@@ -66,3 +66,15 @@
 
 ## Bug Fixes
 - [x] Fix sticky navbar not staying visible on scroll (Landing.tsx)
+
+## Agent Platform Extension
+- [x] Schema: agents table (registration fields + owner + reputation defaults)
+- [x] Schema: agentMetrics table (success_rate, avg_latency, tasks_completed, error_rate)
+- [x] Schema: extend taskHistory with agents_used, execution_time fields
+- [x] tRPC: agent.register, agent.list, agent.getById, agent.myAgents procedures
+- [x] tRPC: agent.discover — scored ranking (capability 50% + success_rate 30% + latency 20%)
+- [x] tRPC: agent.updateReputation — called after task completion
+- [x] Task routing: record agents_used + execution_time on saveTask
+- [x] Frontend: Agent Registry page (/registry — Public Directory + Register + My Agents tabs)
+- [x] Frontend: Discovery scoring wired to discover procedure
+- [x] Vitest: agent registration, discovery scoring, reputation update tests (15/15 passing)

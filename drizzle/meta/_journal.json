@@ -15,6 +15,13 @@
       "when": 1773053883831,
       "tag": "0001_hot_nightmare",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1773069226984,
+      "tag": "0002_shocking_kitty_pryde",
+      "breakpoints": true
     }
   ]
 }

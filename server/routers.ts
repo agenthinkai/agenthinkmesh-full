@@ -4,11 +4,34 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { taskHistory } from "../drizzle/schema";
-import { eq, desc, gte, sql } from "drizzle-orm";
+import { taskHistory, agents, agentMetrics } from "../drizzle/schema";
+import { eq, desc, gte, sql, and, like, or } from "drizzle-orm";
+
+// ── Discovery scoring ─────────────────────────────────────────────────────────
+// score = (capabilityMatch * 0.5) + (successRate * 0.3) + (latencyScore * 0.2)
+// latencyScore = clamp(1 - latency/5000, 0, 1)  — 0ms=1.0, 5000ms=0.0
+function scoreAgent(
+  agent: { averageLatency: number },
+  metrics: { successRate: string; avgLatency: number } | null,
+  capabilityMatch: number // 0–1
+): number {
+  const successRate = metrics ? Number(metrics.successRate) / 100 : 0.8;
+  const latencyMs = metrics ? metrics.avgLatency : agent.averageLatency;
+  const latencyScore = Math.max(0, Math.min(1, 1 - latencyMs / 5000));
+  return capabilityMatch * 0.5 + successRate * 0.3 + latencyScore * 0.2;
+}
+
+function capabilityMatchScore(agentCaps: string[], taskCaps: string[]): number {
+  if (taskCaps.length === 0) return 1; // no filter = full match
+  const agentSet = new Set(agentCaps.map(c => c.toLowerCase()));
+  const matched = taskCaps.filter(c => agentSet.has(c.toLowerCase())).length;
+  return matched / taskCaps.length;
+}
 
 export const appRouter = router({
   system: systemRouter,
+
+  // ── Auth ──────────────────────────────────────────────────────────────────
   auth: router({
     me: publicProcedure.query(opts => opts.ctx.user),
     logout: publicProcedure.mutation(({ ctx }) => {
@@ -18,51 +41,45 @@ export const appRouter = router({
     }),
   }),
 
+  // ── Mesh (existing task history + metrics) ────────────────────────────────
   mesh: router({
     getHistory: protectedProcedure.query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
-      const rows = await db
+      return db
         .select()
         .from(taskHistory)
         .where(eq(taskHistory.userId, ctx.user.id))
         .orderBy(desc(taskHistory.createdAt))
         .limit(50);
-      return rows;
     }),
 
     getRecentActivity: protectedProcedure.query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return [];
-      const rows = await db
+      return db
         .select()
         .from(taskHistory)
         .where(eq(taskHistory.userId, ctx.user.id))
         .orderBy(desc(taskHistory.createdAt))
         .limit(5);
-      return rows;
     }),
 
     getMetrics: protectedProcedure.query(async ({ ctx }) => {
       const db = await getDb();
       if (!db) return { tasksToday: 0, totalTasks: 0, avgAgents: 0, successRate: 100 };
 
-      // Start of today UTC
       const todayStart = new Date();
       todayStart.setUTCHours(0, 0, 0, 0);
 
       const [todayRows, totalRows] = await Promise.all([
-        db
-          .select({ count: sql<number>`count(*)` })
+        db.select({ count: sql<number>`count(*)` })
           .from(taskHistory)
-          .where(
-            sql`${taskHistory.userId} = ${ctx.user.id} AND ${taskHistory.createdAt} >= ${todayStart}`
-          ),
-        db
-          .select({
-            count: sql<number>`count(*)`,
-            avgAgents: sql<number>`avg(${taskHistory.agentCount})`,
-          })
+          .where(sql`${taskHistory.userId} = ${ctx.user.id} AND ${taskHistory.createdAt} >= ${todayStart}`),
+        db.select({
+          count: sql<number>`count(*)`,
+          avgAgents: sql<number>`avg(${taskHistory.agentCount})`,
+        })
           .from(taskHistory)
           .where(eq(taskHistory.userId, ctx.user.id)),
       ]);
@@ -71,7 +88,7 @@ export const appRouter = router({
         tasksToday: Number(todayRows[0]?.count ?? 0),
         totalTasks: Number(totalRows[0]?.count ?? 0),
         avgAgents: Math.round(Number(totalRows[0]?.avgAgents ?? 0)),
-        successRate: 100, // placeholder — extend with status field later
+        successRate: 100,
       };
     }),
 
@@ -82,6 +99,8 @@ export const appRouter = router({
         contextLabel: z.string(),
         agentCount: z.number(),
         outputs: z.string().optional(),
+        agentsUsed: z.array(z.number()).optional(), // registered agent IDs
+        executionTime: z.number().optional(),       // ms
       }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
@@ -93,7 +112,265 @@ export const appRouter = router({
           contextLabel: input.contextLabel,
           agentCount: input.agentCount,
           outputs: input.outputs || null,
+          agentsUsed: input.agentsUsed ? JSON.stringify(input.agentsUsed) : null,
+          executionTime: input.executionTime ?? null,
         });
+        return { success: true };
+      }),
+  }),
+
+  // ── Agent Registry ────────────────────────────────────────────────────────
+  agent: router({
+    // Register a new external agent (authenticated users only)
+    register: protectedProcedure
+      .input(z.object({
+        agentName: z.string().min(2).max(128),
+        developerName: z.string().min(2).max(128),
+        description: z.string().min(10),
+        capabilities: z.array(z.string()).min(1),
+        endpointUrl: z.string().url(),
+        averageLatency: z.number().min(0).max(60000).default(500),
+        pricingModel: z.enum(["free", "per_task", "subscription"]).default("free"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        const [result] = await db.insert(agents).values({
+          ownerId: ctx.user.id,
+          agentName: input.agentName,
+          developerName: input.developerName,
+          description: input.description,
+          capabilities: JSON.stringify(input.capabilities),
+          endpointUrl: input.endpointUrl,
+          averageLatency: input.averageLatency,
+          pricingModel: input.pricingModel,
+          status: "active",
+        });
+
+        const agentId = (result as unknown as { insertId: number }).insertId;
+
+        // Seed metrics row with neutral defaults
+        await db.insert(agentMetrics).values({
+          agentId,
+          tasksCompleted: 0,
+          successRate: "80.00",
+          avgLatency: input.averageLatency,
+          errorRate: "0.00",
+        });
+
+        return { success: true, agentId };
+      }),
+
+    // List all active agents (public)
+    list: publicProcedure
+      .input(z.object({
+        search: z.string().optional(),
+        capability: z.string().optional(),
+        limit: z.number().min(1).max(100).default(20),
+        offset: z.number().min(0).default(0),
+      }).optional())
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return [];
+
+        const rows = await db
+          .select({
+            id: agents.id,
+            agentName: agents.agentName,
+            developerName: agents.developerName,
+            description: agents.description,
+            capabilities: agents.capabilities,
+            averageLatency: agents.averageLatency,
+            pricingModel: agents.pricingModel,
+            status: agents.status,
+            createdAt: agents.createdAt,
+            tasksCompleted: agentMetrics.tasksCompleted,
+            successRate: agentMetrics.successRate,
+            avgLatency: agentMetrics.avgLatency,
+            errorRate: agentMetrics.errorRate,
+          })
+          .from(agents)
+          .leftJoin(agentMetrics, eq(agents.id, agentMetrics.agentId))
+          .where(eq(agents.status, "active"))
+          .orderBy(desc(agentMetrics.tasksCompleted))
+          .limit(input?.limit ?? 20)
+          .offset(input?.offset ?? 0);
+
+        return rows;
+      }),
+
+    // Get a single agent by ID (public)
+    getById: publicProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return null;
+
+        const rows = await db
+          .select({
+            id: agents.id,
+            ownerId: agents.ownerId,
+            agentName: agents.agentName,
+            developerName: agents.developerName,
+            description: agents.description,
+            capabilities: agents.capabilities,
+            endpointUrl: agents.endpointUrl,
+            averageLatency: agents.averageLatency,
+            pricingModel: agents.pricingModel,
+            status: agents.status,
+            createdAt: agents.createdAt,
+            tasksCompleted: agentMetrics.tasksCompleted,
+            successRate: agentMetrics.successRate,
+            avgLatency: agentMetrics.avgLatency,
+            errorRate: agentMetrics.errorRate,
+          })
+          .from(agents)
+          .leftJoin(agentMetrics, eq(agents.id, agentMetrics.agentId))
+          .where(eq(agents.id, input.id))
+          .limit(1);
+
+        return rows[0] ?? null;
+      }),
+
+    // My registered agents
+    myAgents: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+
+      return db
+        .select({
+          id: agents.id,
+          agentName: agents.agentName,
+          developerName: agents.developerName,
+          description: agents.description,
+          capabilities: agents.capabilities,
+          endpointUrl: agents.endpointUrl,
+          averageLatency: agents.averageLatency,
+          pricingModel: agents.pricingModel,
+          status: agents.status,
+          createdAt: agents.createdAt,
+          tasksCompleted: agentMetrics.tasksCompleted,
+          successRate: agentMetrics.successRate,
+          avgLatency: agentMetrics.avgLatency,
+          errorRate: agentMetrics.errorRate,
+        })
+        .from(agents)
+        .leftJoin(agentMetrics, eq(agents.id, agentMetrics.agentId))
+        .where(eq(agents.ownerId, ctx.user.id))
+        .orderBy(desc(agents.createdAt));
+    }),
+
+    // Deactivate an agent (owner only)
+    deactivate: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        const [existing] = await db.select({ ownerId: agents.ownerId })
+          .from(agents)
+          .where(eq(agents.id, input.id))
+          .limit(1);
+
+        if (!existing || existing.ownerId !== ctx.user.id) {
+          throw new Error("Not authorised");
+        }
+
+        await db.update(agents)
+          .set({ status: "inactive" })
+          .where(eq(agents.id, input.id));
+
+        return { success: true };
+      }),
+
+    // ── Discovery: ranked agent list for a task ────────────────────────────
+    discover: publicProcedure
+      .input(z.object({
+        capabilities: z.array(z.string()).default([]),
+        limit: z.number().min(1).max(50).default(10),
+      }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return [];
+
+        const rows = await db
+          .select({
+            id: agents.id,
+            agentName: agents.agentName,
+            developerName: agents.developerName,
+            description: agents.description,
+            capabilities: agents.capabilities,
+            averageLatency: agents.averageLatency,
+            pricingModel: agents.pricingModel,
+            tasksCompleted: agentMetrics.tasksCompleted,
+            successRate: agentMetrics.successRate,
+            avgLatency: agentMetrics.avgLatency,
+            errorRate: agentMetrics.errorRate,
+          })
+          .from(agents)
+          .leftJoin(agentMetrics, eq(agents.id, agentMetrics.agentId))
+          .where(eq(agents.status, "active"));
+
+        // Score and rank
+        const scored = rows.map(row => {
+          const agentCaps: string[] = (() => {
+            try { return JSON.parse(row.capabilities); } catch { return []; }
+          })();
+          const matchScore = capabilityMatchScore(agentCaps, input.capabilities);
+          const score = scoreAgent(
+            { averageLatency: row.averageLatency },
+            row.successRate ? { successRate: row.successRate, avgLatency: row.avgLatency ?? row.averageLatency } : null,
+            matchScore
+          );
+          return { ...row, score: Math.round(score * 100) };
+        });
+
+        return scored
+          .sort((a, b) => b.score - a.score)
+          .slice(0, input.limit);
+      }),
+
+    // ── Reputation: update metrics after task execution ────────────────────
+    updateReputation: protectedProcedure
+      .input(z.object({
+        agentId: z.number(),
+        success: z.boolean(),
+        latencyMs: z.number().min(0),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return { success: false };
+
+        const [existing] = await db
+          .select()
+          .from(agentMetrics)
+          .where(eq(agentMetrics.agentId, input.agentId))
+          .limit(1);
+
+        if (!existing) return { success: false };
+
+        const prevTotal = existing.tasksCompleted;
+        const prevSuccess = (Number(existing.successRate) / 100) * prevTotal;
+        const newTotal = prevTotal + 1;
+        const newSuccessCount = prevSuccess + (input.success ? 1 : 0);
+        const newSuccessRate = ((newSuccessCount / newTotal) * 100).toFixed(2);
+        const newAvgLatency = Math.round(
+          (existing.avgLatency * prevTotal + input.latencyMs) / newTotal
+        );
+        const prevErrors = (Number(existing.errorRate) / 100) * prevTotal;
+        const newErrors = prevErrors + (input.success ? 0 : 1);
+        const newErrorRate = ((newErrors / newTotal) * 100).toFixed(2);
+
+        await db.update(agentMetrics)
+          .set({
+            tasksCompleted: newTotal,
+            successRate: newSuccessRate,
+            avgLatency: newAvgLatency,
+            errorRate: newErrorRate,
+          })
+          .where(eq(agentMetrics.agentId, input.agentId));
+
         return { success: true };
       }),
   }),

@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { decimal, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -34,6 +34,8 @@ export const taskHistory = mysqlTable("task_history", {
   contextLabel: varchar("contextLabel", { length: 128 }).notNull(),
   agentCount: int("agentCount").notNull().default(0),
   outputs: text("outputs"), // JSON string of { agentLabel: output }
+  agentsUsed: text("agentsUsed"), // JSON array of agent IDs used in routing
+  executionTime: int("executionTime"), // ms
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 
@@ -53,3 +55,36 @@ export const vaultDocuments = mysqlTable("vault_documents", {
 
 export type VaultDocument = typeof vaultDocuments.$inferSelect;
 export type InsertVaultDocument = typeof vaultDocuments.$inferInsert;
+
+// ── Agent Registry ────────────────────────────────────────────────────────────
+export const agents = mysqlTable("agents", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerId: int("ownerId").notNull(), // FK → users.id
+  agentName: varchar("agentName", { length: 128 }).notNull(),
+  developerName: varchar("developerName", { length: 128 }).notNull(),
+  description: text("description").notNull(),
+  capabilities: text("capabilities").notNull(), // JSON array of capability strings
+  endpointUrl: varchar("endpointUrl", { length: 512 }).notNull(),
+  averageLatency: int("averageLatency").notNull().default(500), // ms, self-reported
+  pricingModel: mysqlEnum("pricingModel", ["free", "per_task", "subscription"]).notNull().default("free"),
+  status: mysqlEnum("status", ["active", "inactive", "pending"]).notNull().default("active"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Agent = typeof agents.$inferSelect;
+export type InsertAgent = typeof agents.$inferInsert;
+
+// ── Agent Reputation / Metrics ────────────────────────────────────────────────
+export const agentMetrics = mysqlTable("agent_metrics", {
+  id: int("id").autoincrement().primaryKey(),
+  agentId: int("agentId").notNull().unique(), // FK → agents.id
+  tasksCompleted: int("tasksCompleted").notNull().default(0),
+  successRate: decimal("successRate", { precision: 5, scale: 2 }).notNull().default("80.00"), // neutral default
+  avgLatency: int("avgLatency").notNull().default(500), // ms, measured
+  errorRate: decimal("errorRate", { precision: 5, scale: 2 }).notNull().default("0.00"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AgentMetrics = typeof agentMetrics.$inferSelect;
+export type InsertAgentMetrics = typeof agentMetrics.$inferInsert;

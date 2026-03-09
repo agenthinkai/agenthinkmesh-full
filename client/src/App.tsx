@@ -5,6 +5,7 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
 import Landing from "./pages/Landing";
 import MeshDashboard from "./pages/MeshDashboard";
+import AgentRegistry from "./pages/AgentRegistry";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./_core/hooks/useAuth";
 
@@ -19,7 +20,7 @@ function Router() {
         alignItems: "center",
         justifyContent: "center",
         background: "#F8FAFC",
-        fontFamily: "'Syne', sans-serif",
+        fontFamily: "'Inter', sans-serif",
       }}>
         <div style={{ textAlign: "center" }}>
           <div style={{
@@ -29,7 +30,7 @@ function Router() {
             animation: "spin 0.8s linear infinite",
             margin: "0 auto 12px",
           }} />
-          <div style={{ fontSize: 12, color: "#94A3B8", fontFamily: "'DM Mono', monospace" }}>
+          <div style={{ fontSize: 12, color: "#94A3B8", fontFamily: "'JetBrains Mono', monospace" }}>
             Initialising Mesh…
           </div>
         </div>
@@ -42,6 +43,7 @@ function Router() {
     <Switch>
       <Route path="/" component={isAuthenticated ? MeshDashboard : Landing} />
       <Route path="/mesh" component={isAuthenticated ? MeshDashboard : Landing} />
+      <Route path="/registry" component={AgentRegistry} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
