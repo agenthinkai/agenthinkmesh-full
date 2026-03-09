@@ -1,5 +1,6 @@
 import { getLoginUrl } from "@/const";
 import Logo from "@/components/Logo";
+import { Link } from "wouter";
 
 const FONT = "'Inter', system-ui, -apple-system, sans-serif";
 const MONO = "'JetBrains Mono', 'Fira Code', monospace";
@@ -73,6 +74,9 @@ export default function Landing() {
           {[["#features", "Features"], ["#domains", "Domains"], ["#how-it-works", "How it works"]].map(([href, label]) => (
             <a key={href} href={href} style={{ fontSize: 13, color: "#64748B", textDecoration: "none", fontWeight: 500 }}>{label}</a>
           ))}
+          <Link href="/registry" style={{ fontSize: 13, color: "#4F46E5", textDecoration: "none", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+            ⬡ Registry
+          </Link>
           <a href={loginUrl} style={{
             padding: "8px 20px", background: "#4F46E5", color: "#fff",
             borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none",

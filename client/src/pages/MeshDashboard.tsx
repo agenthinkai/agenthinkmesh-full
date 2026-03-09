@@ -10,8 +10,9 @@ import {
   buildLayout,
   inferAgents,
 } from "@/lib/meshData";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import Logo from "@/components/Logo";
+import { ExternalAgentCard } from "@/components/ExternalAgentCard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface OutputMap { [label: string]: string }
@@ -127,13 +128,12 @@ function ContextSwitcher({ current, onSwitch, onClose }: {
 }
 
 // ─── AgentCard ────────────────────────────────────────────────────────────────
-function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText, apiKey, delay, onDone }: {
+function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText, delay, onDone }: {
   agent: AgentNode;
   taskText: string;
   contextLabel: string;
   systemPromptBase: string;
   vaultText: string;
-  apiKey: string;
   delay: number;
   onDone: (label: string, text: string) => void;
 }) {
@@ -143,15 +143,7 @@ function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText,
   const startRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const color = agent.spawned ? "#F59E0B" : "#4F46E5";
-
-  const buildPrompt = () => {
-    let base = `${systemPromptBase}\n\nYou are the ${agent.label}. Analyse the following task and respond with exactly this structure:\nSUMMARY: one sentence.\nKEY FINDINGS: 3-5 bullet points.\nFLAGS: any risks or issues (or 'None identified').\nNEXT ACTION: one recommended step.`;
-    if (vaultText) base += `\n\nDocument context:\n${vaultText.slice(0, 2000)}`;
-    return base;
-  };
-
-  const placeholder = () =>
-    `SUMMARY: ${agent.label} has completed analysis within the ${contextLabel} context.\n\nKEY FINDINGS:\n• Primary objective identified and scoped against institutional parameters\n• Relevant data points extracted and cross-referenced with context configuration\n• Risk threshold assessment completed against baseline criteria\n• Compliance alignment verified for applicable regulatory framework\n• Output structured for downstream agent consumption\n\nFLAGS: None identified at this stage. Recommend secondary review if task scope expands.\n\nNEXT ACTION: Route findings to Mesh Core for aggregation and final output compilation.`;
+  const runAgentTask = trpc.mesh.runAgentTask.useMutation();
 
   useEffect(() => {
     const timeout = setTimeout(async () => {
@@ -159,69 +151,32 @@ function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText,
       startRef.current = Date.now();
       timerRef.current = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current) / 1000)), 1000);
 
-      if (!apiKey) {
-        const text = placeholder();
+      try {
+        const { result } = await runAgentTask.mutateAsync({
+          agentLabel: agent.label,
+          systemPromptBase,
+          taskText,
+          contextLabel,
+          vaultText: vaultText || "",
+        });
+        clearInterval(timerRef.current!);
+        // Typewriter effect for the result
         let i = 0;
         const tw = setInterval(() => {
-          i += 3;
-          setContent(text.slice(0, i));
-          if (i >= text.length) {
+          i += 6;
+          setContent(result.slice(0, i));
+          if (i >= result.length) {
             clearInterval(tw);
-            clearInterval(timerRef.current!);
             setStatus("done");
-            onDone(agent.label, text);
+            onDone(agent.label, result);
           }
-        }, 18);
-        return;
-      }
-
-      try {
-        const res = await fetch("https://api.anthropic.com/v1/messages", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": apiKey,
-            "anthropic-version": "2023-06-01",
-            "anthropic-dangerous-direct-browser-access": "true",
-          },
-          body: JSON.stringify({
-            model: "claude-3-5-sonnet-20241022",
-            max_tokens: 1000,
-            stream: true,
-            system: buildPrompt(),
-            messages: [{ role: "user", content: taskText }],
-          }),
-        });
-        if (!res.ok) throw new Error(`API ${res.status}`);
-        const reader = res.body!.getReader();
-        const decoder = new TextDecoder();
-        let full = "";
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const lines = decoder.decode(value).split("\n");
-          for (const line of lines) {
-            if (line.startsWith("data: ")) {
-              const d = line.slice(6);
-              if (d === "[DONE]") continue;
-              try {
-                const p = JSON.parse(d);
-                if (p.type === "content_block_delta" && p.delta?.text) {
-                  full += p.delta.text;
-                  setContent(full);
-                }
-              } catch { /* ignore */ }
-            }
-          }
-        }
-        clearInterval(timerRef.current!);
-        setStatus("done");
-        onDone(agent.label, full);
+        }, 12);
       } catch (err: unknown) {
         clearInterval(timerRef.current!);
         const msg = err instanceof Error ? err.message : String(err);
-        setContent(`Error: ${msg}. Check API key in Settings.`);
+        setContent(`Error: ${msg}`);
         setStatus("error");
+        onDone(agent.label, `Error: ${msg}`);
       }
     }, delay);
     return () => { clearTimeout(timeout); clearInterval(timerRef.current!); };
@@ -259,14 +214,12 @@ function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText,
     </div>
   );
 }
-
-// ─── OutputPanel ──────────────────────────────────────────────────────────────
-function OutputPanel({ agents, taskText, ctx, vaultText, apiKey, onBack, onDone }: {
+// ─── OutputPanel ────────────────────────────────────────────────────────────────
+function OutputPanel({ agents, taskText, ctx, vaultText, onBack, onDone }: {
   agents: AgentNode[];
   taskText: string;
   ctx: MeshContext;
   vaultText: string;
-  apiKey: string;
   onBack: () => void;
   onDone: (outputs: OutputMap) => void;
 }) {
@@ -275,7 +228,15 @@ function OutputPanel({ agents, taskText, ctx, vaultText, apiKey, onBack, onDone 
   const outputsRef = useRef<OutputMap>({});
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startRef = useRef(Date.now());
-  const total = agents.length;
+
+  // Discover top registered external agent
+  const { data: discoveredAgents } = trpc.agent.discover.useQuery(
+    { capabilities: [], limit: 1 },
+    { staleTime: 60000 }
+  );
+  const topExternalAgent = discoveredAgents && discoveredAgents.length > 0 ? discoveredAgents[0] : null;
+
+  const total = agents.length + (topExternalAgent ? 1 : 0);
 
   useEffect(() => {
     timerRef.current = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current) / 1000)), 1000);
@@ -340,11 +301,20 @@ function OutputPanel({ agents, taskText, ctx, vaultText, apiKey, onBack, onDone 
           contextLabel={ctx.label}
           systemPromptBase={ctx.systemPromptBase}
           vaultText={vaultText}
-          apiKey={apiKey}
           delay={i * 400}
           onDone={handleDone}
         />
       ))}
+      {topExternalAgent && (
+        <ExternalAgentCard
+          key={`ext-${topExternalAgent.id}`}
+          agentId={topExternalAgent.id}
+          agentName={topExternalAgent.agentName}
+          taskText={taskText}
+          contextLabel={ctx.label}
+          onDone={handleDone}
+        />
+      )}
     </div>
   );
 }
@@ -566,7 +536,6 @@ export default function MeshDashboard() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const ctx = CONTEXTS[role];
-  const apiKey = sessionStorage.getItem("mesh_api_key") || "";
 
   const [agentList, setAgentList] = useState<AgentNode[]>(() =>
     CONTEXTS[role].agents.map((label, i) => ({ id: "a" + i, label, spawned: false }))
@@ -742,7 +711,6 @@ export default function MeshDashboard() {
                 taskText={task}
                 ctx={ctx}
                 vaultText={vaultText}
-                apiKey={apiKey}
                 onBack={() => { setShowOutput(false); }}
                 onDone={handleOutputDone}
               />

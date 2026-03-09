@@ -6,6 +6,7 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
 import { taskHistory, agents, agentMetrics } from "../drizzle/schema";
 import { eq, desc, gte, sql, and, like, or } from "drizzle-orm";
+import { invokeLLM } from "./_core/llm";
 
 // ── Discovery scoring ─────────────────────────────────────────────────────────
 // score = (capabilityMatch * 0.5) + (successRate * 0.3) + (latencyScore * 0.2)
@@ -91,6 +92,39 @@ export const appRouter = router({
         successRate: 100,
       };
     }),
+
+    // ── Server-side LLM agent execution ─────────────────────────────────────
+    runAgentTask: protectedProcedure
+      .input(z.object({
+        agentLabel: z.string(),
+        systemPromptBase: z.string(),
+        taskText: z.string().min(1),
+        contextLabel: z.string(),
+        vaultText: z.string().optional().default(""),
+      }))
+      .mutation(async ({ input }) => {
+        const systemPrompt = [
+          input.systemPromptBase,
+          `You are the ${input.agentLabel}. Analyse the following task and respond with exactly this structure:`,
+          "SUMMARY: one sentence.",
+          "KEY FINDINGS: 3-5 bullet points.",
+          "FLAGS: any risks or issues (or 'None identified').",
+          "NEXT ACTION: one recommended step.",
+          input.vaultText ? `\nDocument context:\n${input.vaultText.slice(0, 2000)}` : "",
+        ].filter(Boolean).join("\n");
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: input.taskText },
+          ],
+          max_tokens: 1000,
+        });
+
+        const content = response.choices[0]?.message?.content;
+        const result = typeof content === "string" ? content : JSON.stringify(content);
+        return { result };
+      }),
 
     saveTask: protectedProcedure
       .input(z.object({
@@ -329,6 +363,94 @@ export const appRouter = router({
         return scored
           .sort((a, b) => b.score - a.score)
           .slice(0, input.limit);
+      }),
+
+    // ── Endpoint connection test (public — no auth needed to test) ──────────
+    testEndpoint: publicProcedure
+      .input(z.object({
+        endpointUrl: z.string().url(),
+      }))
+      .mutation(async ({ input }) => {
+        const start = Date.now();
+        try {
+          const res = await fetch(input.endpointUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              task: "Test task",
+              context: "Connection validation from AgenThink Mesh",
+            }),
+            signal: AbortSignal.timeout(10000), // 10s timeout
+          });
+          const latencyMs = Date.now() - start;
+          if (!res.ok) {
+            return { ok: false, latencyMs, preview: "", error: `HTTP ${res.status} ${res.statusText}` };
+          }
+          const text = await res.text();
+          let preview = text.slice(0, 300);
+          // Try to pretty-print JSON
+          try { preview = JSON.stringify(JSON.parse(text), null, 2).slice(0, 300); } catch { /* keep raw */ }
+          return { ok: true, latencyMs, preview, error: undefined };
+        } catch (err: unknown) {
+          const latencyMs = Date.now() - start;
+          const msg = err instanceof Error ? err.message : String(err);
+          return { ok: false, latencyMs, preview: "", error: msg };
+        }
+      }),
+
+    // ── Route a task to a registered external agent ───────────────────────
+    routeTask: protectedProcedure
+      .input(z.object({
+        agentId: z.number(),
+        task: z.string().min(1),
+        context: z.string(),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        // Fetch agent endpoint
+        const [agent] = await db
+          .select({ endpointUrl: agents.endpointUrl, agentName: agents.agentName, status: agents.status })
+          .from(agents)
+          .where(eq(agents.id, input.agentId))
+          .limit(1);
+
+        if (!agent) throw new Error("Agent not found");
+        if (agent.status !== "active") throw new Error("Agent is not active");
+
+        const start = Date.now();
+        let success = false;
+        let result = "";
+
+        try {
+          const res = await fetch(agent.endpointUrl, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ task: input.task, context: input.context }),
+            signal: AbortSignal.timeout(30000),
+          });
+          const latencyMs = Date.now() - start;
+
+          if (!res.ok) {
+            throw new Error(`HTTP ${res.status}`);
+          }
+
+          const data = await res.json() as { result?: string; latency_ms?: number };
+          result = data.result ?? JSON.stringify(data);
+          success = true;
+
+          // Update reputation async (don't await — don't block response)
+          db.update(agentMetrics).set({
+            tasksCompleted: sql`${agentMetrics.tasksCompleted} + 1`,
+          }).where(eq(agentMetrics.agentId, input.agentId)).catch(() => {});
+
+          return { success: true, result, latencyMs, agentName: agent.agentName };
+        } catch (err: unknown) {
+          const latencyMs = Date.now() - start;
+          const msg = err instanceof Error ? err.message : String(err);
+          return { success: false, result: `Error: ${msg}`, latencyMs, agentName: agent.agentName };
+        }
       }),
 
     // ── Reputation: update metrics after task execution ────────────────────

@@ -62,12 +62,44 @@ export default function AgentRegistry() {
         agentName: "", developerName: user?.name ?? "", description: "",
         capabilities: "", endpointUrl: "", averageLatency: 500, pricingModel: "free",
       });
+      setEndpointTest(null);
       refetchList();
       refetchMine();
       setActiveTab("my-agents");
     },
     onError: (e) => toast.error(e.message),
   });
+
+  // Endpoint connection test
+  const [endpointTest, setEndpointTest] = useState<{
+    ok: boolean;
+    latencyMs: number;
+    preview: string;
+    error?: string;
+  } | null>(null);
+  const [testingEndpoint, setTestingEndpoint] = useState(false);
+  const testEndpointMutation = trpc.agent.testEndpoint.useMutation();
+
+  const handleTestEndpoint = async () => {
+    if (!form.endpointUrl) { toast.error("Enter an endpoint URL first"); return; }
+    setTestingEndpoint(true);
+    setEndpointTest(null);
+    try {
+      const result = await testEndpointMutation.mutateAsync({ endpointUrl: form.endpointUrl });
+      setEndpointTest(result);
+      if (result.ok) {
+        toast.success(`Connection successful · ${result.latencyMs}ms`);
+      } else {
+        toast.error(`Connection failed: ${result.error}`);
+      }
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setEndpointTest({ ok: false, latencyMs: 0, preview: "", error: msg });
+      toast.error(`Test failed: ${msg}`);
+    } finally {
+      setTestingEndpoint(false);
+    }
+  };
 
   const deactivateMutation = trpc.agent.deactivate.useMutation({
     onSuccess: () => { toast.success("Agent deactivated"); refetchMine(); refetchList(); },
@@ -331,9 +363,50 @@ export default function AgentRegistry() {
 
                 <div>
                   <label style={labelStyle}>Endpoint URL *</label>
-                  <input required type="url" style={inputStyle} value={form.endpointUrl}
-                    onChange={e => setForm(f => ({ ...f, endpointUrl: e.target.value }))}
-                    placeholder="https://your-agent.example.com/execute" />
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <input required type="url" style={{ ...inputStyle, flex: 1 }} value={form.endpointUrl}
+                      onChange={e => { setForm(f => ({ ...f, endpointUrl: e.target.value })); setEndpointTest(null); }}
+                      placeholder="https://your-agent.example.com/execute" />
+                    <button
+                      type="button"
+                      onClick={handleTestEndpoint}
+                      disabled={testingEndpoint || !form.endpointUrl}
+                      style={{
+                        padding: "9px 16px", border: `1px solid ${BORDER}`, borderRadius: 8,
+                        background: testingEndpoint ? "#F1F5F9" : "#fff",
+                        color: testingEndpoint ? MUTED : SLATE,
+                        fontSize: 12, fontWeight: 600, cursor: testingEndpoint || !form.endpointUrl ? "not-allowed" : "pointer",
+                        whiteSpace: "nowrap", fontFamily: MONO, flexShrink: 0,
+                      }}
+                    >
+                      {testingEndpoint ? "Testing…" : "Test Connection"}
+                    </button>
+                  </div>
+                  {/* Test result */}
+                  {endpointTest && (
+                    <div style={{
+                      marginTop: 8, padding: "10px 12px", borderRadius: 8,
+                      background: endpointTest.ok ? "#F0FDF4" : "#FFF1F2",
+                      border: `1px solid ${endpointTest.ok ? "#BBF7D0" : "#FECDD3"}`,
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: endpointTest.preview ? 6 : 0 }}>
+                        <span style={{ fontSize: 14 }}>{endpointTest.ok ? "✓" : "✗"}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: endpointTest.ok ? "#16A34A" : "#DC2626" }}>
+                          {endpointTest.ok ? `Connected · ${endpointTest.latencyMs}ms` : `Failed: ${endpointTest.error}`}
+                        </span>
+                      </div>
+                      {endpointTest.preview && (
+                        <pre style={{ margin: 0, fontSize: 10, color: "#374151", fontFamily: MONO, whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 120, overflow: "auto" }}>
+                          {endpointTest.preview}
+                        </pre>
+                      )}
+                    </div>
+                  )}
+                  {endpointTest && !endpointTest.ok && (
+                    <div style={{ marginTop: 6, fontSize: 11, color: "#D97706", fontFamily: MONO }}>
+                      ⚠ Endpoint validation failed. You can still register, but the agent may not function correctly.
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>

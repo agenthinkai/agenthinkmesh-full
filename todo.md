@@ -78,3 +78,36 @@
 - [x] Frontend: Agent Registry page (/registry — Public Directory + Register + My Agents tabs)
 - [x] Frontend: Discovery scoring wired to discover procedure
 - [x] Vitest: agent registration, discovery scoring, reputation update tests (15/15 passing)
+
+## Incremental Extension — Session 2
+
+### 1. Server-side LLM (invokeLLM)
+- [x] Add mesh.runAgentTask tRPC procedure (protectedProcedure) using invokeLLM
+- [x] Procedure accepts: agentLabel, systemPromptBase, taskText, contextLabel, vaultText
+- [x] Returns: { result: string }
+- [x] Update AgentCard in MeshDashboard to call trpc.mesh.runAgentTask instead of direct Anthropic fetch
+- [x] Remove apiKey prop from AgentCard and OutputPanel
+- [x] Keep placeholder mode for unauthenticated (not needed — dashboard is auth-gated)
+- [x] Remove Settings panel API key section (or keep as legacy/optional override)
+
+### 2. Endpoint Connection Testing
+- [x] Add agent.testEndpoint tRPC procedure (publicProcedure) — POST to endpointUrl with sample payload
+- [x] Returns: { ok: boolean, latencyMs: number, preview: string, error?: string }
+- [x] Add "Test Connection" button in AgentRegistry Register tab
+- [x] Show inline result: green success with latency + response preview, or red error
+- [x] Warn (but don't block) registration if test fails
+
+### 3. Registry Navbar Link
+- [x] Add "Registry" link to Landing.tsx navbar (between "How it works" and "Sign in")
+- [x] Link to /registry route
+
+### 4. External Agent Execution Bridge
+- [x] Add agent.routeTask tRPC procedure (protectedProcedure)
+- [x] Accepts: agentId, task, context
+- [x] POSTs to agent.endpointUrl with { task, context }
+- [x] Returns: { result, latencyMs, success }
+- [x] Calls updateReputation after execution
+- [x] In MeshDashboard: after task submit, call agent.discover to find top external agent
+- [x] If discovered agent found: add ExternalAgentCard to output panel alongside internal agents
+- [x] ExternalAgentCard calls routeTask, displays result in same card format
+- [x] Log external agent execution in saveTask (agentsUsed)

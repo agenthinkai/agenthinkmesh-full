@@ -1,0 +1,276 @@
+/**
+ * extension.test.ts
+ * Tests for the three new procedures added in Session 2:
+ *   1. agent.testEndpoint  — public, validates external endpoint reachability
+ *   2. agent.routeTask     — protected, routes task to registered external agent
+ *   3. mesh.runAgentTask   — protected, server-side LLM execution via invokeLLM
+ */
+
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { appRouter } from "./routers";
+import type { TrpcContext } from "./_core/context";
+
+// ── Context helpers ────────────────────────────────────────────────────────────
+
+function createAuthContext(userId = 1): TrpcContext {
+  return {
+    user: {
+      id: userId,
+      openId: `user-${userId}`,
+      email: `user${userId}@example.com`,
+      name: `Test User ${userId}`,
+      loginMethod: "manus",
+      role: "user",
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      lastSignedIn: new Date(),
+    },
+    req: { protocol: "https", headers: {} } as TrpcContext["req"],
+    res: { clearCookie: () => {} } as unknown as TrpcContext["res"],
+  };
+}
+
+function createPublicContext(): TrpcContext {
+  return {
+    user: null,
+    req: { protocol: "https", headers: {} } as TrpcContext["req"],
+    res: { clearCookie: () => {} } as unknown as TrpcContext["res"],
+  };
+}
+
+// ── agent.testEndpoint ─────────────────────────────────────────────────────────
+
+describe("agent.testEndpoint", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("returns ok:true with latency and preview on 200 response", async () => {
+    const mockResponse = { result: "Hello from agent", status: "ok" };
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: async () => JSON.stringify(mockResponse),
+      })
+    );
+
+    const caller = appRouter.createCaller(createPublicContext());
+    const result = await caller.agent.testEndpoint({
+      endpointUrl: "https://example.com/agent/execute",
+    });
+
+    expect(result.ok).toBe(true);
+    expect(result.latencyMs).toBeGreaterThanOrEqual(0);
+    expect(result.preview).toContain("Hello from agent");
+    expect(result.error).toBeUndefined();
+  });
+
+  it("returns ok:false with error message on non-200 response", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+        statusText: "Service Unavailable",
+        text: async () => "Service down",
+      })
+    );
+
+    const caller = appRouter.createCaller(createPublicContext());
+    const result = await caller.agent.testEndpoint({
+      endpointUrl: "https://example.com/agent/execute",
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("503");
+    expect(result.preview).toBe("");
+  });
+
+  it("returns ok:false with error message on network failure", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockRejectedValue(new Error("ECONNREFUSED"))
+    );
+
+    const caller = appRouter.createCaller(createPublicContext());
+    const result = await caller.agent.testEndpoint({
+      endpointUrl: "https://unreachable.example.com/execute",
+    });
+
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain("ECONNREFUSED");
+  });
+
+  it("rejects invalid URL input", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    await expect(
+      caller.agent.testEndpoint({ endpointUrl: "not-a-url" })
+    ).rejects.toThrow();
+  });
+
+  it("is accessible without authentication (public procedure)", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: "OK",
+        text: async () => '{"result":"ok"}',
+      })
+    );
+    // Should not throw UNAUTHORIZED
+    const caller = appRouter.createCaller(createPublicContext());
+    await expect(
+      caller.agent.testEndpoint({ endpointUrl: "https://example.com/exec" })
+    ).resolves.toBeDefined();
+  });
+});
+
+// ── agent.routeTask ────────────────────────────────────────────────────────────
+
+describe("agent.routeTask", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("requires authentication (protected procedure)", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    await expect(
+      caller.agent.routeTask({ agentId: 1, task: "Analyse this", context: "Finance" })
+    ).rejects.toThrow();
+  });
+
+  it("throws when agent does not exist", async () => {
+    const caller = appRouter.createCaller(createAuthContext(1));
+    await expect(
+      caller.agent.routeTask({ agentId: 999999, task: "Test task", context: "Finance" })
+    ).rejects.toThrow();
+  });
+
+  it("rejects empty task string", async () => {
+    const caller = appRouter.createCaller(createAuthContext(1));
+    await expect(
+      caller.agent.routeTask({ agentId: 1, task: "", context: "Finance" })
+    ).rejects.toThrow();
+  });
+});
+
+// ── mesh.runAgentTask ──────────────────────────────────────────────────────────
+
+describe("mesh.runAgentTask", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("requires authentication (protected procedure)", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    await expect(
+      caller.mesh.runAgentTask({
+        agentLabel: "Deal Screener",
+        systemPromptBase: "You are a VC analyst.",
+        taskText: "Screen this deal",
+        contextLabel: "VC / PE Fund",
+        vaultText: "",
+      })
+    ).rejects.toThrow();
+  });
+
+  it("rejects empty taskText", async () => {
+    const caller = appRouter.createCaller(createAuthContext(1));
+    await expect(
+      caller.mesh.runAgentTask({
+        agentLabel: "Deal Screener",
+        systemPromptBase: "You are a VC analyst.",
+        taskText: "",
+        contextLabel: "VC / PE Fund",
+        vaultText: "",
+      })
+    ).rejects.toThrow();
+  });
+
+  it("calls invokeLLM and returns result string on success", async () => {
+    const mockLLMResponse = {
+      id: "test-id",
+      created: Date.now(),
+      model: "gemini-2.5-flash",
+      choices: [
+        {
+          index: 0,
+          message: {
+            role: "assistant" as const,
+            content:
+              "SUMMARY: Deal looks promising.\nKEY FINDINGS:\n- Strong team\n- Large TAM\nFLAGS: None identified.\nNEXT ACTION: Schedule partner review.",
+          },
+          finish_reason: "stop",
+        },
+      ],
+    };
+
+    // Stub the internal fetch used by invokeLLM
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => mockLLMResponse,
+      })
+    );
+
+    const caller = appRouter.createCaller(createAuthContext(1));
+    const result = await caller.mesh.runAgentTask({
+      agentLabel: "Deal Screener",
+      systemPromptBase: "You are a VC analyst.",
+      taskText: "Screen this inbound deal from a fintech startup",
+      contextLabel: "VC / PE Fund",
+      vaultText: "",
+    });
+
+    expect(result).toHaveProperty("result");
+    expect(typeof result.result).toBe("string");
+    expect(result.result.length).toBeGreaterThan(0);
+  });
+
+  it("includes vaultText in system prompt when provided", async () => {
+    let capturedBody: string | null = null;
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockImplementation(async (_url: string, opts: RequestInit) => {
+        capturedBody = opts.body as string;
+        return {
+          ok: true,
+          json: async () => ({
+            id: "test",
+            created: Date.now(),
+            model: "gemini-2.5-flash",
+            choices: [
+              {
+                index: 0,
+                message: { role: "assistant", content: "SUMMARY: Done." },
+                finish_reason: "stop",
+              },
+            ],
+          }),
+        };
+      })
+    );
+
+    const caller = appRouter.createCaller(createAuthContext(1));
+    await caller.mesh.runAgentTask({
+      agentLabel: "Contract Reviewer",
+      systemPromptBase: "You are a legal analyst.",
+      taskText: "Review this contract",
+      contextLabel: "Law Firm",
+      vaultText: "CONFIDENTIAL: This agreement is between Party A and Party B.",
+    });
+
+    expect(capturedBody).not.toBeNull();
+    const parsed = JSON.parse(capturedBody!);
+    const systemMsg = parsed.messages.find(
+      (m: { role: string }) => m.role === "system"
+    );
+    expect(systemMsg?.content).toContain("CONFIDENTIAL");
+  });
+});
