@@ -111,3 +111,41 @@
 - [x] If discovered agent found: add ExternalAgentCard to output panel alongside internal agents
 - [x] ExternalAgentCard calls routeTask, displays result in same card format
 - [x] Log external agent execution in saveTask (agentsUsed)
+
+## Session 3 — Full Platform Completion
+
+### Capability-Aware Discovery
+- [x] Pass active context agent labels as capabilities to agent.discover in OutputPanel
+- [x] Add connectionTested boolean field to agents table schema
+- [x] Add Verified badge (green chip) to Registry public directory for tested agents
+- [x] Update agent.register to accept connectionTested flag
+- [x] Update AgentRegistry to set connectionTested=true after successful test
+
+### Document Vault
+- [x] Add documents table to drizzle schema (userId, filename, s3Key, s3Url, extractedText, createdAt)
+- [x] Add vault.upload tRPC procedure — accepts base64 file, stores to S3, saves metadata to DB
+- [x] Add vault.list tRPC procedure — returns user's uploaded documents
+- [x] Add vault.delete tRPC procedure
+- [x] Add DocumentVault UI panel in MeshDashboard (file picker, upload progress, document list)
+- [x] Wire selected document's extractedText into vaultText passed to OutputPanel
+- [x] Support PDF and plain text extraction server-side
+
+### Agent Developer Docs Page (/build)
+- [x] Create /build route in App.tsx
+- [x] Create Build.tsx page with API contract, payload format, response format
+- [x] Show scoring formula (capability 50% + success_rate 30% + latency 20%)
+- [x] Show example agent code (Node.js + Python)
+- [x] Add link to /build from Registry page and Landing navbar
+
+### Reference Agent Package
+- [x] Create /home/ubuntu/reference-agent/ standalone Express + TypeScript project
+- [x] POST /execute endpoint accepting { task, context }
+- [x] Calls invokeLLM-equivalent (Gemini API) and returns { result }
+- [x] Includes README with deploy instructions for Railway/Render
+- [x] Includes package.json, tsconfig, Dockerfile
+
+### GitHub Export
+- [x] Create public GitHub repo: agenthinkmesh
+- [x] Push full project code
+- [x] Write professional README with features, architecture, demo link, deploy instructions
+- [x] Add architecture diagram (Mermaid)

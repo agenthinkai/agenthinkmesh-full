@@ -1,0 +1,1 @@
+ALTER TABLE `agents` ADD `connectionTested` boolean DEFAULT false NOT NULL;

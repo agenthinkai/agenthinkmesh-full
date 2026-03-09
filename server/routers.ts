@@ -4,7 +4,8 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { taskHistory, agents, agentMetrics } from "../drizzle/schema";
+import { taskHistory, agents, agentMetrics, vaultDocuments } from "../drizzle/schema";
+import { storagePut } from "./storage";
 import { eq, desc, gte, sql, and, like, or } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
 
@@ -153,6 +154,97 @@ export const appRouter = router({
       }),
   }),
 
+  // ── Document Vault ─────────────────────────────────────────────────────────
+  vault: router({
+    // Upload a document: base64-encoded content + filename
+    upload: protectedProcedure
+      .input(z.object({
+        filename: z.string().min(1).max(255),
+        mimeType: z.string().default("text/plain"),
+        base64Content: z.string().min(1), // base64-encoded file bytes
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        // Decode base64 to buffer
+        const buffer = Buffer.from(input.base64Content, "base64");
+        if (buffer.length > 5 * 1024 * 1024) throw new Error("File too large (max 5 MB)");
+
+        // Upload to S3
+        const suffix = Math.random().toString(36).slice(2, 8);
+        const ext = input.filename.split(".").pop() ?? "txt";
+        const fileKey = `vault/${ctx.user.id}/${Date.now()}-${suffix}.${ext}`;
+        const { url } = await storagePut(fileKey, buffer, input.mimeType);
+
+        // Extract text for prompt injection
+        let extractedText = "";
+        if (input.mimeType === "text/plain" || ext === "txt" || ext === "md") {
+          extractedText = buffer.toString("utf-8").slice(0, 8000);
+        } else if (input.mimeType === "application/pdf" || ext === "pdf") {
+          // For PDF: extract readable ASCII text from buffer (basic extraction)
+          const raw = buffer.toString("latin1");
+          const textMatches = raw.match(/BT[\s\S]*?ET/g) ?? [];
+          const pdfText = textMatches
+            .join(" ")
+            .replace(/[^\x20-\x7E\n]/g, " ")
+            .replace(/\s+/g, " ")
+            .trim();
+          extractedText = pdfText.slice(0, 8000) || "[PDF uploaded — text extraction limited]"; 
+        } else {
+          extractedText = `[${input.filename} uploaded — binary file, no text extraction]`;
+        }
+
+        // Save metadata to DB
+        const [result] = await db.insert(vaultDocuments).values({
+          userId: ctx.user.id,
+          filename: input.filename,
+          fileKey,
+          fileUrl: url,
+          mimeType: input.mimeType,
+          extractedText,
+        });
+
+        const docId = (result as unknown as { insertId: number }).insertId;
+        return { success: true, docId, url, filename: input.filename, extractedText: extractedText.slice(0, 200) };
+      }),
+
+    // List user's vault documents
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db
+        .select({
+          id: vaultDocuments.id,
+          filename: vaultDocuments.filename,
+          fileUrl: vaultDocuments.fileUrl,
+          mimeType: vaultDocuments.mimeType,
+          extractedText: vaultDocuments.extractedText,
+          createdAt: vaultDocuments.createdAt,
+        })
+        .from(vaultDocuments)
+        .where(eq(vaultDocuments.userId, ctx.user.id))
+        .orderBy(desc(vaultDocuments.createdAt))
+        .limit(20);
+    }),
+
+    // Delete a vault document
+    delete: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        // Verify ownership
+        const [doc] = await db.select({ userId: vaultDocuments.userId })
+          .from(vaultDocuments)
+          .where(eq(vaultDocuments.id, input.id))
+          .limit(1);
+        if (!doc || doc.userId !== ctx.user.id) throw new Error("Not authorised");
+        await db.delete(vaultDocuments).where(eq(vaultDocuments.id, input.id));
+        return { success: true };
+      }),
+  }),
+
   // ── Agent Registry ────────────────────────────────────────────────────────
   agent: router({
     // Register a new external agent (authenticated users only)
@@ -165,6 +257,7 @@ export const appRouter = router({
         endpointUrl: z.string().url(),
         averageLatency: z.number().min(0).max(60000).default(500),
         pricingModel: z.enum(["free", "per_task", "subscription"]).default("free"),
+        connectionTested: z.boolean().default(false),
       }))
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();
@@ -180,6 +273,7 @@ export const appRouter = router({
           averageLatency: input.averageLatency,
           pricingModel: input.pricingModel,
           status: "active",
+          connectionTested: input.connectionTested,
         });
 
         const agentId = (result as unknown as { insertId: number }).insertId;
@@ -218,6 +312,7 @@ export const appRouter = router({
             averageLatency: agents.averageLatency,
             pricingModel: agents.pricingModel,
             status: agents.status,
+            connectionTested: agents.connectionTested,
             createdAt: agents.createdAt,
             tasksCompleted: agentMetrics.tasksCompleted,
             successRate: agentMetrics.successRate,
@@ -337,6 +432,7 @@ export const appRouter = router({
             capabilities: agents.capabilities,
             averageLatency: agents.averageLatency,
             pricingModel: agents.pricingModel,
+            connectionTested: agents.connectionTested,
             tasksCompleted: agentMetrics.tasksCompleted,
             successRate: agentMetrics.successRate,
             avgLatency: agentMetrics.avgLatency,
@@ -499,3 +595,4 @@ export const appRouter = router({
 });
 
 export type AppRouter = typeof appRouter;
+

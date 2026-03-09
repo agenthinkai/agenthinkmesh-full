@@ -1,4 +1,4 @@
-import { decimal, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, decimal, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -68,6 +68,7 @@ export const agents = mysqlTable("agents", {
   averageLatency: int("averageLatency").notNull().default(500), // ms, self-reported
   pricingModel: mysqlEnum("pricingModel", ["free", "per_task", "subscription"]).notNull().default("free"),
   status: mysqlEnum("status", ["active", "inactive", "pending"]).notNull().default("active"),
+  connectionTested: boolean("connectionTested").notNull().default(false), // true if endpoint passed validation
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

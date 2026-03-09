@@ -1,0 +1,241 @@
+/**
+ * DocumentVault — file upload panel for the MeshDashboard.
+ * Allows users to upload PDF or text documents that are injected
+ * as context into every agent task prompt.
+ */
+import { trpc } from "@/lib/trpc";
+import { useRef, useState } from "react";
+import { toast } from "sonner";
+
+const MONO = "'JetBrains Mono', monospace";
+const INDIGO = "#4F46E5";
+const BORDER = "#E2E8F0";
+const MUTED = "#64748B";
+const SLATE = "#0F172A";
+
+interface VaultDoc {
+  id: number;
+  filename: string;
+  fileUrl: string;
+  mimeType: string | null;
+  extractedText: string | null;
+  createdAt: Date;
+}
+
+interface DocumentVaultProps {
+  onVaultTextChange: (text: string) => void;
+  activeDocId: number | null;
+  onActiveDocChange: (id: number | null) => void;
+}
+
+export function DocumentVault({
+  onVaultTextChange,
+  activeDocId,
+  onActiveDocChange,
+}: DocumentVaultProps) {
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const { data: docs = [], refetch } = trpc.vault.list.useQuery(undefined, {
+    staleTime: 30000,
+  });
+
+  const uploadMutation = trpc.vault.upload.useMutation({
+    onSuccess: (data) => {
+      toast.success(`${data.filename} uploaded`);
+      refetch();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const deleteMutation = trpc.vault.delete.useMutation({
+    onSuccess: () => {
+      toast.success("Document removed");
+      refetch();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("File too large — max 5 MB");
+      return;
+    }
+    setUploading(true);
+    try {
+      const buffer = await file.arrayBuffer();
+      const base64 = btoa(
+        new Uint8Array(buffer).reduce((s, b) => s + String.fromCharCode(b), "")
+      );
+      await uploadMutation.mutateAsync({
+        filename: file.name,
+        mimeType: file.type || "application/octet-stream",
+        base64Content: base64,
+      });
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+
+  const handleSelect = (doc: VaultDoc) => {
+    if (activeDocId === doc.id) {
+      // Deselect
+      onActiveDocChange(null);
+      onVaultTextChange("");
+    } else {
+      onActiveDocChange(doc.id);
+      onVaultTextChange(doc.extractedText ?? "");
+      toast.success(`"${doc.filename}" added to task context`);
+    }
+  };
+
+  const handleDelete = (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    if (activeDocId === id) {
+      onActiveDocChange(null);
+      onVaultTextChange("");
+    }
+    deleteMutation.mutate({ id });
+  };
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Upload button */}
+      <div
+        onClick={() => !uploading && fileInputRef.current?.click()}
+        style={{
+          border: `1.5px dashed ${uploading ? INDIGO : BORDER}`,
+          borderRadius: 10,
+          padding: "12px 16px",
+          textAlign: "center",
+          cursor: uploading ? "not-allowed" : "pointer",
+          background: uploading ? "#EEF2FF" : "#FAFBFF",
+          transition: "all 0.15s",
+        }}
+      >
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".pdf,.txt,.md,.csv"
+          style={{ display: "none" }}
+          onChange={handleFileChange}
+        />
+        <div style={{ fontSize: 18, marginBottom: 4 }}>
+          {uploading ? "⏳" : "📎"}
+        </div>
+        <div
+          style={{
+            fontSize: 11,
+            fontWeight: 600,
+            color: uploading ? INDIGO : SLATE,
+            fontFamily: MONO,
+          }}
+        >
+          {uploading ? "Uploading..." : "Upload document"}
+        </div>
+        <div style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
+          PDF, TXT, MD, CSV · max 5 MB
+        </div>
+      </div>
+
+      {/* Document list */}
+      {docs.length > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {docs.map((doc) => {
+            const isActive = activeDocId === doc.id;
+            return (
+              <div
+                key={doc.id}
+                onClick={() => handleSelect(doc)}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  padding: "8px 10px",
+                  borderRadius: 8,
+                  border: `1px solid ${isActive ? INDIGO : BORDER}`,
+                  background: isActive ? "#EEF2FF" : "#fff",
+                  cursor: "pointer",
+                  transition: "all 0.12s",
+                }}
+              >
+                <span style={{ fontSize: 14, flexShrink: 0 }}>
+                  {doc.mimeType?.includes("pdf") ? "📄" : "📝"}
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: isActive ? INDIGO : SLATE,
+                      fontFamily: MONO,
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {doc.filename}
+                  </div>
+                  <div style={{ fontSize: 9, color: MUTED }}>
+                    {new Date(doc.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+                {isActive && (
+                  <span
+                    style={{
+                      fontSize: 9,
+                      padding: "2px 6px",
+                      borderRadius: 999,
+                      background: INDIGO,
+                      color: "#fff",
+                      fontFamily: MONO,
+                      fontWeight: 700,
+                      flexShrink: 0,
+                    }}
+                  >
+                    Active
+                  </span>
+                )}
+                <button
+                  onClick={(e) => handleDelete(e, doc.id)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    cursor: "pointer",
+                    color: "#CBD5E1",
+                    fontSize: 14,
+                    padding: "0 2px",
+                    flexShrink: 0,
+                    lineHeight: 1,
+                  }}
+                  title="Remove document"
+                >
+                  ×
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {docs.length === 0 && (
+        <div
+          style={{
+            fontSize: 10,
+            color: MUTED,
+            textAlign: "center",
+            fontFamily: MONO,
+            padding: "8px 0",
+          }}
+        >
+          No documents in vault yet.
+          <br />
+          Upload a client profile or brief to inject context.
+        </div>
+      )}
+    </div>
+  );
+}

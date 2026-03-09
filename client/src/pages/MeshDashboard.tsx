@@ -13,6 +13,7 @@ import {
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import Logo from "@/components/Logo";
 import { ExternalAgentCard } from "@/components/ExternalAgentCard";
+import { DocumentVault } from "@/components/DocumentVault";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface OutputMap { [label: string]: string }
@@ -229,9 +230,10 @@ function OutputPanel({ agents, taskText, ctx, vaultText, onBack, onDone }: {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const startRef = useRef(Date.now());
 
-  // Discover top registered external agent
+  // Discover top registered external agent — pass context agent labels for domain-aware matching
+  const contextCapabilities = useMemo(() => agents.map(a => a.label), [agents]);
   const { data: discoveredAgents } = trpc.agent.discover.useQuery(
-    { capabilities: [], limit: 1 },
+    { capabilities: contextCapabilities, limit: 1 },
     { staleTime: 60000 }
   );
   const topExternalAgent = discoveredAgents && discoveredAgents.length > 0 ? discoveredAgents[0] : null;
@@ -530,7 +532,8 @@ export default function MeshDashboard() {
   const [activeNav, setActiveNav] = useState<"home"|"history"|"settings">("home");
   const [showSwitcher, setShowSwitcher] = useState(false);
   const [routedNodes, setRoutedNodes] = useState<string[]>([]);
-  const [vaultText] = useState("");
+  const [vaultText, setVaultText] = useState("");
+  const [activeVaultDocId, setActiveVaultDocId] = useState<number | null>(null);
   const [booting, setBooting] = useState(true);
   const [bootStep, setBootStep] = useState(0);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -817,6 +820,20 @@ export default function MeshDashboard() {
                   <LiveActivityWidget />
                   <AgentStatusWidget agentList={agentList} ctxColor={ctx.color} />
                   <SystemMetricsWidget />
+                  {/* Document Vault */}
+                  <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px", marginTop: 12 }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                      <span style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", fontWeight: 600 }}>Document Vault</span>
+                      {activeVaultDocId && (
+                        <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 999, background: "#DCFCE7", color: "#16A34A", fontFamily: "'DM Mono', monospace", fontWeight: 700 }}>● Active</span>
+                      )}
+                    </div>
+                    <DocumentVault
+                      onVaultTextChange={setVaultText}
+                      activeDocId={activeVaultDocId}
+                      onActiveDocChange={setActiveVaultDocId}
+                    />
+                  </div>
                 </div>
               </div>
             )}

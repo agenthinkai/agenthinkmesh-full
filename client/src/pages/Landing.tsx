@@ -77,6 +77,9 @@ export default function Landing() {
           <Link href="/registry" style={{ fontSize: 13, color: "#4F46E5", textDecoration: "none", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
             ⬡ Registry
           </Link>
+          <Link href="/build" style={{ fontSize: 13, color: "#64748B", textDecoration: "none", fontWeight: 500 }}>
+            Build
+          </Link>
           <a href={loginUrl} style={{
             padding: "8px 20px", background: "#4F46E5", color: "#fff",
             borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none",

@@ -274,3 +274,61 @@ describe("mesh.runAgentTask", () => {
     expect(systemMsg?.content).toContain("CONFIDENTIAL");
   });
 });
+
+// ── vault procedures ───────────────────────────────────────────────────────────
+
+describe("vault.upload", () => {
+  it("requires authentication", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    await expect(
+      caller.vault.upload({
+        filename: "test.txt",
+        mimeType: "text/plain",
+        base64Content: Buffer.from("hello world").toString("base64"),
+      })
+    ).rejects.toThrow();
+  });
+
+  it("rejects empty filename", async () => {
+    const caller = appRouter.createCaller(createAuthContext(1));
+    await expect(
+      caller.vault.upload({
+        filename: "",
+        mimeType: "text/plain",
+        base64Content: Buffer.from("hello").toString("base64"),
+      })
+    ).rejects.toThrow();
+  });
+
+  it("rejects empty base64Content", async () => {
+    const caller = appRouter.createCaller(createAuthContext(1));
+    await expect(
+      caller.vault.upload({
+        filename: "test.txt",
+        mimeType: "text/plain",
+        base64Content: "",
+      })
+    ).rejects.toThrow();
+  });
+});
+
+describe("vault.list", () => {
+  it("requires authentication", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    await expect(caller.vault.list()).rejects.toThrow();
+  });
+});
+
+describe("vault.delete", () => {
+  it("requires authentication", async () => {
+    const caller = appRouter.createCaller(createPublicContext());
+    await expect(caller.vault.delete({ id: 1 })).rejects.toThrow();
+  });
+
+  it("rejects non-integer id", async () => {
+    const caller = appRouter.createCaller(createAuthContext(1));
+    await expect(
+      caller.vault.delete({ id: 1.5 })
+    ).rejects.toThrow();
+  });
+});

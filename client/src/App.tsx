@@ -6,6 +6,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import Landing from "./pages/Landing";
 import MeshDashboard from "./pages/MeshDashboard";
 import AgentRegistry from "./pages/AgentRegistry";
+import Build from "./pages/Build";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./_core/hooks/useAuth";
 
@@ -44,6 +45,7 @@ function Router() {
       <Route path="/" component={isAuthenticated ? MeshDashboard : Landing} />
       <Route path="/mesh" component={isAuthenticated ? MeshDashboard : Landing} />
       <Route path="/registry" component={AgentRegistry} />
+      <Route path="/build" component={Build} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

@@ -131,6 +131,7 @@ export default function AgentRegistry() {
       endpointUrl: form.endpointUrl,
       averageLatency: form.averageLatency,
       pricingModel: form.pricingModel,
+      connectionTested: endpointTest?.ok === true,
     });
   }
 
@@ -245,7 +246,16 @@ export default function AgentRegistry() {
                     }}>
                       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
                         <div>
-                          <div style={{ fontSize: 15, fontWeight: 700, marginBottom: 2 }}>{agent.agentName}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                            <span style={{ fontSize: 15, fontWeight: 700 }}>{agent.agentName}</span>
+                            {agent.connectionTested && (
+                              <span style={{
+                                fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 999,
+                                background: "#DCFCE7", color: "#16A34A", fontFamily: MONO,
+                                border: "1px solid #BBF7D0", letterSpacing: "0.04em",
+                              }}>✓ Verified</span>
+                            )}
+                          </div>
                           <div style={{ fontSize: 11, color: MUTED, fontFamily: MONO }}>by {agent.developerName}</div>
                         </div>
                         <span style={{
