@@ -11,6 +11,7 @@ import {
   inferAgents,
 } from "@/lib/meshData";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Logo from "@/components/Logo";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface OutputMap { [label: string]: string }
@@ -632,7 +633,7 @@ export default function MeshDashboard() {
     return (
       <div style={{ minHeight: "100vh", background: "#0F172A", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Mono', monospace" }}>
         <div style={{ textAlign: "center" }}>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 20, color: "#fff", marginBottom: 24, letterSpacing: "-0.02em" }}>AgenThink / Mesh</div>
+          <div style={{ marginBottom: 24 }}><Logo size={34} inverted /></div>
           {bootMsgs.slice(0, bootStep + 1).map((msg, i) => (
             <div key={i} style={{ fontSize: 11, color: i === bootStep ? "#4F46E5" : "#475569", marginBottom: 6, transition: "color 0.3s" }}>{msg}</div>
           ))}
@@ -645,8 +646,7 @@ export default function MeshDashboard() {
     <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#F8FAFC", fontFamily: "'Syne', sans-serif" }}>
       {/* Topbar */}
       <header style={{ height: 52, display: "flex", alignItems: "center", padding: "0 20px", borderBottom: "1px solid #E2E8F0", background: "#fff", gap: 12, flexShrink: 0 }}>
-        <span style={{ fontWeight: 800, fontSize: 15, color: "#1E293B", letterSpacing: "-0.02em" }}>AgenThink</span>
-        <span style={{ fontSize: 10, color: "#94A3B8", fontFamily: "'DM Mono', monospace" }}>/ Mesh</span>
+        <Logo size={26} />
         <div style={{ position: "relative" }}>
           <button onClick={() => setShowSwitcher(s => !s)} style={{
             display: "flex", alignItems: "center", gap: 6, padding: "5px 10px",

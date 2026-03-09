@@ -1,4 +1,5 @@
 import { getLoginUrl } from "@/const";
+import Logo from "@/components/Logo";
 
 const FONT = "'Inter', system-ui, -apple-system, sans-serif";
 const MONO = "'JetBrains Mono', 'Fira Code', monospace";
@@ -67,10 +68,7 @@ export default function Landing() {
         background: "rgba(255,255,255,0.95)", backdropFilter: "blur(12px)",
         borderBottom: "1px solid #E2E8F0",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-0.03em", color: "#0F172A" }}>AgenThink</span>
-          <span style={{ fontSize: 10, color: "#4F46E5", fontFamily: MONO, padding: "2px 8px", background: "#EEF2FF", borderRadius: 999, border: "1px solid #C7D2FE" }}>Mesh v3.1</span>
-        </div>
+        <Logo size={30} />
         <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
           {[["#features", "Features"], ["#domains", "Domains"], ["#how-it-works", "How it works"]].map(([href, label]) => (
             <a key={href} href={href} style={{ fontSize: 13, color: "#64748B", textDecoration: "none", fontWeight: 500 }}>{label}</a>
@@ -284,10 +282,7 @@ export default function Landing() {
 
       {/* ── Footer ── */}
       <footer style={{ borderTop: "1px solid #E2E8F0", padding: "24px 48px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontWeight: 800, fontSize: 14, color: "#0F172A" }}>AgenThink</span>
-          <span style={{ fontSize: 10, color: "#94A3B8", fontFamily: MONO }}>/ Mesh v3.1</span>
-        </div>
+        <Logo size={24} />
         <div style={{ fontSize: 11, color: "#94A3B8", fontFamily: MONO }}>
           112 agents · 14 contexts · 5 domains · Institutional AI orchestration
         </div>

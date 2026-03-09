@@ -57,3 +57,9 @@
 - [x] Replace Syne + DM Mono with Inter + JetBrains Mono (cleaner, professional SaaS standard)
 - [x] Convert landing page from dark (#080D1A) to clean light theme (#F8FAFC / #FFFFFF)
 - [x] Update all text, border, and background colors for light mode readability
+
+## Logo
+- [x] Design professional SVG logo mark (hexagonal mesh node concept)
+- [x] Create shared Logo component (mark + wordmark variants)
+- [x] Replace text brand in Landing.tsx navbar
+- [x] Replace text brand in MeshDashboard.tsx topbar
