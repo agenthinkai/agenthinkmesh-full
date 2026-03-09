@@ -52,3 +52,8 @@
 - [x] Social proof / use case section
 - [x] Bottom CTA section
 - [x] Professional navbar with Sign In button
+
+## Font & Theme Update
+- [x] Replace Syne + DM Mono with Inter + JetBrains Mono (cleaner, professional SaaS standard)
+- [x] Convert landing page from dark (#080D1A) to clean light theme (#F8FAFC / #FFFFFF)
+- [x] Update all text, border, and background colors for light mode readability
