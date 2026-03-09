@@ -58,7 +58,7 @@ export default function Landing() {
   const loginUrl = getLoginUrl();
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FFFFFF", fontFamily: FONT, color: "#0F172A", overflowX: "hidden" }}>
+    <div style={{ minHeight: "100vh", background: "#FFFFFF", fontFamily: FONT, color: "#0F172A" }}>
 
       {/* ── Navbar ── */}
       <nav style={{

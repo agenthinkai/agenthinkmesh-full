@@ -63,3 +63,6 @@
 - [x] Create shared Logo component (mark + wordmark variants)
 - [x] Replace text brand in Landing.tsx navbar
 - [x] Replace text brand in MeshDashboard.tsx topbar
+
+## Bug Fixes
+- [x] Fix sticky navbar not staying visible on scroll (Landing.tsx)
