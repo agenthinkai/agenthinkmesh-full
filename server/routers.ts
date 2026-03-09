@@ -5,7 +5,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
 import { taskHistory } from "../drizzle/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, gte, sql } from "drizzle-orm";
 
 export const appRouter = router({
   system: systemRouter,
@@ -29,6 +29,50 @@ export const appRouter = router({
         .orderBy(desc(taskHistory.createdAt))
         .limit(50);
       return rows;
+    }),
+
+    getRecentActivity: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      const rows = await db
+        .select()
+        .from(taskHistory)
+        .where(eq(taskHistory.userId, ctx.user.id))
+        .orderBy(desc(taskHistory.createdAt))
+        .limit(5);
+      return rows;
+    }),
+
+    getMetrics: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return { tasksToday: 0, totalTasks: 0, avgAgents: 0, successRate: 100 };
+
+      // Start of today UTC
+      const todayStart = new Date();
+      todayStart.setUTCHours(0, 0, 0, 0);
+
+      const [todayRows, totalRows] = await Promise.all([
+        db
+          .select({ count: sql<number>`count(*)` })
+          .from(taskHistory)
+          .where(
+            sql`${taskHistory.userId} = ${ctx.user.id} AND ${taskHistory.createdAt} >= ${todayStart}`
+          ),
+        db
+          .select({
+            count: sql<number>`count(*)`,
+            avgAgents: sql<number>`avg(${taskHistory.agentCount})`,
+          })
+          .from(taskHistory)
+          .where(eq(taskHistory.userId, ctx.user.id)),
+      ]);
+
+      return {
+        tasksToday: Number(todayRows[0]?.count ?? 0),
+        totalTasks: Number(totalRows[0]?.count ?? 0),
+        avgAgents: Math.round(Number(totalRows[0]?.avgAgents ?? 0)),
+        successRate: 100, // placeholder — extend with status field later
+      };
     }),
 
     saveTask: protectedProcedure

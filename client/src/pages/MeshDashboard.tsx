@@ -423,6 +423,126 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
   );
 }
 
+// ─── Recent Tasks Panel ───────────────────────────────────────────────────────
+function RecentTasksPanel({ onRerun }: { onRerun: (task: string) => void }) {
+  const { data: history, isLoading } = trpc.mesh.getHistory.useQuery();
+  type HistoryRow = NonNullable<typeof history>[number];
+  const recent = (history || []).slice(0, 5);
+  return (
+    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px" }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <span style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", fontWeight: 600 }}>Recent Tasks</span>
+        {history && history.length > 5 && (
+          <span style={{ fontSize: 9, color: "#4F46E5", fontFamily: "'DM Mono', monospace", cursor: "pointer" }}>{history.length} total</span>
+        )}
+      </div>
+      {isLoading && <div style={{ fontSize: 10, color: "#CBD5E1", fontFamily: "'DM Mono', monospace" }}>Loading…</div>}
+      {!isLoading && recent.length === 0 && (
+        <div style={{ fontSize: 10, color: "#CBD5E1", fontFamily: "'DM Mono', monospace", textAlign: "center", padding: "10px 0" }}>No tasks yet — execute your first task above</div>
+      )}
+      {recent.map((h: HistoryRow) => (
+        <div key={h.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #F8FAFC" }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 11, color: "#374151", fontFamily: "'DM Mono', monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {h.task.length > 60 ? h.task.slice(0, 60) + "…" : h.task}
+            </div>
+            <div style={{ fontSize: 9, color: "#94A3B8", fontFamily: "'DM Mono', monospace", marginTop: 2 }}>
+              {h.contextLabel} · {h.agentCount} agents · {new Date(h.createdAt).toLocaleDateString()}
+            </div>
+          </div>
+          <button
+            onClick={() => onRerun(h.task)}
+            style={{ fontSize: 9, padding: "3px 8px", borderRadius: 6, background: "#EEF2FF", color: "#4F46E5", border: "none", cursor: "pointer", fontFamily: "'DM Mono', monospace", fontWeight: 600, flexShrink: 0 }}
+          >
+            ▶ Rerun
+          </button>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Right-panel widgets ─────────────────────────────────────────────────────
+function LiveActivityWidget() {
+  const { data: activity, isLoading } = trpc.mesh.getRecentActivity.useQuery();
+  type Row = NonNullable<typeof activity>[number];
+  return (
+    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <span style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", fontWeight: 600 }}>Live Mesh Activity</span>
+        <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E", display: "inline-block", boxShadow: "0 0 0 3px rgba(34,197,94,0.2)" }} />
+      </div>
+      {isLoading && <div style={{ fontSize: 10, color: "#CBD5E1", fontFamily: "'DM Mono', monospace" }}>Loading…</div>}
+      {!isLoading && (!activity || activity.length === 0) && (
+        <div style={{ fontSize: 10, color: "#CBD5E1", fontFamily: "'DM Mono', monospace", textAlign: "center", padding: "12px 0" }}>No activity yet — execute your first task</div>
+      )}
+      {(activity || []).map((row: Row, i: number) => (
+        <div key={row.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, paddingBottom: 8, marginBottom: 8, borderBottom: i < (activity!.length - 1) ? "1px solid #F8FAFC" : "none" }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: "#EEF2FF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 11 }}>⚡</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 10, color: "#374151", fontFamily: "'DM Mono', monospace", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {row.task.length > 42 ? row.task.slice(0, 42) + "…" : row.task}
+            </div>
+            <div style={{ fontSize: 9, color: "#94A3B8", fontFamily: "'DM Mono', monospace", marginTop: 2 }}>
+              {row.contextLabel} · {row.agentCount} agents
+            </div>
+          </div>
+          <span style={{ fontSize: 8, padding: "2px 6px", borderRadius: 999, background: "#DCFCE7", color: "#16A34A", fontFamily: "'DM Mono', monospace", fontWeight: 600, flexShrink: 0 }}>Done</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function AgentStatusWidget({ agentList, ctxColor }: { agentList: AgentNode[]; ctxColor: string }) {
+  return (
+    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+        <span style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", fontWeight: 600 }}>Agent Status</span>
+        <span style={{ fontSize: 9, color: "#94A3B8", fontFamily: "'DM Mono', monospace" }}>{agentList.length} active</span>
+      </div>
+      <div style={{ maxHeight: 180, overflowY: "auto" }}>
+        {agentList.map(ag => (
+          <div key={ag.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ width: 5, height: 5, borderRadius: "50%", background: ag.spawned ? "#F59E0B" : ctxColor, display: "inline-block", flexShrink: 0 }} />
+              <span style={{ fontSize: 10, color: "#374151", fontFamily: "'DM Mono', monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 110 }}>{ag.label}</span>
+            </div>
+            <span style={{ fontSize: 8, padding: "1px 6px", borderRadius: 999, background: ag.spawned ? "#FFFBEB" : "#F1F5F9", color: ag.spawned ? "#F59E0B" : "#94A3B8", fontFamily: "'DM Mono', monospace", fontWeight: 600 }}>
+              {ag.spawned ? "⚡ spawned" : "standby"}
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SystemMetricsWidget() {
+  const { data: metrics, isLoading } = trpc.mesh.getMetrics.useQuery();
+  const stats = [
+    { label: "Tasks Today",   value: isLoading ? "—" : String(metrics?.tasksToday ?? 0),    unit: "",  color: "#4F46E5" },
+    { label: "Total Tasks",   value: isLoading ? "—" : String(metrics?.totalTasks ?? 0),    unit: "",  color: "#0EA5E9" },
+    { label: "Avg Agents",    value: isLoading ? "—" : String(metrics?.avgAgents ?? 0),     unit: "/task", color: "#8B5CF6" },
+    { label: "Success Rate",  value: isLoading ? "—" : String(metrics?.successRate ?? 100), unit: "%", color: "#22C55E" },
+  ];
+  return (
+    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px" }}>
+      <div style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", fontWeight: 600, marginBottom: 12 }}>System Metrics</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+        {stats.map(s => (
+          <div key={s.label} style={{ background: "#F8FAFC", borderRadius: 8, padding: "10px 12px" }}>
+            <div style={{ fontSize: 18, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: s.color, lineHeight: 1 }}>
+              {s.value}<span style={{ fontSize: 10, color: "#94A3B8", fontWeight: 400, fontFamily: "'DM Mono', monospace" }}>{s.unit}</span>
+            </div>
+            <div style={{ fontSize: 9, color: "#94A3B8", fontFamily: "'DM Mono', monospace", marginTop: 4 }}>{s.label}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 export default function MeshDashboard() {
   const { user, logout } = useAuth();
@@ -610,101 +730,129 @@ export default function MeshDashboard() {
           </div>
         </aside>
 
-        {/* Main content */}
-        <main style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
-          {activeNav === "history" ? (
-            <HistoryPanel onClose={() => setActiveNav("home")} />
-          ) : activeNav === "settings" ? (
-            <SettingsPanel onClose={() => setActiveNav("home")} />
-          ) : showOutput ? (
-            <OutputPanel
-              agents={currentAgents}
-              taskText={task}
-              ctx={ctx}
-              vaultText={vaultText}
-              apiKey={apiKey}
-              onBack={() => { setShowOutput(false); }}
-              onDone={handleOutputDone}
-            />
-          ) : (
-            <div style={{ flex: 1, overflowY: "auto", padding: "28px 28px", background: "#F8FAFC" }}>
-              <div style={{ maxWidth: 520 }}>
-                {/* Greeting */}
-                <div style={{ marginBottom: 24 }}>
-                  <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 28, color: "#1E293B", letterSpacing: "-0.03em", marginBottom: 4 }}>
-                    Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}, {(user?.name || "").split(" ")[0] || "there"}.
-                  </h1>
-                  <div style={{ fontSize: 12, color: "#64748B", fontFamily: "'DM Mono', monospace" }}>
-                    Mesh configured for <span style={{ color: ctx.color, fontWeight: 600 }}>{ctx.label}</span>
+          {/* Main content */}
+          <main style={{ flex: 1, overflow: "hidden", display: "flex", flexDirection: "column" }}>
+            {activeNav === "history" ? (
+              <HistoryPanel onClose={() => setActiveNav("home")} />
+            ) : activeNav === "settings" ? (
+              <SettingsPanel onClose={() => setActiveNav("home")} />
+            ) : showOutput ? (
+              <OutputPanel
+                agents={currentAgents}
+                taskText={task}
+                ctx={ctx}
+                vaultText={vaultText}
+                apiKey={apiKey}
+                onBack={() => { setShowOutput(false); }}
+                onDone={handleOutputDone}
+              />
+            ) : (
+              /* ── Three-column enterprise home layout ── */
+              <div style={{ flex: 1, overflow: "hidden", display: "grid", gridTemplateColumns: "1fr 280px", gap: 0, background: "#F1F5F9" }}>
+
+                {/* ── CENTER: Task Command Center ── */}
+                <div style={{ overflowY: "auto", padding: "24px 24px 24px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
+
+                  {/* Greeting header */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div>
+                      <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 22, color: "#1E293B", letterSpacing: "-0.03em", marginBottom: 2 }}>
+                        Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}, {(user?.name || "").split(" ")[0] || "there"}.
+                      </h1>
+                      <div style={{ fontSize: 11, color: "#64748B", fontFamily: "'DM Mono', monospace" }}>
+                        Mesh configured for <span style={{ color: ctx.color, fontWeight: 600 }}>{ctx.label}</span> · {agentList.length} agents ready
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", gap: 6 }}>
+                      <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, padding: "6px 12px", fontSize: 10, fontFamily: "'DM Mono', monospace", color: "#374151" }}>
+                        <span style={{ color: "#22C55E", fontWeight: 700 }}>● </span>Mesh Online
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Task Command Center */}
+                  <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 16px rgba(0,0,0,0.05)" }}>
+                    <div style={{ padding: "12px 16px 0", borderBottom: "1px solid #F1F5F9" }}>
+                      <div style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", fontWeight: 600, marginBottom: 10 }}>Task Command Center</div>
+                    </div>
+                    <div style={{ padding: "14px 16px" }}>
+                      <textarea
+                        value={task}
+                        onChange={e => setTask(e.target.value)}
+                        onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) run(); }}
+                        placeholder={`e.g. ${ctx.quickTasks[0]}…`}
+                        rows={4}
+                        style={{ width: "100%", border: "none", outline: "none", resize: "none", fontSize: 13, color: "#1E293B", fontFamily: "'DM Mono', monospace", lineHeight: 1.6, background: "transparent" }}
+                      />
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTop: "1px solid #F8FAFC" }}>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          {["PDF", "DOCX", "CSV", "XLSX"].map(f => (
+                            <span key={f} style={{ fontSize: 9, padding: "2px 7px", borderRadius: 6, background: "#F8FAFC", color: "#94A3B8", fontFamily: "'DM Mono', monospace", border: "1px solid #E2E8F0" }}>{f}</span>
+                          ))}
+                        </div>
+                        <button
+                          onClick={run}
+                          disabled={!task.trim()}
+                          style={{
+                            background: task.trim() ? "#4F46E5" : "#E2E8F0",
+                            color: task.trim() ? "#fff" : "#94A3B8",
+                            border: "none", borderRadius: 10, padding: "9px 20px",
+                            cursor: task.trim() ? "pointer" : "not-allowed",
+                            fontSize: 12, fontFamily: "'Syne', sans-serif", fontWeight: 700,
+                            transition: "all 0.15s",
+                          }}
+                        >
+                          ▶ Execute via Mesh
+                        </button>
+                      </div>
+                    </div>
+                    {/* Quick task chips */}
+                    <div style={{ padding: "0 16px 14px", display: "flex", gap: 6, flexWrap: "wrap" }}>
+                      {ctx.quickTasks.map(qt => (
+                        <button key={qt} onClick={() => setTask(qt)} style={{
+                          padding: "5px 10px", background: "#F8FAFC",
+                          border: "1px solid #E2E8F0", borderRadius: 8,
+                          cursor: "pointer", fontSize: 10, color: "#374151",
+                          fontFamily: "'DM Mono', monospace", transition: "all 0.12s",
+                        }}>
+                          {qt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Recent Tasks panel */}
+                  <RecentTasksPanel onRerun={(t: string) => setTask(t)} />
+
+                  {/* Configured agents strip */}
+                  <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "12px 16px" }}>
+                    <div style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", marginBottom: 8 }}>Configured Agents · {agentList.length} total</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                      {agentList.map(ag => (
+                        <span key={ag.id} style={{
+                          fontSize: 9, padding: "3px 9px", borderRadius: 999,
+                          border: `1px solid ${ag.spawned ? "#FDE68A" : "#E2E8F0"}`,
+                          background: ag.spawned ? "#FFFBEB" : "#F8FAFC",
+                          color: ag.spawned ? "#F59E0B" : "#374151",
+                          fontFamily: "'DM Mono', monospace",
+                        }}>
+                          {ag.spawned ? "⚡ " : ""}{ag.label}
+                        </span>
+                      ))}
+                    </div>
                   </div>
                 </div>
 
-                {/* Task input */}
-                <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "16px", marginBottom: 16, boxShadow: "0 2px 12px rgba(0,0,0,0.04)" }}>
-                  <textarea
-                    value={task}
-                    onChange={e => setTask(e.target.value)}
-                    onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) run(); }}
-                    placeholder={`e.g. ${ctx.quickTasks[0]}…`}
-                    rows={4}
-                    style={{ width: "100%", border: "none", outline: "none", resize: "none", fontSize: 13, color: "#1E293B", fontFamily: "'DM Mono', monospace", lineHeight: 1.6, background: "transparent" }}
-                  />
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
-                    <span style={{ fontSize: 10, color: "#CBD5E1", fontFamily: "'DM Mono', monospace" }}>PDF · DOCX · CSV · XLSX</span>
-                    <button
-                      onClick={run}
-                      disabled={!task.trim()}
-                      style={{
-                        background: task.trim() ? "#4F46E5" : "#E2E8F0",
-                        color: task.trim() ? "#fff" : "#94A3B8",
-                        border: "none", borderRadius: 10, padding: "9px 20px",
-                        cursor: task.trim() ? "pointer" : "not-allowed",
-                        fontSize: 12, fontFamily: "'Syne', sans-serif", fontWeight: 700,
-                        transition: "all 0.15s",
-                      }}
-                    >
-                      ▶ Execute via Mesh
-                    </button>
-                  </div>
-                </div>
-
-                {/* Suggested tasks */}
-                <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", marginBottom: 8 }}>Suggested Tasks</div>
-                  {ctx.quickTasks.map(qt => (
-                    <button key={qt} onClick={() => setTask(qt)} style={{
-                      display: "block", width: "100%", textAlign: "left",
-                      padding: "10px 14px", marginBottom: 6,
-                      background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10,
-                      cursor: "pointer", fontSize: 12, color: "#374151",
-                      fontFamily: "'DM Mono', monospace",
-                    }}>
-                      {qt}
-                    </button>
-                  ))}
-                </div>
-
-                {/* Configured agents */}
-                <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px" }}>
-                  <div style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", marginBottom: 10 }}>Configured Agents</div>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                    {agentList.map(ag => (
-                      <span key={ag.id} style={{
-                        fontSize: 10, padding: "3px 10px", borderRadius: 999,
-                        border: `1px solid ${ag.spawned ? "#FDE68A" : "#E2E8F0"}`,
-                        background: ag.spawned ? "#FFFBEB" : "#F8FAFC",
-                        color: ag.spawned ? "#F59E0B" : "#374151",
-                        fontFamily: "'DM Mono', monospace",
-                      }}>
-                        {ag.label}
-                      </span>
-                    ))}
-                  </div>
+                {/* ── RIGHT: Three widgets ── */}
+                <div style={{ borderLeft: "1px solid #E2E8F0", background: "#fff", overflowY: "auto", padding: "20px 16px" }}>
+                  <div style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", fontWeight: 600, marginBottom: 14 }}>Mesh Intelligence</div>
+                  <LiveActivityWidget />
+                  <AgentStatusWidget agentList={agentList} ctxColor={ctx.color} />
+                  <SystemMetricsWidget />
                 </div>
               </div>
-            </div>
-          )}
-        </main>
+            )}
+          </main>
       </div>
     </div>
   );

@@ -34,3 +34,11 @@
 ## Quality
 - [x] Vitest tests for auth and mesh procedures (7/7 passing)
 - [ ] Checkpoint and deliver live URL
+
+## Dashboard Redesign
+- [x] tRPC procedures: getMetrics (tasks today, avg time, success rate), getRecentActivity
+- [x] Three-column enterprise layout: left (canvas+agents), center (task input + recent tasks), right (3 widgets)
+- [x] Center: Task Command Center with large input + Recent Tasks list
+- [x] Right widget 1: Live Mesh Activity (last 5 task executions with status)
+- [x] Right widget 2: Agent Status (all agents with standby/active state)
+- [x] Right widget 3: System Metrics (tasks today, avg time, success rate)
