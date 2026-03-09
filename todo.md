@@ -42,3 +42,13 @@
 - [x] Right widget 1: Live Mesh Activity (last 5 task executions with status)
 - [x] Right widget 2: Agent Status (all agents with standby/active state)
 - [x] Right widget 3: System Metrics (tasks today, avg time, success rate)
+
+## Landing Page Redesign
+- [x] Dark hero section with animated mesh graphic, headline, sub-headline, CTA
+- [x] Stats bar (14 contexts, 112 agents, 5 domains, 50 max per task)
+- [x] How it works section (3-step flow)
+- [x] Feature highlights section (6 cards)
+- [x] Domain showcase section (5 domains with agent list)
+- [x] Social proof / use case section
+- [x] Bottom CTA section
+- [x] Professional navbar with Sign In button
