@@ -95,11 +95,11 @@ export function DocumentVault({
   };
 
   const uploadFile = async (file: File): Promise<void> => {
-    if (file.size > 5 * 1024 * 1024) {
+    if (file.size > 20 * 1024 * 1024) {
       setUploadingFiles(prev =>
-        prev.map(f => f.name === file.name ? { ...f, status: "error", error: "Too large (max 5 MB)" } : f)
+        prev.map(f => f.name === file.name ? { ...f, status: "error", error: "Too large (max 20 MB)" } : f)
       );
-      toast.error(`${file.name}: File too large — max 5 MB`);
+      toast.error(`${file.name}: File too large — max 20 MB`);
       return;
     }
     try {
@@ -236,7 +236,7 @@ export function DocumentVault({
             : "Upload documents"}
         </div>
         <div style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
-          Any format · max 5 MB each · drag & drop or click
+          Any format · max 20 MB each · drag & drop or click
         </div>
       </div>
 

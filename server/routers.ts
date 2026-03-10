@@ -10,6 +10,8 @@ import { eq, desc, gte, sql, and, like, or } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import * as XLSX from "xlsx";
+import { PDFParse } from "pdf-parse";
+import mammoth from "mammoth";
 
 // ── Discovery scoring ─────────────────────────────────────────────────────────
 // score = (capabilityMatch * 0.5) + (successRate * 0.3) + (latencyScore * 0.2)
@@ -233,7 +235,7 @@ export const appRouter = router({
 
         // Decode base64 to buffer
         const buffer = Buffer.from(input.base64Content, "base64");
-        if (buffer.length > 5 * 1024 * 1024) throw new Error("File too large (max 5 MB)");
+        if (buffer.length > 20 * 1024 * 1024) throw new Error("File too large (max 20 MB)");
 
         // Upload to S3
         const suffix = Math.random().toString(36).slice(2, 8);
@@ -262,24 +264,40 @@ export const appRouter = router({
             extractedText = `[Excel file uploaded — could not parse: ${err instanceof Error ? err.message : "unknown error"}]`;
           }
         } else if (input.mimeType === "application/pdf" || ext === "pdf") {
-          // For PDF: extract readable ASCII text from buffer (basic extraction)
-          const raw = buffer.toString("latin1");
-          const textMatches = raw.match(/BT[\s\S]*?ET/g) ?? [];
-          const pdfText = textMatches
-            .join(" ")
-            .replace(/[^\x20-\x7E\n]/g, " ")
-            .replace(/\s+/g, " ")
-            .trim();
-          extractedText = pdfText.slice(0, 12000) || "[PDF uploaded — text extraction limited]";
+          // Parse PDF with PDFParse for accurate text extraction
+          try {
+            const parser = new PDFParse({ data: buffer });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            await (parser as any).load();
+            const result = await (parser as any).getText() as { pages: Array<{ text: string }> };
+            const fullText = result.pages.map((p: { text: string }) => p.text).join("\n\n");
+            const cleaned = fullText
+              .replace(/\r\n/g, "\n")
+              .replace(/[ \t]{2,}/g, " ")
+              .replace(/\n{3,}/g, "\n\n")
+              .trim();
+            extractedText = cleaned.slice(0, 15000) || "[PDF uploaded — no extractable text found]";
+            console.log(`[vault] PDF parsed: ${result.pages.length} pages, ${cleaned.length} chars`);
+          } catch (err) {
+            console.error("[vault] PDFParse failed:", err);
+            extractedText = `[PDF uploaded: ${input.filename} — could not extract text: ${err instanceof Error ? err.message : "unknown error"}]`;
+          }
         } else if (input.mimeType === "application/json" || ext === "json") {
           try { extractedText = JSON.stringify(JSON.parse(buffer.toString("utf-8")), null, 2).slice(0, 12000); } catch { extractedText = buffer.toString("utf-8").slice(0, 12000); }
         } else if (ext === "docx" || input.mimeType.includes("wordprocessingml")) {
-          // Basic DOCX text extraction — read XML content from the zip
+          // Parse DOCX with mammoth for accurate text extraction
           try {
-            const wb = XLSX.read(buffer, { type: "buffer" }); // XLSX can read OOXML
-            extractedText = `[DOCX uploaded: ${input.filename} — use a dedicated parser for full text extraction]`;
-          } catch {
-            extractedText = `[DOCX uploaded: ${input.filename}]`;
+            const result = await mammoth.extractRawText({ buffer });
+            const cleaned = result.value
+              .replace(/\r\n/g, "\n")
+              .replace(/[ \t]{2,}/g, " ")
+              .replace(/\n{3,}/g, "\n\n")
+              .trim();
+            extractedText = cleaned.slice(0, 15000) || `[DOCX uploaded: ${input.filename} — no extractable text found]`;
+            console.log(`[vault] DOCX parsed: ${cleaned.length} chars`);
+          } catch (err) {
+            console.error("[vault] mammoth failed:", err);
+            extractedText = `[DOCX uploaded: ${input.filename} — could not extract text: ${err instanceof Error ? err.message : "unknown error"}]`;
           }
         } else {
           extractedText = `[${input.filename} uploaded — file stored in vault, content available for download]`;
@@ -359,10 +377,24 @@ export const appRouter = router({
             throw new Error(`Excel parse failed: ${err instanceof Error ? err.message : "unknown"}`);
           }
         } else if (doc.mimeType === "application/pdf" || ext === "pdf") {
-          const raw = buffer.toString("latin1");
-          const textMatches = raw.match(/BT[\s\S]*?ET/g) ?? [];
-          const pdfText = textMatches.join(" ").replace(/[^\x20-\x7E\n]/g, " ").replace(/\s+/g, " ").trim();
-          extractedText = pdfText.slice(0, 12000) || "[PDF uploaded — text extraction limited]";
+          try {
+            const parser = new PDFParse({ data: buffer });
+            await (parser as any).load();
+            const result = await (parser as any).getText() as { pages: Array<{ text: string }> };
+            const fullText = result.pages.map((p: { text: string }) => p.text).join("\n\n");
+            const cleaned = fullText.replace(/\r\n/g, "\n").replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+            extractedText = cleaned.slice(0, 15000) || "[PDF — no extractable text found]";
+          } catch (err) {
+            throw new Error(`PDF parse failed: ${err instanceof Error ? err.message : "unknown"}`);
+          }
+        } else if (ext === "docx" || (doc.mimeType ?? "").includes("wordprocessingml")) {
+          try {
+            const result = await mammoth.extractRawText({ buffer });
+            const cleaned = result.value.replace(/\r\n/g, "\n").replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+            extractedText = cleaned.slice(0, 15000) || `[DOCX — no extractable text found]`;
+          } catch (err) {
+            throw new Error(`DOCX parse failed: ${err instanceof Error ? err.message : "unknown"}`);
+          }
         } else if (doc.mimeType === "application/json" || ext === "json") {
           try { extractedText = JSON.stringify(JSON.parse(buffer.toString("utf-8")), null, 2).slice(0, 12000); } catch { extractedText = buffer.toString("utf-8").slice(0, 12000); }
         } else {
