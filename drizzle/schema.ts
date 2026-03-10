@@ -17,6 +17,7 @@ export const users = mysqlTable("users", {
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
+  orgId: varchar("orgId", { length: 64 }), // Gap 8: multi-tenant isolation
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
@@ -69,6 +70,8 @@ export const agents = mysqlTable("agents", {
   pricingModel: mysqlEnum("pricingModel", ["free", "per_task", "subscription"]).notNull().default("free"),
   status: mysqlEnum("status", ["active", "inactive", "pending"]).notNull().default("active"),
   connectionTested: boolean("connectionTested").notNull().default(false), // true if endpoint passed validation
+  webhookUrl: varchar("webhookUrl", { length: 512 }), // optional: POST result payload here after task execution
+  orgId: varchar("orgId", { length: 64 }), // optional: tenant isolation
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -106,8 +109,8 @@ export const annotations = mysqlTable("annotations", {
   requiresReview: boolean("requiresReview").notNull().default(false),
   reviewStatus: mysqlEnum("reviewStatus", ["pending", "approved", "rejected"]).notNull().default("pending"),
   reviewedBy: int("reviewedBy"),                // FK → users.id
-  reviewNote: text("reviewNote"),
-  latencyMs: int("latencyMs"),
+  reviewNote: text("reviewNote"),               // optional reviewer note
+  latencyMs: int("latencyMs").default(0),       // agent response time
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -118,7 +121,7 @@ export type InsertAnnotation = typeof annotations.$inferInsert;
 export const annotationExports = mysqlTable("annotation_exports", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
-  format: mysqlEnum("format", ["jsonl", "csv"]).notNull().default("jsonl"),
+  format: mysqlEnum("format", ["jsonl", "csv", "openai"]).notNull().default("jsonl"),
   recordCount: int("recordCount").notNull().default(0),
   agentFilter: varchar("agentFilter", { length: 128 }), // null = all agents
   statusFilter: varchar("statusFilter", { length: 32 }),  // approved/all

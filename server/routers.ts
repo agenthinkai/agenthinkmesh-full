@@ -4,10 +4,11 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports } from "../drizzle/schema";
+import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users } from "../drizzle/schema";
 import { storagePut } from "./storage";
 import { eq, desc, gte, sql, and, like, or } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
+import { notifyOwner } from "./_core/notification";
 
 // ── Discovery scoring ─────────────────────────────────────────────────────────
 // score = (capabilityMatch * 0.5) + (successRate * 0.3) + (latencyScore * 0.2)
@@ -263,6 +264,9 @@ export const appRouter = router({
         const db = await getDb();
         if (!db) throw new Error("Database unavailable");
 
+        // Gap 8: inherit orgId from the registering user
+        const [ownerUser] = await db.select({ orgId: users.orgId }).from(users).where(eq(users.id, ctx.user.id)).limit(1);
+
         const [result] = await db.insert(agents).values({
           ownerId: ctx.user.id,
           agentName: input.agentName,
@@ -274,6 +278,7 @@ export const appRouter = router({
           pricingModel: input.pricingModel,
           status: "active",
           connectionTested: input.connectionTested,
+          orgId: ownerUser?.orgId ?? null,
         });
 
         const agentId = (result as unknown as { insertId: number }).insertId;
@@ -285,6 +290,12 @@ export const appRouter = router({
           successRate: "80.00",
           avgLatency: input.averageLatency,
           errorRate: "0.00",
+        });
+
+        // Gap 6: Developer onboarding notification to platform owner
+        void notifyOwner({
+          title: `New Agent Registered: ${input.agentName}`,
+          content: `Developer: ${input.developerName} (user #${ctx.user.id})\nAgent ID: ${agentId}\nEndpoint: ${input.endpointUrl}\nCapabilities: ${input.capabilities.join(", ")}\nConnection tested: ${input.connectionTested ? "Yes ✓" : "No"}\n\nView at /registry`,
         });
 
         return { success: true, agentId };
@@ -507,7 +518,7 @@ export const appRouter = router({
 
         // Fetch agent endpoint
         const [agent] = await db
-          .select({ endpointUrl: agents.endpointUrl, agentName: agents.agentName, status: agents.status })
+          .select({ endpointUrl: agents.endpointUrl, agentName: agents.agentName, status: agents.status, webhookUrl: agents.webhookUrl })
           .from(agents)
           .where(eq(agents.id, input.agentId))
           .limit(1);
@@ -541,10 +552,23 @@ export const appRouter = router({
             tasksCompleted: sql`${agentMetrics.tasksCompleted} + 1`,
           }).where(eq(agentMetrics.agentId, input.agentId)).catch(() => {});
 
+          // Gap 7: Fire webhook asynchronously if configured
+          if (agent.webhookUrl) {
+            const webhookPayload = { agentId: input.agentId, result, success: true, latencyMs, completedAt: new Date().toISOString() };
+            fetch(agent.webhookUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(webhookPayload), signal: AbortSignal.timeout(10000) }).catch(() => {});
+          }
+
           return { success: true, result, latencyMs, agentName: agent.agentName };
         } catch (err: unknown) {
           const latencyMs = Date.now() - start;
           const msg = err instanceof Error ? err.message : String(err);
+
+          // Gap 7: Fire webhook on failure too
+          if (agent.webhookUrl) {
+            const webhookPayload = { agentId: input.agentId, result: null, success: false, error: msg, latencyMs, completedAt: new Date().toISOString() };
+            fetch(agent.webhookUrl, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(webhookPayload), signal: AbortSignal.timeout(10000) }).catch(() => {});
+          }
+
           return { success: false, result: `Error: ${msg}`, latencyMs, agentName: agent.agentName };
         }
       }),
@@ -740,7 +764,7 @@ export const appRouter = router({
     // Export annotations as JSONL or CSV, upload to S3, return download URL
     export: protectedProcedure
       .input(z.object({
-        format: z.enum(["jsonl", "csv"]).default("jsonl"),
+        format: z.enum(["jsonl", "csv", "openai"]).default("jsonl"),
         agentName: z.string().optional(),
         statusFilter: z.enum(["approved", "all"]).default("approved"),
       }))
@@ -783,6 +807,20 @@ export const appRouter = router({
             structured_result: (() => { try { return JSON.parse(r.structuredResult); } catch { return r.structuredResult; } })(),
             created_at: r.createdAt,
           })).join("\n");
+        } else if (input.format === "openai") {
+          // OpenAI fine-tuning JSONL format
+          fileContent = rows.map(r => JSON.stringify({
+            messages: [
+              { role: "system", content: "You are an expert Arabic NLP annotator." },
+              { role: "user", content: r.context ? `Context: ${r.context}\n\nText: ${r.inputText}` : r.inputText },
+              { role: "assistant", content: JSON.stringify({
+                label: r.label,
+                confidence: Number(r.confidence),
+                dialect: r.dialect,
+                rationale: r.rationale,
+              }) },
+            ],
+          })).join("\n");
         } else {
           // CSV
           mimeType = "text/csv";
@@ -800,7 +838,8 @@ export const appRouter = router({
           fileContent = [header, ...csvRows].join("\n");
         }
 
-        const fileKey = `annotations/${ctx.user.id}/${Date.now()}-export.${input.format === "jsonl" ? "jsonl" : "csv"}`;
+        const ext = input.format === "csv" ? "csv" : "jsonl";
+        const fileKey = `annotations/${ctx.user.id}/${Date.now()}-export.${ext}`;
         const { url } = await storagePut(fileKey, Buffer.from(fileContent, "utf-8"), mimeType);
 
         // Log the export

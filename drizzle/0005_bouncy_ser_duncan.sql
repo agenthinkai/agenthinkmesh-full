@@ -1,0 +1,1 @@
+ALTER TABLE `annotation_exports` MODIFY COLUMN `format` enum('jsonl','csv','openai') NOT NULL DEFAULT 'jsonl';

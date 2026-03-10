@@ -33,6 +33,7 @@ export default function AgentRegistry() {
   const [activeTab, setActiveTab] = useState<Tab>("directory");
   const [searchQuery, setSearchQuery] = useState("");
   const [capFilter, setCapFilter] = useState("");
+  const [domainFilter, setDomainFilter] = useState("");
 
   // Registration form state
   const [form, setForm] = useState({
@@ -112,9 +113,12 @@ export default function AgentRegistry() {
       a.developerName.toLowerCase().includes(q) ||
       a.description.toLowerCase().includes(q);
     if (!nameMatch) return false;
+    const caps: string[] = (() => { try { return JSON.parse(a.capabilities); } catch { return []; } })();
     if (capFilter) {
-      const caps: string[] = (() => { try { return JSON.parse(a.capabilities); } catch { return []; } })();
-      return caps.some(c => c.toLowerCase().includes(capFilter.toLowerCase()));
+      if (!caps.some(c => c.toLowerCase().includes(capFilter.toLowerCase()))) return false;
+    }
+    if (domainFilter) {
+      if (!caps.some(c => c.toLowerCase().includes(domainFilter.toLowerCase()))) return false;
     }
     return true;
   });
@@ -207,21 +211,44 @@ export default function AgentRegistry() {
         {/* ── Directory Tab ── */}
         {activeTab === "directory" && (
           <div>
-            {/* Search + filter */}
-            <div style={{ display: "flex", gap: 12, marginBottom: 24 }}>
+            {/* Search + filter bar */}
+            <div style={{ display: "flex", gap: 10, marginBottom: 24, flexWrap: "wrap", alignItems: "center" }}>
               <input
                 placeholder="Search agents..."
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                style={{ ...inputStyle, maxWidth: 320 }}
+                style={{ ...inputStyle, maxWidth: 280, flex: "1 1 180px" }}
               />
+              <select
+                value={domainFilter}
+                onChange={e => setDomainFilter(e.target.value)}
+                style={{ ...inputStyle, maxWidth: 200, flex: "0 0 auto", cursor: "pointer" }}
+              >
+                {[
+                  { value: "", label: "All Domains" },
+                  { value: "finance", label: "Finance" },
+                  { value: "legal", label: "Legal" },
+                  { value: "healthcare", label: "Healthcare" },
+                  { value: "arabic nlp", label: "Arabic NLP" },
+                  { value: "strategy", label: "Strategy" },
+                  { value: "market research", label: "Market Research" },
+                  { value: "report writing", label: "Report Writing" },
+                  { value: "data labeling", label: "Data Labeling" },
+                ].map(d => <option key={d.value} value={d.value}>{d.label}</option>)}
+              </select>
               <input
-                placeholder="Filter by capability..."
+                placeholder="Capability search..."
                 value={capFilter}
                 onChange={e => setCapFilter(e.target.value)}
-                style={{ ...inputStyle, maxWidth: 240 }}
+                style={{ ...inputStyle, maxWidth: 200, flex: "0 0 auto" }}
               />
-              <span style={{ fontSize: 12, color: MUTED, alignSelf: "center" }}>
+              {(domainFilter || capFilter || searchQuery) && (
+                <button onClick={() => { setDomainFilter(""); setCapFilter(""); setSearchQuery(""); }}
+                  style={{ padding: "8px 14px", fontSize: 11, color: MUTED, background: "none", border: `1px solid ${BORDER}`, borderRadius: 8, cursor: "pointer", fontFamily: MONO }}>
+                  Clear
+                </button>
+              )}
+              <span style={{ fontSize: 12, color: MUTED, marginLeft: "auto" }}>
                 {filteredAgents.length} agent{filteredAgents.length !== 1 ? "s" : ""}
               </span>
             </div>

@@ -1,0 +1,50 @@
+{
+  "query": "SELECT agentName, LEFT(endpointUrl, 80) as endpointUrl FROM agents ORDER BY id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT agentName, LEFT(endpointUrl, 80) as endpointUrl FROM agents ORDER BY id;",
+  "rows": [
+    {
+      "agentName": "Market Research Agent",
+      "endpointUrl": "https://agenthink-7enctkan.manus.space/api/agents/market-research/run"
+    },
+    {
+      "agentName": "Financial Analysis Agent",
+      "endpointUrl": "https://agenthink-7enctkan.manus.space/api/agents/financial-analysis/run"
+    },
+    {
+      "agentName": "Strategy Agent",
+      "endpointUrl": "https://agenthink-7enctkan.manus.space/api/agents/strategy/run"
+    },
+    {
+      "agentName": "Legal Review Agent",
+      "endpointUrl": "https://agenthink-7enctkan.manus.space/api/agents/legal-review/run"
+    },
+    {
+      "agentName": "Report Writer Agent",
+      "endpointUrl": "https://agenthink-7enctkan.manus.space/api/agents/report-writer/run"
+    },
+    {
+      "agentName": "Arabic Legal Clause Extractor",
+      "endpointUrl": "https://agenthink-7enctkan.manus.space/api/agents/arabic/legal"
+    },
+    {
+      "agentName": "Arabic NER Agent",
+      "endpointUrl": "https://agenthink-7enctkan.manus.space/api/agents/arabic/ner"
+    },
+    {
+      "agentName": "Gulf Sentiment Labeler",
+      "endpointUrl": "https://agenthink-7enctkan.manus.space/api/agents/arabic/sentiment"
+    },
+    {
+      "agentName": "Islamic Finance Intent Classifier",
+      "endpointUrl": "https://agenthink-7enctkan.manus.space/api/agents/arabic/intent"
+    },
+    {
+      "agentName": "Arabic Code-Switch Detector",
+      "endpointUrl": "https://agenthink-7enctkan.manus.space/api/agents/arabic/codeswitch"
+    }
+  ],
+  "messages": [],
+  "stdout": "agentName\tendpointUrl\nMarket Research Agent\thttps://agenthink-7enctkan.manus.space/api/agents/market-research/run\nFinancial Analysis Agent\thttps://agenthink-7enctkan.manus.space/api/agents/financial-analysis/run\nStrategy Agent\thttps://agenthink-7enctkan.manus.space/api/agents/strategy/run\nLegal Review Agent\thttps://agenthink-7enctkan.manus.space/api/agents/legal-review/run\nReport Writer Agent\thttps://agenthink-7enctkan.manus.space/api/agents/report-writer/run\nArabic Legal Clause Extractor\thttps://agenthink-7enctkan.manus.space/api/agents/arabic/legal\nArabic NER Agent\thttps://agenthink-7enctkan.manus.space/api/agents/arabic/ner\nGulf Sentiment Labeler\thttps://agenthink-7enctkan.manus.space/api/agents/arabic/sentiment\nIslamic Finance Intent Classifier\thttps://agenthink-7enctkan.manus.space/api/agents/arabic/intent\nArabic Code-Switch Detector\thttps://agenthink-7enctkan.manus.space/api/agents/arabic/codeswitch\n",
+  "stderr": "",
+  "execution_time_ms": 1511
+}

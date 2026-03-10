@@ -202,3 +202,19 @@
 - [ ] Expose Arabic agents on port 4001 and register all 5 in database
 - [ ] Write tests for annotation.submit, annotation.review, annotation.export
 - [ ] TypeScript check and checkpoint
+
+## Session 5 — Fix All 8 Gaps
+
+- [ ] Gap 1: Deploy all 10 agents permanently, update DB endpoint URLs, verify each
+- [ ] Gap 2: Batch annotation mode in AnnotationStudio (50 texts, table, JSONL download)
+- [ ] Gap 3: Registry domain/capability filter bar (client-side, no backend changes)
+- [ ] Gap 4: Arabic RTL rendering — dir=rtl + Noto Naskh Arabic font in AnnotationStudio
+- [ ] Gap 5: Fine-tuning export format (openai JSONL) in annotation.export + UI option
+- [ ] Gap 6: Developer onboarding email on agent.register
+- [ ] Gap 7: Webhook support — optional webhookUrl on agents, async POST on routeTask complete
+- [ ] Gap 8: Multi-tenant orgId — add to users + agents tables, filter queries by org
+- [ ] Run full test suite — 33+ tests passing
+- [ ] Write new tests for batch annotation and webhook dispatch
+- [ ] Final TypeScript check
+- [ ] Save checkpoint
+- [ ] Deliver updated technical brief PDF

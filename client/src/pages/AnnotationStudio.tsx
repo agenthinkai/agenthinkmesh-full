@@ -68,9 +68,16 @@ export default function AnnotationStudio() {
   const [selectedAgentId, setSelectedAgentId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState<"annotate" | "history" | "export">("annotate");
   const [lastResult, setLastResult] = useState<AnnotationResult | null>(null);
-  const [exportFormat, setExportFormat] = useState<"jsonl" | "csv">("jsonl");
+  const [exportFormat, setExportFormat] = useState<"jsonl" | "csv" | "openai">("jsonl");
   const [exportStatusFilter, setExportStatusFilter] = useState<"approved" | "all">("approved");
   const [exportUrl, setExportUrl] = useState<string | null>(null);
+
+  // Batch mode state
+  const [batchMode, setBatchMode] = useState(false);
+  const [batchInput, setBatchInput] = useState("");
+  const [batchResults, setBatchResults] = useState<Array<{ text: string; label: string; confidence: number; dialect: string; status: "pending" | "done" | "error" }>>([]);
+  const [batchRunning, setBatchRunning] = useState(false);
+  const [batchProgress, setBatchProgress] = useState(0);
 
   // Fetch Arabic annotation agents from registry
   const { data: allAgents } = trpc.agent.list.useQuery({ limit: 100 });
@@ -108,6 +115,45 @@ export default function AnnotationStudio() {
       setExportUrl(data.url);
     },
   });
+
+  // Batch processing function
+  const runBatch = async () => {
+    if (!selectedAgentId || batchRunning) return;
+    const lines = batchInput.split("\n").map(l => l.trim()).filter(Boolean).slice(0, 50);
+    if (lines.length === 0) return;
+    setBatchRunning(true);
+    setBatchProgress(0);
+    setBatchResults(lines.map(text => ({ text, label: "", confidence: 0, dialect: "", status: "pending" as const })));
+    for (let i = 0; i < lines.length; i++) {
+      try {
+        const result = await new Promise<{ label: string; confidence: number; dialect: string }>((resolve, reject) => {
+          fetch("/api/trpc/annotation.submit", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ json: { agentId: selectedAgentId, inputText: lines[i], context: context || undefined } }),
+          }).then(r => r.json()).then(data => {
+            if (data?.result?.data?.json) resolve(data.result.data.json);
+            else reject(new Error("No result"));
+          }).catch(reject);
+        });
+        setBatchResults(prev => prev.map((r, idx) => idx === i ? { ...r, label: result.label, confidence: result.confidence, dialect: result.dialect || "", status: "done" as const } : r));
+      } catch {
+        setBatchResults(prev => prev.map((r, idx) => idx === i ? { ...r, label: "error", status: "error" as const } : r));
+      }
+      setBatchProgress(i + 1);
+    }
+    setBatchRunning(false);
+    void refetchHistory();
+  };
+
+  const downloadBatchJSONL = () => {
+    const done = batchResults.filter(r => r.status === "done");
+    const content = done.map(r => JSON.stringify({ input_text: r.text, label: r.label, confidence: r.confidence, dialect: r.dialect })).join("\n");
+    const blob = new Blob([content], { type: "application/x-ndjson" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a"); a.href = url; a.download = `batch-annotations-${Date.now()}.jsonl`; a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const pendingCount = history?.filter(a => a.reviewStatus === "pending").length ?? 0;
 
@@ -190,7 +236,84 @@ export default function AnnotationStudio() {
 
         {/* ── Annotate Tab ── */}
         {activeTab === "annotate" && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
+          <div>
+          {/* Mode toggle */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
+            <span style={{ fontSize: 11, color: "#64748B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.08em" }}>Mode:</span>
+            {(["single", "batch"] as const).map(m => (
+              <button key={m} onClick={() => setBatchMode(m === "batch")}
+                style={{ padding: "5px 16px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                  background: (m === "batch") === batchMode ? "rgba(180,83,9,0.25)" : "rgba(255,255,255,0.04)",
+                  border: (m === "batch") === batchMode ? "1px solid rgba(180,83,9,0.5)" : "1px solid rgba(255,255,255,0.08)",
+                  color: (m === "batch") === batchMode ? "#F59E0B" : "#64748B",
+                }}>{m === "single" ? "Single Text" : "Batch (up to 50)"}</button>
+            ))}
+          </div>
+
+          {/* Batch mode panel */}
+          {batchMode && (
+            <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: 24, marginBottom: 24 }}>
+              <div style={{ fontSize: 11, color: "#F59E0B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16, fontWeight: 600 }}>Batch Annotation — one Arabic text per line (max 50)</div>
+              <textarea value={batchInput} onChange={e => setBatchInput(e.target.value)}
+                placeholder={"أدخل النص الأول هنا\nأدخل النص الثاني هنا\nأدخل النص الثالث هنا"}
+                dir="rtl" rows={8}
+                style={{ width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "14px 16px", color: "#E2E8F0", fontSize: 14, lineHeight: 1.8, fontFamily: "'Noto Naskh Arabic', 'Noto Sans Arabic', 'Arial', sans-serif", resize: "vertical", outline: "none", textAlign: "right" }} />
+              <div style={{ marginTop: 8, fontSize: 10, color: "#64748B", fontFamily: MONO }}>{batchInput.split("\n").filter(l => l.trim()).length} texts entered · agent: {arabicAgents.find(a => a.id === selectedAgentId)?.agentName ?? "none selected"}</div>
+              <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+                <button onClick={() => void runBatch()} disabled={!selectedAgentId || batchRunning || !batchInput.trim()}
+                  style={{ flex: 1, padding: "12px", background: (!selectedAgentId || batchRunning || !batchInput.trim()) ? "rgba(180,83,9,0.3)" : "#B45309", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: (!selectedAgentId || batchRunning || !batchInput.trim()) ? "not-allowed" : "pointer" }}>
+                  {batchRunning ? `Annotating ${batchProgress}/${batchInput.split("\n").filter(l => l.trim()).slice(0,50).length}...` : "Run Batch →"}
+                </button>
+                {batchResults.some(r => r.status === "done") && (
+                  <button onClick={downloadBatchJSONL}
+                    style={{ padding: "12px 20px", background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)", color: "#22C55E", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    ↓ Download JSONL
+                  </button>
+                )}
+              </div>
+              {batchRunning && (
+                <div style={{ marginTop: 12, height: 4, background: "rgba(255,255,255,0.06)", borderRadius: 999, overflow: "hidden" }}>
+                  <div style={{ height: "100%", background: "#F59E0B", borderRadius: 999, transition: "width 0.3s ease", width: `${(batchProgress / Math.max(1, batchInput.split("\n").filter(l => l.trim()).slice(0,50).length)) * 100}%` }} />
+                </div>
+              )}
+              {batchResults.length > 0 && (
+                <div style={{ marginTop: 20 }}>
+                  <div style={{ fontSize: 10, color: "#64748B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Results</div>
+                  <div style={{ overflowX: "auto" }}>
+                    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
+                      <thead>
+                        <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
+                          {["#", "Text (60 chars)", "Label", "Confidence", "Dialect", "Status"].map(h => (
+                            <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: "#64748B", fontFamily: MONO, fontWeight: 600, fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {batchResults.map((r, i) => (
+                          <tr key={i} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+                            <td style={{ padding: "8px 10px", color: "#374151", fontFamily: MONO }}>{i + 1}</td>
+                            <td style={{ padding: "8px 10px", color: "#94A3B8", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", direction: "rtl", fontFamily: "'Noto Naskh Arabic', sans-serif" }}>{r.text.slice(0, 60)}{r.text.length > 60 ? "…" : ""}</td>
+                            <td style={{ padding: "8px 10px", color: r.status === "done" ? "#22C55E" : r.status === "error" ? "#EF4444" : "#374151", fontFamily: MONO, fontWeight: 700 }}>{r.label || "—"}</td>
+                            <td style={{ padding: "8px 10px", color: "#64748B", fontFamily: MONO }}>{r.status === "done" ? `${Math.round(r.confidence * 100)}%` : "—"}</td>
+                            <td style={{ padding: "8px 10px", color: "#F59E0B", fontFamily: MONO, fontSize: 10 }}>{r.dialect || "—"}</td>
+                            <td style={{ padding: "8px 10px" }}>
+                              <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 999, fontFamily: MONO, fontWeight: 700,
+                                background: r.status === "done" ? "rgba(34,197,94,0.1)" : r.status === "error" ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.05)",
+                                color: r.status === "done" ? "#22C55E" : r.status === "error" ? "#EF4444" : "#64748B",
+                                border: `1px solid ${r.status === "done" ? "rgba(34,197,94,0.3)" : r.status === "error" ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.08)"}`,
+                              }}>{r.status}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <div style={{ display: batchMode ? "none" : "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
 
             {/* Left: Input panel */}
             <div>
@@ -411,6 +534,7 @@ export default function AnnotationStudio() {
               )}
             </div>
           </div>
+          </div>
         )}
 
         {/* ── History Tab ── */}
@@ -471,20 +595,20 @@ export default function AnnotationStudio() {
                 <div style={{ marginBottom: 16 }}>
                   <div style={{ fontSize: 10, color: "#64748B", fontFamily: MONO, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Format</div>
                   <div style={{ display: "flex", gap: 10 }}>
-                    {(["jsonl", "csv"] as const).map(fmt => (
-                      <button key={fmt} onClick={() => setExportFormat(fmt)} style={{
+                      {(["jsonl", "csv", "openai"] as const).map(f => (
+                      <button key={f} onClick={() => setExportFormat(f)} style={{
                         flex: 1, padding: "10px", borderRadius: 8, cursor: "pointer",
-                        background: exportFormat === fmt ? "rgba(180,83,9,0.2)" : "rgba(0,0,0,0.2)",
-                        border: exportFormat === fmt ? "1px solid rgba(180,83,9,0.5)" : "1px solid rgba(255,255,255,0.08)",
-                        color: exportFormat === fmt ? "#F59E0B" : "#64748B",
+                        background: exportFormat === f ? "rgba(180,83,9,0.2)" : "rgba(0,0,0,0.2)",
+                        border: exportFormat === f ? "1px solid rgba(180,83,9,0.5)" : "1px solid rgba(255,255,255,0.08)",
+                        color: exportFormat === f ? "#F59E0B" : "#64748B",
                         fontSize: 12, fontWeight: 700, fontFamily: MONO,
                       }}>
-                        {fmt.toUpperCase()}
+                        {f === "openai" ? "OpenAI" : f.toUpperCase()}
                       </button>
                     ))}
                   </div>
                   <div style={{ marginTop: 8, fontSize: 10, color: "#374151", fontFamily: MONO, lineHeight: 1.6 }}>
-                    {exportFormat === "jsonl" ? "JSONL: One JSON object per line. Compatible with OpenAI, Gemini, Llama fine-tuning." : "CSV: Flat table format. Compatible with Excel, pandas, and data labeling platforms."}
+                    {exportFormat === "jsonl" ? "JSONL: One JSON object per line. Compatible with Gemini, Llama, and general fine-tuning." : exportFormat === "openai" ? "OpenAI format: messages array with system/user/assistant roles. Ready for GPT-4 fine-tuning API." : "CSV: Flat table format. Compatible with Excel, pandas, and data labeling platforms."}
                   </div>
                 </div>
 

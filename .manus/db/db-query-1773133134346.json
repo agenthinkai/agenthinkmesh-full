@@ -1,0 +1,9 @@
+{
+  "query": "\nUPDATE agents SET endpointUrl = REPLACE(endpointUrl, 'https://4000-ite58n70udx243qagg7nd-4d7ca83c.sg1.manus.computer/agents', 'https://agenthink-7enctkan.manus.space/api/agents') WHERE endpointUrl LIKE '%4000-ite58n70udx243qagg7nd%';\nUPDATE agents SET endpointUrl = REPLACE(endpointUrl, 'http://localhost:4001/arabic', 'https://agenthink-7enctkan.manus.space/api/agents/arabic') WHERE endpointUrl LIKE '%localhost:4001%';\nUPDATE agents SET endpointUrl = REPLACE(endpointUrl, 'http://localhost:4000/agents', 'https://agenthink-7enctkan.manus.space/api/agents') WHERE endpointUrl LIKE '%localhost:4000%';\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute \nUPDATE agents SET endpointUrl = REPLACE(endpointUrl, 'https://4000-ite58n70udx243qagg7nd-4d7ca83c.sg1.manus.computer/agents', 'https://agenthink-7enctkan.manus.space/api/agents') WHERE endpointUrl LIKE '%4000-ite58n70udx243qagg7nd%';\nUPDATE agents SET endpointUrl = REPLACE(endpointUrl, 'http://localhost:4001/arabic', 'https://agenthink-7enctkan.manus.space/api/agents/arabic') WHERE endpointUrl LIKE '%localhost:4001%';\nUPDATE agents SET endpointUrl = REPLACE(endpointUrl, 'http://localhost:4000/agents', 'https://agenthink-7enctkan.manus.space/api/agents') WHERE endpointUrl LIKE '%localhost:4000%';\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2022
+}
