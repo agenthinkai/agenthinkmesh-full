@@ -607,9 +607,10 @@ export default function MeshDashboard() {
   const utils = trpc.useUtils();
 
   // State
-  const [role, setRole] = useState(() => {
+  // null = no context selected yet (prompt-first mode)
+  const [role, setRole] = useState<string | null>(() => {
     const saved = localStorage.getItem("mesh_role");
-    return saved || "vc";
+    return saved || null;
   });
   const [task, setTask] = useState("");
   const [showOutput, setShowOutput] = useState(false);
@@ -637,6 +638,14 @@ export default function MeshDashboard() {
   const suppressTaskResetRef = useRef(false);
   // Frozen task text captured at run() time — used by OutputPanel so stale state doesn't cause empty taskText
   const [frozenTask, setFrozenTask] = useState("");
+  // Mismatch pending: when user manually selected a context but prompt doesn't match
+  // Pauses execution and shows "Switch & Run" / "Run Anyway" choice
+  const [mismatchPending, setMismatchPending] = useState<{
+    suggestedKey: string;
+    suggestedDomain: string;
+    suggestedContext: string;
+    capturedTask: string;
+  } | null>(null);
   // Auto-switch banner: shown when the system switches context based on prompt
   const [autoSwitchBanner, setAutoSwitchBanner] = useState<{ from: string; to: string; toContext: string } | null>(null);
   // Agent discovery animation state
@@ -644,12 +653,13 @@ export default function MeshDashboard() {
   const [assemblyPhase, setAssemblyPhase] = useState<"idle" | "scanning" | "assembling" | "executing">("idle");
   const [assembledAgents, setAssembledAgents] = useState<string[]>([]); // labels revealed so far
 
-  const ctx = CONTEXTS[role];
+  // ctx is null when no context is selected (prompt-first mode)
+  const ctx = role ? CONTEXTS[role] : null;
 
   // ── Domain nav groups for sidebar (must be before any early return) ─────────────────────────────────────────
   const [expandedDomains, setExpandedDomains] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
-    Object.keys(DOMAIN_MAP).forEach(d => { initial[d] = d === ctx.domain; });
+    Object.keys(DOMAIN_MAP).forEach(d => { initial[d] = false; });
     return initial;
   });
   const toggleDomain = (d: string) => setExpandedDomains(prev => ({ ...prev, [d]: !prev[d] }));
@@ -660,7 +670,7 @@ export default function MeshDashboard() {
   };
 
   const [agentList, setAgentList] = useState<AgentNode[]>(() =>
-    CONTEXTS[role].agents.map((label, i) => ({ id: "a" + i, label, spawned: false }))
+    role ? CONTEXTS[role].agents.map((label, i) => ({ id: "a" + i, label, spawned: false })) : []
   );
 
   // tRPC mutations
@@ -669,8 +679,9 @@ export default function MeshDashboard() {
     onSuccess: () => utils.mesh.getHistory.invalidate(),
   });
 
-  // Debounced agent inference
+  // Debounced agent inference (only when a context is selected)
   useEffect(() => {
+    if (!ctx) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => {
       setAgentList(inferAgents(task, ctx.agents));
@@ -680,7 +691,8 @@ export default function MeshDashboard() {
 
   // Reset on role change — skip task reset if an auto-switch is in progress
   useEffect(() => {
-    setAgentList(CONTEXTS[role].agents.map((label, i) => ({ id: "a" + i, label, spawned: false })));
+    if (!role) { setAgentList([]); return; }
+    setAgentList(CONTEXTS[role].agents.map((label: string, i: number) => ({ id: "a" + i, label, spawned: false })));
     if (!suppressTaskResetRef.current) {
       setTask("");
       setShowOutput(false);
@@ -690,7 +702,7 @@ export default function MeshDashboard() {
   }, [role]);
 
   // Boot sequence
-  const bootMsgs = ["Initialising Mesh…", "Identifying profile…", `Detected: ${ctx.label}`, "Configuring agents…", "Ready."];
+  const bootMsgs = ["Initialising Mesh…", "Identifying profile…", ctx ? `Detected: ${ctx.label}` : "Prompt-first mode", "Configuring agents…", "Ready."];
   useEffect(() => {
     let i = 0;
     const t = setInterval(() => {
@@ -701,7 +713,7 @@ export default function MeshDashboard() {
     return () => clearInterval(t);
   }, []);
 
-  const meshNodes = buildLayout(agentList, ctx.color);
+  const meshNodes = buildLayout(agentList, ctx?.color ?? "#7BA3D4");
   const spawnedCount = agentList.filter(a => a.spawned).length;
 
   // Helper: find best matching context key from LLM-suggested domain/context strings
@@ -749,21 +761,37 @@ export default function MeshDashboard() {
     try {
       const allDomains = Object.values(DOMAIN_MAP).map(d => d.label);
 
-      // Step 1: Analyse prompt against current context
+      // Step 1: Analyse prompt against current context (ctx may be null if no context selected yet)
+      const activeCtx = ctx ?? CONTEXTS[Object.keys(CONTEXTS)[0]];
       const analysis = await routeAgentsMutation.mutateAsync({
         taskText: task,
-        contextLabel: ctx.label,
-        domainLabel: DOMAIN_MAP[ctx.domain]?.label ?? ctx.domain,
+        contextLabel: activeCtx.label,
+        domainLabel: DOMAIN_MAP[activeCtx.domain]?.label ?? activeCtx.domain,
         agentLabels: agentList.map(a => a.label),
         allDomains,
       });
 
-      // Step 2: Auto-switch if domain mismatch detected
+      // Step 2: Handle domain mismatch
       if (!analysis.domainMatch && (analysis.suggestedDomain || analysis.suggestedContext)) {
         const bestKey = findBestContextKey(analysis.suggestedDomain, analysis.suggestedContext);
         if (bestKey && bestKey !== role) {
+          // If user manually selected a context (role !== null), pause and ask
+          // If no context was selected (role === null), auto-switch silently
+          if (role !== null) {
+            // User explicitly chose a context — show choice dialog
+            setAssemblyPhase("idle");
+            setIsRouting(false);
+            setRoutedNodes([]);
+            setMismatchPending({
+              suggestedKey: bestKey,
+              suggestedDomain: DOMAIN_MAP[CONTEXTS[bestKey].domain]?.label ?? CONTEXTS[bestKey].domain,
+              suggestedContext: CONTEXTS[bestKey].label,
+              capturedTask,
+            });
+            return;
+          }
           const newCtx = CONTEXTS[bestKey];
-          const fromLabel = ctx.label;
+          const fromLabel = activeCtx.label;
           // Switch context state — suppress the role-change effect's task reset
           suppressTaskResetRef.current = true;
           setRole(bestKey);
@@ -839,11 +867,65 @@ export default function MeshDashboard() {
     setTimeout(() => { setShowOutput(true); setRoutedNodes([]); setIsRouting(false); }, 1200);
   };
 
+  // Called when user clicks "Switch & Run" or "Run Anyway" from the mismatch dialog
+  const resolveWithContext = async (useKey: string | null) => {
+    if (!mismatchPending) return;
+    const { capturedTask, suggestedKey } = mismatchPending;
+    setMismatchPending(null);
+    setFrozenTask(capturedTask);
+    setIsRouting(true);
+    setRoutingAnalysis(null);
+    setAssemblyPhase("scanning");
+    setAssembledAgents([]);
+    const targetKey = useKey ?? suggestedKey;
+    const targetCtx = CONTEXTS[targetKey];
+    suppressTaskResetRef.current = true;
+    setRole(targetKey);
+    localStorage.setItem("mesh_role", targetKey);
+    setExpandedDomains(prev => ({ ...prev, [targetCtx.domain]: true }));
+    const newAgentList = targetCtx.agents.map((label: string, i: number) => ({ id: "a" + i, label, spawned: false }));
+    setAgentList(newAgentList);
+    const allDomains = Object.values(DOMAIN_MAP).map(d => d.label);
+    try {
+      const reAnalysis = await routeAgentsMutation.mutateAsync({
+        taskText: capturedTask,
+        contextLabel: targetCtx.label,
+        domainLabel: DOMAIN_MAP[targetCtx.domain]?.label ?? targetCtx.domain,
+        agentLabels: newAgentList.map((a: AgentNode) => a.label),
+        allDomains,
+      });
+      setRoutingAnalysis({ ...reAnalysis, domainMatch: true });
+      const relevantSet = new Set(reAnalysis.relevantAgents);
+      const filtered = newAgentList.filter((a: AgentNode) => relevantSet.has(a.label));
+      const agentsToRun = filtered.length > 0 ? filtered : [...newAgentList];
+      setCurrentAgents(agentsToRun);
+      setAssemblyPhase("assembling");
+      agentsToRun.forEach((ag: AgentNode, i: number) => {
+        setTimeout(() => setAssembledAgents(prev => [...prev, ag.label]), i * 180);
+      });
+      const dur = agentsToRun.length * 180 + 600;
+      setTimeout(() => {
+        suppressTaskResetRef.current = false;
+        setTask(capturedTask);
+        setAssemblyPhase("executing");
+        setShowOutput(true);
+        setRoutedNodes([]);
+        setIsRouting(false);
+      }, dur);
+    } catch {
+      suppressTaskResetRef.current = false;
+      setCurrentAgents([...newAgentList]);
+      setAssemblyPhase("idle");
+      setTimeout(() => { setShowOutput(true); setRoutedNodes([]); setIsRouting(false); }, 800);
+    }
+  };
+
   const handleOutputDone = (outputs: OutputMap) => {
+    const activeCtxLabel = ctx?.label ?? "Auto-detected";
     saveHistory.mutate({
-      task,
-      contextKey: role,
-      contextLabel: ctx.label,
+      task: frozenTask || task,
+      contextKey: role ?? "auto",
+      contextLabel: activeCtxLabel,
       agentCount: currentAgents.length,
       outputs: JSON.stringify(outputs),
     });
@@ -870,12 +952,18 @@ export default function MeshDashboard() {
       {/* ── Slim top bar ── */}
       <header style={{ height: 48, display: "flex", alignItems: "center", padding: "0 20px", borderBottom: "1px solid #1C3057", background: "#0F1E38", gap: 12, flexShrink: 0 }}>
         <Logo size={24} />
-        {/* Active context badge */}
-        <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 10px", background: "rgba(123,163,212,0.08)", border: "1px solid rgba(123,163,212,0.2)", borderRadius: 20 }}>
-          <span style={{ fontSize: 12 }}>{ctx.icon}</span>
-          <span style={{ fontSize: 11, fontWeight: 700, color: "#E8ECF2" }}>{ctx.label}</span>
-          <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#22C55E", display: "inline-block" }} />
-        </div>
+        {/* Active context badge — hidden when no context selected */}
+        {ctx ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 10px", background: "rgba(123,163,212,0.08)", border: "1px solid rgba(123,163,212,0.2)", borderRadius: 20 }}>
+            <span style={{ fontSize: 12 }}>{ctx.icon}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#E8ECF2" }}>{ctx.label}</span>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#22C55E", display: "inline-block" }} />
+          </div>
+        ) : (
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 10px", background: "rgba(123,163,212,0.05)", border: "1px dashed rgba(123,163,212,0.2)", borderRadius: 20 }}>
+            <span style={{ fontSize: 11, color: "#637080" }}>No context selected — type a prompt to auto-detect</span>
+          </div>
+        )}
         {spawnedCount > 0 && (
           <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 999, background: "rgba(201,168,76,0.12)", color: "#C9A84C", border: "1px solid rgba(201,168,76,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>⚡ {spawnedCount} spawned</span>
         )}
@@ -959,7 +1047,7 @@ export default function MeshDashboard() {
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, paddingTop: 4 }}>
                 {Object.entries(DOMAIN_MAP).map(([domainKey, domain]) => {
                   const domainColor = DOMAIN_COLORS[domainKey] || "#7BA3D4";
-                  const hasActive = CONTEXTS[role]?.domain === domainKey;
+                  const hasActive = role ? CONTEXTS[role]?.domain === domainKey : false;
                   return (
                     <button
                       key={domainKey}
@@ -983,7 +1071,7 @@ export default function MeshDashboard() {
               const domainContexts = Object.entries(CONTEXTS).filter(([, c]) => c.domain === domainKey);
               const isExpanded = expandedDomains[domainKey];
               const domainColor = DOMAIN_COLORS[domainKey] || "#7BA3D4";
-              const hasActive = CONTEXTS[role]?.domain === domainKey;
+              const hasActive = role ? CONTEXTS[role]?.domain === domainKey : false;
               return (
                 <div key={domainKey} style={{ marginBottom: 4 }}>
                   {/* Domain header */}
@@ -1062,7 +1150,7 @@ export default function MeshDashboard() {
             <OutputPanel
               agents={currentAgents}
               taskText={frozenTask || task}
-              ctx={ctx}
+              ctx={ctx ?? CONTEXTS[Object.keys(CONTEXTS)[0]]}
               vaultText={vaultText}
               activeDocId={activeVaultDocId}
               onBack={() => setShowOutput(false)}
@@ -1081,7 +1169,11 @@ export default function MeshDashboard() {
                       Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}, {(user?.name || "").split(" ")[0] || "there"}.
                     </h1>
                     <div style={{ fontSize: 12, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>
-                      <span style={{ color: ctx.color, fontWeight: 600 }}>{ctx.label}</span> · {agentList.length} agents ready
+                      {ctx ? (
+                        <><span style={{ color: ctx.color, fontWeight: 600 }}>{ctx.label}</span> · {agentList.length} agents ready</>
+                      ) : (
+                        <span style={{ color: "#637080" }}>Type a prompt — the system will select the right agents</span>
+                      )}
                     </div>
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 8, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "#A8B4C8" }}>
@@ -1169,6 +1261,73 @@ export default function MeshDashboard() {
                   </div>
                 )}
 
+                {/* Mismatch Choice Dialog — shown when user manually selected a context that doesn't match the prompt */}
+                {mismatchPending && (
+                  <div style={{
+                    background: "#0F1E38",
+                    border: "1px solid rgba(201,168,76,0.4)",
+                    borderRadius: 16,
+                    padding: "20px 24px",
+                    boxShadow: "0 4px 24px rgba(201,168,76,0.08)",
+                    animation: "slide-up-fade-in 0.35s ease-out",
+                  }}>
+                    <div style={{ display: "flex", alignItems: "flex-start", gap: 14 }}>
+                      <span style={{ fontSize: 20, flexShrink: 0, marginTop: 2 }}>⚠</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: "#C9A84C", marginBottom: 6, fontFamily: "'Inter', sans-serif" }}>
+                          Context mismatch detected
+                        </div>
+                        <div style={{ fontSize: 12, color: "#A8B4C8", lineHeight: 1.6, marginBottom: 14, fontFamily: "'Inter', sans-serif" }}>
+                          Your prompt looks like a <strong style={{ color: "#E8ECF2" }}>{mismatchPending.suggestedDomain} → {mismatchPending.suggestedContext}</strong> task,
+                          but you have <strong style={{ color: "#E8ECF2" }}>{ctx?.label ?? "no context"}</strong> selected.
+                          Would you like to switch to the right context, or run anyway?
+                        </div>
+                        <div style={{ display: "flex", gap: 10 }}>
+                          <button
+                            onClick={() => resolveWithContext(mismatchPending.suggestedKey)}
+                            style={{
+                              background: "linear-gradient(135deg, #7BA3D4 0%, #4A7DB5 100%)",
+                              color: "#0B1629", border: "none", borderRadius: 8,
+                              padding: "9px 18px", fontSize: 12, fontWeight: 800,
+                              cursor: "pointer", fontFamily: "'Inter', sans-serif",
+                            }}
+                          >
+                            ↻ Switch to {mismatchPending.suggestedContext} &amp; Run
+                          </button>
+                          <button
+                            onClick={() => {
+                              const pending = mismatchPending;
+                              setMismatchPending(null);
+                              // Run with current context — re-use the captured task
+                              setTask(pending.capturedTask);
+                              setTimeout(() => run(), 50);
+                            }}
+                            style={{
+                              background: "transparent", color: "#8494AA",
+                              border: "1px solid #1C3057", borderRadius: 8,
+                              padding: "9px 18px", fontSize: 12, fontWeight: 600,
+                              cursor: "pointer", fontFamily: "'Inter', sans-serif",
+                            }}
+                          >
+                            Run Anyway
+                          </button>
+                          <button
+                            onClick={() => setMismatchPending(null)}
+                            style={{
+                              background: "transparent", color: "#637080",
+                              border: "none", borderRadius: 8,
+                              padding: "9px 14px", fontSize: 12,
+                              cursor: "pointer", fontFamily: "'Inter', sans-serif",
+                            }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 {/* Task Command Center */}
                 <div style={{ background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.3)" }}>
                   <div style={{ padding: "14px 18px 10px", borderBottom: "1px solid #152542", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -1184,7 +1343,7 @@ export default function MeshDashboard() {
                       value={task}
                       onChange={e => setTask(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) run(); }}
-                      placeholder={`e.g. ${ctx.quickTasks[0]}…`}
+                      placeholder={ctx ? `e.g. ${ctx.quickTasks[0]}…` : "Describe your task — e.g. Screen a Series A deal, Review an employment contract…"}
                       rows={4}
                       style={{ width: "100%", border: "none", outline: "none", resize: "none", fontSize: 14, color: "#E8ECF2", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.7, background: "transparent" }}
                     />
@@ -1258,9 +1417,9 @@ export default function MeshDashboard() {
                       </div>
                     </div>
                   )}
-                  {/* Quick task chips */}
+                  {/* Quick task chips — only shown when a context is selected */}
                   <div style={{ padding: "0 18px 14px", display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {ctx.quickTasks.map(qt => (
+                    {(ctx?.quickTasks ?? []).map((qt: string) => (
                       <button key={qt} onClick={() => setTask(qt)} style={{
                         padding: "5px 12px", background: "#152542",
                         border: "1px solid #1C3057", borderRadius: 20,
@@ -1337,7 +1496,7 @@ export default function MeshDashboard() {
                         // During assembling: hide agents not yet revealed
                         const isVisible = assemblyPhase === "idle" || assemblyPhase === "executing" || isAssembled;
                         if (!isVisible) return null;
-                        const dotColor = isSkipped ? "#4A5568" : ag.spawned ? "#C9A84C" : isRouted ? "#4ADE80" : isAssembled && assemblyPhase === "assembling" ? "#7BA3D4" : ctx.color;
+                        const dotColor = isSkipped ? "#4A5568" : ag.spawned ? "#C9A84C" : isRouted ? "#4ADE80" : isAssembled && assemblyPhase === "assembling" ? "#7BA3D4" : (ctx?.color ?? "#7BA3D4");
                         return (
                           <div key={ag.id} style={{
                             display: "flex", alignItems: "center", padding: "7px 14px",

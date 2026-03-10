@@ -252,3 +252,13 @@
 
 - [x] Fix: agents receive empty taskText (Zod too_small error) after assembly animation
 - [x] Root cause: role-change useEffect called setTask("") during auto-switch; fixed with suppressTaskResetRef + frozenTask state
+
+## Session 10 — No Default Selection + Mismatch UX
+
+- [x] Remove default context (VC/PE Fund) — dashboard starts with no context selected
+- [x] Show "Type a prompt — the system will select the right agents" empty state when no context selected
+- [x] Execute button works without pre-selected context — system auto-detects on first run
+- [x] When user manually selects a context then types a mismatched prompt: show amber mismatch dialog with suggested context
+- [x] "Run Anyway" executes with the user's chosen context even if it doesn't match
+- [x] "Switch & Run" auto-switches to the correct context and executes
+- [x] "Cancel" dismisses the dialog without running
