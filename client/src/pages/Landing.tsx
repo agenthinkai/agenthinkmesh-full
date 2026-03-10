@@ -119,77 +119,76 @@ export default function Landing() {
       </nav>
 
       {/* ── Hero ── */}
-      <section style={{ padding: "100px 48px 88px", textAlign: "center", background: NAVY_900, borderBottom: `1px solid ${NAVY_700}`, position: "relative", overflow: "hidden" }}>
+      <section style={{ padding: "100px 48px 80px", textAlign: "center", background: NAVY_900, borderBottom: `1px solid ${NAVY_700}`, position: "relative", overflow: "hidden" }}>
         {/* Subtle grid */}
         <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(${NAVY_700} 1px, transparent 1px)`, backgroundSize: "32px 32px", opacity: 0.5, pointerEvents: "none" }} />
         {/* Silver glow top */}
-        <div style={{ position: "absolute", top: -120, left: "50%", transform: "translateX(-50%)", width: 600, height: 300, background: "radial-gradient(ellipse, rgba(168,180,200,0.08) 0%, transparent 70%)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", top: -120, left: "50%", transform: "translateX(-50%)", width: 700, height: 350, background: "radial-gradient(ellipse, rgba(123,163,212,0.09) 0%, transparent 70%)", pointerEvents: "none" }} />
 
-        {/* Animated mesh SVG */}
-        <div style={{ marginBottom: 44, display: "flex", justifyContent: "center", position: "relative" }}>
-          <svg width="180" height="120" viewBox="0 0 180 120">
-            {([[90,60,28,22],[90,60,152,22],[90,60,16,72],[90,60,164,72],[90,60,50,106],[90,60,130,106],[90,60,90,10]] as [number,number,number,number][]).map(([x1,y1,x2,y2],i) => (
-              <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(168,180,200,0.35)" strokeWidth="1.5" strokeDasharray="4 3">
-                <animate attributeName="stroke-opacity" values="0.2;0.7;0.2" dur={`${1.8 + i * 0.25}s`} repeatCount="indefinite" />
-              </line>
-            ))}
-            {([[28,22],[152,22],[16,72],[164,72],[50,106],[130,106],[90,10]] as [number,number][]).map(([cx,cy],i) => (
-              <circle key={i} cx={cx} cy={cy} r="5" fill={NAVY_700} stroke="rgba(168,180,200,0.6)" strokeWidth="1.5">
-                <animate attributeName="r" values="3.5;5.5;3.5" dur={`${2.2 + i * 0.3}s`} repeatCount="indefinite" />
-              </circle>
-            ))}
-            <circle cx="90" cy="60" r="15" fill={NAVY_800} stroke="rgba(168,180,200,0.5)" strokeWidth="2">
-              <animate attributeName="r" values="12;17;12" dur="3.5s" repeatCount="indefinite" />
-            </circle>
-            <circle cx="90" cy="60" r="7" fill="rgba(168,180,200,0.8)" />
-          </svg>
+        {/* Status pill — ☆ 112 verified specialist agents · Live */}
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", background: "transparent", border: `1px solid ${NAVY_600}`, borderRadius: 999, marginBottom: 44, position: "relative" }}>
+          <span style={{ fontSize: 13, color: SILVER_400 }}>☆</span>
+          <span style={{ fontSize: 12, color: SILVER_300, fontFamily: MONO }}>112 verified specialist agents · Live</span>
         </div>
 
-        {/* Status pill */}
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "4px 16px", background: `${NAVY_800}`, border: `1px solid ${NAVY_600}`, borderRadius: 999, marginBottom: 28, position: "relative" }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ADE80", display: "inline-block" }} />
-          <span style={{ fontSize: 11, color: SILVER_300, fontFamily: MONO }}>v3.1 · 112 agents · 14 domain contexts · Live</span>
-        </div>
-
-        {/* Arabic tagline */}
-        <div style={{ fontSize: 15, color: SILVER_400, fontFamily: "'Noto Naskh Arabic', 'Arial', sans-serif", direction: "rtl", marginBottom: 16, letterSpacing: "0.02em", position: "relative" }}>
-          نظام تنسيق وكلاء الذكاء الاصطناعي للمؤسسات
-        </div>
-
-        {/* Product name line — mirrors Google AI Agents style */}
-        <div style={{ fontSize: "clamp(38px, 5.5vw, 68px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.05, marginBottom: 8, maxWidth: 820, margin: "0 auto 8px", position: "relative" }}>
-          <span style={{ background: SILVER_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-            AgenThink Mesh
-          </span>
-        </div>
-        <h1 style={{ fontSize: "clamp(32px, 4.5vw, 58px)", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1.1, marginBottom: 20, maxWidth: 820, margin: "0 auto 20px", color: SILVER_50, position: "relative" }}>
-          Multi-agent tasks, handled.
+        {/* Main headline — "The AgenThink Mesh / of AI Agents" */}
+        <h1 style={{ fontSize: "clamp(52px, 8vw, 108px)", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1.0, margin: "0 auto 28px", maxWidth: 860, position: "relative", color: SILVER_50 }}>
+          The{" "}
+          <span style={{ color: "#7BA3D4" }}>AgenThink</span>
+          <br />
+          <span style={{ color: "#7BA3D4" }}>Mesh</span>
+          {" "}of AI Agents
         </h1>
 
-        <p style={{ fontSize: 16, color: SILVER_300, maxWidth: 540, margin: "0 auto 44px", lineHeight: 1.8, position: "relative" }}>
-          AgenThink Mesh orchestrates coordinated teams of domain-specific AI agents across Finance, Legal, Healthcare, Enterprise, and GCC Wealth — running in parallel, streaming output in real time.
+        {/* Subtitle */}
+        <p style={{ fontSize: "clamp(15px, 2vw, 18px)", color: SILVER_300, maxWidth: 640, margin: "0 auto 44px", lineHeight: 1.75, position: "relative" }}>
+          Describe any complex business task. AgenThinkMesh activates the right
+          specialist agents across Finance, Legal, Healthcare, and GCC Wealth —
+          delivering institutional-grade results in seconds.
         </p>
 
-        <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", position: "relative" }}>
+        {/* Task input bar */}
+        <div style={{ maxWidth: 680, margin: "0 auto 16px", position: "relative", display: "flex", alignItems: "center", background: "rgba(255,255,255,0.04)", border: `1px solid ${NAVY_600}`, borderRadius: 14, padding: "6px 6px 6px 20px", boxShadow: "0 4px 32px rgba(0,0,0,0.35)" }}>
+          <span style={{ fontSize: 18, color: SILVER_400, marginRight: 10, flexShrink: 0 }}>⌕</span>
+          <input
+            readOnly
+            value=""
+            placeholder="Describe a task — e.g. Screen 5 deals against our VC thesis"
+            style={{ flex: 1, background: "transparent", border: "none", outline: "none", fontSize: 14, color: SILVER_300, fontFamily: FONT, caretColor: "#7BA3D4" }}
+            onClick={() => { window.location.href = loginUrl; }}
+          />
           <a href={loginUrl} style={{
-            padding: "14px 36px",
-            background: "linear-gradient(135deg, #1C3057 0%, #243B6E 100%)",
-            color: SILVER_50,
+            display: "inline-flex", alignItems: "center", gap: 8,
+            padding: "12px 24px",
+            background: "linear-gradient(135deg, #7BA3D4 0%, #5B8EC4 100%)",
+            color: "#0B1629",
             borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: "none",
-            border: `1px solid rgba(168,180,200,0.25)`,
-            boxShadow: "0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
-          }}>Access the Mesh →</a>
-          <a href="#how-it-works" style={{
-            padding: "14px 36px",
-            background: "transparent",
-            color: SILVER_300,
-            borderRadius: 10, fontSize: 14, fontWeight: 600, textDecoration: "none",
-            border: `1px solid ${NAVY_700}`,
-          }}>See how it works</a>
+            flexShrink: 0,
+            boxShadow: "0 2px 16px rgba(123,163,212,0.35)",
+          }}>
+            <span style={{ fontSize: 16 }}>⚡</span> Activate mesh
+          </a>
         </div>
-        <p style={{ marginTop: 16, fontSize: 11, color: SILVER_500, fontFamily: MONO, position: "relative" }}>
-          Sign in with Google, GitHub, or email · Free to access · No credit card required
+
+        {/* Sub-note */}
+        <p style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, marginBottom: 52, position: "relative" }}>
+          No sign-in required to preview · 112 specialist agents ready
         </p>
+
+        {/* Inline stats row */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 0, flexWrap: "wrap", position: "relative", maxWidth: 820, margin: "0 auto" }}>
+          {[
+            { bold: "2,405+", label: "tasks run" },
+            { bold: "112", label: "verified agents" },
+            { bold: "14", label: "domain contexts" },
+            { bold: "avg. 47 sec", label: "execution time" },
+          ].map((s, i, arr) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 28px", borderRight: i < arr.length - 1 ? `1px solid ${NAVY_700}` : "none" }}>
+              <span style={{ fontSize: 15, fontWeight: 800, color: SILVER_50 }}>{s.bold}</span>
+              <span style={{ fontSize: 13, color: SILVER_400 }}>{s.label}</span>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* ── Stats bar ── */}
