@@ -633,6 +633,8 @@ export default function MeshDashboard() {
     reasoning: string;
   } | null>(null);
   const [isRouting, setIsRouting] = useState(false);
+  // Auto-switch banner: shown when the system switches context based on prompt
+  const [autoSwitchBanner, setAutoSwitchBanner] = useState<{ from: string; to: string; toContext: string } | null>(null);
 
   const ctx = CONTEXTS[role];
 
@@ -692,10 +694,38 @@ export default function MeshDashboard() {
   const meshNodes = buildLayout(agentList, ctx.color);
   const spawnedCount = agentList.filter(a => a.spawned).length;
 
+  // Helper: find best matching context key from LLM-suggested domain/context strings
+  const findBestContextKey = (suggestedDomain: string | null, suggestedContext: string | null): string | null => {
+    const ctxLower = (suggestedContext ?? "").toLowerCase().trim();
+    const domLower = (suggestedDomain ?? "").toLowerCase().trim();
+    // 1. Exact context label match
+    if (ctxLower) {
+      const exact = Object.keys(CONTEXTS).find(k => CONTEXTS[k].label.toLowerCase() === ctxLower);
+      if (exact) return exact;
+      // 2. Partial context label match
+      const partial = Object.keys(CONTEXTS).find(
+        k => CONTEXTS[k].label.toLowerCase().includes(ctxLower) || ctxLower.includes(CONTEXTS[k].label.toLowerCase())
+      );
+      if (partial) return partial;
+    }
+    // 3. First context in the suggested domain
+    if (domLower) {
+      const domainKey = Object.keys(DOMAIN_MAP).find(
+        k => DOMAIN_MAP[k].label.toLowerCase() === domLower || k === domLower
+      );
+      if (domainKey) {
+        const firstInDomain = Object.keys(CONTEXTS).find(k => CONTEXTS[k].domain === domainKey);
+        if (firstInDomain) return firstInDomain;
+      }
+    }
+    return null;
+  };
+
   const run = async () => {
     if (!task.trim() || isRouting) return;
     setIsRouting(true);
     setRoutingAnalysis(null);
+    setAutoSwitchBanner(null);
 
     // Animate mesh nodes while routing
     const nodeIds = meshNodes.map(n => n.id);
@@ -703,6 +733,8 @@ export default function MeshDashboard() {
 
     try {
       const allDomains = Object.values(DOMAIN_MAP).map(d => d.label);
+
+      // Step 1: Analyse prompt against current context
       const analysis = await routeAgentsMutation.mutateAsync({
         taskText: task,
         contextLabel: ctx.label,
@@ -710,9 +742,45 @@ export default function MeshDashboard() {
         agentLabels: agentList.map(a => a.label),
         allDomains,
       });
-      setRoutingAnalysis(analysis);
 
-      // Only run agents that are relevant
+      // Step 2: Auto-switch if domain mismatch detected
+      if (!analysis.domainMatch && (analysis.suggestedDomain || analysis.suggestedContext)) {
+        const bestKey = findBestContextKey(analysis.suggestedDomain, analysis.suggestedContext);
+        if (bestKey && bestKey !== role) {
+          const newCtx = CONTEXTS[bestKey];
+          const fromLabel = ctx.label;
+          // Switch context state
+          setRole(bestKey);
+          localStorage.setItem("mesh_role", bestKey);
+          setExpandedDomains(prev => ({ ...prev, [newCtx.domain]: true }));
+          const newAgentList = newCtx.agents.map((label, i) => ({ id: "a" + i, label, spawned: false }));
+          setAgentList(newAgentList);
+          // Show auto-switch banner
+          setAutoSwitchBanner({
+            from: fromLabel,
+            to: DOMAIN_MAP[newCtx.domain]?.label ?? newCtx.domain,
+            toContext: newCtx.label,
+          });
+          setTimeout(() => setAutoSwitchBanner(null), 6000);
+          // Step 3: Re-run routing against the new context
+          const reAnalysis = await routeAgentsMutation.mutateAsync({
+            taskText: task,
+            contextLabel: newCtx.label,
+            domainLabel: DOMAIN_MAP[newCtx.domain]?.label ?? newCtx.domain,
+            agentLabels: newAgentList.map(a => a.label),
+            allDomains,
+          });
+          setRoutingAnalysis({ ...reAnalysis, domainMatch: true });
+          const relevantSet = new Set(reAnalysis.relevantAgents);
+          const filteredAgents = newAgentList.filter(a => relevantSet.has(a.label));
+          setCurrentAgents(filteredAgents.length > 0 ? filteredAgents : [...newAgentList]);
+          setTimeout(() => { setShowOutput(true); setRoutedNodes([]); setIsRouting(false); }, 1200);
+          return;
+        }
+      }
+
+      // Normal path: domain matches, run relevant agents
+      setRoutingAnalysis(analysis);
       const relevantSet = new Set(analysis.relevantAgents);
       const filteredAgents = agentList.filter(a => relevantSet.has(a.label));
       setCurrentAgents(filteredAgents.length > 0 ? filteredAgents : [...agentList]);
@@ -1025,31 +1093,33 @@ export default function MeshDashboard() {
                       </div>
                     </div>
                   )}
+                  {/* Auto-switch banner — shown when context was changed automatically */}
+                  {autoSwitchBanner && (
+                    <div style={{ padding: "0 18px 8px" }}>
+                      <div style={{ padding: "10px 14px", background: "rgba(123,163,212,0.08)", border: "1px solid rgba(123,163,212,0.35)", borderRadius: 10, display: "flex", alignItems: "flex-start", gap: 8 }}>
+                        <span style={{ fontSize: 14, flexShrink: 0 }}>🔀</span>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 11, color: "#7BA3D4", fontFamily: "'Inter', sans-serif", fontWeight: 700, marginBottom: 3 }}>
+                            Context switched automatically
+                          </div>
+                          <div style={{ fontSize: 10, color: "#A8B4C8", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.6 }}>
+                            Your prompt doesn't match <strong style={{ color: "#637080" }}>{autoSwitchBanner.from}</strong>. Switched to{" "}
+                            <strong style={{ color: "#7BA3D4" }}>{autoSwitchBanner.to} → {autoSwitchBanner.toContext}</strong> and loaded the right agents.
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setAutoSwitchBanner(null)}
+                          style={{ background: "none", border: "none", cursor: "pointer", color: "#637080", fontSize: 14, lineHeight: 1, flexShrink: 0, padding: 0 }}
+                        >×</button>
+                      </div>
+                    </div>
+                  )}
                   {/* Routing state indicator */}
                   {isRouting && (
                     <div style={{ padding: "0 18px 8px" }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "rgba(123,163,212,0.06)", border: "1px solid rgba(123,163,212,0.2)", borderRadius: 8 }}>
                         <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#7BA3D4", display: "inline-block", animation: "pulse 1s infinite" }} />
                         <span style={{ fontSize: 10, color: "#7BA3D4", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>Analysing task — routing to relevant agents…</span>
-                      </div>
-                    </div>
-                  )}
-                  {/* Domain mismatch warning */}
-                  {routingAnalysis && !routingAnalysis.domainMatch && (
-                    <div style={{ padding: "0 18px 8px" }}>
-                      <div style={{ padding: "10px 14px", background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: 10 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
-                          <span style={{ fontSize: 13 }}>⚠️</span>
-                          <span style={{ fontSize: 11, color: "#C9A84C", fontFamily: "'Inter', sans-serif", fontWeight: 700 }}>Domain mismatch detected</span>
-                        </div>
-                        <div style={{ fontSize: 10, color: "#A8B4C8", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.6 }}>
-                          {routingAnalysis.reasoning}
-                        </div>
-                        {routingAnalysis.suggestedDomain && (
-                          <div style={{ marginTop: 6, fontSize: 10, color: "#C9A84C", fontFamily: "'JetBrains Mono', monospace" }}>
-                            Suggested: <strong>{routingAnalysis.suggestedDomain}</strong>{routingAnalysis.suggestedContext ? ` → ${routingAnalysis.suggestedContext}` : ""}
-                          </div>
-                        )}
                       </div>
                     </div>
                   )}

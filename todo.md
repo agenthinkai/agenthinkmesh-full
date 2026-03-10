@@ -231,3 +231,10 @@
 - [x] Fix External agent HTTP 429 error: show friendly rate-limit message instead of raw "Error: HTTP 429"
 - [x] Make external agent execution non-blocking (don't count toward task completion gate)
 - [x] Improve server-side routeTask to return structured error with retryAfter hint for 429
+
+## Session 7 — Auto Context Switch on Mismatch
+
+- [x] Auto-switch to the correct context when LLM detects domain mismatch
+- [x] Load the correct agents for the switched context before execution
+- [x] Show "Switched to X → Y based on your prompt" info banner
+- [x] Persist the auto-switched context in localStorage
