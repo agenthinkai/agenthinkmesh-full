@@ -134,8 +134,40 @@ export const appRouter = router({
         taskText: z.string().min(1),
         contextLabel: z.string(),
         vaultText: z.string().optional().default(""),
+        activeDocId: z.number().optional(), // server-side fallback: fetch text directly from DB
       }))
-      .mutation(async ({ input }) => {
+      .mutation(async ({ ctx, input }) => {
+        // Resolve vault text: prefer client-provided text, fall back to DB lookup
+        let resolvedVaultText = input.vaultText || "";
+        if (!resolvedVaultText && input.activeDocId) {
+          const db = await getDb();
+          if (db) {
+            const [doc] = await db
+              .select({ extractedText: vaultDocuments.extractedText })
+              .from(vaultDocuments)
+              .where(eq(vaultDocuments.id, input.activeDocId))
+              .limit(1);
+            if (doc?.extractedText) resolvedVaultText = doc.extractedText;
+          }
+        }
+        // Also auto-inject the most recently activated vault doc if nothing was passed
+        if (!resolvedVaultText) {
+          const db = await getDb();
+          if (db) {
+            const [latestDoc] = await db
+              .select({ extractedText: vaultDocuments.extractedText, filename: vaultDocuments.filename })
+              .from(vaultDocuments)
+              .where(eq(vaultDocuments.userId, ctx.user.id))
+              .orderBy(desc(vaultDocuments.createdAt))
+              .limit(1);
+            // Only auto-inject if the doc has real extracted text (not a placeholder)
+            if (latestDoc?.extractedText && !latestDoc.extractedText.startsWith("[")) {
+              resolvedVaultText = latestDoc.extractedText;
+            }
+          }
+        }
+        console.log(`[runAgentTask] agent=${input.agentLabel} vaultTextLen=${resolvedVaultText.length} activeDocId=${input.activeDocId}`);
+
         const systemPrompt = [
           input.systemPromptBase,
           `You are the ${input.agentLabel}. Analyse the following task and respond with exactly this structure:`,
@@ -143,7 +175,7 @@ export const appRouter = router({
           "KEY FINDINGS: 3-5 bullet points.",
           "FLAGS: any risks or issues (or 'None identified').",
           "NEXT ACTION: one recommended step.",
-          input.vaultText ? `\n\n=== DOCUMENT CONTEXT (analyse this data to answer the task) ===\n${input.vaultText.slice(0, 10000)}\n=== END DOCUMENT CONTEXT ===` : "",
+          resolvedVaultText ? `\n\n=== DOCUMENT CONTEXT (analyse this data to answer the task) ===\n${resolvedVaultText.slice(0, 10000)}\n=== END DOCUMENT CONTEXT ===` : "",
         ].filter(Boolean).join("\n");
 
         const response = await invokeLLM({

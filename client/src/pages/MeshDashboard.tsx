@@ -129,12 +129,13 @@ function ContextSwitcher({ current, onSwitch, onClose }: {
 }
 
 // ─── AgentCard ────────────────────────────────────────────────────────────────
-function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText, delay, onDone }: {
+function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText, activeDocId, delay, onDone }: {
   agent: AgentNode;
   taskText: string;
   contextLabel: string;
   systemPromptBase: string;
   vaultText: string;
+  activeDocId?: number | null;
   delay: number;
   onDone: (label: string, text: string) => void;
 }) {
@@ -145,6 +146,10 @@ function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText,
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const color = agent.spawned ? "#C9A84C" : "#7BA3D4";
   const runAgentTask = trpc.mesh.runAgentTask.useMutation();
+  // Use a ref so the async effect always reads the LATEST vaultText value,
+  // even though the effect runs with an empty dependency array.
+  const vaultTextRef = useRef(vaultText);
+  useEffect(() => { vaultTextRef.current = vaultText; }, [vaultText]);
 
   useEffect(() => {
     const timeout = setTimeout(async () => {
@@ -158,7 +163,8 @@ function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText,
           systemPromptBase,
           taskText,
           contextLabel,
-          vaultText: vaultText || "",
+          vaultText: vaultTextRef.current || "",
+          activeDocId: activeDocId ?? undefined,
         });
         clearInterval(timerRef.current!);
         // Typewriter effect for the result
@@ -216,11 +222,12 @@ function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText,
   );
 }
 // ─── OutputPanel ────────────────────────────────────────────────────────────────
-function OutputPanel({ agents, taskText, ctx, vaultText, onBack, onDone }: {
+function OutputPanel({ agents, taskText, ctx, vaultText, activeDocId, onBack, onDone }: {
   agents: AgentNode[];
   taskText: string;
   ctx: MeshContext;
   vaultText: string;
+  activeDocId?: number | null;
   onBack: () => void;
   onDone: (outputs: OutputMap) => void;
 }) {
@@ -303,6 +310,7 @@ function OutputPanel({ agents, taskText, ctx, vaultText, onBack, onDone }: {
           contextLabel={ctx.label}
           systemPromptBase={ctx.systemPromptBase}
           vaultText={vaultText}
+          activeDocId={activeDocId}
           delay={i * 400}
           onDone={handleDone}
         />
@@ -906,6 +914,7 @@ export default function MeshDashboard() {
               taskText={task}
               ctx={ctx}
               vaultText={vaultText}
+              activeDocId={activeVaultDocId}
               onBack={() => setShowOutput(false)}
               onDone={handleOutputDone}
             />
