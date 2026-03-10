@@ -341,3 +341,7 @@
 - [x] Fix nav links overflowing on mobile (hamburger menu) — removed inline display:flex so CSS media query works
 - [x] Ensure proper z-index so navbar stays above all content (zIndex: 100)
 - [x] Fix hero task input bar overflow on mobile (already handled by landing-nav-inner class)
+
+## Session 20 — Mobile Upload Button
+- [x] Add visible upload/attach button inside Task Command Center on mobile
+- [x] Tapping it opens the Document Vault bottom sheet (same as the ⚡ FAB)

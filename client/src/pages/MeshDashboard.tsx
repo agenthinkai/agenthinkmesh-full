@@ -1591,10 +1591,29 @@ export default function MeshDashboard() {
                       onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) run(); }}
                       placeholder={ctx ? `e.g. ${ctx.quickTasks[0]}…` : "Describe your task — e.g. Screen a Series A deal, Review an employment contract…"}
                       rows={4}
-                      style={{ width: "100%", border: "none", outline: "none", resize: "none", fontSize: 14, color: "#E8ECF2", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.7, background: "transparent" }}
+                      style={{ width: "100%", border: "none", outline: "none", resize: "none", fontSize: 14, color: "#E8ECF2", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.7, background: "transparent", boxSizing: "border-box" }}
                     />
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 12, borderTop: "1px solid #152542" }}>
-                      <div style={{ fontSize: 10, color: "#4A5568", fontFamily: "'JetBrains Mono', monospace" }}>⌘ + Enter to execute</div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 12, borderTop: "1px solid #152542", gap: 8, flexWrap: "wrap" }}>
+                      {/* Left side: keyboard hint on desktop, attach button on mobile */}
+                      {isMobile ? (
+                        <button
+                          onClick={() => setMobileAgentPanelOpen(true)}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 6,
+                            background: vaultText ? "rgba(74,222,128,0.1)" : "rgba(123,163,212,0.08)",
+                            border: vaultText ? "1px solid rgba(74,222,128,0.3)" : "1px solid #1C3057",
+                            borderRadius: 8, padding: "8px 12px", cursor: "pointer",
+                            fontSize: 12, color: vaultText ? "#4ADE80" : "#8494AA",
+                            fontFamily: "'JetBrains Mono', monospace", fontWeight: 600,
+                          }}
+                          aria-label="Upload document"
+                        >
+                          <span style={{ fontSize: 14 }}>{vaultText ? "📎" : "📎"}</span>
+                          {vaultText ? "Doc attached" : "Attach doc"}
+                        </button>
+                      ) : (
+                        <div style={{ fontSize: 10, color: "#4A5568", fontFamily: "'JetBrains Mono', monospace" }}>⌘ + Enter to execute</div>
+                      )}
                       <button
                         onClick={run}
                         disabled={!task.trim() || isRouting}
@@ -1606,6 +1625,7 @@ export default function MeshDashboard() {
                           cursor: (task.trim() && !isRouting) ? "pointer" : "not-allowed",
                           fontSize: 13, fontFamily: "'Inter', sans-serif", fontWeight: 800,
                           transition: "all 0.15s", letterSpacing: "-0.01em",
+                          flexShrink: 0,
                         }}
                       >
                         {isRouting ? "⟳ Routing…" : "▶ Execute via Mesh"}
