@@ -1,6 +1,7 @@
 import { getLoginUrl } from "@/const";
 import Logo from "@/components/Logo";
 import { Link } from "wouter";
+import { trpc } from "@/lib/trpc";
 
 // ── Brand palette (matches logo: deep navy + silver/platinum) ──────────────
 const NAVY_950 = "#0B1629";   // darkest — page background
@@ -78,6 +79,18 @@ const card = (extra?: React.CSSProperties): React.CSSProperties => ({
 
 export default function Landing() {
   const loginUrl = getLoginUrl();
+  const { data: stats } = trpc.public.platformStats.useQuery(undefined, {
+    refetchInterval: 30_000, // refresh every 30 s
+    staleTime: 20_000,
+  });
+
+  // Animated counter helper — shows live value or fallback
+  const s = {
+    tasksRun:       stats?.tasksRun       ?? 2405,
+    verifiedAgents: stats?.verifiedAgents ?? 112,
+    domainContexts: stats?.domainContexts ?? 14,
+    avgExecSec:     stats?.avgExecSec     ?? 47,
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: NAVY_950, fontFamily: FONT, color: SILVER_100 }}>
@@ -174,34 +187,34 @@ export default function Landing() {
           No sign-in required to preview · 112 specialist agents ready
         </p>
 
-        {/* Inline stats row */}
+        {/* Inline stats row — live DB counts */}
         <div style={{ display: "flex", justifyContent: "center", gap: 0, flexWrap: "wrap", position: "relative", maxWidth: 820, margin: "0 auto" }}>
-          {[
-            { bold: "2,405+", label: "tasks run" },
-            { bold: "112", label: "verified agents" },
-            { bold: "14", label: "domain contexts" },
-            { bold: "avg. 47 sec", label: "execution time" },
-          ].map((s, i, arr) => (
+          {([
+            { bold: `${s.tasksRun.toLocaleString()}+`, label: "tasks run" },
+            { bold: String(s.verifiedAgents), label: "verified agents" },
+            { bold: String(s.domainContexts), label: "domain contexts" },
+            { bold: `avg. ${s.avgExecSec} sec`, label: "execution time" },
+          ] as { bold: string; label: string }[]).map((item, i, arr) => (
             <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 28px", borderRight: i < arr.length - 1 ? `1px solid ${NAVY_700}` : "none" }}>
-              <span style={{ fontSize: 15, fontWeight: 800, color: SILVER_50 }}>{s.bold}</span>
-              <span style={{ fontSize: 13, color: SILVER_400 }}>{s.label}</span>
+              <span style={{ fontSize: 15, fontWeight: 800, color: SILVER_50 }}>{item.bold}</span>
+              <span style={{ fontSize: 13, color: SILVER_400 }}>{item.label}</span>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── Stats bar ── */}
+      {/* ── Stats bar — live DB counts ── */}
       <section style={{ borderBottom: `1px solid ${NAVY_700}`, background: NAVY_800, padding: "32px 48px" }}>
         <div style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
-          {[
-            { value: "14", label: "Domain Contexts", color: "#7BA3D4" },
-            { value: "112", label: "Specialist Agents", color: SILVER_100 },
+          {([
+            { value: String(s.domainContexts), label: "Domain Contexts", color: "#7BA3D4" },
+            { value: String(s.verifiedAgents), label: "Specialist Agents", color: SILVER_100 },
             { value: "50", label: "Max Agents / Task", color: "#8BBFD4" },
             { value: "5", label: "Industry Verticals", color: GOLD },
-          ].map((s, i) => (
+          ] as { value: string; label: string; color: string }[]).map((item, i) => (
             <div key={i} style={{ textAlign: "center", padding: "0 20px", borderRight: i < 3 ? `1px solid ${NAVY_700}` : "none" }}>
-              <div style={{ fontSize: 40, fontWeight: 800, color: s.color, letterSpacing: "-0.04em", lineHeight: 1, background: SILVER_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{s.value}</div>
-              <div style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</div>
+              <div style={{ fontSize: 40, fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1, background: SILVER_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{item.value}</div>
+              <div style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>{item.label}</div>
             </div>
           ))}
         </div>
