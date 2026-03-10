@@ -241,11 +241,13 @@ export default function Landing() {
         background: `${NAVY_900}F0`, backdropFilter: "blur(16px)",
         borderBottom: `1px solid ${NAVY_700}`,
       }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", height: 64, maxWidth: 1200, margin: "0 auto" }}>
-          <Logo size={32} />
+        <div className="landing-nav-inner">
+          <div className="landing-logo-wrap">
+            <Logo size={32} />
+          </div>
 
           {/* Desktop nav links */}
-          <div className="landing-nav-links" style={{ display: "flex", alignItems: "center", gap: 20 }}>
+          <div className="landing-nav-links" style={{ alignItems: "center", gap: 20 }}>
             {[["#features", "Features"], ["#domains", "Domains"], ["#how-it-works", "How it works"], ["#contact", "Contact"]].map(([href, label]) => (
               <a key={href} href={href} style={{ fontSize: 13, color: SILVER_300, textDecoration: "none", fontWeight: 500, transition: "color 0.2s", whiteSpace: "nowrap" }}
                 onMouseEnter={e => (e.currentTarget.style.color = SILVER_50)}

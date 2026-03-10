@@ -30,6 +30,8 @@ export default function Logo({ size = 36, wordmark = true, className }: LogoProp
         alignItems: "center",
         gap: 8,
         userSelect: "none",
+        minWidth: 0,
+        overflow: "hidden",
       }}
     >
       {/* Official AGENTHINK logo image */}
@@ -41,15 +43,18 @@ export default function Logo({ size = 36, wordmark = true, className }: LogoProp
         style={{
           height: imgHeight,
           width: "auto",
+          maxWidth: "100%",
           objectFit: "contain",
           borderRadius: 6,
           display: "block",
+          flexShrink: 0,
         }}
       />
 
-      {/* MESH badge */}
+      {/* MESH badge — hidden on mobile via .mesh-badge CSS class */}
       {wordmark && (
         <span
+          className="mesh-badge"
           style={{
             fontSize: Math.max(9, Math.round(imgHeight * 0.3)),
             fontWeight: 700,
@@ -62,6 +67,7 @@ export default function Logo({ size = 36, wordmark = true, className }: LogoProp
             border: "1px solid oklch(0.87 0.006 255 / 35%)",
             borderRadius: 4,
             lineHeight: 1.4,
+            flexShrink: 0,
           }}
         >
           MESH

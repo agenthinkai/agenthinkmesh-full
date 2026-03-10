@@ -327,6 +327,25 @@
 /* Desktop nav links: visible on desktop, hidden on mobile */
 .landing-nav-links { display: flex; }
 
+/* Navbar inner wrapper: ensure logo + hamburger are always visible */
+.landing-nav-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  height: 64px;
+  max-width: 1200px;
+  margin: 0 auto;
+  min-width: 0;
+}
+
+/* Logo wrapper: prevent overflow */
+.landing-logo-wrap {
+  flex-shrink: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
 /* Mobile dropdown: always rendered via React state, no extra CSS needed */
 
 /* 3-column grid → 1 column on mobile */
@@ -387,6 +406,15 @@
   gap: 14px;
 }
 
+/* ── Tablet breakpoint (≤ 768px) ─────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .landing-nav-links { display: none !important; }
+  .landing-hamburger { display: block; }
+  .landing-nav-inner { padding: 0 16px; }
+  .landing-logo-wrap img { height: 26px !important; width: auto !important; }
+  .mesh-badge { display: none !important; }
+}
+
 /* ── Tablet breakpoint (≤ 900px) ─────────────────────────────────────────── */
 @media (max-width: 900px) {
   .landing-domains-grid {
@@ -408,8 +436,12 @@
 /* ── Mobile breakpoint (≤ 640px) ─────────────────────────────────────────── */
 @media (max-width: 640px) {
   /* Navbar */
-  .landing-nav-links { display: none; }
+  .landing-nav-links { display: none !important; }
   .landing-hamburger { display: block; }
+  .landing-nav-inner { padding: 0 16px; }
+  /* Shrink logo on mobile to avoid overflow */
+  .landing-logo-wrap img { height: 24px !important; width: auto !important; }
+  .landing-logo-wrap .mesh-badge { display: none; }
 
   /* Grids → single column */
   .landing-3col-grid {

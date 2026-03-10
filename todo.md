@@ -335,3 +335,9 @@
 - [x] Fix context switcher: sidebar becomes overlay on mobile, domain tabs intact
 - [x] Fix topbar: hamburger on mobile, compact padding, truncated context badge
 - [x] Verified: 0 TS errors, 46/46 tests pass, responsive breakpoints at 768px
+
+## Session 19 — Navbar Mobile Fix
+- [x] Fix logo overlap with MESH badge on mobile navbar
+- [x] Fix nav links overflowing on mobile (hamburger menu) — removed inline display:flex so CSS media query works
+- [x] Ensure proper z-index so navbar stays above all content (zIndex: 100)
+- [x] Fix hero task input bar overflow on mobile (already handled by landing-nav-inner class)
