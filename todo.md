@@ -299,3 +299,13 @@
 - [x] Switch contact form to use activated farouq@agenthink.ai FormSubmit account
 - [x] kishore@agenthink.ai added as CC recipient
 - [x] _captcha disabled, _template table for clean email formatting
+
+## Session 16 — Contact Form: Switch to Web3Forms (Browser-Side)
+
+- [x] Remove tRPC contact.submit call from ContactSection — FormSubmit.co was blocked by Cloudflare
+- [x] Implement browser-side fetch to https://api.web3forms.com/submit in Landing.tsx
+- [x] Store Web3Forms access key as VITE_WEB3FORMS_ACCESS_KEY env var (exposed to frontend)
+- [x] Form sends: access_key, subject, name, email, company, message, from_name
+- [x] Sending state replaces isPending for button disabled/label logic
+- [x] Vitest added: validates env var is set + confirms endpoint reachable (server-side 403 is expected by design)
+- [x] All 46 tests passing, 0 TypeScript errors

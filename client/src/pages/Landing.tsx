@@ -76,24 +76,42 @@ function ContactSection() {
   const [form, setForm] = useState({ name: "", email: "", company: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
 
-  const submitContact = trpc.contact.submit.useMutation({
-    onSuccess: () => {
-      setSubmitted(true);
-      setForm({ name: "", email: "", company: "", message: "" });
-      toast.success("Message sent! We'll be in touch shortly.");
-    },
-    onError: (err) => {
-      toast.error(err.message || "Failed to send message. Please try again.");
-    },
-  });
+  const [sending, setSending] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
       toast.error("Please fill in all required fields.");
       return;
     }
-    submitContact.mutate(form);
+    setSending(true);
+    try {
+      const res = await fetch("https://api.web3forms.com/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({
+          access_key: import.meta.env.VITE_WEB3FORMS_ACCESS_KEY,
+          subject: `New Contact from AgenThinkMesh: ${form.name}`,
+          name: form.name,
+          email: form.email,
+          company: form.company || "Not provided",
+          message: form.message,
+          from_name: "AgenThinkMesh Contact Form",
+        }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSubmitted(true);
+        setForm({ name: "", email: "", company: "", message: "" });
+        toast.success("Message sent! We'll be in touch shortly.");
+      } else {
+        throw new Error(data.message || "Submission failed");
+      }
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to send message. Please try again.");
+    } finally {
+      setSending(false);
+    }
   };
 
   const inputStyle: React.CSSProperties = {
@@ -170,17 +188,17 @@ function ContactSection() {
               </div>
               <button
                 type="submit"
-                disabled={submitContact.isPending}
+                disabled={sending}
                 style={{
                   padding: "14px 32px",
-                  background: submitContact.isPending ? "#1C3057" : "linear-gradient(135deg, #7BA3D4 0%, #5B8EC4 100%)",
-                  color: submitContact.isPending ? "#637080" : "#0B1629",
-                  borderRadius: 10, fontSize: 14, fontWeight: 700, border: "none", cursor: submitContact.isPending ? "not-allowed" : "pointer",
-                  boxShadow: submitContact.isPending ? "none" : "0 2px 16px rgba(123,163,212,0.3)",
+                  background: sending ? "#1C3057" : "linear-gradient(135deg, #7BA3D4 0%, #5B8EC4 100%)",
+                  color: sending ? "#637080" : "#0B1629",
+                  borderRadius: 10, fontSize: 14, fontWeight: 700, border: "none", cursor: sending ? "not-allowed" : "pointer",
+                  boxShadow: sending ? "none" : "0 2px 16px rgba(123,163,212,0.3)",
                   transition: "all 0.2s",
                 }}
               >
-                {submitContact.isPending ? "Sending..." : "Send Message →"}
+                {sending ? "Sending..." : "Send Message →"}
               </button>
               <p style={{ fontSize: 11, color: "#637080", fontFamily: "'JetBrains Mono', monospace", textAlign: "center" as const }}>We typically respond within 24 hours.</p>
             </form>
