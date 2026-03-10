@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getLoginUrl } from "@/const";
 import Logo from "@/components/Logo";
 import { Link } from "wouter";
@@ -208,6 +208,193 @@ function ContactSection() {
   );
 }
 
+// ── Neon Hero Component (VarD) ──────────────────────────────────────────────
+const NEON_COLORS = [
+  { color: "#00D4FF", glow: "rgba(0,212,255,", border: "rgba(0,212,255,0.18)", shadow: "rgba(0,212,255,0.06)", bar: "linear-gradient(90deg,#00D4FF,#008AB8)" },
+  { color: "#0080FF", glow: "rgba(0,128,255,", border: "rgba(0,128,255,0.18)", shadow: "rgba(0,128,255,0.06)", bar: "linear-gradient(90deg,#0080FF,#0050B0)" },
+  { color: "#40B8FF", glow: "rgba(64,184,255,", border: "rgba(64,184,255,0.18)", shadow: "rgba(64,184,255,0.06)", bar: "linear-gradient(90deg,#40B8FF,#2080C0)" },
+  { color: "#4060FF", glow: "rgba(64,96,255,",  border: "rgba(64,96,255,0.18)",  shadow: "rgba(64,96,255,0.06)",  bar: "linear-gradient(90deg,#4060FF,#2030C0)" },
+];
+
+const AGENT_CARDS = [
+  { name: "Deal Screener", domain: "Finance · Active" },
+  { name: "Legal Reviewer", domain: "Legal · Standby" },
+  { name: "Healthcare AI",  domain: "Healthcare · Ready" },
+  { name: "GCC Wealth",     domain: "Wealth · Active" },
+];
+
+function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: number; verifiedAgents: number; domainContexts: number; avgExecSec: number } }) {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const animRef   = useRef<number>(0);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const dpr = window.devicePixelRatio || 1;
+    const resize = () => {
+      canvas.width  = window.innerWidth  * dpr;
+      canvas.height = window.innerHeight * dpr;
+      ctx.scale(dpr, dpr);
+    };
+    resize();
+    window.addEventListener("resize", resize);
+
+    const W = () => window.innerWidth;
+    const H = () => window.innerHeight;
+
+    const neonList = [
+      { color: "#00D4FF", glow: "rgba(0,212,255," },
+      { color: "#0080FF", glow: "rgba(0,128,255," },
+      { color: "#40B8FF", glow: "rgba(64,184,255," },
+      { color: "#4060FF", glow: "rgba(64,96,255," },
+    ];
+
+    const nodes = Array.from({ length: 65 }, () => {
+      const n = neonList[Math.floor(Math.random() * neonList.length)];
+      return {
+        x: Math.random() * W(), y: Math.random() * H(),
+        vx: (Math.random() - 0.5) * 0.38, vy: (Math.random() - 0.5) * 0.38,
+        r: Math.random() * 2.2 + 0.9,
+        color: n.color, glow: n.glow,
+        pulse: Math.random() * Math.PI * 2,
+        isHub: Math.random() < 0.1,
+      };
+    });
+
+    const draw = () => {
+      ctx.clearRect(0, 0, W(), H());
+      nodes.forEach(n => {
+        n.x += n.vx; n.y += n.vy; n.pulse += 0.017;
+        if (n.x < 0 || n.x > W()) n.vx *= -1;
+        if (n.y < 0 || n.y > H()) n.vy *= -1;
+      });
+      // Connections
+      for (let i = 0; i < nodes.length; i++) {
+        for (let j = i + 1; j < nodes.length; j++) {
+          const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y;
+          const d = Math.sqrt(dx * dx + dy * dy);
+          if (d < 155) {
+            const a = (1 - d / 155) * 0.22;
+            const grad = ctx.createLinearGradient(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y);
+            grad.addColorStop(0, nodes[i].glow + (a * 1.5).toFixed(2) + ")");
+            grad.addColorStop(1, nodes[j].glow + (a * 1.5).toFixed(2) + ")");
+            ctx.beginPath();
+            ctx.moveTo(nodes[i].x, nodes[i].y);
+            ctx.lineTo(nodes[j].x, nodes[j].y);
+            ctx.strokeStyle = grad;
+            ctx.lineWidth = 0.75;
+            ctx.stroke();
+          }
+        }
+      }
+      // Nodes
+      nodes.forEach(n => {
+        const p = Math.sin(n.pulse) * 0.5 + 0.5;
+        const r = n.isHub ? n.r * 2.2 : n.r;
+        const glowR = r * (n.isHub ? 8 : 5);
+        const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
+        g.addColorStop(0, n.glow + (n.isHub ? "0.55" : "0.38") + ")");
+        g.addColorStop(0.4, n.glow + "0.12)");
+        g.addColorStop(1, "transparent");
+        ctx.beginPath(); ctx.arc(n.x, n.y, glowR, 0, Math.PI * 2);
+        ctx.fillStyle = g; ctx.fill();
+        ctx.beginPath(); ctx.arc(n.x, n.y, r + p * 0.8, 0, Math.PI * 2);
+        ctx.fillStyle = n.color; ctx.fill();
+        if (n.isHub) {
+          ctx.beginPath(); ctx.arc(n.x, n.y, r * 2.5, 0, Math.PI * 2);
+          ctx.strokeStyle = n.glow + "0.3)";
+          ctx.lineWidth = 0.8; ctx.stroke();
+        }
+      });
+      animRef.current = requestAnimationFrame(draw);
+    };
+    draw();
+    return () => {
+      cancelAnimationFrame(animRef.current);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+
+  return (
+    <section style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "100px 24px 80px", overflow: "hidden", background: "#060F1C" }}>
+      {/* Neural canvas */}
+      <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 0 }} />
+      {/* Vignette */}
+      <div style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none", background: "radial-gradient(ellipse 65% 55% at 50% 50%, transparent 15%, rgba(6,15,28,0.55) 65%, rgba(6,15,28,0.92) 100%)" }} />
+
+      {/* Content */}
+      <div style={{ position: "relative", zIndex: 2, width: "100%", maxWidth: 840 }}>
+        {/* Live badge */}
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 16px", borderRadius: 999, background: "rgba(6,15,28,0.75)", backdropFilter: "blur(16px)", border: "1px solid rgba(0,212,255,0.18)", fontFamily: MONO, fontSize: 11, color: "#3A5A7A", letterSpacing: "0.06em", marginBottom: 32 }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#00D4FF", boxShadow: "0 0 10px #00D4FF", display: "inline-block", animation: "neonPulse 2s ease-in-out infinite" }} />
+          <span style={{ color: "#00D4FF", fontWeight: 700 }}>{stats.verifiedAgents}</span> verified specialist agents · Live
+        </div>
+
+        {/* Headline */}
+        <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(52px, 8vw, 96px)", fontWeight: 900, lineHeight: 1.0, letterSpacing: "-0.02em", color: "#F0F4FA", marginBottom: 24 }}>
+          The{" "}
+          <span style={{ background: "linear-gradient(135deg, #00D4FF 0%, #40B8FF 40%, #0080FF 75%, #4060FF 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", filter: "drop-shadow(0 0 40px rgba(0,212,255,0.55))" }}>Google</span>
+          <br />of AI Agents
+        </h1>
+
+        {/* Subtext */}
+        <p style={{ fontSize: 17, color: "#3A5A7A", maxWidth: 580, lineHeight: 1.75, margin: "0 auto 44px" }}>
+          Describe any complex business task. <strong style={{ color: "#5A9ABF" }}>AgenThinkMesh</strong> activates the right specialist agents across Finance, Legal, Healthcare, and GCC Wealth — delivering institutional-grade results in seconds.
+        </p>
+
+        {/* Search bar */}
+        <div style={{ maxWidth: 660, margin: "0 auto 14px" }}>
+          <div style={{ display: "flex", alignItems: "center", background: "rgba(6,15,28,0.85)", backdropFilter: "blur(24px)", border: "1px solid rgba(0,212,255,0.16)", borderRadius: 14, padding: "6px 6px 6px 20px", boxShadow: "0 0 0 1px rgba(0,212,255,0.05), 0 20px 60px rgba(0,0,0,0.5)" }}>
+            <span style={{ color: "#1E3A5A", fontSize: 15, marginRight: 12, flexShrink: 0 }}>⊙</span>
+            <input readOnly value="" placeholder="Describe a task — e.g. Screen 5 deals against our VC thesis"
+              style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 14, color: "#A0C8E8", fontFamily: FONT, minWidth: 0 }}
+              onClick={() => { window.location.href = loginUrl; }}
+            />
+            <a href={loginUrl} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "linear-gradient(135deg, #00D4FF 0%, #0080FF 100%)", color: "#060F1C", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 13, fontWeight: 900, textDecoration: "none", whiteSpace: "nowrap", boxShadow: "0 4px 20px rgba(0,212,255,0.4)", flexShrink: 0 }}>⚡ Activate mesh</a>
+          </div>
+        </div>
+        <p style={{ fontFamily: MONO, fontSize: 11, color: "#1E3A5A", marginBottom: 52 }}>No sign-in required to preview · {stats.verifiedAgents} specialist agents ready</p>
+
+        {/* Agent cards row */}
+        <div className="landing-agent-row">
+          {AGENT_CARDS.map((ac, i) => (
+            <div key={i} className="landing-agent-card" style={{ border: `1px solid ${NEON_COLORS[i].border}`, boxShadow: `0 4px 24px rgba(0,0,0,0.45), 0 0 20px ${NEON_COLORS[i].shadow}` }}>
+              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${NEON_COLORS[i].color}99, transparent)` }} />
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                <span style={{ width: 7, height: 7, borderRadius: "50%", background: NEON_COLORS[i].color, boxShadow: `0 0 8px ${NEON_COLORS[i].color}`, display: "inline-block", flexShrink: 0 }} />
+                <span style={{ fontSize: 12, fontWeight: 700, color: "#C0D8EE" }}>{ac.name}</span>
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: "#1E3A5A", marginBottom: 10 }}>{ac.domain}</div>
+              <div style={{ height: 3, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                <div className={`neon-bar-${i}`} style={{ height: "100%", borderRadius: 2, background: NEON_COLORS[i].bar, width: "60%", animation: `barFill${i} 3s ease-in-out ${i * 0.75}s infinite alternate` }} />
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Stats row */}
+        <div className="landing-neon-stats">
+          {[
+            { num: `${stats.tasksRun.toLocaleString()}+`, label: "Tasks Run",       neon: "#00D4FF" },
+            { num: String(stats.verifiedAgents),          label: "Verified Agents", neon: "#40B8FF" },
+            { num: String(stats.domainContexts),          label: "Domain Contexts", neon: "#0080FF" },
+            { num: `avg. ${stats.avgExecSec}s`,           label: "Exec Time",       neon: "#4060FF" },
+          ].map((item, i) => (
+            <div key={i} className="landing-neon-stat-cell" style={{ borderRight: i < 3 ? "1px solid rgba(0,212,255,0.07)" : "none" }}>
+              <div style={{ position: "absolute", top: 0, left: "20%", right: "20%", height: 1, background: `linear-gradient(90deg, transparent, ${item.neon}66, transparent)` }} />
+              <div style={{ fontSize: 24, fontWeight: 900, color: item.neon, letterSpacing: "-0.04em", textShadow: `0 0 16px ${item.neon}80` }}>{item.num}</div>
+              <div style={{ fontSize: 10, color: "#1E3A5A", marginTop: 5, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase" }}>{item.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // Shared card style
 const card = (extra?: React.CSSProperties): React.CSSProperties => ({
   background: NAVY_800,
@@ -299,74 +486,8 @@ export default function Landing() {
         )}
       </nav>
 
-      {/* ── Hero ── */}
-      <section style={{ padding: "80px 24px 64px", textAlign: "center", background: NAVY_900, borderBottom: `1px solid ${NAVY_700}`, position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(${NAVY_700} 1px, transparent 1px)`, backgroundSize: "32px 32px", opacity: 0.5, pointerEvents: "none" }} />
-        <div style={{ position: "absolute", top: -120, left: "50%", transform: "translateX(-50%)", width: 700, height: 350, background: "radial-gradient(ellipse, rgba(123,163,212,0.09) 0%, transparent 70%)", pointerEvents: "none" }} />
-
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", background: "transparent", border: `1px solid ${NAVY_600}`, borderRadius: 999, marginBottom: 36, position: "relative" }}>
-          <span style={{ fontSize: 13, color: SILVER_400 }}>☆</span>
-          <span style={{ fontSize: 12, color: SILVER_300, fontFamily: MONO }}>112 verified specialist agents · Live</span>
-        </div>
-
-        <h1 style={{ fontSize: "clamp(44px, 10vw, 108px)", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1.0, margin: "0 auto 24px", maxWidth: 860, position: "relative", color: SILVER_50 }}>
-          The{" "}
-          <span style={{ color: "#7BA3D4" }}>Google</span>
-          <br />
-          of AI Agents
-        </h1>
-
-        <p style={{ fontSize: "clamp(14px, 2.5vw, 18px)", color: SILVER_300, maxWidth: 600, margin: "0 auto 36px", lineHeight: 1.75, position: "relative", padding: "0 8px" }}>
-          Describe any complex business task. AgenThinkMesh activates the right
-          specialist agents across Finance, Legal, Healthcare, and GCC Wealth —
-          delivering institutional-grade results in seconds.
-        </p>
-
-        {/* Task input bar — responsive */}
-        <div className="landing-hero-input" style={{ maxWidth: 680, margin: "0 auto 16px", position: "relative" }}>
-          <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.04)", border: `1px solid ${NAVY_600}`, borderRadius: 14, padding: "6px 6px 6px 16px", boxShadow: "0 4px 32px rgba(0,0,0,0.35)", flexWrap: "wrap", gap: 8 }}>
-            <span style={{ fontSize: 18, color: SILVER_400, flexShrink: 0 }}>⌕</span>
-            <input
-              readOnly
-              value=""
-              placeholder="Describe a task — e.g. Screen 5 deals against our VC thesis"
-              style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none", fontSize: 14, color: SILVER_300, fontFamily: FONT, caretColor: "#7BA3D4" }}
-              onClick={() => { window.location.href = loginUrl; }}
-            />
-            <a href={loginUrl} style={{
-              display: "inline-flex", alignItems: "center", gap: 6,
-              padding: "10px 20px",
-              background: "linear-gradient(135deg, #7BA3D4 0%, #5B8EC4 100%)",
-              color: "#0B1629",
-              borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none",
-              flexShrink: 0,
-              boxShadow: "0 2px 16px rgba(123,163,212,0.35)",
-              whiteSpace: "nowrap",
-            }}>
-              <span>⚡</span> Activate mesh
-            </a>
-          </div>
-        </div>
-
-        <p style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, marginBottom: 44, position: "relative" }}>
-          No sign-in required to preview · 112 specialist agents ready
-        </p>
-
-        {/* Inline stats row */}
-        <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 8, position: "relative", maxWidth: 820, margin: "0 auto" }}>
-          {([
-            { bold: `${s.tasksRun.toLocaleString()}+`, label: "tasks run" },
-            { bold: String(s.verifiedAgents), label: "verified agents" },
-            { bold: String(s.domainContexts), label: "domain contexts" },
-            { bold: `avg. ${s.avgExecSec} sec`, label: "execution time" },
-          ] as { bold: string; label: string }[]).map((item, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 16px", borderRight: "none" }}>
-              <span style={{ fontSize: 14, fontWeight: 800, color: SILVER_50 }}>{item.bold}</span>
-              <span style={{ fontSize: 12, color: SILVER_400 }}>{item.label}</span>
-            </div>
-          ))}
-        </div>
-      </section>
+      {/* ── Hero (VarD Neon) ── */}
+      <NeonHero loginUrl={loginUrl} stats={s} />
 
       {/* ── Stats bar ── */}
       <section style={{ borderBottom: `1px solid ${NAVY_700}`, background: NAVY_800, padding: "28px 24px" }}>
