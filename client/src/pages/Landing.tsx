@@ -134,10 +134,9 @@ export default function Landing() {
         {/* Main headline — "The AgenThink Mesh / of AI Agents" */}
         <h1 style={{ fontSize: "clamp(52px, 8vw, 108px)", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1.0, margin: "0 auto 28px", maxWidth: 860, position: "relative", color: SILVER_50 }}>
           The{" "}
-          <span style={{ color: "#7BA3D4" }}>AgenThink</span>
+          <span style={{ color: "#7BA3D4" }}>Google</span>
           <br />
-          <span style={{ color: "#7BA3D4" }}>Mesh</span>
-          {" "}of AI Agents
+          of AI Agents
         </h1>
 
         {/* Subtitle */}
