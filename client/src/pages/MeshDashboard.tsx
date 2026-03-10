@@ -635,6 +635,10 @@ export default function MeshDashboard() {
   const [isRouting, setIsRouting] = useState(false);
   // Auto-switch banner: shown when the system switches context based on prompt
   const [autoSwitchBanner, setAutoSwitchBanner] = useState<{ from: string; to: string; toContext: string } | null>(null);
+  // Agent discovery animation state
+  // idle → scanning (LLM call) → assembling (agents appear one-by-one) → executing
+  const [assemblyPhase, setAssemblyPhase] = useState<"idle" | "scanning" | "assembling" | "executing">("idle");
+  const [assembledAgents, setAssembledAgents] = useState<string[]>([]); // labels revealed so far
 
   const ctx = CONTEXTS[role];
 
@@ -726,6 +730,8 @@ export default function MeshDashboard() {
     setIsRouting(true);
     setRoutingAnalysis(null);
     setAutoSwitchBanner(null);
+    setAssemblyPhase("scanning");
+    setAssembledAgents([]);
 
     // Animate mesh nodes while routing
     const nodeIds = meshNodes.map(n => n.id);
@@ -774,7 +780,19 @@ export default function MeshDashboard() {
           const relevantSet = new Set(reAnalysis.relevantAgents);
           const filteredAgents = newAgentList.filter(a => relevantSet.has(a.label));
           setCurrentAgents(filteredAgents.length > 0 ? filteredAgents : [...newAgentList]);
-          setTimeout(() => { setShowOutput(true); setRoutedNodes([]); setIsRouting(false); }, 1200);
+          // Run assembly animation for the new agents
+          setAssemblyPhase("assembling");
+          const agentsToReveal = filteredAgents.length > 0 ? filteredAgents : newAgentList;
+          agentsToReveal.forEach((ag, i) => {
+            setTimeout(() => setAssembledAgents(prev => [...prev, ag.label]), i * 180);
+          });
+          const assemblyDuration = agentsToReveal.length * 180 + 600;
+          setTimeout(() => {
+            setAssemblyPhase("executing");
+            setShowOutput(true);
+            setRoutedNodes([]);
+            setIsRouting(false);
+          }, assemblyDuration);
           return;
         }
       }
@@ -783,10 +801,25 @@ export default function MeshDashboard() {
       setRoutingAnalysis(analysis);
       const relevantSet = new Set(analysis.relevantAgents);
       const filteredAgents = agentList.filter(a => relevantSet.has(a.label));
-      setCurrentAgents(filteredAgents.length > 0 ? filteredAgents : [...agentList]);
+      const agentsToRun = filteredAgents.length > 0 ? filteredAgents : [...agentList];
+      setCurrentAgents(agentsToRun);
+      // Run assembly animation
+      setAssemblyPhase("assembling");
+      agentsToRun.forEach((ag, i) => {
+        setTimeout(() => setAssembledAgents(prev => [...prev, ag.label]), i * 180);
+      });
+      const assemblyDuration = agentsToRun.length * 180 + 600;
+      setTimeout(() => {
+        setAssemblyPhase("executing");
+        setShowOutput(true);
+        setRoutedNodes([]);
+        setIsRouting(false);
+      }, assemblyDuration);
+      return;
     } catch {
       // On routing failure, run all agents
       setCurrentAgents([...agentList]);
+      setAssemblyPhase("idle");
     }
 
     setTimeout(() => { setShowOutput(true); setRoutedNodes([]); setIsRouting(false); }, 1200);
@@ -1045,6 +1078,83 @@ export default function MeshDashboard() {
                 {/* Metrics row — inline 4-col grid above task box */}
                 <CenterMetrics />
 
+                {/* ── Agent Discovery Overlay ── shown during scanning + assembling phases */}
+                {(assemblyPhase === "scanning" || assemblyPhase === "assembling") && (
+                  <div style={{
+                    background: "#0F1E38",
+                    border: `1px solid ${assemblyPhase === "assembling" ? "rgba(123,163,212,0.4)" : "rgba(123,163,212,0.2)"}`,
+                    borderRadius: 16,
+                    padding: "24px 28px",
+                    boxShadow: "0 4px 24px rgba(0,0,0,0.3)",
+                    position: "relative",
+                    overflow: "hidden",
+                    animation: "slide-up-fade-in 0.4s ease-out",
+                  }}>
+                    {/* Radar rings */}
+                    <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%,-50%)", pointerEvents: "none" }}>
+                      {[0, 0.4, 0.8].map(delay => (
+                        <div key={delay} style={{
+                          position: "absolute",
+                          width: 120, height: 120,
+                          borderRadius: "50%",
+                          border: "1px solid rgba(123,163,212,0.25)",
+                          top: "50%", left: "50%",
+                          transform: "translate(-50%,-50%)",
+                          animation: "radar-sweep 2s ease-out infinite",
+                          animationDelay: `${delay}s`,
+                        }} />
+                      ))}
+                    </div>
+                    {/* Content */}
+                    <div style={{ position: "relative", zIndex: 1 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+                        <span style={{
+                          width: 10, height: 10, borderRadius: "50%",
+                          background: assemblyPhase === "scanning" ? "#7BA3D4" : "#4ADE80",
+                          display: "inline-block",
+                          animation: assemblyPhase === "scanning" ? "pulse 0.8s ease-in-out infinite" : "none",
+                          boxShadow: assemblyPhase === "scanning" ? "0 0 0 3px rgba(123,163,212,0.2)" : "0 0 0 3px rgba(74,222,128,0.2)",
+                        }} />
+                        <span style={{ fontSize: 13, fontWeight: 700, color: assemblyPhase === "scanning" ? "#7BA3D4" : "#4ADE80", fontFamily: "'Inter', sans-serif" }}>
+                          {assemblyPhase === "scanning" ? "Analysing prompt…" : `Assembling ${assembledAgents.length} of ${currentAgents.length} agents`}
+                        </span>
+                      </div>
+                      {/* Assembling: show agent names as they appear */}
+                      {assemblyPhase === "assembling" && assembledAgents.length > 0 && (
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {assembledAgents.map((label, i) => (
+                            <span key={label} style={{
+                              fontSize: 10, padding: "3px 10px", borderRadius: 999,
+                              background: "rgba(123,163,212,0.1)",
+                              border: "1px solid rgba(123,163,212,0.3)",
+                              color: "#7BA3D4",
+                              fontFamily: "'JetBrains Mono', monospace",
+                              animation: "agent-card-in 0.3s cubic-bezier(0.22,1,0.36,1) both",
+                              animationDelay: `${i * 0.05}s`,
+                            }}>
+                              ⚡ {label}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {/* Scanning: shimmer lines */}
+                      {assemblyPhase === "scanning" && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {["100%", "75%", "88%", "60%"].map((w, i) => (
+                            <div key={i} style={{
+                              height: 8, width: w, borderRadius: 4,
+                              background: "linear-gradient(90deg, rgba(28,48,87,0.8) 0%, rgba(123,163,212,0.18) 50%, rgba(28,48,87,0.8) 100%)",
+                              backgroundSize: "200% 100%",
+                              animation: "shimmer 1.2s ease-in-out infinite",
+                              animationDelay: `${i * 0.2}s`,
+                            }} />
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {/* Task Command Center */}
                 <div style={{ background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.3)" }}>
                   <div style={{ padding: "14px 18px 10px", borderBottom: "1px solid #152542", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -1158,40 +1268,90 @@ export default function MeshDashboard() {
               <div style={{ borderLeft: "1px solid #1C3057", background: "#0A1628", overflowY: "auto", display: "flex", flexDirection: "column", paddingTop: 14 }}>
 
                 {/* ── Agents card ── */}
-                <div style={{ margin: "0 14px 12px", background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, overflow: "hidden" }}>
+                <div style={{ margin: "0 14px 12px", background: "#0F1E38", border: `1px solid ${assemblyPhase === "assembling" ? "rgba(123,163,212,0.5)" : "#1C3057"}`, borderRadius: 12, overflow: "hidden", transition: "border-color 0.4s", boxShadow: assemblyPhase === "assembling" ? "0 0 18px rgba(123,163,212,0.12)" : "none" }}>
                   {/* Card header */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: "1px solid #152542" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E", display: "inline-block", boxShadow: "0 0 0 2px rgba(34,197,94,0.2)" }} />
+                      {/* Status dot: green=idle/executing, blue-pulse=scanning/assembling */}
+                      <span style={{
+                        width: 7, height: 7, borderRadius: "50%",
+                        background: assemblyPhase === "scanning" || assemblyPhase === "assembling" ? "#7BA3D4" : "#22C55E",
+                        display: "inline-block",
+                        boxShadow: assemblyPhase === "scanning" || assemblyPhase === "assembling" ? "0 0 0 2px rgba(123,163,212,0.25)" : "0 0 0 2px rgba(34,197,94,0.2)",
+                        animation: assemblyPhase === "scanning" ? "pulse 0.9s ease-in-out infinite" : "none",
+                      }} />
                       <span style={{ fontSize: 11, fontWeight: 700, color: "#E8ECF2" }}>Agents</span>
                     </div>
-                    <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 999, background: "rgba(123,163,212,0.1)", color: "#7BA3D4", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>{agentList.length} ready</span>
+                    {/* Header badge: changes per phase */}
+                    {assemblyPhase === "scanning" && (
+                      <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 999, background: "rgba(123,163,212,0.1)", color: "#7BA3D4", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, animation: "pulse 1.2s ease-in-out infinite" }}>Scanning…</span>
+                    )}
+                    {assemblyPhase === "assembling" && (
+                      <span key={assembledAgents.length} style={{ fontSize: 9, padding: "2px 8px", borderRadius: 999, background: "rgba(74,222,128,0.1)", color: "#4ADE80", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, animation: "counter-tick 0.25s ease-out" }}>
+                        {assembledAgents.length} / {currentAgents.length > 0 ? currentAgents.length : agentList.length} assembled
+                      </span>
+                    )}
+                    {(assemblyPhase === "idle" || assemblyPhase === "executing") && (
+                      <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 999, background: "rgba(123,163,212,0.1)", color: "#7BA3D4", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>{agentList.length} ready</span>
+                    )}
                   </div>
-                  {/* Agent rows */}
-                  <div style={{ padding: "8px 0", maxHeight: 220, overflowY: "auto" }}>
-                    {agentList.map((ag, idx) => {
-                      const isSkipped = routingAnalysis && routingAnalysis.irrelevantAgents.includes(ag.label);
-                      const isRouted = routingAnalysis && routingAnalysis.relevantAgents.includes(ag.label);
-                      return (
-                        <div key={ag.id} style={{
-                          display: "flex", alignItems: "center", padding: "7px 14px",
-                          background: ag.spawned ? "rgba(201,168,76,0.04)" : "transparent",
-                          borderBottom: idx < agentList.length - 1 ? "1px solid rgba(28,48,87,0.5)" : "none",
-                          opacity: isSkipped ? 0.4 : 1,
-                          transition: "opacity 0.3s",
-                        }}>
-                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: isSkipped ? "#4A5568" : ag.spawned ? "#C9A84C" : isRouted ? "#4ADE80" : ctx.color, display: "inline-block", flexShrink: 0, marginRight: 10 }} />
-                          <span style={{ flex: 1, fontSize: 12, color: isSkipped ? "#4A5568" : ag.spawned ? "#C9A84C" : "#A8B4C8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ag.label}</span>
-                          <span style={{
-                            fontSize: 9, padding: "2px 7px", borderRadius: 999, fontFamily: "'JetBrains Mono', monospace",
-                            background: isSkipped ? "rgba(74,85,104,0.1)" : isRouted ? "rgba(74,222,128,0.1)" : ag.spawned ? "rgba(201,168,76,0.12)" : "rgba(168,180,200,0.06)",
-                            color: isSkipped ? "#4A5568" : isRouted ? "#4ADE80" : ag.spawned ? "#C9A84C" : "#4A5568",
-                            border: isSkipped ? "1px solid rgba(74,85,104,0.3)" : isRouted ? "1px solid rgba(74,222,128,0.2)" : ag.spawned ? "1px solid rgba(201,168,76,0.2)" : "1px solid rgba(28,48,87,0.8)",
-                          }}>{isSkipped ? "skipped" : isRouted ? "✓ routed" : ag.spawned ? "⚡ active" : "standby"}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
+
+                  {/* Scanning phase: show shimmer placeholder rows */}
+                  {assemblyPhase === "scanning" && (
+                    <div style={{ padding: "10px 14px" }}>
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} style={{
+                          height: 28, borderRadius: 6, marginBottom: 6,
+                          background: "linear-gradient(90deg, rgba(28,48,87,0.6) 0%, rgba(123,163,212,0.12) 50%, rgba(28,48,87,0.6) 100%)",
+                          backgroundSize: "200% 100%",
+                          animation: `shimmer 1.4s ease-in-out infinite`,
+                          animationDelay: `${i * 0.15}s`,
+                          opacity: 1 - i * 0.12,
+                        }} />
+                      ))}
+                      <div style={{ fontSize: 9, color: "#4A5568", fontFamily: "'JetBrains Mono', monospace", textAlign: "center", paddingTop: 4 }}>Identifying relevant agents…</div>
+                    </div>
+                  )}
+
+                  {/* Assembling + executing: show actual agent rows with staggered animation */}
+                  {(assemblyPhase === "assembling" || assemblyPhase === "executing" || assemblyPhase === "idle") && (
+                    <div style={{ padding: "8px 0", maxHeight: 260, overflowY: "auto" }}>
+                      {agentList.map((ag, idx) => {
+                        const isSkipped = routingAnalysis && routingAnalysis.irrelevantAgents.includes(ag.label);
+                        const isRouted = routingAnalysis && routingAnalysis.relevantAgents.includes(ag.label);
+                        const isAssembled = assembledAgents.includes(ag.label);
+                        // During assembling: hide agents not yet revealed
+                        const isVisible = assemblyPhase === "idle" || assemblyPhase === "executing" || isAssembled;
+                        if (!isVisible) return null;
+                        const dotColor = isSkipped ? "#4A5568" : ag.spawned ? "#C9A84C" : isRouted ? "#4ADE80" : isAssembled && assemblyPhase === "assembling" ? "#7BA3D4" : ctx.color;
+                        return (
+                          <div key={ag.id} style={{
+                            display: "flex", alignItems: "center", padding: "7px 14px",
+                            background: ag.spawned ? "rgba(201,168,76,0.04)" : isAssembled && assemblyPhase === "assembling" ? "rgba(123,163,212,0.04)" : "transparent",
+                            borderBottom: idx < agentList.length - 1 ? "1px solid rgba(28,48,87,0.5)" : "none",
+                            opacity: isSkipped ? 0.35 : 1,
+                            animation: isAssembled && assemblyPhase === "assembling" ? "agent-card-in 0.35s cubic-bezier(0.22,1,0.36,1) both" : "none",
+                            transition: "opacity 0.4s, background 0.3s",
+                          }}>
+                            <span style={{
+                              width: 6, height: 6, borderRadius: "50%",
+                              background: dotColor,
+                              display: "inline-block", flexShrink: 0, marginRight: 10,
+                              animation: isAssembled && assemblyPhase === "assembling" ? "node-ripple 0.6s ease-out" : "none",
+                            }} />
+                            <span style={{ flex: 1, fontSize: 12, color: isSkipped ? "#4A5568" : ag.spawned ? "#C9A84C" : isAssembled && assemblyPhase === "assembling" ? "#7BA3D4" : "#A8B4C8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", transition: "color 0.5s" }}>{ag.label}</span>
+                            <span style={{
+                              fontSize: 9, padding: "2px 7px", borderRadius: 999, fontFamily: "'JetBrains Mono', monospace",
+                              background: isSkipped ? "rgba(74,85,104,0.1)" : isRouted ? "rgba(74,222,128,0.1)" : isAssembled && assemblyPhase === "assembling" ? "rgba(123,163,212,0.12)" : ag.spawned ? "rgba(201,168,76,0.12)" : "rgba(168,180,200,0.06)",
+                              color: isSkipped ? "#4A5568" : isRouted ? "#4ADE80" : isAssembled && assemblyPhase === "assembling" ? "#7BA3D4" : ag.spawned ? "#C9A84C" : "#4A5568",
+                              border: isSkipped ? "1px solid rgba(74,85,104,0.3)" : isRouted ? "1px solid rgba(74,222,128,0.2)" : isAssembled && assemblyPhase === "assembling" ? "1px solid rgba(123,163,212,0.3)" : ag.spawned ? "1px solid rgba(201,168,76,0.2)" : "1px solid rgba(28,48,87,0.8)",
+                              transition: "all 0.4s",
+                            }}>{isSkipped ? "skipped" : isRouted ? "✓ routed" : isAssembled && assemblyPhase === "assembling" ? "⚡ assembling" : ag.spawned ? "⚡ active" : "standby"}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
 
                 {/* ── Document Vault ── */}

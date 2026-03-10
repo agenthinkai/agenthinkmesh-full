@@ -238,3 +238,12 @@
 - [x] Load the correct agents for the switched context before execution
 - [x] Show "Switched to X → Y based on your prompt" info banner
 - [x] Persist the auto-switched context in localStorage
+
+## Session 8 — Agent Discovery Animation
+
+- [x] Add 3-phase assembly state: idle → scanning → assembling → executing
+- [x] Phase 1 (Scanning): radar-sweep pulse overlay, shimmer placeholder rows, "Analysing prompt…" text
+- [x] Phase 2 (Assembly): relevant agents appear one-by-one with ripple effect, agent chip tags appear in center overlay, "X/Y assembled" counter
+- [x] Phase 3 (Execution): assembled agents start running, output panel slides in
+- [x] Right-panel agent list: cards animate in sequentially with agent-card-in keyframe during assembly
+- [x] CSS keyframe animations: pulse, radar-sweep, node-appear, node-ripple, agent-card-in, counter-tick, shimmer, slide-up-fade-in
