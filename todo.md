@@ -281,7 +281,8 @@
 
 - [x] Add contact_submissions table to database schema (migrated)
 - [x] Add server-side contact.submit tRPC procedure: validates fields, saves to DB, sends Manus owner notification
-- [x] Add Contact Us section to Home.tsx landing page (name, email, company, message fields)
+- [x] Add Contact Us section to Landing.tsx (correct file — was incorrectly added to Home.tsx first)
+- [x] Add Contact link to Landing.tsx navbar for direct scroll navigation
 - [x] Show success state with checkmark after form submission
 - [x] Notification content includes: sender name, email, company, message, UTC timestamp
-- [x] Full landing page built: hero, features, how-it-works, domains, contact, footer
+- [x] Contact info displayed: kishore@agenthink.ai, website, GCC region

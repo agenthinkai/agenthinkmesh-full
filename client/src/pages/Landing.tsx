@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { getLoginUrl } from "@/const";
 import Logo from "@/components/Logo";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 // ── Brand palette (matches logo: deep navy + silver/platinum) ──────────────
 const NAVY_950 = "#0B1629";   // darkest — page background
@@ -69,6 +71,127 @@ const USE_CASES = [
   { role: "Hospital Ops Director", task: "Analyse this week's bed occupancy data and generate a staffing optimisation report", agents: 8, domain: "Healthcare" },
 ];
 
+// ── Contact Section Component ─────────────────────────────────────────────
+function ContactSection() {
+  const [form, setForm] = useState({ name: "", email: "", company: "", message: "" });
+  const [submitted, setSubmitted] = useState(false);
+
+  const submitContact = trpc.contact.submit.useMutation({
+    onSuccess: () => {
+      setSubmitted(true);
+      setForm({ name: "", email: "", company: "", message: "" });
+      toast.success("Message sent! We'll be in touch shortly.");
+    },
+    onError: (err) => {
+      toast.error(err.message || "Failed to send message. Please try again.");
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.email.trim() || !form.message.trim()) {
+      toast.error("Please fill in all required fields.");
+      return;
+    }
+    submitContact.mutate(form);
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%",
+    padding: "12px 16px",
+    background: "rgba(255,255,255,0.04)",
+    border: `1px solid #1C3057`,
+    borderRadius: 10,
+    fontSize: 14,
+    color: "#F5F7FA",
+    fontFamily: "'Inter', system-ui, sans-serif",
+    outline: "none",
+    boxSizing: "border-box" as const,
+    transition: "border-color 0.2s",
+  };
+
+  return (
+    <section id="contact" style={{ padding: "100px 48px", background: "#0F1E38", borderTop: "1px solid #1C3057" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "start" }}>
+        {/* Left — copy */}
+        <div>
+          <div style={{ fontSize: 11, color: "#8494AA", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'JetBrains Mono', monospace", marginBottom: 16, fontWeight: 500 }}>Contact Us</div>
+          <h2 style={{ fontSize: 40, fontWeight: 800, letterSpacing: "-0.04em", color: "#F5F7FA", marginBottom: 20, lineHeight: 1.1 }}>
+            Let's talk about<br /><span style={{ color: "#7BA3D4" }}>your use case.</span>
+          </h2>
+          <p style={{ fontSize: 15, color: "#A8B4C8", lineHeight: 1.8, marginBottom: 40 }}>
+            Whether you're a VC fund, a GCC bank, a law firm, or a healthcare operator — we'd love to show you what AgenThinkMesh can do for your team.
+          </p>
+          <div style={{ display: "flex", flexDirection: "column" as const, gap: 20 }}>
+            {[
+              { icon: "✉", label: "Email", value: "kishore@agenthink.ai" },
+              { icon: "🌐", label: "Website", value: "agenthink-7enctkan.manus.space" },
+              { icon: "📍", label: "Region", value: "GCC · MENA · Global" },
+            ].map((item) => (
+              <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(123,163,212,0.1)", border: "1px solid #1C3057", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{item.icon}</div>
+                <div>
+                  <div style={{ fontSize: 11, color: "#637080", fontFamily: "'JetBrains Mono', monospace", marginBottom: 2 }}>{item.label}</div>
+                  <div style={{ fontSize: 14, color: "#E8ECF2", fontWeight: 500 }}>{item.value}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Right — form */}
+        <div style={{ background: "#152542", border: "1px solid #1C3057", borderRadius: 16, padding: "40px 36px" }}>
+          {submitted ? (
+            <div style={{ textAlign: "center", padding: "40px 0" }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
+              <h3 style={{ fontSize: 22, fontWeight: 700, color: "#F5F7FA", marginBottom: 12 }}>Message Sent!</h3>
+              <p style={{ fontSize: 14, color: "#A8B4C8", lineHeight: 1.7 }}>Thank you for reaching out. Our team will get back to you at <strong style={{ color: "#7BA3D4" }}>{form.email || "your email"}</strong> shortly.</p>
+              <button onClick={() => setSubmitted(false)} style={{ marginTop: 24, padding: "10px 28px", background: "transparent", border: "1px solid #1C3057", borderRadius: 8, color: "#A8B4C8", fontSize: 13, cursor: "pointer" }}>Send another message</button>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column" as const, gap: 18 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: "#F5F7FA", marginBottom: 4 }}>Send us a message</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div>
+                  <label style={{ fontSize: 11, color: "#8494AA", fontFamily: "'JetBrains Mono', monospace", display: "block", marginBottom: 6 }}>Name *</label>
+                  <input style={inputStyle} placeholder="Farouq Sultan" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, color: "#8494AA", fontFamily: "'JetBrains Mono', monospace", display: "block", marginBottom: 6 }}>Email *</label>
+                  <input style={inputStyle} type="email" placeholder="you@company.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: "#8494AA", fontFamily: "'JetBrains Mono', monospace", display: "block", marginBottom: 6 }}>Company</label>
+                <input style={inputStyle} placeholder="AgenThink" value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, color: "#8494AA", fontFamily: "'JetBrains Mono', monospace", display: "block", marginBottom: 6 }}>Message *</label>
+                <textarea style={{ ...inputStyle, minHeight: 120, resize: "vertical" as const }} placeholder="Tell us about your use case, team size, or what you'd like to explore..." value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} />
+              </div>
+              <button
+                type="submit"
+                disabled={submitContact.isPending}
+                style={{
+                  padding: "14px 32px",
+                  background: submitContact.isPending ? "#1C3057" : "linear-gradient(135deg, #7BA3D4 0%, #5B8EC4 100%)",
+                  color: submitContact.isPending ? "#637080" : "#0B1629",
+                  borderRadius: 10, fontSize: 14, fontWeight: 700, border: "none", cursor: submitContact.isPending ? "not-allowed" : "pointer",
+                  boxShadow: submitContact.isPending ? "none" : "0 2px 16px rgba(123,163,212,0.3)",
+                  transition: "all 0.2s",
+                }}
+              >
+                {submitContact.isPending ? "Sending..." : "Send Message →"}
+              </button>
+              <p style={{ fontSize: 11, color: "#637080", fontFamily: "'JetBrains Mono', monospace", textAlign: "center" as const }}>We typically respond within 24 hours.</p>
+            </form>
+          )}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // Shared card style
 const card = (extra?: React.CSSProperties): React.CSSProperties => ({
   background: NAVY_800,
@@ -105,7 +228,7 @@ export default function Landing() {
       }}>
         <Logo size={32} />
         <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-          {[["#features", "Features"], ["#domains", "Domains"], ["#how-it-works", "How it works"]].map(([href, label]) => (
+          {[["#features", "Features"], ["#domains", "Domains"], ["#how-it-works", "How it works"], ["#contact", "Contact"]].map(([href, label]) => (
             <a key={href} href={href} style={{ fontSize: 13, color: SILVER_300, textDecoration: "none", fontWeight: 500, transition: "color 0.2s" }}
               onMouseEnter={e => (e.currentTarget.style.color = SILVER_50)}
               onMouseLeave={e => (e.currentTarget.style.color = SILVER_300)}
@@ -470,6 +593,9 @@ export default function Landing() {
           </p>
         </div>
       </section>
+
+      {/* ── Contact Us ── */}
+      <ContactSection />
 
       {/* ── Footer ── */}
       <footer style={{ borderTop: `1px solid ${NAVY_700}`, padding: "24px 48px", display: "flex", alignItems: "center", justifyContent: "space-between", background: NAVY_950 }}>
