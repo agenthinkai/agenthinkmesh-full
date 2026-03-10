@@ -489,6 +489,24 @@ export default function Landing() {
       {/* ── Hero (VarD Neon) ── */}
       <NeonHero loginUrl={loginUrl} stats={s} />
 
+      {/* ── Neon Divider ── */}
+      <div style={{ position: "relative", height: 1, background: "#060F1C", overflow: "visible" }}>
+        <div style={{
+          position: "absolute", left: "50%", transform: "translateX(-50%)",
+          width: "72%", height: 1,
+          background: "linear-gradient(90deg, transparent 0%, #00D4FF33 18%, #0080FF66 38%, #40B8FF66 50%, #0080FF66 62%, #00D4FF33 82%, transparent 100%)",
+          boxShadow: "0 0 18px 2px rgba(0,212,255,0.10), 0 0 6px 1px rgba(64,184,255,0.14)",
+        }} />
+        {/* Centre glow dot */}
+        <div style={{
+          position: "absolute", left: "50%", top: "50%",
+          transform: "translate(-50%, -50%)",
+          width: 6, height: 6, borderRadius: "50%",
+          background: "#40B8FF",
+          boxShadow: "0 0 12px 4px rgba(64,184,255,0.55), 0 0 28px 8px rgba(0,212,255,0.18)",
+        }} />
+      </div>
+
       {/* ── How it works ── */}
       <section id="how-it-works" style={{ padding: "72px 24px", background: NAVY_950 }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
