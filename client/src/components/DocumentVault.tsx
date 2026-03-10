@@ -73,6 +73,27 @@ export function DocumentVault({
     onError: (e) => toast.error(e.message),
   });
 
+  const [reparsing, setReparsing] = useState<number | null>(null);
+  const reparseMutation = trpc.vault.reparse.useMutation({
+    onSuccess: async (data, variables) => {
+      toast.success(`Re-parsed: ${data.charCount.toLocaleString()} chars extracted`);
+      const freshResult = await refetch();
+      // If this doc is currently active, update the vault text with fresh content
+      if (activeDocId === variables.id) {
+        const freshDoc = freshResult.data?.find((d: VaultDoc) => d.id === variables.id);
+        if (freshDoc?.extractedText) onVaultTextChange(freshDoc.extractedText);
+      }
+      setReparsing(null);
+    },
+    onError: (e) => { toast.error(`Re-parse failed: ${e.message}`); setReparsing(null); },
+  });
+
+  const handleReparse = (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    setReparsing(id);
+    reparseMutation.mutate({ id });
+  };
+
   const uploadFile = async (file: File): Promise<void> => {
     if (file.size > 5 * 1024 * 1024) {
       setUploadingFiles(prev =>
@@ -289,6 +310,19 @@ export function DocumentVault({
                     Active
                   </span>
                 )}
+                <button
+                  onClick={(e) => handleReparse(e, doc.id)}
+                  disabled={reparsing === doc.id}
+                  style={{
+                    background: "none", border: "none", cursor: reparsing === doc.id ? "wait" : "pointer",
+                    color: reparsing === doc.id ? INDIGO : "#637080",
+                    fontSize: 11, padding: "0 2px",
+                    flexShrink: 0, lineHeight: 1, fontFamily: MONO,
+                  }}
+                  title="Re-parse document (refresh text extraction)"
+                >
+                  {reparsing === doc.id ? "⟳" : "↺"}
+                </button>
                 <button
                   onClick={(e) => handleDelete(e, doc.id)}
                   style={{

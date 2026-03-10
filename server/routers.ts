@@ -286,6 +286,61 @@ export const appRouter = router({
         .limit(20);
     }),
 
+    // Re-parse an existing vault document (re-download from S3 and re-extract text)
+    reparse: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        // Verify ownership and get file info
+        const [doc] = await db.select({
+          userId: vaultDocuments.userId,
+          fileUrl: vaultDocuments.fileUrl,
+          filename: vaultDocuments.filename,
+          mimeType: vaultDocuments.mimeType,
+        }).from(vaultDocuments).where(eq(vaultDocuments.id, input.id)).limit(1);
+        if (!doc || doc.userId !== ctx.user.id) throw new Error("Not authorised");
+        // Download file from S3
+        const response = await fetch(doc.fileUrl);
+        if (!response.ok) throw new Error(`Failed to download file: ${response.status}`);
+        const arrayBuffer = await response.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const ext = doc.filename.split(".").pop()?.toLowerCase() ?? "";
+        // Re-extract text using the same logic as upload
+        const TEXT_EXTS = new Set(["txt","md","csv","json","xml","yaml","yml","html","htm","js","ts","py","java","c","cpp","cs","go","rb","sh","sql","log","toml","ini","env","rst"]);
+        const EXCEL_EXTS = new Set(["xlsx","xls","xlsm","xlsb","ods"]);
+        let extractedText = "";
+        const mimeType = doc.mimeType ?? "application/octet-stream";
+        if (mimeType.startsWith("text/") || TEXT_EXTS.has(ext)) {
+          extractedText = buffer.toString("utf-8").slice(0, 12000);
+        } else if (EXCEL_EXTS.has(ext) || mimeType.includes("spreadsheet") || mimeType.includes("excel")) {
+          try {
+            const workbook = XLSX.read(buffer, { type: "buffer" });
+            const parts: string[] = [];
+            for (const sheetName of workbook.SheetNames) {
+              const sheet = workbook.Sheets[sheetName];
+              const csv = XLSX.utils.sheet_to_csv(sheet, { blankrows: false });
+              if (csv.trim()) parts.push(`=== Sheet: ${sheetName} ===\n${csv}`);
+            }
+            extractedText = parts.join("\n\n").slice(0, 12000);
+          } catch (err) {
+            throw new Error(`Excel parse failed: ${err instanceof Error ? err.message : "unknown"}`);
+          }
+        } else if (doc.mimeType === "application/pdf" || ext === "pdf") {
+          const raw = buffer.toString("latin1");
+          const textMatches = raw.match(/BT[\s\S]*?ET/g) ?? [];
+          const pdfText = textMatches.join(" ").replace(/[^\x20-\x7E\n]/g, " ").replace(/\s+/g, " ").trim();
+          extractedText = pdfText.slice(0, 12000) || "[PDF uploaded — text extraction limited]";
+        } else if (doc.mimeType === "application/json" || ext === "json") {
+          try { extractedText = JSON.stringify(JSON.parse(buffer.toString("utf-8")), null, 2).slice(0, 12000); } catch { extractedText = buffer.toString("utf-8").slice(0, 12000); }
+        } else {
+          extractedText = `[${doc.filename} — binary file, content not extractable as text]`;
+        }
+        // Update the DB record
+        await db.update(vaultDocuments).set({ extractedText }).where(eq(vaultDocuments.id, input.id));
+        return { success: true, extractedText: extractedText.slice(0, 200), charCount: extractedText.length };
+      }),
+
     // Delete a vault document
     delete: protectedProcedure
       .input(z.object({ id: z.number() }))
