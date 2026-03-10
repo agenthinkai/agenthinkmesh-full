@@ -411,8 +411,14 @@
   .landing-nav-links { display: none !important; }
   .landing-hamburger { display: block; }
   .landing-nav-inner { padding: 0 16px; }
-  .landing-logo-wrap img { height: 26px !important; width: auto !important; }
-  .mesh-badge { display: none !important; }
+  /* Shrink logo image on mobile */
+  .landing-logo-wrap img { height: 22px !important; width: auto !important; }
+  /* Keep MESH badge visible but smaller */
+  .mesh-badge {
+    font-size: 8px !important;
+    padding: 1px 5px !important;
+    letter-spacing: 0.12em !important;
+  }
 }
 
 /* ── Tablet breakpoint (≤ 900px) ─────────────────────────────────────────── */
@@ -438,10 +444,7 @@
   /* Navbar */
   .landing-nav-links { display: none !important; }
   .landing-hamburger { display: block; }
-  .landing-nav-inner { padding: 0 16px; }
-  /* Shrink logo on mobile to avoid overflow */
-  .landing-logo-wrap img { height: 24px !important; width: auto !important; }
-  .landing-logo-wrap .mesh-badge { display: none; }
+  .landing-nav-inner { padding: 0 14px; }
 
   /* Grids → single column */
   .landing-3col-grid {
