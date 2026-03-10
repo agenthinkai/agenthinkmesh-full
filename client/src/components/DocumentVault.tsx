@@ -119,7 +119,7 @@ export function DocumentVault({
         <input
           ref={fileInputRef}
           type="file"
-          accept=".pdf,.txt,.md,.csv"
+          accept="*/*"
           style={{ display: "none" }}
           onChange={handleFileChange}
         />
@@ -137,7 +137,7 @@ export function DocumentVault({
           {uploading ? "Uploading..." : "Upload document"}
         </div>
         <div style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
-          PDF, TXT, MD, CSV · max 5 MB
+          Any format · max 5 MB
         </div>
       </div>
 
@@ -163,7 +163,15 @@ export function DocumentVault({
                 }}
               >
                 <span style={{ fontSize: 14, flexShrink: 0 }}>
-                  {doc.mimeType?.includes("pdf") ? "📄" : "📝"}
+                  {doc.mimeType?.includes("pdf") ? "📄"
+                    : doc.mimeType?.includes("image") ? "🖼️"
+                    : doc.mimeType?.includes("spreadsheet") || doc.filename.match(/\.(xlsx|xls|csv)$/i) ? "📊"
+                    : doc.mimeType?.includes("word") || doc.filename.match(/\.(docx|doc)$/i) ? "📝"
+                    : doc.mimeType?.includes("presentation") || doc.filename.match(/\.(pptx|ppt)$/i) ? "📊"
+                    : doc.mimeType?.includes("video") ? "🎥"
+                    : doc.mimeType?.includes("audio") ? "🎧"
+                    : doc.mimeType?.includes("zip") || doc.filename.match(/\.(zip|rar|gz|tar)$/i) ? "🗂️"
+                    : "📎"}
                 </span>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div

@@ -209,8 +209,9 @@ export const appRouter = router({
         const { url } = await storagePut(fileKey, buffer, input.mimeType);
 
         // Extract text for prompt injection
+        const TEXT_EXTS = new Set(["txt","md","csv","json","xml","yaml","yml","html","htm","js","ts","py","java","c","cpp","cs","go","rb","sh","sql","log","toml","ini","env","rst"]);
         let extractedText = "";
-        if (input.mimeType === "text/plain" || ext === "txt" || ext === "md") {
+        if (input.mimeType.startsWith("text/") || TEXT_EXTS.has(ext.toLowerCase())) {
           extractedText = buffer.toString("utf-8").slice(0, 8000);
         } else if (input.mimeType === "application/pdf" || ext === "pdf") {
           // For PDF: extract readable ASCII text from buffer (basic extraction)
@@ -221,9 +222,11 @@ export const appRouter = router({
             .replace(/[^\x20-\x7E\n]/g, " ")
             .replace(/\s+/g, " ")
             .trim();
-          extractedText = pdfText.slice(0, 8000) || "[PDF uploaded — text extraction limited]"; 
+          extractedText = pdfText.slice(0, 8000) || "[PDF uploaded — text extraction limited]";
+        } else if (input.mimeType === "application/json" || ext === "json") {
+          try { extractedText = JSON.stringify(JSON.parse(buffer.toString("utf-8")), null, 2).slice(0, 8000); } catch { extractedText = buffer.toString("utf-8").slice(0, 8000); }
         } else {
-          extractedText = `[${input.filename} uploaded — binary file, no text extraction]`;
+          extractedText = `[${input.filename} uploaded — file stored in vault, content available for download]`;
         }
 
         // Save metadata to DB
