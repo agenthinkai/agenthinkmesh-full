@@ -213,8 +213,15 @@
 - [ ] Gap 6: Developer onboarding email on agent.register
 - [ ] Gap 7: Webhook support — optional webhookUrl on agents, async POST on routeTask complete
 - [ ] Gap 8: Multi-tenant orgId — add to users + agents tables, filter queries by org
-- [ ] Run full test suite — 33+ tests passing
-- [ ] Write new tests for batch annotation and webhook dispatch
-- [ ] Final TypeScript check
+
+## Smart Agent Routing
+- [x] Server-side routeAgents LLM procedure: analyse prompt and return list of relevant agent labels + confidence scores
+- [x] Domain mismatch detection: if prompt doesn't match selected context, return suggested domain/context
+- [x] MeshDashboard: call routeAgents before execution, show mismatch warning banner with suggested context
+- [x] AgentCard: show dimmed "Not relevant for this task" state when agent is not in routed list
+- [x] Show routing reasoning in the output panel header (e.g. "3 of 8 agents matched your task")
+- [x] Run full test suite — 44 tests passing
+- [x] Write new tests for routeAgents procedure (4 new tests)
+- [x] Final TypeScript check
 - [ ] Save checkpoint
 - [ ] Deliver updated technical brief PDF

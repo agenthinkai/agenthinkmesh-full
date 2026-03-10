@@ -623,6 +623,16 @@ export default function MeshDashboard() {
   const [bootStep, setBootStep] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Smart routing state
+  const [routingAnalysis, setRoutingAnalysis] = useState<{
+    relevantAgents: string[];
+    irrelevantAgents: string[];
+    domainMatch: boolean;
+    suggestedDomain: string | null;
+    suggestedContext: string | null;
+    reasoning: string;
+  } | null>(null);
+  const [isRouting, setIsRouting] = useState(false);
 
   const ctx = CONTEXTS[role];
 
@@ -644,6 +654,7 @@ export default function MeshDashboard() {
   );
 
   // tRPC mutations
+  const routeAgentsMutation = trpc.mesh.routeAgents.useMutation();
   const saveHistory = trpc.mesh.saveTask.useMutation({
     onSuccess: () => utils.mesh.getHistory.invalidate(),
   });
@@ -681,12 +692,36 @@ export default function MeshDashboard() {
   const meshNodes = buildLayout(agentList, ctx.color);
   const spawnedCount = agentList.filter(a => a.spawned).length;
 
-  const run = () => {
-    if (!task.trim()) return;
-    setCurrentAgents([...agentList]);
+  const run = async () => {
+    if (!task.trim() || isRouting) return;
+    setIsRouting(true);
+    setRoutingAnalysis(null);
+
+    // Animate mesh nodes while routing
     const nodeIds = meshNodes.map(n => n.id);
     nodeIds.forEach((id, i) => setTimeout(() => setRoutedNodes(r => [...r, id]), i * 200));
-    setTimeout(() => { setShowOutput(true); setRoutedNodes([]); }, 1200);
+
+    try {
+      const allDomains = Object.values(DOMAIN_MAP).map(d => d.label);
+      const analysis = await routeAgentsMutation.mutateAsync({
+        taskText: task,
+        contextLabel: ctx.label,
+        domainLabel: DOMAIN_MAP[ctx.domain]?.label ?? ctx.domain,
+        agentLabels: agentList.map(a => a.label),
+        allDomains,
+      });
+      setRoutingAnalysis(analysis);
+
+      // Only run agents that are relevant
+      const relevantSet = new Set(analysis.relevantAgents);
+      const filteredAgents = agentList.filter(a => relevantSet.has(a.label));
+      setCurrentAgents(filteredAgents.length > 0 ? filteredAgents : [...agentList]);
+    } catch {
+      // On routing failure, run all agents
+      setCurrentAgents([...agentList]);
+    }
+
+    setTimeout(() => { setShowOutput(true); setRoutedNodes([]); setIsRouting(false); }, 1200);
   };
 
   const handleOutputDone = (outputs: OutputMap) => {
@@ -965,17 +1000,18 @@ export default function MeshDashboard() {
                       <div style={{ fontSize: 10, color: "#4A5568", fontFamily: "'JetBrains Mono', monospace" }}>⌘ + Enter to execute</div>
                       <button
                         onClick={run}
-                        disabled={!task.trim()}
+                        disabled={!task.trim() || isRouting}
                         style={{
-                          background: task.trim() ? "linear-gradient(135deg, #7BA3D4 0%, #4A7DB5 100%)" : "#152542",
-                          color: task.trim() ? "#0B1629" : "#637080",
-                          border: "none", borderRadius: 10, padding: "10px 24px",
-                          cursor: task.trim() ? "pointer" : "not-allowed",
+                          background: isRouting ? "#152542" : task.trim() ? "linear-gradient(135deg, #7BA3D4 0%, #4A7DB5 100%)" : "#152542",
+                          color: isRouting ? "#7BA3D4" : task.trim() ? "#0B1629" : "#637080",
+                          border: isRouting ? "1px solid rgba(123,163,212,0.3)" : "none",
+                          borderRadius: 10, padding: "10px 24px",
+                          cursor: (task.trim() && !isRouting) ? "pointer" : "not-allowed",
                           fontSize: 13, fontFamily: "'Inter', sans-serif", fontWeight: 800,
                           transition: "all 0.15s", letterSpacing: "-0.01em",
                         }}
                       >
-                        ▶ Execute via Mesh
+                        {isRouting ? "⟳ Routing…" : "▶ Execute via Mesh"}
                       </button>
                     </div>
                   </div>
@@ -986,6 +1022,45 @@ export default function MeshDashboard() {
                         <span style={{ color: "#4ADE80", fontSize: 11 }}>📎</span>
                         <span style={{ fontSize: 10, color: "#4ADE80", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>Document context active — agents will analyse your uploaded file</span>
                         <button onClick={() => { setVaultText(""); setActiveVaultDocId(null); }} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#637080", fontSize: 13, lineHeight: 1 }}>×</button>
+                      </div>
+                    </div>
+                  )}
+                  {/* Routing state indicator */}
+                  {isRouting && (
+                    <div style={{ padding: "0 18px 8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px", background: "rgba(123,163,212,0.06)", border: "1px solid rgba(123,163,212,0.2)", borderRadius: 8 }}>
+                        <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#7BA3D4", display: "inline-block", animation: "pulse 1s infinite" }} />
+                        <span style={{ fontSize: 10, color: "#7BA3D4", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>Analysing task — routing to relevant agents…</span>
+                      </div>
+                    </div>
+                  )}
+                  {/* Domain mismatch warning */}
+                  {routingAnalysis && !routingAnalysis.domainMatch && (
+                    <div style={{ padding: "0 18px 8px" }}>
+                      <div style={{ padding: "10px 14px", background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.3)", borderRadius: 10 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 4 }}>
+                          <span style={{ fontSize: 13 }}>⚠️</span>
+                          <span style={{ fontSize: 11, color: "#C9A84C", fontFamily: "'Inter', sans-serif", fontWeight: 700 }}>Domain mismatch detected</span>
+                        </div>
+                        <div style={{ fontSize: 10, color: "#A8B4C8", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.6 }}>
+                          {routingAnalysis.reasoning}
+                        </div>
+                        {routingAnalysis.suggestedDomain && (
+                          <div style={{ marginTop: 6, fontSize: 10, color: "#C9A84C", fontFamily: "'JetBrains Mono', monospace" }}>
+                            Suggested: <strong>{routingAnalysis.suggestedDomain}</strong>{routingAnalysis.suggestedContext ? ` → ${routingAnalysis.suggestedContext}` : ""}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                  {/* Routing summary — shown when analysis is done */}
+                  {routingAnalysis && routingAnalysis.domainMatch && routingAnalysis.irrelevantAgents.length > 0 && (
+                    <div style={{ padding: "0 18px 8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", background: "rgba(74,222,128,0.05)", border: "1px solid rgba(74,222,128,0.15)", borderRadius: 8 }}>
+                        <span style={{ color: "#4ADE80", fontSize: 11 }}>✓</span>
+                        <span style={{ fontSize: 10, color: "#4ADE80", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>
+                          Routed to {routingAnalysis.relevantAgents.length} of {routingAnalysis.relevantAgents.length + routingAnalysis.irrelevantAgents.length} agents — {routingAnalysis.irrelevantAgents.length} skipped as not relevant
+                        </span>
                       </div>
                     </div>
                   )}
@@ -1024,22 +1099,28 @@ export default function MeshDashboard() {
                   </div>
                   {/* Agent rows */}
                   <div style={{ padding: "8px 0", maxHeight: 220, overflowY: "auto" }}>
-                    {agentList.map((ag, idx) => (
-                      <div key={ag.id} style={{
-                        display: "flex", alignItems: "center", padding: "7px 14px",
-                        background: ag.spawned ? "rgba(201,168,76,0.04)" : "transparent",
-                        borderBottom: idx < agentList.length - 1 ? "1px solid rgba(28,48,87,0.5)" : "none",
-                      }}>
-                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: ag.spawned ? "#C9A84C" : ctx.color, display: "inline-block", flexShrink: 0, marginRight: 10 }} />
-                        <span style={{ flex: 1, fontSize: 12, color: ag.spawned ? "#C9A84C" : "#A8B4C8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ag.label}</span>
-                        <span style={{
-                          fontSize: 9, padding: "2px 7px", borderRadius: 999, fontFamily: "'JetBrains Mono', monospace",
-                          background: ag.spawned ? "rgba(201,168,76,0.12)" : "rgba(168,180,200,0.06)",
-                          color: ag.spawned ? "#C9A84C" : "#4A5568",
-                          border: ag.spawned ? "1px solid rgba(201,168,76,0.2)" : "1px solid rgba(28,48,87,0.8)",
-                        }}>{ag.spawned ? "⚡ active" : "standby"}</span>
-                      </div>
-                    ))}
+                    {agentList.map((ag, idx) => {
+                      const isSkipped = routingAnalysis && routingAnalysis.irrelevantAgents.includes(ag.label);
+                      const isRouted = routingAnalysis && routingAnalysis.relevantAgents.includes(ag.label);
+                      return (
+                        <div key={ag.id} style={{
+                          display: "flex", alignItems: "center", padding: "7px 14px",
+                          background: ag.spawned ? "rgba(201,168,76,0.04)" : "transparent",
+                          borderBottom: idx < agentList.length - 1 ? "1px solid rgba(28,48,87,0.5)" : "none",
+                          opacity: isSkipped ? 0.4 : 1,
+                          transition: "opacity 0.3s",
+                        }}>
+                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: isSkipped ? "#4A5568" : ag.spawned ? "#C9A84C" : isRouted ? "#4ADE80" : ctx.color, display: "inline-block", flexShrink: 0, marginRight: 10 }} />
+                          <span style={{ flex: 1, fontSize: 12, color: isSkipped ? "#4A5568" : ag.spawned ? "#C9A84C" : "#A8B4C8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ag.label}</span>
+                          <span style={{
+                            fontSize: 9, padding: "2px 7px", borderRadius: 999, fontFamily: "'JetBrains Mono', monospace",
+                            background: isSkipped ? "rgba(74,85,104,0.1)" : isRouted ? "rgba(74,222,128,0.1)" : ag.spawned ? "rgba(201,168,76,0.12)" : "rgba(168,180,200,0.06)",
+                            color: isSkipped ? "#4A5568" : isRouted ? "#4ADE80" : ag.spawned ? "#C9A84C" : "#4A5568",
+                            border: isSkipped ? "1px solid rgba(74,85,104,0.3)" : isRouted ? "1px solid rgba(74,222,128,0.2)" : ag.spawned ? "1px solid rgba(201,168,76,0.2)" : "1px solid rgba(28,48,87,0.8)",
+                          }}>{isSkipped ? "skipped" : isRouted ? "✓ routed" : ag.spawned ? "⚡ active" : "standby"}</span>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 

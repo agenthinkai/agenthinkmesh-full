@@ -234,6 +234,115 @@ export const appRouter = router({
         return { result };
       }),
 
+    // ── Smart agent routing ─────────────────────────────────────────────────
+    // Analyses the prompt and returns which agents are relevant + domain match
+    routeAgents: protectedProcedure
+      .input(z.object({
+        taskText: z.string().min(1),
+        contextLabel: z.string(),      // e.g. "VC / PE Fund"
+        domainLabel: z.string(),       // e.g. "Finance"
+        agentLabels: z.array(z.string()), // all agents in the selected context
+        allDomains: z.array(z.string()),  // all available domain names
+      }))
+      .mutation(async ({ input }) => {
+        const agentList = input.agentLabels.join(", ");
+        const domainList = input.allDomains.join(", ");
+
+        const systemPrompt = [
+          `You are an intelligent task router for a multi-agent AI platform.`,
+          `The user has selected the "${input.contextLabel}" context under the "${input.domainLabel}" domain.`,
+          `Available agents in this context: ${agentList}.`,
+          `All available domains: ${domainList}.`,
+          ``,
+          `Analyse the user's task and return a JSON object with this exact schema:`,
+          `{`,
+          `  "relevantAgents": ["Agent Name", ...],  // subset of available agents that are relevant to this task`,
+          `  "irrelevantAgents": ["Agent Name", ...], // agents that are NOT relevant`,
+          `  "domainMatch": true | false,             // does the task match the selected domain?`,
+          `  "suggestedDomain": "Domain Name" | null, // if domainMatch is false, suggest the correct domain`,
+          `  "suggestedContext": "Context Name" | null, // if domainMatch is false, suggest the correct context`,
+          `  "confidence": 0.0-1.0,                  // routing confidence`,
+          `  "reasoning": "one sentence explanation"`,
+          `}`,
+          ``,
+          `Rules:`,
+          `- Always include at least 1 relevant agent unless the task is completely unrelated to all agents.`,
+          `- If the task is partially relevant, include the most applicable agents.`,
+          `- Only set domainMatch=false if the task clearly belongs to a different domain entirely.`,
+          `- Return ONLY the JSON object, no markdown fences.`,
+        ].join("\n");
+
+        try {
+          const response = await invokeLLM({
+            messages: [
+              { role: "system", content: systemPrompt },
+              { role: "user", content: input.taskText },
+            ],
+            max_tokens: 500,
+            response_format: {
+              type: "json_schema",
+              json_schema: {
+                name: "agent_routing",
+                strict: true,
+                schema: {
+                  type: "object",
+                  properties: {
+                    relevantAgents: { type: "array", items: { type: "string" } },
+                    irrelevantAgents: { type: "array", items: { type: "string" } },
+                    domainMatch: { type: "boolean" },
+                    suggestedDomain: { type: ["string", "null"] },
+                    suggestedContext: { type: ["string", "null"] },
+                    confidence: { type: "number" },
+                    reasoning: { type: "string" },
+                  },
+                  required: ["relevantAgents", "irrelevantAgents", "domainMatch", "suggestedDomain", "suggestedContext", "confidence", "reasoning"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          });
+
+          const content = response.choices[0]?.message?.content;
+          const raw = typeof content === "string" ? content : JSON.stringify(content);
+          const parsed = JSON.parse(raw) as {
+            relevantAgents: string[];
+            irrelevantAgents: string[];
+            domainMatch: boolean;
+            suggestedDomain: string | null;
+            suggestedContext: string | null;
+            confidence: number;
+            reasoning: string;
+          };
+
+          // Validate: ensure relevantAgents are a subset of the provided list
+          const validSet = new Set(input.agentLabels);
+          const relevantAgents = (parsed.relevantAgents ?? []).filter(a => validSet.has(a));
+          // If LLM returned nothing valid, fall back to all agents
+          const finalRelevant = relevantAgents.length > 0 ? relevantAgents : input.agentLabels;
+
+          return {
+            relevantAgents: finalRelevant,
+            irrelevantAgents: input.agentLabels.filter(a => !finalRelevant.includes(a)),
+            domainMatch: parsed.domainMatch ?? true,
+            suggestedDomain: parsed.suggestedDomain ?? null,
+            suggestedContext: parsed.suggestedContext ?? null,
+            confidence: parsed.confidence ?? 1.0,
+            reasoning: parsed.reasoning ?? "",
+          };
+        } catch {
+          // On any failure, route all agents (safe fallback)
+          return {
+            relevantAgents: input.agentLabels,
+            irrelevantAgents: [],
+            domainMatch: true,
+            suggestedDomain: null,
+            suggestedContext: null,
+            confidence: 1.0,
+            reasoning: "Routing analysis unavailable — running all agents.",
+          };
+        }
+      }),
+
     saveTask: protectedProcedure
       .input(z.object({
         task: z.string(),

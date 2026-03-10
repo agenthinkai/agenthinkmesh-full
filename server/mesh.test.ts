@@ -32,6 +32,27 @@ vi.mock("./db", () => ({
   }),
 }));
 
+// ── Mock LLM for routeAgents tests ────────────────────────────────────────────
+vi.mock("./_core/llm", () => ({
+  invokeLLM: vi.fn().mockResolvedValue({
+    choices: [
+      {
+        message: {
+          content: JSON.stringify({
+            relevantAgents: ["Deal Screener", "Due Diligence"],
+            irrelevantAgents: ["Portfolio Monitor", "LP Comms", "Cap Table", "Exit Modeler"],
+            domainMatch: true,
+            suggestedDomain: null,
+            suggestedContext: null,
+            confidence: 0.92,
+            reasoning: "Task is clearly a deal screening exercise relevant to VC/PE fund context.",
+          }),
+        },
+      },
+    ],
+  }),
+}));
+
 type AuthenticatedUser = NonNullable<TrpcContext["user"]>;
 
 function createAuthContext(): { ctx: TrpcContext; clearedCookies: Array<{ name: string; options: Record<string, unknown> }> } {
@@ -133,5 +154,72 @@ describe("mesh.getHistory", () => {
       contextLabel: "VC / PE Fund",
       agentCount: 8,
     });
+  });
+});
+
+// ── Smart routing tests ───────────────────────────────────────────────────────
+describe("mesh.routeAgents", () => {
+  const vcAgents = ["Deal Screener", "Due Diligence", "Portfolio Monitor", "LP Comms", "Cap Table", "Exit Modeler"];
+
+  it("returns relevant and irrelevant agent lists", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.mesh.routeAgents({
+      taskText: "Screen a new Series A SaaS deal",
+      contextLabel: "VC / PE Fund",
+      domainLabel: "Finance",
+      agentLabels: vcAgents,
+      allDomains: ["Finance", "Legal", "Healthcare", "Enterprise", "GCC Wealth"],
+    });
+    expect(result).toHaveProperty("relevantAgents");
+    expect(result).toHaveProperty("irrelevantAgents");
+    expect(result).toHaveProperty("domainMatch");
+    expect(result).toHaveProperty("reasoning");
+    expect(Array.isArray(result.relevantAgents)).toBe(true);
+    expect(Array.isArray(result.irrelevantAgents)).toBe(true);
+    // All returned agents must be from the input list
+    result.relevantAgents.forEach(a => expect(vcAgents).toContain(a));
+    result.irrelevantAgents.forEach(a => expect(vcAgents).toContain(a));
+  });
+
+  it("returns at least one relevant agent", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.mesh.routeAgents({
+      taskText: "Screen a new Series A SaaS deal",
+      contextLabel: "VC / PE Fund",
+      domainLabel: "Finance",
+      agentLabels: vcAgents,
+      allDomains: ["Finance", "Legal", "Healthcare", "Enterprise", "GCC Wealth"],
+    });
+    expect(result.relevantAgents.length).toBeGreaterThan(0);
+  });
+
+  it("relevant + irrelevant agents cover all input agents", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.mesh.routeAgents({
+      taskText: "Screen a new Series A SaaS deal",
+      contextLabel: "VC / PE Fund",
+      domainLabel: "Finance",
+      agentLabels: vcAgents,
+      allDomains: ["Finance", "Legal", "Healthcare", "Enterprise", "GCC Wealth"],
+    });
+    const allReturned = [...result.relevantAgents, ...result.irrelevantAgents].sort();
+    const allInput = [...vcAgents].sort();
+    expect(allReturned).toEqual(allInput);
+  });
+
+  it("has domainMatch as boolean", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    const result = await caller.mesh.routeAgents({
+      taskText: "Screen a new Series A SaaS deal",
+      contextLabel: "VC / PE Fund",
+      domainLabel: "Finance",
+      agentLabels: vcAgents,
+      allDomains: ["Finance", "Legal", "Healthcare", "Enterprise", "GCC Wealth"],
+    });
+    expect(typeof result.domainMatch).toBe("boolean");
   });
 });
