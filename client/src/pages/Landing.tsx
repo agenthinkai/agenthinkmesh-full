@@ -489,23 +489,6 @@ export default function Landing() {
       {/* ── Hero (VarD Neon) ── */}
       <NeonHero loginUrl={loginUrl} stats={s} />
 
-      {/* ── Stats bar ── */}
-      <section style={{ borderBottom: `1px solid ${NAVY_700}`, background: NAVY_800, padding: "28px 24px" }}>
-        <div className="landing-stats-grid" style={{ maxWidth: 900, margin: "0 auto" }}>
-          {([
-            { value: String(s.domainContexts), label: "Domain Contexts", color: "#7BA3D4" },
-            { value: String(s.verifiedAgents), label: "Specialist Agents", color: SILVER_100 },
-            { value: "50", label: "Max Agents / Task", color: "#8BBFD4" },
-            { value: "5", label: "Industry Verticals", color: GOLD },
-          ] as { value: string; label: string; color: string }[]).map((item, i) => (
-            <div key={i} style={{ textAlign: "center", padding: "12px 16px" }}>
-              <div style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1, background: SILVER_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{item.value}</div>
-              <div style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>{item.label}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
       {/* ── How it works ── */}
       <section id="how-it-works" style={{ padding: "72px 24px", background: NAVY_950 }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
