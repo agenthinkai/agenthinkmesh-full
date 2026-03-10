@@ -633,6 +633,10 @@ export default function MeshDashboard() {
     reasoning: string;
   } | null>(null);
   const [isRouting, setIsRouting] = useState(false);
+  // Ref to suppress the task-reset in the role-change effect during an active auto-switch
+  const suppressTaskResetRef = useRef(false);
+  // Frozen task text captured at run() time — used by OutputPanel so stale state doesn't cause empty taskText
+  const [frozenTask, setFrozenTask] = useState("");
   // Auto-switch banner: shown when the system switches context based on prompt
   const [autoSwitchBanner, setAutoSwitchBanner] = useState<{ from: string; to: string; toContext: string } | null>(null);
   // Agent discovery animation state
@@ -674,12 +678,14 @@ export default function MeshDashboard() {
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
   }, [task, role]);
 
-  // Reset on role change
+  // Reset on role change — skip task reset if an auto-switch is in progress
   useEffect(() => {
     setAgentList(CONTEXTS[role].agents.map((label, i) => ({ id: "a" + i, label, spawned: false })));
-    setTask("");
-    setShowOutput(false);
-    setRoutedNodes([]);
+    if (!suppressTaskResetRef.current) {
+      setTask("");
+      setShowOutput(false);
+      setRoutedNodes([]);
+    }
     localStorage.setItem("mesh_role", role);
   }, [role]);
 
@@ -727,6 +733,9 @@ export default function MeshDashboard() {
 
   const run = async () => {
     if (!task.trim() || isRouting) return;
+    // Capture the task text at run-time so async callbacks always have the correct value
+    const capturedTask = task.trim();
+    setFrozenTask(capturedTask);
     setIsRouting(true);
     setRoutingAnalysis(null);
     setAutoSwitchBanner(null);
@@ -755,7 +764,8 @@ export default function MeshDashboard() {
         if (bestKey && bestKey !== role) {
           const newCtx = CONTEXTS[bestKey];
           const fromLabel = ctx.label;
-          // Switch context state
+          // Switch context state — suppress the role-change effect's task reset
+          suppressTaskResetRef.current = true;
           setRole(bestKey);
           localStorage.setItem("mesh_role", bestKey);
           setExpandedDomains(prev => ({ ...prev, [newCtx.domain]: true }));
@@ -788,6 +798,9 @@ export default function MeshDashboard() {
           });
           const assemblyDuration = agentsToReveal.length * 180 + 600;
           setTimeout(() => {
+            suppressTaskResetRef.current = false;
+            // Restore the captured task text in case the role-change effect cleared it
+            setTask(capturedTask);
             setAssemblyPhase("executing");
             setShowOutput(true);
             setRoutedNodes([]);
@@ -818,6 +831,7 @@ export default function MeshDashboard() {
       return;
     } catch {
       // On routing failure, run all agents
+      suppressTaskResetRef.current = false;
       setCurrentAgents([...agentList]);
       setAssemblyPhase("idle");
     }
@@ -1047,7 +1061,7 @@ export default function MeshDashboard() {
           ) : showOutput ? (
             <OutputPanel
               agents={currentAgents}
-              taskText={task}
+              taskText={frozenTask || task}
               ctx={ctx}
               vaultText={vaultText}
               activeDocId={activeVaultDocId}

@@ -247,3 +247,8 @@
 - [x] Phase 3 (Execution): assembled agents start running, output panel slides in
 - [x] Right-panel agent list: cards animate in sequentially with agent-card-in keyframe during assembly
 - [x] CSS keyframe animations: pulse, radar-sweep, node-appear, node-ripple, agent-card-in, counter-tick, shimmer, slide-up-fade-in
+
+## Session 9 — Bug Fix: Empty taskText on Agent Execution
+
+- [x] Fix: agents receive empty taskText (Zod too_small error) after assembly animation
+- [x] Root cause: role-change useEffect called setTask("") during auto-switch; fixed with suppressTaskResetRef + frozenTask state
