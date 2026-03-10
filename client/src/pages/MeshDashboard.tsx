@@ -516,7 +516,63 @@ function SystemMetricsWidget() {
   );
 }
 
-// ─── Main Dashboard ───────────────────────────────────────────────────────────
+// ─── Right Panel: Metrics Strip ───────────────────────────────────────────────────────────────────────────────
+function RightPanelMetrics() {
+  const { data: metrics, isLoading } = trpc.mesh.getMetrics.useQuery();
+  const items = [
+    { label: "Today",   value: isLoading ? "—" : String(metrics?.tasksToday ?? 0),    sub: "tasks",   color: "#7BA3D4" },
+    { label: "Total",   value: isLoading ? "—" : String(metrics?.totalTasks ?? 0),    sub: "tasks",   color: "#8BBFD4" },
+    { label: "Agents",  value: isLoading ? "—" : String(metrics?.avgAgents ?? 0),     sub: "avg/task", color: "#A89BD4" },
+    { label: "Success", value: isLoading ? "—" : `${metrics?.successRate ?? 100}%`,   sub: "rate",    color: "#4ADE80" },
+  ];
+  return (
+    <div style={{ padding: "14px 14px 10px", borderBottom: "1px solid #1C3057", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, flexShrink: 0 }}>
+      {items.map(item => (
+        <div key={item.label} style={{ background: "#0B1629", borderRadius: 10, padding: "10px 12px", border: "1px solid #1C3057" }}>
+          <div style={{ fontSize: 20, fontFamily: "'Inter', sans-serif", fontWeight: 800, color: item.color, lineHeight: 1, letterSpacing: "-0.02em" }}>{item.value}</div>
+          <div style={{ fontSize: 9, color: "#637080", fontFamily: "'JetBrains Mono', monospace", marginTop: 4, textTransform: "uppercase", letterSpacing: "0.06em" }}>{item.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Right Panel: Live Activity Feed ──────────────────────────────────────────────────────────────────────────────
+function LiveActivityFeed() {
+  const { data: activity, isLoading } = trpc.mesh.getRecentActivity.useQuery();
+  type Row = NonNullable<typeof activity>[number];
+  if (isLoading) return <div style={{ padding: "14px", fontSize: 10, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>Loading…</div>;
+  if (!activity || activity.length === 0) return (
+    <div style={{ padding: "16px 14px", textAlign: "center" }}>
+      <div style={{ fontSize: 22, marginBottom: 6 }}>⚡</div>
+      <div style={{ fontSize: 11, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>No activity yet</div>
+      <div style={{ fontSize: 10, color: "#4A5568", fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>Execute your first task above</div>
+    </div>
+  );
+  return (
+    <div style={{ padding: "8px 0" }}>
+      {(activity || []).map((row: Row, i: number) => (
+        <div key={row.id} style={{
+          display: "flex", alignItems: "flex-start", gap: 10, padding: "9px 14px",
+          borderBottom: i < activity.length - 1 ? "1px solid rgba(28,48,87,0.5)" : "none",
+        }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(123,163,212,0.08)", border: "1px solid rgba(123,163,212,0.15)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 12 }}>⚡</div>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontSize: 11, color: "#A8B4C8", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", marginBottom: 2 }}>
+              {row.task.length > 38 ? row.task.slice(0, 38) + "…" : row.task}
+            </div>
+            <div style={{ fontSize: 9, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>
+              {row.contextLabel} · {row.agentCount} agents
+            </div>
+          </div>
+          <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 999, background: "rgba(74,222,128,0.1)", color: "#4ADE80", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, border: "1px solid rgba(74,222,128,0.15)", flexShrink: 0 }}>Done</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Main Dashboard ───────────────────────────────────────────────────────────────────────────────
 export default function MeshDashboard() {
   const { user, logout } = useAuth();
   const utils = trpc.useUtils();
@@ -850,50 +906,66 @@ export default function MeshDashboard() {
               </div>
 
               {/* ── RIGHT PANEL ── */}
-              <div style={{ borderLeft: "1px solid #1C3057", background: "#0A1628", overflowY: "auto", padding: "20px 14px", display: "flex", flexDirection: "column", gap: 12 }}>
+              <div style={{ borderLeft: "1px solid #1C3057", background: "#0A1628", overflowY: "auto", display: "flex", flexDirection: "column" }}>
 
-                {/* Active agents */}
-                <div style={{ background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, padding: "14px 14px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                    <span style={{ fontSize: 9, color: "#637080", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>Active Agents</span>
-                    <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 999, background: "rgba(123,163,212,0.1)", color: "#7BA3D4", fontFamily: "'JetBrains Mono', monospace" }}>{agentList.length} / 50</span>
+                {/* ── Metrics strip ── */}
+                <RightPanelMetrics />
+
+                {/* ── Agents card ── */}
+                <div style={{ margin: "0 14px 12px", background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, overflow: "hidden" }}>
+                  {/* Card header */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: "1px solid #152542" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E", display: "inline-block", boxShadow: "0 0 0 2px rgba(34,197,94,0.2)" }} />
+                      <span style={{ fontSize: 11, fontWeight: 700, color: "#E8ECF2" }}>Agents</span>
+                    </div>
+                    <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 999, background: "rgba(123,163,212,0.1)", color: "#7BA3D4", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>{agentList.length} ready</span>
                   </div>
-                  {/* Capacity bar */}
-                  <div style={{ height: 3, background: "#152542", borderRadius: 999, marginBottom: 12 }}>
-                    <div style={{ height: "100%", width: `${(agentList.length / 50) * 100}%`, background: agentList.length > 30 ? "#C9A84C" : "#7BA3D4", borderRadius: 999, transition: "width 0.3s" }} />
-                  </div>
-                  <div style={{ maxHeight: 200, overflowY: "auto" }}>
-                    {agentList.map(ag => (
-                      <div key={ag.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid #0F1E38" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 7 }}>
-                          <span style={{ width: 6, height: 6, borderRadius: "50%", background: ag.spawned ? "#C9A84C" : ctx.color, display: "inline-block", flexShrink: 0 }} />
-                          <span style={{ fontSize: 11, color: ag.spawned ? "#C9A84C" : "#A8B4C8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 110 }}>{ag.label}</span>
-                        </div>
-                        <span style={{ fontSize: 9, color: ag.spawned ? "#C9A84C" : "#4A5568", fontFamily: "'JetBrains Mono', monospace" }}>{ag.spawned ? "⚡" : "●"}</span>
+                  {/* Agent rows */}
+                  <div style={{ padding: "8px 0", maxHeight: 220, overflowY: "auto" }}>
+                    {agentList.map((ag, idx) => (
+                      <div key={ag.id} style={{
+                        display: "flex", alignItems: "center", padding: "7px 14px",
+                        background: ag.spawned ? "rgba(201,168,76,0.04)" : "transparent",
+                        borderBottom: idx < agentList.length - 1 ? "1px solid rgba(28,48,87,0.5)" : "none",
+                      }}>
+                        <span style={{ width: 6, height: 6, borderRadius: "50%", background: ag.spawned ? "#C9A84C" : ctx.color, display: "inline-block", flexShrink: 0, marginRight: 10 }} />
+                        <span style={{ flex: 1, fontSize: 12, color: ag.spawned ? "#C9A84C" : "#A8B4C8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ag.label}</span>
+                        <span style={{
+                          fontSize: 9, padding: "2px 7px", borderRadius: 999, fontFamily: "'JetBrains Mono', monospace",
+                          background: ag.spawned ? "rgba(201,168,76,0.12)" : "rgba(168,180,200,0.06)",
+                          color: ag.spawned ? "#C9A84C" : "#4A5568",
+                          border: ag.spawned ? "1px solid rgba(201,168,76,0.2)" : "1px solid rgba(28,48,87,0.8)",
+                        }}>{ag.spawned ? "⚡ active" : "standby"}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                {/* System Metrics */}
-                <SystemMetricsWidget />
+                {/* ── Live Activity feed ── */}
+                <div style={{ margin: "0 14px 12px", background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: "1px solid #152542" }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#E8ECF2" }}>Recent Activity</span>
+                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E", display: "inline-block", boxShadow: "0 0 0 2px rgba(34,197,94,0.2)" }} />
+                  </div>
+                  <LiveActivityFeed />
+                </div>
 
-                {/* Live Activity */}
-                <LiveActivityWidget />
-
-                {/* Document Vault */}
-                <div style={{ background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, padding: "14px 14px" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                    <span style={{ fontSize: 9, color: "#637080", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>Document Vault</span>
+                {/* ── Document Vault ── */}
+                <div style={{ margin: "0 14px 16px", background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, overflow: "hidden" }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: "1px solid #152542" }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, color: "#E8ECF2" }}>Document Vault</span>
                     {activeVaultDocId && (
-                      <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 999, background: "rgba(74,222,128,0.12)", color: "#4ADE80", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>● Active</span>
+                      <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 999, background: "rgba(74,222,128,0.1)", color: "#4ADE80", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, border: "1px solid rgba(74,222,128,0.2)" }}>● Active</span>
                     )}
                   </div>
-                  <DocumentVault
-                    onVaultTextChange={setVaultText}
-                    activeDocId={activeVaultDocId}
-                    onActiveDocChange={setActiveVaultDocId}
-                  />
+                  <div style={{ padding: "12px 14px" }}>
+                    <DocumentVault
+                      onVaultTextChange={setVaultText}
+                      activeDocId={activeVaultDocId}
+                      onActiveDocChange={setActiveVaultDocId}
+                    />
+                  </div>
                 </div>
 
               </div>
