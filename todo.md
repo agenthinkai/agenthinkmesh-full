@@ -322,3 +322,16 @@
 - [x] Fix footer: stacked layout on mobile
 - [x] Fix horizontal overflow: overflowX hidden on root, reduced padding to 24px
 - [x] Added responsive CSS classes for 640px and 900px breakpoints covering all grids
+
+## Session 18 — Dashboard Mobile Responsiveness
+
+- [x] Audit DashboardLayout sidebar for mobile overflow
+- [x] Add collapsible sidebar with hamburger toggle on mobile (overlay with backdrop)
+- [x] Fix MeshDashboard 3-column layout: single column on mobile (isMobile check)
+- [x] Fix task input area: full-width on mobile, reduced padding 14px
+- [x] Fix agent panel: bottom sheet on mobile with FAB toggle (⚡ button)
+- [x] Fix OutputPanel: responsive padding and header wrapping on mobile
+- [x] Fix AgentCard and ExternalAgentCard: already full-width (flex layout, no fixed widths)
+- [x] Fix context switcher: sidebar becomes overlay on mobile, domain tabs intact
+- [x] Fix topbar: hamburger on mobile, compact padding, truncated context badge
+- [x] Verified: 0 TS errors, 46/46 tests pass, responsive breakpoints at 768px

@@ -11,6 +11,7 @@ import {
   inferAgents,
 } from "@/lib/meshData";
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
+import { useIsMobile } from "@/hooks/useMobile";
 import Logo from "@/components/Logo";
 import { ExternalAgentCard } from "@/components/ExternalAgentCard";
 import { DocumentVault } from "@/components/DocumentVault";
@@ -484,18 +485,19 @@ function OutputPanel({ agents, taskText, ctx, vaultText, activeDocId, onBack, on
     };
   };
 
+  const isSmallScreen = typeof window !== "undefined" && window.innerWidth < 768;
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "22px 24px", background: "#0B1629" }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
-        <button onClick={onBack} style={{ background: "none", border: "1px solid #1C3057", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 12, color: "#8494AA", fontFamily: "'JetBrains Mono', monospace" }}>← Back</button>
-        <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 700, color: "#E8ECF2" }}>{taskText.length > 80 ? taskText.slice(0, 80) + "…" : taskText}</div>
+    <div style={{ flex: 1, overflowY: "auto", padding: isSmallScreen ? "14px 12px" : "22px 24px", background: "#0B1629" }}>
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 18, flexWrap: "wrap" }}>
+        <button onClick={onBack} style={{ background: "none", border: "1px solid #1C3057", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 12, color: "#8494AA", fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>← Back</button>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: isSmallScreen ? 12 : 13, fontWeight: 700, color: "#E8ECF2", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: isSmallScreen ? "normal" : "nowrap" }}>{taskText.length > (isSmallScreen ? 60 : 80) ? taskText.slice(0, isSmallScreen ? 60 : 80) + "…" : taskText}</div>
           <div style={{ fontSize: 10, color: "#637080", fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>
             {ctx.label} · {agents.length} agents · {doneCount >= total ? "Completed" : `Running · ${elapsed}s`}
           </div>
         </div>
         {doneCount >= total && (
-          <button onClick={exportPDF} style={{ background: "linear-gradient(135deg, #1C3057 0%, #243B6E 100%)", color: "#E8ECF2", border: "1px solid rgba(168,180,200,0.2)", borderRadius: 8, padding: "7px 14px", cursor: "pointer", fontSize: 11, fontFamily: "'Inter', sans-serif", fontWeight: 700 }}>
+          <button onClick={exportPDF} style={{ background: "linear-gradient(135deg, #1C3057 0%, #243B6E 100%)", color: "#E8ECF2", border: "1px solid rgba(168,180,200,0.2)", borderRadius: 8, padding: "7px 14px", cursor: "pointer", fontSize: 11, fontFamily: "'Inter', sans-serif", fontWeight: 700, flexShrink: 0 }}>
             ↓ Export PDF
           </button>
         )}
@@ -742,8 +744,9 @@ function CenterMetrics() {
     { label: "Agents",  value: isLoading ? "—" : String(metrics?.avgAgents ?? 0),     color: "#A89BD4" },
     { label: "Success", value: isLoading ? "—" : `${metrics?.successRate ?? 100}%`,   color: "#4ADE80" },
   ];
+  const isSmall = typeof window !== "undefined" && window.innerWidth < 768;
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+    <div style={{ display: "grid", gridTemplateColumns: isSmall ? "repeat(2, 1fr)" : "repeat(4, 1fr)", gap: 10 }}>
       {items.map(item => (
         <div key={item.label} style={{ background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, padding: "14px 16px" }}>
           <div style={{ fontSize: 22, fontFamily: "'Inter', sans-serif", fontWeight: 800, color: item.color, lineHeight: 1, letterSpacing: "-0.02em" }}>{item.value}</div>
@@ -832,6 +835,9 @@ export default function MeshDashboard() {
   const [booting, setBooting] = useState(true);
   const [bootStep, setBootStep] = useState(0);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const isMobile = useIsMobile();
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [mobileAgentPanelOpen, setMobileAgentPanelOpen] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Smart routing state
   const [routingAnalysis, setRoutingAnalysis] = useState<{
@@ -1159,42 +1165,73 @@ export default function MeshDashboard() {
     <div style={{ height: "100vh", display: "flex", flexDirection: "column", background: "#0B1629", fontFamily: "'Inter', sans-serif", overflow: "hidden" }}>
 
       {/* ── Slim top bar ── */}
-      <header style={{ height: 48, display: "flex", alignItems: "center", padding: "0 20px", borderBottom: "1px solid #1C3057", background: "#0F1E38", gap: 12, flexShrink: 0 }}>
+      <header style={{ height: 48, display: "flex", alignItems: "center", padding: isMobile ? "0 12px" : "0 20px", borderBottom: "1px solid #1C3057", background: "#0F1E38", gap: isMobile ? 8 : 12, flexShrink: 0, minWidth: 0 }}>
+        {/* Mobile hamburger */}
+        {isMobile && (
+          <button
+            onClick={() => setMobileSidebarOpen(o => !o)}
+            style={{ width: 32, height: 32, borderRadius: 8, border: "1px solid #1C3057", background: "rgba(123,163,212,0.06)", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", color: "#8494AA", fontSize: 16, flexShrink: 0 }}
+            aria-label="Toggle sidebar"
+          >☰</button>
+        )}
         <Logo size={24} />
-        {/* Active context badge — hidden when no context selected */}
+        {/* Active context badge — hidden on mobile when no context, truncated when context active */}
         {ctx ? (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 10px", background: "rgba(123,163,212,0.08)", border: "1px solid rgba(123,163,212,0.2)", borderRadius: 20 }}>
-            <span style={{ fontSize: 12 }}>{ctx.icon}</span>
-            <span style={{ fontSize: 11, fontWeight: 700, color: "#E8ECF2" }}>{ctx.label}</span>
-            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#22C55E", display: "inline-block" }} />
+          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 10px", background: "rgba(123,163,212,0.08)", border: "1px solid rgba(123,163,212,0.2)", borderRadius: 20, minWidth: 0, overflow: "hidden" }}>
+            <span style={{ fontSize: 12, flexShrink: 0 }}>{ctx.icon}</span>
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#E8ECF2", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ctx.label}</span>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: "#22C55E", display: "inline-block", flexShrink: 0 }} />
           </div>
         ) : (
-          <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 10px", background: "rgba(123,163,212,0.05)", border: "1px dashed rgba(123,163,212,0.2)", borderRadius: 20 }}>
-            <span style={{ fontSize: 11, color: "#637080" }}>No context selected — type a prompt to auto-detect</span>
-          </div>
+          !isMobile && (
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "3px 10px", background: "rgba(123,163,212,0.05)", border: "1px dashed rgba(123,163,212,0.2)", borderRadius: 20 }}>
+              <span style={{ fontSize: 11, color: "#637080" }}>No context selected — type a prompt to auto-detect</span>
+            </div>
+          )
         )}
         {spawnedCount > 0 && (
-          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 999, background: "rgba(201,168,76,0.12)", color: "#C9A84C", border: "1px solid rgba(201,168,76,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>⚡ {spawnedCount} spawned</span>
+          <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 999, background: "rgba(201,168,76,0.12)", color: "#C9A84C", border: "1px solid rgba(201,168,76,0.3)", fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>⚡ {spawnedCount}</span>
         )}
         <div style={{ flex: 1 }} />
-        <span style={{ fontSize: 12, color: "#8494AA" }}>{user?.name || user?.email || "User"}</span>
-        <button onClick={logout} style={{ fontSize: 11, color: "#637080", background: "none", border: "1px solid #1C3057", borderRadius: 6, padding: "4px 10px", cursor: "pointer" }}>Sign out</button>
+        {!isMobile && <span style={{ fontSize: 12, color: "#8494AA" }}>{user?.name || user?.email || "User"}</span>}
+        <button onClick={logout} style={{ fontSize: 11, color: "#637080", background: "none", border: "1px solid #1C3057", borderRadius: 6, padding: "4px 10px", cursor: "pointer", flexShrink: 0 }}>{isMobile ? "↩" : "Sign out"}</button>
       </header>
 
       {/* ── Body ── */}
-      <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <div style={{ flex: 1, display: "flex", overflow: "hidden", position: "relative" }}>
+
+        {/* Mobile sidebar backdrop */}
+        {isMobile && mobileSidebarOpen && (
+          <div
+            onClick={() => setMobileSidebarOpen(false)}
+            style={{
+              position: "fixed", inset: 0, background: "rgba(0,0,0,0.6)",
+              zIndex: 100, backdropFilter: "blur(2px)",
+            }}
+          />
+        )}
 
         {/* ── LEFT SIDEBAR: Domain navigation ── */}
         <aside style={{
-          width: sidebarCollapsed ? 52 : 220,
+          width: isMobile ? 260 : (sidebarCollapsed ? 52 : 220),
           borderRight: "1px solid #1C3057",
           background: "#0A1628",
           display: "flex",
           flexDirection: "column",
           flexShrink: 0,
-          overflowY: sidebarCollapsed ? "hidden" : "auto",
-          transition: "width 0.25s cubic-bezier(0.4,0,0.2,1)",
-          overflow: "hidden",
+          overflowY: isMobile ? "auto" : (sidebarCollapsed ? "hidden" : "auto"),
+          transition: isMobile ? "transform 0.28s cubic-bezier(0.4,0,0.2,1)" : "width 0.25s cubic-bezier(0.4,0,0.2,1)",
+          overflow: isMobile ? "auto" : "hidden",
+          // Mobile: slide in/out as overlay
+          ...(isMobile ? {
+            position: "fixed",
+            top: 48,
+            left: 0,
+            bottom: 0,
+            zIndex: 110,
+            transform: mobileSidebarOpen ? "translateX(0)" : "translateX(-100%)",
+            boxShadow: mobileSidebarOpen ? "4px 0 24px rgba(0,0,0,0.5)" : "none",
+          } : {}),
         }}>
 
           {/* Sidebar header + collapse toggle */}
@@ -1366,15 +1403,15 @@ export default function MeshDashboard() {
               onDone={handleOutputDone}
             />
           ) : (
-            <div style={{ flex: 1, overflow: "hidden", display: "grid", gridTemplateColumns: "1fr 260px" }}>
+            <div style={{ flex: 1, overflow: isMobile ? "auto" : "hidden", display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 260px" }}>
 
               {/* ── CENTER ── */}
-              <div style={{ overflowY: "auto", padding: "28px 28px 28px", display: "flex", flexDirection: "column", gap: 18, background: "#0B1629" }}>
+              <div style={{ overflowY: isMobile ? "visible" : "auto", padding: isMobile ? "16px 14px 80px" : "28px 28px 28px", display: "flex", flexDirection: "column", gap: isMobile ? 14 : 18, background: "#0B1629" }}>
 
                 {/* Greeting */}
-                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between" }}>
-                  <div>
-                    <h1 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 800, fontSize: 24, color: "#E8ECF2", letterSpacing: "-0.03em", marginBottom: 4 }}>
+                <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ minWidth: 0 }}>
+                    <h1 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 800, fontSize: isMobile ? 20 : 24, color: "#E8ECF2", letterSpacing: "-0.03em", marginBottom: 4 }}>
                       Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}, {(user?.name || "").split(" ")[0] || "there"}.
                     </h1>
                     <div style={{ fontSize: 12, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>
@@ -1385,7 +1422,7 @@ export default function MeshDashboard() {
                       )}
                     </div>
                   </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 8, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "#A8B4C8" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 12px", background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 8, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "#A8B4C8", flexShrink: 0 }}>
                     <span style={{ color: "#22C55E", fontWeight: 700 }}>●</span> Mesh Online
                   </div>
                 </div>
@@ -1646,8 +1683,82 @@ export default function MeshDashboard() {
 
               </div>
 
-              {/* ── RIGHT PANEL ── */}
-              <div style={{ borderLeft: "1px solid #1C3057", background: "#0A1628", overflowY: "auto", display: "flex", flexDirection: "column", paddingTop: 14 }}>
+              {/* Mobile: Floating button to open agent panel */}
+              {isMobile && (
+                <button
+                  onClick={() => setMobileAgentPanelOpen(o => !o)}
+                  style={{
+                    position: "fixed", bottom: 20, right: 20, zIndex: 120,
+                    width: 52, height: 52, borderRadius: "50%",
+                    background: "linear-gradient(135deg, #7BA3D4 0%, #4A7DB5 100%)",
+                    border: "none", cursor: "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    boxShadow: "0 4px 20px rgba(123,163,212,0.4)",
+                    fontSize: 20, color: "#0B1629",
+                  }}
+                  aria-label="Toggle agent panel"
+                >
+                  {mobileAgentPanelOpen ? "×" : "⚡"}
+                </button>
+              )}
+
+              {/* Mobile: Agent panel as bottom sheet */}
+              {isMobile && mobileAgentPanelOpen && (
+                <>
+                  <div
+                    onClick={() => setMobileAgentPanelOpen(false)}
+                    style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", zIndex: 115 }}
+                  />
+                  <div style={{
+                    position: "fixed", bottom: 0, left: 0, right: 0, zIndex: 120,
+                    background: "#0A1628", borderTop: "1px solid #1C3057",
+                    borderRadius: "20px 20px 0 0",
+                    maxHeight: "70vh", overflowY: "auto",
+                    boxShadow: "0 -8px 32px rgba(0,0,0,0.5)",
+                    paddingBottom: 32,
+                  }}>
+                    {/* Handle */}
+                    <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 8px" }}>
+                      <div style={{ width: 40, height: 4, borderRadius: 2, background: "#1C3057" }} />
+                    </div>
+                    {/* Agents card */}
+                    <div style={{ margin: "0 14px 12px", background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, overflow: "hidden" }}>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: "1px solid #152542" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E", display: "inline-block", boxShadow: "0 0 0 2px rgba(34,197,94,0.2)" }} />
+                          <span style={{ fontSize: 11, fontWeight: 700, color: "#E8ECF2" }}>Agents</span>
+                        </div>
+                        <span style={{ fontSize: 10, padding: "2px 8px", borderRadius: 999, background: "rgba(123,163,212,0.1)", color: "#7BA3D4", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>{agentList.length} ready</span>
+                      </div>
+                      <div style={{ padding: "8px 0", maxHeight: 240, overflowY: "auto" }}>
+                        {agentList.map((ag, idx) => (
+                          <div key={ag.id} style={{ display: "flex", alignItems: "center", padding: "7px 14px", borderBottom: idx < agentList.length - 1 ? "1px solid rgba(28,48,87,0.5)" : "none" }}>
+                            <span style={{ width: 6, height: 6, borderRadius: "50%", background: ag.spawned ? "#C9A84C" : (ctx?.color ?? "#7BA3D4"), display: "inline-block", flexShrink: 0, marginRight: 10 }} />
+                            <span style={{ flex: 1, fontSize: 12, color: ag.spawned ? "#C9A84C" : "#A8B4C8", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{ag.label}</span>
+                            <span style={{ fontSize: 9, padding: "2px 7px", borderRadius: 999, background: "rgba(168,180,200,0.08)", color: "#637080", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, border: "1px solid rgba(28,48,87,0.8)" }}>{ag.spawned ? "⚡ active" : "standby"}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    {/* Document Vault */}
+                    <div style={{ margin: "0 14px 16px", background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, overflow: "hidden" }}>
+                      <div style={{ padding: "12px 14px", borderBottom: "1px solid #152542" }}>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: "#E8ECF2" }}>Document Vault</span>
+                      </div>
+                      <div style={{ padding: "12px 14px" }}>
+                        <DocumentVault
+                          onVaultTextChange={setVaultText}
+                          activeDocId={activeVaultDocId}
+                          onActiveDocChange={setActiveVaultDocId}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* ── RIGHT PANEL (desktop only) ── */}
+              {!isMobile && <div style={{ borderLeft: "1px solid #1C3057", background: "#0A1628", overflowY: "auto", display: "flex", flexDirection: "column", paddingTop: 14 }}>
 
                 {/* ── Agents card ── */}
                 <div style={{ margin: "0 14px 12px", background: "#0F1E38", border: `1px solid ${assemblyPhase === "assembling" ? "rgba(123,163,212,0.5)" : "#1C3057"}`, borderRadius: 12, overflow: "hidden", transition: "border-color 0.4s", boxShadow: assemblyPhase === "assembling" ? "0 0 18px rgba(123,163,212,0.12)" : "none" }}>
@@ -1753,7 +1864,7 @@ export default function MeshDashboard() {
                   </div>
                 </div>
 
-              </div>
+              </div>}
             </div>
           )}
         </main>
