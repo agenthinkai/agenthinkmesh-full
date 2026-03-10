@@ -345,3 +345,8 @@
 ## Session 20 — Mobile Upload Button
 - [x] Add visible upload/attach button inside Task Command Center on mobile
 - [x] Tapping it opens the Document Vault bottom sheet (same as the ⚡ FAB)
+
+## Session 22 — Agent Card Hover Effects
+- [x] Enrich AGENT_CARDS data with capabilities, task count, accuracy, and description
+- [x] Add hover state to each card: expand height, reveal details panel with smooth CSS transition
+- [x] Add "View agent →" link on hover pointing to /registry

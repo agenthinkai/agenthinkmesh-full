@@ -516,9 +516,10 @@
   border-radius: 14px;
   padding: 14px 18px;
   min-width: 160px;
+  max-width: 200px;
   text-align: left;
   position: relative;
-  overflow: hidden;
+  overflow: visible; /* allow hover details to expand below */
   animation: neonCardFloat 5s ease-in-out infinite;
 }
 .landing-agent-card:nth-child(2) { animation-delay: 1s; }
@@ -544,6 +545,12 @@
   padding: 18px 30px;
   text-align: center;
   position: relative;
+}
+
+/* ── Agent card hover detail animation ─────────────────────────────────── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 /* Mobile: stack agent cards 2-per-row, stats 2-per-row */

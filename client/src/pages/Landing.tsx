@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { getLoginUrl } from "@/const";
 import Logo from "@/components/Logo";
 import { Link } from "wouter";
@@ -238,15 +238,52 @@ const NEON_COLORS = [
 ];
 
 const AGENT_CARDS = [
-  { name: "Deal Screener", domain: "Finance · Active" },
-  { name: "Legal Reviewer", domain: "Legal · Standby" },
-  { name: "Healthcare AI",  domain: "Healthcare · Ready" },
-  { name: "GCC Wealth",     domain: "Wealth · Active" },
+  {
+    name: "Deal Screener",
+    domain: "Finance · Active",
+    icon: "📊",
+    description: "Screens investment opportunities against custom thesis criteria. Analyses financials, market position, and risk factors.",
+    capabilities: ["Pitch deck analysis", "Financial modelling", "Competitor benchmarking"],
+    tasksRun: 842,
+    accuracy: 96,
+    barWidth: 72,
+  },
+  {
+    name: "Legal Reviewer",
+    domain: "Legal · Standby",
+    icon: "⚖️",
+    description: "Reviews contracts, NDAs, and employment agreements. Flags risk clauses and suggests redlines in seconds.",
+    capabilities: ["Contract redlining", "Clause risk scoring", "Jurisdiction checks"],
+    tasksRun: 614,
+    accuracy: 98,
+    barWidth: 58,
+  },
+  {
+    name: "Healthcare AI",
+    domain: "Healthcare · Ready",
+    icon: "🏥",
+    description: "Processes clinical data, summarises patient records, and assists with regulatory compliance documentation.",
+    capabilities: ["Clinical summarisation", "Regulatory mapping", "Coding assistance"],
+    tasksRun: 391,
+    accuracy: 97,
+    barWidth: 44,
+  },
+  {
+    name: "GCC Wealth",
+    domain: "Wealth · Active",
+    icon: "🏦",
+    description: "Tailored for GCC wealth management. Generates client briefs, portfolio commentary, and Sharia-compliant screening.",
+    capabilities: ["Portfolio commentary", "Sharia screening", "Client brief generation"],
+    tasksRun: 558,
+    accuracy: 95,
+    barWidth: 65,
+  },
 ];
 
 function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: number; verifiedAgents: number; domainContexts: number; avgExecSec: number } }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animRef   = useRef<number>(0);
+  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -381,19 +418,67 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
 
         {/* Agent cards row */}
         <div className="landing-agent-row">
-          {AGENT_CARDS.map((ac, i) => (
-            <div key={i} className="landing-agent-card" style={{ border: `1px solid ${NEON_COLORS[i].border}`, boxShadow: `0 4px 24px rgba(0,0,0,0.45), 0 0 20px ${NEON_COLORS[i].shadow}` }}>
-              <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${NEON_COLORS[i].color}99, transparent)` }} />
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
-                <span style={{ width: 7, height: 7, borderRadius: "50%", background: NEON_COLORS[i].color, boxShadow: `0 0 8px ${NEON_COLORS[i].color}`, display: "inline-block", flexShrink: 0 }} />
-                <span style={{ fontSize: 12, fontWeight: 700, color: "#C0D8EE" }}>{ac.name}</span>
+          {AGENT_CARDS.map((ac, i) => {
+            const isHovered = hoveredCard === i;
+            return (
+              <div
+                key={i}
+                className="landing-agent-card"
+                onMouseEnter={() => setHoveredCard(i)}
+                onMouseLeave={() => setHoveredCard(null)}
+                style={{
+                  border: `1px solid ${isHovered ? NEON_COLORS[i].color + "55" : NEON_COLORS[i].border}`,
+                  boxShadow: isHovered
+                    ? `0 8px 40px rgba(0,0,0,0.6), 0 0 32px ${NEON_COLORS[i].shadow.replace("0.06", "0.22")}, 0 0 0 1px ${NEON_COLORS[i].color}22`
+                    : `0 4px 24px rgba(0,0,0,0.45), 0 0 20px ${NEON_COLORS[i].shadow}`,
+                  transform: isHovered ? "translateY(-6px) scale(1.03)" : "translateY(0) scale(1)",
+                  transition: "all 0.28s cubic-bezier(0.34,1.56,0.64,1)",
+                  cursor: "pointer",
+                  minHeight: isHovered ? 180 : 90,
+                  zIndex: isHovered ? 10 : 1,
+                }}
+              >
+                {/* Top accent line */}
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: isHovered ? 2 : 1, background: `linear-gradient(90deg, transparent, ${NEON_COLORS[i].color}${isHovered ? "cc" : "99"}, transparent)`, transition: "height 0.2s" }} />
+
+                {/* Header row */}
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: isHovered ? 16 : 13, transition: "font-size 0.2s" }}>{ac.icon}</span>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: isHovered ? NEON_COLORS[i].color : "#C0D8EE", transition: "color 0.2s" }}>{ac.name}</span>
+                  <span style={{ marginLeft: "auto", width: 7, height: 7, borderRadius: "50%", background: NEON_COLORS[i].color, boxShadow: `0 0 8px ${NEON_COLORS[i].color}`, display: "inline-block", flexShrink: 0, animation: "pulse 2s infinite" }} />
+                </div>
+
+                {/* Domain badge */}
+                <div style={{ fontFamily: MONO, fontSize: 10, color: "#1E3A5A", marginBottom: isHovered ? 10 : 8 }}>{ac.domain}</div>
+
+                {/* Progress bar */}
+                <div style={{ height: 3, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden", marginBottom: isHovered ? 12 : 0 }}>
+                  <div style={{ height: "100%", borderRadius: 2, background: NEON_COLORS[i].bar, width: `${ac.barWidth}%`, transition: "width 0.6s ease" }} />
+                </div>
+
+                {/* Hover-only details */}
+                {isHovered && (
+                  <div style={{ animation: "fadeSlideUp 0.22s ease forwards" }}>
+                    <p style={{ fontSize: 11, color: "#7AAAC8", lineHeight: 1.6, marginBottom: 10 }}>{ac.description}</p>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
+                      {ac.capabilities.map((cap, j) => (
+                        <div key={j} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: "#4A7A9A" }}>
+                          <span style={{ width: 4, height: 4, borderRadius: "50%", background: NEON_COLORS[i].color, opacity: 0.7, flexShrink: 0, display: "inline-block" }} />
+                          {cap}
+                        </div>
+                      ))}
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontFamily: MONO, fontSize: 10, color: "#1E3A5A" }}>{ac.tasksRun.toLocaleString()} tasks · {ac.accuracy}% accuracy</span>
+                      <a href={loginUrl} style={{ fontSize: 10, color: NEON_COLORS[i].color, textDecoration: "none", fontWeight: 700, fontFamily: MONO }}>
+                        View agent →
+                      </a>
+                    </div>
+                  </div>
+                )}
               </div>
-              <div style={{ fontFamily: MONO, fontSize: 10, color: "#1E3A5A", marginBottom: 10 }}>{ac.domain}</div>
-              <div style={{ height: 3, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-                <div className={`neon-bar-${i}`} style={{ height: "100%", borderRadius: 2, background: NEON_COLORS[i].bar, width: "60%", animation: `barFill${i} 3s ease-in-out ${i * 0.75}s infinite alternate` }} />
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Stats row */}
