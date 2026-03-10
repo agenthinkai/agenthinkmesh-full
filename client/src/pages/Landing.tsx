@@ -156,12 +156,14 @@ export default function Landing() {
           نظام تنسيق وكلاء الذكاء الاصطناعي للمؤسسات
         </div>
 
-        <h1 style={{ fontSize: "clamp(36px, 5vw, 62px)", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1.1, marginBottom: 20, maxWidth: 780, margin: "0 auto 20px", color: SILVER_50, position: "relative" }}>
-          Deploy a mesh of<br />
+        {/* Product name line — mirrors Google AI Agents style */}
+        <div style={{ fontSize: "clamp(38px, 5.5vw, 68px)", fontWeight: 800, letterSpacing: "-0.03em", lineHeight: 1.05, marginBottom: 8, maxWidth: 820, margin: "0 auto 8px", position: "relative" }}>
           <span style={{ background: SILVER_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-            specialist AI agents
+            AgenThink Mesh
           </span>
-          <br />against any task.
+        </div>
+        <h1 style={{ fontSize: "clamp(32px, 4.5vw, 58px)", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1.1, marginBottom: 20, maxWidth: 820, margin: "0 auto 20px", color: SILVER_50, position: "relative" }}>
+          Multi-agent tasks, handled.
         </h1>
 
         <p style={{ fontSize: 16, color: SILVER_300, maxWidth: 540, margin: "0 auto 44px", lineHeight: 1.8, position: "relative" }}>
