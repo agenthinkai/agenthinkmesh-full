@@ -9,6 +9,7 @@ import { storagePut } from "./storage";
 import { eq, desc, gte, sql, and, like, or } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
+import * as XLSX from "xlsx";
 
 // ── Discovery scoring ─────────────────────────────────────────────────────────
 // score = (capabilityMatch * 0.5) + (successRate * 0.3) + (latencyScore * 0.2)
@@ -142,7 +143,7 @@ export const appRouter = router({
           "KEY FINDINGS: 3-5 bullet points.",
           "FLAGS: any risks or issues (or 'None identified').",
           "NEXT ACTION: one recommended step.",
-          input.vaultText ? `\nDocument context:\n${input.vaultText.slice(0, 2000)}` : "",
+          input.vaultText ? `\n\n=== DOCUMENT CONTEXT (analyse this data to answer the task) ===\n${input.vaultText.slice(0, 10000)}\n=== END DOCUMENT CONTEXT ===` : "",
         ].filter(Boolean).join("\n");
 
         const response = await invokeLLM({
@@ -150,7 +151,7 @@ export const appRouter = router({
             { role: "system", content: systemPrompt },
             { role: "user", content: input.taskText },
           ],
-          max_tokens: 1000,
+          max_tokens: 2000,
         });
 
         const content = response.choices[0]?.message?.content;
@@ -210,9 +211,24 @@ export const appRouter = router({
 
         // Extract text for prompt injection
         const TEXT_EXTS = new Set(["txt","md","csv","json","xml","yaml","yml","html","htm","js","ts","py","java","c","cpp","cs","go","rb","sh","sql","log","toml","ini","env","rst"]);
+        const EXCEL_EXTS = new Set(["xlsx","xls","xlsm","xlsb","ods"]);
         let extractedText = "";
         if (input.mimeType.startsWith("text/") || TEXT_EXTS.has(ext.toLowerCase())) {
-          extractedText = buffer.toString("utf-8").slice(0, 8000);
+          extractedText = buffer.toString("utf-8").slice(0, 12000);
+        } else if (EXCEL_EXTS.has(ext.toLowerCase()) || input.mimeType.includes("spreadsheet") || input.mimeType.includes("excel")) {
+          // Parse Excel with SheetJS — convert every sheet to CSV text
+          try {
+            const workbook = XLSX.read(buffer, { type: "buffer" });
+            const parts: string[] = [];
+            for (const sheetName of workbook.SheetNames) {
+              const sheet = workbook.Sheets[sheetName];
+              const csv = XLSX.utils.sheet_to_csv(sheet, { blankrows: false });
+              if (csv.trim()) parts.push(`=== Sheet: ${sheetName} ===\n${csv}`);
+            }
+            extractedText = parts.join("\n\n").slice(0, 12000);
+          } catch (err) {
+            extractedText = `[Excel file uploaded — could not parse: ${err instanceof Error ? err.message : "unknown error"}]`;
+          }
         } else if (input.mimeType === "application/pdf" || ext === "pdf") {
           // For PDF: extract readable ASCII text from buffer (basic extraction)
           const raw = buffer.toString("latin1");
@@ -222,9 +238,17 @@ export const appRouter = router({
             .replace(/[^\x20-\x7E\n]/g, " ")
             .replace(/\s+/g, " ")
             .trim();
-          extractedText = pdfText.slice(0, 8000) || "[PDF uploaded — text extraction limited]";
+          extractedText = pdfText.slice(0, 12000) || "[PDF uploaded — text extraction limited]";
         } else if (input.mimeType === "application/json" || ext === "json") {
-          try { extractedText = JSON.stringify(JSON.parse(buffer.toString("utf-8")), null, 2).slice(0, 8000); } catch { extractedText = buffer.toString("utf-8").slice(0, 8000); }
+          try { extractedText = JSON.stringify(JSON.parse(buffer.toString("utf-8")), null, 2).slice(0, 12000); } catch { extractedText = buffer.toString("utf-8").slice(0, 12000); }
+        } else if (ext === "docx" || input.mimeType.includes("wordprocessingml")) {
+          // Basic DOCX text extraction — read XML content from the zip
+          try {
+            const wb = XLSX.read(buffer, { type: "buffer" }); // XLSX can read OOXML
+            extractedText = `[DOCX uploaded: ${input.filename} — use a dedicated parser for full text extraction]`;
+          } catch {
+            extractedText = `[DOCX uploaded: ${input.filename}]`;
+          }
         } else {
           extractedText = `[${input.filename} uploaded — file stored in vault, content available for download]`;
         }

@@ -970,6 +970,16 @@ export default function MeshDashboard() {
                       </button>
                     </div>
                   </div>
+                  {/* Vault context indicator */}
+                  {vaultText && (
+                    <div style={{ padding: "0 18px 8px" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 10px", background: "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.2)", borderRadius: 8 }}>
+                        <span style={{ color: "#4ADE80", fontSize: 11 }}>📎</span>
+                        <span style={{ fontSize: 10, color: "#4ADE80", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>Document context active — agents will analyse your uploaded file</span>
+                        <button onClick={() => { setVaultText(""); setActiveVaultDocId(null); }} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer", color: "#637080", fontSize: 13, lineHeight: 1 }}>×</button>
+                      </div>
+                    </div>
+                  )}
                   {/* Quick task chips */}
                   <div style={{ padding: "0 18px 14px", display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {ctx.quickTasks.map(qt => (
