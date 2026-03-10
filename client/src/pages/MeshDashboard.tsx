@@ -1024,15 +1024,6 @@ export default function MeshDashboard() {
                   </div>
                 </div>
 
-                {/* ── Live Activity feed ── */}
-                <div style={{ margin: "0 14px 12px", background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, overflow: "hidden" }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: "1px solid #152542" }}>
-                    <span style={{ fontSize: 11, fontWeight: 700, color: "#E8ECF2" }}>Recent Activity</span>
-                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#22C55E", display: "inline-block", boxShadow: "0 0 0 2px rgba(34,197,94,0.2)" }} />
-                  </div>
-                  <LiveActivityFeed />
-                </div>
-
                 {/* ── Document Vault ── */}
                 <div style={{ margin: "0 14px 16px", background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, overflow: "hidden" }}>
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 14px", borderBottom: "1px solid #152542" }}>
