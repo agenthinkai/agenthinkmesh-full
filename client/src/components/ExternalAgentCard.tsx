@@ -60,26 +60,26 @@ export function ExternalAgentCard({
   }, []);
 
   const chipStyle = {
-    running: { label: "Running", bg: "#EEF2FF", color: "#4F46E5" },
-    done: { label: "Done", bg: "#DCFCE7", color: "#16A34A" },
-    error: { label: "Error", bg: "#FEE2E2", color: "#DC2626" },
+    running: { label: "Running", bg: "rgba(123,163,212,0.15)", color: "#7BA3D4" },
+    done: { label: "Done", bg: "rgba(74,222,128,0.12)", color: "#4ADE80" },
+    error: { label: "Error", bg: "rgba(239,68,68,0.12)", color: "#EF4444" },
   }[status];
 
   return (
     <div
       style={{
-        background: "#FAFBFF",
+        background: "#0F1E38",
         border: `1px solid ${
           status === "done"
-            ? "#BBF7D0"
+            ? "rgba(74,222,128,0.3)"
             : status === "error"
-            ? "#FECACA"
-            : "#C7D2FE"
+            ? "rgba(239,68,68,0.3)"
+            : "rgba(123,163,212,0.25)"
         }`,
         borderRadius: 14,
         padding: "14px 16px",
         marginBottom: 10,
-        boxShadow: "0 2px 12px rgba(99,102,241,0.07)",
+        boxShadow: "0 2px 12px rgba(0,0,0,0.3)",
       }}
     >
       <div
@@ -95,17 +95,17 @@ export function ExternalAgentCard({
             width: 8,
             height: 8,
             borderRadius: "50%",
-            background: "#6366F1",
+            background: "#7BA3D4",
             display: "inline-block",
             flexShrink: 0,
           }}
         />
         <span
           style={{
-            fontFamily: "'Syne', sans-serif",
+            fontFamily: "'Inter', sans-serif",
             fontSize: 12,
             fontWeight: 600,
-            color: "#374151",
+            color: "#E8ECF2",
             flex: 1,
           }}
         >
@@ -116,10 +116,10 @@ export function ExternalAgentCard({
               fontSize: 8,
               padding: "1px 6px",
               borderRadius: 999,
-              background: "#EEF2FF",
-              color: "#4F46E5",
-              border: "1px solid #C7D2FE",
-              fontFamily: "'DM Mono', monospace",
+              background: "rgba(123,163,212,0.12)",
+              color: "#7BA3D4",
+              border: "1px solid rgba(123,163,212,0.25)",
+              fontFamily: "'JetBrains Mono', monospace",
             }}
           >
             External
@@ -132,7 +132,7 @@ export function ExternalAgentCard({
             borderRadius: 999,
             background: chipStyle.bg,
             color: chipStyle.color,
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: "'JetBrains Mono', monospace",
             fontWeight: 600,
           }}
         >
@@ -141,8 +141,8 @@ export function ExternalAgentCard({
         <span
           style={{
             fontSize: 9,
-            color: "#94A3B8",
-            fontFamily: "'DM Mono', monospace",
+            color: "#637080",
+            fontFamily: "'JetBrains Mono', monospace",
           }}
         >
           {elapsed}s
@@ -153,9 +153,9 @@ export function ExternalAgentCard({
           style={{
             margin: 0,
             fontSize: 10,
-            color: "#374151",
+            color: "#A8B4C8",
             lineHeight: 1.7,
-            fontFamily: "'DM Mono', monospace",
+            fontFamily: "'JetBrains Mono', monospace",
             whiteSpace: "pre-wrap",
             wordBreak: "break-word",
           }}

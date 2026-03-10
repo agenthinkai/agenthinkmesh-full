@@ -9,11 +9,11 @@ import { useState } from "react";
 
 const FONT = "'Inter', sans-serif";
 const MONO = "'JetBrains Mono', monospace";
-const INDIGO = "#4F46E5";
-const SLATE = "#0F172A";
-const MUTED = "#64748B";
-const BORDER = "#E2E8F0";
-const BG = "#F8FAFC";
+const INDIGO = "#7BA3D4";
+const SLATE = "#E8ECF2";
+const MUTED = "#8494AA";
+const BORDER = "#1C3057";
+const BG = "#0B1629";
 
 const NODE_EXAMPLE = `import express from "express";
 const app = express();
@@ -83,8 +83,8 @@ function CopyButton({ text }: { text: string }) {
       onClick={copy}
       style={{
         position: "absolute", top: 10, right: 10,
-        background: copied ? "#DCFCE7" : "#F1F5F9",
-        color: copied ? "#16A34A" : MUTED,
+        background: copied ? "rgba(74,222,128,0.12)" : "#152542",
+        color: copied ? "#4ADE80" : MUTED,
         border: "none", borderRadius: 6, padding: "4px 10px",
         fontSize: 10, fontFamily: MONO, cursor: "pointer", fontWeight: 600,
       }}
@@ -98,13 +98,13 @@ function CodeBlock({ code, lang }: { code: string; lang: string }) {
   return (
     <div style={{ position: "relative", marginTop: 10 }}>
       <div style={{
-        background: "#0F172A", borderRadius: 10, padding: "16px 18px",
-        fontFamily: MONO, fontSize: 11, color: "#E2E8F0", lineHeight: 1.7,
+        background: "#060E1C", borderRadius: 10, padding: "16px 18px",
+        fontFamily: MONO, fontSize: 11, color: "#A8B4C8", lineHeight: 1.7,
         overflowX: "auto", whiteSpace: "pre",
       }}>
         <span style={{
           position: "absolute", top: 10, left: 14,
-          fontSize: 9, color: "#475569", fontFamily: MONO, textTransform: "uppercase",
+          fontSize: 9, color: "#637080", fontFamily: MONO, textTransform: "uppercase",
           letterSpacing: "0.08em",
         }}>{lang}</span>
         <div style={{ marginTop: 14 }}>{code}</div>
@@ -118,7 +118,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   return (
     <div style={{ marginBottom: 40 }}>
       <h2 style={{
-        fontFamily: "'Syne', sans-serif", fontSize: 18, fontWeight: 800,
+        fontFamily: "'Inter', sans-serif", fontSize: 18, fontWeight: 800,
         color: SLATE, letterSpacing: "-0.02em", marginBottom: 12,
         paddingBottom: 10, borderBottom: `1px solid ${BORDER}`,
       }}>
@@ -138,7 +138,7 @@ export default function Build() {
       {/* Topbar */}
       <header style={{
         height: 52, display: "flex", alignItems: "center", padding: "0 24px",
-        borderBottom: `1px solid ${BORDER}`, background: "#fff", gap: 16,
+        borderBottom: `1px solid ${BORDER}`, background: "#0F1E38", gap: 16,
         position: "sticky", top: 0, zIndex: 50,
       }}>
         <Link href="/" style={{ textDecoration: "none" }}>
@@ -149,8 +149,8 @@ export default function Build() {
         <div style={{ flex: 1 }} />
         <Link href="/registry" style={{
           fontSize: 12, color: INDIGO, fontWeight: 600, textDecoration: "none",
-          padding: "5px 12px", border: `1px solid #C7D2FE`, borderRadius: 8,
-          background: "#EEF2FF",
+          padding: "5px 12px", border: `1px solid rgba(123,163,212,0.3)`, borderRadius: 8,
+          background: "rgba(123,163,212,0.1)",
         }}>
           ⬡ Registry
         </Link>
@@ -162,13 +162,13 @@ export default function Build() {
         <div style={{ marginBottom: 48 }}>
           <div style={{
             display: "inline-block", fontSize: 10, fontWeight: 700, padding: "4px 12px",
-            borderRadius: 999, background: "#EEF2FF", color: INDIGO, fontFamily: MONO,
+            borderRadius: 999, background: "rgba(123,163,212,0.1)", color: INDIGO, fontFamily: MONO,
             letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 16,
           }}>
             Developer Docs
           </div>
           <h1 style={{
-            fontFamily: "'Syne', sans-serif", fontSize: 36, fontWeight: 900,
+            fontFamily: "'Inter', sans-serif", fontSize: 36, fontWeight: 900,
             letterSpacing: "-0.04em", color: SLATE, marginBottom: 14, lineHeight: 1.1,
           }}>
             Build agents that run<br />
@@ -190,7 +190,7 @@ export default function Build() {
               { step: "03", title: "Get discovered & routed", desc: "The Mesh scores your agent by capability match, success rate, and latency. Matching tasks are routed to you automatically." },
             ].map(s => (
               <div key={s.step} style={{
-                background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 12,
+                background: "#0F1E38", border: `1px solid ${BORDER}`, borderRadius: 12,
                 padding: "20px 18px",
               }}>
                 <div style={{ fontSize: 11, fontFamily: MONO, color: INDIGO, fontWeight: 700, marginBottom: 8 }}>{s.step}</div>
@@ -262,20 +262,20 @@ export default function Build() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
             {[
               { label: "Capability Match", weight: "50%", color: INDIGO, desc: "How many of your declared capabilities match the task context's agent labels." },
-              { label: "Success Rate", weight: "30%", color: "#0EA5E9", desc: "Percentage of tasks your agent has completed successfully over its lifetime." },
-              { label: "Latency Score", weight: "20%", color: "#8B5CF6", desc: "Derived from average response time. 0ms = 1.0, 5000ms = 0.0, clamped." },
+              { label: "Success Rate", weight: "30%", color: "#4ADE80", desc: "Percentage of tasks your agent has completed successfully over its lifetime." },
+              { label: "Latency Score", weight: "20%", color: "#A89BD4", desc: "Derived from average response time. 0ms = 1.0, 5000ms = 0.0, clamped." },
             ].map(s => (
               <div key={s.label} style={{
-                background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 10, padding: "16px 14px",
+                background: "#0F1E38", border: `1px solid ${BORDER}`, borderRadius: 10, padding: "16px 14px",
               }}>
-                <div style={{ fontSize: 22, fontFamily: "'Syne', sans-serif", fontWeight: 900, color: s.color, marginBottom: 4 }}>{s.weight}</div>
+                <div style={{ fontSize: 22, fontFamily: "'Inter', sans-serif", fontWeight: 900, color: s.color, marginBottom: 4 }}>{s.weight}</div>
                 <div style={{ fontSize: 12, fontWeight: 700, color: SLATE, marginBottom: 6 }}>{s.label}</div>
                 <div style={{ fontSize: 11, color: MUTED, lineHeight: 1.6 }}>{s.desc}</div>
               </div>
             ))}
           </div>
           <div style={{
-            padding: "12px 16px", background: "#F8FAFC", border: `1px solid ${BORDER}`,
+            padding: "12px 16px", background: "#060E1C", border: `1px solid ${BORDER}`,
             borderRadius: 8, fontFamily: MONO, fontSize: 12, color: SLATE,
           }}>
             score = (capabilityMatch × 0.5) + (successRate × 0.3) + (latencyScore × 0.2)
@@ -288,29 +288,31 @@ export default function Build() {
             Agents that pass the connection test in the Registry form receive a{" "}
             <span style={{
               fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999,
-              background: "#DCFCE7", color: "#16A34A", fontFamily: MONO, border: "1px solid #BBF7D0",
+              background: "rgba(74,222,128,0.12)", color: "#4ADE80", fontFamily: MONO, border: "1px solid rgba(74,222,128,0.3)",
             }}>✓ Verified</span>{" "}
             badge in the public directory. This signals to users that your endpoint is reachable
             and returns a valid response. The test sends the standard payload above and checks
-            for a 200 response with a non-empty <code style={{ background: "#F1F5F9", padding: "1px 4px", borderRadius: 4 }}>result</code> field.
+            for a 200 response with a non-empty <code style={{ background: "#152542", padding: "1px 4px", borderRadius: 4, color: SLATE }}>result</code> field.
           </p>
         </Section>
 
         {/* CTA */}
         <div style={{
-          background: `linear-gradient(135deg, ${INDIGO} 0%, #7C3AED 100%)`,
+          background: `linear-gradient(135deg, #0F1E38 0%, #1C3057 100%)`,
+          border: "1px solid rgba(123,163,212,0.2)",
           borderRadius: 16, padding: "32px 32px", textAlign: "center",
         }}>
-          <h2 style={{ fontFamily: "'Syne', sans-serif", fontSize: 22, fontWeight: 800, color: "#fff", marginBottom: 10 }}>
+          <h2 style={{ fontFamily: "'Inter', sans-serif", fontSize: 22, fontWeight: 800, color: SLATE, marginBottom: 10 }}>
             Ready to register your agent?
           </h2>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.75)", marginBottom: 20 }}>
+          <p style={{ fontSize: 13, color: MUTED, marginBottom: 20 }}>
             Deploy your endpoint, then add it to the public registry in under 2 minutes.
           </p>
           <Link href="/registry" style={{
-            display: "inline-block", padding: "10px 28px", background: "#fff",
+            display: "inline-block", padding: "10px 28px", background: "rgba(123,163,212,0.15)",
             color: INDIGO, borderRadius: 10, fontSize: 13, fontWeight: 700,
-            textDecoration: "none", fontFamily: "'Syne', sans-serif",
+            textDecoration: "none", fontFamily: "'Inter', sans-serif",
+            border: "1px solid rgba(123,163,212,0.3)",
           }}>
             ⬡ Open Registry →
           </Link>

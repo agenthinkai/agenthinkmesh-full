@@ -39,7 +39,7 @@ function MeshCanvas({ nodes, routedIds }: { nodes: LayoutNode[]; routedIds: stri
       ctx.beginPath();
       ctx.moveTo(cp.x, cp.y);
       ctx.lineTo(p.x, p.y);
-      ctx.strokeStyle = n.spawned ? "rgba(245,158,11,0.35)" : routed ? "rgba(79,70,229,0.5)" : "rgba(148,163,184,0.25)";
+      ctx.strokeStyle = n.spawned ? "rgba(201,168,76,0.5)" : routed ? "rgba(123,163,212,0.6)" : "rgba(168,180,200,0.2)";
       ctx.lineWidth = n.spawned ? 1.5 : 1;
       ctx.setLineDash(n.spawned ? [4, 3] : []);
       ctx.stroke();
@@ -52,14 +52,14 @@ function MeshCanvas({ nodes, routedIds }: { nodes: LayoutNode[]; routedIds: stri
       const routed = routedIds.includes(n.id);
       ctx.beginPath();
       ctx.arc(p.x, p.y, r, 0, 2 * Math.PI);
-      ctx.fillStyle = n.center ? n.color : routed ? n.color : "#fff";
+      ctx.fillStyle = n.center ? n.color : routed ? n.color : "#1C3057";
       ctx.fill();
       ctx.strokeStyle = n.color;
       ctx.lineWidth = n.center ? 0 : 1.5;
       ctx.stroke();
       // label
       ctx.font = `${n.center ? 600 : 400} 8px 'DM Mono', monospace`;
-      ctx.fillStyle = "#64748B";
+      ctx.fillStyle = "#8494AA";
       ctx.textAlign = "center";
       ctx.fillText(n.label.length > 14 ? n.label.slice(0, 13) + "…" : n.label, p.x, p.y + r + 9);
     });
@@ -85,16 +85,16 @@ function ContextSwitcher({ current, onSwitch, onClose }: {
   return (
     <div style={{
       position: "absolute", top: 44, left: 0, zIndex: 200,
-      background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14,
-      boxShadow: "0 8px 32px rgba(0,0,0,0.12)", width: 320, overflow: "hidden",
+      background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 14,
+      boxShadow: "0 8px 32px rgba(0,0,0,0.5)", width: 320, overflow: "hidden",
     }}>
       {/* Domain tabs */}
-      <div style={{ display: "flex", borderBottom: "1px solid #F1F5F9", padding: "8px 8px 0" }}>
+      <div style={{ display: "flex", borderBottom: "1px solid #1C3057", padding: "8px 8px 0" }}>
         {Object.entries(DOMAIN_MAP).map(([key, d]) => (
           <button key={key} onClick={() => setActiveDomain(key)} style={{
             flex: 1, padding: "6px 4px", border: "none", background: "none", cursor: "pointer",
-            borderBottom: activeDomain === key ? "2px solid #4F46E5" : "2px solid transparent",
-            fontSize: 9, color: activeDomain === key ? "#4F46E5" : "#94A3B8",
+            borderBottom: activeDomain === key ? "2px solid #7BA3D4" : "2px solid transparent",
+            fontSize: 9, color: activeDomain === key ? "#7BA3D4" : "#637080",
             fontFamily: "'DM Mono', monospace", fontWeight: 600,
           }}>
             {d.icon}
@@ -102,26 +102,26 @@ function ContextSwitcher({ current, onSwitch, onClose }: {
         ))}
       </div>
       {/* Context list */}
-      <div style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", padding: "10px 14px 4px", fontFamily: "'DM Mono', monospace" }}>
+      <div style={{ fontSize: 9, color: "#637080", textTransform: "uppercase", letterSpacing: "0.08em", padding: "10px 14px 4px", fontFamily: "'JetBrains Mono', monospace" }}>
         Select context
       </div>
       {domainContexts.map(([id, c]) => (
         <button key={id} onClick={() => { onSwitch(id); onClose(); }} style={{
           display: "flex", alignItems: "center", gap: 10, width: "100%",
-          padding: "10px 14px", border: "none", background: id === current ? "#F8FAFF" : "none",
+          padding: "10px 14px", border: "none", background: id === current ? "rgba(123,163,212,0.1)" : "none",
           cursor: "pointer", textAlign: "left",
         }}>
           <span style={{ fontSize: 14 }}>{c.icon}</span>
           <div style={{ flex: 1 }}>
-            <div style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 12, color: "#1E293B" }}>{c.label}</div>
-            <div style={{ fontSize: 9, color: "#94A3B8", fontFamily: "'DM Mono', monospace", marginTop: 2 }}>
+            <div style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 12, color: "#E8ECF2" }}>{c.label}</div>
+            <div style={{ fontSize: 9, color: "#637080", fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>
               {c.agents.slice(0, 3).join(" · ")} +{c.agents.length - 3}
             </div>
           </div>
-          {id === current && <span style={{ fontSize: 10, color: "#4F46E5" }}>✓</span>}
+          {id === current && <span style={{ fontSize: 10, color: "#7BA3D4" }}>✓</span>}
         </button>
       ))}
-      <div style={{ padding: "8px 14px 10px", borderTop: "1px solid #F1F5F9", fontSize: 9, color: "#CBD5E1", fontFamily: "'DM Mono', monospace" }}>
+      <div style={{ padding: "8px 14px 10px", borderTop: "1px solid #1C3057", fontSize: 9, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>
         {Object.keys(CONTEXTS).length} contexts available · max 50 agents per task
       </div>
     </div>
@@ -143,7 +143,7 @@ function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText,
   const [elapsed, setElapsed] = useState(0);
   const startRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const color = agent.spawned ? "#F59E0B" : "#4F46E5";
+  const color = agent.spawned ? "#C9A84C" : "#7BA3D4";
   const runAgentTask = trpc.mesh.runAgentTask.useMutation();
 
   useEffect(() => {
@@ -185,10 +185,10 @@ function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText,
 
   const chip = (s: typeof status) => {
     const map = {
-      queued:  { label: "Queued",  bg: "#F1F5F9", color: "#94A3B8" },
-      running: { label: "Running", bg: "#EEF2FF", color: "#4F46E5" },
-      done:    { label: "Done",    bg: "#DCFCE7", color: "#16A34A" },
-      error:   { label: "Error",   bg: "#FEE2E2", color: "#DC2626" },
+      queued:  { label: "Queued",  bg: "rgba(168,180,200,0.1)", color: "#8494AA" },
+      running: { label: "Running", bg: "rgba(123,163,212,0.15)", color: "#7BA3D4" },
+      done:    { label: "Done",    bg: "rgba(74,222,128,0.12)", color: "#4ADE80" },
+      error:   { label: "Error",   bg: "rgba(239,68,68,0.12)", color: "#EF4444" },
     };
     const c = map[s];
     return <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 999, background: c.bg, color: c.color, fontFamily: "'DM Mono', monospace", fontWeight: 600 }}>{c.label}</span>;
@@ -196,22 +196,22 @@ function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText,
 
   return (
     <div style={{
-      background: "#fff",
-      border: `1px solid ${status === "done" ? "#BBF7D0" : status === "error" ? "#FECACA" : "#F1F5F9"}`,
+      background: "#0F1E38",
+      border: `1px solid ${status === "done" ? "rgba(74,222,128,0.3)" : status === "error" ? "rgba(239,68,68,0.3)" : "#1C3057"}`,
       borderRadius: 14, padding: "14px 16px", marginBottom: 10,
-      boxShadow: status === "done" ? "0 0 0 1px #BBF7D0, 0 2px 12px rgba(22,163,74,0.06)" : "0 2px 12px rgba(0,0,0,0.05)",
+      boxShadow: status === "done" ? "0 0 0 1px rgba(74,222,128,0.2), 0 2px 12px rgba(0,0,0,0.3)" : "0 2px 12px rgba(0,0,0,0.3)",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
         <span style={{ width: 8, height: 8, borderRadius: "50%", background: color, display: "inline-block", flexShrink: 0 }} />
-        <span style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 600, color: "#374151", flex: 1 }}>
+        <span style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 600, color: "#E8ECF2", flex: 1 }}>
           {agent.label}
-          {agent.spawned && <span style={{ marginLeft: 6, fontSize: 8, padding: "1px 6px", borderRadius: 999, background: "#FFFBEB", color: "#F59E0B", border: "1px solid #FDE68A", fontFamily: "'DM Mono', monospace" }}>⚡ NEW</span>}
+          {agent.spawned && <span style={{ marginLeft: 6, fontSize: 8, padding: "1px 6px", borderRadius: 999, background: "rgba(201,168,76,0.15)", color: "#C9A84C", border: "1px solid rgba(201,168,76,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>⚡ NEW</span>}
         </span>
         {chip(status)}
         {(status === "done" || status === "running") && <span style={{ fontSize: 9, color: "#94A3B8", fontFamily: "'DM Mono', monospace" }}>{elapsed}s</span>}
       </div>
-      {content && <pre style={{ margin: 0, fontSize: 10, color: "#374151", lineHeight: 1.7, fontFamily: "'DM Mono', monospace", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{content}</pre>}
-      {!content && status === "queued" && <div style={{ fontSize: 10, color: "#CBD5E1", fontFamily: "'DM Mono', monospace" }}>Standby…</div>}
+      {content && <pre style={{ margin: 0, fontSize: 10, color: "#A8B4C8", lineHeight: 1.7, fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{content}</pre>}
+      {!content && status === "queued" && <div style={{ fontSize: 10, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>Standby…</div>}
     </div>
   );
 }
@@ -280,17 +280,17 @@ function OutputPanel({ agents, taskText, ctx, vaultText, onBack, onDone }: {
   };
 
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "22px 24px", background: "#F8FAFC" }}>
+    <div style={{ flex: 1, overflowY: "auto", padding: "22px 24px", background: "#0B1629" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
-        <button onClick={onBack} style={{ background: "none", border: "1px solid #E2E8F0", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 12, color: "#64748B", fontFamily: "'DM Mono', monospace" }}>← Back</button>
+        <button onClick={onBack} style={{ background: "none", border: "1px solid #1C3057", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 12, color: "#8494AA", fontFamily: "'JetBrains Mono', monospace" }}>← Back</button>
         <div style={{ flex: 1 }}>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, color: "#374151" }}>{taskText.length > 80 ? taskText.slice(0, 80) + "…" : taskText}</div>
-          <div style={{ fontSize: 10, color: "#94A3B8", fontFamily: "'DM Mono', monospace", marginTop: 2 }}>
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 700, color: "#E8ECF2" }}>{taskText.length > 80 ? taskText.slice(0, 80) + "…" : taskText}</div>
+          <div style={{ fontSize: 10, color: "#637080", fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>
             {ctx.label} · {agents.length} agents · {doneCount >= total ? "Completed" : `Running · ${elapsed}s`}
           </div>
         </div>
         {doneCount >= total && (
-          <button onClick={exportPDF} style={{ background: "#4F46E5", color: "#fff", border: "none", borderRadius: 8, padding: "7px 14px", cursor: "pointer", fontSize: 11, fontFamily: "'Syne', sans-serif", fontWeight: 700 }}>
+          <button onClick={exportPDF} style={{ background: "linear-gradient(135deg, #1C3057 0%, #243B6E 100%)", color: "#E8ECF2", border: "1px solid rgba(168,180,200,0.2)", borderRadius: 8, padding: "7px 14px", cursor: "pointer", fontSize: 11, fontFamily: "'Inter', sans-serif", fontWeight: 700 }}>
             ↓ Export PDF
           </button>
         )}
@@ -331,22 +331,22 @@ function HistoryPanel({ onClose }: { onClose: () => void }) {
     h.contextLabel.toLowerCase().includes(search.toLowerCase())
   );
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "22px 24px", background: "#F8FAFC" }}>
+    <div style={{ flex: 1, overflowY: "auto", padding: "22px 24px", background: "#0B1629" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
-        <button onClick={onClose} style={{ background: "none", border: "1px solid #E2E8F0", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 12, color: "#64748B", fontFamily: "'DM Mono', monospace" }}>← Back</button>
-        <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: "#1E293B", flex: 1 }}>Task History</div>
+        <button onClick={onClose} style={{ background: "none", border: "1px solid #1C3057", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 12, color: "#8494AA", fontFamily: "'JetBrains Mono', monospace" }}>← Back</button>
+        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 700, color: "#E8ECF2", flex: 1 }}>Task History</div>
       </div>
       <input
         value={search} onChange={e => setSearch(e.target.value)}
         placeholder="Search tasks…"
-        style={{ width: "100%", padding: "8px 12px", border: "1px solid #E2E8F0", borderRadius: 8, fontSize: 12, fontFamily: "'DM Mono', monospace", marginBottom: 14, outline: "none", background: "#fff" }}
+        style={{ width: "100%", padding: "8px 12px", border: "1px solid #1C3057", borderRadius: 8, fontSize: 12, fontFamily: "'JetBrains Mono', monospace", marginBottom: 14, outline: "none", background: "#0F1E38", color: "#E8ECF2" }}
       />
-      {isLoading && <div style={{ fontSize: 11, color: "#94A3B8", fontFamily: "'DM Mono', monospace" }}>Loading…</div>}
-      {!isLoading && filtered.length === 0 && <div style={{ fontSize: 11, color: "#CBD5E1", fontFamily: "'DM Mono', monospace" }}>No tasks yet. Execute your first task to see history here.</div>}
+      {isLoading && <div style={{ fontSize: 11, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>Loading…</div>}
+      {!isLoading && filtered.length === 0 && <div style={{ fontSize: 11, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>No tasks yet. Execute your first task to see history here.</div>}
       {filtered.map((h: HistoryRow) => (
-        <div key={h.id} style={{ background: "#fff", border: "1px solid #F1F5F9", borderRadius: 12, padding: "12px 14px", marginBottom: 8 }}>
-          <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 12, fontWeight: 700, color: "#1E293B", marginBottom: 4 }}>{h.task.length > 80 ? h.task.slice(0, 80) + "…" : h.task}</div>
-          <div style={{ fontSize: 10, color: "#94A3B8", fontFamily: "'DM Mono', monospace" }}>
+        <div key={h.id} style={{ background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, padding: "12px 14px", marginBottom: 8 }}>
+          <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 12, fontWeight: 700, color: "#E8ECF2", marginBottom: 4 }}>{h.task.length > 80 ? h.task.slice(0, 80) + "…" : h.task}</div>
+          <div style={{ fontSize: 10, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>
             {h.contextLabel} · {h.agentCount} agents · {new Date(h.createdAt).toLocaleDateString()}
           </div>
         </div>
@@ -366,14 +366,14 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
     setTimeout(() => setSaved(false), 2000);
   };
   return (
-    <div style={{ flex: 1, overflowY: "auto", padding: "22px 24px", background: "#F8FAFC" }}>
+    <div style={{ flex: 1, overflowY: "auto", padding: "22px 24px", background: "#0B1629" }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-        <button onClick={onClose} style={{ background: "none", border: "1px solid #E2E8F0", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 12, color: "#64748B", fontFamily: "'DM Mono', monospace" }}>← Back</button>
-        <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 14, fontWeight: 700, color: "#1E293B" }}>Settings</div>
+        <button onClick={onClose} style={{ background: "none", border: "1px solid #1C3057", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 12, color: "#8494AA", fontFamily: "'JetBrains Mono', monospace" }}>← Back</button>
+        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 14, fontWeight: 700, color: "#E8ECF2" }}>Settings</div>
       </div>
-      <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "20px" }}>
-        <div style={{ fontFamily: "'Syne', sans-serif", fontSize: 13, fontWeight: 700, color: "#1E293B", marginBottom: 4 }}>Anthropic API Key</div>
-        <div style={{ fontSize: 10, color: "#94A3B8", fontFamily: "'DM Mono', monospace", marginBottom: 12 }}>
+      <div style={{ background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 14, padding: "20px" }}>
+        <div style={{ fontFamily: "'Inter', sans-serif", fontSize: 13, fontWeight: 700, color: "#E8ECF2", marginBottom: 4 }}>Anthropic API Key</div>
+        <div style={{ fontSize: 10, color: "#637080", fontFamily: "'JetBrains Mono', monospace", marginBottom: 12 }}>
           Required for live AI output. Stored in session only — never sent to our servers. Get one at console.anthropic.com
         </div>
         <input
@@ -381,13 +381,13 @@ function SettingsPanel({ onClose }: { onClose: () => void }) {
           value={apiKey}
           onChange={e => setApiKey(e.target.value)}
           placeholder="sk-ant-…"
-          style={{ width: "100%", padding: "9px 12px", border: "1px solid #E2E8F0", borderRadius: 8, fontSize: 12, fontFamily: "'DM Mono', monospace", marginBottom: 10, outline: "none" }}
+          style={{ width: "100%", padding: "9px 12px", border: "1px solid #1C3057", borderRadius: 8, fontSize: 12, fontFamily: "'JetBrains Mono', monospace", marginBottom: 10, outline: "none", background: "#0B1629", color: "#E8ECF2" }}
         />
-        <button onClick={save} style={{ background: "#4F46E5", color: "#fff", border: "none", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 12, fontFamily: "'Syne', sans-serif", fontWeight: 700 }}>
+        <button onClick={save} style={{ background: "linear-gradient(135deg, #1C3057 0%, #243B6E 100%)", color: "#E8ECF2", border: "1px solid rgba(168,180,200,0.2)", borderRadius: 8, padding: "8px 20px", cursor: "pointer", fontSize: 12, fontFamily: "'Inter', sans-serif", fontWeight: 700 }}>
           {saved ? "Saved ✓" : "Save Key"}
         </button>
         {!apiKey && (
-          <div style={{ marginTop: 12, fontSize: 10, color: "#F59E0B", fontFamily: "'DM Mono', monospace", padding: "8px 10px", background: "#FFFBEB", borderRadius: 6, border: "1px solid #FDE68A" }}>
+          <div style={{ marginTop: 12, fontSize: 10, color: "#C9A84C", fontFamily: "'JetBrains Mono', monospace", padding: "8px 10px", background: "rgba(201,168,76,0.08)", borderRadius: 6, border: "1px solid rgba(201,168,76,0.3)" }}>
             No API key set — agents will run in placeholder mode with structured demo output.
           </div>
         )}
@@ -402,30 +402,30 @@ function RecentTasksPanel({ onRerun }: { onRerun: (task: string) => void }) {
   type HistoryRow = NonNullable<typeof history>[number];
   const recent = (history || []).slice(0, 5);
   return (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px" }}>
+    <div style={{ background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, padding: "14px 16px" }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <span style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", fontWeight: 600 }}>Recent Tasks</span>
+        <span style={{ fontSize: 9, color: "#637080", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>Recent Tasks</span>
         {history && history.length > 5 && (
-          <span style={{ fontSize: 9, color: "#4F46E5", fontFamily: "'DM Mono', monospace", cursor: "pointer" }}>{history.length} total</span>
+          <span style={{ fontSize: 9, color: "#7BA3D4", fontFamily: "'JetBrains Mono', monospace", cursor: "pointer" }}>{history.length} total</span>
         )}
       </div>
-      {isLoading && <div style={{ fontSize: 10, color: "#CBD5E1", fontFamily: "'DM Mono', monospace" }}>Loading…</div>}
+      {isLoading && <div style={{ fontSize: 10, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>Loading…</div>}
       {!isLoading && recent.length === 0 && (
-        <div style={{ fontSize: 10, color: "#CBD5E1", fontFamily: "'DM Mono', monospace", textAlign: "center", padding: "10px 0" }}>No tasks yet — execute your first task above</div>
+        <div style={{ fontSize: 10, color: "#637080", fontFamily: "'JetBrains Mono', monospace", textAlign: "center", padding: "10px 0" }}>No tasks yet — execute your first task above</div>
       )}
       {recent.map((h: HistoryRow) => (
-        <div key={h.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #F8FAFC" }}>
+        <div key={h.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 0", borderBottom: "1px solid #152542" }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 11, color: "#374151", fontFamily: "'DM Mono', monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ fontSize: 11, color: "#A8B4C8", fontFamily: "'JetBrains Mono', monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {h.task.length > 60 ? h.task.slice(0, 60) + "…" : h.task}
             </div>
-            <div style={{ fontSize: 9, color: "#94A3B8", fontFamily: "'DM Mono', monospace", marginTop: 2 }}>
+            <div style={{ fontSize: 9, color: "#637080", fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>
               {h.contextLabel} · {h.agentCount} agents · {new Date(h.createdAt).toLocaleDateString()}
             </div>
           </div>
           <button
             onClick={() => onRerun(h.task)}
-            style={{ fontSize: 9, padding: "3px 8px", borderRadius: 6, background: "#EEF2FF", color: "#4F46E5", border: "none", cursor: "pointer", fontFamily: "'DM Mono', monospace", fontWeight: 600, flexShrink: 0 }}
+            style={{ fontSize: 9, padding: "3px 8px", borderRadius: 6, background: "rgba(123,163,212,0.12)", color: "#7BA3D4", border: "1px solid rgba(123,163,212,0.2)", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, flexShrink: 0 }}
           >
             ▶ Rerun
           </button>
@@ -440,27 +440,27 @@ function LiveActivityWidget() {
   const { data: activity, isLoading } = trpc.mesh.getRecentActivity.useQuery();
   type Row = NonNullable<typeof activity>[number];
   return (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
+    <div style={{ background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <span style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", fontWeight: 600 }}>Live Mesh Activity</span>
+        <span style={{ fontSize: 9, color: "#637080", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>Live Mesh Activity</span>
         <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E", display: "inline-block", boxShadow: "0 0 0 3px rgba(34,197,94,0.2)" }} />
       </div>
-      {isLoading && <div style={{ fontSize: 10, color: "#CBD5E1", fontFamily: "'DM Mono', monospace" }}>Loading…</div>}
+      {isLoading && <div style={{ fontSize: 10, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>Loading…</div>}
       {!isLoading && (!activity || activity.length === 0) && (
-        <div style={{ fontSize: 10, color: "#CBD5E1", fontFamily: "'DM Mono', monospace", textAlign: "center", padding: "12px 0" }}>No activity yet — execute your first task</div>
+        <div style={{ fontSize: 10, color: "#637080", fontFamily: "'JetBrains Mono', monospace", textAlign: "center", padding: "12px 0" }}>No activity yet — execute your first task</div>
       )}
       {(activity || []).map((row: Row, i: number) => (
         <div key={row.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, paddingBottom: 8, marginBottom: 8, borderBottom: i < (activity!.length - 1) ? "1px solid #F8FAFC" : "none" }}>
-          <div style={{ width: 28, height: 28, borderRadius: 8, background: "#EEF2FF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 11 }}>⚡</div>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(123,163,212,0.1)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 11 }}>⚡</div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontSize: 10, color: "#374151", fontFamily: "'DM Mono', monospace", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <div style={{ fontSize: 10, color: "#A8B4C8", fontFamily: "'JetBrains Mono', monospace", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {row.task.length > 42 ? row.task.slice(0, 42) + "…" : row.task}
             </div>
-            <div style={{ fontSize: 9, color: "#94A3B8", fontFamily: "'DM Mono', monospace", marginTop: 2 }}>
+            <div style={{ fontSize: 9, color: "#637080", fontFamily: "'JetBrains Mono', monospace", marginTop: 2 }}>
               {row.contextLabel} · {row.agentCount} agents
             </div>
           </div>
-          <span style={{ fontSize: 8, padding: "2px 6px", borderRadius: 999, background: "#DCFCE7", color: "#16A34A", fontFamily: "'DM Mono', monospace", fontWeight: 600, flexShrink: 0 }}>Done</span>
+          <span style={{ fontSize: 8, padding: "2px 6px", borderRadius: 999, background: "rgba(74,222,128,0.12)", color: "#4ADE80", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, flexShrink: 0 }}>Done</span>
         </div>
       ))}
     </div>
@@ -469,19 +469,19 @@ function LiveActivityWidget() {
 
 function AgentStatusWidget({ agentList, ctxColor }: { agentList: AgentNode[]; ctxColor: string }) {
   return (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
+    <div style={{ background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, padding: "14px 16px", marginBottom: 12 }}>
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-        <span style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", fontWeight: 600 }}>Agent Status</span>
-        <span style={{ fontSize: 9, color: "#94A3B8", fontFamily: "'DM Mono', monospace" }}>{agentList.length} active</span>
+             <span style={{ fontSize: 9, color: "#637080", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>Agent capacity</span>
+        <span style={{ fontSize: 9, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>{agentList.length} active</span>
       </div>
       <div style={{ maxHeight: 180, overflowY: "auto" }}>
         {agentList.map(ag => (
           <div key={ag.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
               <span style={{ width: 5, height: 5, borderRadius: "50%", background: ag.spawned ? "#F59E0B" : ctxColor, display: "inline-block", flexShrink: 0 }} />
-              <span style={{ fontSize: 10, color: "#374151", fontFamily: "'DM Mono', monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 110 }}>{ag.label}</span>
+              <span style={{ fontSize: 10, color: "#A8B4C8", fontFamily: "'JetBrains Mono', monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 110 }}>{ag.label}</span>
             </div>
-            <span style={{ fontSize: 8, padding: "1px 6px", borderRadius: 999, background: ag.spawned ? "#FFFBEB" : "#F1F5F9", color: ag.spawned ? "#F59E0B" : "#94A3B8", fontFamily: "'DM Mono', monospace", fontWeight: 600 }}>
+            <span style={{ fontSize: 8, padding: "1px 6px", borderRadius: 999, background: ag.spawned ? "rgba(201,168,76,0.12)" : "rgba(168,180,200,0.08)", color: ag.spawned ? "#C9A84C" : "#637080", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>
               {ag.spawned ? "⚡ spawned" : "standby"}
             </span>
           </div>
@@ -494,21 +494,21 @@ function AgentStatusWidget({ agentList, ctxColor }: { agentList: AgentNode[]; ct
 function SystemMetricsWidget() {
   const { data: metrics, isLoading } = trpc.mesh.getMetrics.useQuery();
   const stats = [
-    { label: "Tasks Today",   value: isLoading ? "—" : String(metrics?.tasksToday ?? 0),    unit: "",  color: "#4F46E5" },
-    { label: "Total Tasks",   value: isLoading ? "—" : String(metrics?.totalTasks ?? 0),    unit: "",  color: "#0EA5E9" },
-    { label: "Avg Agents",    value: isLoading ? "—" : String(metrics?.avgAgents ?? 0),     unit: "/task", color: "#8B5CF6" },
-    { label: "Success Rate",  value: isLoading ? "—" : String(metrics?.successRate ?? 100), unit: "%", color: "#22C55E" },
+    { label: "Tasks Today",   value: isLoading ? "—" : String(metrics?.tasksToday ?? 0),    unit: "",  color: "#7BA3D4" },
+    { label: "Total Tasks",   value: isLoading ? "—" : String(metrics?.totalTasks ?? 0),    unit: "",  color: "#8BBFD4" },
+    { label: "Avg Agents",    value: isLoading ? "—" : String(metrics?.avgAgents ?? 0),     unit: "/task", color: "#A89BD4" },
+    { label: "Success Rate",  value: isLoading ? "—" : String(metrics?.successRate ?? 100), unit: "%", color: "#4ADE80" },
   ];
   return (
-    <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px" }}>
-      <div style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", fontWeight: 600, marginBottom: 12 }}>System Metrics</div>
+    <div style={{ background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, padding: "14px 16px" }}>
+      <div style={{ fontSize: 9, color: "#637080", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, marginBottom: 12 }}>System Metrics</div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {stats.map(s => (
-          <div key={s.label} style={{ background: "#F8FAFC", borderRadius: 8, padding: "10px 12px" }}>
-            <div style={{ fontSize: 18, fontFamily: "'Syne', sans-serif", fontWeight: 800, color: s.color, lineHeight: 1 }}>
-              {s.value}<span style={{ fontSize: 10, color: "#94A3B8", fontWeight: 400, fontFamily: "'DM Mono', monospace" }}>{s.unit}</span>
+          <div key={s.label} style={{ background: "#0B1629", borderRadius: 8, padding: "10px 12px" }}>
+            <div style={{ fontSize: 18, fontFamily: "'Inter', sans-serif", fontWeight: 800, color: s.color, lineHeight: 1 }}>
+              {s.value}<span style={{ fontSize: 10, color: "#637080", fontWeight: 400, fontFamily: "'JetBrains Mono', monospace" }}>{s.unit}</span>
             </div>
-            <div style={{ fontSize: 9, color: "#94A3B8", fontFamily: "'DM Mono', monospace", marginTop: 4 }}>{s.label}</div>
+            <div style={{ fontSize: 9, color: "#637080", fontFamily: "'JetBrains Mono', monospace", marginTop: 4 }}>{s.label}</div>
           </div>
         ))}
       </div>
@@ -603,11 +603,11 @@ export default function MeshDashboard() {
   // Boot screen
   if (booting) {
     return (
-      <div style={{ minHeight: "100vh", background: "#0F172A", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'DM Mono', monospace" }}>
+      <div style={{ minHeight: "100vh", background: "#0B1629", display: "flex", alignItems: "center", justifyContent: "center", fontFamily: "'JetBrains Mono', monospace" }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ marginBottom: 24 }}><Logo size={34} inverted /></div>
           {bootMsgs.slice(0, bootStep + 1).map((msg, i) => (
-            <div key={i} style={{ fontSize: 11, color: i === bootStep ? "#4F46E5" : "#475569", marginBottom: 6, transition: "color 0.3s" }}>{msg}</div>
+            <div key={i} style={{ fontSize: 11, color: i === bootStep ? "#7BA3D4" : "#637080", marginBottom: 6, transition: "color 0.3s" }}>{msg}</div>
           ))}
         </div>
       </div>
@@ -615,37 +615,37 @@ export default function MeshDashboard() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#F8FAFC", fontFamily: "'Syne', sans-serif" }}>
+    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", background: "#0B1629", fontFamily: "'Inter', sans-serif" }}>
       {/* Topbar */}
-      <header style={{ height: 52, display: "flex", alignItems: "center", padding: "0 20px", borderBottom: "1px solid #E2E8F0", background: "#fff", gap: 12, flexShrink: 0 }}>
+      <header style={{ height: 52, display: "flex", alignItems: "center", padding: "0 20px", borderBottom: "1px solid #1C3057", background: "#0F1E38", gap: 12, flexShrink: 0 }}>
         <Logo size={26} />
         <div style={{ position: "relative" }}>
           <button onClick={() => setShowSwitcher(s => !s)} style={{
             display: "flex", alignItems: "center", gap: 6, padding: "5px 10px",
-            border: "1px solid #E2E8F0", borderRadius: 8, background: "#F8FAFC",
-            cursor: "pointer", fontSize: 11, fontFamily: "'DM Mono', monospace", color: "#374151",
+            border: "1px solid #1C3057", borderRadius: 8, background: "#152542",
+            cursor: "pointer", fontSize: 11, fontFamily: "'JetBrains Mono', monospace", color: "#A8B4C8",
           }}>
             <span>{ctx.icon}</span>
-            <span style={{ fontFamily: "'Syne', sans-serif", fontWeight: 700, fontSize: 11 }}>{ctx.label}</span>
-            <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 999, background: "#EEF2FF", color: "#4F46E5", fontFamily: "'DM Mono', monospace" }}>
+            <span style={{ fontFamily: "'Inter', sans-serif", fontWeight: 700, fontSize: 11, color: "#E8ECF2" }}>{ctx.label}</span>
+            <span style={{ fontSize: 9, padding: "1px 6px", borderRadius: 999, background: "rgba(123,163,212,0.12)", color: "#7BA3D4", fontFamily: "'JetBrains Mono', monospace" }}>
               {DOMAIN_MAP[ctx.domain]?.label}
             </span>
-            <span style={{ fontSize: 9, color: "#94A3B8" }}>▾</span>
+            <span style={{ fontSize: 9, color: "#637080" }}>▾</span>
           </button>
           {showSwitcher && (
             <ContextSwitcher current={role} onSwitch={setRole} onClose={() => setShowSwitcher(false)} />
           )}
         </div>
         {spawnedCount > 0 && (
-          <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 999, background: "#FFFBEB", color: "#F59E0B", border: "1px solid #FDE68A", fontFamily: "'DM Mono', monospace" }}>
+          <span style={{ fontSize: 10, padding: "3px 8px", borderRadius: 999, background: "rgba(201,168,76,0.12)", color: "#C9A84C", border: "1px solid rgba(201,168,76,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>
             ⚡ {spawnedCount} spawned
           </span>
         )}
         <div style={{ flex: 1 }} />
         {/* User info */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 11, color: "#64748B", fontFamily: "'DM Mono', monospace" }}>{user?.name || user?.email || "User"}</span>
-          <button onClick={logout} style={{ fontSize: 10, color: "#94A3B8", background: "none", border: "1px solid #E2E8F0", borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontFamily: "'DM Mono', monospace" }}>
+          <span style={{ fontSize: 11, color: "#8494AA", fontFamily: "'JetBrains Mono', monospace" }}>{user?.name || user?.email || "User"}</span>
+          <button onClick={logout} style={{ fontSize: 10, color: "#637080", background: "none", border: "1px solid #1C3057", borderRadius: 6, padding: "3px 8px", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace" }}>
             Sign out
           </button>
         </div>
@@ -654,38 +654,38 @@ export default function MeshDashboard() {
       {/* Body */}
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
         {/* Left sidebar */}
-        <aside style={{ width: 280, borderRight: "1px solid #E2E8F0", background: "#fff", display: "flex", flexDirection: "column", flexShrink: 0 }}>
+        <aside style={{ width: 280, borderRight: "1px solid #1C3057", background: "#0F1E38", display: "flex", flexDirection: "column", flexShrink: 0 }}>
           {/* Canvas */}
           <div style={{ padding: "12px 12px 8px" }}>
-            <div style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", marginBottom: 6 }}>Mesh Canvas</div>
+            <div style={{ fontSize: 9, color: "#637080", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'JetBrains Mono', monospace", marginBottom: 6 }}>Mesh Canvas</div>
             <MeshCanvas nodes={meshNodes} routedIds={routedNodes} />
           </div>
           {/* Capacity bar */}
           <div style={{ padding: "0 16px 12px" }}>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
               <span style={{ fontSize: 9, color: "#94A3B8", fontFamily: "'DM Mono', monospace", textTransform: "uppercase", letterSpacing: "0.08em" }}>Agent capacity</span>
-              <span style={{ fontSize: 9, color: agentList.length > 30 ? "#F59E0B" : "#94A3B8", fontFamily: "'DM Mono', monospace" }}>{agentList.length} / 50</span>
+              <span style={{ fontSize: 9, color: agentList.length > 30 ? "#C9A84C" : "#637080", fontFamily: "'JetBrains Mono', monospace" }}>{agentList.length} / 50</span>
             </div>
-            <div style={{ height: 3, background: "#F1F5F9", borderRadius: 999 }}>
-              <div style={{ height: "100%", width: `${(agentList.length / 50) * 100}%`, background: agentList.length > 30 ? "#F59E0B" : "#4F46E5", borderRadius: 999, transition: "width 0.3s" }} />
+            <div style={{ height: 3, background: "#152542", borderRadius: 999 }}>
+              <div style={{ height: "100%", width: `${(agentList.length / 50) * 100}%`, background: agentList.length > 30 ? "#C9A84C" : "#7BA3D4", borderRadius: 999, transition: "width 0.3s" }} />
             </div>
           </div>
           {/* Agent list */}
           <div style={{ flex: 1, overflowY: "auto", padding: "0 16px" }}>
-            <div style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", marginBottom: 8 }}>Agents</div>
+            <div style={{ fontSize: 9, color: "#637080", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8 }}>Agents</div>
             {agentList.map(ag => (
               <div key={ag.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                   <span style={{ width: 6, height: 6, borderRadius: "50%", background: ag.spawned ? "#F59E0B" : ctx.color, display: "inline-block" }} />
-                  <span style={{ fontSize: 11, color: "#374151", fontFamily: "'DM Mono', monospace" }}>{ag.label}</span>
+                  <span style={{ fontSize: 11, color: "#A8B4C8", fontFamily: "'JetBrains Mono', monospace" }}>{ag.label}</span>
                   {ag.spawned && <span style={{ fontSize: 8, color: "#F59E0B" }}>⚡</span>}
                 </div>
-                <span style={{ fontSize: 9, color: "#CBD5E1", fontFamily: "'DM Mono', monospace" }}>standby</span>
+                <span style={{ fontSize: 9, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>standby</span>
               </div>
             ))}
           </div>
           {/* Nav */}
-          <div style={{ borderTop: "1px solid #F1F5F9", padding: "10px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
+          <div style={{ borderTop: "1px solid #1C3057", padding: "10px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
             <div style={{ display: "flex", gap: 6 }}>
               {[
                 { key: "home", icon: "⌂", label: "Home" },
@@ -694,8 +694,8 @@ export default function MeshDashboard() {
               ].map(n => (
                 <button key={n.key} onClick={() => { setActiveNav(n.key as typeof activeNav); setShowOutput(false); }} style={{
                   flex: 1, padding: "6px 4px", border: "none", borderRadius: 8,
-                  background: activeNav === n.key ? "#EEF2FF" : "none",
-                  cursor: "pointer", fontSize: 14, color: activeNav === n.key ? "#4F46E5" : "#94A3B8",
+                  background: activeNav === n.key ? "rgba(123,163,212,0.12)" : "none",
+                  cursor: "pointer", fontSize: 14, color: activeNav === n.key ? "#7BA3D4" : "#637080",
                 }} title={n.label}>
                   {n.icon}
                 </button>
@@ -703,14 +703,14 @@ export default function MeshDashboard() {
             </div>
             <a href="/annotate" style={{
               display: "flex", alignItems: "center", gap: 8, padding: "8px 10px",
-              background: "linear-gradient(135deg, rgba(180,83,9,0.08) 0%, rgba(245,158,11,0.05) 100%)",
-              border: "1px solid rgba(180,83,9,0.2)", borderRadius: 8,
+              background: "rgba(201,168,76,0.06)",
+              border: "1px solid rgba(201,168,76,0.2)", borderRadius: 8,
               textDecoration: "none",
             }}>
               <span style={{ fontSize: 14, color: "#F59E0B" }}>ع</span>
               <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: "#B45309", lineHeight: 1.2 }}>Arabic Labeling</div>
-                <div style={{ fontSize: 9, color: "#94A3B8", fontFamily: "'DM Mono', monospace" }}>Annotation Studio</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#C9A84C", lineHeight: 1.2 }}>Arabic Labeling</div>
+                <div style={{ fontSize: 9, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>Annotation Studio</div>
               </div>
               <span style={{ fontSize: 9, color: "#F59E0B" }}>→</span>
             </a>
@@ -734,7 +734,7 @@ export default function MeshDashboard() {
               />
             ) : (
               /* ── Three-column enterprise home layout ── */
-              <div style={{ flex: 1, overflow: "hidden", display: "grid", gridTemplateColumns: "1fr 280px", gap: 0, background: "#F1F5F9" }}>
+              <div style={{ flex: 1, overflow: "hidden", display: "grid", gridTemplateColumns: "1fr 280px", gap: 0, background: "#0B1629" }}>
 
                 {/* ── CENTER: Task Command Center ── */}
                 <div style={{ overflowY: "auto", padding: "24px 24px 24px 24px", display: "flex", flexDirection: "column", gap: 16 }}>
@@ -742,24 +742,24 @@ export default function MeshDashboard() {
                   {/* Greeting header */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div>
-                      <h1 style={{ fontFamily: "'Syne', sans-serif", fontWeight: 800, fontSize: 22, color: "#1E293B", letterSpacing: "-0.03em", marginBottom: 2 }}>
+                      <h1 style={{ fontFamily: "'Inter', sans-serif", fontWeight: 800, fontSize: 22, color: "#E8ECF2", letterSpacing: "-0.03em", marginBottom: 2 }}>
                         Good {new Date().getHours() < 12 ? "morning" : new Date().getHours() < 17 ? "afternoon" : "evening"}, {(user?.name || "").split(" ")[0] || "there"}.
                       </h1>
-                      <div style={{ fontSize: 11, color: "#64748B", fontFamily: "'DM Mono', monospace" }}>
+                      <div style={{ fontSize: 11, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>
                         Mesh configured for <span style={{ color: ctx.color, fontWeight: 600 }}>{ctx.label}</span> · {agentList.length} agents ready
                       </div>
                     </div>
                     <div style={{ display: "flex", gap: 6 }}>
-                      <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 8, padding: "6px 12px", fontSize: 10, fontFamily: "'DM Mono', monospace", color: "#374151" }}>
+                      <div style={{ background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 8, padding: "6px 12px", fontSize: 10, fontFamily: "'JetBrains Mono', monospace", color: "#A8B4C8" }}>
                         <span style={{ color: "#22C55E", fontWeight: 700 }}>● </span>Mesh Online
                       </div>
                     </div>
                   </div>
 
                   {/* Task Command Center */}
-                  <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 16px rgba(0,0,0,0.05)" }}>
-                    <div style={{ padding: "12px 16px 0", borderBottom: "1px solid #F1F5F9" }}>
-                      <div style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", fontWeight: 600, marginBottom: 10 }}>Task Command Center</div>
+                  <div style={{ background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 14, overflow: "hidden", boxShadow: "0 2px 16px rgba(0,0,0,0.3)" }}>
+                    <div style={{ padding: "12px 16px 0", borderBottom: "1px solid #152542" }}>
+                      <div style={{ fontSize: 9, color: "#637080", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, marginBottom: 10 }}>Task Command Center</div>
                     </div>
                     <div style={{ padding: "14px 16px" }}>
                       <textarea
@@ -768,23 +768,23 @@ export default function MeshDashboard() {
                         onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) run(); }}
                         placeholder={`e.g. ${ctx.quickTasks[0]}…`}
                         rows={4}
-                        style={{ width: "100%", border: "none", outline: "none", resize: "none", fontSize: 13, color: "#1E293B", fontFamily: "'DM Mono', monospace", lineHeight: 1.6, background: "transparent" }}
+                        style={{ width: "100%", border: "none", outline: "none", resize: "none", fontSize: 13, color: "#E8ECF2", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.6, background: "transparent" }}
                       />
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTop: "1px solid #F8FAFC" }}>
+                        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", paddingTop: 10, borderTop: "1px solid #152542" }}>
                         <div style={{ display: "flex", gap: 6 }}>
                           {["PDF", "DOCX", "CSV", "XLSX"].map(f => (
-                            <span key={f} style={{ fontSize: 9, padding: "2px 7px", borderRadius: 6, background: "#F8FAFC", color: "#94A3B8", fontFamily: "'DM Mono', monospace", border: "1px solid #E2E8F0" }}>{f}</span>
+                            <span key={f} style={{ fontSize: 9, padding: "2px 7px", borderRadius: 6, background: "#152542", color: "#637080", fontFamily: "'JetBrains Mono', monospace", border: "1px solid #1C3057" }}>{f}</span>
                           ))}
                         </div>
                         <button
                           onClick={run}
                           disabled={!task.trim()}
                           style={{
-                            background: task.trim() ? "#4F46E5" : "#E2E8F0",
-                            color: task.trim() ? "#fff" : "#94A3B8",
-                            border: "none", borderRadius: 10, padding: "9px 20px",
+                            background: task.trim() ? "linear-gradient(135deg, #1C3057 0%, #243B6E 100%)" : "#152542",
+                            color: task.trim() ? "#E8ECF2" : "#637080",
+                            border: task.trim() ? "1px solid rgba(168,180,200,0.2)" : "1px solid #1C3057", borderRadius: 10, padding: "9px 20px",
                             cursor: task.trim() ? "pointer" : "not-allowed",
-                            fontSize: 12, fontFamily: "'Syne', sans-serif", fontWeight: 700,
+                            fontSize: 12, fontFamily: "'Inter', sans-serif", fontWeight: 700,
                             transition: "all 0.15s",
                           }}
                         >
@@ -796,10 +796,10 @@ export default function MeshDashboard() {
                     <div style={{ padding: "0 16px 14px", display: "flex", gap: 6, flexWrap: "wrap" }}>
                       {ctx.quickTasks.map(qt => (
                         <button key={qt} onClick={() => setTask(qt)} style={{
-                          padding: "5px 10px", background: "#F8FAFC",
-                          border: "1px solid #E2E8F0", borderRadius: 8,
-                          cursor: "pointer", fontSize: 10, color: "#374151",
-                          fontFamily: "'DM Mono', monospace", transition: "all 0.12s",
+                          padding: "5px 10px", background: "#152542",
+                          border: "1px solid #1C3057", borderRadius: 8,
+                          cursor: "pointer", fontSize: 10, color: "#A8B4C8",
+                          fontFamily: "'JetBrains Mono', monospace", transition: "all 0.12s",
                         }}>
                           {qt}
                         </button>
@@ -811,16 +811,16 @@ export default function MeshDashboard() {
                   <RecentTasksPanel onRerun={(t: string) => setTask(t)} />
 
                   {/* Configured agents strip */}
-                  <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "12px 16px" }}>
-                    <div style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", marginBottom: 8 }}>Configured Agents · {agentList.length} total</div>
+                  <div style={{ background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, padding: "12px 16px" }}>
+                    <div style={{ fontSize: 9, color: "#637080", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'JetBrains Mono', monospace", marginBottom: 8 }}>Configured Agents · {agentList.length} total</div>
                     <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
                       {agentList.map(ag => (
                         <span key={ag.id} style={{
                           fontSize: 9, padding: "3px 9px", borderRadius: 999,
-                          border: `1px solid ${ag.spawned ? "#FDE68A" : "#E2E8F0"}`,
-                          background: ag.spawned ? "#FFFBEB" : "#F8FAFC",
-                          color: ag.spawned ? "#F59E0B" : "#374151",
-                          fontFamily: "'DM Mono', monospace",
+                          border: `1px solid ${ag.spawned ? "rgba(201,168,76,0.3)" : "#1C3057"}`,
+                          background: ag.spawned ? "rgba(201,168,76,0.08)" : "#152542",
+                          color: ag.spawned ? "#C9A84C" : "#A8B4C8",
+                          fontFamily: "'JetBrains Mono', monospace",
                         }}>
                           {ag.spawned ? "⚡ " : ""}{ag.label}
                         </span>
@@ -830,17 +830,17 @@ export default function MeshDashboard() {
                 </div>
 
                 {/* ── RIGHT: Three widgets ── */}
-                <div style={{ borderLeft: "1px solid #E2E8F0", background: "#fff", overflowY: "auto", padding: "20px 16px" }}>
-                  <div style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", fontWeight: 600, marginBottom: 14 }}>Mesh Intelligence</div>
+                <div style={{ borderLeft: "1px solid #1C3057", background: "#0F1E38", overflowY: "auto", padding: "20px 16px" }}>
+                  <div style={{ fontSize: 9, color: "#637080", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, marginBottom: 14 }}>Mesh Intelligence</div>
                   <LiveActivityWidget />
                   <AgentStatusWidget agentList={agentList} ctxColor={ctx.color} />
                   <SystemMetricsWidget />
                   {/* Document Vault */}
-                  <div style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 12, padding: "14px 16px", marginTop: 12 }}>
+                    <div style={{ background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, padding: "14px 16px", marginTop: 12 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
-                      <span style={{ fontSize: 9, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'DM Mono', monospace", fontWeight: 600 }}>Document Vault</span>
+                      <span style={{ fontSize: 9, color: "#637080", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>Document Vault</span>
                       {activeVaultDocId && (
-                        <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 999, background: "#DCFCE7", color: "#16A34A", fontFamily: "'DM Mono', monospace", fontWeight: 700 }}>● Active</span>
+                        <span style={{ fontSize: 9, padding: "2px 6px", borderRadius: 999, background: "rgba(74,222,128,0.12)", color: "#4ADE80", fontFamily: "'JetBrains Mono', monospace", fontWeight: 700 }}>● Active</span>
                       )}
                     </div>
                     <DocumentVault

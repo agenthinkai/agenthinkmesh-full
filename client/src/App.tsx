@@ -21,14 +21,14 @@ function Router() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background: "#F8FAFC",
+        background: "#0B1629",
         fontFamily: "'Inter', sans-serif",
       }}>
         <div style={{ textAlign: "center" }}>
           <div style={{
             width: 40, height: 40, borderRadius: "50%",
             border: "3px solid #E2E8F0",
-            borderTopColor: "#4F46E5",
+            borderTopColor: "#7BA3D4",
             animation: "spin 0.8s linear infinite",
             margin: "0 auto 12px",
           }} />

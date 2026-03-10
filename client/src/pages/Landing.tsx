@@ -2,32 +2,45 @@ import { getLoginUrl } from "@/const";
 import Logo from "@/components/Logo";
 import { Link } from "wouter";
 
-const FONT = "'Inter', system-ui, -apple-system, sans-serif";
+// ── Brand palette (matches logo: deep navy + silver/platinum) ──────────────
+const NAVY_950 = "#0B1629";   // darkest — page background
+const NAVY_900 = "#0F1E38";   // hero background
+const NAVY_800 = "#152542";   // card background
+const NAVY_700 = "#1C3057";   // card hover / border
+const NAVY_600 = "#243B6E";   // subtle dividers
+const SILVER_50  = "#F5F7FA"; // near-white text
+const SILVER_100 = "#E8ECF2"; // body text
+const SILVER_300 = "#A8B4C8"; // muted text
+const SILVER_400 = "#8494AA"; // very muted
+const SILVER_500 = "#637080"; // placeholder
+const SILVER_GRAD = "linear-gradient(135deg, #F0F4FA 0%, #C8D4E8 40%, #E8ECF2 70%, #9AAAC0 100%)";
+const GOLD        = "#C9A84C"; // accent gold for highlights
 const MONO = "'JetBrains Mono', 'Fira Code', monospace";
+const FONT = "'Inter', system-ui, -apple-system, sans-serif";
 
 const DOMAINS = [
   {
-    icon: "💹", name: "Finance", color: "#4F46E5", lightBg: "#EEF2FF",
+    icon: "💹", name: "Finance", color: "#7BA3D4", lightBg: "rgba(123,163,212,0.08)",
     contexts: ["VC / PE Fund", "Sovereign Wealth", "Fund Manager"],
     agents: ["Deal Screener", "Due Diligence", "Portfolio Monitor", "LP Comms", "Valuation", "Exit Modeler"],
   },
   {
-    icon: "⚖️", name: "Legal", color: "#0284C7", lightBg: "#E0F2FE",
+    icon: "⚖️", name: "Legal", color: "#8BBFD4", lightBg: "rgba(139,191,212,0.08)",
     contexts: ["Law Firm", "In-House Counsel"],
     agents: ["Contract Review", "Clause Extractor", "Risk Flagger", "Jurisdiction Intel", "Draft Gen", "Redline"],
   },
   {
-    icon: "🏥", name: "Healthcare", color: "#059669", lightBg: "#D1FAE5",
+    icon: "🏥", name: "Healthcare", color: "#7DC4A8", lightBg: "rgba(125,196,168,0.08)",
     contexts: ["Hospital Ops", "Clinical Research"],
     agents: ["Bed Manager", "Staffing Optimizer", "Patient Flow", "Cost Analyzer", "Safety Monitor", "Report Gen"],
   },
   {
-    icon: "🏢", name: "Enterprise", color: "#7C3AED", lightBg: "#EDE9FE",
+    icon: "🏢", name: "Enterprise", color: "#A89BD4", lightBg: "rgba(168,155,212,0.08)",
     contexts: ["HR & People Ops", "Procurement", "Operations"],
     agents: ["Talent Screener", "Vendor Screener", "Process Monitor", "KPI Tracker", "Resource Planner", "SLA Monitor"],
   },
   {
-    icon: "🏦", name: "GCC Wealth", color: "#B45309", lightBg: "#FEF3C7",
+    icon: "🏦", name: "GCC Wealth", color: "#C9A84C", lightBg: "rgba(201,168,76,0.08)",
     contexts: ["Private Wealth", "Investment Banking", "Family Office", "Fund Distribution"],
     agents: ["Client Profiler", "Suitability Checker", "Portfolio Builder", "Deal Originator", "Asset Allocator", "Investor Matcher"],
   },
@@ -55,133 +68,160 @@ const USE_CASES = [
   { role: "Hospital Ops Director", task: "Analyse this week's bed occupancy data and generate a staffing optimisation report", agents: 8, domain: "Healthcare" },
 ];
 
+// Shared card style
+const card = (extra?: React.CSSProperties): React.CSSProperties => ({
+  background: NAVY_800,
+  border: `1px solid ${NAVY_700}`,
+  borderRadius: 14,
+  ...extra,
+});
+
 export default function Landing() {
   const loginUrl = getLoginUrl();
 
   return (
-    <div style={{ minHeight: "100vh", background: "#FFFFFF", fontFamily: FONT, color: "#0F172A" }}>
+    <div style={{ minHeight: "100vh", background: NAVY_950, fontFamily: FONT, color: SILVER_100 }}>
 
       {/* ── Navbar ── */}
       <nav style={{
         position: "sticky", top: 0, zIndex: 100,
         display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 48px", height: 60,
-        background: "rgba(255,255,255,0.95)", backdropFilter: "blur(12px)",
-        borderBottom: "1px solid #E2E8F0",
+        padding: "0 48px", height: 64,
+        background: `${NAVY_900}F0`, backdropFilter: "blur(16px)",
+        borderBottom: `1px solid ${NAVY_700}`,
       }}>
-        <Logo size={30} />
+        <Logo size={32} />
         <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
           {[["#features", "Features"], ["#domains", "Domains"], ["#how-it-works", "How it works"]].map(([href, label]) => (
-            <a key={href} href={href} style={{ fontSize: 13, color: "#64748B", textDecoration: "none", fontWeight: 500 }}>{label}</a>
+            <a key={href} href={href} style={{ fontSize: 13, color: SILVER_300, textDecoration: "none", fontWeight: 500, transition: "color 0.2s" }}
+              onMouseEnter={e => (e.currentTarget.style.color = SILVER_50)}
+              onMouseLeave={e => (e.currentTarget.style.color = SILVER_300)}
+            >{label}</a>
           ))}
-          <Link href="/registry" style={{ fontSize: 13, color: "#4F46E5", textDecoration: "none", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+          <Link href="/registry" style={{ fontSize: 13, color: "#7BA3D4", textDecoration: "none", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
             ⬡ Registry
           </Link>
-          <Link href="/annotate" style={{ fontSize: 13, color: "#B45309", textDecoration: "none", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+          <Link href="/annotate" style={{ fontSize: 13, color: GOLD, textDecoration: "none", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
             ع Arabic Labeling
           </Link>
-          <Link href="/build" style={{ fontSize: 13, color: "#64748B", textDecoration: "none", fontWeight: 500 }}>
+          <Link href="/build" style={{ fontSize: 13, color: SILVER_300, textDecoration: "none", fontWeight: 500 }}>
             Build
           </Link>
           <a href={loginUrl} style={{
-            padding: "8px 20px", background: "#4F46E5", color: "#fff",
+            padding: "8px 22px",
+            background: "linear-gradient(135deg, #1C3057 0%, #243B6E 100%)",
+            color: SILVER_50,
             borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none",
+            border: `1px solid ${NAVY_600}`,
+            boxShadow: "0 2px 12px rgba(0,0,0,0.3)",
           }}>Sign in →</a>
         </div>
       </nav>
 
       {/* ── Hero ── */}
-      <section style={{ padding: "96px 48px 80px", textAlign: "center", background: "#FAFBFF", borderBottom: "1px solid #E2E8F0", position: "relative", overflow: "hidden" }}>
-        {/* Subtle grid background */}
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(#E2E8F0 1px, transparent 1px)", backgroundSize: "28px 28px", opacity: 0.6, pointerEvents: "none" }} />
+      <section style={{ padding: "100px 48px 88px", textAlign: "center", background: NAVY_900, borderBottom: `1px solid ${NAVY_700}`, position: "relative", overflow: "hidden" }}>
+        {/* Subtle grid */}
+        <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(${NAVY_700} 1px, transparent 1px)`, backgroundSize: "32px 32px", opacity: 0.5, pointerEvents: "none" }} />
+        {/* Silver glow top */}
+        <div style={{ position: "absolute", top: -120, left: "50%", transform: "translateX(-50%)", width: 600, height: 300, background: "radial-gradient(ellipse, rgba(168,180,200,0.08) 0%, transparent 70%)", pointerEvents: "none" }} />
 
-        {/* Animated mesh */}
-        <div style={{ marginBottom: 40, display: "flex", justifyContent: "center", position: "relative" }}>
+        {/* Animated mesh SVG */}
+        <div style={{ marginBottom: 44, display: "flex", justifyContent: "center", position: "relative" }}>
           <svg width="180" height="120" viewBox="0 0 180 120">
             {([[90,60,28,22],[90,60,152,22],[90,60,16,72],[90,60,164,72],[90,60,50,106],[90,60,130,106],[90,60,90,10]] as [number,number,number,number][]).map(([x1,y1,x2,y2],i) => (
-              <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="#C7D2FE" strokeWidth="1.5" strokeDasharray="4 3">
-                <animate attributeName="stroke-opacity" values="0.4;1;0.4" dur={`${1.8 + i * 0.25}s`} repeatCount="indefinite" />
+              <line key={i} x1={x1} y1={y1} x2={x2} y2={y2} stroke="rgba(168,180,200,0.35)" strokeWidth="1.5" strokeDasharray="4 3">
+                <animate attributeName="stroke-opacity" values="0.2;0.7;0.2" dur={`${1.8 + i * 0.25}s`} repeatCount="indefinite" />
               </line>
             ))}
             {([[28,22],[152,22],[16,72],[164,72],[50,106],[130,106],[90,10]] as [number,number][]).map(([cx,cy],i) => (
-              <circle key={i} cx={cx} cy={cy} r="5" fill="#A5B4FC" stroke="#6366F1" strokeWidth="1">
+              <circle key={i} cx={cx} cy={cy} r="5" fill={NAVY_700} stroke="rgba(168,180,200,0.6)" strokeWidth="1.5">
                 <animate attributeName="r" values="3.5;5.5;3.5" dur={`${2.2 + i * 0.3}s`} repeatCount="indefinite" />
               </circle>
             ))}
-            <circle cx="90" cy="60" r="15" fill="#EEF2FF" stroke="#6366F1" strokeWidth="2">
+            <circle cx="90" cy="60" r="15" fill={NAVY_800} stroke="rgba(168,180,200,0.5)" strokeWidth="2">
               <animate attributeName="r" values="12;17;12" dur="3.5s" repeatCount="indefinite" />
             </circle>
-            <circle cx="90" cy="60" r="7" fill="#4F46E5" />
+            <circle cx="90" cy="60" r="7" fill="rgba(168,180,200,0.8)" />
           </svg>
         </div>
 
         {/* Status pill */}
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "4px 14px", background: "#EEF2FF", border: "1px solid #C7D2FE", borderRadius: 999, marginBottom: 24, position: "relative" }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#22C55E", display: "inline-block" }} />
-          <span style={{ fontSize: 11, color: "#4F46E5", fontFamily: MONO }}>v3.1 · 112 agents · 14 domain contexts · Live</span>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 7, padding: "4px 16px", background: `${NAVY_800}`, border: `1px solid ${NAVY_600}`, borderRadius: 999, marginBottom: 28, position: "relative" }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ADE80", display: "inline-block" }} />
+          <span style={{ fontSize: 11, color: SILVER_300, fontFamily: MONO }}>v3.1 · 112 agents · 14 domain contexts · Live</span>
         </div>
 
-        <h1 style={{ fontSize: "clamp(36px, 5vw, 62px)", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1.1, marginBottom: 20, maxWidth: 780, margin: "0 auto 20px", color: "#0F172A", position: "relative" }}>
+        {/* Arabic tagline */}
+        <div style={{ fontSize: 15, color: SILVER_400, fontFamily: "'Noto Naskh Arabic', 'Arial', sans-serif", direction: "rtl", marginBottom: 16, letterSpacing: "0.02em", position: "relative" }}>
+          نظام تنسيق وكلاء الذكاء الاصطناعي للمؤسسات
+        </div>
+
+        <h1 style={{ fontSize: "clamp(36px, 5vw, 62px)", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1.1, marginBottom: 20, maxWidth: 780, margin: "0 auto 20px", color: SILVER_50, position: "relative" }}>
           Deploy a mesh of<br />
-          <span style={{ background: "linear-gradient(135deg, #4F46E5 0%, #7C3AED 60%, #0EA5E9 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+          <span style={{ background: SILVER_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
             specialist AI agents
           </span>
           <br />against any task.
         </h1>
 
-        <p style={{ fontSize: 16, color: "#475569", maxWidth: 540, margin: "0 auto 40px", lineHeight: 1.75, position: "relative" }}>
+        <p style={{ fontSize: 16, color: SILVER_300, maxWidth: 540, margin: "0 auto 44px", lineHeight: 1.8, position: "relative" }}>
           AgenThink Mesh orchestrates coordinated teams of domain-specific AI agents across Finance, Legal, Healthcare, Enterprise, and GCC Wealth — running in parallel, streaming output in real time.
         </p>
 
-        <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap", position: "relative" }}>
+        <div style={{ display: "flex", gap: 14, justifyContent: "center", flexWrap: "wrap", position: "relative" }}>
           <a href={loginUrl} style={{
-            padding: "13px 32px", background: "#4F46E5", color: "#fff",
+            padding: "14px 36px",
+            background: "linear-gradient(135deg, #1C3057 0%, #243B6E 100%)",
+            color: SILVER_50,
             borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: "none",
-            boxShadow: "0 4px 24px rgba(79,70,229,0.3)",
+            border: `1px solid rgba(168,180,200,0.25)`,
+            boxShadow: "0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06)",
           }}>Access the Mesh →</a>
           <a href="#how-it-works" style={{
-            padding: "13px 32px", background: "#fff", color: "#374151",
+            padding: "14px 36px",
+            background: "transparent",
+            color: SILVER_300,
             borderRadius: 10, fontSize: 14, fontWeight: 600, textDecoration: "none",
-            border: "1px solid #E2E8F0", boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+            border: `1px solid ${NAVY_700}`,
           }}>See how it works</a>
         </div>
-        <p style={{ marginTop: 14, fontSize: 11, color: "#94A3B8", fontFamily: MONO, position: "relative" }}>
+        <p style={{ marginTop: 16, fontSize: 11, color: SILVER_500, fontFamily: MONO, position: "relative" }}>
           Sign in with Google, GitHub, or email · Free to access · No credit card required
         </p>
       </section>
 
       {/* ── Stats bar ── */}
-      <section style={{ borderBottom: "1px solid #E2E8F0", background: "#fff", padding: "32px 48px" }}>
+      <section style={{ borderBottom: `1px solid ${NAVY_700}`, background: NAVY_800, padding: "32px 48px" }}>
         <div style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
           {[
-            { value: "14", label: "Domain Contexts", color: "#4F46E5" },
-            { value: "112", label: "Specialist Agents", color: "#7C3AED" },
-            { value: "50", label: "Max Agents / Task", color: "#0284C7" },
-            { value: "5", label: "Industry Verticals", color: "#059669" },
+            { value: "14", label: "Domain Contexts", color: "#7BA3D4" },
+            { value: "112", label: "Specialist Agents", color: SILVER_100 },
+            { value: "50", label: "Max Agents / Task", color: "#8BBFD4" },
+            { value: "5", label: "Industry Verticals", color: GOLD },
           ].map((s, i) => (
-            <div key={i} style={{ textAlign: "center", padding: "0 20px", borderRight: i < 3 ? "1px solid #E2E8F0" : "none" }}>
-              <div style={{ fontSize: 40, fontWeight: 800, color: s.color, letterSpacing: "-0.04em", lineHeight: 1 }}>{s.value}</div>
-              <div style={{ fontSize: 11, color: "#94A3B8", fontFamily: MONO, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</div>
+            <div key={i} style={{ textAlign: "center", padding: "0 20px", borderRight: i < 3 ? `1px solid ${NAVY_700}` : "none" }}>
+              <div style={{ fontSize: 40, fontWeight: 800, color: s.color, letterSpacing: "-0.04em", lineHeight: 1, background: SILVER_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{s.value}</div>
+              <div style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>{s.label}</div>
             </div>
           ))}
         </div>
       </section>
 
       {/* ── How it works ── */}
-      <section id="how-it-works" style={{ padding: "88px 48px", background: "#fff" }}>
+      <section id="how-it-works" style={{ padding: "88px 48px", background: NAVY_950 }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <div style={{ fontSize: 11, color: "#4F46E5", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>How it works</div>
-            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: "#0F172A", lineHeight: 1.15 }}>From task to structured output<br />in under 60 seconds.</h2>
+            <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>How it works</div>
+            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>From task to structured output<br />in under 60 seconds.</h2>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, position: "relative" }}>
             {HOW_IT_WORKS.map((step, i) => (
-              <div key={i} style={{ background: "#FAFBFF", border: "1px solid #E2E8F0", borderRadius: 14, padding: "28px 24px", position: "relative" }}>
-                <div style={{ fontSize: 48, fontWeight: 800, color: "#EEF2FF", letterSpacing: "-0.04em", lineHeight: 1, marginBottom: 16, fontFamily: FONT }}>{step.step}</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", marginBottom: 9 }}>{step.title}</div>
-                <div style={{ fontSize: 13, color: "#64748B", lineHeight: 1.75 }}>{step.desc}</div>
+              <div key={i} style={{ ...card({ padding: "28px 24px", position: "relative" }) }}>
+                <div style={{ fontSize: 48, fontWeight: 800, color: NAVY_700, letterSpacing: "-0.04em", lineHeight: 1, marginBottom: 16 }}>{step.step}</div>
+                <div style={{ fontSize: 15, fontWeight: 700, color: SILVER_50, marginBottom: 9 }}>{step.title}</div>
+                <div style={{ fontSize: 13, color: SILVER_300, lineHeight: 1.75 }}>{step.desc}</div>
                 {i < 2 && (
-                  <div style={{ position: "absolute", right: -14, top: "50%", transform: "translateY(-50%)", fontSize: 20, color: "#C7D2FE", zIndex: 2 }}>→</div>
+                  <div style={{ position: "absolute", right: -14, top: "50%", transform: "translateY(-50%)", fontSize: 20, color: NAVY_600, zIndex: 2 }}>→</div>
                 )}
               </div>
             ))}
@@ -190,18 +230,18 @@ export default function Landing() {
       </section>
 
       {/* ── Features ── */}
-      <section id="features" style={{ padding: "88px 48px", background: "#F8FAFC", borderTop: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0" }}>
+      <section id="features" style={{ padding: "88px 48px", background: NAVY_900, borderTop: `1px solid ${NAVY_700}`, borderBottom: `1px solid ${NAVY_700}` }}>
         <div style={{ maxWidth: 1060, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <div style={{ fontSize: 11, color: "#4F46E5", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>Platform capabilities</div>
-            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: "#0F172A", lineHeight: 1.15 }}>Built for institutional-grade<br />AI task execution.</h2>
+            <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>Platform capabilities</div>
+            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>Built for institutional-grade<br />AI task execution.</h2>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }}>
             {FEATURES.map((f, i) => (
-              <div key={i} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "26px 22px", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+              <div key={i} style={{ ...card({ padding: "26px 22px" }) }}>
                 <div style={{ fontSize: 28, marginBottom: 14 }}>{f.icon}</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#0F172A", marginBottom: 8 }}>{f.title}</div>
-                <div style={{ fontSize: 13, color: "#64748B", lineHeight: 1.75 }}>{f.desc}</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: SILVER_50, marginBottom: 8 }}>{f.title}</div>
+                <div style={{ fontSize: 13, color: SILVER_300, lineHeight: 1.75 }}>{f.desc}</div>
               </div>
             ))}
           </div>
@@ -209,23 +249,23 @@ export default function Landing() {
       </section>
 
       {/* ── Domain showcase ── */}
-      <section id="domains" style={{ padding: "88px 48px", background: "#fff" }}>
+      <section id="domains" style={{ padding: "88px 48px", background: NAVY_950 }}>
         <div style={{ maxWidth: 1060, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <div style={{ fontSize: 11, color: "#4F46E5", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>Domain coverage</div>
-            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: "#0F172A", lineHeight: 1.15 }}>5 verticals. 14 contexts.<br />112 specialist agents.</h2>
+            <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>Domain coverage</div>
+            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>5 verticals. 14 contexts.<br />112 specialist agents.</h2>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16 }}>
             {DOMAINS.map((d, i) => (
-              <div key={i} style={{ background: d.lightBg, border: `1px solid ${d.color}22`, borderRadius: 14, padding: "22px 18px" }}>
+              <div key={i} style={{ background: d.lightBg, border: `1px solid ${d.color}33`, borderRadius: 14, padding: "22px 18px" }}>
                 <div style={{ fontSize: 26, marginBottom: 10 }}>{d.icon}</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: d.color, marginBottom: 6 }}>{d.name}</div>
-                <div style={{ fontSize: 10, color: "#64748B", fontFamily: MONO, marginBottom: 14, lineHeight: 1.6 }}>
+                <div style={{ fontSize: 10, color: SILVER_400, fontFamily: MONO, marginBottom: 14, lineHeight: 1.6 }}>
                   {d.contexts.join(" · ")}
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                   {d.agents.map((ag, j) => (
-                    <div key={j} style={{ fontSize: 11, color: "#374151", display: "flex", alignItems: "center", gap: 6 }}>
+                    <div key={j} style={{ fontSize: 11, color: SILVER_300, display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{ width: 4, height: 4, borderRadius: "50%", background: d.color, opacity: 0.7, display: "inline-block", flexShrink: 0 }} />
                       {ag}
                     </div>
@@ -238,25 +278,25 @@ export default function Landing() {
       </section>
 
       {/* ── Use cases ── */}
-      <section style={{ padding: "88px 48px", background: "#F8FAFC", borderTop: "1px solid #E2E8F0", borderBottom: "1px solid #E2E8F0" }}>
+      <section style={{ padding: "88px 48px", background: NAVY_900, borderTop: `1px solid ${NAVY_700}`, borderBottom: `1px solid ${NAVY_700}` }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
-            <div style={{ fontSize: 11, color: "#4F46E5", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>Use cases</div>
-            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: "#0F172A", lineHeight: 1.15 }}>Real tasks. Real professionals.<br />Real output.</h2>
+            <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>Use cases</div>
+            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>Real tasks. Real professionals.<br />Real output.</h2>
           </div>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
             {USE_CASES.map((uc, i) => (
-              <div key={i} style={{ background: "#fff", border: "1px solid #E2E8F0", borderRadius: 14, padding: "24px 22px", boxShadow: "0 1px 4px rgba(0,0,0,0.04)" }}>
+              <div key={i} style={{ ...card({ padding: "24px 22px" }) }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                  <span style={{ fontSize: 11, padding: "3px 11px", borderRadius: 999, background: "#EEF2FF", color: "#4F46E5", fontFamily: MONO, border: "1px solid #C7D2FE", fontWeight: 500 }}>
+                  <span style={{ fontSize: 11, padding: "3px 11px", borderRadius: 999, background: NAVY_700, color: SILVER_300, fontFamily: MONO, border: `1px solid ${NAVY_600}`, fontWeight: 500 }}>
                     {uc.role}
                   </span>
-                  <span style={{ fontSize: 11, color: "#94A3B8", fontFamily: MONO }}>
+                  <span style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO }}>
                     {uc.domain} · {uc.agents} agents
                   </span>
                 </div>
-                <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.7, fontStyle: "italic" }}>
-                  "{uc.task}"
+                <div style={{ fontSize: 14, color: SILVER_300, lineHeight: 1.7, fontStyle: "italic" }}>
+                  &ldquo;{uc.task}&rdquo;
                 </div>
               </div>
             ))}
@@ -265,40 +305,38 @@ export default function Landing() {
       </section>
 
       {/* ── Arabic Data Labeling — Flagship Government Section ── */}
-      <section id="arabic-labeling" style={{ padding: "96px 48px", background: "#0C1220", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(180,83,9,0.12) 1px, transparent 1px)", backgroundSize: "32px 32px", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", top: 0, right: 0, width: 480, height: 480, background: "radial-gradient(circle at 80% 20%, rgba(180,83,9,0.15) 0%, transparent 70%)", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", bottom: 0, left: 0, width: 360, height: 360, background: "radial-gradient(circle at 20% 80%, rgba(79,70,229,0.12) 0%, transparent 70%)", pointerEvents: "none" }} />
+      <section id="arabic-labeling" style={{ padding: "96px 48px", background: "#080F1E", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(${GOLD}18 1px, transparent 1px)`, backgroundSize: "32px 32px", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", top: 0, right: 0, width: 480, height: 480, background: `radial-gradient(circle at 80% 20%, ${GOLD}18 0%, transparent 70%)`, pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: 0, left: 0, width: 360, height: 360, background: "radial-gradient(circle at 20% 80%, rgba(123,163,212,0.1) 0%, transparent 70%)", pointerEvents: "none" }} />
 
         <div style={{ maxWidth: 1060, margin: "0 auto", position: "relative" }}>
-
-          {/* Header */}
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center", marginBottom: 72 }}>
             <div>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 14px", background: "rgba(180,83,9,0.15)", border: "1px solid rgba(180,83,9,0.4)", borderRadius: 999, marginBottom: 24 }}>
-                <span style={{ fontSize: 10, color: "#F59E0B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600 }}>GCC AI Infrastructure</span>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 14px", background: `${GOLD}18`, border: `1px solid ${GOLD}50`, borderRadius: 999, marginBottom: 24 }}>
+                <span style={{ fontSize: 10, color: GOLD, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600 }}>GCC AI Infrastructure</span>
               </div>
-              <h2 style={{ fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 800, letterSpacing: "-0.04em", color: "#F8FAFC", lineHeight: 1.1, marginBottom: 20 }}>
+              <h2 style={{ fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 800, letterSpacing: "-0.04em", color: SILVER_50, lineHeight: 1.1, marginBottom: 20 }}>
                 Arabic Data Labeling<br />
-                <span style={{ background: "linear-gradient(135deg, #F59E0B 0%, #B45309 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                <span style={{ background: `linear-gradient(135deg, ${GOLD} 0%, #8B6914 100%)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                   for GCC LLM Teams.
                 </span>
               </h2>
-              <p style={{ fontSize: 15, color: "#94A3B8", lineHeight: 1.8, marginBottom: 32, maxWidth: 480 }}>
+              <p style={{ fontSize: 15, color: SILVER_300, lineHeight: 1.8, marginBottom: 32, maxWidth: 480 }}>
                 Every Arabic LLM initiative in the Gulf hits the same wall: not enough high-quality, domain-specific, annotated training data. AgenThink Mesh provides the annotation infrastructure GCC governments and enterprises need to build sovereign Arabic AI.
               </p>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <Link href="/annotate" style={{
-                  padding: "12px 28px", background: "#B45309", color: "#fff",
+                  padding: "12px 28px", background: `linear-gradient(135deg, ${GOLD} 0%, #8B6914 100%)`, color: "#0B1629",
                   borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none",
-                  boxShadow: "0 4px 20px rgba(180,83,9,0.4)",
+                  boxShadow: `0 4px 20px ${GOLD}40`,
                 }}>
                   Open Annotation Studio &rarr;
                 </Link>
                 <Link href="/registry" style={{
-                  padding: "12px 28px", background: "transparent", color: "#94A3B8",
+                  padding: "12px 28px", background: "transparent", color: SILVER_300,
                   borderRadius: 10, fontSize: 13, fontWeight: 600, textDecoration: "none",
-                  border: "1px solid rgba(255,255,255,0.12)",
+                  border: `1px solid ${NAVY_700}`,
                 }}>
                   Browse Arabic Agents
                 </Link>
@@ -306,50 +344,50 @@ export default function Landing() {
             </div>
 
             {/* Live annotation demo card */}
-            <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: "28px 24px" }}>
-              <div style={{ fontSize: 10, color: "#F59E0B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16, fontWeight: 600 }}>Live annotation example</div>
-              <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 10, padding: "16px 18px", marginBottom: 16, direction: "rtl", textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: "#64748B", fontFamily: MONO, marginBottom: 8, direction: "ltr", textAlign: "left" }}>input_text</div>
-                <div style={{ fontSize: 15, color: "#E2E8F0", lineHeight: 1.8, fontFamily: "'Noto Sans Arabic', 'Arial', sans-serif" }}>
+            <div style={{ background: `${NAVY_800}CC`, border: `1px solid ${NAVY_700}`, borderRadius: 16, padding: "28px 24px" }}>
+              <div style={{ fontSize: 10, color: GOLD, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16, fontWeight: 600 }}>Live annotation example</div>
+              <div style={{ background: `${NAVY_950}CC`, borderRadius: 10, padding: "16px 18px", marginBottom: 16, direction: "rtl", textAlign: "right" }}>
+                <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, marginBottom: 8, direction: "ltr", textAlign: "left" }}>input_text</div>
+                <div style={{ fontSize: 15, color: SILVER_100, lineHeight: 1.8, fontFamily: "'Noto Naskh Arabic', 'Arial', sans-serif" }}>
                   والله الخدمة في هذا البنك وايد زينة، ما قصروا معي أبد.
                 </div>
               </div>
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                 {[
-                  { key: "label", value: "positive", color: "#22C55E" },
-                  { key: "dialect", value: "gulf", color: "#F59E0B" },
-                  { key: "confidence", value: "0.95", color: "#60A5FA" },
-                  { key: "requires_review", value: "false", color: "#A78BFA" },
+                  { key: "label", value: "positive", color: "#4ADE80" },
+                  { key: "dialect", value: "gulf", color: GOLD },
+                  { key: "confidence", value: "0.95", color: "#7BA3D4" },
+                  { key: "requires_review", value: "false", color: "#A89BD4" },
                 ].map((item, i) => (
-                  <div key={i} style={{ background: "rgba(0,0,0,0.25)", borderRadius: 8, padding: "10px 12px" }}>
-                    <div style={{ fontSize: 9, color: "#64748B", fontFamily: MONO, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>{item.key}</div>
+                  <div key={i} style={{ background: `${NAVY_950}CC`, borderRadius: 8, padding: "10px 12px" }}>
+                    <div style={{ fontSize: 9, color: SILVER_500, fontFamily: MONO, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>{item.key}</div>
                     <div style={{ fontSize: 13, color: item.color, fontFamily: MONO, fontWeight: 600 }}>{item.value}</div>
                   </div>
                 ))}
               </div>
-              <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(0,0,0,0.25)", borderRadius: 8 }}>
-                <div style={{ fontSize: 9, color: "#64748B", fontFamily: MONO, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>rationale</div>
-                <div style={{ fontSize: 11, color: "#94A3B8", lineHeight: 1.6 }}>Strong positive Gulf dialect markers: وايد زينة, ما قصروا — high confidence, no review needed</div>
+              <div style={{ marginTop: 12, padding: "10px 12px", background: `${NAVY_950}CC`, borderRadius: 8 }}>
+                <div style={{ fontSize: 9, color: SILVER_500, fontFamily: MONO, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>rationale</div>
+                <div style={{ fontSize: 11, color: SILVER_300, lineHeight: 1.6 }}>Strong positive Gulf dialect markers: وايد زينة, ما قصروا — high confidence, no review needed</div>
               </div>
             </div>
           </div>
 
           {/* Five agent cards */}
           <div style={{ marginBottom: 56 }}>
-            <div style={{ fontSize: 11, color: "#64748B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 20, fontWeight: 500 }}>5 specialist Arabic annotation agents</div>
+            <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 20, fontWeight: 500 }}>5 specialist Arabic annotation agents</div>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
               {[
-                { icon: "\u{1F4AC}", name: "Gulf Sentiment", desc: "Classifies sentiment with dialect detection across all 6 Gulf states", tag: "gulf \u00b7 msa \u00b7 levantine" },
-                { icon: "\u{1F3F7}\uFE0F", name: "Arabic NER", desc: "Extracts persons, orgs, locations, dates from Arabic text", tag: "ner \u00b7 entities \u00b7 tagging" },
-                { icon: "\u{1F54B}", name: "Islamic Finance Intent", desc: "Classifies intent across murabaha, sukuk, takaful, zakat queries", tag: "islamic \u00b7 banking \u00b7 intent" },
-                { icon: "\u2696\uFE0F", name: "Legal Clause Extractor", desc: "Identifies and flags clauses in Arabic contracts and regulations", tag: "legal \u00b7 gcc \u00b7 contracts" },
-                { icon: "\u{1F500}", name: "Code-Switch Detector", desc: "Annotates Arabic-English mixing patterns common in Gulf professional text", tag: "arabizi \u00b7 bilingual \u00b7 nlp" },
+                { icon: "💬", name: "Gulf Sentiment", desc: "Classifies sentiment with dialect detection across all 6 Gulf states", tag: "gulf · msa · levantine" },
+                { icon: "🏷️", name: "Arabic NER", desc: "Extracts persons, orgs, locations, dates from Arabic text", tag: "ner · entities · tagging" },
+                { icon: "🕌", name: "Islamic Finance Intent", desc: "Classifies intent across murabaha, sukuk, takaful, zakat queries", tag: "islamic · banking · intent" },
+                { icon: "⚖️", name: "Legal Clause Extractor", desc: "Identifies and flags clauses in Arabic contracts and regulations", tag: "legal · gcc · contracts" },
+                { icon: "🔀", name: "Code-Switch Detector", desc: "Annotates Arabic-English mixing patterns common in Gulf professional text", tag: "arabizi · bilingual · nlp" },
               ].map((agent, i) => (
-                <div key={i} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "20px 16px" }}>
+                <div key={i} style={{ background: `${NAVY_800}CC`, border: `1px solid ${NAVY_700}`, borderRadius: 12, padding: "20px 16px" }}>
                   <div style={{ fontSize: 22, marginBottom: 10 }}>{agent.icon}</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: "#F8FAFC", marginBottom: 8, lineHeight: 1.3 }}>{agent.name}</div>
-                  <div style={{ fontSize: 11, color: "#64748B", lineHeight: 1.6, marginBottom: 12 }}>{agent.desc}</div>
-                  <div style={{ fontSize: 9, color: "#F59E0B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.06em" }}>{agent.tag}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: SILVER_50, marginBottom: 8, lineHeight: 1.3 }}>{agent.name}</div>
+                  <div style={{ fontSize: 11, color: SILVER_400, lineHeight: 1.6, marginBottom: 12 }}>{agent.desc}</div>
+                  <div style={{ fontSize: 9, color: GOLD, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.06em" }}>{agent.tag}</div>
                 </div>
               ))}
             </div>
@@ -357,52 +395,37 @@ export default function Landing() {
 
           {/* Government use cases */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 56 }}>
-            <div style={{ gridColumn: "1 / -1", fontSize: 11, color: "#64748B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500, marginBottom: 4 }}>Government and enterprise use cases</div>
+            <div style={{ gridColumn: "1 / -1", fontSize: 11, color: SILVER_500, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500, marginBottom: 4 }}>Government and enterprise use cases</div>
             {[
-              {
-                org: "National AI Authority",
-                flag: "\u{1F1F8}\u{1F1E6}",
-                task: "Annotate 50,000 Gulf dialect customer service transcripts for national Arabic chatbot training",
-                output: "JSONL export \u00b7 sentiment labels \u00b7 dialect tags \u00b7 review queue",
-              },
-              {
-                org: "Islamic Development Bank",
-                flag: "\u{1F1F8}\u{1F1E6}",
-                task: "Label 20,000 Arabic banking queries with Islamic finance intent classes for Shariah-compliant AI",
-                output: "Intent labels \u00b7 product mentions \u00b7 sharia sensitivity flags",
-              },
-              {
-                org: "Ministry of Justice",
-                flag: "\u{1F1E6}\u{1F1EA}",
-                task: "Extract and classify clauses from 10,000 Arabic contracts to build a GCC legal NLP corpus",
-                output: "Clause types \u00b7 risk levels \u00b7 jurisdiction tags \u00b7 CSV export",
-              },
+              { org: "National AI Authority", flag: "🇸🇦", task: "Annotate 50,000 Gulf dialect customer service transcripts for national Arabic chatbot training", output: "JSONL export · sentiment labels · dialect tags · review queue" },
+              { org: "Islamic Development Bank", flag: "🇸🇦", task: "Label 20,000 Arabic banking queries with Islamic finance intent classes for Shariah-compliant AI", output: "Intent labels · product mentions · sharia sensitivity flags" },
+              { org: "Ministry of Justice", flag: "🇦🇪", task: "Extract and classify clauses from 5,000 Arabic legal contracts for judicial AI training data", output: "Clause types · risk flags · legal entity tags · review queue" },
             ].map((uc, i) => (
-              <div key={i} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "24px 20px" }}>
+              <div key={i} style={{ background: `${NAVY_800}CC`, border: `1px solid ${NAVY_700}`, borderRadius: 14, padding: "24px 20px" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
                   <span style={{ fontSize: 20 }}>{uc.flag}</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#F8FAFC" }}>{uc.org}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: SILVER_50 }}>{uc.org}</span>
                 </div>
-                <div style={{ fontSize: 13, color: "#94A3B8", lineHeight: 1.7, marginBottom: 14, fontStyle: "italic" }}>
+                <div style={{ fontSize: 13, color: SILVER_300, lineHeight: 1.7, marginBottom: 14, fontStyle: "italic" }}>
                   &ldquo;{uc.task}&rdquo;
                 </div>
-                <div style={{ fontSize: 10, color: "#F59E0B", fontFamily: MONO, lineHeight: 1.6 }}>{uc.output}</div>
+                <div style={{ fontSize: 10, color: GOLD, fontFamily: MONO, lineHeight: 1.6 }}>{uc.output}</div>
               </div>
             ))}
           </div>
 
           {/* Stats row */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "rgba(255,255,255,0.06)", borderRadius: 14, overflow: "hidden" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: NAVY_700, borderRadius: 14, overflow: "hidden" }}>
             {[
-              { value: "5", label: "Arabic Dialects Supported", sub: "Gulf \u00b7 MSA \u00b7 Levantine \u00b7 Egyptian \u00b7 Maghrebi" },
+              { value: "5", label: "Arabic Dialects Supported", sub: "Gulf · MSA · Levantine · Egyptian · Maghrebi" },
               { value: "JSONL", label: "Fine-Tuning Export Format", sub: "Compatible with OpenAI, Gemini, Llama fine-tuning" },
               { value: "<3s", label: "Avg Annotation Latency", sub: "Structured JSON output with confidence scores" },
               { value: "100%", label: "Sovereign Data", sub: "Your annotations stay in your account, exportable anytime" },
             ].map((s, i) => (
-              <div key={i} style={{ background: "rgba(0,0,0,0.2)", padding: "28px 24px", textAlign: "center" }}>
-                <div style={{ fontSize: 32, fontWeight: 800, color: "#F59E0B", letterSpacing: "-0.04em", lineHeight: 1, marginBottom: 8 }}>{s.value}</div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#F8FAFC", marginBottom: 6 }}>{s.label}</div>
-                <div style={{ fontSize: 10, color: "#64748B", fontFamily: MONO, lineHeight: 1.5 }}>{s.sub}</div>
+              <div key={i} style={{ background: NAVY_800, padding: "28px 24px", textAlign: "center" }}>
+                <div style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1, marginBottom: 8, background: SILVER_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{s.value}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: SILVER_100, marginBottom: 6 }}>{s.label}</div>
+                <div style={{ fontSize: 10, color: SILVER_400, fontFamily: MONO, lineHeight: 1.5 }}>{s.sub}</div>
               </div>
             ))}
           </div>
@@ -410,35 +433,35 @@ export default function Landing() {
       </section>
 
       {/* ── Bottom CTA ── */}
-      <section style={{ padding: "100px 48px", textAlign: "center", background: "#4F46E5", position: "relative", overflow: "hidden" }}>
-        {/* Subtle pattern */}
-        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(255,255,255,0.08) 1px, transparent 1px)", backgroundSize: "24px 24px", pointerEvents: "none" }} />
+      <section style={{ padding: "100px 48px", textAlign: "center", background: NAVY_800, borderTop: `1px solid ${NAVY_700}`, position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(${NAVY_700} 1px, transparent 1px)`, backgroundSize: "24px 24px", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
-          <div style={{ fontSize: 11, color: "#A5B4FC", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 16, fontWeight: 500 }}>Get started today</div>
-          <h2 style={{ fontSize: 44, fontWeight: 800, letterSpacing: "-0.04em", color: "#fff", marginBottom: 16, maxWidth: 600, margin: "0 auto 16px", lineHeight: 1.1 }}>
+          <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 16, fontWeight: 500 }}>Get started today</div>
+          <h2 style={{ fontSize: 44, fontWeight: 800, letterSpacing: "-0.04em", color: SILVER_50, marginBottom: 16, maxWidth: 600, margin: "0 auto 16px", lineHeight: 1.1 }}>
             Your mesh is ready.<br />Are you?
           </h2>
-          <p style={{ fontSize: 15, color: "#C7D2FE", maxWidth: 460, margin: "0 auto 36px", lineHeight: 1.75 }}>
+          <p style={{ fontSize: 15, color: SILVER_300, maxWidth: 460, margin: "0 auto 36px", lineHeight: 1.75 }}>
             Sign in to access 112 specialist agents across 14 domain contexts. No setup. No configuration. Execute your first task in under 30 seconds.
           </p>
           <a href={loginUrl} style={{
-            display: "inline-block", padding: "15px 40px",
-            background: "#fff", color: "#4F46E5",
+            display: "inline-block", padding: "15px 44px",
+            background: SILVER_GRAD,
+            color: NAVY_950,
             borderRadius: 10, fontSize: 15, fontWeight: 700, textDecoration: "none",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.15)",
+            boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
           }}>
             Sign in to access the Mesh →
           </a>
-          <p style={{ marginTop: 14, fontSize: 11, color: "#818CF8", fontFamily: MONO }}>
+          <p style={{ marginTop: 16, fontSize: 11, color: SILVER_500, fontFamily: MONO }}>
             Sign in with Google, GitHub, or email · Free to access · No credit card required
           </p>
         </div>
       </section>
 
       {/* ── Footer ── */}
-      <footer style={{ borderTop: "1px solid #E2E8F0", padding: "24px 48px", display: "flex", alignItems: "center", justifyContent: "space-between", background: "#fff" }}>
-        <Logo size={24} />
-        <div style={{ fontSize: 11, color: "#94A3B8", fontFamily: MONO }}>
+      <footer style={{ borderTop: `1px solid ${NAVY_700}`, padding: "24px 48px", display: "flex", alignItems: "center", justifyContent: "space-between", background: NAVY_950 }}>
+        <Logo size={28} />
+        <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO }}>
           112 agents · 14 contexts · 5 domains · Institutional AI orchestration
         </div>
       </footer>

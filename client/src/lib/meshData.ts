@@ -24,19 +24,19 @@ export interface MeshContext {
 export const CONTEXTS: Record<string, MeshContext> = {
   // ── Finance ──────────────────────────────────────────────────────────────
   vc: {
-    icon: "💹", label: "VC / PE Fund", domain: "finance", color: "#4F46E5",
+    icon: "💹", label: "VC / PE Fund", domain: "finance", color: "#7BA3D4",
     agents: ["Deal Screener","Due Diligence","Portfolio Monitor","LP Comms","Cap Table","Exit Modeler","Valuation","Term Sheet"],
     quickTasks: ["Screen new deal","Run due diligence","Update LP report","Model exit scenario"],
     systemPromptBase: "You are operating within a VC/PE Fund institutional Mesh. Apply venture capital and private equity frameworks.",
   },
   swf: {
-    icon: "💹", label: "Sovereign Wealth Fund", domain: "finance", color: "#4F46E5",
+    icon: "💹", label: "Sovereign Wealth Fund", domain: "finance", color: "#7BA3D4",
     agents: ["Asset Allocation","Macro Intel","Risk Monitor","ESG Screener","FX Overlay","Rebalancing","Liquidity","Board Reporter"],
     quickTasks: ["Review asset allocation","Run macro analysis","ESG screen portfolio","Prepare board report"],
     systemPromptBase: "You are operating within a Sovereign Wealth Fund institutional Mesh. Apply sovereign investment and macro frameworks.",
   },
   fm: {
-    icon: "💹", label: "Fund Manager", domain: "finance", color: "#4F46E5",
+    icon: "💹", label: "Fund Manager", domain: "finance", color: "#7BA3D4",
     agents: ["iNAV Engine","Compliance","Performance","Trade Exec","Risk Monitor","Report Gen","Benchmark","Investor Notifier"],
     quickTasks: ["Calculate iNAV","Run compliance check","Generate performance report","Notify investors"],
     systemPromptBase: "You are operating within a Fund Management institutional Mesh. Apply fund administration and portfolio management frameworks.",

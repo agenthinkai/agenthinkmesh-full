@@ -8,10 +8,10 @@ import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 const MONO = "'JetBrains Mono', monospace";
-const INDIGO = "#4F46E5";
-const BORDER = "#E2E8F0";
-const MUTED = "#64748B";
-const SLATE = "#0F172A";
+const INDIGO = "#7BA3D4";
+const BORDER = "#1C3057";
+const MUTED = "#8494AA";
+const SLATE = "#E8ECF2";
 
 interface VaultDoc {
   id: number;
@@ -112,7 +112,7 @@ export function DocumentVault({
           padding: "12px 16px",
           textAlign: "center",
           cursor: uploading ? "not-allowed" : "pointer",
-          background: uploading ? "#EEF2FF" : "#FAFBFF",
+          background: uploading ? "rgba(123,163,212,0.15)" : "#0F1E38",
           transition: "all 0.15s",
         }}
       >
@@ -157,7 +157,7 @@ export function DocumentVault({
                   padding: "8px 10px",
                   borderRadius: 8,
                   border: `1px solid ${isActive ? INDIGO : BORDER}`,
-                  background: isActive ? "#EEF2FF" : "#fff",
+                  background: isActive ? "rgba(123,163,212,0.1)" : "#0F1E38",
                   cursor: "pointer",
                   transition: "all 0.12s",
                 }}
@@ -190,7 +190,7 @@ export function DocumentVault({
                       padding: "2px 6px",
                       borderRadius: 999,
                       background: INDIGO,
-                      color: "#fff",
+                      color: "#0B1629",
                       fontFamily: MONO,
                       fontWeight: 700,
                       flexShrink: 0,
@@ -205,7 +205,7 @@ export function DocumentVault({
                     background: "none",
                     border: "none",
                     cursor: "pointer",
-                    color: "#CBD5E1",
+                    color: "#637080",
                     fontSize: 14,
                     padding: "0 2px",
                     flexShrink: 0,

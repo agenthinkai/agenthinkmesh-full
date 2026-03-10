@@ -8,11 +8,11 @@ import { Link } from "wouter";
 
 const FONT = "'Inter', sans-serif";
 const MONO = "'JetBrains Mono', monospace";
-const INDIGO = "#4F46E5";
-const SLATE = "#0F172A";
-const MUTED = "#64748B";
-const BORDER = "#E2E8F0";
-const BG = "#F8FAFC";
+const INDIGO = "#7BA3D4";
+const SLATE = "#E8ECF2";
+const MUTED = "#8494AA";
+const BORDER = "#1C3057";
+const BG = "#0B1629";
 
 const PRICING_LABELS: Record<string, string> = {
   free: "Free",
@@ -21,9 +21,9 @@ const PRICING_LABELS: Record<string, string> = {
 };
 
 const PRICING_COLORS: Record<string, string> = {
-  free: "#16A34A",
-  per_task: "#D97706",
-  subscription: "#4F46E5",
+  free: "#4ADE80",
+  per_task: "#C9A84C",
+  subscription: "#7BA3D4",
 };
 
 type Tab = "directory" | "register" | "my-agents";
@@ -142,7 +142,7 @@ export default function AgentRegistry() {
   const inputStyle: React.CSSProperties = {
     width: "100%", padding: "9px 12px", border: `1px solid ${BORDER}`,
     borderRadius: 8, fontSize: 13, fontFamily: FONT, color: SLATE,
-    background: "#fff", outline: "none", boxSizing: "border-box",
+    background: "#0F1E38", outline: "none", boxSizing: "border-box",
   };
 
   const labelStyle: React.CSSProperties = {
@@ -156,7 +156,7 @@ export default function AgentRegistry() {
       {/* Topbar */}
       <header style={{
         height: 52, display: "flex", alignItems: "center", padding: "0 24px",
-        borderBottom: `1px solid ${BORDER}`, background: "#fff", gap: 16, flexShrink: 0,
+        borderBottom: `1px solid ${BORDER}`, background: "#0F1E38", gap: 16, flexShrink: 0,
         position: "sticky", top: 0, zIndex: 50,
       }}>
         <Link href="/" style={{ textDecoration: "none" }}>
@@ -169,7 +169,7 @@ export default function AgentRegistry() {
           <span style={{ fontSize: 12, color: MUTED }}>{user?.name}</span>
         ) : (
           <a href={getLoginUrl()} style={{
-            padding: "6px 16px", background: INDIGO, color: "#fff",
+            padding: "6px 16px", background: "rgba(123,163,212,0.15)", color: INDIGO, border: "1px solid rgba(123,163,212,0.3)",
             borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none",
           }}>Sign in</a>
         )}
@@ -268,7 +268,7 @@ export default function AgentRegistry() {
                   const caps: string[] = (() => { try { return JSON.parse(agent.capabilities); } catch { return []; } })();
                   return (
                     <div key={agent.id} style={{
-                      background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 12,
+                      background: "#0F1E38", border: `1px solid ${BORDER}`, borderRadius: 12,
                       padding: "20px 20px 16px", display: "flex", flexDirection: "column", gap: 12,
                     }}>
                       <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 8 }}>
@@ -278,8 +278,8 @@ export default function AgentRegistry() {
                             {agent.connectionTested && (
                               <span style={{
                                 fontSize: 9, fontWeight: 700, padding: "2px 7px", borderRadius: 999,
-                                background: "#DCFCE7", color: "#16A34A", fontFamily: MONO,
-                                border: "1px solid #BBF7D0", letterSpacing: "0.04em",
+                                background: "rgba(74,222,128,0.12)", color: "#4ADE80", fontFamily: MONO,
+                                border: "1px solid rgba(74,222,128,0.3)", letterSpacing: "0.04em",
                               }}>✓ Verified</span>
                             )}
                           </div>
@@ -303,7 +303,7 @@ export default function AgentRegistry() {
                         {caps.slice(0, 5).map(c => (
                           <span key={c} style={{
                             fontSize: 10, padding: "2px 8px", borderRadius: 999,
-                            background: "#EEF2FF", color: INDIGO, fontFamily: MONO,
+                              background: "rgba(123,163,212,0.1)", color: INDIGO, fontFamily: MONO,
                           }}>{c}</span>
                         ))}
                         {caps.length > 5 && (
@@ -345,22 +345,24 @@ export default function AgentRegistry() {
               }}>
                 <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 12 }}>Sign in to register an agent</div>
                 <a href={getLoginUrl()} style={{
-                  display: "inline-block", padding: "8px 20px", background: INDIGO,
-                  color: "#fff", borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none",
+                  display: "inline-block", padding: "8px 20px", background: "rgba(123,163,212,0.15)",
+                  color: INDIGO, borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none",
+                  border: "1px solid rgba(123,163,212,0.3)",
                 }}>Sign in</a>
               </div>
             ) : (
               <form onSubmit={handleRegister} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
                 <div style={{
-                  padding: "12px 16px", background: "#EEF2FF", borderRadius: 8,
+                  padding: "12px 16px", background: "rgba(123,163,212,0.08)", borderRadius: 8,
                   fontSize: 12, color: INDIGO, fontFamily: MONO, lineHeight: 1.6,
+                  border: `1px solid rgba(123,163,212,0.2)`,
                 }}>
                   External agents must expose a REST POST endpoint that accepts{" "}
-                  <code style={{ background: "#C7D2FE", padding: "1px 4px", borderRadius: 4 }}>
+                  <code style={{ background: "rgba(123,163,212,0.15)", padding: "1px 4px", borderRadius: 4, color: SLATE }}>
                     {"{ task, context }"}
                   </code>{" "}
                   and returns{" "}
-                  <code style={{ background: "#C7D2FE", padding: "1px 4px", borderRadius: 4 }}>
+                  <code style={{ background: "rgba(123,163,212,0.15)", padding: "1px 4px", borderRadius: 4, color: SLATE }}>
                     {"{ result, latency_ms }"}
                   </code>.
                 </div>
@@ -410,7 +412,7 @@ export default function AgentRegistry() {
                       disabled={testingEndpoint || !form.endpointUrl}
                       style={{
                         padding: "9px 16px", border: `1px solid ${BORDER}`, borderRadius: 8,
-                        background: testingEndpoint ? "#F1F5F9" : "#fff",
+                        background: testingEndpoint ? "#152542" : "#0F1E38",
                         color: testingEndpoint ? MUTED : SLATE,
                         fontSize: 12, fontWeight: 600, cursor: testingEndpoint || !form.endpointUrl ? "not-allowed" : "pointer",
                         whiteSpace: "nowrap", fontFamily: MONO, flexShrink: 0,
@@ -423,24 +425,25 @@ export default function AgentRegistry() {
                   {endpointTest && (
                     <div style={{
                       marginTop: 8, padding: "10px 12px", borderRadius: 8,
-                      background: endpointTest.ok ? "#F0FDF4" : "#FFF1F2",
-                      border: `1px solid ${endpointTest.ok ? "#BBF7D0" : "#FECDD3"}`,
+                      background: endpointTest.ok ? "rgba(74,222,128,0.08)" : "rgba(239,68,68,0.08)",
+                      border: `1px solid ${endpointTest.ok ? "rgba(74,222,128,0.3)" : "rgba(239,68,68,0.3)"}`,
+                      color: endpointTest.ok ? "#4ADE80" : "#EF4444",
                     }}>
                       <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: endpointTest.preview ? 6 : 0 }}>
                         <span style={{ fontSize: 14 }}>{endpointTest.ok ? "✓" : "✗"}</span>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: endpointTest.ok ? "#16A34A" : "#DC2626" }}>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: endpointTest.ok ? "#4ADE80" : "#EF4444" }}>
                           {endpointTest.ok ? `Connected · ${endpointTest.latencyMs}ms` : `Failed: ${endpointTest.error}`}
                         </span>
                       </div>
                       {endpointTest.preview && (
-                        <pre style={{ margin: 0, fontSize: 10, color: "#374151", fontFamily: MONO, whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 120, overflow: "auto" }}>
+                        <pre style={{ margin: 0, fontSize: 10, color: "#A8B4C8", fontFamily: MONO, whiteSpace: "pre-wrap", wordBreak: "break-word", maxHeight: 120, overflow: "auto" }}>
                           {endpointTest.preview}
                         </pre>
                       )}
                     </div>
                   )}
                   {endpointTest && !endpointTest.ok && (
-                    <div style={{ marginTop: 6, fontSize: 11, color: "#D97706", fontFamily: MONO }}>
+                    <div style={{ marginTop: 6, fontSize: 11, color: "#C9A84C", fontFamily: MONO }}>
                       ⚠ Endpoint validation failed. You can still register, but the agent may not function correctly.
                     </div>
                   )}
@@ -468,8 +471,8 @@ export default function AgentRegistry() {
                   type="submit"
                   disabled={registerMutation.isPending}
                   style={{
-                    padding: "11px 24px", background: registerMutation.isPending ? "#A5B4FC" : INDIGO,
-                    color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700,
+                    padding: "11px 24px", background: registerMutation.isPending ? "rgba(123,163,212,0.3)" : "rgba(123,163,212,0.15)",
+                    color: registerMutation.isPending ? MUTED : INDIGO, border: `1px solid rgba(123,163,212,0.3)`, borderRadius: 8, fontSize: 14, fontWeight: 700,
                     cursor: registerMutation.isPending ? "not-allowed" : "pointer", alignSelf: "flex-start",
                   }}
                 >
@@ -486,8 +489,9 @@ export default function AgentRegistry() {
             {!isAuthenticated ? (
               <div style={{ textAlign: "center", padding: "48px 24px", color: MUTED }}>
                 <a href={getLoginUrl()} style={{
-                  display: "inline-block", padding: "8px 20px", background: INDIGO,
-                  color: "#fff", borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none",
+                  display: "inline-block", padding: "8px 20px", background: "rgba(123,163,212,0.15)",
+                  color: INDIGO, borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none",
+                  border: "1px solid rgba(123,163,212,0.3)",
                 }}>Sign in to view your agents</a>
               </div>
             ) : myAgents.length === 0 ? (
@@ -497,8 +501,8 @@ export default function AgentRegistry() {
               }}>
                 <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>No agents registered yet</div>
                 <button onClick={() => setActiveTab("register")} style={{
-                  padding: "8px 20px", background: INDIGO, color: "#fff",
-                  border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
+                  padding: "8px 20px", background: "rgba(123,163,212,0.15)", color: INDIGO,
+                  border: "1px solid rgba(123,163,212,0.3)", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer",
                 }}>Register your first agent →</button>
               </div>
             ) : (
@@ -507,7 +511,7 @@ export default function AgentRegistry() {
                   const caps: string[] = (() => { try { return JSON.parse(agent.capabilities); } catch { return []; } })();
                   return (
                     <div key={agent.id} style={{
-                      background: "#fff", border: `1px solid ${BORDER}`, borderRadius: 12,
+                      background: "#0F1E38", border: `1px solid ${BORDER}`, borderRadius: 12,
                       padding: "18px 20px", display: "flex", alignItems: "center", gap: 20,
                     }}>
                       <div style={{ flex: 1 }}>
@@ -515,8 +519,8 @@ export default function AgentRegistry() {
                           <span style={{ fontSize: 15, fontWeight: 700 }}>{agent.agentName}</span>
                           <span style={{
                             fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999,
-                            background: agent.status === "active" ? "#DCFCE7" : "#FEE2E2",
-                            color: agent.status === "active" ? "#16A34A" : "#DC2626",
+                              background: agent.status === "active" ? "rgba(74,222,128,0.12)" : "rgba(239,68,68,0.12)",
+                            color: agent.status === "active" ? "#4ADE80" : "#EF4444",
                             fontFamily: MONO,
                           }}>{agent.status}</span>
                         </div>
@@ -525,7 +529,7 @@ export default function AgentRegistry() {
                           {caps.slice(0, 4).map(c => (
                             <span key={c} style={{
                               fontSize: 10, padding: "2px 8px", borderRadius: 999,
-                              background: "#EEF2FF", color: INDIGO, fontFamily: MONO,
+                              background: "rgba(123,163,212,0.1)", color: INDIGO, fontFamily: MONO,
                             }}>{c}</span>
                           ))}
                         </div>
@@ -550,8 +554,8 @@ export default function AgentRegistry() {
                         <button
                           onClick={() => deactivateMutation.mutate({ id: agent.id })}
                           style={{
-                            padding: "6px 14px", background: "none", border: `1px solid #FCA5A5`,
-                            borderRadius: 8, fontSize: 12, color: "#DC2626", cursor: "pointer",
+                            padding: "6px 14px", background: "none", border: `1px solid rgba(239,68,68,0.4)`,
+                            borderRadius: 8, fontSize: 12, color: "#EF4444", cursor: "pointer",
                             fontWeight: 600, flexShrink: 0,
                           }}
                         >Deactivate</button>

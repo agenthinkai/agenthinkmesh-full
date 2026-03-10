@@ -50,8 +50,8 @@ function StructuredResultView({ data }: { data: unknown }) {
           : String(val ?? "");
         return (
           <div key={key} style={{ background: "rgba(0,0,0,0.25)", borderRadius: 8, padding: "10px 12px" }}>
-            <div style={{ fontSize: 9, color: "#64748B", fontFamily: MONO, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>{key.replace(/_/g, " ")}</div>
-            <div style={{ fontSize: 11, color: "#E2E8F0", fontFamily: MONO, wordBreak: "break-word", lineHeight: 1.5 }}>{display || "—"}</div>
+            <div style={{ fontSize: 9, color: "#8494AA", fontFamily: MONO, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>{key.replace(/_/g, " ")}</div>
+            <div style={{ fontSize: 11, color: "#A8B4C8", fontFamily: MONO, wordBreak: "break-word", lineHeight: 1.5 }}>{display || "—"}</div>
           </div>
         );
       })}
@@ -159,14 +159,14 @@ export default function AnnotationStudio() {
 
   if (authLoading) {
     return (
-      <div style={{ minHeight: "100vh", background: "#0C1220", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ color: "#64748B", fontFamily: MONO, fontSize: 13 }}>Loading...</div>
+      <div style={{ minHeight: "100vh", background: "#0B1629", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ color: "#8494AA", fontFamily: MONO, fontSize: 13 }}>Loading...</div>
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#0C1220", fontFamily: FONT, color: "#F8FAFC" }}>
+    <div style={{ minHeight: "100vh", background: "#0B1629", fontFamily: FONT, color: "#E8ECF2" }}>
 
       {/* Navbar */}
       <nav style={{
@@ -181,18 +181,18 @@ export default function AnnotationStudio() {
           <div style={{ width: 1, height: 20, background: "rgba(255,255,255,0.1)" }} />
           <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
             <span style={{ fontSize: 16, color: "#F59E0B" }}>ع</span>
-            <span style={{ fontSize: 13, fontWeight: 700, color: "#F8FAFC" }}>Arabic Annotation Studio</span>
+            <span style={{ fontSize: 13, fontWeight: 700, color: "#E8ECF2" }}>Arabic Annotation Studio</span>
             <span style={{ fontSize: 10, padding: "2px 8px", background: "rgba(180,83,9,0.2)", border: "1px solid rgba(180,83,9,0.4)", borderRadius: 999, color: "#F59E0B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.08em" }}>Beta</span>
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
           {user ? (
             <>
-              <span style={{ fontSize: 12, color: "#64748B", fontFamily: MONO }}>{user.name}</span>
-              <Link href="/dashboard" style={{ fontSize: 12, color: "#4F46E5", textDecoration: "none", fontWeight: 600 }}>Dashboard</Link>
+              <span style={{ fontSize: 12, color: "#8494AA", fontFamily: MONO }}>{user.name}</span>
+              <Link href="/dashboard" style={{ fontSize: 12, color: "#7BA3D4", textDecoration: "none", fontWeight: 600 }}>Dashboard</Link>
             </>
           ) : (
-            <a href={loginUrl} style={{ padding: "7px 18px", background: "#B45309", color: "#fff", borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Sign in to annotate</a>
+            <a href={loginUrl} style={{ padding: "7px 18px", background: "rgba(123,163,212,0.15)", color: "#7BA3D4", border: "1px solid rgba(123,163,212,0.3)", borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: "none" }}>Sign in to annotate</a>
           )}
         </div>
       </nav>
@@ -204,10 +204,10 @@ export default function AnnotationStudio() {
           <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "4px 12px", background: "rgba(180,83,9,0.15)", border: "1px solid rgba(180,83,9,0.3)", borderRadius: 999, marginBottom: 16 }}>
             <span style={{ fontSize: 9, color: "#F59E0B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600 }}>GCC AI Infrastructure</span>
           </div>
-          <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-0.03em", color: "#F8FAFC", marginBottom: 10, lineHeight: 1.15 }}>
+          <h1 style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-0.03em", color: "#E8ECF2", marginBottom: 10, lineHeight: 1.15 }}>
             Arabic Data Annotation Studio
           </h1>
-          <p style={{ fontSize: 14, color: "#64748B", lineHeight: 1.7, maxWidth: 600 }}>
+          <p style={{ fontSize: 14, color: "#8494AA", lineHeight: 1.7, maxWidth: 600 }}>
             Submit Arabic text to specialist annotation agents. Get structured labels — sentiment, entities, intent, clauses, code-switching — with confidence scores and dialect detection. Export as JSONL for LLM fine-tuning.
           </p>
         </div>
@@ -225,7 +225,7 @@ export default function AnnotationStudio() {
               style={{
                 padding: "10px 20px", fontSize: 13, fontWeight: 600, cursor: "pointer",
                 background: "transparent", border: "none", borderBottom: activeTab === tab ? "2px solid #F59E0B" : "2px solid transparent",
-                color: activeTab === tab ? "#F59E0B" : "#64748B",
+                color: activeTab === tab ? "#C9A84C" : "#8494AA",
                 marginBottom: -1, transition: "all 0.15s",
               }}
             >
@@ -239,13 +239,13 @@ export default function AnnotationStudio() {
           <div>
           {/* Mode toggle */}
           <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 24 }}>
-            <span style={{ fontSize: 11, color: "#64748B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.08em" }}>Mode:</span>
+            <span style={{ fontSize: 11, color: "#8494AA", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.08em" }}>Mode:</span>
             {(["single", "batch"] as const).map(m => (
               <button key={m} onClick={() => setBatchMode(m === "batch")}
                 style={{ padding: "5px 16px", borderRadius: 8, fontSize: 11, fontWeight: 700, cursor: "pointer",
                   background: (m === "batch") === batchMode ? "rgba(180,83,9,0.25)" : "rgba(255,255,255,0.04)",
                   border: (m === "batch") === batchMode ? "1px solid rgba(180,83,9,0.5)" : "1px solid rgba(255,255,255,0.08)",
-                  color: (m === "batch") === batchMode ? "#F59E0B" : "#64748B",
+                  color: (m === "batch") === batchMode ? "#C9A84C" : "#8494AA",
                 }}>{m === "single" ? "Single Text" : "Batch (up to 50)"}</button>
             ))}
           </div>
@@ -257,16 +257,16 @@ export default function AnnotationStudio() {
               <textarea value={batchInput} onChange={e => setBatchInput(e.target.value)}
                 placeholder={"أدخل النص الأول هنا\nأدخل النص الثاني هنا\nأدخل النص الثالث هنا"}
                 dir="rtl" rows={8}
-                style={{ width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "14px 16px", color: "#E2E8F0", fontSize: 14, lineHeight: 1.8, fontFamily: "'Noto Naskh Arabic', 'Noto Sans Arabic', 'Arial', sans-serif", resize: "vertical", outline: "none", textAlign: "right" }} />
-              <div style={{ marginTop: 8, fontSize: 10, color: "#64748B", fontFamily: MONO }}>{batchInput.split("\n").filter(l => l.trim()).length} texts entered · agent: {arabicAgents.find(a => a.id === selectedAgentId)?.agentName ?? "none selected"}</div>
+                style={{ width: "100%", boxSizing: "border-box", background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "14px 16px", color: "#A8B4C8", fontSize: 14, lineHeight: 1.8, fontFamily: "'Noto Naskh Arabic', 'Noto Sans Arabic', 'Arial', sans-serif", resize: "vertical", outline: "none", textAlign: "right" }} />
+              <div style={{ marginTop: 8, fontSize: 10, color: "#8494AA", fontFamily: MONO }}>{batchInput.split("\n").filter(l => l.trim()).length} texts entered · agent: {arabicAgents.find(a => a.id === selectedAgentId)?.agentName ?? "none selected"}</div>
               <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
                 <button onClick={() => void runBatch()} disabled={!selectedAgentId || batchRunning || !batchInput.trim()}
-                  style={{ flex: 1, padding: "12px", background: (!selectedAgentId || batchRunning || !batchInput.trim()) ? "rgba(180,83,9,0.3)" : "#B45309", color: "#fff", border: "none", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: (!selectedAgentId || batchRunning || !batchInput.trim()) ? "not-allowed" : "pointer" }}>
+                  style={{ flex: 1, padding: "12px", background: (!selectedAgentId || batchRunning || !batchInput.trim()) ? "rgba(180,83,9,0.3)" : "#B45309", color: "#7BA3D4", border: "1px solid rgba(123,163,212,0.3)", borderRadius: 10, fontSize: 13, fontWeight: 700, cursor: (!selectedAgentId || batchRunning || !batchInput.trim()) ? "not-allowed" : "pointer" }}>
                   {batchRunning ? `Annotating ${batchProgress}/${batchInput.split("\n").filter(l => l.trim()).slice(0,50).length}...` : "Run Batch →"}
                 </button>
                 {batchResults.some(r => r.status === "done") && (
                   <button onClick={downloadBatchJSONL}
-                    style={{ padding: "12px 20px", background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)", color: "#22C55E", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
+                    style={{ padding: "12px 20px", background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)", color: "#4ADE80", borderRadius: 10, fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
                     ↓ Download JSONL
                   </button>
                 )}
@@ -278,28 +278,28 @@ export default function AnnotationStudio() {
               )}
               {batchResults.length > 0 && (
                 <div style={{ marginTop: 20 }}>
-                  <div style={{ fontSize: 10, color: "#64748B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Results</div>
+                  <div style={{ fontSize: 10, color: "#8494AA", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Results</div>
                   <div style={{ overflowX: "auto" }}>
                     <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 11 }}>
                       <thead>
                         <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
                           {["#", "Text (60 chars)", "Label", "Confidence", "Dialect", "Status"].map(h => (
-                            <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: "#64748B", fontFamily: MONO, fontWeight: 600, fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em" }}>{h}</th>
+                            <th key={h} style={{ padding: "8px 10px", textAlign: "left", color: "#8494AA", fontFamily: MONO, fontWeight: 600, fontSize: 9, textTransform: "uppercase", letterSpacing: "0.08em" }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {batchResults.map((r, i) => (
                           <tr key={i} style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-                            <td style={{ padding: "8px 10px", color: "#374151", fontFamily: MONO }}>{i + 1}</td>
+                            <td style={{ padding: "8px 10px", color: "#A8B4C8", fontFamily: MONO }}>{i + 1}</td>
                             <td style={{ padding: "8px 10px", color: "#94A3B8", maxWidth: 200, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", direction: "rtl", fontFamily: "'Noto Naskh Arabic', sans-serif" }}>{r.text.slice(0, 60)}{r.text.length > 60 ? "…" : ""}</td>
-                            <td style={{ padding: "8px 10px", color: r.status === "done" ? "#22C55E" : r.status === "error" ? "#EF4444" : "#374151", fontFamily: MONO, fontWeight: 700 }}>{r.label || "—"}</td>
-                            <td style={{ padding: "8px 10px", color: "#64748B", fontFamily: MONO }}>{r.status === "done" ? `${Math.round(r.confidence * 100)}%` : "—"}</td>
+                            <td style={{ padding: "8px 10px", color: r.status === "done" ? "#4ADE80" : r.status === "error" ? "#EF4444" : "#A8B4C8", fontFamily: MONO, fontWeight: 700 }}>{r.label || "—"}</td>
+                            <td style={{ padding: "8px 10px", color: "#8494AA", fontFamily: MONO }}>{r.status === "done" ? `${Math.round(r.confidence * 100)}%` : "—"}</td>
                             <td style={{ padding: "8px 10px", color: "#F59E0B", fontFamily: MONO, fontSize: 10 }}>{r.dialect || "—"}</td>
                             <td style={{ padding: "8px 10px" }}>
                               <span style={{ fontSize: 9, padding: "2px 8px", borderRadius: 999, fontFamily: MONO, fontWeight: 700,
                                 background: r.status === "done" ? "rgba(34,197,94,0.1)" : r.status === "error" ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.05)",
-                                color: r.status === "done" ? "#22C55E" : r.status === "error" ? "#EF4444" : "#64748B",
+                                color: r.status === "done" ? "#4ADE80" : r.status === "error" ? "#EF4444" : "#8494AA",
                                 border: `1px solid ${r.status === "done" ? "rgba(34,197,94,0.3)" : r.status === "error" ? "rgba(239,68,68,0.3)" : "rgba(255,255,255,0.08)"}`,
                               }}>{r.status}</span>
                             </td>
@@ -331,7 +331,7 @@ export default function AnnotationStudio() {
                     width: "100%", boxSizing: "border-box",
                     background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.1)",
                     borderRadius: 10, padding: "14px 16px",
-                    color: "#E2E8F0", fontSize: 15, lineHeight: 1.8,
+                    color: "#A8B4C8", fontSize: 15, lineHeight: 1.8,
                     fontFamily: "'Noto Sans Arabic', 'Arial', sans-serif",
                     resize: "vertical", outline: "none",
                     textAlign: "right",
@@ -340,7 +340,7 @@ export default function AnnotationStudio() {
 
                 {/* Context field */}
                 <div style={{ marginTop: 14 }}>
-                  <div style={{ fontSize: 10, color: "#64748B", fontFamily: MONO, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.08em" }}>Domain context (optional)</div>
+                  <div style={{ fontSize: 10, color: "#8494AA", fontFamily: MONO, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.08em" }}>Domain context (optional)</div>
                   <input
                     value={context}
                     onChange={e => setContext(e.target.value)}
@@ -349,7 +349,7 @@ export default function AnnotationStudio() {
                       width: "100%", boxSizing: "border-box",
                       background: "rgba(0,0,0,0.3)", border: "1px solid rgba(255,255,255,0.08)",
                       borderRadius: 8, padding: "10px 14px",
-                      color: "#E2E8F0", fontSize: 12, outline: "none",
+                      color: "#A8B4C8", fontSize: 12, outline: "none",
                       fontFamily: FONT,
                     }}
                   />
@@ -357,9 +357,9 @@ export default function AnnotationStudio() {
 
                 {/* Agent selector */}
                 <div style={{ marginTop: 16 }}>
-                  <div style={{ fontSize: 10, color: "#64748B", fontFamily: MONO, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Annotation agent</div>
+                  <div style={{ fontSize: 10, color: "#8494AA", fontFamily: MONO, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Annotation agent</div>
                   {arabicAgents.length === 0 ? (
-                    <div style={{ fontSize: 12, color: "#64748B", padding: "12px", background: "rgba(0,0,0,0.2)", borderRadius: 8, fontFamily: MONO }}>
+                    <div style={{ fontSize: 12, color: "#8494AA", padding: "12px", background: "rgba(0,0,0,0.2)", borderRadius: 8, fontFamily: MONO }}>
                       No Arabic agents registered yet. <Link href="/registry" style={{ color: "#F59E0B", textDecoration: "none" }}>Register one →</Link>
                     </div>
                   ) : (
@@ -378,16 +378,16 @@ export default function AnnotationStudio() {
                               textAlign: "left",
                             }}
                           >
-                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: selectedAgentId === agent.id ? "#F59E0B" : "#374151", marginTop: 4, flexShrink: 0 }} />
+                            <div style={{ width: 8, height: 8, borderRadius: "50%", background: selectedAgentId === agent.id ? "#C9A84C" : "#1C3057", marginTop: 4, flexShrink: 0 }} />
                             <div>
-                              <div style={{ fontSize: 12, fontWeight: 700, color: "#F8FAFC", marginBottom: 3 }}>{agent.agentName}</div>
-                              <div style={{ fontSize: 10, color: "#64748B", lineHeight: 1.5 }}>{agent.description}</div>
+                              <div style={{ fontSize: 12, fontWeight: 700, color: "#E8ECF2", marginBottom: 3 }}>{agent.agentName}</div>
+                              <div style={{ fontSize: 10, color: "#8494AA", lineHeight: 1.5 }}>{agent.description}</div>
                               <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginTop: 6 }}>
                                 {caps.slice(0, 4).map((c, i) => (
                                   <span key={i} style={{ fontSize: 9, padding: "2px 7px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 999, color: "#F59E0B", fontFamily: MONO }}>{c}</span>
                                 ))}
                                 {agent.connectionTested && (
-                                  <span style={{ fontSize: 9, padding: "2px 7px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 999, color: "#22C55E", fontFamily: MONO }}>✓ verified</span>
+                                  <span style={{ fontSize: 9, padding: "2px 7px", background: "rgba(34,197,94,0.1)", border: "1px solid rgba(34,197,94,0.2)", borderRadius: 999, color: "#4ADE80", fontFamily: MONO }}>✓ verified</span>
                                 )}
                               </div>
                             </div>
@@ -409,7 +409,7 @@ export default function AnnotationStudio() {
                     style={{
                       marginTop: 20, width: "100%", padding: "13px",
                       background: (!selectedAgentId || !inputText.trim() || submitMutation.isPending) ? "rgba(180,83,9,0.3)" : "#B45309",
-                      color: "#fff", border: "none", borderRadius: 10,
+                      color: "#7BA3D4", border: "1px solid rgba(123,163,212,0.3)", borderRadius: 10,
                       fontSize: 13, fontWeight: 700, cursor: (!selectedAgentId || !inputText.trim() || submitMutation.isPending) ? "not-allowed" : "pointer",
                       transition: "background 0.15s",
                     }}
@@ -419,7 +419,7 @@ export default function AnnotationStudio() {
                 ) : (
                   <a href={loginUrl} style={{
                     display: "block", marginTop: 20, width: "100%", padding: "13px",
-                    background: "#B45309", color: "#fff", borderRadius: 10,
+                    background: "rgba(123,163,212,0.15)", color: "#7BA3D4", border: "1px solid rgba(123,163,212,0.3)", borderRadius: 10,
                     fontSize: 13, fontWeight: 700, textDecoration: "none", textAlign: "center",
                   }}>Sign in to annotate →</a>
                 )}
@@ -433,7 +433,7 @@ export default function AnnotationStudio() {
 
               {/* Sample texts */}
               <div style={{ marginTop: 16, background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "18px 20px" }}>
-                <div style={{ fontSize: 10, color: "#64748B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Sample Arabic texts</div>
+                <div style={{ fontSize: 10, color: "#8494AA", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 12 }}>Sample Arabic texts</div>
                 {[
                   { text: "والله الخدمة في هذا البنك وايد زينة، ما قصروا معي أبد. كل شي تمام", ctx: "Gulf banking feedback" },
                   { text: "وقّع معالي الشيخ محمد بن راشد آل مكتوم اتفاقية شراكة مع شركة أرامكو السعودية في دبي", ctx: "GCC business news" },
@@ -467,17 +467,17 @@ export default function AnnotationStudio() {
                       {lastResult.requiresReview && (
                         <span style={{ fontSize: 9, padding: "3px 9px", background: "rgba(245,158,11,0.15)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: 999, color: "#F59E0B", fontFamily: MONO }}>REVIEW NEEDED</span>
                       )}
-                      <span style={{ fontSize: 9, padding: "3px 9px", background: "rgba(255,255,255,0.06)", borderRadius: 999, color: "#64748B", fontFamily: MONO }}>{lastResult.latencyMs}ms</span>
+                      <span style={{ fontSize: 9, padding: "3px 9px", background: "rgba(255,255,255,0.06)", borderRadius: 999, color: "#8494AA", fontFamily: MONO }}>{lastResult.latencyMs}ms</span>
                     </div>
                   </div>
 
                   {/* Agent name */}
-                  <div style={{ fontSize: 11, color: "#64748B", fontFamily: MONO, marginBottom: 16 }}>via {lastResult.agentName}</div>
+                  <div style={{ fontSize: 11, color: "#8494AA", fontFamily: MONO, marginBottom: 16 }}>via {lastResult.agentName}</div>
 
                   {/* Primary label */}
                   <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 10, padding: "16px 18px", marginBottom: 16 }}>
-                    <div style={{ fontSize: 9, color: "#64748B", fontFamily: MONO, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.08em" }}>Primary Label</div>
-                    <div style={{ fontSize: 22, fontWeight: 800, color: "#22C55E", fontFamily: MONO, letterSpacing: "-0.02em" }}>{lastResult.label}</div>
+                    <div style={{ fontSize: 9, color: "#8494AA", fontFamily: MONO, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.08em" }}>Primary Label</div>
+                    <div style={{ fontSize: 22, fontWeight: 800, color: "#4ADE80", fontFamily: MONO, letterSpacing: "-0.02em" }}>{lastResult.label}</div>
                     {lastResult.dialect && (
                       <div style={{ marginTop: 6, fontSize: 11, color: "#F59E0B", fontFamily: MONO }}>dialect: {lastResult.dialect}</div>
                     )}
@@ -485,21 +485,21 @@ export default function AnnotationStudio() {
 
                   {/* Confidence */}
                   <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontSize: 9, color: "#64748B", fontFamily: MONO, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.08em" }}>Confidence</div>
+                    <div style={{ fontSize: 9, color: "#8494AA", fontFamily: MONO, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.08em" }}>Confidence</div>
                     <ConfidenceBar value={lastResult.confidence} />
                   </div>
 
                   {/* Rationale */}
                   {lastResult.rationale && (
                     <div style={{ background: "rgba(0,0,0,0.2)", borderRadius: 8, padding: "12px 14px", marginBottom: 16 }}>
-                      <div style={{ fontSize: 9, color: "#64748B", fontFamily: MONO, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>Rationale</div>
+                      <div style={{ fontSize: 9, color: "#8494AA", fontFamily: MONO, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.08em" }}>Rationale</div>
                       <div style={{ fontSize: 12, color: "#94A3B8", lineHeight: 1.7 }}>{lastResult.rationale}</div>
                     </div>
                   )}
 
                   {/* Structured result */}
                   <div style={{ marginBottom: 16 }}>
-                    <div style={{ fontSize: 9, color: "#64748B", fontFamily: MONO, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Structured Output</div>
+                    <div style={{ fontSize: 9, color: "#8494AA", fontFamily: MONO, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Structured Output</div>
                     <StructuredResultView data={lastResult.structuredResult} />
                   </div>
 
@@ -508,7 +508,7 @@ export default function AnnotationStudio() {
                     <div style={{ display: "flex", gap: 10, marginTop: 4 }}>
                       <button
                         onClick={() => reviewMutation.mutate({ id: lastResult.id, status: "approved" })}
-                        style={{ flex: 1, padding: "9px", background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 8, color: "#22C55E", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+                        style={{ flex: 1, padding: "9px", background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 8, color: "#4ADE80", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
                       >
                         ✓ Approve
                       </button>
@@ -524,10 +524,10 @@ export default function AnnotationStudio() {
               ) : (
                 <div style={{ background: "rgba(255,255,255,0.02)", border: "1px dashed rgba(255,255,255,0.08)", borderRadius: 14, padding: "48px 24px", textAlign: "center" }}>
                   <div style={{ fontSize: 32, marginBottom: 16, color: "#F59E0B" }}>ع</div>
-                  <div style={{ fontSize: 14, color: "#64748B", lineHeight: 1.7 }}>
+                  <div style={{ fontSize: 14, color: "#8494AA", lineHeight: 1.7 }}>
                     Select an agent, enter Arabic text,<br />and click Annotate to see structured output.
                   </div>
-                  <div style={{ marginTop: 20, fontSize: 11, color: "#374151", fontFamily: MONO, lineHeight: 1.8 }}>
+                  <div style={{ marginTop: 20, fontSize: 11, color: "#A8B4C8", fontFamily: MONO, lineHeight: 1.8 }}>
                     Outputs include: label · confidence · dialect<br />rationale · structured JSON · review status
                   </div>
                 </div>
@@ -542,10 +542,10 @@ export default function AnnotationStudio() {
           <div>
             {!user ? (
               <div style={{ textAlign: "center", padding: "60px 0" }}>
-                <a href={loginUrl} style={{ padding: "12px 28px", background: "#B45309", color: "#fff", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Sign in to view history</a>
+                <a href={loginUrl} style={{ padding: "12px 28px", background: "rgba(123,163,212,0.15)", color: "#7BA3D4", border: "1px solid rgba(123,163,212,0.3)", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none" }}>Sign in to view history</a>
               </div>
             ) : !history || history.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "60px 0", color: "#64748B", fontSize: 13 }}>No annotations yet. Submit your first text above.</div>
+              <div style={{ textAlign: "center", padding: "60px 0", color: "#8494AA", fontSize: 13 }}>No annotations yet. Submit your first text above.</div>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                 {history.map(ann => {
@@ -555,15 +555,15 @@ export default function AnnotationStudio() {
                       <div>
                         <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
                           <span style={{ fontSize: 10, padding: "2px 9px", background: "rgba(245,158,11,0.1)", border: "1px solid rgba(245,158,11,0.2)", borderRadius: 999, color: "#F59E0B", fontFamily: MONO }}>{ann.agentName}</span>
-                          {ann.dialect && <span style={{ fontSize: 10, color: "#64748B", fontFamily: MONO }}>{ann.dialect}</span>}
-                          <span style={{ fontSize: 10, color: "#374151", fontFamily: MONO }}>{new Date(ann.createdAt).toLocaleDateString()}</span>
+                          {ann.dialect && <span style={{ fontSize: 10, color: "#8494AA", fontFamily: MONO }}>{ann.dialect}</span>}
+                          <span style={{ fontSize: 10, color: "#A8B4C8", fontFamily: MONO }}>{new Date(ann.createdAt).toLocaleDateString()}</span>
                         </div>
-                        <div style={{ fontSize: 14, color: "#E2E8F0", direction: "rtl", textAlign: "right", fontFamily: "'Noto Sans Arabic', 'Arial', sans-serif", lineHeight: 1.7, marginBottom: 10 }}>
+                        <div style={{ fontSize: 14, color: "#A8B4C8", direction: "rtl", textAlign: "right", fontFamily: "'Noto Sans Arabic', 'Arial', sans-serif", lineHeight: 1.7, marginBottom: 10 }}>
                           {ann.inputText.slice(0, 120)}{ann.inputText.length > 120 ? "…" : ""}
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                          <span style={{ fontSize: 13, fontWeight: 700, color: "#22C55E", fontFamily: MONO }}>{ann.label}</span>
-                          <span style={{ fontSize: 11, color: "#64748B", fontFamily: MONO }}>{Math.round(Number(ann.confidence) * 100)}% confidence</span>
+                          <span style={{ fontSize: 13, fontWeight: 700, color: "#4ADE80", fontFamily: MONO }}>{ann.label}</span>
+                          <span style={{ fontSize: 11, color: "#8494AA", fontFamily: MONO }}>{Math.round(Number(ann.confidence) * 100)}% confidence</span>
                         </div>
                       </div>
                       <div style={{ display: "flex", flexDirection: "column", gap: 8, alignItems: "flex-end" }}>
@@ -572,7 +572,7 @@ export default function AnnotationStudio() {
                         </span>
                         {ann.reviewStatus === "pending" && (
                           <div style={{ display: "flex", gap: 6 }}>
-                            <button onClick={() => reviewMutation.mutate({ id: ann.id, status: "approved" })} style={{ padding: "5px 12px", background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 6, color: "#22C55E", fontSize: 11, cursor: "pointer" }}>✓</button>
+                            <button onClick={() => reviewMutation.mutate({ id: ann.id, status: "approved" })} style={{ padding: "5px 12px", background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)", borderRadius: 6, color: "#4ADE80", fontSize: 11, cursor: "pointer" }}>✓</button>
                             <button onClick={() => reviewMutation.mutate({ id: ann.id, status: "rejected" })} style={{ padding: "5px 12px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 6, color: "#EF4444", fontSize: 11, cursor: "pointer" }}>✗</button>
                           </div>
                         )}
@@ -593,34 +593,34 @@ export default function AnnotationStudio() {
                 <div style={{ fontSize: 11, color: "#F59E0B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 20, fontWeight: 600 }}>Export Annotation Dataset</div>
 
                 <div style={{ marginBottom: 16 }}>
-                  <div style={{ fontSize: 10, color: "#64748B", fontFamily: MONO, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Format</div>
+                  <div style={{ fontSize: 10, color: "#8494AA", fontFamily: MONO, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Format</div>
                   <div style={{ display: "flex", gap: 10 }}>
                       {(["jsonl", "csv", "openai"] as const).map(f => (
                       <button key={f} onClick={() => setExportFormat(f)} style={{
                         flex: 1, padding: "10px", borderRadius: 8, cursor: "pointer",
                         background: exportFormat === f ? "rgba(180,83,9,0.2)" : "rgba(0,0,0,0.2)",
                         border: exportFormat === f ? "1px solid rgba(180,83,9,0.5)" : "1px solid rgba(255,255,255,0.08)",
-                        color: exportFormat === f ? "#F59E0B" : "#64748B",
+                        color: exportFormat === f ? "#C9A84C" : "#8494AA",
                         fontSize: 12, fontWeight: 700, fontFamily: MONO,
                       }}>
                         {f === "openai" ? "OpenAI" : f.toUpperCase()}
                       </button>
                     ))}
                   </div>
-                  <div style={{ marginTop: 8, fontSize: 10, color: "#374151", fontFamily: MONO, lineHeight: 1.6 }}>
+                  <div style={{ marginTop: 8, fontSize: 10, color: "#A8B4C8", fontFamily: MONO, lineHeight: 1.6 }}>
                     {exportFormat === "jsonl" ? "JSONL: One JSON object per line. Compatible with Gemini, Llama, and general fine-tuning." : exportFormat === "openai" ? "OpenAI format: messages array with system/user/assistant roles. Ready for GPT-4 fine-tuning API." : "CSV: Flat table format. Compatible with Excel, pandas, and data labeling platforms."}
                   </div>
                 </div>
 
                 <div style={{ marginBottom: 20 }}>
-                  <div style={{ fontSize: 10, color: "#64748B", fontFamily: MONO, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Include</div>
+                  <div style={{ fontSize: 10, color: "#8494AA", fontFamily: MONO, marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.08em" }}>Include</div>
                   <div style={{ display: "flex", gap: 10 }}>
                     {(["approved", "all"] as const).map(f => (
                       <button key={f} onClick={() => setExportStatusFilter(f)} style={{
                         flex: 1, padding: "10px", borderRadius: 8, cursor: "pointer",
                         background: exportStatusFilter === f ? "rgba(34,197,94,0.1)" : "rgba(0,0,0,0.2)",
                         border: exportStatusFilter === f ? "1px solid rgba(34,197,94,0.3)" : "1px solid rgba(255,255,255,0.08)",
-                        color: exportStatusFilter === f ? "#22C55E" : "#64748B",
+                        color: exportStatusFilter === f ? "#4ADE80" : "#8494AA",
                         fontSize: 12, fontWeight: 600,
                       }}>
                         {f === "approved" ? "Approved only" : "All annotations"}
@@ -639,14 +639,14 @@ export default function AnnotationStudio() {
                     style={{
                       width: "100%", padding: "13px",
                       background: exportMutation.isPending ? "rgba(180,83,9,0.3)" : "#B45309",
-                      color: "#fff", border: "none", borderRadius: 10,
+                      color: "#7BA3D4", border: "1px solid rgba(123,163,212,0.3)", borderRadius: 10,
                       fontSize: 13, fontWeight: 700, cursor: exportMutation.isPending ? "not-allowed" : "pointer",
                     }}
                   >
                     {exportMutation.isPending ? "Generating export..." : `Export as ${exportFormat.toUpperCase()} →`}
                   </button>
                 ) : (
-                  <a href={loginUrl} style={{ display: "block", width: "100%", padding: "13px", background: "#B45309", color: "#fff", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>Sign in to export</a>
+                  <a href={loginUrl} style={{ display: "block", width: "100%", padding: "13px", background: "rgba(123,163,212,0.15)", color: "#7BA3D4", border: "1px solid rgba(123,163,212,0.3)", borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none", textAlign: "center" }}>Sign in to export</a>
                 )}
 
                 {exportMutation.isError && (
@@ -657,9 +657,9 @@ export default function AnnotationStudio() {
 
                 {exportUrl && (
                   <div style={{ marginTop: 16, padding: "16px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 10 }}>
-                    <div style={{ fontSize: 11, color: "#22C55E", fontFamily: MONO, marginBottom: 10, fontWeight: 600 }}>Export ready — {exportMutation.data?.recordCount} records</div>
+                    <div style={{ fontSize: 11, color: "#4ADE80", fontFamily: MONO, marginBottom: 10, fontWeight: 600 }}>Export ready — {exportMutation.data?.recordCount} records</div>
                     <a href={exportUrl} target="_blank" rel="noreferrer" style={{
-                      display: "block", padding: "10px 16px", background: "#22C55E", color: "#fff",
+                      display: "block", padding: "10px 16px", background: "#4ADE80", color: "#0B1629",
                       borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: "none", textAlign: "center",
                     }}>
                       Download {exportFormat.toUpperCase()} file
@@ -671,16 +671,16 @@ export default function AnnotationStudio() {
 
             {/* Export history */}
             <div>
-              <div style={{ fontSize: 11, color: "#64748B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16, fontWeight: 500 }}>Export history</div>
+              <div style={{ fontSize: 11, color: "#8494AA", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16, fontWeight: 500 }}>Export history</div>
               {!exportHistory || exportHistory.length === 0 ? (
-                <div style={{ color: "#374151", fontSize: 12, fontFamily: MONO }}>No exports yet.</div>
+                <div style={{ color: "#A8B4C8", fontSize: 12, fontFamily: MONO }}>No exports yet.</div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
                   {exportHistory.map(exp => (
                     <div key={exp.id} style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: 10, padding: "14px 16px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                       <div>
-                        <div style={{ fontSize: 12, fontWeight: 700, color: "#F8FAFC", marginBottom: 4 }}>{exp.recordCount} records · {exp.format.toUpperCase()}</div>
-                        <div style={{ fontSize: 10, color: "#64748B", fontFamily: MONO }}>{new Date(exp.createdAt).toLocaleString()}</div>
+                        <div style={{ fontSize: 12, fontWeight: 700, color: "#E8ECF2", marginBottom: 4 }}>{exp.recordCount} records · {exp.format.toUpperCase()}</div>
+                        <div style={{ fontSize: 10, color: "#8494AA", fontFamily: MONO }}>{new Date(exp.createdAt).toLocaleString()}</div>
                       </div>
                       {exp.fileUrl && (
                         <a href={exp.fileUrl} target="_blank" rel="noreferrer" style={{ fontSize: 11, color: "#F59E0B", textDecoration: "none", fontFamily: MONO, fontWeight: 600 }}>Download</a>
