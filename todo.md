@@ -293,3 +293,9 @@
 - [x] Remove Region row from contact info section
 - [x] Send emails via FormSubmit.co to kishore@agenthink.ai (primary) and info@agenthink.ai (cc) on form submission
 - [x] Manus owner notification sent as backup alongside FormSubmit emails
+
+## Session 15 — Email Fix (Resend API)
+
+- [x] Switch contact form to use activated farouq@agenthink.ai FormSubmit account
+- [x] kishore@agenthink.ai added as CC recipient
+- [x] _captcha disabled, _template table for clean email formatting
