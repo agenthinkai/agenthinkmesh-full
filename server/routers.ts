@@ -12,6 +12,47 @@ import { notifyOwner } from "./_core/notification";
 import * as XLSX from "xlsx";
 import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
+import { createRequire } from "module";
+const _require = createRequire(import.meta.url);
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const PPTX2Json = _require("pptx2json") as any;
+
+// ── PPTX text extractor ───────────────────────────────────────────────────────
+// Recursively walk the xml2js-parsed slide JSON and collect all text runs (a:t)
+function extractPptxText(node: unknown): string {
+  if (typeof node === "string") return node;
+  if (Array.isArray(node)) return node.map(extractPptxText).join(" ");
+  if (node && typeof node === "object") {
+    const obj = node as Record<string, unknown>;
+    // Prioritise text run nodes (a:t) to avoid duplicating paragraph/run wrappers
+    if ("a:t" in obj) return extractPptxText(obj["a:t"]);
+    return Object.values(obj).map(extractPptxText).join(" ");
+  }
+  return "";
+}
+
+async function parsePptxBuffer(buffer: Buffer): Promise<string> {
+  const parser = new PPTX2Json({ jszipBinary: "nodebuffer" });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const json = await (parser as any).buffer2json(buffer) as Record<string, unknown>;
+  const slideTexts: string[] = [];
+  // Slides are stored at ppt/slides/slide{N}.xml
+  const slideKeys = Object.keys(json)
+    .filter(k => /^ppt\/slides\/slide\d+\.xml$/.test(k))
+    .sort((a, b) => {
+      const na = parseInt(a.match(/\d+/)?.[0] ?? "0");
+      const nb = parseInt(b.match(/\d+/)?.[0] ?? "0");
+      return na - nb;
+    });
+  for (let i = 0; i < slideKeys.length; i++) {
+    const slideData = json[slideKeys[i]];
+    const text = extractPptxText(slideData)
+      .replace(/\s{2,}/g, " ")
+      .trim();
+    if (text) slideTexts.push(`=== Slide ${i + 1} ===\n${text}`);
+  }
+  return slideTexts.join("\n\n");
+}
 
 // ── Discovery scoring ─────────────────────────────────────────────────────────
 // score = (capabilityMatch * 0.5) + (successRate * 0.3) + (latencyScore * 0.2)
@@ -299,6 +340,18 @@ export const appRouter = router({
             console.error("[vault] mammoth failed:", err);
             extractedText = `[DOCX uploaded: ${input.filename} — could not extract text: ${err instanceof Error ? err.message : "unknown error"}]`;
           }
+        } else if (ext === "pptx" || ext === "ppt" || input.mimeType.includes("presentationml") || input.mimeType.includes("powerpoint")) {
+          // Parse PPTX with pptx2json for slide-by-slide text extraction
+          try {
+            const pptxText = await parsePptxBuffer(buffer);
+            const cleaned = pptxText.replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+            extractedText = cleaned.slice(0, 15000) || `[PPTX uploaded: ${input.filename} — no extractable text found]`;
+            const slideCount = (cleaned.match(/=== Slide \d+ ===/g) ?? []).length;
+            console.log(`[vault] PPTX parsed: ${slideCount} slides, ${cleaned.length} chars`);
+          } catch (err) {
+            console.error("[vault] pptx2json failed:", err);
+            extractedText = `[PPTX uploaded: ${input.filename} — could not extract text: ${err instanceof Error ? err.message : "unknown error"}]`;
+          }
         } else {
           extractedText = `[${input.filename} uploaded — file stored in vault, content available for download]`;
         }
@@ -394,6 +447,14 @@ export const appRouter = router({
             extractedText = cleaned.slice(0, 15000) || `[DOCX — no extractable text found]`;
           } catch (err) {
             throw new Error(`DOCX parse failed: ${err instanceof Error ? err.message : "unknown"}`);
+          }
+        } else if (ext === "pptx" || ext === "ppt" || (doc.mimeType ?? "").includes("presentationml") || (doc.mimeType ?? "").includes("powerpoint")) {
+          try {
+            const pptxText = await parsePptxBuffer(buffer);
+            const cleaned = pptxText.replace(/[ \t]{2,}/g, " ").replace(/\n{3,}/g, "\n\n").trim();
+            extractedText = cleaned.slice(0, 15000) || `[PPTX — no extractable text found]`;
+          } catch (err) {
+            throw new Error(`PPTX parse failed: ${err instanceof Error ? err.message : "unknown"}`);
           }
         } else if (doc.mimeType === "application/json" || ext === "json") {
           try { extractedText = JSON.stringify(JSON.parse(buffer.toString("utf-8")), null, 2).slice(0, 12000); } catch { extractedText = buffer.toString("utf-8").slice(0, 12000); }
