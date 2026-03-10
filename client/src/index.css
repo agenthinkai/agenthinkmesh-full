@@ -256,3 +256,28 @@
     text-transform: uppercase;
   }
 }
+
+/* ── Custom scrollbar — navy palette ─────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: oklch(0.28 0.07 255);   /* navy-700 — subtle, matches card borders */
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.48 0.08 255 / 80%);   /* steel blue on hover */
+}
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: oklch(0.28 0.07 255) transparent;
+}
