@@ -34,6 +34,7 @@ export function DocumentVault({
   onActiveDocChange,
 }: DocumentVaultProps) {
   const [uploading, setUploading] = useState(false);
+  const [dragOver, setDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const { data: docs = [], refetch } = trpc.vault.list.useQuery(undefined, {
@@ -56,13 +57,7 @@ export function DocumentVault({
     onError: (e) => toast.error(e.message),
   });
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error("File too large — max 5 MB");
-      return;
-    }
+  const processFile = async (file: File) => {
     setUploading(true);
     try {
       const buffer = await file.arrayBuffer();
@@ -78,6 +73,36 @@ export function DocumentVault({
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
     }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("File too large — max 5 MB"); return; }
+    await processFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!uploading) setDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOver(false);
+    if (uploading) return;
+    const file = e.dataTransfer.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error("File too large — max 5 MB"); return; }
+    await processFile(file);
   };
 
   const handleSelect = (doc: VaultDoc) => {
@@ -106,14 +131,19 @@ export function DocumentVault({
       {/* Upload button */}
       <div
         onClick={() => !uploading && fileInputRef.current?.click()}
+        onDragOver={handleDragOver}
+        onDragEnter={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         style={{
-          border: `1.5px dashed ${uploading ? INDIGO : BORDER}`,
+          border: `1.5px dashed ${uploading ? INDIGO : dragOver ? "#7BA3D4" : BORDER}`,
           borderRadius: 10,
           padding: "12px 16px",
           textAlign: "center",
           cursor: uploading ? "not-allowed" : "pointer",
-          background: uploading ? "rgba(123,163,212,0.15)" : "#0F1E38",
+          background: uploading ? "rgba(123,163,212,0.15)" : dragOver ? "rgba(123,163,212,0.08)" : "#0F1E38",
           transition: "all 0.15s",
+          transform: dragOver ? "scale(1.01)" : "scale(1)",
         }}
       >
         <input
@@ -134,10 +164,10 @@ export function DocumentVault({
             fontFamily: MONO,
           }}
         >
-          {uploading ? "Uploading..." : "Upload document"}
+          {uploading ? "Uploading..." : dragOver ? "Drop to upload" : "Upload document"}
         </div>
         <div style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>
-          Any format · max 5 MB
+          Any format · max 5 MB · drag & drop supported
         </div>
       </div>
 
