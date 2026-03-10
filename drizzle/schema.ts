@@ -132,3 +132,17 @@ export const annotationExports = mysqlTable("annotation_exports", {
 
 export type AnnotationExport = typeof annotationExports.$inferSelect;
 export type InsertAnnotationExport = typeof annotationExports.$inferInsert;
+
+// ── Contact Form Submissions ──────────────────────────────────────────────────
+export const contactSubmissions = mysqlTable("contact_submissions", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  company: varchar("company", { length: 128 }),
+  message: text("message").notNull(),
+  notified: boolean("notified").notNull().default(false), // true if owner notification was sent
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ContactSubmission = typeof contactSubmissions.$inferSelect;
+export type InsertContactSubmission = typeof contactSubmissions.$inferInsert;

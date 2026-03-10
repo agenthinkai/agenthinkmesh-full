@@ -4,7 +4,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users } from "../drizzle/schema";
+import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions } from "../drizzle/schema";
 import { storagePut } from "./storage";
 import { eq, desc, gte, sql, and, like, or } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
@@ -1309,7 +1309,60 @@ Return ONLY valid JSON matching this exact schema:
         .limit(20);
     }),
   }),
-});
+  // ── Contact Form ──────────────────────────────────────────────────────────
+  contact: router({
+    submit: publicProcedure
+      .input(
+        z.object({
+          name: z.string().min(1, "Name is required").max(128),
+          email: z.string().email("Invalid email address").max(320),
+          company: z.string().max(128).optional(),
+          message: z.string().min(10, "Message must be at least 10 characters").max(5000),
+        })
+      )
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
 
+        // Save to database
+        const [row] = await db.insert(contactSubmissions).values({
+          name: input.name,
+          email: input.email,
+          company: input.company ?? null,
+          message: input.message,
+          notified: false,
+        }).$returningId();
+
+        // Send Manus owner notification
+        const notificationContent = [
+          `New contact form submission from ${input.name}`,
+          ``,
+          `Name: ${input.name}`,
+          `Email: ${input.email}`,
+          `Company: ${input.company ?? "Not provided"}`,
+          ``,
+          `Message:`,
+          input.message,
+          ``,
+          `Submitted at: ${new Date().toUTCString()}`,
+        ].join("\n");
+
+        const notified = await notifyOwner({
+          title: `📬 New Contact: ${input.name} (${input.email})`,
+          content: notificationContent,
+        }).catch(() => false);
+
+        // Update notified flag
+        if (notified && row?.id) {
+          await db
+            .update(contactSubmissions)
+            .set({ notified: true })
+            .where(eq(contactSubmissions.id, row.id));
+        }
+
+        return { success: true, id: row?.id };
+      }),
+  }),
+});
 export type AppRouter = typeof appRouter;
 

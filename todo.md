@@ -276,3 +276,12 @@
 - [x] Fix Export button: use window.open + window.print() to produce a real PDF instead of downloading .html
 - [x] Include Final Summary section in the exported PDF (captured via data-summary-content attribute)
 - [x] Include all agent outputs in the export with proper HTML escaping
+
+## Session 13 — Contact Us Section
+
+- [x] Add contact_submissions table to database schema (migrated)
+- [x] Add server-side contact.submit tRPC procedure: validates fields, saves to DB, sends Manus owner notification
+- [x] Add Contact Us section to Home.tsx landing page (name, email, company, message fields)
+- [x] Show success state with checkmark after form submission
+- [x] Notification content includes: sender name, email, company, message, UTC timestamp
+- [x] Full landing page built: hero, features, how-it-works, domains, contact, footer
