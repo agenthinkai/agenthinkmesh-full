@@ -124,9 +124,8 @@ function ContactSection() {
           </p>
           <div style={{ display: "flex", flexDirection: "column" as const, gap: 20 }}>
             {[
-              { icon: "✉", label: "Email", value: "kishore@agenthink.ai" },
+              { icon: "✉", label: "Email", value: "info@agenthink.ai" },
               { icon: "🌐", label: "Website", value: "agenthink-7enctkan.manus.space" },
-              { icon: "📍", label: "Region", value: "GCC · MENA · Global" },
             ].map((item) => (
               <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 16 }}>
                 <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(123,163,212,0.1)", border: "1px solid #1C3057", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{item.icon}</div>

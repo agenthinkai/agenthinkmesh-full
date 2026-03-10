@@ -1347,19 +1347,42 @@ Return ONLY valid JSON matching this exact schema:
           `Submitted at: ${new Date().toUTCString()}`,
         ].join("\n");
 
+         // Send via FormSubmit.co to both recipients
+        const formSubmitPayload = {
+          name: input.name,
+          email: input.email,
+          company: input.company ?? "Not provided",
+          message: input.message,
+          _subject: `📬 New Contact from AgenThinkMesh: ${input.name}`,
+          _cc: "info@agenthink.ai",
+          _replyto: input.email,
+          _template: "table",
+        };
+        const [res1, res2] = await Promise.allSettled([
+          fetch("https://formsubmit.co/ajax/kishore@agenthink.ai", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify(formSubmitPayload),
+          }),
+          fetch("https://formsubmit.co/ajax/info@agenthink.ai", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify(formSubmitPayload),
+          }),
+        ]);
+        const emailSent = res1.status === "fulfilled" || res2.status === "fulfilled";
+        // Also send Manus owner notification as backup
         const notified = await notifyOwner({
           title: `📬 New Contact: ${input.name} (${input.email})`,
           content: notificationContent,
         }).catch(() => false);
-
         // Update notified flag
-        if (notified && row?.id) {
+        if ((notified || emailSent) && row?.id) {
           await db
             .update(contactSubmissions)
             .set({ notified: true })
             .where(eq(contactSubmissions.id, row.id));
         }
-
         return { success: true, id: row?.id };
       }),
   }),

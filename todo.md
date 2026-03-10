@@ -286,3 +286,10 @@
 - [x] Show success state with checkmark after form submission
 - [x] Notification content includes: sender name, email, company, message, UTC timestamp
 - [x] Contact info displayed: kishore@agenthink.ai, website, GCC region
+
+## Session 14 — Contact Us Update
+
+- [x] Change displayed email from kishore@agenthink.ai to info@agenthink.ai in Landing.tsx
+- [x] Remove Region row from contact info section
+- [x] Send emails via FormSubmit.co to kishore@agenthink.ai (primary) and info@agenthink.ai (cc) on form submission
+- [x] Manus owner notification sent as backup alongside FormSubmit emails
