@@ -270,3 +270,9 @@
 - [x] Final Summary card: headline one-liner, key findings list, conflicts/gaps, recommended next actions, overall confidence badge
 - [x] Show "Generating summary…" skeleton while LLM call is in progress
 - [x] Allow user to copy the summary to clipboard
+
+## Session 12 — PDF Export Fix
+
+- [x] Fix Export button: use window.open + window.print() to produce a real PDF instead of downloading .html
+- [x] Include Final Summary section in the exported PDF (captured via data-summary-content attribute)
+- [x] Include all agent outputs in the export with proper HTML escaping
