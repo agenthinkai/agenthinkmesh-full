@@ -886,7 +886,18 @@ export const appRouter = router({
           const latencyMs = Date.now() - start;
 
           if (!res.ok) {
-            throw new Error(`HTTP ${res.status}`);
+            // Build a structured, human-readable error message
+            const statusMessages: Record<number, string> = {
+              429: "Rate limit exceeded — the external agent has received too many requests. Please try again later.",
+              401: "Authentication failed — the external agent rejected the request (HTTP 401).",
+              403: "Access forbidden — the external agent denied this request (HTTP 403).",
+              404: "Endpoint not found — the external agent URL may have changed (HTTP 404).",
+              500: "External agent server error (HTTP 500). The agent may be experiencing issues.",
+              502: "External agent returned a bad gateway response (HTTP 502).",
+              503: "External agent is temporarily unavailable (HTTP 503). Try again later.",
+            };
+            const friendlyMsg = statusMessages[res.status] ?? `External agent returned HTTP ${res.status}.`;
+            throw new Error(friendlyMsg);
           }
 
           const data = await res.json() as { result?: string; latency_ms?: number };

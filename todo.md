@@ -223,5 +223,11 @@
 - [x] Run full test suite — 44 tests passing
 - [x] Write new tests for routeAgents procedure (4 new tests)
 - [x] Final TypeScript check
-- [ ] Save checkpoint
+- [x] Save checkpoint
 - [ ] Deliver updated technical brief PDF
+
+## Session 6 — Bug Fixes
+
+- [x] Fix External agent HTTP 429 error: show friendly rate-limit message instead of raw "Error: HTTP 429"
+- [x] Make external agent execution non-blocking (don't count toward task completion gate)
+- [x] Improve server-side routeTask to return structured error with retryAfter hint for 429
