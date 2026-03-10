@@ -149,3 +149,56 @@
 - [x] Push full project code
 - [x] Write professional README with features, architecture, demo link, deploy instructions
 - [x] Add architecture diagram (Mermaid)
+
+## Session 4 — Arabic Data Annotation Pipeline
+
+### Phase 1: Arabic Annotation Agents Service
+- [ ] Build Gulf Dialect Sentiment Labeler agent
+- [ ] Build Arabic NER (Named Entity Recognition) agent
+- [ ] Build Islamic Finance Intent Classifier agent
+- [ ] Build Arabic Legal Clause Extractor agent
+- [ ] Build Arabic Code-Switch Detector agent
+- [ ] Deploy all five Arabic agents on port 4001
+- [ ] Validate all five endpoints with connection test payload
+
+### Phase 2: Platform Schema + Procedures
+- [ ] Add annotations table to drizzle schema
+- [ ] Add annotation_exports table to drizzle schema
+- [ ] Run pnpm db:push
+- [ ] Add annotation.submit procedure (routes text to Arabic agent, stores structured result)
+- [ ] Add annotation.list procedure (returns annotation history with filters)
+- [ ] Add annotation.review procedure (approve/reject low-confidence annotations)
+- [ ] Add annotation.export procedure (generate JSONL/CSV, upload to S3, return URL)
+
+### Phase 3: Annotation Studio UI
+- [ ] Create AnnotationStudio.tsx page at /annotate
+- [ ] Arabic RTL text input panel
+- [ ] Agent selector (choose annotation agent)
+- [ ] Structured label display: label, confidence bar, dialect, rationale
+- [ ] Review queue tab for low-confidence annotations
+- [ ] Add /annotate route to App.tsx
+- [ ] Add Annotate link to dashboard sidebar/navbar
+
+### Phase 4: Dataset Export
+- [ ] Export button with format selector (JSONL / CSV)
+- [ ] annotation.export procedure returns S3 download URL
+- [ ] Export history with record counts and download links
+
+### Phase 5: Registry + Tests + Checkpoint
+- [ ] Register all five Arabic agents in the database with verified status
+- [ ] Write tests for annotation.submit, annotation.review, annotation.export
+- [ ] TypeScript check — zero errors
+- [ ] Save checkpoint
+
+## Session 4b — Arabic Labeling as Flagship Feature
+
+- [ ] Add Arabic Data Labeling hero section to Landing page (government-targeted)
+- [ ] Add Arabic NLP stats bar to landing (dialects, entity types, annotation speed)
+- [ ] Add "Arabic AI Infrastructure" positioning block with GCC govt use cases
+- [ ] Build AnnotationStudio.tsx page at /annotate (RTL input, agent selector, structured output, review queue, export)
+- [ ] Add /annotate route to App.tsx
+- [ ] Add "Arabic Labeling" nav item to Landing navbar
+- [ ] Add "Annotation Studio" sidebar entry in DashboardLayout
+- [ ] Expose Arabic agents on port 4001 and register all 5 in database
+- [ ] Write tests for annotation.submit, annotation.review, annotation.export
+- [ ] TypeScript check and checkpoint

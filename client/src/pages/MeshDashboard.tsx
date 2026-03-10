@@ -685,20 +685,35 @@ export default function MeshDashboard() {
             ))}
           </div>
           {/* Nav */}
-          <div style={{ borderTop: "1px solid #F1F5F9", padding: "10px 12px", display: "flex", gap: 6 }}>
-            {[
-              { key: "home", icon: "⌂", label: "Home" },
-              { key: "history", icon: "≡", label: "History" },
-              { key: "settings", icon: "⚙", label: "Settings" },
-            ].map(n => (
-              <button key={n.key} onClick={() => { setActiveNav(n.key as typeof activeNav); setShowOutput(false); }} style={{
-                flex: 1, padding: "6px 4px", border: "none", borderRadius: 8,
-                background: activeNav === n.key ? "#EEF2FF" : "none",
-                cursor: "pointer", fontSize: 14, color: activeNav === n.key ? "#4F46E5" : "#94A3B8",
-              }} title={n.label}>
-                {n.icon}
-              </button>
-            ))}
+          <div style={{ borderTop: "1px solid #F1F5F9", padding: "10px 12px", display: "flex", flexDirection: "column", gap: 4 }}>
+            <div style={{ display: "flex", gap: 6 }}>
+              {[
+                { key: "home", icon: "⌂", label: "Home" },
+                { key: "history", icon: "≡", label: "History" },
+                { key: "settings", icon: "⚙", label: "Settings" },
+              ].map(n => (
+                <button key={n.key} onClick={() => { setActiveNav(n.key as typeof activeNav); setShowOutput(false); }} style={{
+                  flex: 1, padding: "6px 4px", border: "none", borderRadius: 8,
+                  background: activeNav === n.key ? "#EEF2FF" : "none",
+                  cursor: "pointer", fontSize: 14, color: activeNav === n.key ? "#4F46E5" : "#94A3B8",
+                }} title={n.label}>
+                  {n.icon}
+                </button>
+              ))}
+            </div>
+            <a href="/annotate" style={{
+              display: "flex", alignItems: "center", gap: 8, padding: "8px 10px",
+              background: "linear-gradient(135deg, rgba(180,83,9,0.08) 0%, rgba(245,158,11,0.05) 100%)",
+              border: "1px solid rgba(180,83,9,0.2)", borderRadius: 8,
+              textDecoration: "none",
+            }}>
+              <span style={{ fontSize: 14, color: "#F59E0B" }}>ع</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: "#B45309", lineHeight: 1.2 }}>Arabic Labeling</div>
+                <div style={{ fontSize: 9, color: "#94A3B8", fontFamily: "'DM Mono', monospace" }}>Annotation Studio</div>
+              </div>
+              <span style={{ fontSize: 9, color: "#F59E0B" }}>→</span>
+            </a>
           </div>
         </aside>
 

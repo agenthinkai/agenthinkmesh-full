@@ -1,0 +1,60 @@
+{
+  "query": "\nSELECT a.id, a.agentName, a.connectionTested, a.status, a.averageLatency,\n       m.successRate, m.avgLatency, m.tasksCompleted\nFROM agents a\nLEFT JOIN agent_metrics m ON m.agentId = a.id\nORDER BY a.id;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute \nSELECT a.id, a.agentName, a.connectionTested, a.status, a.averageLatency,\n       m.successRate, m.avgLatency, m.tasksCompleted\nFROM agents a\nLEFT JOIN agent_metrics m ON m.agentId = a.id\nORDER BY a.id;\n",
+  "rows": [
+    {
+      "id": "1",
+      "agentName": "Market Research Agent",
+      "connectionTested": "1",
+      "status": "active",
+      "averageLatency": "5000",
+      "successRate": "95.00",
+      "avgLatency": "5000",
+      "tasksCompleted": "0"
+    },
+    {
+      "id": "2",
+      "agentName": "Financial Analysis Agent",
+      "connectionTested": "1",
+      "status": "active",
+      "averageLatency": "5000",
+      "successRate": "95.00",
+      "avgLatency": "5000",
+      "tasksCompleted": "0"
+    },
+    {
+      "id": "3",
+      "agentName": "Strategy Agent",
+      "connectionTested": "1",
+      "status": "active",
+      "averageLatency": "5000",
+      "successRate": "95.00",
+      "avgLatency": "5000",
+      "tasksCompleted": "0"
+    },
+    {
+      "id": "4",
+      "agentName": "Legal Review Agent",
+      "connectionTested": "1",
+      "status": "active",
+      "averageLatency": "2000",
+      "successRate": "95.00",
+      "avgLatency": "2000",
+      "tasksCompleted": "0"
+    },
+    {
+      "id": "5",
+      "agentName": "Report Writer Agent",
+      "connectionTested": "1",
+      "status": "active",
+      "averageLatency": "5000",
+      "successRate": "95.00",
+      "avgLatency": "5000",
+      "tasksCompleted": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tagentName\tconnectionTested\tstatus\taverageLatency\tsuccessRate\tavgLatency\ttasksCompleted\n1\tMarket Research Agent\t1\tactive\t5000\t95.00\t5000\t0\n2\tFinancial Analysis Agent\t1\tactive\t5000\t95.00\t5000\t0\n3\tStrategy Agent\t1\tactive\t5000\t95.00\t5000\t0\n4\tLegal Review Agent\t1\tactive\t2000\t95.00\t2000\t0\n5\tReport Writer Agent\t1\tactive\t5000\t95.00\t5000\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1549
+}

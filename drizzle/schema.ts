@@ -89,3 +89,43 @@ export const agentMetrics = mysqlTable("agent_metrics", {
 
 export type AgentMetrics = typeof agentMetrics.$inferSelect;
 export type InsertAgentMetrics = typeof agentMetrics.$inferInsert;
+
+// ── Arabic Annotation Pipeline ────────────────────────────────────────────────
+export const annotations = mysqlTable("annotations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  agentId: int("agentId").notNull(),           // FK → agents.id
+  agentName: varchar("agentName", { length: 128 }).notNull(),
+  inputText: text("inputText").notNull(),       // original Arabic text submitted
+  context: varchar("context", { length: 256 }), // optional domain context
+  label: varchar("label", { length: 128 }).notNull(),  // top-level label
+  confidence: decimal("confidence", { precision: 4, scale: 3 }).notNull(), // 0.000–1.000
+  dialect: varchar("dialect", { length: 64 }),  // gulf/msa/levantine/etc
+  rationale: text("rationale"),                 // agent's explanation
+  structuredResult: text("structuredResult").notNull(), // full JSON from agent
+  requiresReview: boolean("requiresReview").notNull().default(false),
+  reviewStatus: mysqlEnum("reviewStatus", ["pending", "approved", "rejected"]).notNull().default("pending"),
+  reviewedBy: int("reviewedBy"),                // FK → users.id
+  reviewNote: text("reviewNote"),
+  latencyMs: int("latencyMs"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Annotation = typeof annotations.$inferSelect;
+export type InsertAnnotation = typeof annotations.$inferInsert;
+
+export const annotationExports = mysqlTable("annotation_exports", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  format: mysqlEnum("format", ["jsonl", "csv"]).notNull().default("jsonl"),
+  recordCount: int("recordCount").notNull().default(0),
+  agentFilter: varchar("agentFilter", { length: 128 }), // null = all agents
+  statusFilter: varchar("statusFilter", { length: 32 }),  // approved/all
+  fileKey: varchar("fileKey", { length: 512 }),
+  fileUrl: text("fileUrl"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AnnotationExport = typeof annotationExports.$inferSelect;
+export type InsertAnnotationExport = typeof annotationExports.$inferInsert;

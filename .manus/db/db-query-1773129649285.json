@@ -1,0 +1,49 @@
+{
+  "query": "SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'agents';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'agents';",
+  "rows": [
+    {
+      "COLUMN_NAME": "id"
+    },
+    {
+      "COLUMN_NAME": "ownerId"
+    },
+    {
+      "COLUMN_NAME": "agentName"
+    },
+    {
+      "COLUMN_NAME": "developerName"
+    },
+    {
+      "COLUMN_NAME": "description"
+    },
+    {
+      "COLUMN_NAME": "capabilities"
+    },
+    {
+      "COLUMN_NAME": "endpointUrl"
+    },
+    {
+      "COLUMN_NAME": "averageLatency"
+    },
+    {
+      "COLUMN_NAME": "pricingModel"
+    },
+    {
+      "COLUMN_NAME": "status"
+    },
+    {
+      "COLUMN_NAME": "createdAt"
+    },
+    {
+      "COLUMN_NAME": "updatedAt"
+    },
+    {
+      "COLUMN_NAME": "connectionTested"
+    }
+  ],
+  "messages": [],
+  "stdout": "COLUMN_NAME\nid\nownerId\nagentName\ndeveloperName\ndescription\ncapabilities\nendpointUrl\naverageLatency\npricingModel\nstatus\ncreatedAt\nupdatedAt\nconnectionTested\n",
+  "stderr": "",
+  "execution_time_ms": 1532
+}

@@ -4,7 +4,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { taskHistory, agents, agentMetrics, vaultDocuments } from "../drizzle/schema";
+import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports } from "../drizzle/schema";
 import { storagePut } from "./storage";
 import { eq, desc, gte, sql, and, like, or } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
@@ -591,6 +591,243 @@ export const appRouter = router({
 
         return { success: true };
       }),
+  }),
+
+  // ── Arabic Annotation Pipeline ────────────────────────────────────────────
+  annotation: router({
+
+    // Submit text to an Arabic annotation agent and store structured result
+    submit: protectedProcedure
+      .input(z.object({
+        agentId: z.number(),
+        inputText: z.string().min(1).max(10000),
+        context: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        // Fetch agent
+        const [agent] = await db
+          .select({ endpointUrl: agents.endpointUrl, agentName: agents.agentName, status: agents.status })
+          .from(agents)
+          .where(eq(agents.id, input.agentId))
+          .limit(1);
+
+        if (!agent) throw new Error("Agent not found");
+        if (agent.status !== "active") throw new Error("Agent is not active");
+
+        const start = Date.now();
+        const res = await fetch(agent.endpointUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ task: input.inputText, context: input.context ?? "" }),
+          signal: AbortSignal.timeout(30000),
+        });
+
+        const latencyMs = Date.now() - start;
+        if (!res.ok) throw new Error(`Agent returned HTTP ${res.status}`);
+
+        const data = await res.json() as {
+          label?: string;
+          confidence?: number;
+          dialect?: string;
+          rationale?: string;
+          requires_review?: boolean;
+          result?: unknown;
+        };
+
+        const label = data.label ?? "annotated";
+        const confidence = data.confidence ?? 0.9;
+        const requiresReview = data.requires_review ?? confidence < 0.75;
+
+        const [inserted] = await db.insert(annotations).values({
+          userId: ctx.user.id,
+          agentId: input.agentId,
+          agentName: agent.agentName,
+          inputText: input.inputText,
+          context: input.context,
+          label,
+          confidence: String(confidence),
+          dialect: data.dialect ?? null,
+          rationale: data.rationale ?? null,
+          structuredResult: JSON.stringify(data.result ?? data),
+          requiresReview,
+          reviewStatus: requiresReview ? "pending" : "approved",
+          latencyMs,
+        });
+
+        // Update agent metrics
+        db.update(agentMetrics)
+          .set({ tasksCompleted: sql`${agentMetrics.tasksCompleted} + 1` })
+          .where(eq(agentMetrics.agentId, input.agentId))
+          .catch(() => {});
+
+        return {
+          id: (inserted as { insertId?: number })?.insertId ?? 0,
+          label,
+          confidence,
+          dialect: data.dialect ?? null,
+          rationale: data.rationale ?? null,
+          requiresReview,
+          structuredResult: data.result ?? data,
+          latencyMs,
+          agentName: agent.agentName,
+        };
+      }),
+
+    // List annotations for the current user
+    list: protectedProcedure
+      .input(z.object({
+        agentName: z.string().optional(),
+        reviewStatus: z.enum(["pending", "approved", "rejected", "all"]).default("all"),
+        limit: z.number().min(1).max(200).default(50),
+        offset: z.number().min(0).default(0),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) return [];
+
+        const conditions = [eq(annotations.userId, ctx.user.id)];
+        if (input?.reviewStatus && input.reviewStatus !== "all") {
+          conditions.push(eq(annotations.reviewStatus, input.reviewStatus as "pending" | "approved" | "rejected"));
+        }
+        if (input?.agentName) {
+          conditions.push(like(annotations.agentName, `%${input.agentName}%`));
+        }
+
+        return db
+          .select()
+          .from(annotations)
+          .where(and(...conditions))
+          .orderBy(desc(annotations.createdAt))
+          .limit(input?.limit ?? 50)
+          .offset(input?.offset ?? 0);
+      }),
+
+    // Review an annotation (approve or reject)
+    review: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        status: z.enum(["approved", "rejected"]),
+        note: z.string().optional(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        const [existing] = await db
+          .select({ userId: annotations.userId })
+          .from(annotations)
+          .where(eq(annotations.id, input.id))
+          .limit(1);
+
+        if (!existing || existing.userId !== ctx.user.id) {
+          throw new Error("Not authorised");
+        }
+
+        await db.update(annotations)
+          .set({
+            reviewStatus: input.status,
+            reviewedBy: ctx.user.id,
+            reviewNote: input.note ?? null,
+          })
+          .where(eq(annotations.id, input.id));
+
+        return { success: true };
+      }),
+
+    // Export annotations as JSONL or CSV, upload to S3, return download URL
+    export: protectedProcedure
+      .input(z.object({
+        format: z.enum(["jsonl", "csv"]).default("jsonl"),
+        agentName: z.string().optional(),
+        statusFilter: z.enum(["approved", "all"]).default("approved"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        const conditions = [eq(annotations.userId, ctx.user.id)];
+        if (input.statusFilter === "approved") {
+          conditions.push(eq(annotations.reviewStatus, "approved"));
+        }
+        if (input.agentName) {
+          conditions.push(like(annotations.agentName, `%${input.agentName}%`));
+        }
+
+        const rows = await db
+          .select()
+          .from(annotations)
+          .where(and(...conditions))
+          .orderBy(desc(annotations.createdAt));
+
+        if (rows.length === 0) {
+          throw new Error("No annotations found matching the filter criteria");
+        }
+
+        let fileContent = "";
+        let mimeType = "application/x-ndjson";
+
+        if (input.format === "jsonl") {
+          fileContent = rows.map(r => JSON.stringify({
+            id: r.id,
+            input_text: r.inputText,
+            context: r.context,
+            label: r.label,
+            confidence: Number(r.confidence),
+            dialect: r.dialect,
+            rationale: r.rationale,
+            agent: r.agentName,
+            review_status: r.reviewStatus,
+            structured_result: (() => { try { return JSON.parse(r.structuredResult); } catch { return r.structuredResult; } })(),
+            created_at: r.createdAt,
+          })).join("\n");
+        } else {
+          // CSV
+          mimeType = "text/csv";
+          const header = "id,input_text,label,confidence,dialect,agent,review_status,created_at";
+          const csvRows = rows.map(r => [
+            r.id,
+            `"${(r.inputText ?? "").replace(/"/g, '""')}"`,
+            `"${r.label}"`,
+            Number(r.confidence),
+            `"${r.dialect ?? ""}"`,
+            `"${r.agentName}"`,
+            r.reviewStatus,
+            r.createdAt.toISOString(),
+          ].join(","));
+          fileContent = [header, ...csvRows].join("\n");
+        }
+
+        const fileKey = `annotations/${ctx.user.id}/${Date.now()}-export.${input.format === "jsonl" ? "jsonl" : "csv"}`;
+        const { url } = await storagePut(fileKey, Buffer.from(fileContent, "utf-8"), mimeType);
+
+        // Log the export
+        await db.insert(annotationExports).values({
+          userId: ctx.user.id,
+          format: input.format,
+          recordCount: rows.length,
+          agentFilter: input.agentName ?? null,
+          statusFilter: input.statusFilter,
+          fileKey,
+          fileUrl: url,
+        });
+
+        return { url, recordCount: rows.length, format: input.format };
+      }),
+
+    // List previous exports
+    listExports: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db
+        .select()
+        .from(annotationExports)
+        .where(eq(annotationExports.userId, ctx.user.id))
+        .orderBy(desc(annotationExports.createdAt))
+        .limit(20);
+    }),
   }),
 });
 

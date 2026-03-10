@@ -77,6 +77,9 @@ export default function Landing() {
           <Link href="/registry" style={{ fontSize: 13, color: "#4F46E5", textDecoration: "none", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
             ⬡ Registry
           </Link>
+          <Link href="/annotate" style={{ fontSize: 13, color: "#B45309", textDecoration: "none", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
+            ع Arabic Labeling
+          </Link>
           <Link href="/build" style={{ fontSize: 13, color: "#64748B", textDecoration: "none", fontWeight: 500 }}>
             Build
           </Link>
@@ -255,6 +258,151 @@ export default function Landing() {
                 <div style={{ fontSize: 14, color: "#374151", lineHeight: 1.7, fontStyle: "italic" }}>
                   "{uc.task}"
                 </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Arabic Data Labeling — Flagship Government Section ── */}
+      <section id="arabic-labeling" style={{ padding: "96px 48px", background: "#0C1220", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", inset: 0, backgroundImage: "radial-gradient(rgba(180,83,9,0.12) 1px, transparent 1px)", backgroundSize: "32px 32px", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", top: 0, right: 0, width: 480, height: 480, background: "radial-gradient(circle at 80% 20%, rgba(180,83,9,0.15) 0%, transparent 70%)", pointerEvents: "none" }} />
+        <div style={{ position: "absolute", bottom: 0, left: 0, width: 360, height: 360, background: "radial-gradient(circle at 20% 80%, rgba(79,70,229,0.12) 0%, transparent 70%)", pointerEvents: "none" }} />
+
+        <div style={{ maxWidth: 1060, margin: "0 auto", position: "relative" }}>
+
+          {/* Header */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center", marginBottom: 72 }}>
+            <div>
+              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 14px", background: "rgba(180,83,9,0.15)", border: "1px solid rgba(180,83,9,0.4)", borderRadius: 999, marginBottom: 24 }}>
+                <span style={{ fontSize: 10, color: "#F59E0B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600 }}>GCC AI Infrastructure</span>
+              </div>
+              <h2 style={{ fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 800, letterSpacing: "-0.04em", color: "#F8FAFC", lineHeight: 1.1, marginBottom: 20 }}>
+                Arabic Data Labeling<br />
+                <span style={{ background: "linear-gradient(135deg, #F59E0B 0%, #B45309 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+                  for GCC LLM Teams.
+                </span>
+              </h2>
+              <p style={{ fontSize: 15, color: "#94A3B8", lineHeight: 1.8, marginBottom: 32, maxWidth: 480 }}>
+                Every Arabic LLM initiative in the Gulf hits the same wall: not enough high-quality, domain-specific, annotated training data. AgenThink Mesh provides the annotation infrastructure GCC governments and enterprises need to build sovereign Arabic AI.
+              </p>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                <Link href="/annotate" style={{
+                  padding: "12px 28px", background: "#B45309", color: "#fff",
+                  borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none",
+                  boxShadow: "0 4px 20px rgba(180,83,9,0.4)",
+                }}>
+                  Open Annotation Studio &rarr;
+                </Link>
+                <Link href="/registry" style={{
+                  padding: "12px 28px", background: "transparent", color: "#94A3B8",
+                  borderRadius: 10, fontSize: 13, fontWeight: 600, textDecoration: "none",
+                  border: "1px solid rgba(255,255,255,0.12)",
+                }}>
+                  Browse Arabic Agents
+                </Link>
+              </div>
+            </div>
+
+            {/* Live annotation demo card */}
+            <div style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 16, padding: "28px 24px" }}>
+              <div style={{ fontSize: 10, color: "#F59E0B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16, fontWeight: 600 }}>Live annotation example</div>
+              <div style={{ background: "rgba(0,0,0,0.3)", borderRadius: 10, padding: "16px 18px", marginBottom: 16, direction: "rtl", textAlign: "right" }}>
+                <div style={{ fontSize: 11, color: "#64748B", fontFamily: MONO, marginBottom: 8, direction: "ltr", textAlign: "left" }}>input_text</div>
+                <div style={{ fontSize: 15, color: "#E2E8F0", lineHeight: 1.8, fontFamily: "'Noto Sans Arabic', 'Arial', sans-serif" }}>
+                  والله الخدمة في هذا البنك وايد زينة، ما قصروا معي أبد.
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                {[
+                  { key: "label", value: "positive", color: "#22C55E" },
+                  { key: "dialect", value: "gulf", color: "#F59E0B" },
+                  { key: "confidence", value: "0.95", color: "#60A5FA" },
+                  { key: "requires_review", value: "false", color: "#A78BFA" },
+                ].map((item, i) => (
+                  <div key={i} style={{ background: "rgba(0,0,0,0.25)", borderRadius: 8, padding: "10px 12px" }}>
+                    <div style={{ fontSize: 9, color: "#64748B", fontFamily: MONO, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>{item.key}</div>
+                    <div style={{ fontSize: 13, color: item.color, fontFamily: MONO, fontWeight: 600 }}>{item.value}</div>
+                  </div>
+                ))}
+              </div>
+              <div style={{ marginTop: 12, padding: "10px 12px", background: "rgba(0,0,0,0.25)", borderRadius: 8 }}>
+                <div style={{ fontSize: 9, color: "#64748B", fontFamily: MONO, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>rationale</div>
+                <div style={{ fontSize: 11, color: "#94A3B8", lineHeight: 1.6 }}>Strong positive Gulf dialect markers: وايد زينة, ما قصروا — high confidence, no review needed</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Five agent cards */}
+          <div style={{ marginBottom: 56 }}>
+            <div style={{ fontSize: 11, color: "#64748B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 20, fontWeight: 500 }}>5 specialist Arabic annotation agents</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
+              {[
+                { icon: "\u{1F4AC}", name: "Gulf Sentiment", desc: "Classifies sentiment with dialect detection across all 6 Gulf states", tag: "gulf \u00b7 msa \u00b7 levantine" },
+                { icon: "\u{1F3F7}\uFE0F", name: "Arabic NER", desc: "Extracts persons, orgs, locations, dates from Arabic text", tag: "ner \u00b7 entities \u00b7 tagging" },
+                { icon: "\u{1F54B}", name: "Islamic Finance Intent", desc: "Classifies intent across murabaha, sukuk, takaful, zakat queries", tag: "islamic \u00b7 banking \u00b7 intent" },
+                { icon: "\u2696\uFE0F", name: "Legal Clause Extractor", desc: "Identifies and flags clauses in Arabic contracts and regulations", tag: "legal \u00b7 gcc \u00b7 contracts" },
+                { icon: "\u{1F500}", name: "Code-Switch Detector", desc: "Annotates Arabic-English mixing patterns common in Gulf professional text", tag: "arabizi \u00b7 bilingual \u00b7 nlp" },
+              ].map((agent, i) => (
+                <div key={i} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 12, padding: "20px 16px" }}>
+                  <div style={{ fontSize: 22, marginBottom: 10 }}>{agent.icon}</div>
+                  <div style={{ fontSize: 12, fontWeight: 700, color: "#F8FAFC", marginBottom: 8, lineHeight: 1.3 }}>{agent.name}</div>
+                  <div style={{ fontSize: 11, color: "#64748B", lineHeight: 1.6, marginBottom: 12 }}>{agent.desc}</div>
+                  <div style={{ fontSize: 9, color: "#F59E0B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.06em" }}>{agent.tag}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Government use cases */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 56 }}>
+            <div style={{ gridColumn: "1 / -1", fontSize: 11, color: "#64748B", fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500, marginBottom: 4 }}>Government and enterprise use cases</div>
+            {[
+              {
+                org: "National AI Authority",
+                flag: "\u{1F1F8}\u{1F1E6}",
+                task: "Annotate 50,000 Gulf dialect customer service transcripts for national Arabic chatbot training",
+                output: "JSONL export \u00b7 sentiment labels \u00b7 dialect tags \u00b7 review queue",
+              },
+              {
+                org: "Islamic Development Bank",
+                flag: "\u{1F1F8}\u{1F1E6}",
+                task: "Label 20,000 Arabic banking queries with Islamic finance intent classes for Shariah-compliant AI",
+                output: "Intent labels \u00b7 product mentions \u00b7 sharia sensitivity flags",
+              },
+              {
+                org: "Ministry of Justice",
+                flag: "\u{1F1E6}\u{1F1EA}",
+                task: "Extract and classify clauses from 10,000 Arabic contracts to build a GCC legal NLP corpus",
+                output: "Clause types \u00b7 risk levels \u00b7 jurisdiction tags \u00b7 CSV export",
+              },
+            ].map((uc, i) => (
+              <div key={i} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 14, padding: "24px 20px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                  <span style={{ fontSize: 20 }}>{uc.flag}</span>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: "#F8FAFC" }}>{uc.org}</span>
+                </div>
+                <div style={{ fontSize: 13, color: "#94A3B8", lineHeight: 1.7, marginBottom: 14, fontStyle: "italic" }}>
+                  &ldquo;{uc.task}&rdquo;
+                </div>
+                <div style={{ fontSize: 10, color: "#F59E0B", fontFamily: MONO, lineHeight: 1.6 }}>{uc.output}</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Stats row */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: "rgba(255,255,255,0.06)", borderRadius: 14, overflow: "hidden" }}>
+            {[
+              { value: "5", label: "Arabic Dialects Supported", sub: "Gulf \u00b7 MSA \u00b7 Levantine \u00b7 Egyptian \u00b7 Maghrebi" },
+              { value: "JSONL", label: "Fine-Tuning Export Format", sub: "Compatible with OpenAI, Gemini, Llama fine-tuning" },
+              { value: "<3s", label: "Avg Annotation Latency", sub: "Structured JSON output with confidence scores" },
+              { value: "100%", label: "Sovereign Data", sub: "Your annotations stay in your account, exportable anytime" },
+            ].map((s, i) => (
+              <div key={i} style={{ background: "rgba(0,0,0,0.2)", padding: "28px 24px", textAlign: "center" }}>
+                <div style={{ fontSize: 32, fontWeight: 800, color: "#F59E0B", letterSpacing: "-0.04em", lineHeight: 1, marginBottom: 8 }}>{s.value}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: "#F8FAFC", marginBottom: 6 }}>{s.label}</div>
+                <div style={{ fontSize: 10, color: "#64748B", fontFamily: MONO, lineHeight: 1.5 }}>{s.sub}</div>
               </div>
             ))}
           </div>

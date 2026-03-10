@@ -7,6 +7,7 @@ import Landing from "./pages/Landing";
 import MeshDashboard from "./pages/MeshDashboard";
 import AgentRegistry from "./pages/AgentRegistry";
 import Build from "./pages/Build";
+import AnnotationStudio from "./pages/AnnotationStudio";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./_core/hooks/useAuth";
 
@@ -46,6 +47,7 @@ function Router() {
       <Route path="/mesh" component={isAuthenticated ? MeshDashboard : Landing} />
       <Route path="/registry" component={AgentRegistry} />
       <Route path="/build" component={Build} />
+      <Route path="/annotate" component={AnnotationStudio} />
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
