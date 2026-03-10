@@ -262,3 +262,11 @@
 - [x] "Run Anyway" executes with the user's chosen context even if it doesn't match
 - [x] "Switch & Run" auto-switches to the correct context and executes
 - [x] "Cancel" dismisses the dialog without running
+
+## Session 11 — Final Summary Section
+
+- [x] Add server-side mesh.summariseOutputs procedure: takes task + all agent outputs, calls LLM, returns structured summary (keyFindings, conflicts, nextActions, overallConfidence, oneLiner)
+- [x] OutputPanel: after all agents complete, auto-trigger summariseOutputs and show Final Summary card at the bottom
+- [x] Final Summary card: headline one-liner, key findings list, conflicts/gaps, recommended next actions, overall confidence badge
+- [x] Show "Generating summary…" skeleton while LLM call is in progress
+- [x] Allow user to copy the summary to clipboard

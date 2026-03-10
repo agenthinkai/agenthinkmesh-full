@@ -222,6 +222,159 @@ function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText,
   );
 }
 // ─── OutputPanel ────────────────────────────────────────────────────────────────
+// ─── Final Summary Card ──────────────────────────────────────────────────────
+function FinalSummaryCard({ taskText, contextLabel, agentOutputs }: {
+  taskText: string;
+  contextLabel: string;
+  agentOutputs: { agentName: string; output: string }[];
+}) {
+  const summarise = trpc.mesh.summariseOutputs.useMutation();
+  const [summary, setSummary] = useState<{
+    headline: string;
+    keyFindings: string[];
+    conflicts: string[];
+    nextActions: string[];
+    overallConfidence: number;
+    confidenceRationale: string;
+  } | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    summarise.mutateAsync({ taskText, contextLabel, agentOutputs }).then(setSummary).catch(() => {});
+  }, []);
+
+  const copyToClipboard = () => {
+    if (!summary) return;
+    const text = [
+      summary.headline,
+      "",
+      "KEY FINDINGS",
+      ...summary.keyFindings.map(f => `• ${f}`),
+      "",
+      summary.conflicts.length > 0 ? "CONFLICTS / GAPS" : "",
+      ...summary.conflicts.map(c => `⚠ ${c}`),
+      "",
+      "NEXT ACTIONS",
+      ...summary.nextActions.map((a, i) => `${i + 1}. ${a}`),
+      "",
+      `Confidence: ${summary.overallConfidence}% — ${summary.confidenceRationale}`,
+    ].filter(l => l !== undefined).join("\n");
+    navigator.clipboard.writeText(text).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); });
+  };
+
+  const confidenceColor = summary
+    ? summary.overallConfidence >= 80 ? "#4ADE80"
+    : summary.overallConfidence >= 60 ? "#C9A84C"
+    : "#F87171"
+    : "#637080";
+
+  return (
+    <div style={{
+      background: "linear-gradient(135deg, #0F1E38 0%, #0B1629 100%)",
+      border: "1px solid rgba(123,163,212,0.35)",
+      borderRadius: 16,
+      padding: "22px 24px",
+      marginTop: 8,
+      boxShadow: "0 4px 32px rgba(123,163,212,0.08)",
+      animation: "slide-up-fade-in 0.5s ease-out",
+    }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(123,163,212,0.12)", border: "1px solid rgba(123,163,212,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 14 }}>⚡</div>
+          <div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: "#7BA3D4", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "'JetBrains Mono', monospace" }}>Mesh Final Summary</div>
+            <div style={{ fontSize: 10, color: "#4A5568", fontFamily: "'JetBrains Mono', monospace" }}>Synthesised from {agentOutputs.length} agent outputs</div>
+          </div>
+        </div>
+        {summary && (
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, padding: "4px 12px", background: `${confidenceColor}15`, border: `1px solid ${confidenceColor}40`, borderRadius: 20 }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: confidenceColor, display: "inline-block" }} />
+              <span style={{ fontSize: 11, fontWeight: 700, color: confidenceColor, fontFamily: "'JetBrains Mono', monospace" }}>{summary.overallConfidence}% confidence</span>
+            </div>
+            <button onClick={copyToClipboard} style={{ background: "transparent", border: "1px solid #1C3057", borderRadius: 8, padding: "5px 10px", cursor: "pointer", fontSize: 10, color: "#8494AA", fontFamily: "'JetBrains Mono', monospace" }}>
+              {copied ? "✓ Copied" : "Copy"}
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* Loading skeleton */}
+      {summarise.isPending && !summary && (
+        <div>
+          <div style={{ height: 18, width: "80%", borderRadius: 6, background: "linear-gradient(90deg, rgba(28,48,87,0.8) 0%, rgba(123,163,212,0.15) 50%, rgba(28,48,87,0.8) 100%)", backgroundSize: "200% 100%", animation: "shimmer 1.3s ease-in-out infinite", marginBottom: 12 }} />
+          {["60%", "75%", "50%"].map((w, i) => (
+            <div key={i} style={{ height: 10, width: w, borderRadius: 4, background: "linear-gradient(90deg, rgba(28,48,87,0.6) 0%, rgba(123,163,212,0.1) 50%, rgba(28,48,87,0.6) 100%)", backgroundSize: "200% 100%", animation: `shimmer 1.3s ease-in-out infinite`, animationDelay: `${i * 0.2}s`, marginBottom: 8 }} />
+          ))}
+          <div style={{ fontSize: 10, color: "#4A5568", fontFamily: "'JetBrains Mono', monospace", marginTop: 8 }}>Generating executive summary…</div>
+        </div>
+      )}
+
+      {/* Summary content */}
+      {summary && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {/* Headline */}
+          <div style={{ fontSize: 14, fontWeight: 700, color: "#E8ECF2", lineHeight: 1.5, fontFamily: "'Inter', sans-serif", borderLeft: "3px solid #7BA3D4", paddingLeft: 12 }}>
+            {summary.headline}
+          </div>
+
+          {/* Key Findings */}
+          {summary.keyFindings.length > 0 && (
+            <div>
+              <div style={{ fontSize: 9, color: "#7BA3D4", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, marginBottom: 8 }}>Key Findings</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {summary.keyFindings.map((f, i) => (
+                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                    <span style={{ color: "#4ADE80", fontSize: 10, marginTop: 2, flexShrink: 0 }}>✓</span>
+                    <span style={{ fontSize: 12, color: "#A8B4C8", lineHeight: 1.6, fontFamily: "'Inter', sans-serif" }}>{f}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Conflicts */}
+          {summary.conflicts.length > 0 && (
+            <div>
+              <div style={{ fontSize: 9, color: "#C9A84C", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, marginBottom: 8 }}>Conflicts / Gaps</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {summary.conflicts.map((c, i) => (
+                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                    <span style={{ color: "#C9A84C", fontSize: 10, marginTop: 2, flexShrink: 0 }}>⚠</span>
+                    <span style={{ fontSize: 12, color: "#A8B4C8", lineHeight: 1.6, fontFamily: "'Inter', sans-serif" }}>{c}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Next Actions */}
+          {summary.nextActions.length > 0 && (
+            <div style={{ background: "rgba(123,163,212,0.04)", border: "1px solid rgba(123,163,212,0.15)", borderRadius: 10, padding: "14px 16px" }}>
+              <div style={{ fontSize: 9, color: "#7BA3D4", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, marginBottom: 10 }}>Recommended Next Actions</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {summary.nextActions.map((a, i) => (
+                  <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
+                    <span style={{ width: 20, height: 20, borderRadius: 6, background: "rgba(123,163,212,0.12)", border: "1px solid rgba(123,163,212,0.2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "#7BA3D4", fontFamily: "'JetBrains Mono', monospace", flexShrink: 0 }}>{i + 1}</span>
+                    <span style={{ fontSize: 12, color: "#E8ECF2", lineHeight: 1.6, fontFamily: "'Inter', sans-serif" }}>{a}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Confidence rationale */}
+          <div style={{ fontSize: 10, color: "#4A5568", fontFamily: "'JetBrains Mono', monospace", paddingTop: 4, borderTop: "1px solid #152542" }}>
+            {summary.confidenceRationale}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── OutputPanel ──────────────────────────────────────────────────────────────
 function OutputPanel({ agents, taskText, ctx, vaultText, activeDocId, onBack, onDone }: {
   agents: AgentNode[];
   taskText: string;
@@ -323,6 +476,17 @@ function OutputPanel({ agents, taskText, ctx, vaultText, activeDocId, onBack, on
           taskText={taskText}
           contextLabel={ctx.label}
           onDone={handleDone}
+        />
+      )}
+
+      {/* Final Summary — shown after all agents complete */}
+      {doneCount >= total && total > 0 && (
+        <FinalSummaryCard
+          taskText={taskText}
+          contextLabel={ctx.label}
+          agentOutputs={Object.entries(outputsRef.current)
+            .filter(([, output]) => output && output.trim().length > 0)
+            .map(([agentName, output]) => ({ agentName, output }))}
         />
       )}
     </div>

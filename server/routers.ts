@@ -368,9 +368,93 @@ export const appRouter = router({
         });
         return { success: true };
       }),
-  }),
 
-  // ── Document Vault ─────────────────────────────────────────────────────────
+    summariseOutputs: protectedProcedure
+      .input(z.object({
+        taskText: z.string().min(1),
+        contextLabel: z.string(),
+        agentOutputs: z.array(z.object({
+          agentName: z.string(),
+          output: z.string(),
+        })),
+      }))
+      .mutation(async ({ input }) => {
+        const { invokeLLM } = await import("./_core/llm");
+        const outputsText = input.agentOutputs
+          .map(o => `### ${o.agentName}\n${o.output.slice(0, 3000)}`)
+          .join("\n\n");
+        const response = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `You are a senior analyst synthesising the outputs of a multi-agent AI system. 
+You will receive the original task and the outputs from multiple specialist agents. 
+Your job is to produce a structured executive summary that:
+1. Captures the key findings across all agents in plain language
+2. Identifies any conflicts, gaps, or inconsistencies between agent outputs
+3. Recommends 3-5 concrete next actions the user should take
+4. Gives an overall confidence score (0-100) reflecting how complete and consistent the outputs are
+5. Writes a single one-liner headline summarising the overall result
+
+Return ONLY valid JSON matching this exact schema:
+{
+  "headline": "string — one sentence summary of the overall result",
+  "keyFindings": ["string", ...],
+  "conflicts": ["string", ...],
+  "nextActions": ["string", ...],
+  "overallConfidence": number,
+  "confidenceRationale": "string — one sentence explaining the confidence score"
+}`,
+            },
+            {
+              role: "user",
+              content: `Task: ${input.taskText}\nContext: ${input.contextLabel}\n\nAgent Outputs:\n${outputsText}`,
+            },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "mesh_summary",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  headline: { type: "string" },
+                  keyFindings: { type: "array", items: { type: "string" } },
+                  conflicts: { type: "array", items: { type: "string" } },
+                  nextActions: { type: "array", items: { type: "string" } },
+                  overallConfidence: { type: "number" },
+                  confidenceRationale: { type: "string" },
+                },
+                required: ["headline", "keyFindings", "conflicts", "nextActions", "overallConfidence", "confidenceRationale"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+        const content = response.choices?.[0]?.message?.content ?? "{}";
+        try {
+          return JSON.parse(typeof content === "string" ? content : JSON.stringify(content)) as {
+            headline: string;
+            keyFindings: string[];
+            conflicts: string[];
+            nextActions: string[];
+            overallConfidence: number;
+            confidenceRationale: string;
+          };
+        } catch {
+          return {
+            headline: "Summary generation failed — please review individual agent outputs above.",
+            keyFindings: [],
+            conflicts: [],
+            nextActions: [],
+            overallConfidence: 0,
+            confidenceRationale: "Could not parse LLM response.",
+          };
+        }
+      }),
+  }),
+  // ── Document Vaultt ─────────────────────────────────────────────────────────
   vault: router({
     // Upload a document: base64-encoded content + filename
     upload: protectedProcedure
