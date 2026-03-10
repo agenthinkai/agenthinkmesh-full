@@ -317,3 +317,130 @@
   0%   { opacity: 0; transform: translateY(12px); }
   100% { opacity: 1; transform: translateY(0); }
 }
+
+
+/* ── Landing page responsive grid utilities ─────────────────────────────── */
+
+/* Hamburger: hidden on desktop, visible on mobile */
+.landing-hamburger { display: none; }
+
+/* Desktop nav links: visible on desktop, hidden on mobile */
+.landing-nav-links { display: flex; }
+
+/* Mobile dropdown: always rendered via React state, no extra CSS needed */
+
+/* 3-column grid → 1 column on mobile */
+.landing-3col-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18px;
+}
+
+/* 2-column grid → 1 column on mobile */
+.landing-2col-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+/* 4-column stats grid → 2 columns on mobile */
+.landing-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0;
+}
+
+/* 5-column domains grid → 2 columns on mobile */
+.landing-domains-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+/* 5-column Arabic agents grid → 2 columns on mobile */
+.landing-5col-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+/* Arabic section hero: 2-col → 1-col on mobile */
+.landing-arabic-hero {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 48px;
+  align-items: center;
+}
+
+/* Contact section: 2-col → 1-col on mobile */
+.landing-contact-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 64px;
+  align-items: start;
+}
+
+/* Contact form name/email row: 2-col → 1-col on mobile */
+.landing-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+/* ── Tablet breakpoint (≤ 900px) ─────────────────────────────────────────── */
+@media (max-width: 900px) {
+  .landing-domains-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .landing-5col-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .landing-arabic-hero {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .landing-contact-grid {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+}
+
+/* ── Mobile breakpoint (≤ 640px) ─────────────────────────────────────────── */
+@media (max-width: 640px) {
+  /* Navbar */
+  .landing-nav-links { display: none; }
+  .landing-hamburger { display: block; }
+
+  /* Grids → single column */
+  .landing-3col-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .landing-2col-grid {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .landing-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .landing-domains-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .landing-5col-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .landing-arabic-hero {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+  .landing-contact-grid {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+  .landing-form-row {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+}

@@ -309,3 +309,16 @@
 - [x] Sending state replaces isPending for button disabled/label logic
 - [x] Vitest added: validates env var is set + confirms endpoint reachable (server-side 403 is expected by design)
 - [x] All 46 tests passing, 0 TypeScript errors
+
+## Session 17 — Mobile Layout Fixes
+
+- [x] Audit Landing.tsx for fixed widths, overflow, and non-responsive inline styles
+- [x] Fix hero section: headline, subheadline, CTA buttons stack properly on mobile
+- [x] Fix navbar: hamburger menu or stacked layout on small screens
+- [x] Fix stats bar: wrap/stack on mobile
+- [x] Fix domain cards grid: 2-column on mobile (≤640px), 3-column on tablet (≤900px)
+- [x] Fix How It Works section: single column on mobile
+- [x] Fix Contact section: full-width form inputs on mobile, stacked layout
+- [x] Fix footer: stacked layout on mobile
+- [x] Fix horizontal overflow: overflowX hidden on root, reduced padding to 24px
+- [x] Added responsive CSS classes for 640px and 900px breakpoints covering all grids

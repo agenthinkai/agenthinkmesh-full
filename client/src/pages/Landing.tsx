@@ -6,18 +6,18 @@ import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
 // ── Brand palette (matches logo: deep navy + silver/platinum) ──────────────
-const NAVY_950 = "#0B1629";   // darkest — page background
-const NAVY_900 = "#0F1E38";   // hero background
-const NAVY_800 = "#152542";   // card background
-const NAVY_700 = "#1C3057";   // card hover / border
-const NAVY_600 = "#243B6E";   // subtle dividers
-const SILVER_50  = "#F5F7FA"; // near-white text
-const SILVER_100 = "#E8ECF2"; // body text
-const SILVER_300 = "#A8B4C8"; // muted text
-const SILVER_400 = "#8494AA"; // very muted
-const SILVER_500 = "#637080"; // placeholder
+const NAVY_950 = "#0B1629";
+const NAVY_900 = "#0F1E38";
+const NAVY_800 = "#152542";
+const NAVY_700 = "#1C3057";
+const NAVY_600 = "#243B6E";
+const SILVER_50  = "#F5F7FA";
+const SILVER_100 = "#E8ECF2";
+const SILVER_300 = "#A8B4C8";
+const SILVER_400 = "#8494AA";
+const SILVER_500 = "#637080";
 const SILVER_GRAD = "linear-gradient(135deg, #F0F4FA 0%, #C8D4E8 40%, #E8ECF2 70%, #9AAAC0 100%)";
-const GOLD        = "#C9A84C"; // accent gold for highlights
+const GOLD        = "#C9A84C";
 const MONO = "'JetBrains Mono', 'Fira Code', monospace";
 const FONT = "'Inter', system-ui, -apple-system, sans-serif";
 
@@ -75,7 +75,6 @@ const USE_CASES = [
 function ContactSection() {
   const [form, setForm] = useState({ name: "", email: "", company: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
-
   const [sending, setSending] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -129,12 +128,12 @@ function ContactSection() {
   };
 
   return (
-    <section id="contact" style={{ padding: "100px 48px", background: "#0F1E38", borderTop: "1px solid #1C3057" }}>
-      <div style={{ maxWidth: 1100, margin: "0 auto", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 80, alignItems: "start" }}>
+    <section id="contact" style={{ padding: "80px 0", background: "#0F1E38", borderTop: "1px solid #1C3057" }}>
+      <div className="landing-contact-grid" style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
         {/* Left — copy */}
         <div>
           <div style={{ fontSize: 11, color: "#8494AA", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'JetBrains Mono', monospace", marginBottom: 16, fontWeight: 500 }}>Contact Us</div>
-          <h2 style={{ fontSize: 40, fontWeight: 800, letterSpacing: "-0.04em", color: "#F5F7FA", marginBottom: 20, lineHeight: 1.1 }}>
+          <h2 style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 800, letterSpacing: "-0.04em", color: "#F5F7FA", marginBottom: 20, lineHeight: 1.1 }}>
             Let's talk about<br /><span style={{ color: "#7BA3D4" }}>your use case.</span>
           </h2>
           <p style={{ fontSize: 15, color: "#A8B4C8", lineHeight: 1.8, marginBottom: 40 }}>
@@ -157,7 +156,7 @@ function ContactSection() {
         </div>
 
         {/* Right — form */}
-        <div style={{ background: "#152542", border: "1px solid #1C3057", borderRadius: 16, padding: "40px 36px" }}>
+        <div style={{ background: "#152542", border: "1px solid #1C3057", borderRadius: 16, padding: "40px 28px" }}>
           {submitted ? (
             <div style={{ textAlign: "center", padding: "40px 0" }}>
               <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
@@ -168,7 +167,7 @@ function ContactSection() {
           ) : (
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column" as const, gap: 18 }}>
               <h3 style={{ fontSize: 18, fontWeight: 700, color: "#F5F7FA", marginBottom: 4 }}>Send us a message</h3>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div className="landing-form-row">
                 <div>
                   <label style={{ fontSize: 11, color: "#8494AA", fontFamily: "'JetBrains Mono', monospace", display: "block", marginBottom: 6 }}>Name *</label>
                   <input style={inputStyle} placeholder="Farouq Sultan" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
@@ -219,12 +218,13 @@ const card = (extra?: React.CSSProperties): React.CSSProperties => ({
 
 export default function Landing() {
   const loginUrl = getLoginUrl();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const { data: stats } = trpc.public.platformStats.useQuery(undefined, {
-    refetchInterval: 30_000, // refresh every 30 s
+    refetchInterval: 30_000,
     staleTime: 20_000,
   });
 
-  // Animated counter helper — shows live value or fallback
   const s = {
     tasksRun:       stats?.tasksRun       ?? 2405,
     verifiedAgents: stats?.verifiedAgents ?? 112,
@@ -233,127 +233,150 @@ export default function Landing() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: NAVY_950, fontFamily: FONT, color: SILVER_100 }}>
+    <div style={{ minHeight: "100vh", background: NAVY_950, fontFamily: FONT, color: SILVER_100, overflowX: "hidden" }}>
 
       {/* ── Navbar ── */}
       <nav style={{
         position: "sticky", top: 0, zIndex: 100,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "0 48px", height: 64,
         background: `${NAVY_900}F0`, backdropFilter: "blur(16px)",
         borderBottom: `1px solid ${NAVY_700}`,
       }}>
-        <Logo size={32} />
-        <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
-          {[["#features", "Features"], ["#domains", "Domains"], ["#how-it-works", "How it works"], ["#contact", "Contact"]].map(([href, label]) => (
-            <a key={href} href={href} style={{ fontSize: 13, color: SILVER_300, textDecoration: "none", fontWeight: 500, transition: "color 0.2s" }}
-              onMouseEnter={e => (e.currentTarget.style.color = SILVER_50)}
-              onMouseLeave={e => (e.currentTarget.style.color = SILVER_300)}
-            >{label}</a>
-          ))}
-          <Link href="/registry" style={{ fontSize: 13, color: "#7BA3D4", textDecoration: "none", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
-            ⬡ Registry
-          </Link>
-          <Link href="/annotate" style={{ fontSize: 13, color: GOLD, textDecoration: "none", fontWeight: 600, display: "flex", alignItems: "center", gap: 4 }}>
-            ع Arabic Labeling
-          </Link>
-          <Link href="/build" style={{ fontSize: 13, color: SILVER_300, textDecoration: "none", fontWeight: 500 }}>
-            Build
-          </Link>
-          <a href={loginUrl} style={{
-            padding: "8px 22px",
-            background: "linear-gradient(135deg, #1C3057 0%, #243B6E 100%)",
-            color: SILVER_50,
-            borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none",
-            border: `1px solid ${NAVY_600}`,
-            boxShadow: "0 2px 12px rgba(0,0,0,0.3)",
-          }}>Sign in →</a>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", height: 64, maxWidth: 1200, margin: "0 auto" }}>
+          <Logo size={32} />
+
+          {/* Desktop nav links */}
+          <div className="landing-nav-links" style={{ display: "flex", alignItems: "center", gap: 20 }}>
+            {[["#features", "Features"], ["#domains", "Domains"], ["#how-it-works", "How it works"], ["#contact", "Contact"]].map(([href, label]) => (
+              <a key={href} href={href} style={{ fontSize: 13, color: SILVER_300, textDecoration: "none", fontWeight: 500, transition: "color 0.2s", whiteSpace: "nowrap" }}
+                onMouseEnter={e => (e.currentTarget.style.color = SILVER_50)}
+                onMouseLeave={e => (e.currentTarget.style.color = SILVER_300)}
+              >{label}</a>
+            ))}
+            <Link href="/registry" style={{ fontSize: 13, color: "#7BA3D4", textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap" }}>
+              ⬡ Registry
+            </Link>
+            <Link href="/annotate" style={{ fontSize: 13, color: GOLD, textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap" }}>
+              ع Arabic Labeling
+            </Link>
+            <Link href="/build" style={{ fontSize: 13, color: SILVER_300, textDecoration: "none", fontWeight: 500, whiteSpace: "nowrap" }}>
+              Build
+            </Link>
+            <a href={loginUrl} style={{
+              padding: "8px 18px",
+              background: "linear-gradient(135deg, #1C3057 0%, #243B6E 100%)",
+              color: SILVER_50,
+              borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none",
+              border: `1px solid ${NAVY_600}`,
+              boxShadow: "0 2px 12px rgba(0,0,0,0.3)",
+              whiteSpace: "nowrap",
+            }}>Sign in →</a>
+          </div>
+
+          {/* Mobile hamburger */}
+          <button
+            className="landing-hamburger"
+            onClick={() => setMobileMenuOpen(o => !o)}
+            style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: SILVER_300, fontSize: 22, lineHeight: 1 }}
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? "✕" : "☰"}
+          </button>
         </div>
+
+        {/* Mobile dropdown menu */}
+        {mobileMenuOpen && (
+          <div className="landing-mobile-menu" style={{ background: NAVY_900, borderTop: `1px solid ${NAVY_700}`, padding: "16px 24px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+            {[["#features", "Features"], ["#domains", "Domains"], ["#how-it-works", "How it works"], ["#contact", "Contact"]].map(([href, label]) => (
+              <a key={href} href={href} onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 15, color: SILVER_300, textDecoration: "none", fontWeight: 500 }}>{label}</a>
+            ))}
+            <Link href="/registry" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 15, color: "#7BA3D4", textDecoration: "none", fontWeight: 600 }}>⬡ Registry</Link>
+            <Link href="/annotate" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 15, color: GOLD, textDecoration: "none", fontWeight: 600 }}>ع Arabic Labeling</Link>
+            <Link href="/build" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 15, color: SILVER_300, textDecoration: "none", fontWeight: 500 }}>Build</Link>
+            <a href={loginUrl} style={{ padding: "10px 20px", background: "linear-gradient(135deg, #1C3057 0%, #243B6E 100%)", color: SILVER_50, borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: "none", textAlign: "center" }}>Sign in →</a>
+          </div>
+        )}
       </nav>
 
       {/* ── Hero ── */}
-      <section style={{ padding: "100px 48px 80px", textAlign: "center", background: NAVY_900, borderBottom: `1px solid ${NAVY_700}`, position: "relative", overflow: "hidden" }}>
-        {/* Subtle grid */}
+      <section style={{ padding: "80px 24px 64px", textAlign: "center", background: NAVY_900, borderBottom: `1px solid ${NAVY_700}`, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(${NAVY_700} 1px, transparent 1px)`, backgroundSize: "32px 32px", opacity: 0.5, pointerEvents: "none" }} />
-        {/* Silver glow top */}
         <div style={{ position: "absolute", top: -120, left: "50%", transform: "translateX(-50%)", width: 700, height: 350, background: "radial-gradient(ellipse, rgba(123,163,212,0.09) 0%, transparent 70%)", pointerEvents: "none" }} />
 
-        {/* Status pill — ☆ 112 verified specialist agents · Live */}
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", background: "transparent", border: `1px solid ${NAVY_600}`, borderRadius: 999, marginBottom: 44, position: "relative" }}>
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 18px", background: "transparent", border: `1px solid ${NAVY_600}`, borderRadius: 999, marginBottom: 36, position: "relative" }}>
           <span style={{ fontSize: 13, color: SILVER_400 }}>☆</span>
           <span style={{ fontSize: 12, color: SILVER_300, fontFamily: MONO }}>112 verified specialist agents · Live</span>
         </div>
 
-        {/* Main headline — "The AgenThink Mesh / of AI Agents" */}
-        <h1 style={{ fontSize: "clamp(52px, 8vw, 108px)", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1.0, margin: "0 auto 28px", maxWidth: 860, position: "relative", color: SILVER_50 }}>
+        <h1 style={{ fontSize: "clamp(44px, 10vw, 108px)", fontWeight: 900, letterSpacing: "-0.04em", lineHeight: 1.0, margin: "0 auto 24px", maxWidth: 860, position: "relative", color: SILVER_50 }}>
           The{" "}
           <span style={{ color: "#7BA3D4" }}>Google</span>
           <br />
           of AI Agents
         </h1>
 
-        {/* Subtitle */}
-        <p style={{ fontSize: "clamp(15px, 2vw, 18px)", color: SILVER_300, maxWidth: 640, margin: "0 auto 44px", lineHeight: 1.75, position: "relative" }}>
+        <p style={{ fontSize: "clamp(14px, 2.5vw, 18px)", color: SILVER_300, maxWidth: 600, margin: "0 auto 36px", lineHeight: 1.75, position: "relative", padding: "0 8px" }}>
           Describe any complex business task. AgenThinkMesh activates the right
           specialist agents across Finance, Legal, Healthcare, and GCC Wealth —
           delivering institutional-grade results in seconds.
         </p>
 
-        {/* Task input bar */}
-        <div style={{ maxWidth: 680, margin: "0 auto 16px", position: "relative", display: "flex", alignItems: "center", background: "rgba(255,255,255,0.04)", border: `1px solid ${NAVY_600}`, borderRadius: 14, padding: "6px 6px 6px 20px", boxShadow: "0 4px 32px rgba(0,0,0,0.35)" }}>
-          <span style={{ fontSize: 18, color: SILVER_400, marginRight: 10, flexShrink: 0 }}>⌕</span>
-          <input
-            readOnly
-            value=""
-            placeholder="Describe a task — e.g. Screen 5 deals against our VC thesis"
-            style={{ flex: 1, background: "transparent", border: "none", outline: "none", fontSize: 14, color: SILVER_300, fontFamily: FONT, caretColor: "#7BA3D4" }}
-            onClick={() => { window.location.href = loginUrl; }}
-          />
-          <a href={loginUrl} style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            padding: "12px 24px",
-            background: "linear-gradient(135deg, #7BA3D4 0%, #5B8EC4 100%)",
-            color: "#0B1629",
-            borderRadius: 10, fontSize: 14, fontWeight: 700, textDecoration: "none",
-            flexShrink: 0,
-            boxShadow: "0 2px 16px rgba(123,163,212,0.35)",
-          }}>
-            <span style={{ fontSize: 16 }}>⚡</span> Activate mesh
-          </a>
+        {/* Task input bar — responsive */}
+        <div className="landing-hero-input" style={{ maxWidth: 680, margin: "0 auto 16px", position: "relative" }}>
+          <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.04)", border: `1px solid ${NAVY_600}`, borderRadius: 14, padding: "6px 6px 6px 16px", boxShadow: "0 4px 32px rgba(0,0,0,0.35)", flexWrap: "wrap", gap: 8 }}>
+            <span style={{ fontSize: 18, color: SILVER_400, flexShrink: 0 }}>⌕</span>
+            <input
+              readOnly
+              value=""
+              placeholder="Describe a task — e.g. Screen 5 deals against our VC thesis"
+              style={{ flex: 1, minWidth: 0, background: "transparent", border: "none", outline: "none", fontSize: 14, color: SILVER_300, fontFamily: FONT, caretColor: "#7BA3D4" }}
+              onClick={() => { window.location.href = loginUrl; }}
+            />
+            <a href={loginUrl} style={{
+              display: "inline-flex", alignItems: "center", gap: 6,
+              padding: "10px 20px",
+              background: "linear-gradient(135deg, #7BA3D4 0%, #5B8EC4 100%)",
+              color: "#0B1629",
+              borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none",
+              flexShrink: 0,
+              boxShadow: "0 2px 16px rgba(123,163,212,0.35)",
+              whiteSpace: "nowrap",
+            }}>
+              <span>⚡</span> Activate mesh
+            </a>
+          </div>
         </div>
 
-        {/* Sub-note */}
-        <p style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, marginBottom: 52, position: "relative" }}>
+        <p style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, marginBottom: 44, position: "relative" }}>
           No sign-in required to preview · 112 specialist agents ready
         </p>
 
-        {/* Inline stats row — live DB counts */}
-        <div style={{ display: "flex", justifyContent: "center", gap: 0, flexWrap: "wrap", position: "relative", maxWidth: 820, margin: "0 auto" }}>
+        {/* Inline stats row */}
+        <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 8, position: "relative", maxWidth: 820, margin: "0 auto" }}>
           {([
             { bold: `${s.tasksRun.toLocaleString()}+`, label: "tasks run" },
             { bold: String(s.verifiedAgents), label: "verified agents" },
             { bold: String(s.domainContexts), label: "domain contexts" },
             { bold: `avg. ${s.avgExecSec} sec`, label: "execution time" },
-          ] as { bold: string; label: string }[]).map((item, i, arr) => (
-            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "0 28px", borderRight: i < arr.length - 1 ? `1px solid ${NAVY_700}` : "none" }}>
-              <span style={{ fontSize: 15, fontWeight: 800, color: SILVER_50 }}>{item.bold}</span>
-              <span style={{ fontSize: 13, color: SILVER_400 }}>{item.label}</span>
+          ] as { bold: string; label: string }[]).map((item, i) => (
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, padding: "6px 16px", borderRight: "none" }}>
+              <span style={{ fontSize: 14, fontWeight: 800, color: SILVER_50 }}>{item.bold}</span>
+              <span style={{ fontSize: 12, color: SILVER_400 }}>{item.label}</span>
             </div>
           ))}
         </div>
       </section>
 
-      {/* ── Stats bar — live DB counts ── */}
-      <section style={{ borderBottom: `1px solid ${NAVY_700}`, background: NAVY_800, padding: "32px 48px" }}>
-        <div style={{ maxWidth: 900, margin: "0 auto", display: "grid", gridTemplateColumns: "repeat(4, 1fr)" }}>
+      {/* ── Stats bar ── */}
+      <section style={{ borderBottom: `1px solid ${NAVY_700}`, background: NAVY_800, padding: "28px 24px" }}>
+        <div className="landing-stats-grid" style={{ maxWidth: 900, margin: "0 auto" }}>
           {([
             { value: String(s.domainContexts), label: "Domain Contexts", color: "#7BA3D4" },
             { value: String(s.verifiedAgents), label: "Specialist Agents", color: SILVER_100 },
             { value: "50", label: "Max Agents / Task", color: "#8BBFD4" },
             { value: "5", label: "Industry Verticals", color: GOLD },
           ] as { value: string; label: string; color: string }[]).map((item, i) => (
-            <div key={i} style={{ textAlign: "center", padding: "0 20px", borderRight: i < 3 ? `1px solid ${NAVY_700}` : "none" }}>
-              <div style={{ fontSize: 40, fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1, background: SILVER_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{item.value}</div>
+            <div key={i} style={{ textAlign: "center", padding: "12px 16px" }}>
+              <div style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1, background: SILVER_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{item.value}</div>
               <div style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, marginTop: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>{item.label}</div>
             </div>
           ))}
@@ -361,21 +384,18 @@ export default function Landing() {
       </section>
 
       {/* ── How it works ── */}
-      <section id="how-it-works" style={{ padding: "88px 48px", background: NAVY_950 }}>
+      <section id="how-it-works" style={{ padding: "72px 24px", background: NAVY_950 }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
             <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>How it works</div>
-            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>From task to structured output<br />in under 60 seconds.</h2>
+            <h2 style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>From task to structured output<br />in under 60 seconds.</h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 20, position: "relative" }}>
+          <div className="landing-3col-grid">
             {HOW_IT_WORKS.map((step, i) => (
-              <div key={i} style={{ ...card({ padding: "28px 24px", position: "relative" }) }}>
-                <div style={{ fontSize: 48, fontWeight: 800, color: NAVY_700, letterSpacing: "-0.04em", lineHeight: 1, marginBottom: 16 }}>{step.step}</div>
+              <div key={i} style={{ ...card({ padding: "28px 22px", position: "relative" }) }}>
+                <div style={{ fontSize: 44, fontWeight: 800, color: NAVY_700, letterSpacing: "-0.04em", lineHeight: 1, marginBottom: 14 }}>{step.step}</div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: SILVER_50, marginBottom: 9 }}>{step.title}</div>
                 <div style={{ fontSize: 13, color: SILVER_300, lineHeight: 1.75 }}>{step.desc}</div>
-                {i < 2 && (
-                  <div style={{ position: "absolute", right: -14, top: "50%", transform: "translateY(-50%)", fontSize: 20, color: NAVY_600, zIndex: 2 }}>→</div>
-                )}
               </div>
             ))}
           </div>
@@ -383,13 +403,13 @@ export default function Landing() {
       </section>
 
       {/* ── Features ── */}
-      <section id="features" style={{ padding: "88px 48px", background: NAVY_900, borderTop: `1px solid ${NAVY_700}`, borderBottom: `1px solid ${NAVY_700}` }}>
+      <section id="features" style={{ padding: "72px 24px", background: NAVY_900, borderTop: `1px solid ${NAVY_700}`, borderBottom: `1px solid ${NAVY_700}` }}>
         <div style={{ maxWidth: 1060, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
             <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>Platform capabilities</div>
-            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>Built for institutional-grade<br />AI task execution.</h2>
+            <h2 style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>Built for institutional-grade<br />AI task execution.</h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 18 }}>
+          <div className="landing-3col-grid">
             {FEATURES.map((f, i) => (
               <div key={i} style={{ ...card({ padding: "26px 22px" }) }}>
                 <div style={{ fontSize: 28, marginBottom: 14 }}>{f.icon}</div>
@@ -402,13 +422,13 @@ export default function Landing() {
       </section>
 
       {/* ── Domain showcase ── */}
-      <section id="domains" style={{ padding: "88px 48px", background: NAVY_950 }}>
-        <div style={{ maxWidth: 1060, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
+      <section id="domains" style={{ padding: "72px 24px", background: NAVY_950 }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
             <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>Domain coverage</div>
-            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>5 verticals. 14 contexts.<br />112 specialist agents.</h2>
+            <h2 style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>5 verticals. 14 contexts.<br />112 specialist agents.</h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 16 }}>
+          <div className="landing-domains-grid">
             {DOMAINS.map((d, i) => (
               <div key={i} style={{ background: d.lightBg, border: `1px solid ${d.color}33`, borderRadius: 14, padding: "22px 18px" }}>
                 <div style={{ fontSize: 26, marginBottom: 10 }}>{d.icon}</div>
@@ -431,16 +451,16 @@ export default function Landing() {
       </section>
 
       {/* ── Use cases ── */}
-      <section style={{ padding: "88px 48px", background: NAVY_900, borderTop: `1px solid ${NAVY_700}`, borderBottom: `1px solid ${NAVY_700}` }}>
+      <section style={{ padding: "72px 24px", background: NAVY_900, borderTop: `1px solid ${NAVY_700}`, borderBottom: `1px solid ${NAVY_700}` }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 56 }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
             <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>Use cases</div>
-            <h2 style={{ fontSize: 36, fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>Real tasks. Real professionals.<br />Real output.</h2>
+            <h2 style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>Real tasks. Real professionals.<br />Real output.</h2>
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 16 }}>
+          <div className="landing-2col-grid">
             {USE_CASES.map((uc, i) => (
               <div key={i} style={{ ...card({ padding: "24px 22px" }) }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
                   <span style={{ fontSize: 11, padding: "3px 11px", borderRadius: 999, background: NAVY_700, color: SILVER_300, fontFamily: MONO, border: `1px solid ${NAVY_600}`, fontWeight: 500 }}>
                     {uc.role}
                   </span>
@@ -458,18 +478,19 @@ export default function Landing() {
       </section>
 
       {/* ── Arabic Data Labeling — Flagship Government Section ── */}
-      <section id="arabic-labeling" style={{ padding: "96px 48px", background: "#080F1E", position: "relative", overflow: "hidden" }}>
+      <section id="arabic-labeling" style={{ padding: "80px 24px", background: "#080F1E", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(${GOLD}18 1px, transparent 1px)`, backgroundSize: "32px 32px", pointerEvents: "none" }} />
         <div style={{ position: "absolute", top: 0, right: 0, width: 480, height: 480, background: `radial-gradient(circle at 80% 20%, ${GOLD}18 0%, transparent 70%)`, pointerEvents: "none" }} />
         <div style={{ position: "absolute", bottom: 0, left: 0, width: 360, height: 360, background: "radial-gradient(circle at 20% 80%, rgba(123,163,212,0.1) 0%, transparent 70%)", pointerEvents: "none" }} />
 
         <div style={{ maxWidth: 1060, margin: "0 auto", position: "relative" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center", marginBottom: 72 }}>
+          {/* Hero row */}
+          <div className="landing-arabic-hero" style={{ marginBottom: 56 }}>
             <div>
               <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 14px", background: `${GOLD}18`, border: `1px solid ${GOLD}50`, borderRadius: 999, marginBottom: 24 }}>
                 <span style={{ fontSize: 10, color: GOLD, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600 }}>GCC AI Infrastructure</span>
               </div>
-              <h2 style={{ fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 800, letterSpacing: "-0.04em", color: SILVER_50, lineHeight: 1.1, marginBottom: 20 }}>
+              <h2 style={{ fontSize: "clamp(28px, 4vw, 52px)", fontWeight: 800, letterSpacing: "-0.04em", color: SILVER_50, lineHeight: 1.1, marginBottom: 20 }}>
                 Arabic Data Labeling<br />
                 <span style={{ background: `linear-gradient(135deg, ${GOLD} 0%, #8B6914 100%)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
                   for GCC LLM Teams.
@@ -480,14 +501,14 @@ export default function Landing() {
               </p>
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
                 <Link href="/annotate" style={{
-                  padding: "12px 28px", background: `linear-gradient(135deg, ${GOLD} 0%, #8B6914 100%)`, color: "#0B1629",
+                  padding: "12px 24px", background: `linear-gradient(135deg, ${GOLD} 0%, #8B6914 100%)`, color: "#0B1629",
                   borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none",
                   boxShadow: `0 4px 20px ${GOLD}40`,
                 }}>
                   Open Annotation Studio &rarr;
                 </Link>
                 <Link href="/registry" style={{
-                  padding: "12px 28px", background: "transparent", color: SILVER_300,
+                  padding: "12px 24px", background: "transparent", color: SILVER_300,
                   borderRadius: 10, fontSize: 13, fontWeight: 600, textDecoration: "none",
                   border: `1px solid ${NAVY_700}`,
                 }}>
@@ -497,7 +518,7 @@ export default function Landing() {
             </div>
 
             {/* Live annotation demo card */}
-            <div style={{ background: `${NAVY_800}CC`, border: `1px solid ${NAVY_700}`, borderRadius: 16, padding: "28px 24px" }}>
+            <div style={{ background: `${NAVY_800}CC`, border: `1px solid ${NAVY_700}`, borderRadius: 16, padding: "28px 20px" }}>
               <div style={{ fontSize: 10, color: GOLD, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16, fontWeight: 600 }}>Live annotation example</div>
               <div style={{ background: `${NAVY_950}CC`, borderRadius: 10, padding: "16px 18px", marginBottom: 16, direction: "rtl", textAlign: "right" }}>
                 <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, marginBottom: 8, direction: "ltr", textAlign: "left" }}>input_text</div>
@@ -526,9 +547,9 @@ export default function Landing() {
           </div>
 
           {/* Five agent cards */}
-          <div style={{ marginBottom: 56 }}>
+          <div style={{ marginBottom: 48 }}>
             <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 20, fontWeight: 500 }}>5 specialist Arabic annotation agents</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 12 }}>
+            <div className="landing-5col-grid">
               {[
                 { icon: "💬", name: "Gulf Sentiment", desc: "Classifies sentiment with dialect detection across all 6 Gulf states", tag: "gulf · msa · levantine" },
                 { icon: "🏷️", name: "Arabic NER", desc: "Extracts persons, orgs, locations, dates from Arabic text", tag: "ner · entities · tagging" },
@@ -547,7 +568,7 @@ export default function Landing() {
           </div>
 
           {/* Government use cases */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 16, marginBottom: 56 }}>
+          <div className="landing-3col-grid" style={{ marginBottom: 48 }}>
             <div style={{ gridColumn: "1 / -1", fontSize: 11, color: SILVER_500, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500, marginBottom: 4 }}>Government and enterprise use cases</div>
             {[
               { org: "National AI Authority", flag: "🇸🇦", task: "Annotate 50,000 Gulf dialect customer service transcripts for national Arabic chatbot training", output: "JSONL export · sentiment labels · dialect tags · review queue" },
@@ -568,17 +589,17 @@ export default function Landing() {
           </div>
 
           {/* Stats row */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 1, background: NAVY_700, borderRadius: 14, overflow: "hidden" }}>
+          <div className="landing-stats-grid" style={{ background: NAVY_700, borderRadius: 14, overflow: "hidden", gap: 1 }}>
             {[
               { value: "5", label: "Arabic Dialects Supported", sub: "Gulf · MSA · Levantine · Egyptian · Maghrebi" },
               { value: "JSONL", label: "Fine-Tuning Export Format", sub: "Compatible with OpenAI, Gemini, Llama fine-tuning" },
               { value: "<3s", label: "Avg Annotation Latency", sub: "Structured JSON output with confidence scores" },
-              { value: "100%", label: "Sovereign Data", sub: "Your annotations stay in your account, exportable anytime" },
-            ].map((s, i) => (
-              <div key={i} style={{ background: NAVY_800, padding: "28px 24px", textAlign: "center" }}>
-                <div style={{ fontSize: 32, fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1, marginBottom: 8, background: SILVER_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{s.value}</div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: SILVER_100, marginBottom: 6 }}>{s.label}</div>
-                <div style={{ fontSize: 10, color: SILVER_400, fontFamily: MONO, lineHeight: 1.5 }}>{s.sub}</div>
+              { value: "100%", label: "Sovereign Data", sub: "No data leaves your infrastructure" },
+            ].map((item, i) => (
+              <div key={i} style={{ background: NAVY_800, padding: "24px 20px", textAlign: "center" }}>
+                <div style={{ fontSize: "clamp(22px, 4vw, 32px)", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1, marginBottom: 8, background: SILVER_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{item.value}</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: SILVER_100, marginBottom: 6 }}>{item.label}</div>
+                <div style={{ fontSize: 10, color: SILVER_400, fontFamily: MONO, lineHeight: 1.5 }}>{item.sub}</div>
               </div>
             ))}
           </div>
@@ -586,18 +607,18 @@ export default function Landing() {
       </section>
 
       {/* ── Bottom CTA ── */}
-      <section style={{ padding: "100px 48px", textAlign: "center", background: NAVY_800, borderTop: `1px solid ${NAVY_700}`, position: "relative", overflow: "hidden" }}>
+      <section style={{ padding: "80px 24px", textAlign: "center", background: NAVY_800, borderTop: `1px solid ${NAVY_700}`, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(${NAVY_700} 1px, transparent 1px)`, backgroundSize: "24px 24px", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
           <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 16, fontWeight: 500 }}>Get started today</div>
-          <h2 style={{ fontSize: 44, fontWeight: 800, letterSpacing: "-0.04em", color: SILVER_50, marginBottom: 16, maxWidth: 600, margin: "0 auto 16px", lineHeight: 1.1 }}>
+          <h2 style={{ fontSize: "clamp(28px, 5vw, 44px)", fontWeight: 800, letterSpacing: "-0.04em", color: SILVER_50, marginBottom: 16, maxWidth: 600, margin: "0 auto 16px", lineHeight: 1.1 }}>
             Your mesh is ready.<br />Are you?
           </h2>
-          <p style={{ fontSize: 15, color: SILVER_300, maxWidth: 460, margin: "0 auto 36px", lineHeight: 1.75 }}>
+          <p style={{ fontSize: 15, color: SILVER_300, maxWidth: 460, margin: "0 auto 32px", lineHeight: 1.75 }}>
             Sign in to access 112 specialist agents across 14 domain contexts. No setup. No configuration. Execute your first task in under 30 seconds.
           </p>
           <a href={loginUrl} style={{
-            display: "inline-block", padding: "15px 44px",
+            display: "inline-block", padding: "14px 36px",
             background: SILVER_GRAD,
             color: NAVY_950,
             borderRadius: 10, fontSize: 15, fontWeight: 700, textDecoration: "none",
@@ -615,10 +636,12 @@ export default function Landing() {
       <ContactSection />
 
       {/* ── Footer ── */}
-      <footer style={{ borderTop: `1px solid ${NAVY_700}`, padding: "24px 48px", display: "flex", alignItems: "center", justifyContent: "space-between", background: NAVY_950 }}>
-        <Logo size={28} />
-        <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO }}>
-          112 agents · 14 contexts · 5 domains · Institutional AI orchestration
+      <footer style={{ borderTop: `1px solid ${NAVY_700}`, padding: "20px 24px", background: NAVY_950 }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
+          <Logo size={28} />
+          <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, textAlign: "center" }}>
+            112 agents · 14 contexts · 5 domains · Institutional AI orchestration
+          </div>
         </div>
       </footer>
     </div>
