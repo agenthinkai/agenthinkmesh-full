@@ -516,6 +516,27 @@ function SystemMetricsWidget() {
   );
 }
 
+// ─── Center Section: Metrics Row ───────────────────────────────────────────────────────────────────────────────
+function CenterMetrics() {
+  const { data: metrics, isLoading } = trpc.mesh.getMetrics.useQuery();
+  const items = [
+    { label: "Today",   value: isLoading ? "—" : String(metrics?.tasksToday ?? 0),    color: "#7BA3D4" },
+    { label: "Total",   value: isLoading ? "—" : String(metrics?.totalTasks ?? 0),    color: "#8BBFD4" },
+    { label: "Agents",  value: isLoading ? "—" : String(metrics?.avgAgents ?? 0),     color: "#A89BD4" },
+    { label: "Success", value: isLoading ? "—" : `${metrics?.successRate ?? 100}%`,   color: "#4ADE80" },
+  ];
+  return (
+    <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10 }}>
+      {items.map(item => (
+        <div key={item.label} style={{ background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, padding: "14px 16px" }}>
+          <div style={{ fontSize: 22, fontFamily: "'Inter', sans-serif", fontWeight: 800, color: item.color, lineHeight: 1, letterSpacing: "-0.02em" }}>{item.value}</div>
+          <div style={{ fontSize: 9, color: "#637080", fontFamily: "'JetBrains Mono', monospace", marginTop: 5, textTransform: "uppercase", letterSpacing: "0.08em" }}>{item.label}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 // ─── Right Panel: Metrics Strip ───────────────────────────────────────────────────────────────────────────────
 function RightPanelMetrics() {
   const { data: metrics, isLoading } = trpc.mesh.getMetrics.useQuery();
@@ -592,6 +613,7 @@ export default function MeshDashboard() {
   const [activeVaultDocId, setActiveVaultDocId] = useState<number | null>(null);
   const [booting, setBooting] = useState(true);
   const [bootStep, setBootStep] = useState(0);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const ctx = CONTEXTS[role];
@@ -708,15 +730,42 @@ export default function MeshDashboard() {
       <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
 
         {/* ── LEFT SIDEBAR: Domain navigation ── */}
-        <aside style={{ width: 220, borderRight: "1px solid #1C3057", background: "#0A1628", display: "flex", flexDirection: "column", flexShrink: 0, overflowY: "auto" }}>
+        <aside style={{
+          width: sidebarCollapsed ? 52 : 220,
+          borderRight: "1px solid #1C3057",
+          background: "#0A1628",
+          display: "flex",
+          flexDirection: "column",
+          flexShrink: 0,
+          overflowY: sidebarCollapsed ? "hidden" : "auto",
+          transition: "width 0.25s cubic-bezier(0.4,0,0.2,1)",
+          overflow: "hidden",
+        }}>
 
-          {/* Sidebar header */}
-          <div style={{ padding: "16px 16px 8px" }}>
-            <div style={{ fontSize: 9, color: "#4A5568", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, marginBottom: 4 }}>Workspace</div>
+          {/* Sidebar header + collapse toggle */}
+          <div style={{ padding: "12px 10px 8px", display: "flex", alignItems: "center", justifyContent: sidebarCollapsed ? "center" : "space-between", flexShrink: 0 }}>
+            {!sidebarCollapsed && (
+              <div style={{ fontSize: 9, color: "#4A5568", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600 }}>Workspace</div>
+            )}
+            <button
+              onClick={() => setSidebarCollapsed(c => !c)}
+              title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              style={{
+                width: 28, height: 28, borderRadius: 8, border: "1px solid #1C3057",
+                background: "rgba(123,163,212,0.06)", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                color: "#637080", fontSize: 12, flexShrink: 0,
+                transition: "background 0.2s, color 0.2s",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(123,163,212,0.15)"; (e.currentTarget as HTMLButtonElement).style.color = "#7BA3D4"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(123,163,212,0.06)"; (e.currentTarget as HTMLButtonElement).style.color = "#637080"; }}
+            >
+              {sidebarCollapsed ? "›" : "‹"}
+            </button>
           </div>
 
           {/* Home / History / Settings nav */}
-          <div style={{ padding: "0 10px 8px" }}>
+          <div style={{ padding: "0 8px 8px", flexShrink: 0 }}>
             {[
               { key: "home",     label: "Dashboard",    icon: "▣" },
               { key: "history",  label: "Task History",  icon: "≡" },
@@ -724,26 +773,53 @@ export default function MeshDashboard() {
             ].map(n => (
               <button key={n.key}
                 onClick={() => { setActiveNav(n.key as typeof activeNav); setShowOutput(false); }}
+                title={sidebarCollapsed ? n.label : undefined}
                 style={{
                   display: "flex", alignItems: "center", gap: 10, width: "100%",
-                  padding: "8px 10px", border: "none", borderRadius: 8,
+                  padding: sidebarCollapsed ? "9px 0" : "8px 10px",
+                  justifyContent: sidebarCollapsed ? "center" : "flex-start",
+                  border: "none", borderRadius: 8,
                   background: activeNav === n.key ? "rgba(123,163,212,0.1)" : "none",
                   cursor: "pointer", textAlign: "left",
-                  borderLeft: activeNav === n.key ? "2px solid #7BA3D4" : "2px solid transparent",
+                  borderLeft: sidebarCollapsed ? "none" : (activeNav === n.key ? "2px solid #7BA3D4" : "2px solid transparent"),
                   marginBottom: 2,
                 }}
               >
-                <span style={{ fontSize: 13, color: activeNav === n.key ? "#7BA3D4" : "#4A5568" }}>{n.icon}</span>
-                <span style={{ fontSize: 12, fontWeight: activeNav === n.key ? 700 : 500, color: activeNav === n.key ? "#E8ECF2" : "#8494AA" }}>{n.label}</span>
+                <span style={{ fontSize: 14, color: activeNav === n.key ? "#7BA3D4" : "#4A5568", flexShrink: 0 }}>{n.icon}</span>
+                {!sidebarCollapsed && <span style={{ fontSize: 12, fontWeight: activeNav === n.key ? 700 : 500, color: activeNav === n.key ? "#E8ECF2" : "#8494AA", whiteSpace: "nowrap" }}>{n.label}</span>}
               </button>
             ))}
           </div>
 
           {/* Divider */}
-          <div style={{ height: 1, background: "#1C3057", margin: "4px 16px 8px" }} />
+          {!sidebarCollapsed && <div style={{ height: 1, background: "#1C3057", margin: "4px 16px 8px", flexShrink: 0 }} />}
 
-          {/* Domain sections */}
-          <div style={{ padding: "0 10px", flex: 1 }}>
+          {/* Domain sections — hidden when collapsed, show domain icons only */}
+          <div style={{ padding: sidebarCollapsed ? "0 8px" : "0 10px", flex: 1, overflowY: sidebarCollapsed ? "hidden" : "auto" }}>
+            {sidebarCollapsed ? (
+              /* Icon-only domain dots when collapsed */
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6, paddingTop: 4 }}>
+                {Object.entries(DOMAIN_MAP).map(([domainKey, domain]) => {
+                  const domainColor = DOMAIN_COLORS[domainKey] || "#7BA3D4";
+                  const hasActive = CONTEXTS[role]?.domain === domainKey;
+                  return (
+                    <button
+                      key={domainKey}
+                      title={domain.label}
+                      onClick={() => { setSidebarCollapsed(false); setExpandedDomains(prev => ({ ...prev, [domainKey]: true })); }}
+                      style={{
+                        width: 32, height: 32, borderRadius: 8, border: hasActive ? `1px solid ${domainColor}40` : "1px solid #1C3057",
+                        background: hasActive ? `${domainColor}15` : "rgba(255,255,255,0.03)",
+                        cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15,
+                      }}
+                    >
+                      {domain.icon}
+                    </button>
+                  );
+                })}
+              </div>
+            ) : (
+            <>
             <div style={{ fontSize: 9, color: "#4A5568", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'JetBrains Mono', monospace", fontWeight: 600, marginBottom: 8, paddingLeft: 10 }}>Domains</div>
             {Object.entries(DOMAIN_MAP).map(([domainKey, domain]) => {
               const domainContexts = Object.entries(CONTEXTS).filter(([, c]) => c.domain === domainKey);
@@ -792,22 +868,28 @@ export default function MeshDashboard() {
                 </div>
               );
             })}
+            </>
+            )}
           </div>
 
           {/* Annotation Studio link */}
-          <div style={{ padding: "8px 10px 12px" }}>
+          <div style={{ padding: "8px 10px 12px", flexShrink: 0 }}>
             <div style={{ height: 1, background: "#1C3057", marginBottom: 8 }} />
             <a href="/annotate" style={{
               display: "flex", alignItems: "center", gap: 8, padding: "8px 10px",
               background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.2)",
               borderRadius: 8, textDecoration: "none",
             }}>
-              <span style={{ fontSize: 14, color: "#F59E0B" }}>ع</span>
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: "#C9A84C" }}>Arabic Labeling</div>
-                <div style={{ fontSize: 9, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>Annotation Studio</div>
-              </div>
-              <span style={{ fontSize: 10, color: "#F59E0B" }}>→</span>
+              <span style={{ fontSize: 14, color: "#F59E0B", flexShrink: 0 }}>ع</span>
+              {!sidebarCollapsed && (
+                <>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: "#C9A84C" }}>Arabic Labeling</div>
+                    <div style={{ fontSize: 9, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>Annotation Studio</div>
+                  </div>
+                  <span style={{ fontSize: 10, color: "#F59E0B" }}>→</span>
+                </>
+              )}
             </a>
           </div>
         </aside>
@@ -847,6 +929,9 @@ export default function MeshDashboard() {
                     <span style={{ color: "#22C55E", fontWeight: 700 }}>●</span> Mesh Online
                   </div>
                 </div>
+
+                {/* Metrics row — inline 4-col grid above task box */}
+                <CenterMetrics />
 
                 {/* Task Command Center */}
                 <div style={{ background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 16, overflow: "hidden", boxShadow: "0 4px 24px rgba(0,0,0,0.3)" }}>
@@ -906,10 +991,7 @@ export default function MeshDashboard() {
               </div>
 
               {/* ── RIGHT PANEL ── */}
-              <div style={{ borderLeft: "1px solid #1C3057", background: "#0A1628", overflowY: "auto", display: "flex", flexDirection: "column" }}>
-
-                {/* ── Metrics strip ── */}
-                <RightPanelMetrics />
+              <div style={{ borderLeft: "1px solid #1C3057", background: "#0A1628", overflowY: "auto", display: "flex", flexDirection: "column", paddingTop: 14 }}>
 
                 {/* ── Agents card ── */}
                 <div style={{ margin: "0 14px 12px", background: "#0F1E38", border: "1px solid #1C3057", borderRadius: 12, overflow: "hidden" }}>
