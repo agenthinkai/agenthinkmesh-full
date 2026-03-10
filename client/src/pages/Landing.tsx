@@ -208,7 +208,28 @@ function ContactSection() {
   );
 }
 
-// ── Neon Hero Component (VarD) ──────────────────────────────────────────────
+// ── Reusable Neon Divider ────────────────────────────────────────────────────
+function NeonDivider() {
+  return (
+    <div style={{ position: "relative", height: 1, overflow: "visible" }}>
+      <div style={{
+        position: "absolute", left: "50%", transform: "translateX(-50%)",
+        width: "72%", height: 1,
+        background: "linear-gradient(90deg, transparent 0%, #00D4FF33 18%, #0080FF66 38%, #40B8FF66 50%, #0080FF66 62%, #00D4FF33 82%, transparent 100%)",
+        boxShadow: "0 0 18px 2px rgba(0,212,255,0.10), 0 0 6px 1px rgba(64,184,255,0.14)",
+      }} />
+      <div style={{
+        position: "absolute", left: "50%", top: "50%",
+        transform: "translate(-50%, -50%)",
+        width: 6, height: 6, borderRadius: "50%",
+        background: "#40B8FF",
+        boxShadow: "0 0 12px 4px rgba(64,184,255,0.55), 0 0 28px 8px rgba(0,212,255,0.18)",
+      }} />
+    </div>
+  );
+}
+
+// ── Neon Hero Component (VarD) ────────────────────────────────────────────────
 const NEON_COLORS = [
   { color: "#00D4FF", glow: "rgba(0,212,255,", border: "rgba(0,212,255,0.18)", shadow: "rgba(0,212,255,0.06)", bar: "linear-gradient(90deg,#00D4FF,#008AB8)" },
   { color: "#0080FF", glow: "rgba(0,128,255,", border: "rgba(0,128,255,0.18)", shadow: "rgba(0,128,255,0.06)", bar: "linear-gradient(90deg,#0080FF,#0050B0)" },
@@ -489,23 +510,7 @@ export default function Landing() {
       {/* ── Hero (VarD Neon) ── */}
       <NeonHero loginUrl={loginUrl} stats={s} />
 
-      {/* ── Neon Divider ── */}
-      <div style={{ position: "relative", height: 1, background: "#060F1C", overflow: "visible" }}>
-        <div style={{
-          position: "absolute", left: "50%", transform: "translateX(-50%)",
-          width: "72%", height: 1,
-          background: "linear-gradient(90deg, transparent 0%, #00D4FF33 18%, #0080FF66 38%, #40B8FF66 50%, #0080FF66 62%, #00D4FF33 82%, transparent 100%)",
-          boxShadow: "0 0 18px 2px rgba(0,212,255,0.10), 0 0 6px 1px rgba(64,184,255,0.14)",
-        }} />
-        {/* Centre glow dot */}
-        <div style={{
-          position: "absolute", left: "50%", top: "50%",
-          transform: "translate(-50%, -50%)",
-          width: 6, height: 6, borderRadius: "50%",
-          background: "#40B8FF",
-          boxShadow: "0 0 12px 4px rgba(64,184,255,0.55), 0 0 28px 8px rgba(0,212,255,0.18)",
-        }} />
-      </div>
+      <NeonDivider />
 
       {/* ── How it works ── */}
       <section id="how-it-works" style={{ padding: "72px 24px", background: NAVY_950 }}>
@@ -526,8 +531,10 @@ export default function Landing() {
         </div>
       </section>
 
+      <NeonDivider />
+
       {/* ── Features ── */}
-      <section id="features" style={{ padding: "72px 24px", background: NAVY_900, borderTop: `1px solid ${NAVY_700}`, borderBottom: `1px solid ${NAVY_700}` }}>
+      <section id="features" style={{ padding: "72px 24px", background: NAVY_900 }}>
         <div style={{ maxWidth: 1060, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>Platform capabilities</div>
@@ -544,6 +551,8 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      <NeonDivider />
 
       {/* ── Domain showcase ── */}
       <section id="domains" style={{ padding: "72px 24px", background: NAVY_950 }}>
@@ -574,8 +583,10 @@ export default function Landing() {
         </div>
       </section>
 
+      <NeonDivider />
+
       {/* ── Use cases ── */}
-      <section style={{ padding: "72px 24px", background: NAVY_900, borderTop: `1px solid ${NAVY_700}`, borderBottom: `1px solid ${NAVY_700}` }}>
+      <section style={{ padding: "72px 24px", background: NAVY_900 }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>Use cases</div>
@@ -600,6 +611,8 @@ export default function Landing() {
           </div>
         </div>
       </section>
+
+      <NeonDivider />
 
       {/* ── Arabic Data Labeling — Flagship Government Section ── */}
       <section id="arabic-labeling" style={{ padding: "80px 24px", background: "#080F1E", position: "relative", overflow: "hidden" }}>
@@ -730,8 +743,10 @@ export default function Landing() {
         </div>
       </section>
 
+      <NeonDivider />
+
       {/* ── Bottom CTA ── */}
-      <section style={{ padding: "80px 24px", textAlign: "center", background: NAVY_800, borderTop: `1px solid ${NAVY_700}`, position: "relative", overflow: "hidden" }}>
+      <section style={{ padding: "80px 24px", textAlign: "center", background: NAVY_800, position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(${NAVY_700} 1px, transparent 1px)`, backgroundSize: "24px 24px", pointerEvents: "none" }} />
         <div style={{ position: "relative" }}>
           <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 16, fontWeight: 500 }}>Get started today</div>
@@ -756,11 +771,15 @@ export default function Landing() {
         </div>
       </section>
 
+      <NeonDivider />
+
       {/* ── Contact Us ── */}
       <ContactSection />
 
+      <NeonDivider />
+
       {/* ── Footer ── */}
-      <footer style={{ borderTop: `1px solid ${NAVY_700}`, padding: "20px 24px", background: NAVY_950 }}>
+      <footer style={{ padding: "20px 24px", background: NAVY_950 }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <Logo size={28} />
           <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, textAlign: "center" }}>
