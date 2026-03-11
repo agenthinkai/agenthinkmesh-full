@@ -6,6 +6,7 @@ import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
 import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks } from "../drizzle/schema";
 import { storagePut } from "./storage";
+import { extractFileContent } from "./fileExtract";
 import { eq, desc, gte, sql, and, like, or } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
@@ -491,11 +492,27 @@ Return ONLY valid JSON matching this exact schema:
         const taskId = inserted.insertId as number;
 
         try {
-          // ── Agent 1: Intent Classifier ─────────────────────────────────────────
+          // ── Extract attached file content (if any) ─────────────────────────────────────────────
+          let fileContext = "";
+          if (input.fileUrl && input.fileName) {
+            try {
+              const extracted = await extractFileContent(input.fileUrl, input.fileName);
+              if (extracted.trim()) {
+                fileContext = `\n\n--- ATTACHED DOCUMENT: ${input.fileName} ---\n${extracted}\n--- END OF DOCUMENT ---`;
+              }
+            } catch (extractErr) {
+              console.error("[analyze] File extraction failed:", extractErr);
+              fileContext = `\n\n[Note: An attachment named "${input.fileName}" was provided but could not be read. Please proceed based on the text query only.]`;
+            }
+          }
+
+          const fullQuery = input.query + fileContext;
+
+          // ── Agent 1: Intent Classifier ─────────────────────────────────────────────────────
           const intentRes = await invokeLLM({
             messages: [
-              { role: "system", content: "You are an intent classifier for an AI agent orchestration platform. Classify the user's query into one of these task types: Synthetic Research, Deal Screening, Market Analysis, Pricing Strategy, Risk Assessment, Competitive Intelligence, Business Strategy. Return ONLY a JSON object with fields: taskType (string), confidence (integer 60-95), meshRoute (array of 5 agent name strings appropriate for this task type)." },
-              { role: "user", content: input.query },
+              { role: "system", content: "You are an intent classifier for an AI agent orchestration platform. Classify the user's query into one of these task types: Synthetic Research, Deal Screening, Market Analysis, Pricing Strategy, Risk Assessment, Competitive Intelligence, Business Strategy, Financial Analysis. Return ONLY a JSON object with fields: taskType (string), confidence (integer 60-95), meshRoute (array of 5 agent name strings appropriate for this task type)." },
+              { role: "user", content: fullQuery },
             ],
             response_format: {
               type: "json_schema",
@@ -521,8 +538,9 @@ Return ONLY valid JSON matching this exact schema:
             meshRoute: string[];
           };
 
-          // ── Agents 2-5: Run in parallel ──────────────────────────────────────────
-          const analysisPrompt = `Task type: ${intentData.taskType}\nUser query: ${input.query}\n\nYou are a specialist AI analyst. Provide a thorough analysis.`;
+          // ── Agents 2-5: Run in parallel ──────────────────────────────────────────────────────
+          // fullQuery includes the extracted file content (if any attachment was provided)
+          const analysisPrompt = `Task type: ${intentData.taskType}\nUser query: ${input.query}\n\nYou are a specialist AI analyst. Provide a thorough analysis based on the user query and any attached document data below.\n${fullQuery}`;
 
           const [findingsRes, risksRes, segmentsRes] = await Promise.all([
             // Agent 2: Key Findings

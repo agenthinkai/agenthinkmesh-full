@@ -419,3 +419,10 @@
 - [x] Update server router: new uploadAttachment procedure + analyze accepts optional fileUrl/fileName
 - [x] 2 new vitest tests for uploadAttachment (55/55 tests pass)
 - [ ] Show attached file in ResultScreen alongside task description (future improvement)
+
+## Session 34 — File Content Extraction in Analyze
+- [x] Download attached file from S3 URL on server when fileUrl is provided (downloadBuffer with redirect following)
+- [x] Parse file content by type: XLSX/XLS (all sheets as CSV), CSV, TXT (raw), PDF (pdf-parse), DOCX/DOC (mammoth)
+- [x] Inject extracted file content into fullQuery used by all 5 LLM agent calls
+- [x] Created server/fileExtract.ts helper with 80k char limit to avoid context overflow
+- [x] 55/55 tests pass, 0 TypeScript errors
