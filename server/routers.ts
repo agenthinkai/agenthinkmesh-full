@@ -654,13 +654,63 @@ Return ONLY valid JSON matching this exact schema:
           });
           const reportData = JSON.parse(reportRes.choices[0].message.content as string) as { recommendation: string };
 
+          // ── Agent 6: Structured Report Writer (financial / detailed sections) ─────────────────────────────────────────────
+          const isFinancialTask = ["Financial Analysis", "Deal Screening", "Risk Assessment", "Business Strategy"].includes(intentData.taskType);
+          let structuredReportJson: string | null = null;
+
+          if (isFinancialTask || fileContext) {
+            const structuredRes = await invokeLLM({
+              messages: [
+                {
+                  role: "system",
+                  content: `You are a senior financial analyst and report writer. Based on the user query and any attached document data, produce a comprehensive structured analysis. Return ONLY a JSON object with these fields:
+- executiveSummary: string (3-5 sentence overview)
+- senseCheck: { verdict: string, observations: string[] } (is the data credible? verdict is 'Credible' | 'Concerns Noted' | 'Unreliable')
+- balanceSheet: { years: string[], rows: { label: string, values: (string|number)[], isHeader?: boolean, isBold?: boolean }[] } | null
+- cashFlowStatement: { years: string[], rows: { label: string, values: (string|number)[], isHeader?: boolean, isBold?: boolean }[] } | null
+- dcfValuation: { wacc: string, terminalGrowthRate: string, impliedValuation: string, valuationRange: string, assumptions: string[], sensitivityNote: string } | null
+- keyMetrics: { label: string, value: string, trend: 'up' | 'down' | 'neutral' }[]
+- nextSteps: string[]
+If a section is not applicable (e.g. no financial data provided), set it to null. For balanceSheet and cashFlowStatement, derive them from the P&L and projections in the attached document if available.`,
+                },
+                { role: "user", content: fullQuery },
+              ],
+              response_format: {
+                type: "json_schema",
+                json_schema: {
+                  name: "structured_report",
+                  strict: false,
+                  schema: {
+                    type: "object",
+                    properties: {
+                      executiveSummary: { type: "string" },
+                      senseCheck: {
+                        type: "object",
+                        properties: {
+                          verdict: { type: "string" },
+                          observations: { type: "array", items: { type: "string" } },
+                        },
+                      },
+                      balanceSheet: { type: ["object", "null"] },
+                      cashFlowStatement: { type: ["object", "null"] },
+                      dcfValuation: { type: ["object", "null"] },
+                      keyMetrics: { type: "array", items: { type: "object" } },
+                      nextSteps: { type: "array", items: { type: "string" } },
+                    },
+                  },
+                },
+              },
+            });
+            structuredReportJson = structuredRes.choices[0].message.content as string;
+          }
+
           const execTime = Date.now() - startTime;
 
           // Update task with results
           await db.update(meshTasks).set({
             taskType: intentData.taskType,
             confidenceScore: intentData.confidence,
-            agentsUsed: 5,
+            agentsUsed: isFinancialTask || fileContext ? 6 : 5,
             executionTimeMs: execTime,
             keyFindings: JSON.stringify(findings.keyFindings),
             risks: JSON.stringify(risksData.risks),
@@ -670,6 +720,9 @@ Return ONLY valid JSON matching this exact schema:
             sentimentPositive: risksData.sentimentPositive,
             sentimentNeutral: risksData.sentimentNeutral,
             sentimentNegative: risksData.sentimentNegative,
+            structuredReport: structuredReportJson,
+            fileUrl: input.fileUrl ?? null,
+            fileName: input.fileName ?? null,
             status: "complete",
           }).where(eq(meshTasks.id, taskId));
 
@@ -703,6 +756,9 @@ Return ONLY valid JSON matching this exact schema:
           risks: row.risks ? (JSON.parse(row.risks) as string[]) : [],
           segmentInsights: row.segmentInsights ? (JSON.parse(row.segmentInsights) as { segment: string; likelihood: number }[]) : [],
           meshRoute: row.meshRoute ? (JSON.parse(row.meshRoute) as string[]) : [],
+          structuredReport: row.structuredReport ? (JSON.parse(row.structuredReport) as Record<string, unknown>) : null,
+          fileUrl: row.fileUrl ?? null,
+          fileName: row.fileName ?? null,
         };
       }),
 

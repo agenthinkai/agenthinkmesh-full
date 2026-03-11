@@ -71,6 +71,13 @@
       "when": 1773199672559,
       "tag": "0009_pretty_husk",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1773213456823,
+      "tag": "0010_early_bruce_banner",
+      "breakpoints": true
     }
   ]
 }

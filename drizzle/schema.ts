@@ -165,6 +165,9 @@ export const meshTasks = mysqlTable("mesh_tasks", {
   sentimentPositive: int("sentimentPositive").default(0),
   sentimentNeutral: int("sentimentNeutral").default(0),
   sentimentNegative: int("sentimentNegative").default(0),
+  structuredReport: text("structuredReport"),              // JSON: financial/detailed analysis sections
+  fileUrl: text("fileUrl"),                                  // S3 URL of attached file (if any)
+  fileName: varchar("fileName", { length: 255 }),            // original filename of attached file
   status: mysqlEnum("status", ["running", "complete", "error"]).notNull().default("running"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });

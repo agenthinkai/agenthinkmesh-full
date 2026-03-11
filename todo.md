@@ -426,3 +426,10 @@
 - [x] Inject extracted file content into fullQuery used by all 5 LLM agent calls
 - [x] Created server/fileExtract.ts helper with 80k char limit to avoid context overflow
 - [x] 55/55 tests pass, 0 TypeScript errors
+
+## Session 35 — Structured Financial Result Screen
+- [x] Add Agent 6 (Financial Report Writer) producing structured JSON: executiveSummary, senseCheck, balanceSheet, cashFlowStatement, dcfValuation, keyMetrics, nextSteps
+- [x] Add structuredReport + fileUrl + fileName columns to meshTasks schema; migration pushed (0010)
+- [x] ResultScreen now renders: Executive Summary, Sense Check (with verdict badge), Key Metrics grid, Balance Sheet table, Cash Flow Statement table, DCF Valuation with assumptions, Next Steps
+- [x] Attached filename shown as green chip in result header
+- [x] 55/55 tests pass, 0 TypeScript errors
