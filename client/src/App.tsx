@@ -16,6 +16,10 @@ import PortfolioUpload from "./pages/PortfolioUpload";
 import PortfolioAnalyzing from "./pages/PortfolioAnalyzing";
 import PortfolioReport from "./pages/PortfolioReport";
 import PortfolioVault from "./pages/PortfolioVault";
+import TurnaroundHome from "./pages/TurnaroundHome";
+import TurnaroundUpload from "./pages/TurnaroundUpload";
+import TurnaroundCommand from "./pages/TurnaroundCommand";
+import TurnaroundReport from "./pages/TurnaroundReport";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./_core/hooks/useAuth";
 
@@ -65,6 +69,12 @@ function Router() {
       <Route path="/portfolio-review/analyzing/:id" component={PortfolioAnalyzing} />
       <Route path="/portfolio-review/report/:id" component={PortfolioReport} />
       <Route path="/vault" component={PortfolioVault} />
+
+      {/* 100-Hour Turnaround */}
+      <Route path="/turnaround" component={TurnaroundHome} />
+      <Route path="/turnaround/upload" component={TurnaroundUpload} />
+      <Route path="/turnaround/command/:id" component={TurnaroundCommand} />
+      <Route path="/turnaround/report/:id" component={TurnaroundReport} />
 
       {/* Advanced / power-user section */}
       <Route path="/mesh" component={isAuthenticated ? MeshDashboard : Landing} />

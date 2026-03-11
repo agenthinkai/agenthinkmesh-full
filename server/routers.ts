@@ -5,7 +5,8 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
-import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews } from "../drizzle/schema";
+import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews, turnaroundSessions } from "../drizzle/schema";
+import { turnaroundRouter } from "./routers/turnaround";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
 import { eq, desc, gte, sql, and, like, or } from "drizzle-orm";
@@ -2094,6 +2095,8 @@ If a section is not applicable (e.g. no financial data provided), set it to null
         };
       }),
   }),
+
+  turnaround: turnaroundRouter,
 
 });
 export type AppRouter = typeof appRouter;

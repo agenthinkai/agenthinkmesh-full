@@ -491,3 +491,21 @@
 - [x] PortfolioReport.tsx: Export to PowerPoint button + progress indicator + download link
 - [x] PortfolioVault.tsx: PPTX download icon on completed reviews
 - [x] 55/55 tests pass, 0 TypeScript errors
+
+## Session 44 — 100-Hour Turnaround Workflow
+
+- [x] DB schema: turnaroundSessions table (id, userId, companyName, industry, crisisType, status, agentOutputs JSON, alertsJson, reportJson, pdfUrl, pdfStatus, createdAt)
+- [x] DB push migration
+- [x] /portfolio home: replace one "coming soon" card with 100-Hour Turnaround live workflow card
+- [x] /turnaround — Workflow home screen (explainer + activate button)
+- [x] /turnaround/upload — Document upload with 6-agent assignment UI
+- [x] Backend: turnaround.create mutation (create session, start 6 agents async)
+- [x] Backend: 6 agent LLM procedures (Financial Sentinel, Customer Pulse, Workflow Optimizer, Narrative Architect, Compliance Guardian, Resilience Logger)
+- [x] Backend: turnaround.getStatus query (poll agent progress + alerts)
+- [x] Backend: turnaround.getReport query (full structured output)
+- [x] Backend: turnaround.exportPdf mutation (async PDF export job)
+- [x] /turnaround/command/:id — Live command centre (countdown, 6 agent cards, leadership alerts)
+- [x] /turnaround/report/:id — Full structured report with PDF export
+- [x] App.tsx: register all 4 new routes
+- [x] Nav: add Turnaround link to relevant nav bars
+- [x] 55/55 tests pass, 0 TypeScript errors

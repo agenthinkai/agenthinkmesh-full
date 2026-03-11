@@ -200,3 +200,32 @@ export const portfolioReviews = mysqlTable("portfolio_reviews", {
 
 export type PortfolioReview = typeof portfolioReviews.$inferSelect;
 export type InsertPortfolioReview = typeof portfolioReviews.$inferInsert;
+
+// ── 100-Hour Turnaround Sessions ────────────────────────────────────────────────
+export const turnaroundSessions = mysqlTable("turnaround_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  companyName: varchar("companyName", { length: 255 }),
+  industry: varchar("industry", { length: 128 }),
+  crisisType: varchar("crisisType", { length: 255 }),
+  // Uploaded documents per agent slot (JSON: { slot: string, fileName: string, fileUrl: string }[])
+  documents: text("documents"),
+  // Per-agent status and output (JSON: { agentId: string, status: string, output: object | null, alerts: string[] }[])
+  agentOutputs: text("agentOutputs"),
+  // Leadership alerts that fired (JSON: { agentId: string, level: 'critical'|'high', message: string, timestamp: number }[])
+  alertsJson: text("alertsJson"),
+  // Resilience Logger synthesis + full structured report
+  reportJson: text("reportJson"),
+  // Overall status
+  status: mysqlEnum("status", ["pending", "running", "complete", "error"]).notNull().default("pending"),
+  errorMessage: text("errorMessage"),
+  // PDF export job
+  pdfStatus: mysqlEnum("pdfStatus", ["idle", "generating", "ready", "error"]).notNull().default("idle"),
+  pdfUrl: text("pdfUrl"),
+  pdfJobStartedAt: timestamp("pdfJobStartedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type TurnaroundSession = typeof turnaroundSessions.$inferSelect;
+export type InsertTurnaroundSession = typeof turnaroundSessions.$inferInsert;
