@@ -670,8 +670,9 @@ Return ONLY valid JSON matching this exact schema:
 - cashFlowStatement: { years: string[], rows: { label: string, values: (string|number)[], isHeader?: boolean, isBold?: boolean }[] } | null
 - dcfValuation: { wacc: string, terminalGrowthRate: string, impliedValuation: string, valuationRange: string, assumptions: string[], sensitivityNote: string } | null
 - keyMetrics: { label: string, value: string, trend: 'up' | 'down' | 'neutral' }[]
+- revenueSegments: { segment: string, value: string, percentage?: string }[] | null (revenue breakdown by business segment/product line derived from the document — e.g. SaaS, Marketplace, Services. Use null if not available.)
 - nextSteps: string[]
-If a section is not applicable (e.g. no financial data provided), set it to null. For balanceSheet and cashFlowStatement, derive them from the P&L and projections in the attached document if available.`,
+If a section is not applicable (e.g. no financial data provided), set it to null. For balanceSheet and cashFlowStatement, derive them from the P&L and projections in the attached document if available. For revenueSegments, extract the actual revenue line items from the uploaded spreadsheet.`,
                 },
                 { role: "user", content: fullQuery },
               ],
@@ -695,6 +696,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
                       cashFlowStatement: { type: ["object", "null"] },
                       dcfValuation: { type: ["object", "null"] },
                       keyMetrics: { type: "array", items: { type: "object" } },
+                      revenueSegments: { type: ["array", "null"], items: { type: "object" } },
                       nextSteps: { type: "array", items: { type: "string" } },
                     },
                   },
@@ -768,6 +770,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
                 : [],
             } : null,
             keyMetrics: Array.isArray(sr.keyMetrics) ? sr.keyMetrics : [],
+            revenueSegments: Array.isArray(sr.revenueSegments) ? sr.revenueSegments : null,
             nextSteps: Array.isArray(sr.nextSteps) ? sr.nextSteps : [],
             balanceSheet: sr.balanceSheet ?? null,
             cashFlowStatement: sr.cashFlowStatement ?? null,

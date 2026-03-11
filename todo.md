@@ -436,3 +436,9 @@
 
 ## Session 36 — ResultScreen Crash Fix
 - [x] Fix TypeError crash on result page: added safeParse() wrapper in getTask (handles malformed JSON from LLM), normalised all structuredReport nested arrays to [] fallback, added ?? [] guards on all .map() calls in ResultScreen. 55/55 tests pass.
+
+## Session 37 — Segment Insights Fix
+- [x] Hide generic Segment Insights section when structuredReport is present (financial tasks) — now only shown for non-financial tasks
+- [x] Add revenueSegments field to Agent 6 prompt and JSON schema (extracts actual revenue lines from spreadsheet)
+- [x] Show Revenue Segment Breakdown section in result screen for financial tasks (replaces generic market segments)
+- [x] 55/55 tests pass, 0 TypeScript errors

@@ -39,6 +39,11 @@ interface KeyMetric {
   value: string;
   trend: "up" | "down" | "neutral";
 }
+interface RevenueSegment {
+  segment: string;
+  value: string;
+  percentage?: string;
+}
 interface StructuredReport {
   executiveSummary?: string;
   senseCheck?: { verdict: string; observations: string[] };
@@ -46,6 +51,7 @@ interface StructuredReport {
   cashFlowStatement?: FinancialTable | null;
   dcfValuation?: DCFValuation | null;
   keyMetrics?: KeyMetric[];
+  revenueSegments?: RevenueSegment[] | null;
   nextSteps?: string[];
 }
 
@@ -356,6 +362,26 @@ export default function ResultScreen() {
               </SectionCard>
             )}
 
+            {/* Revenue Segment Breakdown */}
+            {report.revenueSegments && report.revenueSegments.length > 0 && (
+              <SectionCard title="REVENUE SEGMENT BREAKDOWN" color={GREEN}>
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+                  {(report.revenueSegments ?? []).map((seg, i) => {
+                    const color = NEON_COLORS[i % NEON_COLORS.length];
+                    return (
+                      <div key={i} style={{ background: `${NAVY_700}80`, border: `1px solid ${color}25`, borderRadius: 10, padding: "14px 16px" }}>
+                        <div style={{ color: WHITE, fontSize: 13, fontWeight: 600, marginBottom: 4 }}>{seg.segment}</div>
+                        <div style={{ color, fontSize: 15, fontWeight: 700, fontFamily: "'JetBrains Mono', monospace", marginBottom: 4 }}>{seg.value}</div>
+                        {seg.percentage && (
+                          <div style={{ color: MUTED, fontSize: 12 }}>{seg.percentage} of total</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </SectionCard>
+            )}
+
             {/* Balance Sheet */}
             {report.balanceSheet && (
               <FinancialTableView table={report.balanceSheet} title="DERIVED BALANCE SHEET" color={BLUE} />
@@ -403,24 +429,26 @@ export default function ResultScreen() {
           </div>
         </div>
 
-        {/* Segment Insights */}
-        <div style={{ background: `${NAVY_800}CC`, border: `1px solid ${BLUE}25`, borderRadius: 14, padding: "22px 24px", marginBottom: 16 }}>
-          <div style={{ color: SKY, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.08em", marginBottom: 14 }}>SEGMENT INSIGHTS</div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
-            {(task.segmentInsights ?? []).map((seg, i) => {
-              const color = NEON_COLORS[i % NEON_COLORS.length];
-              return (
-                <div key={i} style={{ background: `${NAVY_700}80`, border: `1px solid ${color}25`, borderRadius: 10, padding: "14px 16px" }}>
-                  <div style={{ color: WHITE, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{seg.segment}</div>
-                  <div style={{ height: 4, borderRadius: 2, background: NAVY_950, overflow: "hidden", marginBottom: 4 }}>
-                    <div style={{ height: "100%", width: `${seg.likelihood}%`, background: `linear-gradient(90deg, ${color}, ${color}80)`, boxShadow: `0 0 6px ${color}60`, borderRadius: 2 }} />
+        {/* Segment Insights — only shown for non-financial tasks (hidden when structured report is present) */}
+        {!report && (task.segmentInsights ?? []).length > 0 && (
+          <div style={{ background: `${NAVY_800}CC`, border: `1px solid ${BLUE}25`, borderRadius: 14, padding: "22px 24px", marginBottom: 16 }}>
+            <div style={{ color: SKY, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.08em", marginBottom: 14 }}>SEGMENT INSIGHTS</div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 12 }}>
+              {(task.segmentInsights ?? []).map((seg, i) => {
+                const color = NEON_COLORS[i % NEON_COLORS.length];
+                return (
+                  <div key={i} style={{ background: `${NAVY_700}80`, border: `1px solid ${color}25`, borderRadius: 10, padding: "14px 16px" }}>
+                    <div style={{ color: WHITE, fontSize: 13, fontWeight: 600, marginBottom: 8 }}>{seg.segment}</div>
+                    <div style={{ height: 4, borderRadius: 2, background: NAVY_950, overflow: "hidden", marginBottom: 4 }}>
+                      <div style={{ height: "100%", width: `${seg.likelihood}%`, background: `linear-gradient(90deg, ${color}, ${color}80)`, boxShadow: `0 0 6px ${color}60`, borderRadius: 2 }} />
+                    </div>
+                    <div style={{ color, fontSize: 12, fontFamily: "'JetBrains Mono', monospace" }}>{seg.likelihood}% likelihood</div>
                   </div>
-                  <div style={{ color, fontSize: 12, fontFamily: "'JetBrains Mono', monospace" }}>{seg.likelihood}% likelihood</div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Recommendation */}
         {task.recommendation && (
