@@ -532,7 +532,14 @@ Return ONLY valid JSON matching this exact schema:
               },
             },
           });
-          const intentRaw = JSON.parse(intentRes.choices[0].message.content as string) as {
+          // Helper: safely extract JSON from LLM response (guards against undefined choices)
+          const safeContent = (res: { choices?: Array<{ message?: { content?: string | unknown } }> }, fallback = "{}"): string => {
+            const content = res?.choices?.[0]?.message?.content;
+            if (typeof content === "string") return content;
+            if (content != null) return JSON.stringify(content);
+            return fallback;
+          };
+          const intentRaw = JSON.parse(safeContent(intentRes, '{"taskType":"Business Strategy","confidence":70,"meshRoute":[]}')) as {
             taskType: string;
             confidence: number;
             meshRoute: string[] | null;
@@ -628,9 +635,9 @@ Return ONLY valid JSON matching this exact schema:
             }),
           ]);
 
-          const findingsRaw = JSON.parse(findingsRes.choices[0].message.content as string) as { keyFindings: string[] | null };
+          const findingsRaw = JSON.parse(safeContent(findingsRes, '{"keyFindings":[]}')) as { keyFindings: string[] | null };
           const findings = { keyFindings: Array.isArray(findingsRaw.keyFindings) ? findingsRaw.keyFindings : [] };
-          const risksRaw = JSON.parse(risksRes.choices[0].message.content as string) as {
+          const risksRaw = JSON.parse(safeContent(risksRes, '{"risks":[],"sentimentPositive":50,"sentimentNeutral":30,"sentimentNegative":20}')) as {
             risks: string[] | null;
             sentimentPositive: number;
             sentimentNeutral: number;
@@ -642,7 +649,7 @@ Return ONLY valid JSON matching this exact schema:
             sentimentNeutral: risksRaw.sentimentNeutral ?? 30,
             sentimentNegative: risksRaw.sentimentNegative ?? 20,
           };
-          const segmentsRaw = JSON.parse(segmentsRes.choices[0].message.content as string) as { segmentInsights: { segment: string; likelihood: number }[] | null };
+          const segmentsRaw = JSON.parse(safeContent(segmentsRes, '{"segmentInsights":[]}')) as { segmentInsights: { segment: string; likelihood: number }[] | null };
           const segments = { segmentInsights: Array.isArray(segmentsRaw.segmentInsights) ? segmentsRaw.segmentInsights : [] };
 
           // ── Agent 5: Report Writer ──────────────────────────────────────────────────────────────────────────────────────
@@ -665,7 +672,7 @@ Return ONLY valid JSON matching this exact schema:
               },
             },
           });
-          const reportRaw = JSON.parse(reportRes.choices[0].message.content as string) as { recommendation: string | null };
+          const reportRaw = JSON.parse(safeContent(reportRes, '{"recommendation":null}')) as { recommendation: string | null };
           const reportData = { recommendation: reportRaw.recommendation ?? "Analysis complete. Review the detailed findings above for actionable insights." };
 
           // ── Agent 6: Structured Report Writer (financial / detailed sections) ─────────────────────────────────────────────
@@ -718,7 +725,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
                 },
               },
             });
-            structuredReportJson = structuredRes.choices[0].message.content as string;
+            structuredReportJson = safeContent(structuredRes, 'null') === 'null' ? null : safeContent(structuredRes, 'null');
           }
 
           const execTime = Date.now() - startTime;
