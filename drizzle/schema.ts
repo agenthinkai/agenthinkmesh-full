@@ -190,6 +190,10 @@ export const portfolioReviews = mysqlTable("portfolio_reviews", {
   // Status
   status: mysqlEnum("status", ["pending", "analyzing", "complete", "error"]).notNull().default("pending"),
   errorMessage: text("errorMessage"),
+  // PPTX export job
+  pptxStatus: mysqlEnum("pptxStatus", ["idle", "generating", "ready", "error"]).notNull().default("idle"),
+  pptxUrl: text("pptxUrl"),
+  pptxJobStartedAt: timestamp("pptxJobStartedAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });

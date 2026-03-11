@@ -227,6 +227,29 @@ export default function PortfolioVault() {
                     </span>
                   </div>
 
+                  {/* PPTX download icon — shown when deck is ready */}
+                  {isComplete && review.pptxUrl && (
+                    <a
+                      href={review.pptxUrl}
+                      download={`Portfolio-Review-${review.fundName ?? review.id}.pptx`}
+                      onClick={e => e.stopPropagation()}
+                      title="Download PowerPoint deck"
+                      style={{
+                        flexShrink: 0,
+                        width: 32, height: 32, borderRadius: 8,
+                        background: `${GOLD}18`,
+                        border: `1px solid ${GOLD}35`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        color: GOLD, fontSize: 14, textDecoration: "none",
+                        transition: "all 0.15s",
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = `${GOLD}30`; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = `${GOLD}18`; }}
+                    >
+                      ⬡
+                    </a>
+                  )}
+
                   {isComplete && (
                     <div style={{ color: SILVER_600, fontSize: 16, flexShrink: 0 }}>→</div>
                   )}

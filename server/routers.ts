@@ -3,6 +3,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
+import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
 import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews } from "../drizzle/schema";
 import { storagePut } from "./storage";
@@ -2006,6 +2007,91 @@ If a section is not applicable (e.g. no financial data provided), set it to null
         const key = `portfolio/${ctx.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
         const { url } = await storagePut(key, buffer, input.mimeType);
         return { url, fileName: input.fileName };
+      }),
+
+    // ── PPTX Export ────────────────────────────────────────────────────────
+    // Start an async PPTX generation job for a completed portfolio review.
+    // The job runs in the background; poll getExportStatus to check progress.
+    exportPptx: protectedProcedure
+      .input(z.object({ reviewId: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const [review] = await db
+          .select()
+          .from(portfolioReviews)
+          .where(eq(portfolioReviews.id, input.reviewId))
+          .limit(1);
+
+        if (!review) throw new TRPCError({ code: "NOT_FOUND", message: "Review not found" });
+        if (review.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+        if (review.status !== "complete") throw new TRPCError({ code: "BAD_REQUEST", message: "Analysis must be complete before exporting" });
+
+        // Mark as generating immediately so UI can show spinner
+        if (db) {
+          await db.update(portfolioReviews)
+            .set({ pptxStatus: "generating", pptxJobStartedAt: new Date() })
+            .where(eq(portfolioReviews.id, input.reviewId));
+        }
+
+        // Run generation asynchronously — do NOT await
+        (async () => {
+          try {
+            const { generatePortfolioPptx } = await import("./pptxGenerator");
+            const pptxBuffer = await generatePortfolioPptx({
+              fundName: review.fundName,
+              manager: review.manager,
+              reviewPeriod: review.reviewPeriod,
+              reportJson: review.reportJson ?? "{}",
+              generatedDate: new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" }),
+            });
+
+            const key = `portfolio-pptx/${ctx.user.id}/${input.reviewId}-${Date.now()}.pptx`;
+            const { url } = await storagePut(key, pptxBuffer, "application/vnd.openxmlformats-officedocument.presentationml.presentation");
+
+            const db2 = await getDb();
+            if (db2) {
+              await db2.update(portfolioReviews)
+                .set({ pptxStatus: "ready", pptxUrl: url })
+                .where(eq(portfolioReviews.id, input.reviewId));
+            }
+          } catch (err) {
+            console.error("[PPTX Export] Generation failed:", err);
+            const db3 = await getDb();
+            if (db3) {
+              await db3.update(portfolioReviews)
+                .set({ pptxStatus: "error" })
+                .where(eq(portfolioReviews.id, input.reviewId));
+            }
+          }
+        })();
+
+        return { started: true };
+      }),
+
+    // Poll the PPTX export job status for a given review.
+    getExportStatus: protectedProcedure
+      .input(z.object({ reviewId: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+        const [review] = await db
+          .select({
+            pptxStatus: portfolioReviews.pptxStatus,
+            pptxUrl: portfolioReviews.pptxUrl,
+            userId: portfolioReviews.userId,
+          })
+          .from(portfolioReviews)
+          .where(eq(portfolioReviews.id, input.reviewId))
+          .limit(1);
+
+        if (!review) throw new TRPCError({ code: "NOT_FOUND" });
+        if (review.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+
+        return {
+          pptxStatus: review.pptxStatus as "idle" | "generating" | "ready" | "error",
+          pptxUrl: review.pptxUrl ?? null,
+        };
       }),
   }),
 

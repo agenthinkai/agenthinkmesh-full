@@ -480,3 +480,14 @@
 - [x] DB schema: portfolioReviews table (pushed to DB)
 - [x] Navigation: add Portfolio Intelligence link to Landing nav + AskScreen nav
 - [x] Route registration in App.tsx
+
+## Session 43 — Async 28-Slide PPTX Export
+
+- [x] Install pptxgenjs dependency
+- [x] DB schema: add pptxUrl, pptxStatus, pptxJobStartedAt columns to portfolioReviews (migrated)
+- [x] server/pptxGenerator.ts: 28-slide institutional deck builder (navy/gold palette)
+- [x] tRPC: portfolio.exportPptx mutation (start async job, store in S3)
+- [x] tRPC: portfolio.getExportStatus query (poll pptxStatus + pptxUrl)
+- [x] PortfolioReport.tsx: Export to PowerPoint button + progress indicator + download link
+- [x] PortfolioVault.tsx: PPTX download icon on completed reviews
+- [x] 55/55 tests pass, 0 TypeScript errors

@@ -85,6 +85,13 @@
       "when": 1773224659399,
       "tag": "0011_grey_marten_broadcloak",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "5",
+      "when": 1773226137432,
+      "tag": "0012_real_oracle",
+      "breakpoints": true
     }
   ]
 }

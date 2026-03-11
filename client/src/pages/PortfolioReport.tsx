@@ -1,4 +1,5 @@
 import { useParams } from "wouter";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import Logo from "@/components/Logo";
 import { toast } from "sonner";
@@ -70,6 +71,44 @@ function Section({ title, accent = GOLD, children }: { title: string; accent?: s
 export default function PortfolioReport() {
   const params = useParams<{ id: string }>();
   const reviewId = parseInt(params.id ?? "0", 10);
+  const [pptxPolling, setPptxPolling] = useState(false);
+  const utils = trpc.useUtils();
+
+  const exportPptx = trpc.portfolio.exportPptx.useMutation({
+    onSuccess: () => {
+      setPptxPolling(true);
+      toast.info("Generating institutional deck… (~20 seconds)");
+    },
+    onError: (err) => {
+      toast.error(err.message ?? "Export failed");
+    },
+  });
+
+  const { data: exportStatus } = trpc.portfolio.getExportStatus.useQuery(
+    { reviewId },
+    {
+      enabled: pptxPolling && !!reviewId,
+      refetchInterval: pptxPolling ? 3000 : false,
+    }
+  );
+
+  useEffect(() => {
+    if (!exportStatus) return;
+    if (exportStatus.pptxStatus === "ready") {
+      setPptxPolling(false);
+      utils.portfolio.getExportStatus.invalidate({ reviewId });
+      toast.success("Institutional deck ready — downloading now");
+      if (exportStatus.pptxUrl) {
+        const a = document.createElement("a");
+        a.href = exportStatus.pptxUrl;
+        a.download = `Portfolio-Review-${reviewId}.pptx`;
+        a.click();
+      }
+    } else if (exportStatus.pptxStatus === "error") {
+      setPptxPolling(false);
+      toast.error("Deck generation failed — please try again");
+    }
+  }, [exportStatus, reviewId, utils.portfolio.getExportStatus]);
 
   const { data: review, isLoading } = trpc.portfolio.get.useQuery(
     { id: reviewId },
@@ -207,14 +246,63 @@ export default function PortfolioReport() {
             onClick={handleDownload}
             style={{
               padding: "8px 18px", borderRadius: 8,
-              background: `linear-gradient(135deg, ${GOLD}, ${GOLD_LIGHT})`,
-              border: "none", color: NAVY_950,
-              fontSize: 13, fontWeight: 700, cursor: "pointer",
+              background: NAVY_700,
+              border: `1px solid ${STEEL}`,
+              color: SILVER_200,
+              fontSize: 13, fontWeight: 600, cursor: "pointer",
               fontFamily: MONO, letterSpacing: "0.04em",
             }}
           >
-            ↓ Download Report
+            ↓ Text Report
           </button>
+          {/* Export to PowerPoint */}
+          {exportStatus?.pptxStatus === "ready" && exportStatus.pptxUrl ? (
+            <a
+              href={exportStatus.pptxUrl}
+              download={`Portfolio-Review-${review?.fundName ?? reviewId}.pptx`}
+              style={{
+                padding: "8px 18px", borderRadius: 8,
+                background: `linear-gradient(135deg, ${GOLD}, ${GOLD_LIGHT})`,
+                border: "none", color: NAVY_950,
+                fontSize: 13, fontWeight: 700, cursor: "pointer",
+                fontFamily: MONO, letterSpacing: "0.04em",
+                textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6,
+              }}
+            >
+              ↓ Download Deck
+            </a>
+          ) : pptxPolling || exportStatus?.pptxStatus === "generating" ? (
+            <button
+              disabled
+              style={{
+                padding: "8px 18px", borderRadius: 8,
+                background: `linear-gradient(135deg, ${GOLD}88, ${GOLD_LIGHT}88)`,
+                border: "none", color: NAVY_950,
+                fontSize: 13, fontWeight: 700, cursor: "not-allowed",
+                fontFamily: MONO, letterSpacing: "0.04em",
+                display: "inline-flex", alignItems: "center", gap: 8,
+                opacity: 0.8,
+              }}
+            >
+              <span style={{ width: 12, height: 12, borderRadius: "50%", border: `2px solid ${NAVY_950}`, borderTopColor: "transparent", display: "inline-block", animation: "spin 0.8s linear infinite" }} />
+              Generating Deck…
+            </button>
+          ) : (
+            <button
+              onClick={() => exportPptx.mutate({ reviewId })}
+              disabled={exportPptx.isPending}
+              style={{
+                padding: "8px 18px", borderRadius: 8,
+                background: `linear-gradient(135deg, ${GOLD}, ${GOLD_LIGHT})`,
+                border: "none", color: NAVY_950,
+                fontSize: 13, fontWeight: 700, cursor: exportPptx.isPending ? "not-allowed" : "pointer",
+                fontFamily: MONO, letterSpacing: "0.04em",
+                display: "inline-flex", alignItems: "center", gap: 6,
+              }}
+            >
+              ⬡ Export to PowerPoint
+            </button>
+          )}
         </div>
       </nav>
 
