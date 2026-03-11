@@ -373,3 +373,11 @@
 - [x] Update live badge dot/text to green #4ADE80
 - [x] Update "Google" headline gradient to #60C8F5 → #7BA3D4 → #4ADE80 → #A78BFA
 - [x] Update search bar border and Activate mesh button to mockup blue palette
+
+## Session 26 — Two-Column Hero Layout
+- [x] Redesign NeonHero from narrow center-column to full-width two-column split (left: text/CTA/stats, right: canvas + floating agent cards)
+- [x] Left panel: vertical accent line, live badge, headline, subtext, search bar, stats row
+- [x] Right panel: canvas fills full height, 4 floating agent cards stacked on right edge with barFill animation
+- [x] Left-to-right fade overlay blends canvas into left panel seamlessly
+- [x] Responsive: stacks vertically on ≤900px (tablet), canvas 420px tall; ≤640px canvas 320px
+- [x] 53/53 tests pass, 0 TypeScript errors

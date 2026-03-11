@@ -298,15 +298,15 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
 
     const dpr = window.devicePixelRatio || 1;
     const resize = () => {
-      canvas.width  = window.innerWidth  * dpr;
-      canvas.height = window.innerHeight * dpr;
+      canvas.width  = canvas.offsetWidth  * dpr;
+      canvas.height = canvas.offsetHeight * dpr;
       ctx.scale(dpr, dpr);
     };
     resize();
     window.addEventListener("resize", resize);
 
-    const W = () => window.innerWidth;
-    const H = () => window.innerHeight;
+    const W = () => canvas.offsetWidth;
+    const H = () => canvas.offsetHeight;
 
     // Canvas node/ray colors match mockup2-neural-dark.html 5-color palette
     const neonList = [
@@ -384,124 +384,116 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
   }, []);
 
   return (
-    <section style={{ position: "relative", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", textAlign: "center", padding: "100px 24px 80px", overflow: "hidden", background: "#060F1C" }}>
-      {/* Neural canvas */}
-      <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 0 }} />
-      {/* Vignette */}
-      <div style={{ position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none", background: "radial-gradient(ellipse 65% 55% at 50% 50%, transparent 15%, rgba(6,15,28,0.55) 65%, rgba(6,15,28,0.92) 100%)" }} />
+    <section className="neon-hero-split">
+      {/* ── LEFT PANEL ── */}
+      <div className="neon-hero-left">
+        {/* Vertical accent line */}
+        <div style={{ position: "absolute", left: 0, top: "15%", bottom: "15%", width: 2, background: "linear-gradient(to bottom, transparent, #7BA3D4, #4ADE80, transparent)", borderRadius: 2 }} />
 
-      {/* Content */}
-      <div style={{ position: "relative", zIndex: 2, width: "100%", maxWidth: 840 }}>
         {/* Live badge */}
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 16px", borderRadius: 999, background: "rgba(6,15,28,0.75)", backdropFilter: "blur(16px)", border: "1px solid rgba(74,222,128,0.2)", fontFamily: MONO, fontSize: 11, color: "#3A5A7A", letterSpacing: "0.06em", marginBottom: 32 }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ADE80", boxShadow: "0 0 10px #4ADE80", display: "inline-block", animation: "neonPulse 2s ease-in-out infinite" }} />
-          <span style={{ color: "#4ADE80", fontWeight: 700 }}>{stats.verifiedAgents}</span> verified specialist agents · Live
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 14px", borderRadius: 6, background: "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.2)", fontFamily: MONO, fontSize: 11, color: "#4ADE80", letterSpacing: "0.05em", marginBottom: 28 }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ADE80", boxShadow: "0 0 8px #4ADE80", display: "inline-block", animation: "neonPulse 2s ease-in-out infinite" }} />
+          <span style={{ fontWeight: 700 }}>{stats.verifiedAgents}</span> verified specialist agents · Live
         </div>
 
         {/* Headline */}
-        <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(52px, 8vw, 96px)", fontWeight: 900, lineHeight: 1.0, letterSpacing: "-0.02em", color: "#F0F4FA", marginBottom: 24 }}>
+        <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(40px, 5.5vw, 76px)", fontWeight: 900, lineHeight: 1.0, letterSpacing: "-0.03em", color: "#F0F4FA", marginBottom: 24 }}>
           The{" "}
-          <span style={{ background: "linear-gradient(120deg, #60C8F5 0%, #7BA3D4 40%, #4ADE80 70%, #A78BFA 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", filter: "drop-shadow(0 0 40px rgba(96,200,245,0.55))" }}>Google</span>
+          <span style={{ background: "linear-gradient(120deg, #60C8F5 0%, #7BA3D4 40%, #4ADE80 70%, #A78BFA 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", filter: "drop-shadow(0 0 30px rgba(96,200,245,0.5))" }}>Google</span>
           <br />of AI Agents
         </h1>
 
         {/* Subtext */}
-        <p style={{ fontSize: 17, color: "#3A5A7A", maxWidth: 580, lineHeight: 1.75, margin: "0 auto 44px" }}>
-          Describe any complex business task. <strong style={{ color: "#5A9ABF" }}>AgenThinkMesh</strong> activates the right specialist agents across Finance, Legal, Healthcare, and GCC Wealth — delivering institutional-grade results in seconds.
+        <p style={{ fontSize: 16, color: "#6B7A8D", maxWidth: 480, lineHeight: 1.75, marginBottom: 40 }}>
+          Describe any complex business task. <strong style={{ color: "#A8C4E0" }}>AgenThinkMesh</strong> activates the right specialist agents across Finance, Legal, Healthcare, and GCC Wealth — delivering institutional-grade results in seconds.
         </p>
 
         {/* Search bar */}
-        <div style={{ maxWidth: 660, margin: "0 auto 14px" }}>
-          <div style={{ display: "flex", alignItems: "center", background: "rgba(6,15,28,0.85)", backdropFilter: "blur(24px)", border: "1px solid rgba(123,163,212,0.18)", borderRadius: 14, padding: "6px 6px 6px 20px", boxShadow: "0 0 0 1px rgba(123,163,212,0.06), 0 20px 60px rgba(0,0,0,0.5)" }}>
-            <span style={{ color: "#1E3A5A", fontSize: 15, marginRight: 12, flexShrink: 0 }}>⊙</span>
+        <div style={{ marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(123,163,212,0.2)", borderRadius: 12, padding: "5px 5px 5px 18px", boxShadow: "0 4px 24px rgba(0,0,0,0.4)" }}>
+            <span style={{ color: "#3D4F63", fontSize: 14, marginRight: 10, flexShrink: 0 }}>⊙</span>
             <input readOnly value="" placeholder="Describe a task — e.g. Screen 5 deals against our VC thesis"
-              style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 14, color: "#A0C8E8", fontFamily: FONT, minWidth: 0 }}
+              style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 14, color: "#C8D4E0", fontFamily: FONT, minWidth: 0 }}
               onClick={() => { window.location.href = '/ask'; }}
             />
-            <a href="/ask" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "linear-gradient(135deg, #4A7DB5 0%, #2D5A8E 100%)", color: "#E8F4FF", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 13, fontWeight: 900, textDecoration: "none", whiteSpace: "nowrap", boxShadow: "0 4px 20px rgba(45,90,142,0.55)", flexShrink: 0 }}>⚡ Activate mesh</a>
+            <a href="/ask" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "linear-gradient(135deg, #4A7DB5 0%, #2D5A8E 100%)", color: "#E8F4FF", border: "none", borderRadius: 8, padding: "11px 22px", fontSize: 13, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap", boxShadow: "0 4px 16px rgba(45,90,142,0.5)", flexShrink: 0 }}>⚡ Activate mesh</a>
           </div>
         </div>
-        <p style={{ fontFamily: MONO, fontSize: 11, color: "#1E3A5A", marginBottom: 52 }}>No sign-in required to preview · {stats.verifiedAgents} specialist agents ready</p>
+        <p style={{ fontFamily: MONO, fontSize: 11, color: "#3D4F63", marginBottom: 48 }}>No sign-in required to preview · {stats.verifiedAgents} specialist agents ready</p>
 
-        {/* Agent cards row */}
-        <div className="landing-agent-row">
+        {/* Stats row */}
+        <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
+          {[
+            { num: `${stats.tasksRun.toLocaleString()}+`, label: "tasks run",       neon: "#4ADE80" },
+            { num: String(stats.verifiedAgents),          label: "verified agents", neon: "#60C8F5" },
+            { num: String(stats.domainContexts),          label: "domain contexts", neon: "#7BA3D4" },
+            { num: `avg. ${stats.avgExecSec}s`,           label: "execution time",  neon: "#A78BFA" },
+          ].map((item, i) => (
+            <div key={i}>
+              <div style={{ fontSize: 22, fontWeight: 900, color: item.neon, letterSpacing: "-0.03em", lineHeight: 1, textShadow: `0 0 16px ${item.neon}80` }}>{item.num}</div>
+              <div style={{ fontSize: 11, color: "#3D4F63", marginTop: 3, fontWeight: 500, letterSpacing: "0.05em" }}>{item.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ── RIGHT PANEL: Canvas + Floating Agent Cards ── */}
+      <div className="neon-hero-right">
+        {/* Left-fade overlay so canvas blends into left panel */}
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #060D1A 0%, transparent 28%)", zIndex: 2, pointerEvents: "none" }} />
+        <canvas ref={canvasRef} style={{ display: "block", width: "100%", height: "100%" }} />
+
+        {/* Floating agent cards */}
+        <div className="neon-agent-float">
           {AGENT_CARDS.map((ac, i) => {
             const isHovered = hoveredCard === i;
             return (
               <div
                 key={i}
-                className="landing-agent-card"
+                className="neon-agent-float-card"
                 onMouseEnter={() => setHoveredCard(i)}
                 onMouseLeave={() => setHoveredCard(null)}
                 style={{
-                  border: `1px solid ${isHovered ? NEON_COLORS[i].color + "55" : NEON_COLORS[i].border}`,
+                  border: `1px solid ${isHovered ? NEON_COLORS[i].color + "55" : "rgba(123,163,212,0.15)"}`,
                   boxShadow: isHovered
-                    ? `0 8px 40px rgba(0,0,0,0.6), 0 0 32px ${NEON_COLORS[i].shadow.replace("0.06", "0.22")}, 0 0 0 1px ${NEON_COLORS[i].color}22`
-                    : `0 4px 24px rgba(0,0,0,0.45), 0 0 20px ${NEON_COLORS[i].shadow}`,
-                  transform: isHovered ? "translateY(-6px) scale(1.03)" : "translateY(0) scale(1)",
+                    ? `0 8px 40px rgba(0,0,0,0.7), 0 0 24px ${NEON_COLORS[i].color}33`
+                    : "0 8px 32px rgba(0,0,0,0.5)",
+                  transform: isHovered ? "translateX(-6px) scale(1.04)" : "translateX(0) scale(1)",
                   transition: "all 0.28s cubic-bezier(0.34,1.56,0.64,1)",
                   cursor: "pointer",
-                  minHeight: isHovered ? 180 : 90,
-                  zIndex: isHovered ? 10 : 1,
+                  animationDelay: `${i}s`,
                 }}
               >
                 {/* Top accent line */}
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: isHovered ? 2 : 1, background: `linear-gradient(90deg, transparent, ${NEON_COLORS[i].color}${isHovered ? "cc" : "99"}, transparent)`, transition: "height 0.2s" }} />
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${NEON_COLORS[i].color}99, transparent)` }} />
 
-                {/* Header row */}
+                {/* Header */}
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: isHovered ? 16 : 13, transition: "font-size 0.2s" }}>{ac.icon}</span>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: isHovered ? NEON_COLORS[i].color : "#C0D8EE", transition: "color 0.2s" }}>{ac.name}</span>
-                  <span style={{ marginLeft: "auto", width: 7, height: 7, borderRadius: "50%", background: NEON_COLORS[i].color, boxShadow: `0 0 8px ${NEON_COLORS[i].color}`, display: "inline-block", flexShrink: 0, animation: "pulse 2s infinite" }} />
+                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: NEON_COLORS[i].color, boxShadow: `0 0 8px ${NEON_COLORS[i].color}`, flexShrink: 0, display: "inline-block" }} />
+                  <span style={{ fontSize: 12, fontWeight: 700, color: isHovered ? NEON_COLORS[i].color : "#C8D4E0", transition: "color 0.2s" }}>{ac.name}</span>
                 </div>
 
-                {/* Domain badge */}
-                <div style={{ fontFamily: MONO, fontSize: 10, color: "#1E3A5A", marginBottom: isHovered ? 10 : 8 }}>{ac.domain}</div>
+                {/* Domain */}
+                <div style={{ fontFamily: MONO, fontSize: 10, color: "#4A5568", marginBottom: 8 }}>{ac.domain}</div>
 
                 {/* Progress bar */}
-                <div style={{ height: 3, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden", marginBottom: isHovered ? 12 : 0 }}>
-                  <div style={{ height: "100%", borderRadius: 2, background: NEON_COLORS[i].bar, width: `${ac.barWidth}%`, transition: "width 0.6s ease" }} />
+                <div style={{ height: 3, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
+                  <div style={{ height: "100%", borderRadius: 2, background: NEON_COLORS[i].bar, width: `${ac.barWidth}%`, animation: "barFill 3s ease-in-out infinite alternate" }} />
                 </div>
 
-                {/* Hover-only details */}
+                {/* Hover details */}
                 {isHovered && (
-                  <div style={{ animation: "fadeSlideUp 0.22s ease forwards" }}>
-                    <p style={{ fontSize: 11, color: "#7AAAC8", lineHeight: 1.6, marginBottom: 10 }}>{ac.description}</p>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
-                      {ac.capabilities.map((cap, j) => (
-                        <div key={j} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 10, color: "#4A7A9A" }}>
-                          <span style={{ width: 4, height: 4, borderRadius: "50%", background: NEON_COLORS[i].color, opacity: 0.7, flexShrink: 0, display: "inline-block" }} />
-                          {cap}
-                        </div>
-                      ))}
-                    </div>
+                  <div style={{ marginTop: 10, animation: "fadeSlideUp 0.22s ease forwards" }}>
+                    <p style={{ fontSize: 11, color: "#7AAAC8", lineHeight: 1.6, marginBottom: 8 }}>{ac.description}</p>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: MONO, fontSize: 10, color: "#1E3A5A" }}>{ac.tasksRun.toLocaleString()} tasks · {ac.accuracy}% accuracy</span>
-                      <a href={loginUrl} style={{ fontSize: 10, color: NEON_COLORS[i].color, textDecoration: "none", fontWeight: 700, fontFamily: MONO }}>
-                        View agent →
-                      </a>
+                      <span style={{ fontFamily: MONO, fontSize: 10, color: "#3D4F63" }}>{ac.tasksRun.toLocaleString()} tasks · {ac.accuracy}% acc</span>
+                      <a href={loginUrl} style={{ fontSize: 10, color: NEON_COLORS[i].color, textDecoration: "none", fontWeight: 700, fontFamily: MONO }}>View →</a>
                     </div>
                   </div>
                 )}
               </div>
             );
           })}
-        </div>
-
-        {/* Stats row */}
-        <div className="landing-neon-stats">
-          {[
-            { num: `${stats.tasksRun.toLocaleString()}+`, label: "Tasks Run",       neon: "#4ADE80" },
-            { num: String(stats.verifiedAgents),          label: "Verified Agents", neon: "#60C8F5" },
-            { num: String(stats.domainContexts),          label: "Domain Contexts", neon: "#7BA3D4" },
-            { num: `avg. ${stats.avgExecSec}s`,           label: "Exec Time",       neon: "#A78BFA" },
-          ].map((item, i) => (
-              <div key={i} className="landing-neon-stat-cell" style={{ borderRight: i < 3 ? "1px solid rgba(123,163,212,0.07)" : "none" }}>
-              <div style={{ position: "absolute", top: 0, left: "20%", right: "20%", height: 1, background: `linear-gradient(90deg, transparent, ${item.neon}66, transparent)` }} />
-              <div style={{ fontSize: 24, fontWeight: 900, color: item.neon, letterSpacing: "-0.04em", textShadow: `0 0 16px ${item.neon}80` }}>{item.num}</div>
-              <div style={{ fontSize: 10, color: "#1E3A5A", marginTop: 5, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase" }}>{item.label}</div>
-            </div>
-          ))}
         </div>
       </div>
     </section>

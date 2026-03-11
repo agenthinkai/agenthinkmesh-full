@@ -573,3 +573,118 @@
     border-bottom: 1px solid rgba(0, 212, 255, 0.07);
   }
 }
+
+/* ── Two-column NeonHero split layout ──────────────────────────────────── */
+.neon-hero-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: calc(100vh - 64px);
+  background: #060D1A;
+  overflow: hidden;
+  position: relative;
+}
+
+/* Left panel: text content */
+.neon-hero-left {
+  padding: 80px 64px 80px 80px;
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Right panel: canvas fills full height */
+.neon-hero-right {
+  position: relative;
+  overflow: hidden;
+}
+.neon-hero-right canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Floating agent cards on right panel */
+.neon-agent-float {
+  position: absolute;
+  top: 50%;
+  right: 36px;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  z-index: 3;
+}
+
+.neon-agent-float-card {
+  background: rgba(10, 20, 40, 0.85);
+  backdrop-filter: blur(20px);
+  border-radius: 12px;
+  padding: 12px 16px;
+  min-width: 190px;
+  max-width: 220px;
+  position: relative;
+  overflow: visible;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  animation: neonCardFloat 5s ease-in-out infinite;
+}
+.neon-agent-float-card:nth-child(2) { animation-delay: 1s; }
+.neon-agent-float-card:nth-child(3) { animation-delay: 2s; }
+.neon-agent-float-card:nth-child(4) { animation-delay: 3s; }
+
+/* barFill animation for right-panel cards */
+@keyframes barFill {
+  0%   { width: 30%; }
+  100% { width: 85%; }
+}
+
+/* ── Responsive: stack vertically on tablet/mobile ─────────────────────── */
+@media (max-width: 900px) {
+  .neon-hero-split {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto;
+  }
+  .neon-hero-left {
+    padding: 72px 40px 48px;
+    text-align: center;
+    align-items: center;
+  }
+  .neon-hero-left > div:first-child {
+    /* hide vertical accent line on mobile */
+    display: none;
+  }
+  .neon-hero-right {
+    height: 420px;
+  }
+  .neon-agent-float {
+    flex-direction: row;
+    flex-wrap: wrap;
+    top: auto;
+    bottom: 20px;
+    right: 16px;
+    left: 16px;
+    transform: none;
+    gap: 8px;
+    justify-content: center;
+  }
+  .neon-agent-float-card {
+    min-width: 140px;
+    max-width: 160px;
+    padding: 10px 12px;
+  }
+}
+
+@media (max-width: 640px) {
+  .neon-hero-left {
+    padding: 60px 24px 40px;
+  }
+  .neon-hero-right {
+    height: 320px;
+  }
+  .neon-agent-float-card {
+    min-width: 120px;
+    max-width: 140px;
+  }
+}
