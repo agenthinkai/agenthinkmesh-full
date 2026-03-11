@@ -364,3 +364,12 @@
 - [x] Add "New Analysis" CTA button at bottom of ResultScreen with pre-fill support
 - [x] Add /ask and /history links to dashboard sidebar (DashboardLayout) with Advanced section
 - [x] Verify Ask→Result full flow end-to-end — 53/53 tests pass, 0 TS errors
+
+## Session 25 — Color Palette Update (Mockup2 Neural Dark)
+- [x] Update canvas node/ray colors to mockup2 5-color palette (#7BA3D4, #4ADE80, #F59E0B, #A78BFA, #60C8F5)
+- [x] Update 4 agent card NEON_COLORS and progress bars to mockup2 exact colors (green, blue, amber, purple)
+- [x] Update NeonDivider gradient to use all 5 mockup colors
+- [x] Update stats row numbers to use new palette (green, sky, blue, purple)
+- [x] Update live badge dot/text to green #4ADE80
+- [x] Update "Google" headline gradient to #60C8F5 → #7BA3D4 → #4ADE80 → #A78BFA
+- [x] Update search bar border and Activate mesh button to mockup blue palette

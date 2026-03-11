@@ -215,26 +215,31 @@ function NeonDivider() {
       <div style={{
         position: "absolute", left: "50%", transform: "translateX(-50%)",
         width: "72%", height: 1,
-        background: "linear-gradient(90deg, transparent 0%, #00D4FF33 18%, #0080FF66 38%, #40B8FF66 50%, #0080FF66 62%, #00D4FF33 82%, transparent 100%)",
-        boxShadow: "0 0 18px 2px rgba(0,212,255,0.10), 0 0 6px 1px rgba(64,184,255,0.14)",
+        background: "linear-gradient(90deg, transparent 0%, rgba(74,222,128,0.2) 15%, rgba(123,163,212,0.4) 35%, rgba(96,200,245,0.4) 50%, rgba(167,139,250,0.4) 65%, rgba(245,158,11,0.2) 85%, transparent 100%)",
+        boxShadow: "0 0 18px 2px rgba(123,163,212,0.10), 0 0 6px 1px rgba(96,200,245,0.14)",
       }} />
       <div style={{
         position: "absolute", left: "50%", top: "50%",
         transform: "translate(-50%, -50%)",
         width: 6, height: 6, borderRadius: "50%",
-        background: "#40B8FF",
-        boxShadow: "0 0 12px 4px rgba(64,184,255,0.55), 0 0 28px 8px rgba(0,212,255,0.18)",
+        background: "#60C8F5",
+        boxShadow: "0 0 12px 4px rgba(96,200,245,0.55), 0 0 28px 8px rgba(123,163,212,0.18)",
       }} />
     </div>
   );
 }
 
 // ── Neon Hero Component (VarD) ────────────────────────────────────────────────
+// Agent card colors match mockup2-neural-dark.html exactly:
+// Card 1 (Deal Screener / Finance) → green  #4ADE80
+// Card 2 (Legal Reviewer)          → blue   #7BA3D4
+// Card 3 (Healthcare AI)           → amber  #F59E0B
+// Card 4 (GCC Wealth)              → purple #A78BFA
 const NEON_COLORS = [
-  { color: "#00D4FF", glow: "rgba(0,212,255,", border: "rgba(0,212,255,0.18)", shadow: "rgba(0,212,255,0.06)", bar: "linear-gradient(90deg,#00D4FF,#008AB8)" },
-  { color: "#0080FF", glow: "rgba(0,128,255,", border: "rgba(0,128,255,0.18)", shadow: "rgba(0,128,255,0.06)", bar: "linear-gradient(90deg,#0080FF,#0050B0)" },
-  { color: "#40B8FF", glow: "rgba(64,184,255,", border: "rgba(64,184,255,0.18)", shadow: "rgba(64,184,255,0.06)", bar: "linear-gradient(90deg,#40B8FF,#2080C0)" },
-  { color: "#4060FF", glow: "rgba(64,96,255,",  border: "rgba(64,96,255,0.18)",  shadow: "rgba(64,96,255,0.06)",  bar: "linear-gradient(90deg,#4060FF,#2030C0)" },
+  { color: "#4ADE80", glow: "rgba(74,222,128,",  border: "rgba(74,222,128,0.18)",  shadow: "rgba(74,222,128,0.06)",  bar: "linear-gradient(90deg,#4ADE80,#22C55E)" },
+  { color: "#7BA3D4", glow: "rgba(123,163,212,", border: "rgba(123,163,212,0.18)", shadow: "rgba(123,163,212,0.06)", bar: "linear-gradient(90deg,#7BA3D4,#4A7DB5)" },
+  { color: "#F59E0B", glow: "rgba(245,158,11,",  border: "rgba(245,158,11,0.18)",  shadow: "rgba(245,158,11,0.06)",  bar: "linear-gradient(90deg,#F59E0B,#D97706)" },
+  { color: "#A78BFA", glow: "rgba(167,139,250,", border: "rgba(167,139,250,0.18)", shadow: "rgba(167,139,250,0.06)", bar: "linear-gradient(90deg,#A78BFA,#7C3AED)" },
 ];
 
 const AGENT_CARDS = [
@@ -303,11 +308,13 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
     const W = () => window.innerWidth;
     const H = () => window.innerHeight;
 
+    // Canvas node/ray colors match mockup2-neural-dark.html 5-color palette
     const neonList = [
-      { color: "#00D4FF", glow: "rgba(0,212,255," },
-      { color: "#0080FF", glow: "rgba(0,128,255," },
-      { color: "#40B8FF", glow: "rgba(64,184,255," },
-      { color: "#4060FF", glow: "rgba(64,96,255," },
+      { color: "#7BA3D4", glow: "rgba(123,163,212," },
+      { color: "#4ADE80", glow: "rgba(74,222,128," },
+      { color: "#F59E0B", glow: "rgba(245,158,11," },
+      { color: "#A78BFA", glow: "rgba(167,139,250," },
+      { color: "#60C8F5", glow: "rgba(96,200,245," },
     ];
 
     const nodes = Array.from({ length: 65 }, () => {
@@ -386,15 +393,15 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
       {/* Content */}
       <div style={{ position: "relative", zIndex: 2, width: "100%", maxWidth: 840 }}>
         {/* Live badge */}
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 16px", borderRadius: 999, background: "rgba(6,15,28,0.75)", backdropFilter: "blur(16px)", border: "1px solid rgba(0,212,255,0.18)", fontFamily: MONO, fontSize: 11, color: "#3A5A7A", letterSpacing: "0.06em", marginBottom: 32 }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#00D4FF", boxShadow: "0 0 10px #00D4FF", display: "inline-block", animation: "neonPulse 2s ease-in-out infinite" }} />
-          <span style={{ color: "#00D4FF", fontWeight: 700 }}>{stats.verifiedAgents}</span> verified specialist agents · Live
+        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 16px", borderRadius: 999, background: "rgba(6,15,28,0.75)", backdropFilter: "blur(16px)", border: "1px solid rgba(74,222,128,0.2)", fontFamily: MONO, fontSize: 11, color: "#3A5A7A", letterSpacing: "0.06em", marginBottom: 32 }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ADE80", boxShadow: "0 0 10px #4ADE80", display: "inline-block", animation: "neonPulse 2s ease-in-out infinite" }} />
+          <span style={{ color: "#4ADE80", fontWeight: 700 }}>{stats.verifiedAgents}</span> verified specialist agents · Live
         </div>
 
         {/* Headline */}
         <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(52px, 8vw, 96px)", fontWeight: 900, lineHeight: 1.0, letterSpacing: "-0.02em", color: "#F0F4FA", marginBottom: 24 }}>
           The{" "}
-          <span style={{ background: "linear-gradient(135deg, #00D4FF 0%, #40B8FF 40%, #0080FF 75%, #4060FF 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", filter: "drop-shadow(0 0 40px rgba(0,212,255,0.55))" }}>Google</span>
+          <span style={{ background: "linear-gradient(120deg, #60C8F5 0%, #7BA3D4 40%, #4ADE80 70%, #A78BFA 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", filter: "drop-shadow(0 0 40px rgba(96,200,245,0.55))" }}>Google</span>
           <br />of AI Agents
         </h1>
 
@@ -405,13 +412,13 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
 
         {/* Search bar */}
         <div style={{ maxWidth: 660, margin: "0 auto 14px" }}>
-          <div style={{ display: "flex", alignItems: "center", background: "rgba(6,15,28,0.85)", backdropFilter: "blur(24px)", border: "1px solid rgba(0,212,255,0.16)", borderRadius: 14, padding: "6px 6px 6px 20px", boxShadow: "0 0 0 1px rgba(0,212,255,0.05), 0 20px 60px rgba(0,0,0,0.5)" }}>
+          <div style={{ display: "flex", alignItems: "center", background: "rgba(6,15,28,0.85)", backdropFilter: "blur(24px)", border: "1px solid rgba(123,163,212,0.18)", borderRadius: 14, padding: "6px 6px 6px 20px", boxShadow: "0 0 0 1px rgba(123,163,212,0.06), 0 20px 60px rgba(0,0,0,0.5)" }}>
             <span style={{ color: "#1E3A5A", fontSize: 15, marginRight: 12, flexShrink: 0 }}>⊙</span>
             <input readOnly value="" placeholder="Describe a task — e.g. Screen 5 deals against our VC thesis"
               style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 14, color: "#A0C8E8", fontFamily: FONT, minWidth: 0 }}
               onClick={() => { window.location.href = '/ask'; }}
             />
-            <a href="/ask" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "linear-gradient(135deg, #00D4FF 0%, #0080FF 100%)", color: "#060F1C", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 13, fontWeight: 900, textDecoration: "none", whiteSpace: "nowrap", boxShadow: "0 4px 20px rgba(0,212,255,0.4)", flexShrink: 0 }}>⚡ Activate mesh</a>
+            <a href="/ask" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "linear-gradient(135deg, #4A7DB5 0%, #2D5A8E 100%)", color: "#E8F4FF", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 13, fontWeight: 900, textDecoration: "none", whiteSpace: "nowrap", boxShadow: "0 4px 20px rgba(45,90,142,0.55)", flexShrink: 0 }}>⚡ Activate mesh</a>
           </div>
         </div>
         <p style={{ fontFamily: MONO, fontSize: 11, color: "#1E3A5A", marginBottom: 52 }}>No sign-in required to preview · {stats.verifiedAgents} specialist agents ready</p>
@@ -484,12 +491,12 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
         {/* Stats row */}
         <div className="landing-neon-stats">
           {[
-            { num: `${stats.tasksRun.toLocaleString()}+`, label: "Tasks Run",       neon: "#00D4FF" },
-            { num: String(stats.verifiedAgents),          label: "Verified Agents", neon: "#40B8FF" },
-            { num: String(stats.domainContexts),          label: "Domain Contexts", neon: "#0080FF" },
-            { num: `avg. ${stats.avgExecSec}s`,           label: "Exec Time",       neon: "#4060FF" },
+            { num: `${stats.tasksRun.toLocaleString()}+`, label: "Tasks Run",       neon: "#4ADE80" },
+            { num: String(stats.verifiedAgents),          label: "Verified Agents", neon: "#60C8F5" },
+            { num: String(stats.domainContexts),          label: "Domain Contexts", neon: "#7BA3D4" },
+            { num: `avg. ${stats.avgExecSec}s`,           label: "Exec Time",       neon: "#A78BFA" },
           ].map((item, i) => (
-            <div key={i} className="landing-neon-stat-cell" style={{ borderRight: i < 3 ? "1px solid rgba(0,212,255,0.07)" : "none" }}>
+              <div key={i} className="landing-neon-stat-cell" style={{ borderRight: i < 3 ? "1px solid rgba(123,163,212,0.07)" : "none" }}>
               <div style={{ position: "absolute", top: 0, left: "20%", right: "20%", height: 1, background: `linear-gradient(90deg, transparent, ${item.neon}66, transparent)` }} />
               <div style={{ fontSize: 24, fontWeight: 900, color: item.neon, letterSpacing: "-0.04em", textShadow: `0 0 16px ${item.neon}80` }}>{item.num}</div>
               <div style={{ fontSize: 10, color: "#1E3A5A", marginTop: 5, fontWeight: 500, letterSpacing: "0.08em", textTransform: "uppercase" }}>{item.label}</div>
