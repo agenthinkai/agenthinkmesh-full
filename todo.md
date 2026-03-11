@@ -405,3 +405,9 @@
 
 ## Session 31 — Mobile Canvas Bottom Gradient
 - [x] Add bottom-fade gradient overlay on canvas panel on mobile (100px, transparent → #060D1A, z-index 3, active at ≤900px)
+
+## Session 32 — Sign-in Fix
+- [x] Diagnose OAuth sign-in: auth was working but callback redirected to / (public landing) instead of /ask
+- [x] Fix: encode returnPath=/ask in login state; OAuth callback now redirects to returnPath after login
+- [x] Fix: Landing page now auto-redirects authenticated users to /ask via useEffect
+- [x] 52/53 tests pass (1 pre-existing network failure: web3forms.test.ts ECONNRESET in sandbox)

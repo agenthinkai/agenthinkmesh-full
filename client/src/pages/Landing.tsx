@@ -516,6 +516,14 @@ export default function Landing() {
   const loginUrl = getLoginUrl();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // If user is already signed in, redirect to the main app
+  const meQuery = trpc.auth.me.useQuery(undefined, { retry: false, refetchOnWindowFocus: false });
+  useEffect(() => {
+    if (!meQuery.isLoading && meQuery.data) {
+      window.location.replace("/ask");
+    }
+  }, [meQuery.isLoading, meQuery.data]);
+
   const { data: stats } = trpc.public.platformStats.useQuery(undefined, {
     refetchInterval: 30_000,
     staleTime: 20_000,
