@@ -574,6 +574,25 @@
   }
 }
 
+/* ── Mobile canvas top-fade overlay ────────────────────────────────────────── */
+/* Hidden on desktop; shown on mobile via media query */
+.neon-canvas-top-fade {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to bottom, #060D1A 0%, transparent 100%);
+  z-index: 3;
+  pointer-events: none;
+}
+@media (max-width: 900px) {
+  .neon-canvas-top-fade {
+    display: block;
+  }
+}
+
 /* ── Hero search bar & CTA button ────────────────────────────────────────────────── */
 .neon-search-bar {
   display: flex;
