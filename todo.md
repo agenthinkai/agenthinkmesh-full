@@ -381,3 +381,13 @@
 - [x] Left-to-right fade overlay blends canvas into left panel seamlessly
 - [x] Responsive: stacks vertically on ≤900px (tablet), canvas 420px tall; ≤640px canvas 320px
 - [x] 53/53 tests pass, 0 TypeScript errors
+
+## Session 27 — Mobile Layout Fix
+- [x] Fix hero section mobile layout: proper single-column stacking, readable headline, visible search bar and CTA
+- [x] Fix navbar on mobile: hamburger menu visible, no overflow
+- [x] Fix canvas height on mobile so it doesn't take excessive space (360px tablet, 280px phone)
+- [x] Fix floating agent cards on mobile: 2x2 grid at bottom of canvas; hidden on phones to reduce clutter
+- [x] Fix stats row on mobile: flex-wrap with gap
+- [x] Verify no horizontal overflow on any screen size (overflow-x: hidden on root + hero)
+- [x] Search bar stacks vertically on phones (input + full-width CTA button)
+- [x] 53/53 tests pass, 0 TypeScript errors

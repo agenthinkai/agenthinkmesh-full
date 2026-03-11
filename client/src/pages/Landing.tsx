@@ -409,14 +409,14 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
         </p>
 
         {/* Search bar */}
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ display: "flex", alignItems: "center", background: "rgba(255,255,255,0.03)", border: "1px solid rgba(123,163,212,0.2)", borderRadius: 12, padding: "5px 5px 5px 18px", boxShadow: "0 4px 24px rgba(0,0,0,0.4)" }}>
+        <div style={{ marginBottom: 14, width: "100%" }}>
+          <div className="neon-search-bar">
             <span style={{ color: "#3D4F63", fontSize: 14, marginRight: 10, flexShrink: 0 }}>⊙</span>
             <input readOnly value="" placeholder="Describe a task — e.g. Screen 5 deals against our VC thesis"
               style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 14, color: "#C8D4E0", fontFamily: FONT, minWidth: 0 }}
               onClick={() => { window.location.href = '/ask'; }}
             />
-            <a href="/ask" style={{ display: "inline-flex", alignItems: "center", gap: 7, background: "linear-gradient(135deg, #4A7DB5 0%, #2D5A8E 100%)", color: "#E8F4FF", border: "none", borderRadius: 8, padding: "11px 22px", fontSize: 13, fontWeight: 700, textDecoration: "none", whiteSpace: "nowrap", boxShadow: "0 4px 16px rgba(45,90,142,0.5)", flexShrink: 0 }}>⚡ Activate mesh</a>
+            <a href="/ask" className="neon-activate-btn">⚡ Activate mesh</a>
           </div>
         </div>
         <p style={{ fontFamily: MONO, fontSize: 11, color: "#3D4F63", marginBottom: 48 }}>No sign-in required to preview · {stats.verifiedAgents} specialist agents ready</p>
