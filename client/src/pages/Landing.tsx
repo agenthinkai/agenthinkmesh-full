@@ -443,6 +443,8 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #060D1A 0%, transparent 28%)", zIndex: 2, pointerEvents: "none" }} />
         {/* Top-fade overlay so canvas blends into section above (mobile) */}
         <div className="neon-canvas-top-fade" />
+        {/* Bottom-fade overlay so canvas blends into section below (mobile) */}
+        <div className="neon-canvas-bottom-fade" />
         <canvas ref={canvasRef} style={{ display: "block", width: "100%", height: "100%" }} />
 
         {/* Floating agent cards */}

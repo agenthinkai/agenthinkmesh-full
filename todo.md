@@ -402,3 +402,6 @@
 
 ## Session 30 — Mobile Canvas Top Gradient
 - [x] Add dark top-fade gradient overlay on canvas panel on mobile to blend rays into stats row (80px, #060D1A → transparent, z-index 3, active at ≤900px)
+
+## Session 31 — Mobile Canvas Bottom Gradient
+- [x] Add bottom-fade gradient overlay on canvas panel on mobile (100px, transparent → #060D1A, z-index 3, active at ≤900px)

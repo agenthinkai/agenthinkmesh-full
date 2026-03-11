@@ -587,8 +587,23 @@
   z-index: 3;
   pointer-events: none;
 }
+
+.neon-canvas-bottom-fade {
+  display: none;
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: linear-gradient(to top, #060D1A 0%, transparent 100%);
+  z-index: 3;
+  pointer-events: none;
+}
 @media (max-width: 900px) {
   .neon-canvas-top-fade {
+    display: block;
+  }
+  .neon-canvas-bottom-fade {
     display: block;
   }
 }
