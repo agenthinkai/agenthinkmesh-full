@@ -391,3 +391,7 @@
 - [x] Verify no horizontal overflow on any screen size (overflow-x: hidden on root + hero)
 - [x] Search bar stacks vertically on phones (input + full-width CTA button)
 - [x] 53/53 tests pass, 0 TypeScript errors
+
+## Session 28 — Mobile Agent Cards Fix
+- [x] Show 4 agent cards on phones as horizontal scrollable strip overlaid on canvas (rays behind, cards in front)
+- [x] Increase canvas height on phones to 380px to give enough room for cards + animation
