@@ -552,6 +552,7 @@ export default function Landing() {
 
           {/* Desktop nav links */}
           <div className="landing-nav-links" style={{ alignItems: "center", gap: 20 }}>
+            <a href="/portfolio" style={{ fontSize: 13, color: GOLD, textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap", padding: "4px 10px", borderRadius: 6, background: `${GOLD}12`, border: `1px solid ${GOLD}30` }}>Portfolio Intelligence</a>
             {[["#features", "Features"], ["#domains", "Domains"], ["#how-it-works", "How it works"], ["#contact", "Contact"]].map(([href, label]) => (
               <a key={href} href={href} style={{ fontSize: 13, color: SILVER_300, textDecoration: "none", fontWeight: 500, transition: "color 0.2s", whiteSpace: "nowrap" }}
                 onMouseEnter={e => (e.currentTarget.style.color = SILVER_50)}

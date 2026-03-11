@@ -78,6 +78,13 @@
       "when": 1773213456823,
       "tag": "0010_early_bruce_banner",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "5",
+      "when": 1773224659399,
+      "tag": "0011_grey_marten_broadcloak",
+      "breakpoints": true
     }
   ]
 }

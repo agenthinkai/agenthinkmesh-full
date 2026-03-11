@@ -174,3 +174,25 @@ export const meshTasks = mysqlTable("mesh_tasks", {
 
 export type MeshTask = typeof meshTasks.$inferSelect;
 export type InsertMeshTask = typeof meshTasks.$inferInsert;
+
+// ── Portfolio Intelligence Reviews ────────────────────────────────────────────
+export const portfolioReviews = mysqlTable("portfolio_reviews", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  fundName: varchar("fundName", { length: 255 }),
+  manager: varchar("manager", { length: 255 }),
+  reviewPeriod: varchar("reviewPeriod", { length: 128 }),
+  notes: text("notes"),
+  // Uploaded documents (JSON array of { fileName, fileUrl, mimeType })
+  documents: text("documents"),
+  // Analysis results (JSON)
+  reportJson: text("reportJson"),
+  // Status
+  status: mysqlEnum("status", ["pending", "analyzing", "complete", "error"]).notNull().default("pending"),
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PortfolioReview = typeof portfolioReviews.$inferSelect;
+export type InsertPortfolioReview = typeof portfolioReviews.$inferInsert;

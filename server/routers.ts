@@ -4,7 +4,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks } from "../drizzle/schema";
+import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews } from "../drizzle/schema";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
 import { eq, desc, gte, sql, and, like, or } from "drizzle-orm";
@@ -1799,6 +1799,213 @@ If a section is not applicable (e.g. no financial data provided), set it to null
             .where(eq(contactSubmissions.id, row.id));
         }
          return { success: true, id: row?.id };
+      }),
+  }),
+
+  // ── Portfolio Intelligence ───────────────────────────────────────────────────
+  portfolio: router({
+
+    // Upload a document and create a new portfolio review record
+    create: protectedProcedure
+      .input(z.object({
+        fundName: z.string().optional(),
+        manager: z.string().optional(),
+        reviewPeriod: z.string().optional(),
+        notes: z.string().optional(),
+        documents: z.array(z.object({
+          fileName: z.string(),
+          fileUrl: z.string(),
+          mimeType: z.string(),
+        })).min(1, "At least one document is required"),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        const [row] = await db.insert(portfolioReviews).values({
+          userId: ctx.user.id,
+          fundName: input.fundName ?? null,
+          manager: input.manager ?? null,
+          reviewPeriod: input.reviewPeriod ?? null,
+          notes: input.notes ?? null,
+          documents: JSON.stringify(input.documents),
+          status: "pending",
+        }).$returningId();
+        return { id: row.id as number };
+      }),
+
+    // Run the analysis for a portfolio review
+    analyze: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        // Fetch the review
+        const [review] = await db
+          .select()
+          .from(portfolioReviews)
+          .where(eq(portfolioReviews.id, input.id))
+          .limit(1);
+        if (!review) throw new Error("Portfolio review not found");
+        if (review.userId !== ctx.user.id) throw new Error("Forbidden");
+
+        // Mark as analyzing
+        await db.update(portfolioReviews)
+          .set({ status: "analyzing" })
+          .where(eq(portfolioReviews.id, input.id));
+
+        try {
+          // Extract document content
+          const docs: { fileName: string; fileUrl: string; mimeType: string }[] = (() => {
+            try { return JSON.parse(review.documents ?? "[]"); } catch { return []; }
+          })();
+
+          let combinedContent = "";
+          for (const doc of docs) {
+            try {
+              const extracted = await extractFileContent(doc.fileUrl, doc.fileName);
+              if (extracted.trim()) {
+                combinedContent += `\n\n=== Document: ${doc.fileName} ===\n${extracted}`;
+              }
+            } catch { /* skip failed extractions */ }
+          }
+
+          const context = [
+            review.fundName ? `Fund Name: ${review.fundName}` : "",
+            review.manager ? `Manager: ${review.manager}` : "",
+            review.reviewPeriod ? `Review Period: ${review.reviewPeriod}` : "",
+            review.notes ? `Notes: ${review.notes}` : "",
+            combinedContent ? `\nDocument Content:${combinedContent}` : "",
+          ].filter(Boolean).join("\n");
+
+          const safeContent = (res: { choices?: Array<{ message?: { content?: string | unknown } }> }, fallback = "{}"): string => {
+            const content = res?.choices?.[0]?.message?.content;
+            if (typeof content === "string") return content;
+            if (content != null) return JSON.stringify(content);
+            return fallback;
+          };
+
+          // Run 5 analysis agents in parallel
+          const [execSummaryRes, mandateRes, sectorRes, riskRes, narrativeRes] = await Promise.all([
+            // Agent 1: Executive Summary
+            invokeLLM({
+              messages: [
+                { role: "system", content: "You are a senior portfolio analyst. Write a concise executive summary of this portfolio review. Return ONLY a JSON object with field: executiveSummary (string, 3-5 sentences)." },
+                { role: "user", content: context },
+              ],
+              response_format: { type: "json_schema", json_schema: { name: "exec_summary", strict: true, schema: { type: "object", properties: { executiveSummary: { type: "string" } }, required: ["executiveSummary"], additionalProperties: false } } },
+            }),
+            // Agent 2: Mandate vs Portfolio Reality
+            invokeLLM({
+              messages: [
+                { role: "system", content: "You are a portfolio compliance analyst. Assess whether the portfolio construction matches the stated investment mandate. Return ONLY a JSON object with fields: mandateAlignment (string: 'Aligned' | 'Partial Deviation' | 'Significant Deviation'), summary (string), deviations (string[])." },
+                { role: "user", content: context },
+              ],
+              response_format: { type: "json_schema", json_schema: { name: "mandate_check", strict: true, schema: { type: "object", properties: { mandateAlignment: { type: "string" }, summary: { type: "string" }, deviations: { type: "array", items: { type: "string" } } }, required: ["mandateAlignment", "summary", "deviations"], additionalProperties: false } } },
+            }),
+            // Agent 3: Sector Allocation Analysis
+            invokeLLM({
+              messages: [
+                { role: "system", content: "You are a sector allocation analyst. Analyse the sector exposures in this portfolio. Return ONLY a JSON object with fields: topSectors (array of {sector: string, allocation: string, commentary: string}), concentrationRisk (string), diversificationScore (integer 0-100)." },
+                { role: "user", content: context },
+              ],
+              response_format: { type: "json_schema", json_schema: { name: "sector_analysis", strict: false, schema: { type: "object", properties: { topSectors: { type: "array", items: { type: "object" } }, concentrationRisk: { type: "string" }, diversificationScore: { type: "integer" } }, required: ["topSectors", "concentrationRisk", "diversificationScore"] } } },
+            }),
+            // Agent 4: Risk Signals
+            invokeLLM({
+              messages: [
+                { role: "system", content: "You are a risk analyst. Identify key risk signals in this portfolio. Return ONLY a JSON object with fields: riskSignals (string[]), overallRiskRating ('Low' | 'Medium' | 'High'), riskSummary (string)." },
+                { role: "user", content: context },
+              ],
+              response_format: { type: "json_schema", json_schema: { name: "risk_signals", strict: true, schema: { type: "object", properties: { riskSignals: { type: "array", items: { type: "string" } }, overallRiskRating: { type: "string" }, riskSummary: { type: "string" } }, required: ["riskSignals", "overallRiskRating", "riskSummary"], additionalProperties: false } } },
+            }),
+            // Agent 5: Manager Narrative Assessment
+            invokeLLM({
+              messages: [
+                { role: "system", content: "You are an investment analyst assessing GP accountability. Evaluate whether the manager's narrative in their reports matches their actual portfolio actions. Return ONLY a JSON object with fields: narrativeConsistency ('Consistent' | 'Inconsistent' | 'Partially Consistent'), assessment (string), keyQuestions (string[]), confidenceScore (integer 0-100)." },
+                { role: "user", content: context },
+              ],
+              response_format: { type: "json_schema", json_schema: { name: "narrative_assessment", strict: true, schema: { type: "object", properties: { narrativeConsistency: { type: "string" }, assessment: { type: "string" }, keyQuestions: { type: "array", items: { type: "string" } }, confidenceScore: { type: "integer" } }, required: ["narrativeConsistency", "assessment", "keyQuestions", "confidenceScore"], additionalProperties: false } } },
+            }),
+          ]);
+
+          const execSummaryData = JSON.parse(safeContent(execSummaryRes, '{"executiveSummary":"Analysis complete."}'));
+          const mandateData = JSON.parse(safeContent(mandateRes, '{"mandateAlignment":"Partial Deviation","summary":"Unable to determine mandate alignment from provided documents.","deviations":[]}'));
+          const sectorData = JSON.parse(safeContent(sectorRes, '{"topSectors":[],"concentrationRisk":"Unable to assess.","diversificationScore":50}'));
+          const riskData = JSON.parse(safeContent(riskRes, '{"riskSignals":[],"overallRiskRating":"Medium","riskSummary":"Unable to assess risk signals from provided documents."}'));
+          const narrativeData = JSON.parse(safeContent(narrativeRes, '{"narrativeConsistency":"Partially Consistent","assessment":"Unable to assess narrative consistency from provided documents.","keyQuestions":[],"confidenceScore":50}'));
+
+          const reportJson = JSON.stringify({
+            executiveSummary: execSummaryData.executiveSummary ?? "Analysis complete.",
+            mandateAlignment: mandateData.mandateAlignment ?? "Partial Deviation",
+            mandateSummary: mandateData.summary ?? "",
+            mandateDeviations: Array.isArray(mandateData.deviations) ? mandateData.deviations : [],
+            topSectors: Array.isArray(sectorData.topSectors) ? sectorData.topSectors : [],
+            concentrationRisk: sectorData.concentrationRisk ?? "",
+            diversificationScore: sectorData.diversificationScore ?? 50,
+            riskSignals: Array.isArray(riskData.riskSignals) ? riskData.riskSignals : [],
+            overallRiskRating: riskData.overallRiskRating ?? "Medium",
+            riskSummary: riskData.riskSummary ?? "",
+            narrativeConsistency: narrativeData.narrativeConsistency ?? "Partially Consistent",
+            narrativeAssessment: narrativeData.assessment ?? "",
+            keyQuestions: Array.isArray(narrativeData.keyQuestions) ? narrativeData.keyQuestions : [],
+            confidenceScore: narrativeData.confidenceScore ?? 50,
+          });
+
+          await db.update(portfolioReviews)
+            .set({ status: "complete", reportJson })
+            .where(eq(portfolioReviews.id, input.id));
+
+          return { id: input.id, status: "complete" };
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : "Analysis failed";
+          await db.update(portfolioReviews)
+            .set({ status: "error", errorMessage: msg })
+            .where(eq(portfolioReviews.id, input.id));
+          throw new Error(msg);
+        }
+      }),
+
+    // Get a single portfolio review
+    get: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) return null;
+        const [row] = await db
+          .select()
+          .from(portfolioReviews)
+          .where(eq(portfolioReviews.id, input.id))
+          .limit(1);
+        if (!row || row.userId !== ctx.user.id) return null;
+        return row;
+      }),
+
+    // List all portfolio reviews for the current user
+    list: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db
+        .select()
+        .from(portfolioReviews)
+        .where(eq(portfolioReviews.userId, ctx.user.id))
+        .orderBy(desc(portfolioReviews.createdAt))
+        .limit(50);
+    }),
+
+    // Upload a document for portfolio review (returns S3 URL)
+    uploadDocument: protectedProcedure
+      .input(z.object({
+        fileName: z.string(),
+        mimeType: z.string(),
+        base64Data: z.string(),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const buffer = Buffer.from(input.base64Data, "base64");
+        const ext = input.fileName.split(".").pop() ?? "bin";
+        const key = `portfolio/${ctx.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { url } = await storagePut(key, buffer, input.mimeType);
+        return { url, fileName: input.fileName };
       }),
   }),
 

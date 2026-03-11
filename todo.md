@@ -468,3 +468,15 @@
 - [x] Fix: Added null-safety guards for all LLM response arrays in analyze procedure (intentData.meshRoute, findings.keyFindings, risksData.risks, segments.segmentInsights, reportData.recommendation)
 - [x] Fix: AskScreen error banner now safely stringifies error.message regardless of type
 - [x] 55/55 tests pass, 0 TypeScript errors
+
+## Session 42 — Portfolio Intelligence 5-Screen UX
+
+- [x] Screen 1: Portfolio Intelligence Home (/portfolio) — 2x2 workflow card grid
+- [x] Screen 2: Document Upload (/portfolio-review/upload) — drag-and-drop, metadata fields
+- [x] Screen 3: Analysis Processing (/portfolio-review/analyzing) — 5-step progress indicator
+- [x] Screen 4: Portfolio Review Report (/portfolio-review/report/:id) — structured institutional report
+- [x] Screen 5: Vault (/vault) — history of past analyses with re-run capability
+- [x] Backend: portfolioReview tRPC router (create, analyze, get, list, uploadDocument)
+- [x] DB schema: portfolioReviews table (pushed to DB)
+- [x] Navigation: add Portfolio Intelligence link to Landing nav + AskScreen nav
+- [x] Route registration in App.tsx

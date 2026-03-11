@@ -11,6 +11,11 @@ import AnnotationStudio from "./pages/AnnotationStudio";
 import AskScreen from "./pages/AskScreen";
 import ResultScreen from "./pages/ResultScreen";
 import HistoryScreen from "./pages/HistoryScreen";
+import PortfolioHome from "./pages/PortfolioHome";
+import PortfolioUpload from "./pages/PortfolioUpload";
+import PortfolioAnalyzing from "./pages/PortfolioAnalyzing";
+import PortfolioReport from "./pages/PortfolioReport";
+import PortfolioVault from "./pages/PortfolioVault";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./_core/hooks/useAuth";
 
@@ -53,6 +58,13 @@ function Router() {
       <Route path="/ask" component={AskScreen} />
       <Route path="/result/:id" component={ResultScreen} />
       <Route path="/history" component={HistoryScreen} />
+
+      {/* Portfolio Intelligence */}
+      <Route path="/portfolio" component={PortfolioHome} />
+      <Route path="/portfolio-review/upload" component={PortfolioUpload} />
+      <Route path="/portfolio-review/analyzing/:id" component={PortfolioAnalyzing} />
+      <Route path="/portfolio-review/report/:id" component={PortfolioReport} />
+      <Route path="/vault" component={PortfolioVault} />
 
       {/* Advanced / power-user section */}
       <Route path="/mesh" component={isAuthenticated ? MeshDashboard : Landing} />

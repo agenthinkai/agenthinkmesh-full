@@ -135,6 +135,11 @@ export default function AskScreen() {
           <Logo />
         </a>
         <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
+          <a href="/portfolio" style={{ color: MUTED, fontSize: 14, textDecoration: "none", padding: "6px 14px", borderRadius: 8, transition: "color 0.2s" }}
+            onMouseEnter={e => (e.currentTarget.style.color = WHITE)}
+            onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
+            Portfolio
+          </a>
           <a href="/history" style={{ color: MUTED, fontSize: 14, textDecoration: "none", padding: "6px 14px", borderRadius: 8, transition: "color 0.2s" }}
             onMouseEnter={e => (e.currentTarget.style.color = WHITE)}
             onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
