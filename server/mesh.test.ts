@@ -223,3 +223,107 @@ describe("mesh.routeAgents", () => {
     expect(typeof result.domainMatch).toBe("boolean");
   });
 });
+
+// ── New 3-screen MVP procedure tests ─────────────────────────────────────────
+
+const MOCK_ANALYZE_LLM_RESPONSE = {
+  choices: [{
+    message: {
+      content: JSON.stringify({
+        taskType: "Deal Screening",
+        summary: "Strong HealthTech opportunity with solid unit economics.",
+        keyFindings: ["ARR growing 3x YoY", "Experienced founding team"],
+        risks: ["Regulatory risk in GCC markets"],
+        segmentInsights: ["GCC healthcare market growing at 12% CAGR"],
+        recommendation: "Proceed to due diligence",
+        confidenceScore: 87,
+        agentRoute: [{ agent: "Finance Agent", domain: "Finance", confidence: 90, tasksHandled: 1 }],
+      }),
+    },
+  }],
+};
+
+describe("mesh.analyze — structured LLM output validation", () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it("LLM response contains all required result fields", () => {
+    const content = JSON.parse(
+      MOCK_ANALYZE_LLM_RESPONSE.choices[0].message.content as string
+    );
+    expect(content).toHaveProperty("taskType");
+    expect(content).toHaveProperty("summary");
+    expect(content).toHaveProperty("keyFindings");
+    expect(content).toHaveProperty("risks");
+    expect(content).toHaveProperty("segmentInsights");
+    expect(content).toHaveProperty("recommendation");
+    expect(content).toHaveProperty("confidenceScore");
+    expect(content).toHaveProperty("agentRoute");
+  });
+
+  it("confidenceScore is between 0 and 100", () => {
+    const content = JSON.parse(
+      MOCK_ANALYZE_LLM_RESPONSE.choices[0].message.content as string
+    );
+    expect(content.confidenceScore).toBeGreaterThanOrEqual(0);
+    expect(content.confidenceScore).toBeLessThanOrEqual(100);
+  });
+
+  it("keyFindings and risks are arrays", () => {
+    const content = JSON.parse(
+      MOCK_ANALYZE_LLM_RESPONSE.choices[0].message.content as string
+    );
+    expect(Array.isArray(content.keyFindings)).toBe(true);
+    expect(Array.isArray(content.risks)).toBe(true);
+    expect(Array.isArray(content.segmentInsights)).toBe(true);
+    expect(Array.isArray(content.agentRoute)).toBe(true);
+  });
+
+  it("agentRoute entries have required fields", () => {
+    const content = JSON.parse(
+      MOCK_ANALYZE_LLM_RESPONSE.choices[0].message.content as string
+    );
+    content.agentRoute.forEach((entry: { agent: string; domain: string; confidence: number; tasksHandled: number }) => {
+      expect(entry).toHaveProperty("agent");
+      expect(entry).toHaveProperty("domain");
+      expect(entry).toHaveProperty("confidence");
+      expect(entry.confidence).toBeGreaterThanOrEqual(0);
+      expect(entry.confidence).toBeLessThanOrEqual(100);
+    });
+  });
+
+  it("mesh.analyze requires authentication", async () => {
+    const ctx: TrpcContext = {
+      user: null,
+      req: { protocol: "https", headers: {} } as TrpcContext["req"],
+      res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
+    };
+    const caller = appRouter.createCaller(ctx);
+    await expect(
+      caller.mesh.analyze({ query: "Screen a startup" })
+    ).rejects.toThrow();
+  });
+
+  it("mesh.getTask requires authentication", async () => {
+    const ctx: TrpcContext = {
+      user: null,
+      req: { protocol: "https", headers: {} } as TrpcContext["req"],
+      res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
+    };
+    const caller = appRouter.createCaller(ctx);
+    await expect(
+      caller.mesh.getTask({ id: "task-001" })
+    ).rejects.toThrow();
+  });
+
+  it("mesh.listTasks requires authentication", async () => {
+    const ctx: TrpcContext = {
+      user: null,
+      req: { protocol: "https", headers: {} } as TrpcContext["req"],
+      res: { clearCookie: vi.fn() } as unknown as TrpcContext["res"],
+    };
+    const caller = appRouter.createCaller(ctx);
+    await expect(
+      caller.mesh.listTasks()
+    ).rejects.toThrow();
+  });
+});

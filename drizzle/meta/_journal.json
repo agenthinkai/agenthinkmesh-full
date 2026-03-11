@@ -64,6 +64,13 @@
       "when": 1773158069648,
       "tag": "0008_simple_machine_man",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1773199672559,
+      "tag": "0009_pretty_husk",
+      "breakpoints": true
     }
   ]
 }

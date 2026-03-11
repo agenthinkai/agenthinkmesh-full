@@ -409,9 +409,9 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
             <span style={{ color: "#1E3A5A", fontSize: 15, marginRight: 12, flexShrink: 0 }}>⊙</span>
             <input readOnly value="" placeholder="Describe a task — e.g. Screen 5 deals against our VC thesis"
               style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 14, color: "#A0C8E8", fontFamily: FONT, minWidth: 0 }}
-              onClick={() => { window.location.href = loginUrl; }}
+              onClick={() => { window.location.href = '/ask'; }}
             />
-            <a href={loginUrl} style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "linear-gradient(135deg, #00D4FF 0%, #0080FF 100%)", color: "#060F1C", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 13, fontWeight: 900, textDecoration: "none", whiteSpace: "nowrap", boxShadow: "0 4px 20px rgba(0,212,255,0.4)", flexShrink: 0 }}>⚡ Activate mesh</a>
+            <a href="/ask" style={{ display: "inline-flex", alignItems: "center", gap: 8, background: "linear-gradient(135deg, #00D4FF 0%, #0080FF 100%)", color: "#060F1C", border: "none", borderRadius: 10, padding: "12px 24px", fontSize: 13, fontWeight: 900, textDecoration: "none", whiteSpace: "nowrap", boxShadow: "0 4px 20px rgba(0,212,255,0.4)", flexShrink: 0 }}>⚡ Activate mesh</a>
           </div>
         </div>
         <p style={{ fontFamily: MONO, fontSize: 11, color: "#1E3A5A", marginBottom: 52 }}>No sign-in required to preview · {stats.verifiedAgents} specialist agents ready</p>

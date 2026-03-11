@@ -4,7 +4,7 @@ import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { getDb } from "./db";
-import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions } from "../drizzle/schema";
+import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks } from "../drizzle/schema";
 import { storagePut } from "./storage";
 import { eq, desc, gte, sql, and, like, or } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
@@ -453,6 +453,247 @@ Return ONLY valid JSON matching this exact schema:
           };
         }
       }),
+
+    // Submit a query — creates a task, runs 5 LLM agents, returns task id
+    analyze: protectedProcedure
+      .input((v: unknown) => {
+        const { query } = v as { query: string };
+        if (!query || typeof query !== "string" || query.trim().length === 0)
+          throw new Error("Query is required");
+        return { query: query.trim() };
+      })
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        const startTime = Date.now();
+
+        // Insert task row immediately so we can return the id
+        const [inserted] = await db.insert(meshTasks).values({
+          userId: ctx.user.id,
+          query: input.query,
+          status: "running",
+        });
+        const taskId = inserted.insertId as number;
+
+        try {
+          // ── Agent 1: Intent Classifier ─────────────────────────────────────────
+          const intentRes = await invokeLLM({
+            messages: [
+              { role: "system", content: "You are an intent classifier for an AI agent orchestration platform. Classify the user's query into one of these task types: Synthetic Research, Deal Screening, Market Analysis, Pricing Strategy, Risk Assessment, Competitive Intelligence, Business Strategy. Return ONLY a JSON object with fields: taskType (string), confidence (integer 60-95), meshRoute (array of 5 agent name strings appropriate for this task type)." },
+              { role: "user", content: input.query },
+            ],
+            response_format: {
+              type: "json_schema",
+              json_schema: {
+                name: "intent_classification",
+                strict: true,
+                schema: {
+                  type: "object",
+                  properties: {
+                    taskType: { type: "string" },
+                    confidence: { type: "integer" },
+                    meshRoute: { type: "array", items: { type: "string" } },
+                  },
+                  required: ["taskType", "confidence", "meshRoute"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          });
+          const intentData = JSON.parse(intentRes.choices[0].message.content as string) as {
+            taskType: string;
+            confidence: number;
+            meshRoute: string[];
+          };
+
+          // ── Agents 2-5: Run in parallel ──────────────────────────────────────────
+          const analysisPrompt = `Task type: ${intentData.taskType}\nUser query: ${input.query}\n\nYou are a specialist AI analyst. Provide a thorough analysis.`;
+
+          const [findingsRes, risksRes, segmentsRes] = await Promise.all([
+            // Agent 2: Key Findings
+            invokeLLM({
+              messages: [
+                { role: "system", content: "You are a research analyst. Return ONLY a JSON object with field: keyFindings (array of 3-5 concise insight strings, each under 120 characters)." },
+                { role: "user", content: analysisPrompt },
+              ],
+              response_format: {
+                type: "json_schema",
+                json_schema: {
+                  name: "key_findings",
+                  strict: true,
+                  schema: {
+                    type: "object",
+                    properties: { keyFindings: { type: "array", items: { type: "string" } } },
+                    required: ["keyFindings"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+            }),
+            // Agent 3: Risks
+            invokeLLM({
+              messages: [
+                { role: "system", content: "You are a risk analyst. Return ONLY a JSON object with fields: risks (array of 2-4 risk strings, each under 100 characters), sentimentPositive (integer 0-100), sentimentNeutral (integer 0-100), sentimentNegative (integer 0-100). The three sentiment values must sum to 100." },
+                { role: "user", content: analysisPrompt },
+              ],
+              response_format: {
+                type: "json_schema",
+                json_schema: {
+                  name: "risks_sentiment",
+                  strict: true,
+                  schema: {
+                    type: "object",
+                    properties: {
+                      risks: { type: "array", items: { type: "string" } },
+                      sentimentPositive: { type: "integer" },
+                      sentimentNeutral: { type: "integer" },
+                      sentimentNegative: { type: "integer" },
+                    },
+                    required: ["risks", "sentimentPositive", "sentimentNeutral", "sentimentNegative"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+            }),
+            // Agent 4: Segment Insights
+            invokeLLM({
+              messages: [
+                { role: "system", content: "You are a market segmentation analyst. Return ONLY a JSON object with field: segmentInsights (array of 3-4 objects, each with segment (string) and likelihood (integer 0-100))." },
+                { role: "user", content: analysisPrompt },
+              ],
+              response_format: {
+                type: "json_schema",
+                json_schema: {
+                  name: "segment_insights",
+                  strict: true,
+                  schema: {
+                    type: "object",
+                    properties: {
+                      segmentInsights: {
+                        type: "array",
+                        items: {
+                          type: "object",
+                          properties: {
+                            segment: { type: "string" },
+                            likelihood: { type: "integer" },
+                          },
+                          required: ["segment", "likelihood"],
+                          additionalProperties: false,
+                        },
+                      },
+                    },
+                    required: ["segmentInsights"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+            }),
+          ]);
+
+          const findings = JSON.parse(findingsRes.choices[0].message.content as string) as { keyFindings: string[] };
+          const risksData = JSON.parse(risksRes.choices[0].message.content as string) as {
+            risks: string[];
+            sentimentPositive: number;
+            sentimentNeutral: number;
+            sentimentNegative: number;
+          };
+          const segments = JSON.parse(segmentsRes.choices[0].message.content as string) as { segmentInsights: { segment: string; likelihood: number }[] };
+
+          // ── Agent 5: Report Writer ─────────────────────────────────────────────────
+          const reportRes = await invokeLLM({
+            messages: [
+              { role: "system", content: "You are an executive report writer. Based on the analysis below, write a concise, actionable recommendation in 2-3 sentences. Return ONLY a JSON object with field: recommendation (string)." },
+              { role: "user", content: `Query: ${input.query}\nTask type: ${intentData.taskType}\nKey findings: ${findings.keyFindings.join("; ")}\nRisks: ${risksData.risks.join("; ")}\nTop segment: ${segments.segmentInsights[0]?.segment ?? "General market"}` },
+            ],
+            response_format: {
+              type: "json_schema",
+              json_schema: {
+                name: "recommendation",
+                strict: true,
+                schema: {
+                  type: "object",
+                  properties: { recommendation: { type: "string" } },
+                  required: ["recommendation"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          });
+          const reportData = JSON.parse(reportRes.choices[0].message.content as string) as { recommendation: string };
+
+          const execTime = Date.now() - startTime;
+
+          // Update task with results
+          await db.update(meshTasks).set({
+            taskType: intentData.taskType,
+            confidenceScore: intentData.confidence,
+            agentsUsed: 5,
+            executionTimeMs: execTime,
+            keyFindings: JSON.stringify(findings.keyFindings),
+            risks: JSON.stringify(risksData.risks),
+            segmentInsights: JSON.stringify(segments.segmentInsights),
+            recommendation: reportData.recommendation,
+            meshRoute: JSON.stringify(intentData.meshRoute),
+            sentimentPositive: risksData.sentimentPositive,
+            sentimentNeutral: risksData.sentimentNeutral,
+            sentimentNegative: risksData.sentimentNegative,
+            status: "complete",
+          }).where(eq(meshTasks.id, taskId));
+
+          return { taskId, status: "complete" as const };
+        } catch (err) {
+          await db.update(meshTasks).set({ status: "error" }).where(eq(meshTasks.id, taskId));
+          throw err;
+        }
+      }),
+
+    // Get a single task result by id
+    getTask: protectedProcedure
+      .input((v: unknown) => {
+        const { id } = v as { id: number };
+        if (!id || typeof id !== "number") throw new Error("id required");
+        return { id };
+      })
+      .query(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        const rows = await db
+          .select()
+          .from(meshTasks)
+          .where(and(eq(meshTasks.id, input.id), eq(meshTasks.userId, ctx.user.id)))
+          .limit(1);
+        if (!rows.length) throw new Error("Task not found");
+        const row = rows[0];
+        return {
+          ...row,
+          keyFindings: row.keyFindings ? (JSON.parse(row.keyFindings) as string[]) : [],
+          risks: row.risks ? (JSON.parse(row.risks) as string[]) : [],
+          segmentInsights: row.segmentInsights ? (JSON.parse(row.segmentInsights) as { segment: string; likelihood: number }[]) : [],
+          meshRoute: row.meshRoute ? (JSON.parse(row.meshRoute) as string[]) : [],
+        };
+      }),
+
+    // List all tasks for the current user (history)
+    listTasks: protectedProcedure.query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      const rows = await db
+        .select()
+        .from(meshTasks)
+        .where(eq(meshTasks.userId, ctx.user.id))
+        .orderBy(desc(meshTasks.createdAt))
+        .limit(50);
+      return rows.map(row => ({
+        id: row.id,
+        query: row.query,
+        taskType: row.taskType,
+        confidenceScore: row.confidenceScore,
+        status: row.status,
+        createdAt: row.createdAt,
+        executionTimeMs: row.executionTimeMs,
+        agentsUsed: row.agentsUsed,
+      }));
+    }),
   }),
   // ── Document Vaultt ─────────────────────────────────────────────────────────
   vault: router({
@@ -1377,9 +1618,9 @@ Return ONLY valid JSON matching this exact schema:
             .set({ notified: true })
             .where(eq(contactSubmissions.id, row.id));
         }
-        return { success: true, id: row?.id };
+         return { success: true, id: row?.id };
       }),
   }),
+
 });
 export type AppRouter = typeof appRouter;
-

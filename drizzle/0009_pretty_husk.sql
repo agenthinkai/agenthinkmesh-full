@@ -1,0 +1,20 @@
+CREATE TABLE `mesh_tasks` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`userId` int NOT NULL,
+	`query` text NOT NULL,
+	`taskType` varchar(128),
+	`confidenceScore` int DEFAULT 0,
+	`agentsUsed` int DEFAULT 0,
+	`executionTimeMs` int DEFAULT 0,
+	`keyFindings` text,
+	`risks` text,
+	`segmentInsights` text,
+	`recommendation` text,
+	`meshRoute` text,
+	`sentimentPositive` int DEFAULT 0,
+	`sentimentNeutral` int DEFAULT 0,
+	`sentimentNegative` int DEFAULT 0,
+	`status` enum('running','complete','error') NOT NULL DEFAULT 'running',
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `mesh_tasks_id` PRIMARY KEY(`id`)
+);

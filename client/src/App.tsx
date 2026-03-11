@@ -8,6 +8,9 @@ import MeshDashboard from "./pages/MeshDashboard";
 import AgentRegistry from "./pages/AgentRegistry";
 import Build from "./pages/Build";
 import AnnotationStudio from "./pages/AnnotationStudio";
+import AskScreen from "./pages/AskScreen";
+import ResultScreen from "./pages/ResultScreen";
+import HistoryScreen from "./pages/HistoryScreen";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./_core/hooks/useAuth";
 
@@ -43,11 +46,21 @@ function Router() {
 
   return (
     <Switch>
-      <Route path="/" component={isAuthenticated ? MeshDashboard : Landing} />
+      {/* Public landing page */}
+      <Route path="/" component={Landing} />
+
+      {/* 3-Screen MVP — core user journey */}
+      <Route path="/ask" component={AskScreen} />
+      <Route path="/result/:id" component={ResultScreen} />
+      <Route path="/history" component={HistoryScreen} />
+
+      {/* Advanced / power-user section */}
       <Route path="/mesh" component={isAuthenticated ? MeshDashboard : Landing} />
       <Route path="/registry" component={AgentRegistry} />
       <Route path="/build" component={Build} />
       <Route path="/annotate" component={AnnotationStudio} />
+
+      {/* Fallback */}
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>

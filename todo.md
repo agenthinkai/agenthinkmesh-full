@@ -350,3 +350,12 @@
 - [x] Enrich AGENT_CARDS data with capabilities, task count, accuracy, and description
 - [x] Add hover state to each card: expand height, reveal details panel with smooth CSS transition
 - [x] Add "View agent →" link on hover pointing to /registry
+
+## Session 23 — 3-Screen MVP Refactor
+- [x] Add mesh_tasks table to drizzle schema and run db:push
+- [x] Add mesh.analyze tRPC procedure: LLM intent classification + structured JSON result (taskType, summary, findings, risks, recommendation, confidenceScore, agentRoute)
+- [x] Build AskScreen.tsx at /ask: center-aligned input, 6 example prompts, Analyze button, auth gate
+- [x] Build ResultScreen.tsx at /result/:id: summary card, key findings, risks, segment insights, recommendation, mesh route transparency, polling while running
+- [x] Build HistoryScreen.tsx at /history: task cards with status badge, confidence badge, exec time, date, link to result
+- [x] Update App.tsx: /ask, /result/:id, /history routes added; /mesh remains as Advanced; landing hero CTA links to /ask
+- [x] Write vitest tests for mesh.analyze, mesh.getTask, mesh.listTasks auth guards — 53/53 tests pass, 0 TS errors

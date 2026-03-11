@@ -146,3 +146,28 @@ export const contactSubmissions = mysqlTable("contact_submissions", {
 
 export type ContactSubmission = typeof contactSubmissions.$inferSelect;
 export type InsertContactSubmission = typeof contactSubmissions.$inferInsert;
+
+// ── Mesh Tasks (3-screen MVP) ─────────────────────────────────────────────────
+export const meshTasks = mysqlTable("mesh_tasks", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  query: text("query").notNull(),                     // raw user input
+  taskType: varchar("taskType", { length: 128 }),     // classified intent
+  confidenceScore: int("confidenceScore").default(0), // 0-100
+  agentsUsed: int("agentsUsed").default(0),
+  executionTimeMs: int("executionTimeMs").default(0),
+  // Structured result fields
+  keyFindings: text("keyFindings"),                   // JSON string[]
+  risks: text("risks"),                               // JSON string[]
+  segmentInsights: text("segmentInsights"),           // JSON {segment, likelihood}[]
+  recommendation: text("recommendation"),
+  meshRoute: text("meshRoute"),                       // JSON string[] of agent names
+  sentimentPositive: int("sentimentPositive").default(0),
+  sentimentNeutral: int("sentimentNeutral").default(0),
+  sentimentNegative: int("sentimentNegative").default(0),
+  status: mysqlEnum("status", ["running", "complete", "error"]).notNull().default("running"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type MeshTask = typeof meshTasks.$inferSelect;
+export type InsertMeshTask = typeof meshTasks.$inferInsert;
