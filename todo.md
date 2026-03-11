@@ -458,3 +458,6 @@
 - [x] Added mesh.downloadPdf tRPC protected procedure (generates PDF, returns base64 + filename)
 - [x] Client decodes base64 → Blob → URL.createObjectURL → triggers browser download
 - [x] 55/55 tests pass, 0 TypeScript errors
+
+## Session 40 — AskScreen Crash Fix
+- [x] Fix "Cannot read properties of undefined (reading '0')" on /ask page after file attachment — safely stringify error.message before rendering in error banner

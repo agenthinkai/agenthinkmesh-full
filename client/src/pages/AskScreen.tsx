@@ -379,7 +379,7 @@ export default function AskScreen() {
             fontSize: 14,
             marginBottom: 16,
           }}>
-            ⚠ {analyze.error?.message ?? "Something went wrong. Please try again."}
+            ⚠ {typeof analyze.error?.message === "string" ? analyze.error.message : analyze.error ? JSON.stringify(analyze.error) : "Something went wrong. Please try again."}
           </div>
         )}
 
