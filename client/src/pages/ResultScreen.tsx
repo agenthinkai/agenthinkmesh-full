@@ -111,13 +111,13 @@ function FinancialTableView({ table, title, color }: { table: FinancialTable; ti
           <thead>
             <tr>
               <th style={{ textAlign: "left", padding: "6px 10px", color: MUTED, fontWeight: 600, borderBottom: `1px solid ${NAVY_700}`, minWidth: 180 }}>Particulars</th>
-              {table.years.map((y, i) => (
+              {(table.years ?? []).map((y, i) => (
                 <th key={i} style={{ textAlign: "right", padding: "6px 10px", color: color, fontWeight: 600, borderBottom: `1px solid ${NAVY_700}`, whiteSpace: "nowrap" }}>{y}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {table.rows.map((row, i) => (
+            {(table.rows ?? []).map((row, i) => (
               <tr key={i} style={{ background: row.isHeader ? `${NAVY_700}60` : "transparent" }}>
                 <td style={{
                   padding: "5px 10px", color: row.isHeader ? color : row.isBold ? WHITE : MUTED,
@@ -126,7 +126,7 @@ function FinancialTableView({ table, title, color }: { table: FinancialTable; ti
                   paddingLeft: row.isHeader ? 10 : 20,
                   fontSize: row.isHeader ? 12 : 13,
                 }}>{row.label}</td>
-                {row.values.map((v, j) => (
+                    {(row.values ?? []).map((v, j) => (
                   <td key={j} style={{
                     textAlign: "right", padding: "5px 10px",
                     color: row.isBold ? WHITE : typeof v === "number" && v < 0 ? "#FF8080" : WHITE,
@@ -162,11 +162,11 @@ function DCFSection({ dcf }: { dcf: DCFValuation }) {
           </div>
         ))}
       </div>
-      {dcf.assumptions.length > 0 && (
+      {(dcf.assumptions ?? []).length > 0 && (
         <div style={{ marginBottom: 12 }}>
           <div style={{ color: MUTED, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.06em", marginBottom: 8 }}>KEY ASSUMPTIONS</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            {dcf.assumptions.map((a, i) => (
+              {(dcf.assumptions ?? []).map((a, i) => (
               <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                 <span style={{ color: AMBER, fontSize: 12, flexShrink: 0, marginTop: 2 }}>◆</span>
                 <span style={{ color: WHITE, fontSize: 13, lineHeight: 1.5 }}>{a}</span>
@@ -329,7 +329,7 @@ export default function ResultScreen() {
                   </span>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                  {report.senseCheck.observations.map((obs, i) => (
+                  {(report.senseCheck.observations ?? []).map((obs, i) => (
                     <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start" }}>
                       <span style={{ color: MUTED, fontSize: 14, flexShrink: 0, marginTop: 1 }}>·</span>
                       <span style={{ color: WHITE, fontSize: 14, lineHeight: 1.55 }}>{obs}</span>
@@ -343,7 +343,7 @@ export default function ResultScreen() {
             {report.keyMetrics && report.keyMetrics.length > 0 && (
               <SectionCard title="KEY METRICS" color={SKY}>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12 }}>
-                  {report.keyMetrics.map((m, i) => (
+                  {(report.keyMetrics ?? []).map((m, i) => (
                     <div key={i} style={{ background: `${NAVY_700}80`, border: `1px solid ${SKY}15`, borderRadius: 10, padding: "12px 14px" }}>
                       <div style={{ color: MUTED, fontSize: 10, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.06em", marginBottom: 4 }}>{m.label.toUpperCase()}</div>
                       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
@@ -434,7 +434,7 @@ export default function ResultScreen() {
         {report?.nextSteps && report.nextSteps.length > 0 && (
           <SectionCard title="SUGGESTED NEXT STEPS" color={GREEN}>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {report.nextSteps.map((step, i) => (
+              {(report.nextSteps ?? []).map((step, i) => (
                 <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                   <span style={{ background: `${GREEN}20`, border: `1px solid ${GREEN}40`, color: GREEN, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", borderRadius: 4, padding: "2px 7px", flexShrink: 0, marginTop: 1 }}>{i + 1}</span>
                   <span style={{ color: WHITE, fontSize: 14, lineHeight: 1.6 }}>{step}</span>

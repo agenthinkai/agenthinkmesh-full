@@ -750,13 +750,37 @@ If a section is not applicable (e.g. no financial data provided), set it to null
           .limit(1);
         if (!rows.length) throw new Error("Task not found");
         const row = rows[0];
+        const safeParse = <T>(json: string | null | undefined, fallback: T): T => {
+          if (!json) return fallback;
+          try { return JSON.parse(json) as T; } catch { return fallback; }
+        };
+        const structuredRaw = safeParse<Record<string, unknown> | null>(row.structuredReport, null);
+        // Normalise structuredReport: ensure nested arrays are always arrays
+        let structuredReport: Record<string, unknown> | null = null;
+        if (structuredRaw) {
+          const sr = structuredRaw;
+          structuredReport = {
+            ...sr,
+            senseCheck: sr.senseCheck ? {
+              verdict: (sr.senseCheck as Record<string, unknown>).verdict ?? "Concerns Noted",
+              observations: Array.isArray((sr.senseCheck as Record<string, unknown>).observations)
+                ? (sr.senseCheck as Record<string, unknown>).observations
+                : [],
+            } : null,
+            keyMetrics: Array.isArray(sr.keyMetrics) ? sr.keyMetrics : [],
+            nextSteps: Array.isArray(sr.nextSteps) ? sr.nextSteps : [],
+            balanceSheet: sr.balanceSheet ?? null,
+            cashFlowStatement: sr.cashFlowStatement ?? null,
+            dcfValuation: sr.dcfValuation ?? null,
+          };
+        }
         return {
           ...row,
-          keyFindings: row.keyFindings ? (JSON.parse(row.keyFindings) as string[]) : [],
-          risks: row.risks ? (JSON.parse(row.risks) as string[]) : [],
-          segmentInsights: row.segmentInsights ? (JSON.parse(row.segmentInsights) as { segment: string; likelihood: number }[]) : [],
-          meshRoute: row.meshRoute ? (JSON.parse(row.meshRoute) as string[]) : [],
-          structuredReport: row.structuredReport ? (JSON.parse(row.structuredReport) as Record<string, unknown>) : null,
+          keyFindings: safeParse<string[]>(row.keyFindings, []),
+          risks: safeParse<string[]>(row.risks, []),
+          segmentInsights: safeParse<{ segment: string; likelihood: number }[]>(row.segmentInsights, []),
+          meshRoute: safeParse<string[]>(row.meshRoute, []),
+          structuredReport,
           fileUrl: row.fileUrl ?? null,
           fileName: row.fileName ?? null,
         };

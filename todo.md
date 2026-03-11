@@ -433,3 +433,6 @@
 - [x] ResultScreen now renders: Executive Summary, Sense Check (with verdict badge), Key Metrics grid, Balance Sheet table, Cash Flow Statement table, DCF Valuation with assumptions, Next Steps
 - [x] Attached filename shown as green chip in result header
 - [x] 55/55 tests pass, 0 TypeScript errors
+
+## Session 36 — ResultScreen Crash Fix
+- [x] Fix TypeError crash on result page: added safeParse() wrapper in getTask (handles malformed JSON from LLM), normalised all structuredReport nested arrays to [] fallback, added ?? [] guards on all .map() calls in ResultScreen. 55/55 tests pass.
