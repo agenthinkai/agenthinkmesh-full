@@ -303,18 +303,56 @@ export default function ResultScreen() {
         )}
 
         {/* Actions */}
-        <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-          <button onClick={() => navigate("/ask")} style={{
-            padding: "12px 28px", borderRadius: 10,
-            background: `linear-gradient(135deg, ${CYAN}, ${BLUE})`,
-            border: "none", color: NAVY_950, fontWeight: 700, fontSize: 15,
-            cursor: "pointer",
-          }}>⚡ New Query</button>
-          <button onClick={() => navigate("/history")} style={{
-            padding: "12px 28px", borderRadius: 10,
-            background: "transparent", border: `1px solid ${CYAN}30`,
-            color: CYAN, fontSize: 15, cursor: "pointer",
-          }}>View History</button>
+        <div style={{
+          background: `linear-gradient(135deg, ${NAVY_800}80, ${NAVY_700}40)`,
+          border: `1px solid ${CYAN}20`,
+          borderRadius: 16,
+          padding: "28px 32px",
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+        }}>
+          <div style={{ color: MUTED, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.08em" }}>WHAT WOULD YOU LIKE TO DO NEXT?</div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <button
+              onClick={() => {
+                const query = encodeURIComponent(task?.query ?? "");
+                navigate(`/ask?refine=${query}`);
+              }}
+              style={{
+                padding: "14px 32px", borderRadius: 10,
+                background: `linear-gradient(135deg, ${CYAN}, ${BLUE})`,
+                border: "none", color: NAVY_950, fontWeight: 800, fontSize: 15,
+                cursor: "pointer", letterSpacing: "0.01em",
+                boxShadow: `0 4px 24px ${CYAN}40`,
+                transition: "transform 0.15s, box-shadow 0.15s",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 8px 32px ${CYAN}60`; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 4px 24px ${CYAN}40`; }}
+            >⚡ New Analysis</button>
+            <button
+              onClick={() => navigate("/ask")}
+              style={{
+                padding: "14px 28px", borderRadius: 10,
+                background: "transparent", border: `1px solid ${SKY}40`,
+                color: SKY, fontSize: 15, cursor: "pointer",
+                transition: "border-color 0.15s, color 0.15s",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = SKY; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = `${SKY}40`; }}
+            >+ Start Fresh</button>
+            <button
+              onClick={() => navigate("/history")}
+              style={{
+                padding: "14px 28px", borderRadius: 10,
+                background: "transparent", border: `1px solid ${MUTED}30`,
+                color: MUTED, fontSize: 15, cursor: "pointer",
+              }}
+            >📋 View History</button>
+          </div>
+          <div style={{ color: MUTED, fontSize: 12 }}>
+            <span style={{ color: CYAN }}>⚡ New Analysis</span> — refine this query with additional context &nbsp;·&nbsp; <span style={{ color: SKY }}>+ Start Fresh</span> — begin a completely new task
+          </div>
         </div>
       </main>
 

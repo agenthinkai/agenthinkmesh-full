@@ -359,3 +359,8 @@
 - [x] Build HistoryScreen.tsx at /history: task cards with status badge, confidence badge, exec time, date, link to result
 - [x] Update App.tsx: /ask, /result/:id, /history routes added; /mesh remains as Advanced; landing hero CTA links to /ask
 - [x] Write vitest tests for mesh.analyze, mesh.getTask, mesh.listTasks auth guards — 53/53 tests pass, 0 TS errors
+
+## Session 24 — 3 Next Steps
+- [x] Add "New Analysis" CTA button at bottom of ResultScreen with pre-fill support
+- [x] Add /ask and /history links to dashboard sidebar (DashboardLayout) with Advanced section
+- [x] Verify Ask→Result full flow end-to-end — 53/53 tests pass, 0 TS errors

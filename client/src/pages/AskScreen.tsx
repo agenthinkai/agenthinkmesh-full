@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useLocation } from "wouter";
+import { useState, useEffect } from "react";
+import { useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -35,7 +35,17 @@ const AGENT_STEPS = [
 export default function AskScreen() {
   const [query, setQuery] = useState("");
   const [, navigate] = useLocation();
+  const search = useSearch();
   const { isAuthenticated } = useAuth();
+
+  // Pre-fill from ?refine= param (coming from Result screen's "New Analysis" button)
+  useEffect(() => {
+    const params = new URLSearchParams(search);
+    const refine = params.get("refine");
+    if (refine) {
+      setQuery(decodeURIComponent(refine));
+    }
+  }, [search]);
 
   const analyze = trpc.mesh.analyze.useMutation({
     onSuccess: (data) => {

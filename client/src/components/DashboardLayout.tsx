@@ -21,15 +21,17 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Users } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Zap, History, Network, ChevronRight } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
 
 const menuItems = [
-  { icon: LayoutDashboard, label: "Page 1", path: "/" },
-  { icon: Users, label: "Page 2", path: "/some-path" },
+  { icon: Zap, label: "New Analysis", path: "/ask", group: "main" },
+  { icon: History, label: "History", path: "/history", group: "main" },
+  { icon: Network, label: "Mesh Dashboard", path: "/mesh", group: "advanced" },
+  { icon: LayoutDashboard, label: "Admin", path: "/admin", group: "advanced" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -179,8 +181,9 @@ function DashboardLayoutContent({
           </SidebarHeader>
 
           <SidebarContent className="gap-0">
+            {/* Main navigation */}
             <SidebarMenu className="px-2 py-1">
-              {menuItems.map(item => {
+              {menuItems.filter(i => i.group === "main").map(item => {
                 const isActive = location === item.path;
                 return (
                   <SidebarMenuItem key={item.path}>
@@ -189,6 +192,35 @@ function DashboardLayoutContent({
                       onClick={() => setLocation(item.path)}
                       tooltip={item.label}
                       className={`h-10 transition-all font-normal`}
+                    >
+                      <item.icon
+                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                      />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+
+            {/* Advanced section */}
+            {!isCollapsed && (
+              <div className="px-4 pt-4 pb-1">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                  <ChevronRight className="h-3 w-3" /> Advanced
+                </span>
+              </div>
+            )}
+            <SidebarMenu className="px-2 py-1">
+              {menuItems.filter(i => i.group === "advanced").map(item => {
+                const isActive = location === item.path;
+                return (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton
+                      isActive={isActive}
+                      onClick={() => setLocation(item.path)}
+                      tooltip={item.label}
+                      className={`h-10 transition-all font-normal text-muted-foreground`}
                     >
                       <item.icon
                         className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
