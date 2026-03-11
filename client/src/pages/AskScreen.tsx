@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -38,6 +38,11 @@ export default function AskScreen() {
   const search = useSearch();
   const { isAuthenticated } = useAuth();
 
+  // File attachment state
+  const [attachedFile, setAttachedFile] = useState<{ name: string; url: string; size: number } | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Pre-fill from ?refine= param (coming from Result screen's "New Analysis" button)
   useEffect(() => {
     const params = new URLSearchParams(search);
@@ -46,6 +51,38 @@ export default function AskScreen() {
       setQuery(decodeURIComponent(refine));
     }
   }, [search]);
+
+  const uploadFile = trpc.mesh.uploadAttachment.useMutation();
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const maxSize = 16 * 1024 * 1024; // 16MB
+    if (file.size > maxSize) {
+      alert("File too large. Maximum size is 16MB.");
+      return;
+    }
+    setUploading(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const uint8 = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < uint8.length; i++) binary += String.fromCharCode(uint8[i]);
+      const base64 = btoa(binary);
+      const result = await uploadFile.mutateAsync({
+        fileName: file.name,
+        mimeType: file.type || "application/octet-stream",
+        base64Data: base64,
+      });
+      setAttachedFile({ name: file.name, url: result.url, size: file.size });
+    } catch (err) {
+      console.error("Upload failed", err);
+      alert("File upload failed. Please try again.");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
 
   const analyze = trpc.mesh.analyze.useMutation({
     onSuccess: (data) => {
@@ -59,7 +96,11 @@ export default function AskScreen() {
       window.location.href = getLoginUrl();
       return;
     }
-    analyze.mutate({ query: query.trim() });
+    analyze.mutate({
+      query: query.trim(),
+      fileUrl: attachedFile?.url ?? null,
+      fileName: attachedFile?.name ?? null,
+    });
   };
 
   const handleExample = (text: string) => {
@@ -175,6 +216,15 @@ export default function AskScreen() {
           boxShadow: `0 0 40px ${CYAN}10`,
           marginBottom: 24,
         }}>
+          {/* Hidden file input */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept=".pdf,.docx,.doc,.xlsx,.xls,.pptx,.ppt,.txt,.csv"
+            style={{ display: "none" }}
+            onChange={handleFileSelect}
+          />
+
           <textarea
             value={query}
             onChange={e => setQuery(e.target.value)}
@@ -195,10 +245,61 @@ export default function AskScreen() {
             }}
             disabled={analyze.isPending}
           />
+
+          {/* Attached file chip */}
+          {attachedFile && (
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "6px 12px",
+              background: `${CYAN}15`, border: `1px solid ${CYAN}40`,
+              borderRadius: 8, marginBottom: 10,
+              maxWidth: "100%",
+            }}>
+              <span style={{ fontSize: 14 }}>📎</span>
+              <span style={{ color: CYAN, fontSize: 13, fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 300 }}>
+                {attachedFile.name}
+              </span>
+              <span style={{ color: MUTED, fontSize: 11 }}>
+                ({(attachedFile.size / 1024).toFixed(0)} KB)
+              </span>
+              <button
+                onClick={() => setAttachedFile(null)}
+                style={{ background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 14, padding: "0 2px", lineHeight: 1 }}
+                title="Remove attachment"
+              >✕</button>
+            </div>
+          )}
+
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12, flexWrap: "wrap", gap: 8 }}>
-            <span style={{ color: MUTED, fontSize: 12, fontFamily: "'JetBrains Mono', monospace" }}>
-              {analyze.isPending ? "Activating mesh…" : "⌘ + Enter to analyse"}
-            </span>
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              {/* Attach button */}
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={analyze.isPending || uploading}
+                title="Attach a document (PDF, DOCX, XLSX, PPTX)"
+                style={{
+                  background: "none", border: `1px solid ${CYAN}30`,
+                  borderRadius: 8, padding: "6px 10px",
+                  cursor: analyze.isPending || uploading ? "not-allowed" : "pointer",
+                  color: uploading ? CYAN : MUTED,
+                  fontSize: 16, lineHeight: 1,
+                  transition: "all 0.2s",
+                  display: "flex", alignItems: "center", gap: 6,
+                }}
+                onMouseEnter={e => { if (!analyze.isPending && !uploading) e.currentTarget.style.borderColor = `${CYAN}80`; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = `${CYAN}30`; }}
+              >
+                {uploading ? (
+                  <span style={{ width: 14, height: 14, borderRadius: "50%", border: `2px solid ${MUTED}`, borderTopColor: CYAN, display: "inline-block", animation: "spin 0.8s linear infinite" }} />
+                ) : (
+                  <span>📎</span>
+                )}
+                <span style={{ fontSize: 12 }}>{uploading ? "Uploading…" : "Attach"}</span>
+              </button>
+              <span style={{ color: MUTED, fontSize: 12, fontFamily: "'JetBrains Mono', monospace" }}>
+                {analyze.isPending ? "Activating mesh…" : "⌘ + Enter to analyse"}
+              </span>
+            </div>
             <button
               onClick={handleSubmit}
               disabled={analyze.isPending || !query.trim()}

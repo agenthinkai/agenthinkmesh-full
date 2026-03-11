@@ -327,3 +327,34 @@ describe("mesh.analyze — structured LLM output validation", () => {
     ).rejects.toThrow();
   });
 });
+
+// ── mesh.uploadAttachment tests ───────────────────────────────────────────────
+vi.mock("./storage", () => ({
+  storagePut: vi.fn().mockResolvedValue({ url: "https://cdn.example.com/attachments/1-abc.pdf", key: "attachments/1/1-abc.pdf" }),
+}));
+
+describe("mesh.uploadAttachment", () => {
+  beforeEach(() => { vi.clearAllMocks(); });
+
+  it("uploads a base64-encoded file and returns a CDN url", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    // Minimal 1-byte PDF-like base64 payload
+    const base64Data = Buffer.from("fake-pdf-content").toString("base64");
+    const result = await caller.mesh.uploadAttachment({
+      fileName: "test-report.pdf",
+      mimeType: "application/pdf",
+      base64Data,
+    });
+    expect(result.url).toMatch(/^https:\/\//);
+    expect(result.fileName).toBe("test-report.pdf");
+  });
+
+  it("throws when fileName is missing", async () => {
+    const { ctx } = createAuthContext();
+    const caller = appRouter.createCaller(ctx);
+    await expect(
+      caller.mesh.uploadAttachment({ fileName: "", mimeType: "application/pdf", base64Data: "dGVzdA==" })
+    ).rejects.toThrow("fileName and base64Data are required");
+  });
+});

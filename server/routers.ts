@@ -454,13 +454,28 @@ Return ONLY valid JSON matching this exact schema:
         }
       }),
 
+    // Upload a file attachment (PDF, DOCX, XLSX, PPTX) and return a CDN URL
+    uploadAttachment: protectedProcedure
+      .input((v: unknown) => {
+        const { fileName, mimeType, base64Data } = v as { fileName: string; mimeType: string; base64Data: string };
+        if (!fileName || !base64Data) throw new Error("fileName and base64Data are required");
+        return { fileName, mimeType: mimeType || "application/octet-stream", base64Data };
+      })
+      .mutation(async ({ ctx, input }) => {
+        const buffer = Buffer.from(input.base64Data, "base64");
+        const ext = input.fileName.split(".").pop() ?? "bin";
+        const key = `attachments/${ctx.user.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
+        const { url } = await storagePut(key, buffer, input.mimeType);
+        return { url, fileName: input.fileName };
+      }),
+
     // Submit a query — creates a task, runs 5 LLM agents, returns task id
     analyze: protectedProcedure
       .input((v: unknown) => {
-        const { query } = v as { query: string };
+        const { query, fileUrl, fileName } = v as { query: string; fileUrl?: string; fileName?: string };
         if (!query || typeof query !== "string" || query.trim().length === 0)
           throw new Error("Query is required");
-        return { query: query.trim() };
+        return { query: query.trim(), fileUrl: fileUrl ?? null, fileName: fileName ?? null };
       })
       .mutation(async ({ ctx, input }) => {
         const db = await getDb();

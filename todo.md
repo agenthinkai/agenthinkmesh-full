@@ -411,3 +411,11 @@
 - [x] Fix: encode returnPath=/ask in login state; OAuth callback now redirects to returnPath after login
 - [x] Fix: Landing page now auto-redirects authenticated users to /ask via useEffect
 - [x] 52/53 tests pass (1 pre-existing network failure: web3forms.test.ts ECONNRESET in sandbox)
+
+## Session 33 — File Attachment on /ask Page
+- [x] Add paperclip/attach button to task input box in AskScreen
+- [x] Upload file to S3 on selection, show inline filename chip with remove button
+- [x] Pass fileUrl + fileName to task submission (tRPC mutation)
+- [x] Update server router: new uploadAttachment procedure + analyze accepts optional fileUrl/fileName
+- [x] 2 new vitest tests for uploadAttachment (55/55 tests pass)
+- [ ] Show attached file in ResultScreen alongside task description (future improvement)
