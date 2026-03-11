@@ -395,3 +395,7 @@
 ## Session 28 — Mobile Agent Cards Fix
 - [x] Show 4 agent cards on phones as horizontal scrollable strip overlaid on canvas (rays behind, cards in front)
 - [x] Increase canvas height on phones to 380px to give enough room for cards + animation
+
+## Session 29 — Mobile Cards Vertical Layout
+- [x] Change mobile agent cards from horizontal scroll to vertical 2x2 grid overlaid on canvas
+- [x] Increase canvas height to 460px to fit 2x2 grid comfortably

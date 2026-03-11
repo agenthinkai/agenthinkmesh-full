@@ -737,9 +737,9 @@
 }
 
 @media (max-width: 640px) {
-  /* Tighter padding on phones */
+  /* Canvas tall enough to fit 2x2 card grid */
   .neon-hero-split {
-    grid-template-rows: auto 380px;
+    grid-template-rows: auto 460px;
   }
 
   .neon-hero-left {
@@ -747,40 +747,31 @@
   }
 
   .neon-hero-right {
-    height: 380px;
+    height: 460px;
   }
 
-  /* On phones: show cards as horizontal scrollable strip at bottom of canvas */
+  /* On phones: 2x2 grid centered over canvas */
   .neon-agent-float {
-    display: flex;
-    flex-direction: row;
-    flex-wrap: nowrap;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     top: auto;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    bottom: 12px;
+    left: 12px;
+    right: 12px;
     transform: none;
     gap: 10px;
-    padding: 12px 16px;
-    overflow-x: auto;
-    overflow-y: visible;
-    justify-content: flex-start;
-    /* Subtle bottom gradient so cards sit on a dark strip */
-    background: linear-gradient(to top, rgba(6,13,26,0.85) 60%, transparent 100%);
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-  }
-  .neon-agent-float::-webkit-scrollbar {
-    display: none;
+    padding: 0;
+    overflow: visible;
+    background: none;
   }
 
   .neon-agent-float-card {
-    min-width: 150px;
-    max-width: 160px;
-    flex-shrink: 0;
+    min-width: unset;
+    max-width: unset;
+    width: 100%;
+    flex-shrink: unset;
     padding: 10px 12px;
     font-size: 11px;
-    /* Slightly more opaque on mobile for readability over canvas */
     background: rgba(8, 18, 38, 0.92);
   }
 
