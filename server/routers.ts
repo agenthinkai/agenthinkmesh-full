@@ -532,10 +532,15 @@ Return ONLY valid JSON matching this exact schema:
               },
             },
           });
-          const intentData = JSON.parse(intentRes.choices[0].message.content as string) as {
+          const intentRaw = JSON.parse(intentRes.choices[0].message.content as string) as {
             taskType: string;
             confidence: number;
-            meshRoute: string[];
+            meshRoute: string[] | null;
+          };
+          const intentData = {
+            taskType: intentRaw.taskType ?? "Business Strategy",
+            confidence: intentRaw.confidence ?? 70,
+            meshRoute: Array.isArray(intentRaw.meshRoute) ? intentRaw.meshRoute : [],
           };
 
           // ── Agents 2-5: Run in parallel ──────────────────────────────────────────────────────
@@ -623,16 +628,24 @@ Return ONLY valid JSON matching this exact schema:
             }),
           ]);
 
-          const findings = JSON.parse(findingsRes.choices[0].message.content as string) as { keyFindings: string[] };
-          const risksData = JSON.parse(risksRes.choices[0].message.content as string) as {
-            risks: string[];
+          const findingsRaw = JSON.parse(findingsRes.choices[0].message.content as string) as { keyFindings: string[] | null };
+          const findings = { keyFindings: Array.isArray(findingsRaw.keyFindings) ? findingsRaw.keyFindings : [] };
+          const risksRaw = JSON.parse(risksRes.choices[0].message.content as string) as {
+            risks: string[] | null;
             sentimentPositive: number;
             sentimentNeutral: number;
             sentimentNegative: number;
           };
-          const segments = JSON.parse(segmentsRes.choices[0].message.content as string) as { segmentInsights: { segment: string; likelihood: number }[] };
+          const risksData = {
+            risks: Array.isArray(risksRaw.risks) ? risksRaw.risks : [],
+            sentimentPositive: risksRaw.sentimentPositive ?? 50,
+            sentimentNeutral: risksRaw.sentimentNeutral ?? 30,
+            sentimentNegative: risksRaw.sentimentNegative ?? 20,
+          };
+          const segmentsRaw = JSON.parse(segmentsRes.choices[0].message.content as string) as { segmentInsights: { segment: string; likelihood: number }[] | null };
+          const segments = { segmentInsights: Array.isArray(segmentsRaw.segmentInsights) ? segmentsRaw.segmentInsights : [] };
 
-          // ── Agent 5: Report Writer ─────────────────────────────────────────────────
+          // ── Agent 5: Report Writer ──────────────────────────────────────────────────────────────────────────────────────
           const reportRes = await invokeLLM({
             messages: [
               { role: "system", content: "You are an executive report writer. Based on the analysis below, write a concise, actionable recommendation in 2-3 sentences. Return ONLY a JSON object with field: recommendation (string)." },
@@ -652,7 +665,8 @@ Return ONLY valid JSON matching this exact schema:
               },
             },
           });
-          const reportData = JSON.parse(reportRes.choices[0].message.content as string) as { recommendation: string };
+          const reportRaw = JSON.parse(reportRes.choices[0].message.content as string) as { recommendation: string | null };
+          const reportData = { recommendation: reportRaw.recommendation ?? "Analysis complete. Review the detailed findings above for actionable insights." };
 
           // ── Agent 6: Structured Report Writer (financial / detailed sections) ─────────────────────────────────────────────
           const isFinancialTask = ["Financial Analysis", "Deal Screening", "Risk Assessment", "Business Strategy"].includes(intentData.taskType);

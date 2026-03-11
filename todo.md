@@ -461,3 +461,10 @@
 
 ## Session 40 — AskScreen Crash Fix
 - [x] Fix "Cannot read properties of undefined (reading '0')" on /ask page after file attachment — safely stringify error.message before rendering in error banner
+
+## Session 41 — Deep Fix: AskScreen Crash
+- [x] Find the real root cause of "Cannot read properties of undefined (reading '0')" crash on /ask page
+- [x] Root cause: LLM returns segmentInsights/keyFindings/risks as null instead of array; server crashes at null[0] access
+- [x] Fix: Added null-safety guards for all LLM response arrays in analyze procedure (intentData.meshRoute, findings.keyFindings, risksData.risks, segments.segmentInsights, reportData.recommendation)
+- [x] Fix: AskScreen error banner now safely stringifies error.message regardless of type
+- [x] 55/55 tests pass, 0 TypeScript errors
