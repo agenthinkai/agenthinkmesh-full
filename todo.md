@@ -442,3 +442,6 @@
 - [x] Add revenueSegments field to Agent 6 prompt and JSON schema (extracts actual revenue lines from spreadsheet)
 - [x] Show Revenue Segment Breakdown section in result screen for financial tasks (replaces generic market segments)
 - [x] 55/55 tests pass, 0 TypeScript errors
+
+## Session 38 — Sense Check Observations Fix
+- [x] Fix Sense Check observations: strengthened Agent 6 prompt to require ≥3 observations; added required:["verdict","observations"] to JSON schema; minItems:1 enforced. 55/55 tests pass.

@@ -1,0 +1,38 @@
+{
+  "query": "SELECT id, structuredReport FROM mesh_tasks ORDER BY id DESC LIMIT 3;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT id, structuredReport FROM mesh_tasks ORDER BY id DESC LIMIT 3;",
+  "rows": [
+    {
+      "id": "6",
+      "structuredReport": "{"
+    },
+    {
+      "id": "5",
+      "structuredReport": "{"
+    },
+    {
+      "id": "4",
+      "structuredReport": "{"
+    }
+  ],
+  "messages": [
+    "  \"executiveSummary\": \"AgenThink projects rapid revenue growth from $6.26M in 2026 to $158.1M in 2030, driven by diverse verticalized segments. The company expects to achieve profitability by 2028, with net income rising significantly thereafter. Initial years show substantial losses and negative cash flow, requiring significant external financing. The projected financials indicate a high-growth startup phase, with substantial investment in direct costs like compute, manpower, and platform fees, alongside indirect costs for marketing and marketplace development. The DCF valuation, based on these projections, suggests a significant implied valuation, albeit with high sensitivity to growth and cost assumptions.\",",
+    "  \"senseCheck\": {",
+    "    \"verdict\": \"Concerns Noted\"",
+    "  }",
+    "  }",
+    "  \"executiveSummary\": \"AgenThink's financial projections indicate a rapid growth trajectory, with total revenue projected to increase from $6.26 million in 2026 to $158.1 million in 2030. The company is expected to achieve profitability in 2028, with net profit after tax reaching $9.17 million by 2030. Significant capital injections via equity and debt are planned to fund initial losses and growth. While the growth rates are ambitious, the shift to profitability and positive cash flow in later years suggests a potentially viable business model, assuming successful market penetration and cost management.\",",
+    "  \"senseCheck\": {",
+    "    \"verdict\": \"Concerns Noted\"",
+    "  }",
+    "  }",
+    "  \"executiveSummary\": \"AgenThink's financial projections indicate a high-growth startup phase, with revenue projected to increase significantly from $6.26M in 2026 to $158.1M in 2030. The company is expected to achieve profitability by 2028, after initial years of substantial losses. A significant portion of funding is anticipated through a mix of equity and debt, with continuous capital injections required to support growth and cover initial operational deficits. The DCF valuation, based on these projections, suggests a substantial valuation, but this is highly sensitive to the underlying assumptions.\",",
+    "  \"senseCheck\": {",
+    "    \"verdict\": \"Concerns Noted\"",
+    "  }",
+    "  }"
+  ],
+  "stdout": "id\tstructuredReport\n6\t{\n  \"executiveSummary\": \"AgenThink projects rapid revenue growth from $6.26M in 2026 to $158.1M in 2030, driven by diverse verticalized segments. The company expects to achieve profitability by 2028, with net income rising significantly thereafter. Initial years show substantial losses and negative cash flow, requiring significant external financing. The projected financials indicate a high-growth startup phase, with substantial investment in direct costs like compute, manpower, and platform fees, alongside indirect costs for marketing and marketplace development. The DCF valuation, based on these projections, suggests a significant implied valuation, albeit with high sensitivity to growth and cost assumptions.\",\n  \"senseCheck\": {\n    \"verdict\": \"Concerns Noted\"\n  }\n  }\n5\t{\n  \"executiveSummary\": \"AgenThink's financial projections indicate a rapid growth trajectory, with total revenue projected to increase from $6.26 million in 2026 to $158.1 million in 2030. The company is expected to achieve profitability in 2028, with net profit after tax reaching $9.17 million by 2030. Significant capital injections via equity and debt are planned to fund initial losses and growth. While the growth rates are ambitious, the shift to profitability and positive cash flow in later years suggests a potentially viable business model, assuming successful market penetration and cost management.\",\n  \"senseCheck\": {\n    \"verdict\": \"Concerns Noted\"\n  }\n  }\n4\t{\n  \"executiveSummary\": \"AgenThink's financial projections indicate a high-growth startup phase, with revenue projected to increase significantly from $6.26M in 2026 to $158.1M in 2030. The company is expected to achieve profitability by 2028, after initial years of substantial losses. A significant portion of funding is anticipated through a mix of equity and debt, with continuous capital injections required to support growth and cover initial operational deficits. The DCF valuation, based on these projections, suggests a substantial valuation, but this is highly sensitive to the underlying assumptions.\",\n  \"senseCheck\": {\n    \"verdict\": \"Concerns Noted\"\n  }\n  }\n",
+  "stderr": "",
+  "execution_time_ms": 1561
+}

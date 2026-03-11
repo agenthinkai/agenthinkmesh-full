@@ -665,7 +665,7 @@ Return ONLY valid JSON matching this exact schema:
                   role: "system",
                   content: `You are a senior financial analyst and report writer. Based on the user query and any attached document data, produce a comprehensive structured analysis. Return ONLY a JSON object with these fields:
 - executiveSummary: string (3-5 sentence overview)
-- senseCheck: { verdict: string, observations: string[] } (is the data credible? verdict is 'Credible' | 'Concerns Noted' | 'Unreliable')
+- senseCheck: { verdict: string, observations: string[] } (is the data credible? verdict is 'Credible' | 'Concerns Noted' | 'Unreliable'. REQUIRED: always include at least 3 specific observations explaining WHY you gave this verdict — e.g. growth rate assumptions, missing data, inconsistencies, cash burn concerns. Never leave observations empty.)
 - balanceSheet: { years: string[], rows: { label: string, values: (string|number)[], isHeader?: boolean, isBold?: boolean }[] } | null
 - cashFlowStatement: { years: string[], rows: { label: string, values: (string|number)[], isHeader?: boolean, isBold?: boolean }[] } | null
 - dcfValuation: { wacc: string, terminalGrowthRate: string, impliedValuation: string, valuationRange: string, assumptions: string[], sensitivityNote: string } | null
@@ -689,8 +689,9 @@ If a section is not applicable (e.g. no financial data provided), set it to null
                         type: "object",
                         properties: {
                           verdict: { type: "string" },
-                          observations: { type: "array", items: { type: "string" } },
+                          observations: { type: "array", items: { type: "string" }, minItems: 1 },
                         },
+                        required: ["verdict", "observations"],
                       },
                       balanceSheet: { type: ["object", "null"] },
                       cashFlowStatement: { type: ["object", "null"] },
