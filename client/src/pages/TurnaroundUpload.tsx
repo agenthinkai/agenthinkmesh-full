@@ -86,6 +86,55 @@ interface UploadedFile {
   slot: string;
 }
 
+// Synthetic GCC demo scenario
+const DEMO_COMPANY = "Al-Rashid Retail Group";
+const DEMO_INDUSTRY = "Retail & Consumer Goods";
+const DEMO_CRISIS = "Cash runway under 5 months, accelerating customer churn in core Kuwait City stores, and a supplier credit freeze following delayed payments to 3 key vendors.";
+const DEMO_DOC = `AL-RASHID RETAIL GROUP — FINANCIAL SUMMARY (Q3 2025)
+
+COMPANY OVERVIEW
+Al-Rashid Retail Group operates 34 retail outlets across Kuwait (22), UAE (8), and Bahrain (4), with a workforce of 2,400. The group operates in mid-market fashion, home goods, and electronics segments.
+
+CASH POSITION
+- Cash & equivalents: KWD 2.1M (down from KWD 6.8M at year-start)
+- Monthly cash burn: KWD 0.9M
+- Projected runway at current burn: 4.8 months
+- Revolving credit facility: KWD 5M (fully drawn)
+- Supplier payables overdue >60 days: KWD 3.2M
+
+REVENUE PERFORMANCE
+- Q3 2025 revenue: KWD 18.4M (vs KWD 24.1M Q3 2024, -23.7% YoY)
+- Kuwait City flagship stores: -31% YoY (5 stores)
+- UAE stores: -12% YoY (performing relatively better)
+- E-commerce: +8% YoY (small base, KWD 1.1M)
+
+GROSS MARGIN
+- Blended gross margin: 28.4% (vs 34.1% prior year)
+- Margin compression driven by: aggressive discounting (-4.2pp), higher logistics costs (+1.5pp)
+
+OPERATING EXPENSES
+- Staff costs: KWD 5.2M/quarter (fixed, no redundancies yet)
+- Rent: KWD 3.8M/quarter (lease renegotiations in progress for 6 stores)
+- Marketing: KWD 0.8M/quarter (cut from KWD 1.6M)
+
+DEBT STRUCTURE
+- Term loan (NBK): KWD 12M outstanding, next principal repayment KWD 2M due Jan 2026
+- Supplier credit lines: 3 major suppliers have suspended credit (total exposure KWD 3.2M)
+- No covenant breaches yet, but DSCR at 0.91x (covenant threshold: 1.0x)
+
+KEY RISKS
+1. Covenant breach on NBK term loan if Q4 revenue misses by >15%
+2. Supplier inventory freeze — 2 key product categories at risk of stockout within 8 weeks
+3. Staff morale: 3 senior managers resigned in Q3; recruitment freeze in place
+4. Lease renegotiations: 2 landlords have issued breach notices for late rent
+
+MANAGEMENT ACTIONS TO DATE
+- Hired turnaround advisor — engagement started Oct 2025
+- Initiated sale-leaseback of 2 owned store properties (expected proceeds KWD 4.5M, Q1 2026)
+- Launched Project Phoenix — internal cost reduction initiative targeting KWD 2M annualised savings
+- Approached 2 strategic investors for equity injection (discussions at NDA stage)
+`;
+
 export default function TurnaroundUpload() {
   const [, navigate] = useLocation();
   const { isAuthenticated } = useAuth();
@@ -97,6 +146,7 @@ export default function TurnaroundUpload() {
   const [dragOverSlot, setDragOverSlot] = useState<string | null>(null);
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
+  const [isDemoLoaded, setIsDemoLoaded] = useState(false);
   const uploadDocument = trpc.turnaround.uploadDocument.useMutation();
   const createSession = trpc.turnaround.create.useMutation({
     onSuccess: (data) => {
@@ -165,6 +215,32 @@ export default function TurnaroundUpload() {
 
   const canActivate = companyName.trim() && uploadedFiles.some(f => f.slot === "financial-sentinel");
 
+  const handleLoadDemo = async () => {
+    setCompanyName(DEMO_COMPANY);
+    setIndustry(DEMO_INDUSTRY);
+    setCrisisType(DEMO_CRISIS);
+    setIsDemoLoaded(true);
+    toast.success("Demo scenario loaded — Al-Rashid Retail Group, Kuwait");
+    try {
+      const encoded = encodeURIComponent(DEMO_DOC);
+      const base64 = btoa(unescape(encoded));
+      const result = await uploadDocument.mutateAsync({
+        fileName: "AlRashid_Financial_Summary_Q3_2025.txt",
+        mimeType: "text/plain",
+        base64Data: base64,
+      });
+      setUploadedFiles([{
+        fileName: result.fileName,
+        fileUrl: result.url,
+        mimeType: "text/plain",
+        slot: "financial-sentinel",
+      }]);
+      toast.success("Synthetic financial document assigned to Financial Sentinel");
+    } catch {
+      toast.error("Could not upload demo document — please upload manually");
+    }
+  };
+
   return (
     <div style={{ minHeight: "100vh", background: NAVY_950, fontFamily: FONT, color: SILVER_50 }}>
       {/* Navbar */}
@@ -195,9 +271,44 @@ export default function TurnaroundUpload() {
           <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: 32, fontWeight: 900, color: SILVER_50, marginBottom: 10 }}>
             Activate Crisis Response
           </h1>
-          <p style={{ fontSize: 14, color: SILVER_400, lineHeight: 1.7 }}>
+          <p style={{ fontSize: 14, color: SILVER_400, lineHeight: 1.7, marginBottom: 20 }}>
             Assign documents to each specialist agent. Financial Sentinel requires at least one document. All other agents will run with whatever context is available.
           </p>
+          {/* Demo mode button */}
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: 10,
+            padding: "10px 18px", borderRadius: 10,
+            background: isDemoLoaded ? "rgba(34,197,94,0.08)" : "rgba(224,123,84,0.08)",
+            border: `1px solid ${isDemoLoaded ? "rgba(34,197,94,0.3)" : "rgba(224,123,84,0.3)"}`,
+          }}>
+            <span style={{ fontSize: 13, color: isDemoLoaded ? "#4ADE80" : "#E07B54", fontFamily: MONO }}>
+              {isDemoLoaded ? "✓ Demo loaded — Al-Rashid Retail Group" : "⚡ Try a live demo"}
+            </span>
+            {!isDemoLoaded && (
+              <button
+                onClick={handleLoadDemo}
+                disabled={uploadDocument.isPending}
+                style={{
+                  padding: "6px 14px", borderRadius: 7,
+                  background: "#E07B54", border: "none",
+                  color: "#fff", fontSize: 12, fontWeight: 700,
+                  cursor: uploadDocument.isPending ? "not-allowed" : "pointer",
+                  fontFamily: MONO, letterSpacing: "0.04em",
+                  opacity: uploadDocument.isPending ? 0.6 : 1,
+                }}
+              >
+                {uploadDocument.isPending ? "Loading…" : "Load Demo Company"}
+              </button>
+            )}
+            {isDemoLoaded && (
+              <button
+                onClick={() => { setCompanyName(""); setIndustry(""); setCrisisType(""); setUploadedFiles([]); setIsDemoLoaded(false); }}
+                style={{ padding: "4px 10px", borderRadius: 6, background: "none", border: "1px solid rgba(34,197,94,0.3)", color: "#4ADE80", fontSize: 11, cursor: "pointer", fontFamily: MONO }}
+              >
+                Clear
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Company details */}

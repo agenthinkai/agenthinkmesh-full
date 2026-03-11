@@ -509,3 +509,11 @@
 - [x] App.tsx: register all 4 new routes
 - [x] Nav: add Turnaround link to relevant nav bars
 - [x] 55/55 tests pass, 0 TypeScript errors
+
+## Session 45 — Turnaround Nav + Demo Mode
+
+- [x] Add "Turnaround" link to AskScreen top nav bar
+- [x] Add "Turnaround" link to Landing page top nav (desktop + mobile menu)
+- [x] TurnaroundUpload: "Load Demo Company" button with pre-filled synthetic GCC scenario (Al-Rashid Retail Group, Kuwait)
+- [x] Demo scenario: company name, industry, crisis type, and synthetic financial document auto-uploaded to Financial Sentinel
+- [x] 55/55 tests pass, 0 TypeScript errors
