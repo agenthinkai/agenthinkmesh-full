@@ -445,3 +445,16 @@
 
 ## Session 38 — Sense Check Observations Fix
 - [x] Fix Sense Check observations: strengthened Agent 6 prompt to require ≥3 observations; added required:["verdict","observations"] to JSON schema; minItems:1 enforced. 55/55 tests pass.
+
+## Session 39 — Download as PDF
+- [ ] Add server-side PDF generation endpoint using pdfkit
+- [ ] Add Download as PDF button to ResultScreen navbar
+- [ ] PDF includes: header with task type/date, Executive Summary, Sense Check observations, Key Metrics, Balance Sheet table, Cash Flow table, DCF Valuation, Next Steps
+- [ ] Write vitest test for the PDF generation procedure
+
+## Session 39 — Download as PDF
+- [x] Add ⬇ Download PDF button to result screen navbar (green, with spinner during generation)
+- [x] Created server/pdfReport.ts using pdfkit — renders Executive Summary, Sense Check, Key Metrics, Balance Sheet, Cash Flow, DCF Valuation, Next Steps
+- [x] Added mesh.downloadPdf tRPC protected procedure (generates PDF, returns base64 + filename)
+- [x] Client decodes base64 → Blob → URL.createObjectURL → triggers browser download
+- [x] 55/55 tests pass, 0 TypeScript errors

@@ -790,6 +790,48 @@ If a section is not applicable (e.g. no financial data provided), set it to null
         };
       }),
 
+    // Download a task result as a formatted PDF
+    downloadPdf: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+
+        const [row] = await db
+          .select()
+          .from(meshTasks)
+          .where(and(eq(meshTasks.id, input.id), eq(meshTasks.userId, ctx.user.id)))
+          .limit(1);
+
+        if (!row) throw new Error("Task not found");
+
+        const { generateReportPdf } = await import("./pdfReport.js");
+
+        const safeParse = (val: string | null) => {
+          if (!val) return null;
+          try { return JSON.parse(val); } catch { return null; }
+        };
+
+        const structuredReport = safeParse(row.structuredReport as string | null);
+        const taskData = {
+          id: row.id,
+          query: row.query,
+          taskType: row.taskType ?? "Analysis",
+          confidence: Number(row.confidenceScore ?? 0),
+          executionTime: Math.round((row.executionTimeMs ?? 0) / 1000),
+          keyFindings: safeParse(row.keyFindings as string | null) ?? [],
+          risks: safeParse(row.risks as string | null) ?? [],
+          recommendation: row.recommendation ?? null,
+          fileName: row.fileName ?? null,
+          structuredReport,
+          createdAt: row.createdAt,
+        };
+
+        const pdfBuffer = generateReportPdf(taskData);
+        const base64 = pdfBuffer.toString("base64");
+        return { base64, filename: `AgenThinkMesh-Report-${row.id}.pdf` };
+      }),
+
     // List all tasks for the current user (history)
     listTasks: protectedProcedure.query(async ({ ctx }) => {
       const db = await getDb();

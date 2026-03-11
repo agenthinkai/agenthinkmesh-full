@@ -1,4 +1,5 @@
 import { useParams, useLocation } from "wouter";
+import React from "react";
 import { trpc } from "@/lib/trpc";
 import Logo from "@/components/Logo";
 
@@ -196,6 +197,29 @@ export default function ResultScreen() {
   const params = useParams<{ id: string }>();
   const taskId = parseInt(params.id ?? "0", 10);
   const [, navigate] = useLocation();
+  const [pdfLoading, setPdfLoading] = React.useState(false);
+
+  const downloadPdf = trpc.mesh.downloadPdf.useMutation({
+    onSuccess: (data) => {
+      // Decode base64 and trigger browser download
+      const bytes = Uint8Array.from(atob(data.base64), c => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = data.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+      setPdfLoading(false);
+    },
+    onError: () => setPdfLoading(false),
+  });
+
+  const handleDownloadPdf = () => {
+    if (!taskId || pdfLoading) return;
+    setPdfLoading(true);
+    downloadPdf.mutate({ id: taskId });
+  };
 
   const { data: task, isLoading, error } = trpc.mesh.getTask.useQuery(
     { id: taskId },
@@ -277,8 +301,29 @@ export default function ResultScreen() {
             padding: "7px 18px", borderRadius: 8, border: `1px solid ${CYAN}20`,
             background: "transparent", color: MUTED, cursor: "pointer", fontSize: 14,
           }}>History</button>
+          <button
+            onClick={handleDownloadPdf}
+            disabled={pdfLoading}
+            style={{
+              padding: "7px 18px", borderRadius: 8,
+              border: `1px solid ${GREEN}40`,
+              background: pdfLoading ? `${GREEN}10` : `${GREEN}18`,
+              color: pdfLoading ? MUTED : GREEN,
+              cursor: pdfLoading ? "not-allowed" : "pointer",
+              fontSize: 14, fontWeight: 600,
+              display: "flex", alignItems: "center", gap: 6,
+              transition: "all 0.2s",
+            }}
+          >
+            {pdfLoading ? (
+              <><span style={{ display: "inline-block", width: 12, height: 12, border: `2px solid ${GREEN}40`, borderTopColor: GREEN, borderRadius: "50%", animation: "spin 0.8s linear infinite" }} /> Generating…</>
+            ) : (
+              <>⬇ Download PDF</>
+            )}
+          </button>
         </div>
       </nav>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
 
       {/* Content */}
       <main style={{ position: "relative", zIndex: 1, maxWidth: 1100, margin: "0 auto", padding: "40px 24px" }}>
