@@ -1,0 +1,19 @@
+{
+  "query": "SELECT id, userId, basePersona, activePersona, confidence, sessionCount, createdAt FROM user_profiles LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT id, userId, basePersona, activePersona, confidence, sessionCount, createdAt FROM user_profiles LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "userId": "1",
+      "basePersona": "RETAILER",
+      "activePersona": "RETAILER",
+      "confidence": "HIGH",
+      "sessionCount": "0",
+      "createdAt": "2026-03-15 08:09:34"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tbasePersona\tactivePersona\tconfidence\tsessionCount\tcreatedAt\n1\t1\tRETAILER\tRETAILER\tHIGH\t0\t2026-03-15 08:09:34\n",
+  "stderr": "",
+  "execution_time_ms": 1560
+}

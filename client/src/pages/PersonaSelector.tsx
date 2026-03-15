@@ -123,8 +123,11 @@ export default function PersonaSelector() {
   const [selected, setSelected] = useState<string | null>(null);
   const [, navigate] = useLocation();
 
+  const utils = trpc.useUtils();
   const classifyPersona = trpc.identity.classifyPersona.useMutation({
-    onSuccess: () => {
+    onSuccess: async () => {
+      // Invalidate the stale null cache so AskScreen won't redirect back here
+      await utils.identity.getProfile.invalidate();
       navigate("/ask");
     },
     onError: () => {

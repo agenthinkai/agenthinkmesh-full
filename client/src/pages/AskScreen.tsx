@@ -49,12 +49,18 @@ export default function AskScreen() {
   const dismissNudge = trpc.identity.dismissNudge.useMutation();
   const utils = trpc.useUtils();
 
-  // Redirect to persona setup if user has no profile yet
+  // Redirect to persona setup if user has no profile yet.
+  // Guard against isFetching so a cache invalidation refetch doesn't trigger the redirect.
   useEffect(() => {
-    if (isAuthenticated && identityProfile.data === null && !identityProfile.isLoading) {
+    if (
+      isAuthenticated &&
+      identityProfile.data === null &&
+      !identityProfile.isLoading &&
+      !identityProfile.isFetching
+    ) {
       navigate("/persona-setup");
     }
-  }, [isAuthenticated, identityProfile.data, identityProfile.isLoading, navigate]);
+  }, [isAuthenticated, identityProfile.data, identityProfile.isLoading, identityProfile.isFetching, navigate]);
 
   // Nudge banner state
   const [nudgeDismissed, setNudgeDismissed] = useState(false);

@@ -1,0 +1,35 @@
+{
+  "query": "SELECT id, openId, name FROM users LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT id, openId, name FROM users LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "openId": "oYGdZuwudwZqvkpodoMS68",
+      "name": "Farouq Sultan"
+    },
+    {
+      "id": "5",
+      "openId": "XuTbFHovbBSJrzQWNyjJXs",
+      "name": "kishore"
+    },
+    {
+      "id": "30187",
+      "openId": "mtqSPAAJeMUP9Ps6P6NMs6",
+      "name": "Shoeb Khan"
+    },
+    {
+      "id": "120331",
+      "openId": "MXgLPLqBL4XDK7Ezrpnh4i",
+      "name": "Kishore G"
+    },
+    {
+      "id": "210323",
+      "openId": "ZbcBooB5L96YKGqnDXFenN",
+      "name": "kishore"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\topenId\tname\n1\toYGdZuwudwZqvkpodoMS68\tFarouq Sultan\n5\tXuTbFHovbBSJrzQWNyjJXs\tkishore\n30187\tmtqSPAAJeMUP9Ps6P6NMs6\tShoeb Khan\n120331\tMXgLPLqBL4XDK7Ezrpnh4i\tKishore G\n210323\tZbcBooB5L96YKGqnDXFenN\tkishore\n",
+  "stderr": "",
+  "execution_time_ms": 1562
+}

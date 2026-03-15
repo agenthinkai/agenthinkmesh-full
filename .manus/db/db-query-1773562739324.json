@@ -1,0 +1,18 @@
+{
+  "query": "SELECT up.id, up.userId, up.basePersona, up.activePersona, u.name, u.openId FROM user_profiles up LEFT JOIN users u ON up.userId = u.id;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT up.id, up.userId, up.basePersona, up.activePersona, u.name, u.openId FROM user_profiles up LEFT JOIN users u ON up.userId = u.id;",
+  "rows": [
+    {
+      "id": "1",
+      "userId": "1",
+      "basePersona": "RETAILER",
+      "activePersona": "RETAILER",
+      "name": "Farouq Sultan",
+      "openId": "oYGdZuwudwZqvkpodoMS68"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tbasePersona\tactivePersona\tname\topenId\n1\t1\tRETAILER\tRETAILER\tFarouq Sultan\toYGdZuwudwZqvkpodoMS68\n",
+  "stderr": "",
+  "execution_time_ms": 1591
+}

@@ -1,0 +1,32 @@
+{
+  "query": "SELECT * FROM user_profiles LIMIT 5;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT * FROM user_profiles LIMIT 5;",
+  "rows": [
+    {
+      "id": "1",
+      "userId": "1",
+      "basePersona": "RETAILER",
+      "activePersona": "RETAILER",
+      "agentBundle": "[\"Demand Forecasting Agent\",\"Inventory Optimizer\",\"Supplier Risk Scorer\",\"Customer Sentiment Analyzer\",\"Pricing Intelligence Agent\"]",
+      "suggestedWorkflows": "[\"Inventory Review\",\"Supplier Assessment\"]",
+      "tone": "operational",
+      "domainTags": "[\"retail\",\"supply chain\",\"operations\"]",
+      "queryDomainTags": "NULL",
+      "dominantDomain": "NULL",
+      "personaDrift": "0",
+      "homepageReorder": "0",
+      "nudgeMessage": "NULL",
+      "sessionCount": "0",
+      "agentsUsedList": "NULL",
+      "domainTagFrequency": "NULL",
+      "workflowsCompleted": "NULL",
+      "confidence": "HIGH",
+      "createdAt": "2026-03-15 08:09:34",
+      "updatedAt": "2026-03-15 08:09:57"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tbasePersona\tactivePersona\tagentBundle\tsuggestedWorkflows\ttone\tdomainTags\tqueryDomainTags\tdominantDomain\tpersonaDrift\thomepageReorder\tnudgeMessage\tsessionCount\tagentsUsedList\tdomainTagFrequency\tworkflowsCompleted\tconfidence\tcreatedAt\tupdatedAt\n1\t1\tRETAILER\tRETAILER\t[\"Demand Forecasting Agent\",\"Inventory Optimizer\",\"Supplier Risk Scorer\",\"Customer Sentiment Analyzer\",\"Pricing Intelligence Agent\"]\t[\"Inventory Review\",\"Supplier Assessment\"]\toperational\t[\"retail\",\"supply chain\",\"operations\"]\tNULL\tNULL\t0\t0\tNULL\t0\tNULL\tNULL\tNULL\tHIGH\t2026-03-15 08:09:34\t2026-03-15 08:09:57\n",
+  "stderr": "",
+  "execution_time_ms": 1574
+}

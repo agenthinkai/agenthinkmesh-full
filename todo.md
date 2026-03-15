@@ -555,3 +555,9 @@
 - [x] UAE demo: 600-word synthetic project financing crisis brief (Khaleeji Properties, Dubai Marina tower, AED 380M, RERA refund risk) pre-loaded into Financial Sentinel slot
 - [x] UI: two demo buttons side by side (🇰🇼 Kuwait Retail + 🇦🇪 UAE Real Estate), each with independent loaded/clear state
 - [x] 55/55 tests pass, 0 TypeScript errors
+
+## Session 49 — Bug Fix: PersonaSelector
+
+- [ ] Fix: "Confirm & Enter Mesh" button stays greyed out even after tile selection
+- [ ] Fix: button should navigate to /ask after classifyPersona mutation succeeds
+- [ ] 55/55 tests pass, 0 TypeScript errors

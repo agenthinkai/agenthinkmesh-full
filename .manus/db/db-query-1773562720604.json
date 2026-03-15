@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, userId, basePersona, activePersona FROM user_profiles;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT id, userId, basePersona, activePersona FROM user_profiles;",
+  "rows": [
+    {
+      "id": "1",
+      "userId": "1",
+      "basePersona": "RETAILER",
+      "activePersona": "RETAILER"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\tbasePersona\tactivePersona\n1\t1\tRETAILER\tRETAILER\n",
+  "stderr": "",
+  "execution_time_ms": 1509
+}
