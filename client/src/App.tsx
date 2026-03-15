@@ -20,6 +20,7 @@ import TurnaroundHome from "./pages/TurnaroundHome";
 import TurnaroundUpload from "./pages/TurnaroundUpload";
 import TurnaroundCommand from "./pages/TurnaroundCommand";
 import TurnaroundReport from "./pages/TurnaroundReport";
+import PersonaSelector from "./pages/PersonaSelector";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./_core/hooks/useAuth";
 
@@ -69,6 +70,9 @@ function Router() {
       <Route path="/portfolio-review/analyzing/:id" component={PortfolioAnalyzing} />
       <Route path="/portfolio-review/report/:id" component={PortfolioReport} />
       <Route path="/vault" component={PortfolioVault} />
+
+      {/* Mesh Identity Layer */}
+      <Route path="/persona-setup" component={PersonaSelector} />
 
       {/* 100-Hour Turnaround */}
       <Route path="/turnaround" component={TurnaroundHome} />

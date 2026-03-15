@@ -517,3 +517,21 @@
 - [x] TurnaroundUpload: "Load Demo Company" button with pre-filled synthetic GCC scenario (Al-Rashid Retail Group, Kuwait)
 - [x] Demo scenario: company name, industry, crisis type, and synthetic financial document auto-uploaded to Financial Sentinel
 - [x] 55/55 tests pass, 0 TypeScript errors
+
+## Session 46 — Mesh Identity Layer (3-Stage Personalisation)
+
+- [x] DB schema: userProfiles table (20 columns) — pushed to DB
+- [x] tRPC: identity.classifyPersona mutation (Stage 1 — LLM call, create/update userProfile)
+- [x] tRPC: identity.inferFromFirstQuery mutation (Stage 2 — silent, runs on first query)
+- [x] tRPC: identity.refineSession mutation (Stage 3 — silent, runs every 5 sessions)
+- [x] tRPC: identity.getProfile query (read userProfile for current user)
+- [x] tRPC: identity.dismissNudge mutation (clear nudge_message after shown)
+- [x] tRPC: identity.recordSession mutation (increment session count, append agents used)
+- [x] PersonaSelector.tsx: 13 visual tile cards at /persona-setup
+- [x] Route: /persona-setup — redirect here if user has no userProfile after login
+- [x] AskScreen: Stage 2 silent hook on first query submission (session_count === 0)
+- [x] AskScreen: Stage 3 silent hook every 5 sessions (session_count % 5 === 0)
+- [x] AskScreen: dismissable nudge banner (shown once, cleared after dismiss)
+- [x] AskScreen: personalised hero text driven by active_persona
+- [x] App.tsx: /persona-setup route registered
+- [x] 55/55 tests pass, 0 TypeScript errors

@@ -229,3 +229,32 @@ export const turnaroundSessions = mysqlTable("turnaround_sessions", {
 
 export type TurnaroundSession = typeof turnaroundSessions.$inferSelect;
 export type InsertTurnaroundSession = typeof turnaroundSessions.$inferInsert;
+
+// ── Mesh Identity Layer — User Profiles ──────────────────────────────────────
+export const userProfiles = mysqlTable("user_profiles", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(), // FK → users.id, one profile per user
+  // Stage 1 — Signup Classifier
+  basePersona: varchar("basePersona", { length: 64 }), // tile selected at signup
+  // Stage 2 & 3 — updated by inference and refinement
+  activePersona: varchar("activePersona", { length: 64 }),
+  agentBundle: text("agentBundle"),           // JSON string[]
+  suggestedWorkflows: text("suggestedWorkflows"), // JSON string[]
+  tone: varchar("tone", { length: 64 }),
+  domainTags: text("domainTags"),             // JSON string[] from Stage 1
+  queryDomainTags: text("queryDomainTags"),   // JSON string[] from Stage 2
+  dominantDomain: varchar("dominantDomain", { length: 64 }), // Stage 3
+  personaDrift: boolean("personaDrift").notNull().default(false),
+  homepageReorder: boolean("homepageReorder").notNull().default(false),
+  nudgeMessage: text("nudgeMessage"),         // shown once then cleared
+  sessionCount: int("sessionCount").notNull().default(0),
+  agentsUsedList: text("agentsUsedList"),     // JSON string[] — append each use
+  domainTagFrequency: text("domainTagFrequency"), // JSON { tag: count }
+  workflowsCompleted: text("workflowsCompleted"), // JSON string[]
+  confidence: mysqlEnum("confidence", ["HIGH", "MEDIUM", "LOW"]).default("HIGH"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type UserProfile = typeof userProfiles.$inferSelect;
+export type InsertUserProfile = typeof userProfiles.$inferInsert;

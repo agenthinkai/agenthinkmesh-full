@@ -38,6 +38,35 @@ export default function AskScreen() {
   const search = useSearch();
   const { isAuthenticated } = useAuth();
 
+  // ── Mesh Identity Layer hooks ──────────────────────────────────────────────
+  const identityProfile = trpc.identity.getProfile.useQuery(undefined, {
+    enabled: isAuthenticated,
+    staleTime: 60_000,
+  });
+  const inferFromFirstQuery = trpc.identity.inferFromFirstQuery.useMutation();
+  const refineSession = trpc.identity.refineSession.useMutation();
+  const recordSession = trpc.identity.recordSession.useMutation();
+  const dismissNudge = trpc.identity.dismissNudge.useMutation();
+  const utils = trpc.useUtils();
+
+  // Redirect to persona setup if user has no profile yet
+  useEffect(() => {
+    if (isAuthenticated && identityProfile.data === null && !identityProfile.isLoading) {
+      navigate("/persona-setup");
+    }
+  }, [isAuthenticated, identityProfile.data, identityProfile.isLoading, navigate]);
+
+  // Nudge banner state
+  const [nudgeDismissed, setNudgeDismissed] = useState(false);
+  const nudgeMessage = identityProfile.data?.nudgeMessage ?? null;
+
+  const handleDismissNudge = () => {
+    setNudgeDismissed(true);
+    dismissNudge.mutate(undefined, {
+      onSuccess: () => utils.identity.getProfile.invalidate(),
+    });
+  };
+
   // File attachment state
   const [attachedFile, setAttachedFile] = useState<{ name: string; url: string; size: number } | null>(null);
   const [uploading, setUploading] = useState(false);
@@ -96,6 +125,27 @@ export default function AskScreen() {
       window.location.href = getLoginUrl();
       return;
     }
+
+    const currentSessionCount = identityProfile.data?.sessionCount ?? -1;
+
+    // Stage 2: fire silently on the very first query (sessionCount === 0)
+    if (currentSessionCount === 0) {
+      inferFromFirstQuery.mutate(
+        { firstQuery: query.trim() },
+        { onSuccess: () => utils.identity.getProfile.invalidate() }
+      );
+    }
+
+    // Stage 3: fire silently every 5 completed sessions
+    if (currentSessionCount > 0 && currentSessionCount % 5 === 0) {
+      refineSession.mutate(undefined, {
+        onSuccess: () => utils.identity.getProfile.invalidate(),
+      });
+    }
+
+    // Record the session (increment count, append agents)
+    recordSession.mutate({ agentsUsed: ["Intent Classifier", "Research Analyst", "Risk Analyst", "Segment Analyst", "Report Writer"] });
+
     analyze.mutate({
       query: query.trim(),
       fileUrl: attachedFile?.url ?? null,
@@ -190,7 +240,9 @@ export default function AskScreen() {
         }}>
           <span style={{ width: 7, height: 7, borderRadius: "50%", background: CYAN, boxShadow: `0 0 8px ${CYAN}`, display: "inline-block" }} />
           <span style={{ color: CYAN, fontSize: 12, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.08em" }}>
-            112 specialist agents · Mesh Online
+            {identityProfile.data?.activePersona
+              ? `${identityProfile.data.activePersona.replace(/_/g, " ")} MESH · Online`
+              : "112 specialist agents · Mesh Online"}
           </span>
         </div>
 
@@ -212,7 +264,9 @@ export default function AskScreen() {
         </h1>
 
         <p style={{ color: MUTED, fontSize: 16, textAlign: "center", marginBottom: 36, lineHeight: 1.6, maxWidth: 560 }}>
-          AgenThinkMesh activates the right specialist agents across Finance, Legal, Healthcare, and GCC Wealth — delivering institutional-grade results in seconds.
+          {identityProfile.data?.activePersona
+            ? `Your Mesh is configured for ${identityProfile.data.activePersona.replace(/_/g, " ").toLowerCase()} workflows. The right agents are ready.`
+            : "AgenThinkMesh activates the right specialist agents across Finance, Legal, Healthcare, and GCC Wealth — delivering institutional-grade results in seconds."}
         </p>
 
         {/* Input area */}
@@ -378,6 +432,31 @@ export default function AskScreen() {
         )}
 
         {/* Error state */}
+        {/* Stage 3 nudge banner — shown when persona drift detected */}
+        {nudgeMessage && !nudgeDismissed && (
+          <div style={{
+            width: "100%",
+            background: "#00D4FF08",
+            border: "1px solid #00D4FF30",
+            borderRadius: 10,
+            padding: "12px 16px",
+            color: "#7DD3FC",
+            fontSize: 13,
+            marginBottom: 16,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 12,
+          }}>
+            <span>✦ {nudgeMessage}</span>
+            <button
+              onClick={handleDismissNudge}
+              style={{ background: "none", border: "none", color: "#7DD3FC", cursor: "pointer", fontSize: 16, lineHeight: 1, padding: 0, flexShrink: 0 }}
+              aria-label="Dismiss"
+            >×</button>
+          </div>
+        )}
+
         {analyze.isError && (
           <div style={{
             width: "100%",
