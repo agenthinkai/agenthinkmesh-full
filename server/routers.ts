@@ -1609,6 +1609,22 @@ If a section is not applicable (e.g. no financial data provided), set it to null
           isBuiltIn: false,
         };
       }),
+    // Returns { [domain]: count } for all active agents in one query
+    countByDomain: publicProcedure
+      .query(async () => {
+        const db = await getDb();
+        if (!db) return {} as Record<string, number>;
+        const rows = await db
+          .select({ domain: agents.domain, count: sql<number>`COUNT(*)` })
+          .from(agents)
+          .where(eq(agents.status, "active"))
+          .groupBy(agents.domain);
+        const map: Record<string, number> = {};
+        for (const row of rows) {
+          if (row.domain) map[row.domain] = Number(row.count);
+        }
+        return map;
+      }),
   }),
 
   // ── Arabic Annotation Pipeline ────────────────────────────────────────────

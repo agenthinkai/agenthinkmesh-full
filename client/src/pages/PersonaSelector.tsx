@@ -336,6 +336,10 @@ export default function PersonaSelector() {
 
   const utils = trpc.useUtils();
 
+  // Fetch agent counts for all domains (used on step 1 to show badge + hide empty tiles)
+  const countsQuery = trpc.agent.countByDomain.useQuery(undefined, { staleTime: 120_000 });
+  const domainCounts: Record<string, number> = countsQuery.data ?? {};
+
   // Fetch agents for selected domain (only when a domain is selected)
   const agentsQuery = trpc.agent.listByDomain.useQuery(
     { domain: selectedDomain?.id ?? "" },
@@ -471,7 +475,14 @@ export default function PersonaSelector() {
               gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
               gap: 14,
             }}>
-              {DOMAIN_TILES.map((tile) => (
+              {DOMAIN_TILES.filter((tile) => {
+                // Hide tiles with zero agents (unless counts haven't loaded yet)
+                if (countsQuery.isLoading) return true;
+                const count = tile.id === "OTHER" ? (domainCounts["OTHER"] ?? 0) : (domainCounts[tile.id] ?? 0);
+                return count > 0;
+              }).map((tile) => {
+                const agentCount = tile.id === "OTHER" ? (domainCounts["OTHER"] ?? 0) : (domainCounts[tile.id] ?? 0);
+                return (
                 <button
                   key={tile.id}
                   onClick={() => handleDomainClick(tile)}
@@ -518,13 +529,28 @@ export default function PersonaSelector() {
                     {tile.description}
                   </p>
                   <div style={{
-                    display: "flex", alignItems: "center", justifyContent: "flex-end",
-                    fontSize: 12, color: tile.color, fontWeight: 600,
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
                   }}>
-                    View agents →
+                    {/* Agent count badge */}
+                    {agentCount > 0 && (
+                      <span style={{
+                        fontSize: 11, fontWeight: 600,
+                        color: tile.color,
+                        background: `${tile.color}15`,
+                        border: `1px solid ${tile.color}30`,
+                        borderRadius: 20,
+                        padding: "2px 9px",
+                      }}>
+                        {agentCount} agent{agentCount !== 1 ? "s" : ""}
+                      </span>
+                    )}
+                    <span style={{ fontSize: 12, color: tile.color, fontWeight: 600, marginLeft: "auto" }}>
+                      View agents →
+                    </span>
                   </div>
                 </button>
-              ))}
+              );
+              })}
             </div>
           </>
         )}
