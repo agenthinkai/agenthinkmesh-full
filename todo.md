@@ -638,3 +638,7 @@
 ## Session: Fix PDF Export
 
 - [x] Fix Download PDF button on ResultScreen — PDF not opening / corrupted
+
+## Session: Dynamic roles from DB
+
+- [x] Display all roles/domains from DB on PersonaSelector with live agent counts sorted A-Z

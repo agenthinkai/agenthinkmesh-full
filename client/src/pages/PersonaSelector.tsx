@@ -1,94 +1,35 @@
 /**
  * Persona Selector — 2-step flow:
- *  Step 1: Choose a role (Doctor / Lawyer / Manager / etc.)
- *  Step 2: Browse agents for that role's domain, click one to run it
+ *  Step 1: Choose a domain/role from DB (sorted A–Z, with live agent counts)
+ *  Step 2: Browse agents for that domain, click one to run it
  */
 
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
-import Logo from "@/components/Logo";
 import SiteNav from "@/components/SiteNav";
 
-// ── Role tiles ────────────────────────────────────────────────────────────────
+// ── Domain metadata (icon + colour + description) ─────────────────────────────
+// Keyed by domain name (case-insensitive match attempted)
+const DOMAIN_META: Record<string, { icon: string; color: string; desc: string; persona: string }> = {
+  "Education":    { icon: "🎓", color: "#818CF8", desc: "Research assistance, citations, essay outlining, study planning", persona: "STUDENT" },
+  "Enterprise":   { icon: "🏢", color: "#E879F9", desc: "HR, procurement, SLA management, workflow automation", persona: "ENTERPRISE" },
+  "Finance":      { icon: "📈", color: "#4ADE80", desc: "Deal screening, DCF models, comps, macro monitoring, KYC/AML", persona: "FUND_MANAGER" },
+  "GCC Wealth":   { icon: "💎", color: "#C9A84C", desc: "Private wealth, HNWI profiling, Shariah compliance, family office", persona: "INVESTMENT_MANAGER" },
+  "Healthcare":   { icon: "🩺", color: "#22D3EE", desc: "Clinical summaries, drug interactions, ICD coding, patient records", persona: "DOCTOR" },
+  "Legal":        { icon: "⚖️", color: "#94A3B8", desc: "Contract review, clause extraction, GCC compliance, risk scoring", persona: "LAWYER" },
+};
 
-const ROLE_TILES = [
-  {
-    id: "doctor",
-    label: "Doctor",
-    icon: "🩺",
-    color: "#22D3EE",
-    domain: "Healthcare",
-    persona: "DOCTOR",
-    desc: "Clinical summaries, drug interactions, ICD coding, patient records",
-  },
-  {
-    id: "lawyer",
-    label: "Lawyer",
-    icon: "⚖️",
-    color: "#94A3B8",
-    domain: "Legal",
-    persona: "LAWYER",
-    desc: "Contract review, clause extraction, GCC compliance, risk scoring",
-  },
-  {
-    id: "manager",
-    label: "Manager",
-    icon: "🎯",
-    color: "#F87171",
-    domain: "Enterprise",
-    persona: "ENTERPRISE",
-    desc: "KPI tracking, budget analysis, project monitoring, meeting summaries",
-  },
-  {
-    id: "analyst",
-    label: "Financial Analyst",
-    icon: "📈",
-    color: "#4ADE80",
-    domain: "Finance",
-    persona: "FUND_MANAGER",
-    desc: "Deal screening, DCF models, comps, macro monitoring",
-  },
-  {
-    id: "banker",
-    label: "Banker",
-    icon: "🏦",
-    color: "#60A5FA",
-    domain: "Finance",
-    persona: "FUND_MANAGER",
-    desc: "KYC/AML, credit risk, loan structuring, portfolio monitoring",
-  },
-  {
-    id: "investor",
-    label: "Investor",
-    icon: "💎",
-    color: "#C9A84C",
-    domain: "GCC Wealth",
-    persona: "INVESTMENT_MANAGER",
-    desc: "Private wealth, HNWI profiling, Shariah compliance, family office",
-  },
-  {
-    id: "student",
-    label: "Student",
-    icon: "🎓",
-    color: "#818CF8",
-    domain: "Education",
-    persona: "STUDENT",
-    desc: "Research assistance, citations, essay outlining, study planning",
-  },
-  {
-    id: "enterprise",
-    label: "Enterprise",
-    icon: "🏢",
-    color: "#E879F9",
-    domain: "Enterprise",
-    persona: "ENTERPRISE",
-    desc: "HR, procurement, SLA management, workflow automation",
-  },
-];
+// Fallback for any domain not in the map above
+function domainMeta(domain: string) {
+  // Try exact match first, then case-insensitive
+  if (DOMAIN_META[domain]) return DOMAIN_META[domain];
+  const key = Object.keys(DOMAIN_META).find(k => k.toLowerCase() === domain.toLowerCase());
+  if (key) return DOMAIN_META[key];
+  return { icon: "🤖", color: "#7BA3D4", desc: `Specialist agents for ${domain}`, persona: "ENTERPRISE" };
+}
 
 // ── Capability badge colours ───────────────────────────────────────────────────
-
 const CAP_COLORS: Record<string, string> = {
   "deal-screening": "#7BA3D4",
   "due-diligence": "#60C8F5",
@@ -111,7 +52,6 @@ function capColor(cap: string) {
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-
 type DomainAgent = {
   id: number;
   agentName: string;
@@ -123,7 +63,6 @@ type DomainAgent = {
 };
 
 // ── Agent Card ────────────────────────────────────────────────────────────────
-
 function AgentCard({
   agent,
   roleColor,
@@ -243,26 +182,25 @@ function AgentCard({
 }
 
 // ── Main component ────────────────────────────────────────────────────────────
-
 export default function PersonaSelector() {
   const [step, setStep] = useState<1 | 2>(1);
-  const [selectedRole, setSelectedRole] = useState<typeof ROLE_TILES[0] | null>(null);
+  const [selectedDomain, setSelectedDomain] = useState<{ domain: string; count: number } | null>(null);
   const [, navigate] = useLocation();
 
   const utils = trpc.useUtils();
 
-  // Fetch agent counts per domain for Step 1 badges
-  const countQuery = trpc.agent.countByDomain.useQuery(undefined, { staleTime: 60_000 });
-  const domainCounts: Record<string, number> = countQuery.data ?? {};
+  // Fetch all domains sorted A-Z with live agent counts
+  const domainsQuery = trpc.agent.listDomains.useQuery(undefined, { staleTime: 60_000 });
+  const domains = domainsQuery.data ?? [];
 
-  // Fetch agents for selected role's domain
+  // Fetch agents for selected domain
   const agentsQuery = trpc.agent.listByDomain.useQuery(
-    { domain: selectedRole?.domain ?? "" },
-    { enabled: !!selectedRole, staleTime: 60_000 }
+    { domain: selectedDomain?.domain ?? "" },
+    { enabled: !!selectedDomain, staleTime: 60_000 }
   );
 
   const classifyPersona = trpc.identity.classifyPersona.useMutation({
-    onSuccess: async (_, variables) => {
+    onSuccess: async () => {
       await utils.identity.getProfile.invalidate();
       navigate("/ask");
     },
@@ -271,24 +209,25 @@ export default function PersonaSelector() {
     },
   });
 
-  const handleRoleClick = (role: typeof ROLE_TILES[0]) => {
-    setSelectedRole(role);
+  const handleDomainClick = (d: { domain: string; count: number }) => {
+    setSelectedDomain(d);
     setStep(2);
   };
 
   const handleAgentClick = (agent: DomainAgent) => {
-    if (!selectedRole) return;
-    classifyPersona.mutate({ selectedPersona: selectedRole.persona });
-    // Navigate immediately with agent context; mutation runs in background
+    if (!selectedDomain) return;
+    const meta = domainMeta(selectedDomain.domain);
+    classifyPersona.mutate({ selectedPersona: meta.persona });
     navigate(`/ask?agent=${agent.id}&agentName=${encodeURIComponent(agent.agentName)}`);
   };
 
   const handleBack = () => {
     setStep(1);
-    setSelectedRole(null);
+    setSelectedDomain(null);
   };
 
-  const roleColor = selectedRole?.color ?? "#7BA3D4";
+  const meta = selectedDomain ? domainMeta(selectedDomain.domain) : null;
+  const roleColor = meta?.color ?? "#7BA3D4";
   const agents = (agentsQuery.data ?? []) as DomainAgent[];
 
   return (
@@ -323,13 +262,13 @@ export default function PersonaSelector() {
       {/* ── Body ── */}
       <div style={{
         flex: 1,
-        maxWidth: 900,
+        maxWidth: 1000,
         width: "100%",
         margin: "0 auto",
         padding: "40px 24px 60px",
       }}>
 
-        {/* ── STEP 1: Role selection ── */}
+        {/* ── STEP 1: Domain selection (A–Z from DB) ── */}
         {step === 1 && (
           <>
             <div style={{ textAlign: "center", marginBottom: 36 }}>
@@ -337,93 +276,115 @@ export default function PersonaSelector() {
                 Step 1 of 2
               </div>
               <h1 style={{ fontSize: "clamp(22px, 4vw, 32px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 10 }}>
-                What best describes your role?
+                Choose your domain
               </h1>
               <p style={{ fontSize: 14, color: "rgba(240,244,250,0.45)", maxWidth: 480, margin: "0 auto", lineHeight: 1.7 }}>
-                Select your professional role. We'll show you the specialist agents built for your field.
+                Select the domain that best matches your work. We'll show you the specialist agents built for that field.
               </p>
+              {domainsQuery.isLoading && (
+                <p style={{ fontSize: 12, color: "rgba(240,244,250,0.3)", marginTop: 12, fontFamily: "monospace" }}>
+                  Loading domains…
+                </p>
+              )}
+              {!domainsQuery.isLoading && domains.length > 0 && (
+                <p style={{ fontSize: 12, color: "rgba(240,244,250,0.3)", marginTop: 12, fontFamily: "monospace" }}>
+                  {domains.reduce((sum, d) => sum + d.count, 0)} specialist agents across {domains.length} domains
+                </p>
+              )}
             </div>
 
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
-              gap: 14,
-            }}>
-              {ROLE_TILES.map((role) => (
-                <button
-                  key={role.id}
-                  onClick={() => handleRoleClick(role)}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 10,
-                    padding: "20px",
-                    borderRadius: 16,
-                    border: `1.5px solid ${role.color}40`,
-                    background: `${role.color}0A`,
-                    cursor: "pointer",
-                    textAlign: "left",
-                    transition: "all 0.18s ease",
-                    outline: "none",
-                  }}
-                  onMouseEnter={e => {
-                    const el = e.currentTarget as HTMLButtonElement;
-                    el.style.boxShadow = `0 0 0 2px ${role.color}30, 0 8px 32px ${role.color}20`;
-                    el.style.transform = "translateY(-2px)";
-                    el.style.borderColor = `${role.color}70`;
-                  }}
-                  onMouseLeave={e => {
-                    const el = e.currentTarget as HTMLButtonElement;
-                    el.style.boxShadow = "none";
-                    el.style.transform = "none";
-                    el.style.borderColor = `${role.color}40`;
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{
-                      width: 44, height: 44, borderRadius: 12,
-                      background: `${role.color}18`,
-                      border: `1px solid ${role.color}30`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 22, flexShrink: 0,
-                    }}>
-                      {role.icon}
-                    </div>
-                    <div>
-                  <div style={{ fontWeight: 700, fontSize: 15, color: "#F0F4FA" }}>{role.label}</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-                      <span style={{ fontSize: 10, color: role.color, fontFamily: "monospace" }}>
-                        {role.domain}
-                      </span>
-                      {domainCounts[role.domain] != null && (
-                        <span style={{
-                          fontSize: 9, fontFamily: "monospace", fontWeight: 700,
-                          background: `${role.color}20`,
-                          border: `1px solid ${role.color}40`,
-                          color: role.color,
-                          borderRadius: 10,
-                          padding: "1px 7px",
+            {domainsQuery.isLoading ? (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 14 }}>
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} style={{
+                    height: 140, borderRadius: 16,
+                    background: "rgba(255,255,255,0.03)",
+                    border: "1.5px solid rgba(255,255,255,0.06)",
+                    animation: "pulse 1.5s ease-in-out infinite",
+                    animationDelay: `${i * 0.1}s`,
+                  }} />
+                ))}
+              </div>
+            ) : (
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+                gap: 14,
+              }}>
+                {domains.map((d) => {
+                  const m = domainMeta(d.domain);
+                  return (
+                    <button
+                      key={d.domain}
+                      onClick={() => handleDomainClick(d)}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 10,
+                        padding: "20px",
+                        borderRadius: 16,
+                        border: `1.5px solid ${m.color}40`,
+                        background: `${m.color}0A`,
+                        cursor: "pointer",
+                        textAlign: "left",
+                        transition: "all 0.18s ease",
+                        outline: "none",
+                      }}
+                      onMouseEnter={e => {
+                        const el = e.currentTarget as HTMLButtonElement;
+                        el.style.boxShadow = `0 0 0 2px ${m.color}30, 0 8px 32px ${m.color}20`;
+                        el.style.transform = "translateY(-2px)";
+                        el.style.borderColor = `${m.color}70`;
+                      }}
+                      onMouseLeave={e => {
+                        const el = e.currentTarget as HTMLButtonElement;
+                        el.style.boxShadow = "none";
+                        el.style.transform = "none";
+                        el.style.borderColor = `${m.color}40`;
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <div style={{
+                          width: 44, height: 44, borderRadius: 12,
+                          background: `${m.color}18`,
+                          border: `1px solid ${m.color}30`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 22, flexShrink: 0,
                         }}>
-                          {domainCounts[role.domain]} agents
-                        </span>
-                      )}
-                    </div>
-                    </div>
-                  </div>
-                  <p style={{ fontSize: 12, color: "rgba(240,244,250,0.45)", lineHeight: 1.6, margin: 0 }}>
-                    {role.desc}
-                  </p>
-                  <span style={{ fontSize: 12, color: role.color, fontWeight: 600, alignSelf: "flex-end" }}>
-                    Select →
-                  </span>
-                </button>
-              ))}
-            </div>
+                          {m.icon}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 700, fontSize: 15, color: "#F0F4FA" }}>{d.domain}</div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                            <span style={{
+                              fontSize: 9, fontFamily: "monospace", fontWeight: 700,
+                              background: `${m.color}20`,
+                              border: `1px solid ${m.color}40`,
+                              color: m.color,
+                              borderRadius: 10,
+                              padding: "1px 7px",
+                            }}>
+                              {d.count} agent{d.count !== 1 ? "s" : ""}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <p style={{ fontSize: 12, color: "rgba(240,244,250,0.45)", lineHeight: 1.6, margin: 0 }}>
+                        {m.desc}
+                      </p>
+                      <span style={{ fontSize: 12, color: m.color, fontWeight: 600, alignSelf: "flex-end" }}>
+                        Select →
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </>
         )}
 
         {/* ── STEP 2: Agent list ── */}
-        {step === 2 && selectedRole && (
+        {step === 2 && selectedDomain && meta && (
           <>
             {/* Back + heading */}
             <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 32 }}>
@@ -444,55 +405,45 @@ export default function PersonaSelector() {
                   Step 2 of 2
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                  <span style={{ fontSize: 22 }}>{selectedRole.icon}</span>
+                  <span style={{ fontSize: 22 }}>{meta.icon}</span>
                   <h2 style={{ fontSize: "clamp(18px, 3vw, 26px)", fontWeight: 800, letterSpacing: "-0.03em", margin: 0 }}>
-                    {selectedRole.label} Agents
+                    {selectedDomain.domain} Agents
                   </h2>
                   <span style={{
-                    fontSize: 10, color: roleColor, fontFamily: "monospace",
-                    background: `${roleColor}15`, border: `1px solid ${roleColor}30`,
-                    borderRadius: 4, padding: "2px 8px", fontWeight: 700,
+                    fontSize: 10, fontFamily: "monospace", fontWeight: 700,
+                    background: `${roleColor}20`, border: `1px solid ${roleColor}40`,
+                    color: roleColor, borderRadius: 10, padding: "2px 9px",
                   }}>
-                    {selectedRole.domain}
+                    {selectedDomain.count} agents
                   </span>
                 </div>
-                <p style={{ fontSize: 13, color: "rgba(240,244,250,0.4)", margin: 0 }}>
-                  Click any agent to run it instantly in the Mesh
+                <p style={{ fontSize: 13, color: "rgba(240,244,250,0.45)", margin: 0 }}>
+                  Click any agent to launch it in the Mesh.
                 </p>
               </div>
             </div>
 
-            {/* Agent grid */}
             {agentsQuery.isLoading ? (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
-                {Array.from({ length: 6 }).map((_, i) => (
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: 12 }}>
+                {[...Array(6)].map((_, i) => (
                   <div key={i} style={{
-                    height: 140, borderRadius: 14,
+                    height: 120, borderRadius: 14,
                     background: "rgba(255,255,255,0.03)",
-                    border: "1px solid rgba(255,255,255,0.06)",
+                    border: "1.5px solid rgba(255,255,255,0.06)",
                     animation: "pulse 1.5s ease-in-out infinite",
+                    animationDelay: `${i * 0.1}s`,
                   }} />
                 ))}
               </div>
             ) : agents.length === 0 ? (
-              <div style={{
-                padding: "48px 24px", textAlign: "center",
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 16,
-              }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
-                <p style={{ fontSize: 14, color: "rgba(240,244,250,0.4)", lineHeight: 1.7 }}>
-                  No agents found for this domain yet.<br />
-                  <a href="/ask" style={{ color: roleColor, textDecoration: "none", fontWeight: 600 }}>
-                    Go to the Mesh →
-                  </a>
-                </p>
+              <div style={{ textAlign: "center", padding: "60px 0", color: "rgba(240,244,250,0.35)" }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>🔍</div>
+                <div style={{ fontSize: 14 }}>No agents found for this domain yet.</div>
               </div>
             ) : (
               <div style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+                gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
                 gap: 12,
               }}>
                 {agents.map((agent) => (
@@ -505,31 +456,14 @@ export default function PersonaSelector() {
                 ))}
               </div>
             )}
-
-            {/* Loading state while navigating */}
-            {classifyPersona.isPending && (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "24px 0", marginTop: 16 }}>
-                <svg style={{ animation: "spin 1s linear infinite", width: 28, height: 28, color: roleColor }} viewBox="0 0 24 24" fill="none">
-                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
-                  <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                </svg>
-                <span style={{ fontSize: 13, color: roleColor, fontWeight: 600 }}>
-                  Launching agent…
-                </span>
-              </div>
-            )}
           </>
         )}
       </div>
 
       <style>{`
         @keyframes pulse {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.4; }
-        }
-        @keyframes spin {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
+          0%, 100% { opacity: 0.4; }
+          50% { opacity: 0.7; }
         }
       `}</style>
     </div>

@@ -1625,6 +1625,22 @@ If a section is not applicable (e.g. no financial data provided), set it to null
         }
         return map;
       }),
+
+    // Returns all distinct domains sorted A-Z with agent counts
+    listDomains: publicProcedure
+      .query(async () => {
+        const db = await getDb();
+        if (!db) return [] as { domain: string; count: number }[];
+        const rows = await db
+          .select({ domain: agents.domain, count: sql<number>`COUNT(*)` })
+          .from(agents)
+          .where(eq(agents.status, "active"))
+          .groupBy(agents.domain);
+        return rows
+          .filter((r) => !!r.domain)
+          .map((r) => ({ domain: r.domain as string, count: Number(r.count) }))
+          .sort((a, b) => a.domain.localeCompare(b.domain));
+      }),
   }),
 
   // ── Arabic Annotation Pipeline ────────────────────────────────────────────

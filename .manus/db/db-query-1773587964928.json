@@ -1,0 +1,38 @@
+{
+  "query": "SELECT domain, COUNT(*) as agent_count FROM agents GROUP BY domain ORDER BY domain ASC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT domain, COUNT(*) as agent_count FROM agents GROUP BY domain ORDER BY domain ASC;",
+  "rows": [
+    {
+      "domain": "NULL",
+      "agent_count": "25"
+    },
+    {
+      "domain": "Education",
+      "agent_count": "6"
+    },
+    {
+      "domain": "Enterprise",
+      "agent_count": "31"
+    },
+    {
+      "domain": "Finance",
+      "agent_count": "31"
+    },
+    {
+      "domain": "GCC Wealth",
+      "agent_count": "6"
+    },
+    {
+      "domain": "Healthcare",
+      "agent_count": "13"
+    },
+    {
+      "domain": "Legal",
+      "agent_count": "6"
+    }
+  ],
+  "messages": [],
+  "stdout": "domain\tagent_count\nNULL\t25\nEducation\t6\nEnterprise\t31\nFinance\t31\nGCC Wealth\t6\nHealthcare\t13\nLegal\t6\n",
+  "stderr": "",
+  "execution_time_ms": 1557
+}
