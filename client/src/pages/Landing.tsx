@@ -4,6 +4,7 @@ import Logo from "@/components/Logo";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
+import { HowItWorks } from "@/components/HowItWorks";
 
 // ── Brand palette (matches logo: deep navy + silver/platinum) ──────────────
 const NAVY_950 = "#0B1629";
@@ -591,6 +592,8 @@ export default function Landing() {
 
       {/* ── Hero (VarD Neon) ── */}
       <NeonHero loginUrl={loginUrl} stats={s} />
+
+      <HowItWorks />
 
       {false && <section id="how-it-works" style={{ padding: "72px 24px", background: NAVY_950 }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>

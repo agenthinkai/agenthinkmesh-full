@@ -605,3 +605,8 @@
 ## Session: Remove Domains Dropdown
 
 - [x] Replace Domains dropdown in navbar with a simple anchor link that scrolls to the domain showcase section
+
+## Session: Animated How It Works Section
+
+- [x] Build animated HowItWorks component with 4 steps: select role, pick agents, run & get output, create new agent
+- [x] Integrate HowItWorks section into Landing page between hero and domain showcase
