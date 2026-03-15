@@ -595,3 +595,9 @@
 
 - [x] Standardize all CTA buttons on landing page to use the same primary color (blue-to-green gradient)
 - [x] Remove "Skip now" link from /ask page top-right corner
+
+## Session: Fix Domains vs Personas Confusion
+
+- [x] Replace persona/role names in Domains navbar dropdown with true domain names (Finance, Legal, Healthcare, Enterprise, GCC Wealth, etc.)
+- [x] Redesign PersonaSelector Step 1 to show true domains instead of job titles
+- [x] Ensure domain tile IDs match the agent seeding domain names in the DB

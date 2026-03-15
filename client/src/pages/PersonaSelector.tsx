@@ -14,21 +14,10 @@ import Logo from "@/components/Logo";
 
 const DOMAIN_TILES = [
   {
-    id: "Banker",
-    label: "Banker",
-    icon: "🏦",
-    description: "Credit, KYC/AML, GCC regulatory monitoring, compliance",
-    color: "#60A5FA",
-    bg: "rgba(96,165,250,0.10)",
-    border: "rgba(96,165,250,0.35)",
-    glow: "rgba(96,165,250,0.25)",
-    persona: "BANKER",
-  },
-  {
     id: "Finance",
-    label: "Finance / VC",
-    icon: "💰",
-    description: "Deal screening, due diligence, portfolio monitoring, LP reporting, valuations",
+    label: "Finance",
+    icon: "💹",
+    description: "VC deal screening, banking, investment analysis, fund management, portfolio monitoring",
     color: "#4ADE80",
     bg: "rgba(74,222,128,0.10)",
     border: "rgba(74,222,128,0.35)",
@@ -36,65 +25,10 @@ const DOMAIN_TILES = [
     persona: "FUND_MANAGER",
   },
   {
-    id: "Fund Manager",
-    label: "Fund Manager",
-    icon: "📊",
-    description: "Portfolio intelligence, deal screening, macro monitoring, LP reporting",
-    color: "#34D399",
-    bg: "rgba(52,211,153,0.10)",
-    border: "rgba(52,211,153,0.35)",
-    glow: "rgba(52,211,153,0.25)",
-    persona: "FUND_MANAGER",
-  },
-  {
-    id: "Investment Manager",
-    label: "Investment Manager",
-    icon: "💼",
-    description: "Asset allocation, sovereign wealth, AUM reporting, mandate compliance",
-    color: "#FBBF24",
-    bg: "rgba(251,191,36,0.10)",
-    border: "rgba(251,191,36,0.35)",
-    glow: "rgba(251,191,36,0.25)",
-    persona: "INVESTMENT_MANAGER",
-  },
-  {
-    id: "Investment Analyst",
-    label: "Investment Analyst",
-    icon: "📈",
-    description: "DCF modeling, earnings analysis, equity research, comps",
-    color: "#A78BFA",
-    bg: "rgba(167,139,250,0.10)",
-    border: "rgba(167,139,250,0.35)",
-    glow: "rgba(167,139,250,0.25)",
-    persona: "INVESTMENT_ANALYST",
-  },
-  {
-    id: "Doctor",
-    label: "Doctor",
-    icon: "🩺",
-    description: "Clinical summaries, drug interactions, ICD coding, medical literature",
-    color: "#22D3EE",
-    bg: "rgba(34,211,238,0.10)",
-    border: "rgba(34,211,238,0.35)",
-    glow: "rgba(34,211,238,0.25)",
-    persona: "DOCTOR",
-  },
-  {
-    id: "Student",
-    label: "Student",
-    icon: "🎓",
-    description: "Research assistance, citations, concept explanations, essay outlining",
-    color: "#818CF8",
-    bg: "rgba(129,140,248,0.10)",
-    border: "rgba(129,140,248,0.35)",
-    glow: "rgba(129,140,248,0.25)",
-    persona: "STUDENT",
-  },
-  {
     id: "Legal",
-    label: "Lawyer",
+    label: "Legal",
     icon: "⚖️",
-    description: "Contract review, regulatory compliance, legal extraction, GCC law",
+    description: "Contract review, clause extraction, regulatory compliance, GCC jurisdiction intelligence",
     color: "#94A3B8",
     bg: "rgba(148,163,184,0.10)",
     border: "rgba(148,163,184,0.35)",
@@ -105,73 +39,29 @@ const DOMAIN_TILES = [
     id: "Healthcare",
     label: "Healthcare",
     icon: "🏥",
-    description: "Hospital ops, bed management, staffing, patient flow, clinical reporting",
-    color: "#6EE7B7",
-    bg: "rgba(110,231,183,0.10)",
-    border: "rgba(110,231,183,0.35)",
-    glow: "rgba(110,231,183,0.25)",
+    description: "Hospital operations, bed management, staffing optimisation, patient flow, clinical reporting",
+    color: "#22D3EE",
+    bg: "rgba(34,211,238,0.10)",
+    border: "rgba(34,211,238,0.35)",
+    glow: "rgba(34,211,238,0.25)",
     persona: "DOCTOR",
-  },
-  {
-    id: "Retailer",
-    label: "Retailer",
-    icon: "🛒",
-    description: "Demand forecasting, inventory, supplier risk, pricing intelligence",
-    color: "#FB923C",
-    bg: "rgba(251,146,60,0.10)",
-    border: "rgba(251,146,60,0.35)",
-    glow: "rgba(251,146,60,0.25)",
-    persona: "RETAILER",
-  },
-  {
-    id: "Office Clerk",
-    label: "Office Clerk",
-    icon: "📋",
-    description: "Document processing, email drafting, meeting notes, task prioritisation",
-    color: "#2DD4BF",
-    bg: "rgba(45,212,191,0.10)",
-    border: "rgba(45,212,191,0.35)",
-    glow: "rgba(45,212,191,0.25)",
-    persona: "OFFICE_CLERK",
-  },
-  {
-    id: "Manager",
-    label: "Manager",
-    icon: "🎯",
-    description: "Team performance, KPIs, project tracking, budget variance",
-    color: "#F87171",
-    bg: "rgba(248,113,113,0.10)",
-    border: "rgba(248,113,113,0.35)",
-    glow: "rgba(248,113,113,0.25)",
-    persona: "MANAGER",
-  },
-  {
-    id: "Marketing Manager",
-    label: "Marketing Manager",
-    icon: "📣",
-    description: "Campaign analysis, audience segmentation, content briefs, competitor monitoring",
-    color: "#F472B6",
-    bg: "rgba(244,114,182,0.10)",
-    border: "rgba(244,114,182,0.35)",
-    glow: "rgba(244,114,182,0.25)",
-    persona: "MARKETING_MANAGER",
   },
   {
     id: "Enterprise",
     label: "Enterprise",
     icon: "🏢",
-    description: "Workflow automation, multi-domain routing, HR, procurement, SLA management",
-    color: "#9CA3AF",
-    bg: "rgba(156,163,175,0.10)",
-    border: "rgba(156,163,175,0.35)",
-    glow: "rgba(156,163,175,0.25)",
+    description: "HR, operations, marketing, procurement, SLA management, workflow automation",
+    color: "#F87171",
+    bg: "rgba(248,113,113,0.10)",
+    border: "rgba(248,113,113,0.35)",
+    glow: "rgba(248,113,113,0.25)",
     persona: "ENTERPRISE",
   },
   {
     id: "GCC Wealth",
     label: "GCC Wealth",
     icon: "💎",
-    description: "Private wealth, HNWI profiling, Shariah compliance, family office",
+    description: "Private wealth management, HNWI profiling, Shariah compliance, family office",
     color: "#C9A84C",
     bg: "rgba(201,168,76,0.10)",
     border: "rgba(201,168,76,0.35)",
@@ -179,15 +69,15 @@ const DOMAIN_TILES = [
     persona: "INVESTMENT_MANAGER",
   },
   {
-    id: "OTHER",
-    label: "Other / General",
-    icon: "✨",
-    description: "Research, document review, task assistance, general analysis",
-    color: "#E879F9",
-    bg: "rgba(232,121,249,0.10)",
-    border: "rgba(232,121,249,0.35)",
-    glow: "rgba(232,121,249,0.25)",
-    persona: "OTHER",
+    id: "Education",
+    label: "Education",
+    icon: "🎓",
+    description: "Research assistance, citations, concept explanations, essay outlining, study planning",
+    color: "#818CF8",
+    bg: "rgba(129,140,248,0.10)",
+    border: "rgba(129,140,248,0.35)",
+    glow: "rgba(129,140,248,0.25)",
+    persona: "STUDENT",
   },
 ];
 
@@ -367,7 +257,7 @@ export default function PersonaSelector() {
   const agentsQuery = trpc.agent.listByDomain.useQuery(
     { domain: selectedDomain?.id ?? "" },
     {
-      enabled: !!selectedDomain && selectedDomain.id !== "OTHER",
+      enabled: !!selectedDomain,
       staleTime: 60_000,
     }
   );
@@ -393,12 +283,7 @@ export default function PersonaSelector() {
   const handleDomainClick = (domain: typeof DOMAIN_TILES[0]) => {
     setSelectedDomain(domain);
     setSelectedAgent(null);
-    if (domain.id === "OTHER") {
-      // No agents to show for "Other", go straight to confirm
-      setStep(2);
-    } else {
-      setStep(2);
-    }
+    setStep(2);
   };
 
   const handleConfirm = () => {
@@ -463,10 +348,10 @@ export default function PersonaSelector() {
           <>
             <div style={{ textAlign: "center", marginBottom: 36 }}>
               <h1 style={{ fontSize: "clamp(22px, 4vw, 32px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 10 }}>
-                What best describes your work?
+                Choose your domain
               </h1>
               <p style={{ fontSize: 14, color: "rgba(240,244,250,0.45)", maxWidth: 480, margin: "0 auto", lineHeight: 1.7 }}>
-                Select your domain. The Mesh will show you the specialist agents built for your field.
+                Select the industry domain that best matches your use case. The Mesh will activate the specialist agents built for that field.
               </p>
             </div>
 
@@ -516,7 +401,7 @@ export default function PersonaSelector() {
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 15, color: "#F0F4FA" }}>{tile.label}</div>
                       <div style={{ fontSize: 10, color: tile.color, fontFamily: "monospace", marginTop: 2 }}>
-                        {tile.id === "OTHER" ? "General" : `${tile.id} domain`}
+                        {tile.id} domain
                       </div>
                     </div>
                   </div>

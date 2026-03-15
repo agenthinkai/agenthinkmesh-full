@@ -71,24 +71,14 @@ const USE_CASES = [
   { role: "Hospital Ops Director", task: "Analyse this week's bed occupancy data and generate a staffing optimisation report", agents: 8, domain: "Healthcare" },
 ];
 
-// ── All 14 domain tiles for navbar dropdown ─────────────────────────────────
+// ── True industry domains for navbar dropdown ───────────────────────────────
 const ALL_DOMAINS = [
-  { id: "Banker", label: "Banker", icon: "🏦" },
-  { id: "Finance", label: "Finance / VC", icon: "💰" },
-  { id: "Fund Manager", label: "Fund Manager", icon: "📊" },
-  { id: "Investment Manager", label: "Investment Manager", icon: "💼" },
-  { id: "Investment Analyst", label: "Investment Analyst", icon: "📈" },
-  { id: "Doctor", label: "Doctor", icon: "🩺" },
-  { id: "Student", label: "Student", icon: "🎓" },
-  { id: "Legal", label: "Lawyer", icon: "⚖️" },
-  { id: "Healthcare", label: "Healthcare", icon: "🏥" },
-  { id: "Retailer", label: "Retailer", icon: "🛒" },
-  { id: "Office Clerk", label: "Office Clerk", icon: "📋" },
-  { id: "Manager", label: "Manager", icon: "🎯" },
-  { id: "Marketing Manager", label: "Marketing Manager", icon: "📣" },
-  { id: "Enterprise", label: "Enterprise", icon: "🏢" },
-  { id: "GCC Wealth", label: "GCC Wealth", icon: "💎" },
-  { id: "OTHER", label: "Other / General", icon: "✨" },
+  { id: "Finance", label: "Finance", icon: "💹", sub: "VC, Banking, Investment, Fund Management" },
+  { id: "Legal", label: "Legal", icon: "⚖️", sub: "Contract review, compliance, GCC law" },
+  { id: "Healthcare", label: "Healthcare", icon: "🏥", sub: "Hospital ops, clinical, patient flow" },
+  { id: "Enterprise", label: "Enterprise", icon: "🏢", sub: "HR, ops, marketing, procurement" },
+  { id: "GCC Wealth", label: "GCC Wealth", icon: "💎", sub: "Private wealth, Shariah, family office" },
+  { id: "Education", label: "Education", icon: "🎓", sub: "Research, citations, essay, study" },
 ];
 
 function DomainsDropdown() {
@@ -126,25 +116,27 @@ function DomainsDropdown() {
           padding: "8px 0", minWidth: 220, zIndex: 1000,
           boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
         }}>
-          <div style={{ padding: "6px 16px 8px", fontSize: 10, color: SILVER_500, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>14 specialist domains</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+          <div style={{ padding: "6px 16px 8px", fontSize: 10, color: SILVER_500, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>6 specialist domains</div>
+          <div style={{ display: "flex", flexDirection: "column" }}>
             {ALL_DOMAINS.map(d => (
               <a
                 key={d.id}
                 href={`/domain/${encodeURIComponent(d.id)}`}
                 onClick={() => setOpen(false)}
                 style={{
-                  display: "flex", alignItems: "center", gap: 8,
-                  padding: "8px 16px", fontSize: 12, color: SILVER_300,
+                  display: "flex", alignItems: "center", gap: 12,
+                  padding: "9px 16px", fontSize: 13, color: SILVER_300,
                   textDecoration: "none", fontWeight: 500,
                   transition: "background 0.15s, color 0.15s",
-                  borderRadius: 0,
                 }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = NAVY_800; (e.currentTarget as HTMLElement).style.color = SILVER_50; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = SILVER_300; }}
               >
-                <span style={{ fontSize: 14 }}>{d.icon}</span>
-                <span>{d.label}</span>
+                <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>{d.icon}</span>
+                <div>
+                  <div style={{ fontWeight: 600, lineHeight: 1.2 }}>{d.label}</div>
+                  <div style={{ fontSize: 10, color: SILVER_500, fontFamily: MONO, marginTop: 2 }}>{d.sub}</div>
+                </div>
               </a>
             ))}
           </div>
@@ -676,8 +668,12 @@ export default function Landing() {
             <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600, marginBottom: 4 }}>Domains</div>
             {ALL_DOMAINS.map(d => (
               <a key={d.id} href={`/domain/${encodeURIComponent(d.id)}`} onClick={() => setMobileMenuOpen(false)}
-                style={{ fontSize: 14, color: SILVER_300, textDecoration: "none", fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
-                <span>{d.icon}</span> {d.label}
+                style={{ fontSize: 14, color: SILVER_300, textDecoration: "none", fontWeight: 500, display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 18 }}>{d.icon}</span>
+                <div>
+                  <div style={{ fontWeight: 600 }}>{d.label}</div>
+                  <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO }}>{d.sub}</div>
+                </div>
               </a>
             ))}
             <div style={{ borderTop: `1px solid ${NAVY_700}`, marginTop: 4, paddingTop: 14 }}>

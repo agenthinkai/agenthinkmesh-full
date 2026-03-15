@@ -1,0 +1,9 @@
+{
+  "query": "\n-- Finance: merge Banker, Fund Manager, Investment Manager, Investment Analyst into Finance\nUPDATE agents SET domain = 'Finance' WHERE domain IN ('Banker', 'Fund Manager', 'Investment Manager', 'Investment Analyst') AND isBuiltIn = 1;\n\n-- Healthcare: merge Doctor into Healthcare\nUPDATE agents SET domain = 'Healthcare' WHERE domain = 'Doctor' AND isBuiltIn = 1;\n\n-- Enterprise: merge Manager, Office Clerk, Marketing Manager, Retailer into Enterprise\nUPDATE agents SET domain = 'Enterprise' WHERE domain IN ('Manager', 'Office Clerk', 'Marketing Manager', 'Retailer') AND isBuiltIn = 1;\n\n-- Education: rename Student to Education\nUPDATE agents SET domain = 'Education' WHERE domain = 'Student' AND isBuiltIn = 1;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute \n-- Finance: merge Banker, Fund Manager, Investment Manager, Investment Analyst into Finance\nUPDATE agents SET domain = 'Finance' WHERE domain IN ('Banker', 'Fund Manager', 'Investment Manager', 'Investment Analyst') AND isBuiltIn = 1;\n\n-- Healthcare: merge Doctor into Healthcare\nUPDATE agents SET domain = 'Healthcare' WHERE domain = 'Doctor' AND isBuiltIn = 1;\n\n-- Enterprise: merge Manager, Office Clerk, Marketing Manager, Retailer into Enterprise\nUPDATE agents SET domain = 'Enterprise' WHERE domain IN ('Manager', 'Office Clerk', 'Marketing Manager', 'Retailer') AND isBuiltIn = 1;\n\n-- Education: rename Student to Education\nUPDATE agents SET domain = 'Education' WHERE domain = 'Student' AND isBuiltIn = 1;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 2257
+}
