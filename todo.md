@@ -561,3 +561,14 @@
 - [ ] Fix: "Confirm & Enter Mesh" button stays greyed out even after tile selection
 - [ ] Fix: button should navigate to /ask after classifyPersona mutation succeeds
 - [ ] 55/55 tests pass, 0 TypeScript errors
+
+## Session — Landing Page Flow (Mar 15 2026)
+
+- [x] Add domain field to agents schema and push migration
+- [x] Seed domain-tagged built-in agents into DB for all 5 domains
+- [x] Add backend: agent.listByDomain procedure (public, returns agents for a domain)
+- [x] Add backend: agent.createCustom procedure (authenticated, LLM-powered agent creation)
+- [x] Build DomainAgents page (/domain/:name) with agent grid + custom agent prompt
+- [x] Update Landing page: add "Try the Mesh →" CTA button → /persona-setup
+- [x] Update Landing page: make domain cards clickable → /domain/:name with "Try" button
+- [x] Register /domain/:name route in App.tsx

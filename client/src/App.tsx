@@ -21,6 +21,7 @@ import TurnaroundUpload from "./pages/TurnaroundUpload";
 import TurnaroundCommand from "./pages/TurnaroundCommand";
 import TurnaroundReport from "./pages/TurnaroundReport";
 import PersonaSelector from "./pages/PersonaSelector";
+import DomainAgents from "./pages/DomainAgents";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./_core/hooks/useAuth";
 
@@ -73,6 +74,9 @@ function Router() {
 
       {/* Mesh Identity Layer */}
       <Route path="/persona-setup" component={PersonaSelector} />
+
+      {/* Domain agent explorer */}
+      <Route path="/domain/:name" component={DomainAgents} />
 
       {/* 100-Hour Turnaround */}
       <Route path="/turnaround" component={TurnaroundHome} />

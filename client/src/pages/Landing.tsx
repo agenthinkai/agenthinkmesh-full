@@ -662,13 +662,17 @@ export default function Landing() {
           </div>
           <div className="landing-domains-grid">
             {DOMAINS.map((d, i) => (
-              <div key={i} style={{ background: d.lightBg, border: `1px solid ${d.color}33`, borderRadius: 14, padding: "22px 18px" }}>
+              <a key={i} href={`/domain/${encodeURIComponent(d.name)}`}
+                style={{ textDecoration: "none", display: "block", background: d.lightBg, border: `1px solid ${d.color}33`, borderRadius: 14, padding: "22px 18px", transition: "border-color 0.2s, transform 0.2s", cursor: "pointer" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${d.color}66`; (e.currentTarget as HTMLElement).style.transform = "translateY(-3px)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = `${d.color}33`; (e.currentTarget as HTMLElement).style.transform = "none"; }}
+              >
                 <div style={{ fontSize: 26, marginBottom: 10 }}>{d.icon}</div>
                 <div style={{ fontSize: 13, fontWeight: 700, color: d.color, marginBottom: 6 }}>{d.name}</div>
                 <div style={{ fontSize: 10, color: SILVER_400, fontFamily: MONO, marginBottom: 14, lineHeight: 1.6 }}>
                   {d.contexts.join(" · ")}
                 </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 14 }}>
                   {d.agents.map((ag, j) => (
                     <div key={j} style={{ fontSize: 11, color: SILVER_300, display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{ width: 4, height: 4, borderRadius: "50%", background: d.color, opacity: 0.7, display: "inline-block", flexShrink: 0 }} />
@@ -676,7 +680,10 @@ export default function Landing() {
                     </div>
                   ))}
                 </div>
-              </div>
+                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: d.color, fontFamily: MONO, padding: "5px 12px", borderRadius: 6, background: `${d.color}14`, border: `1px solid ${d.color}30` }}>
+                  Try {d.name} agents →
+                </div>
+              </a>
             ))}
           </div>
         </div>
@@ -853,19 +860,30 @@ export default function Landing() {
             Your mesh is ready.<br />Are you?
           </h2>
           <p style={{ fontSize: 15, color: SILVER_300, maxWidth: 460, margin: "0 auto 32px", lineHeight: 1.75 }}>
-            Sign in to access 112 specialist agents across 14 domain contexts. No setup. No configuration. Execute your first task in under 30 seconds.
+            Select your domain, set up your profile, and start executing tasks with 112 specialist agents in under 30 seconds.
           </p>
-          <a href={loginUrl} style={{
-            display: "inline-block", padding: "14px 36px",
-            background: SILVER_GRAD,
-            color: NAVY_950,
-            borderRadius: 10, fontSize: 15, fontWeight: 700, textDecoration: "none",
-            boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
-          }}>
-            Sign in to access the Mesh →
-          </a>
+          <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
+            <a href="/persona-setup" style={{
+              display: "inline-block", padding: "14px 36px",
+              background: "linear-gradient(135deg, #7BA3D4 0%, #4ADE80 100%)",
+              color: NAVY_950,
+              borderRadius: 10, fontSize: 15, fontWeight: 700, textDecoration: "none",
+              boxShadow: "0 4px 24px rgba(123,163,212,0.4)",
+            }}>
+              ⚡ Try the Mesh
+            </a>
+            <a href={loginUrl} style={{
+              display: "inline-block", padding: "14px 36px",
+              background: "transparent",
+              color: SILVER_300,
+              borderRadius: 10, fontSize: 15, fontWeight: 600, textDecoration: "none",
+              border: `1px solid ${NAVY_600}`,
+            }}>
+              Sign in →
+            </a>
+          </div>
           <p style={{ marginTop: 16, fontSize: 11, color: SILVER_500, fontFamily: MONO }}>
-            Sign in with Google, GitHub, or email · Free to access · No credit card required
+            No credit card required · Free to access · 5 domains · 30 specialist agents
           </p>
         </div>
       </section>

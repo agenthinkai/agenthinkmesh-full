@@ -72,6 +72,9 @@ export const agents = mysqlTable("agents", {
   connectionTested: boolean("connectionTested").notNull().default(false), // true if endpoint passed validation
   webhookUrl: varchar("webhookUrl", { length: 512 }), // optional: POST result payload here after task execution
   orgId: varchar("orgId", { length: 64 }), // optional: tenant isolation
+  domain: varchar("domain", { length: 64 }), // e.g. Finance, Legal, Healthcare, Enterprise, GCC Wealth
+  isBuiltIn: boolean("isBuiltIn").notNull().default(false), // true for platform-seeded agents
+  isCustom: boolean("isCustom").notNull().default(false), // true for user-created AI-generated agents
   // Registry versioning & health tracking
   version: varchar("version", { length: 32 }).notNull().default("1.0.0"),
   lastVerifiedAt: timestamp("lastVerifiedAt"),

@@ -1489,6 +1489,126 @@ If a section is not applicable (e.g. no financial data provided), set it to null
 
         return { success: true };
       }),
+
+    // List agents by domain (public)
+    listByDomain: publicProcedure
+      .input(z.object({ domain: z.string().min(1).max(64) }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) return [];
+        const rows = await db
+          .select({
+            id: agents.id,
+            agentName: agents.agentName,
+            developerName: agents.developerName,
+            description: agents.description,
+            capabilities: agents.capabilities,
+            averageLatency: agents.averageLatency,
+            pricingModel: agents.pricingModel,
+            status: agents.status,
+            connectionTested: agents.connectionTested,
+            domain: agents.domain,
+            isBuiltIn: agents.isBuiltIn,
+            isCustom: agents.isCustom,
+            createdAt: agents.createdAt,
+            tasksCompleted: agentMetrics.tasksCompleted,
+            successRate: agentMetrics.successRate,
+            avgLatency: agentMetrics.avgLatency,
+          })
+          .from(agents)
+          .leftJoin(agentMetrics, eq(agents.id, agentMetrics.agentId))
+          .where(and(eq(agents.status, "active"), eq(agents.domain, input.domain)))
+          .orderBy(desc(agents.isBuiltIn), desc(agentMetrics.tasksCompleted))
+          .limit(100);
+        return rows;
+      }),
+
+    // Create a custom AI-generated agent for a domain (authenticated)
+    createCustom: protectedProcedure
+      .input(z.object({
+        domain: z.string().min(1).max(64),
+        userPrompt: z.string().min(5).max(500),
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+        const llmResponse = await invokeLLM({
+          messages: [
+            {
+              role: "system",
+              content: `You are an AI agent designer for the AgenThinkMesh platform. Given a user's description of an agent they need, generate a structured agent specification. Always respond with valid JSON only, no markdown.\n\nThe agent will operate in the "${input.domain}" domain. Generate a realistic, professional agent name, a concise description (1-2 sentences), and 3-5 capability tags (lowercase hyphenated strings).`,
+            },
+            {
+              role: "user",
+              content: `Create an agent for this need: "${input.userPrompt}"`,
+            },
+          ],
+          response_format: {
+            type: "json_schema",
+            json_schema: {
+              name: "agent_spec",
+              strict: true,
+              schema: {
+                type: "object",
+                properties: {
+                  agentName: { type: "string", description: "Short professional agent name (2-4 words)" },
+                  description: { type: "string", description: "1-2 sentence description of what the agent does" },
+                  capabilities: { type: "array", items: { type: "string" }, description: "3-5 lowercase hyphenated capability tags" },
+                },
+                required: ["agentName", "description", "capabilities"],
+                additionalProperties: false,
+              },
+            },
+          },
+        });
+
+        const rawContent = llmResponse?.choices?.[0]?.message?.content;
+        if (!rawContent) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "LLM did not return a response" });
+        const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
+
+        let spec: { agentName: string; description: string; capabilities: string[] };
+        try {
+          spec = JSON.parse(content);
+        } catch {
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to parse LLM response" });
+        }
+
+        const [result] = await db.insert(agents).values({
+          ownerId: ctx.user.id,
+          agentName: spec.agentName,
+          developerName: ctx.user.name ?? "Custom",
+          description: spec.description,
+          capabilities: JSON.stringify(spec.capabilities),
+          endpointUrl: "https://mesh.agenthink.ai/agents/custom",
+          averageLatency: 500,
+          pricingModel: "free",
+          status: "active",
+          connectionTested: false,
+          domain: input.domain,
+          isBuiltIn: false,
+          isCustom: true,
+          version: "1.0.0",
+        });
+        const agentId = (result as unknown as { insertId: number }).insertId;
+        await db.insert(agentMetrics).values({
+          agentId,
+          tasksCompleted: 0,
+          successRate: "80.00",
+          avgLatency: 500,
+          errorRate: "0.00",
+        });
+
+        return {
+          id: agentId,
+          agentName: spec.agentName,
+          description: spec.description,
+          capabilities: spec.capabilities,
+          domain: input.domain,
+          isCustom: true,
+          isBuiltIn: false,
+        };
+      }),
   }),
 
   // ── Arabic Annotation Pipeline ────────────────────────────────────────────
