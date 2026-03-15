@@ -1,8 +1,7 @@
 /**
- * Persona Selector — 3-step flow:
- *  Step 1: Choose a domain tile (what best describes your work?)
- *  Step 2: Browse agents for that domain, pick one
- *  Step 3: Confirm → classifyPersona → /ask?agent=<agentId>
+ * Persona Selector — 2-step flow:
+ *  Step 1: Choose a role (Doctor / Lawyer / Manager / etc.)
+ *  Step 2: Browse agents for that role's domain, click one to run it
  */
 
 import { useState } from "react";
@@ -10,87 +9,80 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import Logo from "@/components/Logo";
 
-// ── Role tiles (Step 1) ─────────────────────────────────────────────────────
+// ── Role tiles ────────────────────────────────────────────────────────────────
 
 const ROLE_TILES = [
-  { id: "doctor",   label: "Doctor",           icon: "🩺", color: "#22D3EE", domain: "Healthcare", desc: "Clinical summaries, drug interactions, ICD coding, patient records" },
-  { id: "lawyer",   label: "Lawyer",           icon: "⚖️", color: "#94A3B8", domain: "Legal",      desc: "Contract review, clause extraction, GCC compliance, risk scoring" },
-  { id: "manager",  label: "Manager",          icon: "🎯", color: "#F87171", domain: "Enterprise", desc: "KPI tracking, budget analysis, project monitoring, meeting summaries" },
-  { id: "analyst",  label: "Financial Analyst",icon: "📈", color: "#4ADE80", domain: "Finance",    desc: "Deal screening, DCF models, comps, macro monitoring" },
-  { id: "banker",   label: "Banker",           icon: "🏦", color: "#60A5FA", domain: "Finance",    desc: "KYC/AML, credit risk, loan structuring, portfolio monitoring" },
-  { id: "investor", label: "Investor",         icon: "💎", color: "#C9A84C", domain: "GCC Wealth", desc: "Private wealth, HNWI profiling, Shariah compliance, family office" },
-  { id: "student",  label: "Student",          icon: "🎓", color: "#818CF8", domain: "Education",  desc: "Research assistance, citations, essay outlining, study planning" },
-  { id: "enterprise",label: "Enterprise",      icon: "🏢", color: "#E879F9", domain: "Enterprise", desc: "HR, procurement, SLA management, workflow automation" },
-];
-
-// ── Domain tiles (Step 2) ─────────────────────────────────────────────────────
-
-const DOMAIN_TILES = [
   {
-    id: "Finance",
-    label: "Finance",
-    icon: "💹",
-    description: "VC deal screening, banking, investment analysis, fund management, portfolio monitoring",
-    color: "#4ADE80",
-    bg: "rgba(74,222,128,0.10)",
-    border: "rgba(74,222,128,0.35)",
-    glow: "rgba(74,222,128,0.25)",
-    persona: "FUND_MANAGER",
-  },
-  {
-    id: "Legal",
-    label: "Legal",
-    icon: "⚖️",
-    description: "Contract review, clause extraction, regulatory compliance, GCC jurisdiction intelligence",
-    color: "#94A3B8",
-    bg: "rgba(148,163,184,0.10)",
-    border: "rgba(148,163,184,0.35)",
-    glow: "rgba(148,163,184,0.25)",
-    persona: "LAWYER",
-  },
-  {
-    id: "Healthcare",
-    label: "Healthcare",
-    icon: "🏥",
-    description: "Hospital operations, bed management, staffing optimisation, patient flow, clinical reporting",
+    id: "doctor",
+    label: "Doctor",
+    icon: "🩺",
     color: "#22D3EE",
-    bg: "rgba(34,211,238,0.10)",
-    border: "rgba(34,211,238,0.35)",
-    glow: "rgba(34,211,238,0.25)",
+    domain: "Healthcare",
     persona: "DOCTOR",
+    desc: "Clinical summaries, drug interactions, ICD coding, patient records",
   },
   {
-    id: "Enterprise",
+    id: "lawyer",
+    label: "Lawyer",
+    icon: "⚖️",
+    color: "#94A3B8",
+    domain: "Legal",
+    persona: "LAWYER",
+    desc: "Contract review, clause extraction, GCC compliance, risk scoring",
+  },
+  {
+    id: "manager",
+    label: "Manager",
+    icon: "🎯",
+    color: "#F87171",
+    domain: "Enterprise",
+    persona: "ENTERPRISE",
+    desc: "KPI tracking, budget analysis, project monitoring, meeting summaries",
+  },
+  {
+    id: "analyst",
+    label: "Financial Analyst",
+    icon: "📈",
+    color: "#4ADE80",
+    domain: "Finance",
+    persona: "FUND_MANAGER",
+    desc: "Deal screening, DCF models, comps, macro monitoring",
+  },
+  {
+    id: "banker",
+    label: "Banker",
+    icon: "🏦",
+    color: "#60A5FA",
+    domain: "Finance",
+    persona: "FUND_MANAGER",
+    desc: "KYC/AML, credit risk, loan structuring, portfolio monitoring",
+  },
+  {
+    id: "investor",
+    label: "Investor",
+    icon: "💎",
+    color: "#C9A84C",
+    domain: "GCC Wealth",
+    persona: "INVESTMENT_MANAGER",
+    desc: "Private wealth, HNWI profiling, Shariah compliance, family office",
+  },
+  {
+    id: "student",
+    label: "Student",
+    icon: "🎓",
+    color: "#818CF8",
+    domain: "Education",
+    persona: "STUDENT",
+    desc: "Research assistance, citations, essay outlining, study planning",
+  },
+  {
+    id: "enterprise",
     label: "Enterprise",
     icon: "🏢",
-    description: "HR, operations, marketing, procurement, SLA management, workflow automation",
-    color: "#F87171",
-    bg: "rgba(248,113,113,0.10)",
-    border: "rgba(248,113,113,0.35)",
-    glow: "rgba(248,113,113,0.25)",
+    color: "#E879F9",
+    domain: "Enterprise",
     persona: "ENTERPRISE",
-  },
-  {
-    id: "GCC Wealth",
-    label: "GCC Wealth",
-    icon: "💎",
-    description: "Private wealth management, HNWI profiling, Shariah compliance, family office",
-    color: "#C9A84C",
-    bg: "rgba(201,168,76,0.10)",
-    border: "rgba(201,168,76,0.35)",
-    glow: "rgba(201,168,76,0.25)",
-    persona: "INVESTMENT_MANAGER",
-  },
-  {
-    id: "Education",
-    label: "Education",
-    icon: "🎓",
-    description: "Research assistance, citations, concept explanations, essay outlining, study planning",
-    color: "#818CF8",
-    bg: "rgba(129,140,248,0.10)",
-    border: "rgba(129,140,248,0.35)",
-    glow: "rgba(129,140,248,0.25)",
-    persona: "STUDENT",
+    desc: "HR, procurement, SLA management, workflow automation",
   },
 ];
 
@@ -133,13 +125,11 @@ type DomainAgent = {
 
 function AgentCard({
   agent,
-  selected,
-  domainColor,
+  roleColor,
   onSelect,
 }: {
   agent: DomainAgent;
-  selected: boolean;
-  domainColor: string;
+  roleColor: string;
   onSelect: () => void;
 }) {
   let caps: string[] = [];
@@ -154,80 +144,79 @@ function AgentCard({
         gap: 10,
         padding: "16px",
         borderRadius: 14,
-        border: selected
-          ? `2px solid ${domainColor}`
-          : "1.5px solid rgba(255,255,255,0.08)",
-        background: selected
-          ? `linear-gradient(135deg, ${domainColor}18, ${domainColor}08)`
-          : "rgba(255,255,255,0.03)",
+        border: `1.5px solid rgba(255,255,255,0.08)`,
+        background: "rgba(255,255,255,0.03)",
         cursor: "pointer",
         textAlign: "left",
         transition: "all 0.18s ease",
-        position: "relative",
         outline: "none",
-        boxShadow: selected ? `0 0 0 3px ${domainColor}30` : "none",
+        width: "100%",
+      }}
+      onMouseEnter={e => {
+        const el = e.currentTarget as HTMLButtonElement;
+        el.style.border = `1.5px solid ${roleColor}60`;
+        el.style.background = `${roleColor}0A`;
+        el.style.transform = "translateY(-2px)";
+        el.style.boxShadow = `0 8px 24px ${roleColor}20`;
+      }}
+      onMouseLeave={e => {
+        const el = e.currentTarget as HTMLButtonElement;
+        el.style.border = "1.5px solid rgba(255,255,255,0.08)";
+        el.style.background = "rgba(255,255,255,0.03)";
+        el.style.transform = "none";
+        el.style.boxShadow = "none";
       }}
     >
-      {/* Selected check */}
-      {selected && (
-        <div style={{
-          position: "absolute", top: 10, right: 10,
-          width: 20, height: 20, borderRadius: "50%",
-          background: domainColor,
-          display: "flex", alignItems: "center", justifyContent: "center",
-        }}>
-          <svg width="10" height="8" viewBox="0 0 10 8" fill="none">
-            <path d="M1 4L3.5 6.5L9 1" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
-        </div>
-      )}
-
       {/* Header row */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div style={{
           width: 36, height: 36, borderRadius: 10,
-          background: `${domainColor}18`,
-          border: `1px solid ${domainColor}30`,
+          background: `${roleColor}18`,
+          border: `1px solid ${roleColor}30`,
           display: "flex", alignItems: "center", justifyContent: "center",
           fontSize: 16, flexShrink: 0,
         }}>
           🤖
         </div>
-        <div style={{ minWidth: 0 }}>
-          <div style={{ fontWeight: 700, fontSize: 13, color: "#F0F4FA", lineHeight: 1.2, paddingRight: 24 }}>
+        <div style={{ minWidth: 0, flex: 1 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: "#F0F4FA", lineHeight: 1.2 }}>
             {agent.agentName}
           </div>
           {agent.isBuiltIn && (
             <div style={{
               display: "inline-flex", alignItems: "center", gap: 4,
-              fontSize: 9, color: domainColor, fontFamily: "monospace",
-              background: `${domainColor}15`, border: `1px solid ${domainColor}30`,
+              fontSize: 9, color: roleColor, fontFamily: "monospace",
+              background: `${roleColor}15`, border: `1px solid ${roleColor}30`,
               borderRadius: 4, padding: "1px 6px", marginTop: 3,
             }}>
               ✓ PLATFORM
             </div>
           )}
         </div>
+        <span style={{ fontSize: 11, color: roleColor, fontWeight: 600, flexShrink: 0 }}>
+          Run →
+        </span>
       </div>
 
       {/* Description */}
-      <p style={{ fontSize: 12, color: "rgba(240,244,250,0.55)", lineHeight: 1.55, margin: 0 }}>
-        {agent.description}
-      </p>
+      {agent.description && (
+        <p style={{ fontSize: 11, color: "rgba(240,244,250,0.45)", lineHeight: 1.55, margin: 0 }}>
+          {agent.description.length > 100 ? agent.description.slice(0, 100) + "…" : agent.description}
+        </p>
+      )}
 
       {/* Capabilities */}
       {caps.length > 0 && (
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
-          {caps.slice(0, 3).map((c) => (
-            <span key={c} style={{
-              fontSize: 9, padding: "2px 7px", borderRadius: 4,
-              background: `${capColor(c)}15`,
-              border: `1px solid ${capColor(c)}30`,
-              color: capColor(c),
+          {caps.slice(0, 3).map((cap) => (
+            <span key={cap} style={{
+              fontSize: 9, padding: "2px 7px", borderRadius: 10,
+              background: `${capColor(cap)}18`,
+              border: `1px solid ${capColor(cap)}30`,
+              color: capColor(cap),
               fontFamily: "monospace",
-              textTransform: "lowercase",
             }}>
-              {c}
+              {cap}
             </span>
           ))}
         </div>
@@ -255,71 +244,46 @@ function AgentCard({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function PersonaSelector() {
-  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [step, setStep] = useState<1 | 2>(1);
   const [selectedRole, setSelectedRole] = useState<typeof ROLE_TILES[0] | null>(null);
-  const [selectedDomain, setSelectedDomain] = useState<typeof DOMAIN_TILES[0] | null>(null);
-  const [selectedAgent, setSelectedAgent] = useState<DomainAgent | null>(null);
   const [, navigate] = useLocation();
 
   const utils = trpc.useUtils();
 
-  // Fetch agent counts for all domains (used on step 1 to show badge + hide empty tiles)
-  const countsQuery = trpc.agent.countByDomain.useQuery(undefined, { staleTime: 120_000 });
-  const domainCounts: Record<string, number> = countsQuery.data ?? {};
-
-  // Fetch agents for selected domain (only when a domain is selected)
+  // Fetch agents for selected role's domain
   const agentsQuery = trpc.agent.listByDomain.useQuery(
-    { domain: selectedDomain?.id ?? "" },
-    {
-      enabled: !!selectedDomain,
-      staleTime: 60_000,
-    }
+    { domain: selectedRole?.domain ?? "" },
+    { enabled: !!selectedRole, staleTime: 60_000 }
   );
 
   const classifyPersona = trpc.identity.classifyPersona.useMutation({
-    onSuccess: async () => {
+    onSuccess: async (_, variables) => {
       await utils.identity.getProfile.invalidate();
-      if (selectedAgent) {
-        navigate(`/ask?agent=${selectedAgent.id}&agentName=${encodeURIComponent(selectedAgent.agentName)}`);
-      } else {
-        navigate("/ask");
-      }
+      navigate("/ask");
     },
     onError: () => {
-      if (selectedAgent) {
-        navigate(`/ask?agent=${selectedAgent.id}&agentName=${encodeURIComponent(selectedAgent.agentName)}`);
-      } else {
-        navigate("/ask");
-      }
+      navigate("/ask");
     },
   });
 
   const handleRoleClick = (role: typeof ROLE_TILES[0]) => {
     setSelectedRole(role);
-    // Auto-select the matching domain tile
-    const matchedDomain = DOMAIN_TILES.find(d => d.id === role.domain) ?? null;
-    setSelectedDomain(matchedDomain);
-    setSelectedAgent(null);
     setStep(2);
   };
 
-  const handleDomainClick = (domain: typeof DOMAIN_TILES[0]) => {
-    setSelectedDomain(domain);
-    setSelectedAgent(null);
-    setStep(3);
-  };
-
-  const handleConfirm = () => {
-    if (!selectedDomain) return;
-    classifyPersona.mutate({ selectedPersona: selectedDomain.persona });
+  const handleAgentClick = (agent: DomainAgent) => {
+    if (!selectedRole) return;
+    classifyPersona.mutate({ selectedPersona: selectedRole.persona });
+    // Navigate immediately with agent context; mutation runs in background
+    navigate(`/ask?agent=${agent.id}&agentName=${encodeURIComponent(agent.agentName)}`);
   };
 
   const handleBack = () => {
-    if (step === 3) { setStep(2); setSelectedAgent(null); }
-    else { setStep(1); setSelectedRole(null); setSelectedDomain(null); }
+    setStep(1);
+    setSelectedRole(null);
   };
 
-  const domainColor = selectedDomain?.color ?? "#7BA3D4";
+  const roleColor = selectedRole?.color ?? "#7BA3D4";
   const agents = (agentsQuery.data ?? []) as DomainAgent[];
 
   return (
@@ -343,7 +307,7 @@ export default function PersonaSelector() {
 
         {/* Step indicator */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {[1, 2, 3].map((s) => (
+          {[1, 2].map((s) => (
             <div key={s} style={{
               width: s === step ? 24 : 8,
               height: 8,
@@ -370,17 +334,20 @@ export default function PersonaSelector() {
         {step === 1 && (
           <>
             <div style={{ textAlign: "center", marginBottom: 36 }}>
+              <div style={{ fontSize: 11, color: "rgba(240,244,250,0.35)", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 10 }}>
+                Step 1 of 2
+              </div>
               <h1 style={{ fontSize: "clamp(22px, 4vw, 32px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 10 }}>
                 What best describes your role?
               </h1>
               <p style={{ fontSize: 14, color: "rgba(240,244,250,0.45)", maxWidth: 480, margin: "0 auto", lineHeight: 1.7 }}>
-                Select your professional role. The Mesh will personalise the agent catalogue to match your domain.
+                Select your professional role. We'll show you the specialist agents built for your field.
               </p>
             </div>
 
             <div style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
               gap: 14,
             }}>
               {ROLE_TILES.map((role) => (
@@ -401,14 +368,16 @@ export default function PersonaSelector() {
                     outline: "none",
                   }}
                   onMouseEnter={e => {
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 0 0 2px ${role.color}30, 0 8px 32px ${role.color}20`;
-                    (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)";
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = `${role.color}70`;
+                    const el = e.currentTarget as HTMLButtonElement;
+                    el.style.boxShadow = `0 0 0 2px ${role.color}30, 0 8px 32px ${role.color}20`;
+                    el.style.transform = "translateY(-2px)";
+                    el.style.borderColor = `${role.color}70`;
                   }}
                   onMouseLeave={e => {
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
-                    (e.currentTarget as HTMLButtonElement).style.transform = "none";
-                    (e.currentTarget as HTMLButtonElement).style.borderColor = `${role.color}40`;
+                    const el = e.currentTarget as HTMLButtonElement;
+                    el.style.boxShadow = "none";
+                    el.style.transform = "none";
+                    el.style.borderColor = `${role.color}40`;
                   }}
                 >
                   <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -424,7 +393,7 @@ export default function PersonaSelector() {
                     <div>
                       <div style={{ fontWeight: 700, fontSize: 15, color: "#F0F4FA" }}>{role.label}</div>
                       <div style={{ fontSize: 10, color: role.color, fontFamily: "monospace", marginTop: 2 }}>
-                        {role.domain} domain
+                        {role.domain}
                       </div>
                     </div>
                   </div>
@@ -440,117 +409,11 @@ export default function PersonaSelector() {
           </>
         )}
 
-        {/* ── STEP 2: Domain confirmation ── */}
+        {/* ── STEP 2: Agent list ── */}
         {step === 2 && selectedRole && (
           <>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
-              <button
-                onClick={handleBack}
-                style={{
-                  background: "rgba(255,255,255,0.05)",
-                  border: "1px solid rgba(255,255,255,0.1)",
-                  borderRadius: 8, padding: "6px 14px",
-                  color: "rgba(240,244,250,0.6)", fontSize: 13, cursor: "pointer",
-                }}
-              >
-                ← Back
-              </button>
-              <div>
-                <h2 style={{ fontSize: "clamp(18px, 3vw, 26px)", fontWeight: 800, letterSpacing: "-0.03em", margin: 0 }}>
-                  Confirm your domain
-                </h2>
-                <p style={{ fontSize: 13, color: "rgba(240,244,250,0.4)", margin: "4px 0 0" }}>
-                  Based on your role, we recommend the {selectedRole.domain} domain. You can also pick a different one.
-                </p>
-              </div>
-            </div>
-
-            <div style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-              gap: 14,
-            }}>
-              {DOMAIN_TILES.map((tile) => {
-                const agentCount = domainCounts[tile.id] ?? 0;
-                const isRecommended = tile.id === selectedRole.domain;
-                return (
-                  <button
-                    key={tile.id}
-                    onClick={() => handleDomainClick(tile)}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      gap: 10,
-                      padding: "20px",
-                      borderRadius: 16,
-                      border: isRecommended ? `2px solid ${tile.color}` : `1.5px solid ${tile.border}`,
-                      background: isRecommended ? `${tile.color}15` : tile.bg,
-                      cursor: "pointer",
-                      textAlign: "left",
-                      transition: "all 0.18s ease",
-                      outline: "none",
-                      boxShadow: isRecommended ? `0 0 0 2px ${tile.glow}` : "none",
-                      position: "relative",
-                    }}
-                    onMouseEnter={e => {
-                      (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)";
-                    }}
-                    onMouseLeave={e => {
-                      (e.currentTarget as HTMLButtonElement).style.transform = "none";
-                    }}
-                  >
-                    {isRecommended && (
-                      <div style={{
-                        position: "absolute", top: 10, right: 10,
-                        fontSize: 9, color: tile.color, fontFamily: "monospace",
-                        background: `${tile.color}20`, border: `1px solid ${tile.color}40`,
-                        borderRadius: 4, padding: "2px 7px", fontWeight: 700,
-                      }}>RECOMMENDED</div>
-                    )}
-                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                      <div style={{
-                        width: 44, height: 44, borderRadius: 12,
-                        background: `${tile.color}18`,
-                        border: `1px solid ${tile.color}30`,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontSize: 22, flexShrink: 0,
-                      }}>
-                        {tile.icon}
-                      </div>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: 15, color: "#F0F4FA" }}>{tile.label}</div>
-                        <div style={{ fontSize: 10, color: tile.color, fontFamily: "monospace", marginTop: 2 }}>
-                          {tile.id} domain
-                        </div>
-                      </div>
-                    </div>
-                    <p style={{ fontSize: 12, color: "rgba(240,244,250,0.45)", lineHeight: 1.6, margin: 0 }}>
-                      {tile.description}
-                    </p>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{
-                        fontSize: 11, fontWeight: 600,
-                        color: agentCount > 0 ? tile.color : "rgba(240,244,250,0.25)",
-                        background: agentCount > 0 ? `${tile.color}15` : "rgba(255,255,255,0.04)",
-                        border: `1px solid ${agentCount > 0 ? tile.color + "30" : "rgba(255,255,255,0.08)"}`,
-                        borderRadius: 20, padding: "2px 9px",
-                      }}>
-                        {countsQuery.isLoading ? "…" : agentCount > 0 ? `${agentCount} agents` : "0 agents"}
-                      </span>
-                      <span style={{ fontSize: 12, color: tile.color, fontWeight: 600 }}>View agents →</span>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </>
-        )}
-
-        {/* ── STEP 3: Agent selection ── */}
-        {step === 3 && selectedDomain && (
-          <>
             {/* Back + heading */}
-            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 14, marginBottom: 32 }}>
               <button
                 onClick={handleBack}
                 style={{
@@ -558,27 +421,37 @@ export default function PersonaSelector() {
                   border: "1px solid rgba(255,255,255,0.1)",
                   borderRadius: 8, padding: "6px 14px",
                   color: "rgba(240,244,250,0.6)", fontSize: 13, cursor: "pointer",
+                  flexShrink: 0, marginTop: 4,
                 }}
               >
                 ← Back
               </button>
               <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <span style={{ fontSize: 20 }}>{selectedDomain.icon}</span>
-                  <h2 style={{ fontSize: "clamp(18px, 3vw, 26px)", fontWeight: 800, letterSpacing: "-0.03em", margin: 0 }}>
-                    {selectedDomain.label} Agents
-                  </h2>
+                <div style={{ fontSize: 11, color: "rgba(240,244,250,0.35)", fontFamily: "monospace", textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 6 }}>
+                  Step 2 of 2
                 </div>
-                <p style={{ fontSize: 13, color: "rgba(240,244,250,0.4)", margin: "4px 0 0" }}>
-                  Select an agent to work with in the {selectedDomain.label} domain
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                  <span style={{ fontSize: 22 }}>{selectedRole.icon}</span>
+                  <h2 style={{ fontSize: "clamp(18px, 3vw, 26px)", fontWeight: 800, letterSpacing: "-0.03em", margin: 0 }}>
+                    {selectedRole.label} Agents
+                  </h2>
+                  <span style={{
+                    fontSize: 10, color: roleColor, fontFamily: "monospace",
+                    background: `${roleColor}15`, border: `1px solid ${roleColor}30`,
+                    borderRadius: 4, padding: "2px 8px", fontWeight: 700,
+                  }}>
+                    {selectedRole.domain}
+                  </span>
+                </div>
+                <p style={{ fontSize: 13, color: "rgba(240,244,250,0.4)", margin: 0 }}>
+                  Click any agent to run it instantly in the Mesh
                 </p>
               </div>
             </div>
 
             {/* Agent grid */}
             {agentsQuery.isLoading ? (
-              /* Loading skeleton */
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12, marginBottom: 28 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12 }}>
                 {Array.from({ length: 6 }).map((_, i) => (
                   <div key={i} style={{
                     height: 140, borderRadius: 14,
@@ -590,13 +463,17 @@ export default function PersonaSelector() {
               </div>
             ) : agents.length === 0 ? (
               <div style={{
-                padding: "40px 24px", textAlign: "center",
+                padding: "48px 24px", textAlign: "center",
                 background: "rgba(255,255,255,0.02)",
                 border: "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 16, marginBottom: 28,
+                borderRadius: 16,
               }}>
-                <p style={{ fontSize: 14, color: "rgba(240,244,250,0.4)" }}>
-                  No agents found for this domain yet.
+                <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>
+                <p style={{ fontSize: 14, color: "rgba(240,244,250,0.4)", lineHeight: 1.7 }}>
+                  No agents found for this domain yet.<br />
+                  <a href="/ask" style={{ color: roleColor, textDecoration: "none", fontWeight: 600 }}>
+                    Go to the Mesh →
+                  </a>
                 </p>
               </div>
             ) : (
@@ -604,40 +481,29 @@ export default function PersonaSelector() {
                 display: "grid",
                 gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
                 gap: 12,
-                marginBottom: 28,
               }}>
                 {agents.map((agent) => (
                   <AgentCard
                     key={agent.id}
                     agent={agent}
-                    selected={selectedAgent?.id === agent.id}
-                    domainColor={domainColor}
-                    onSelect={() => {
-                      setSelectedAgent(agent);
-                      if (selectedDomain) {
-                        classifyPersona.mutate({ selectedPersona: selectedDomain.persona });
-                      }
-                    }}
+                    roleColor={roleColor}
+                    onSelect={() => handleAgentClick(agent)}
                   />
                 ))}
               </div>
             )}
 
             {/* Loading state while navigating */}
-            {classifyPersona.isPending ? (
-              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "24px 0" }}>
-                <svg style={{ animation: "spin 1s linear infinite", width: 28, height: 28, color: domainColor }} viewBox="0 0 24 24" fill="none">
+            {classifyPersona.isPending && (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "24px 0", marginTop: 16 }}>
+                <svg style={{ animation: "spin 1s linear infinite", width: 28, height: 28, color: roleColor }} viewBox="0 0 24 24" fill="none">
                   <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
                   <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
                 </svg>
-                <span style={{ fontSize: 13, color: domainColor, fontWeight: 600 }}>
-                  {selectedAgent ? `Opening ${selectedAgent.agentName}…` : "Configuring your Mesh…"}
+                <span style={{ fontSize: 13, color: roleColor, fontWeight: 600 }}>
+                  Launching agent…
                 </span>
               </div>
-            ) : (
-              <p style={{ fontSize: 12, color: "rgba(240,244,250,0.30)", textAlign: "center", marginTop: 4 }}>
-                Click any agent card to open it directly in the Mesh
-              </p>
             )}
           </>
         )}

@@ -619,3 +619,7 @@
 
 - [x] Remove "Your mesh is ready. Are you?" section from landing page
 - [x] Fix PersonaSelector to show roles (Doctor, Lawyer, Manager, etc.) as Step 1 instead of domains
+
+## Session: 2-step role → agents flow
+
+- [x] Simplify PersonaSelector to 2 steps: Step 1 = role selection, Step 2 = agents list for that role's domain (no domain confirmation step)
