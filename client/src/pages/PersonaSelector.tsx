@@ -250,6 +250,10 @@ export default function PersonaSelector() {
 
   const utils = trpc.useUtils();
 
+  // Fetch agent counts per domain for Step 1 badges
+  const countQuery = trpc.agent.countByDomain.useQuery(undefined, { staleTime: 60_000 });
+  const domainCounts: Record<string, number> = countQuery.data ?? {};
+
   // Fetch agents for selected role's domain
   const agentsQuery = trpc.agent.listByDomain.useQuery(
     { domain: selectedRole?.domain ?? "" },
@@ -391,10 +395,24 @@ export default function PersonaSelector() {
                       {role.icon}
                     </div>
                     <div>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: "#F0F4FA" }}>{role.label}</div>
-                      <div style={{ fontSize: 10, color: role.color, fontFamily: "monospace", marginTop: 2 }}>
+                  <div style={{ fontWeight: 700, fontSize: 15, color: "#F0F4FA" }}>{role.label}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                      <span style={{ fontSize: 10, color: role.color, fontFamily: "monospace" }}>
                         {role.domain}
-                      </div>
+                      </span>
+                      {domainCounts[role.domain] != null && (
+                        <span style={{
+                          fontSize: 9, fontFamily: "monospace", fontWeight: 700,
+                          background: `${role.color}20`,
+                          border: `1px solid ${role.color}40`,
+                          color: role.color,
+                          borderRadius: 10,
+                          padding: "1px 7px",
+                        }}>
+                          {domainCounts[role.domain]} agents
+                        </span>
+                      )}
+                    </div>
                     </div>
                   </div>
                   <p style={{ fontSize: 12, color: "rgba(240,244,250,0.45)", lineHeight: 1.6, margin: 0 }}>

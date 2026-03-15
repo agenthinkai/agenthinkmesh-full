@@ -623,3 +623,7 @@
 ## Session: 2-step role → agents flow
 
 - [x] Simplify PersonaSelector to 2 steps: Step 1 = role selection, Step 2 = agents list for that role's domain (no domain confirmation step)
+
+## Session: Agent count badges on role tiles
+
+- [x] Add agent count badges to each role tile on PersonaSelector Step 1
