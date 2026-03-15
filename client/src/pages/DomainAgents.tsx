@@ -11,6 +11,7 @@ import {
   ArrowLeft, Sparkles, CheckCircle2, Clock, Zap, Plus, Network,
   Star, Cpu, Search, ChevronRight
 } from "lucide-react";
+import Logo from "@/components/Logo";
 
 const DOMAIN_META: Record<string, { icon: string; color: string; gradient: string; description: string; contexts: string[] }> = {
   "Finance": {
@@ -200,14 +201,9 @@ export default function DomainAgents() {
           <span className="text-white/20">/</span>
           <span className="text-sm font-medium" style={{ color: domainColor }}>{domainName}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-md bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center">
-            <Network className="w-3 h-3 text-white" />
-          </div>
-          <span className="text-sm font-bold bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent hidden sm:block">
-            AgenThinkMesh
-          </span>
-        </div>
+        <a href="/" style={{ textDecoration: "none" }}>
+          <Logo size={30} />
+        </a>
       </nav>
 
       {/* ── Hero ── */}

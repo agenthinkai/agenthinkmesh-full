@@ -8,6 +8,7 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import Logo from "@/components/Logo";
 
 // ── Domain tiles ──────────────────────────────────────────────────────────────
 
@@ -430,21 +431,9 @@ export default function PersonaSelector() {
         padding: "18px 32px",
         borderBottom: "1px solid rgba(255,255,255,0.07)",
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <svg width="28" height="28" viewBox="0 0 40 40" fill="none">
-            <polygon points="20,2 36,11 36,29 20,38 4,29 4,11" fill="none" stroke="#38BDF8" strokeWidth="1.5" />
-            <circle cx="20" cy="20" r="4" fill="#38BDF8" />
-            <line x1="20" y1="2" x2="20" y2="16" stroke="#38BDF8" strokeWidth="1" strokeOpacity="0.5" />
-            <line x1="36" y1="11" x2="24" y2="17" stroke="#38BDF8" strokeWidth="1" strokeOpacity="0.5" />
-            <line x1="36" y1="29" x2="24" y2="23" stroke="#38BDF8" strokeWidth="1" strokeOpacity="0.5" />
-            <line x1="20" y1="38" x2="20" y2="24" stroke="#38BDF8" strokeWidth="1" strokeOpacity="0.5" />
-            <line x1="4" y1="29" x2="16" y2="23" stroke="#38BDF8" strokeWidth="1" strokeOpacity="0.5" />
-            <line x1="4" y1="11" x2="16" y2="17" stroke="#38BDF8" strokeWidth="1" strokeOpacity="0.5" />
-          </svg>
-          <span style={{ fontWeight: 600, fontSize: 15, letterSpacing: "0.04em" }}>
-            AGENTHINK <span style={{ color: "#38BDF8" }}>MESH</span>
-          </span>
-        </div>
+        <a href="/" style={{ textDecoration: "none" }}>
+          <Logo size={32} />
+        </a>
 
         {/* Step indicator */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
