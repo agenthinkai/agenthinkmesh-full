@@ -55,7 +55,7 @@ export async function runHealthCheck(): Promise<void> {
     return;
   }
 
-  // Fetch all active or degraded agents
+  // Fetch all active or degraded agents — skip built-in platform agents (no real endpoint)
   const agentList = await db
     .select({
       id: agents.id,
@@ -63,6 +63,7 @@ export async function runHealthCheck(): Promise<void> {
       endpointUrl: agents.endpointUrl,
       status: agents.status,
       failCount: agents.failCount,
+      isBuiltIn: agents.isBuiltIn,
     })
     .from(agents)
     .where(
@@ -77,6 +78,11 @@ export async function runHealthCheck(): Promise<void> {
   console.log(`[HealthCheck] Checking ${agentList.length} agents...`);
 
   for (const agent of agentList) {
+    // Built-in platform agents always pass — they run via invokeLLM and have no external endpoint
+    if (agent.isBuiltIn) {
+      console.log(`[HealthCheck]   ✓ ${agent.agentName} [built-in, skipped]`);
+      continue;
+    }
     const alive = await pingAgent(agent.endpointUrl);
     const now = new Date();
 
