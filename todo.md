@@ -572,3 +572,10 @@
 - [x] Update Landing page: add "Try the Mesh →" CTA button → /persona-setup
 - [x] Update Landing page: make domain cards clickable → /domain/:name with "Try" button
 - [x] Register /domain/:name route in App.tsx
+
+## Persona-Setup Agent Selection Flow (Mar 15 2026)
+- [x] Rebuild PersonaSelector: tile click shows domain agents panel
+- [x] Agent list panel: fetches agents via agent.listByDomain for the tile's domain
+- [x] User selects an agent from the list
+- [x] Confirm button fires classifyPersona + navigates to /ask with agent pre-selected
+- [x] Pass selected agent context to /ask via URL param (?agent=id&agentName=...)

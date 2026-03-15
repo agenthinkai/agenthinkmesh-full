@@ -78,12 +78,18 @@ export default function AskScreen() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Pre-fill from ?refine= param (coming from Result screen's "New Analysis" button)
+  // Pre-selected agent from persona-setup (?agent=id&agentName=...)
+  const [preSelectedAgent, setPreSelectedAgent] = useState<{ id: string; name: string } | null>(null);
+
+  // Pre-fill from ?refine= param and read ?agent= from persona-setup
   useEffect(() => {
     const params = new URLSearchParams(search);
     const refine = params.get("refine");
-    if (refine) {
-      setQuery(decodeURIComponent(refine));
+    if (refine) setQuery(decodeURIComponent(refine));
+    const agentId = params.get("agent");
+    const agentName = params.get("agentName");
+    if (agentId && agentName) {
+      setPreSelectedAgent({ id: agentId, name: decodeURIComponent(agentName) });
     }
   }, [search]);
 
@@ -237,6 +243,42 @@ export default function AskScreen() {
         padding: "40px 24px",
         maxWidth: 760, margin: "0 auto", width: "100%",
       }}>
+        {/* Pre-selected agent banner (from persona-setup) */}
+        {preSelectedAgent && (
+          <div style={{
+            width: "100%",
+            background: `${CYAN}08`,
+            border: `1px solid ${CYAN}30`,
+            borderRadius: 12,
+            padding: "12px 18px",
+            marginBottom: 20,
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{
+                width: 32, height: 32, borderRadius: 8,
+                background: `${CYAN}18`,
+                border: `1px solid ${CYAN}30`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 16, flexShrink: 0,
+              }}>🤖</div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 600, color: WHITE }}>
+                  {preSelectedAgent.name} is ready
+                </div>
+                <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+                  This agent has been pre-loaded based on your domain selection
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => setPreSelectedAgent(null)}
+              style={{ background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 18, lineHeight: 1, padding: 0, flexShrink: 0 }}
+              aria-label="Dismiss"
+            >×</button>
+          </div>
+        )}
+
         {/* Badge */}
         <div style={{
           display: "inline-flex", alignItems: "center", gap: 8,
