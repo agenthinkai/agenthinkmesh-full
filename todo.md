@@ -649,3 +649,7 @@
 - [x] Seed all roles (Doctor, Lawyer, Manager, Banker, etc.) into DB
 - [x] Add listRoles tRPC procedure returning all roles sorted A-Z with agent counts
 - [x] Update PersonaSelector Step 1 to show roles from DB dynamically
+
+## Session: Role card agent count footer
+
+- [x] Move agent count badge to bottom-left footer of each role card on PersonaSelector

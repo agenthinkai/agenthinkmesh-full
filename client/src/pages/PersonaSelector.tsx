@@ -364,25 +364,27 @@ export default function PersonaSelector() {
                           }}>
                             {r.domain}
                           </span>
-                          <span style={{
-                            fontSize: 9, fontFamily: "monospace", fontWeight: 700,
-                            background: "rgba(255,255,255,0.05)",
-                            border: "1px solid rgba(255,255,255,0.1)",
-                            color: "rgba(240,244,250,0.5)",
-                            borderRadius: 10,
-                            padding: "1px 7px",
-                          }}>
-                            {r.agentCount} agents
-                          </span>
                         </div>
                       </div>
                     </div>
-                    <p style={{ fontSize: 12, color: "rgba(240,244,250,0.45)", lineHeight: 1.6, margin: 0 }}>
+                    <p style={{ fontSize: 12, color: "rgba(240,244,250,0.45)", lineHeight: 1.6, margin: 0, flex: 1 }}>
                       {r.description}
                     </p>
-                    <span style={{ fontSize: 12, color: r.color, fontWeight: 600, alignSelf: "flex-end" }}>
-                      Select →
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
+                      <span style={{
+                        fontSize: 10, fontFamily: "monospace", fontWeight: 700,
+                        background: "rgba(255,255,255,0.06)",
+                        border: "1px solid rgba(255,255,255,0.1)",
+                        color: "rgba(240,244,250,0.45)",
+                        borderRadius: 8,
+                        padding: "3px 9px",
+                      }}>
+                        {r.agentCount} agents
+                      </span>
+                      <span style={{ fontSize: 12, color: r.color, fontWeight: 600 }}>
+                        Select →
+                      </span>
+                    </div>
                   </button>
                 ))}
               </div>
