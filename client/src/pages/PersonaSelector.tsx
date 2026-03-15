@@ -8,6 +8,7 @@ import { useState } from "react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import Logo from "@/components/Logo";
+import SiteNav from "@/components/SiteNav";
 
 // ── Role tiles ────────────────────────────────────────────────────────────────
 
@@ -299,30 +300,24 @@ export default function PersonaSelector() {
       display: "flex",
       flexDirection: "column",
     }}>
-      {/* ── Header ── */}
+      {/* ── Shared sticky navbar ── */}
+      <SiteNav />
+
+      {/* ── Step indicator sub-bar ── */}
       <div style={{
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "18px 32px",
-        borderBottom: "1px solid rgba(255,255,255,0.07)",
+        display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+        padding: "10px 32px",
+        borderBottom: "1px solid rgba(255,255,255,0.05)",
       }}>
-        <a href="/" style={{ textDecoration: "none" }}>
-          <Logo size={32} />
-        </a>
-
-        {/* Step indicator */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {[1, 2].map((s) => (
-            <div key={s} style={{
-              width: s === step ? 24 : 8,
-              height: 8,
-              borderRadius: 4,
-              background: s === step ? "#38BDF8" : "rgba(255,255,255,0.12)",
-              transition: "all 0.3s ease",
-            }} />
-          ))}
-        </div>
-
-        <div style={{ width: 80 }} />
+        {[1, 2].map((s) => (
+          <div key={s} style={{
+            width: s === step ? 24 : 8,
+            height: 8,
+            borderRadius: 4,
+            background: s === step ? "#38BDF8" : "rgba(255,255,255,0.12)",
+            transition: "all 0.3s ease",
+          }} />
+        ))}
       </div>
 
       {/* ── Body ── */}

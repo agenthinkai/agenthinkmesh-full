@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Logo from "@/components/Logo";
+import SiteNav from "@/components/SiteNav";
 
 const NAVY_950 = "#0B1629";
 const NAVY_900 = "#0F1E38";
@@ -304,56 +305,8 @@ export default function AskScreen() {
         <div style={{ position: "absolute", bottom: "15%", right: "10%", width: 500, height: 500, borderRadius: "50%", background: `radial-gradient(circle, ${INDIGO}12 0%, transparent 70%)`, filter: "blur(60px)" }} />
       </div>
 
-      {/* Navbar */}
-      <nav style={{
-        position: "relative", zIndex: 10,
-        display: "flex", alignItems: "center", justifyContent: "space-between",
-        padding: "16px 32px",
-        borderBottom: `1px solid ${CYAN}20`,
-        background: `${NAVY_950}CC`,
-        backdropFilter: "blur(12px)",
-      }}>
-        <a href="/" style={{ textDecoration: "none" }}>
-          <Logo />
-        </a>
-        <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-          <a href="/portfolio" style={{ color: MUTED, fontSize: 14, textDecoration: "none", padding: "6px 14px", borderRadius: 8, transition: "color 0.2s" }}
-            onMouseEnter={e => (e.currentTarget.style.color = WHITE)}
-            onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
-            Portfolio
-          </a>
-          <a href="/turnaround" style={{ color: MUTED, fontSize: 14, textDecoration: "none", padding: "6px 14px", borderRadius: 8, transition: "color 0.2s" }}
-            onMouseEnter={e => (e.currentTarget.style.color = WHITE)}
-            onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
-            Turnaround
-          </a>
-          <a href="/history" style={{ color: MUTED, fontSize: 14, textDecoration: "none", padding: "6px 14px", borderRadius: 8, transition: "color 0.2s" }}
-            onMouseEnter={e => (e.currentTarget.style.color = WHITE)}
-            onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
-            History
-          </a>
-          <a href="/mesh" style={{ color: MUTED, fontSize: 14, textDecoration: "none", padding: "6px 14px", borderRadius: 8, transition: "color 0.2s" }}
-            onMouseEnter={e => (e.currentTarget.style.color = WHITE)}
-            onMouseLeave={e => (e.currentTarget.style.color = MUTED)}>
-            Advanced
-          </a>
-          {isAuthenticated ? (
-            <a href="/mesh" style={{
-              color: WHITE, fontSize: 14, textDecoration: "none",
-              padding: "7px 18px", borderRadius: 8,
-              background: `linear-gradient(135deg, ${CYAN}30, ${BLUE}30)`,
-              border: `1px solid ${CYAN}50`,
-            }}>Dashboard</a>
-          ) : (
-            <a href={getLoginUrl()} style={{
-              color: WHITE, fontSize: 14, textDecoration: "none",
-              padding: "7px 18px", borderRadius: 8,
-              background: `linear-gradient(135deg, ${CYAN}30, ${BLUE}30)`,
-              border: `1px solid ${CYAN}50`,
-            }}>Sign in</a>
-          )}
-        </div>
-      </nav>
+      {/* Shared sticky navbar */}
+      <SiteNav />
 
       {/* Main content */}
       <main style={{

@@ -5,6 +5,7 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import { HowItWorks } from "@/components/HowItWorks";
+import SiteNav from "@/components/SiteNav";
 
 // ── Brand palette (matches logo: deep navy + silver/platinum) ──────────────
 const NAVY_950 = "#0B1629";
@@ -519,7 +520,6 @@ const card = (extra?: React.CSSProperties): React.CSSProperties => ({
 
 export default function Landing() {
   const loginUrl = getLoginUrl();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
 
   const { data: stats } = trpc.public.platformStats.useQuery(undefined, {
@@ -537,58 +537,8 @@ export default function Landing() {
   return (
     <div style={{ minHeight: "100vh", background: NAVY_950, fontFamily: FONT, color: SILVER_100, overflowX: "hidden" }}>
 
-      {/* ── Navbar ── */}
-      <nav style={{
-        position: "sticky", top: 0, zIndex: 100,
-        background: `${NAVY_900}F0`, backdropFilter: "blur(16px)",
-        borderBottom: `1px solid ${NAVY_700}`,
-      }}>
-        <div className="landing-nav-inner">
-          <div className="landing-logo-wrap">
-            <Logo size={32} />
-          </div>
-
-          {/* Desktop nav links */}
-          <div className="landing-nav-links" style={{ alignItems: "center", gap: 20 }}>
-            <a href="#domains" style={{ fontSize: 13, color: SILVER_300, textDecoration: "none", fontWeight: 500, transition: "color 0.2s", whiteSpace: "nowrap" }}
-              onMouseEnter={e => (e.currentTarget.style.color = SILVER_50)}
-              onMouseLeave={e => (e.currentTarget.style.color = SILVER_300)}
-            >Domains</a>
-            <a href="#contact" style={{ fontSize: 13, color: SILVER_300, textDecoration: "none", fontWeight: 500, transition: "color 0.2s", whiteSpace: "nowrap" }}
-              onMouseEnter={e => (e.currentTarget.style.color = SILVER_50)}
-              onMouseLeave={e => (e.currentTarget.style.color = SILVER_300)}
-            >Contact</a>
-            <a href={loginUrl} style={{
-              padding: "8px 18px",
-              background: "linear-gradient(135deg, #1C3057 0%, #243B6E 100%)",
-              color: SILVER_50,
-              borderRadius: 8, fontSize: 13, fontWeight: 600, textDecoration: "none",
-              border: `1px solid ${NAVY_600}`,
-              boxShadow: "0 2px 12px rgba(0,0,0,0.3)",
-              whiteSpace: "nowrap",
-            }}>Sign in →</a>
-          </div>
-
-          {/* Mobile hamburger */}
-          <button
-            className="landing-hamburger"
-            onClick={() => setMobileMenuOpen(o => !o)}
-            style={{ background: "none", border: "none", cursor: "pointer", padding: 8, color: SILVER_300, fontSize: 22, lineHeight: 1 }}
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? "✕" : "☰"}
-          </button>
-        </div>
-
-        {/* Mobile dropdown menu */}
-        {mobileMenuOpen && (
-          <div className="landing-mobile-menu" style={{ background: NAVY_900, borderTop: `1px solid ${NAVY_700}`, padding: "16px 24px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-            <a href="#domains" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 14, color: SILVER_300, textDecoration: "none", fontWeight: 500 }}>Domains</a>
-            <a href="#contact" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 14, color: SILVER_300, textDecoration: "none", fontWeight: 500 }}>Contact</a>
-            <a href={loginUrl} style={{ padding: "10px 20px", background: "linear-gradient(135deg, #1C3057 0%, #243B6E 100%)", color: SILVER_50, borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: "none", textAlign: "center" }}>Sign in →</a>
-          </div>
-        )}
-      </nav>
+      {/* ── Shared sticky navbar ── */}
+      <SiteNav isLandingPage />
 
       {/* ── Hero (VarD Neon) ── */}
       <NeonHero loginUrl={loginUrl} stats={s} />

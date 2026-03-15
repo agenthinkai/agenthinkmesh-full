@@ -627,3 +627,10 @@
 ## Session: Agent count badges on role tiles
 
 - [x] Add agent count badges to each role tile on PersonaSelector Step 1
+
+## Session: Consistent sticky navbar across all pages
+
+- [x] Create shared SiteNav component with sticky positioning
+- [x] Replace Ask page navbar with shared SiteNav
+- [x] Replace PersonaSelector navbar with shared SiteNav
+- [x] Ensure Landing page navbar is sticky on scroll
