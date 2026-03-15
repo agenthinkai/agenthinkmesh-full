@@ -1,0 +1,108 @@
+{
+  "query": "SELECT id, name, icon, domain, sortOrder FROM roles ORDER BY name ASC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT id, name, icon, domain, sortOrder FROM roles ORDER BY name ASC;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Banker",
+      "icon": "🏦",
+      "domain": "Finance",
+      "sortOrder": "1"
+    },
+    {
+      "id": "2",
+      "name": "Compliance Officer",
+      "icon": "📋",
+      "domain": "Legal",
+      "sortOrder": "2"
+    },
+    {
+      "id": "3",
+      "name": "Doctor",
+      "icon": "🩺",
+      "domain": "Healthcare",
+      "sortOrder": "3"
+    },
+    {
+      "id": "4",
+      "name": "Enterprise Manager",
+      "icon": "🏢",
+      "domain": "Enterprise",
+      "sortOrder": "4"
+    },
+    {
+      "id": "5",
+      "name": "Financial Analyst",
+      "icon": "📈",
+      "domain": "Finance",
+      "sortOrder": "5"
+    },
+    {
+      "id": "6",
+      "name": "Fund Manager",
+      "icon": "💼",
+      "domain": "Finance",
+      "sortOrder": "6"
+    },
+    {
+      "id": "7",
+      "name": "Healthcare Admin",
+      "icon": "🏥",
+      "domain": "Healthcare",
+      "sortOrder": "7"
+    },
+    {
+      "id": "8",
+      "name": "Investor",
+      "icon": "💎",
+      "domain": "GCC Wealth",
+      "sortOrder": "8"
+    },
+    {
+      "id": "9",
+      "name": "Lawyer",
+      "icon": "⚖️",
+      "domain": "Legal",
+      "sortOrder": "9"
+    },
+    {
+      "id": "10",
+      "name": "Manager",
+      "icon": "🎯",
+      "domain": "Enterprise",
+      "sortOrder": "10"
+    },
+    {
+      "id": "11",
+      "name": "Marketing Manager",
+      "icon": "📣",
+      "domain": "Enterprise",
+      "sortOrder": "11"
+    },
+    {
+      "id": "12",
+      "name": "Retailer",
+      "icon": "🛍️",
+      "domain": "Enterprise",
+      "sortOrder": "12"
+    },
+    {
+      "id": "13",
+      "name": "Student",
+      "icon": "🎓",
+      "domain": "Education",
+      "sortOrder": "13"
+    },
+    {
+      "id": "14",
+      "name": "Wealth Advisor",
+      "icon": "🌟",
+      "domain": "GCC Wealth",
+      "sortOrder": "14"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\ticon\tdomain\tsortOrder\n1\tBanker\t🏦\tFinance\t1\n2\tCompliance Officer\t📋\tLegal\t2\n3\tDoctor\t🩺\tHealthcare\t3\n4\tEnterprise Manager\t🏢\tEnterprise\t4\n5\tFinancial Analyst\t📈\tFinance\t5\n6\tFund Manager\t💼\tFinance\t6\n7\tHealthcare Admin\t🏥\tHealthcare\t7\n8\tInvestor\t💎\tGCC Wealth\t8\n9\tLawyer\t⚖️\tLegal\t9\n10\tManager\t🎯\tEnterprise\t10\n11\tMarketing Manager\t📣\tEnterprise\t11\n12\tRetailer\t🛍️\tEnterprise\t12\n13\tStudent\t🎓\tEducation\t13\n14\tWealth Advisor\t🌟\tGCC Wealth\t14\n",
+  "stderr": "",
+  "execution_time_ms": 1509
+}

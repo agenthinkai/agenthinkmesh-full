@@ -189,9 +189,9 @@ export default function PersonaSelector() {
 
   const utils = trpc.useUtils();
 
-  // Fetch all domains sorted A-Z with live agent counts
-  const domainsQuery = trpc.agent.listDomains.useQuery(undefined, { staleTime: 60_000 });
-  const domains = domainsQuery.data ?? [];
+  // Fetch all roles sorted A-Z from DB with live agent counts
+  const rolesQuery = trpc.agent.listRoles.useQuery(undefined, { staleTime: 60_000 });
+  const dbRoles = rolesQuery.data ?? [];
 
   // Fetch agents for selected domain
   const agentsQuery = trpc.agent.listByDomain.useQuery(
@@ -209,8 +209,8 @@ export default function PersonaSelector() {
     },
   });
 
-  const handleDomainClick = (d: { domain: string; count: number }) => {
-    setSelectedDomain(d);
+  const handleRoleClick = (r: typeof dbRoles[0]) => {
+    setSelectedDomain({ domain: r.domain, count: r.agentCount });
     setStep(2);
   };
 
@@ -268,7 +268,7 @@ export default function PersonaSelector() {
         padding: "40px 24px 60px",
       }}>
 
-        {/* ── STEP 1: Domain selection (A–Z from DB) ── */}
+        {/* ── STEP 1: Role selection (A–Z from DB) ── */}
         {step === 1 && (
           <>
             <div style={{ textAlign: "center", marginBottom: 36 }}>
@@ -276,26 +276,26 @@ export default function PersonaSelector() {
                 Step 1 of 2
               </div>
               <h1 style={{ fontSize: "clamp(22px, 4vw, 32px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 10 }}>
-                Choose your domain
+                What best describes your role?
               </h1>
               <p style={{ fontSize: 14, color: "rgba(240,244,250,0.45)", maxWidth: 480, margin: "0 auto", lineHeight: 1.7 }}>
-                Select the domain that best matches your work. We'll show you the specialist agents built for that field.
+                Select your professional role. We'll show you the specialist agents built for your field.
               </p>
-              {domainsQuery.isLoading && (
+              {rolesQuery.isLoading && (
                 <p style={{ fontSize: 12, color: "rgba(240,244,250,0.3)", marginTop: 12, fontFamily: "monospace" }}>
-                  Loading domains…
+                  Loading roles…
                 </p>
               )}
-              {!domainsQuery.isLoading && domains.length > 0 && (
+              {!rolesQuery.isLoading && dbRoles.length > 0 && (
                 <p style={{ fontSize: 12, color: "rgba(240,244,250,0.3)", marginTop: 12, fontFamily: "monospace" }}>
-                  {domains.reduce((sum, d) => sum + d.count, 0)} specialist agents across {domains.length} domains
+                  {dbRoles.length} roles · {dbRoles.reduce((sum, r) => sum + r.agentCount, 0)} specialist agents
                 </p>
               )}
             </div>
 
-            {domainsQuery.isLoading ? (
+            {rolesQuery.isLoading ? (
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 14 }}>
-                {[...Array(6)].map((_, i) => (
+                {[...Array(8)].map((_, i) => (
                   <div key={i} style={{
                     height: 140, borderRadius: 16,
                     background: "rgba(255,255,255,0.03)",
@@ -311,73 +311,80 @@ export default function PersonaSelector() {
                 gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
                 gap: 14,
               }}>
-                {domains.map((d) => {
-                  const m = domainMeta(d.domain);
-                  return (
-                    <button
-                      key={d.domain}
-                      onClick={() => handleDomainClick(d)}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        gap: 10,
-                        padding: "20px",
-                        borderRadius: 16,
-                        border: `1.5px solid ${m.color}40`,
-                        background: `${m.color}0A`,
-                        cursor: "pointer",
-                        textAlign: "left",
-                        transition: "all 0.18s ease",
-                        outline: "none",
-                      }}
-                      onMouseEnter={e => {
-                        const el = e.currentTarget as HTMLButtonElement;
-                        el.style.boxShadow = `0 0 0 2px ${m.color}30, 0 8px 32px ${m.color}20`;
-                        el.style.transform = "translateY(-2px)";
-                        el.style.borderColor = `${m.color}70`;
-                      }}
-                      onMouseLeave={e => {
-                        const el = e.currentTarget as HTMLButtonElement;
-                        el.style.boxShadow = "none";
-                        el.style.transform = "none";
-                        el.style.borderColor = `${m.color}40`;
-                      }}
-                    >
-                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                        <div style={{
-                          width: 44, height: 44, borderRadius: 12,
-                          background: `${m.color}18`,
-                          border: `1px solid ${m.color}30`,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          fontSize: 22, flexShrink: 0,
-                        }}>
-                          {m.icon}
-                        </div>
-                        <div>
-                          <div style={{ fontWeight: 700, fontSize: 15, color: "#F0F4FA" }}>{d.domain}</div>
-                          <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
-                            <span style={{
-                              fontSize: 9, fontFamily: "monospace", fontWeight: 700,
-                              background: `${m.color}20`,
-                              border: `1px solid ${m.color}40`,
-                              color: m.color,
-                              borderRadius: 10,
-                              padding: "1px 7px",
-                            }}>
-                              {d.count} agent{d.count !== 1 ? "s" : ""}
-                            </span>
-                          </div>
+                {dbRoles.map((r) => (
+                  <button
+                    key={r.id}
+                    onClick={() => handleRoleClick(r)}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 10,
+                      padding: "20px",
+                      borderRadius: 16,
+                      border: `1.5px solid ${r.color}40`,
+                      background: `${r.color}0A`,
+                      cursor: "pointer",
+                      textAlign: "left",
+                      transition: "all 0.18s ease",
+                      outline: "none",
+                    }}
+                    onMouseEnter={e => {
+                      const el = e.currentTarget as HTMLButtonElement;
+                      el.style.boxShadow = `0 0 0 2px ${r.color}30, 0 8px 32px ${r.color}20`;
+                      el.style.transform = "translateY(-2px)";
+                      el.style.borderColor = `${r.color}70`;
+                    }}
+                    onMouseLeave={e => {
+                      const el = e.currentTarget as HTMLButtonElement;
+                      el.style.boxShadow = "none";
+                      el.style.transform = "none";
+                      el.style.borderColor = `${r.color}40`;
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{
+                        width: 44, height: 44, borderRadius: 12,
+                        background: `${r.color}18`,
+                        border: `1px solid ${r.color}30`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 22, flexShrink: 0,
+                      }}>
+                        {r.icon}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: "#F0F4FA" }}>{r.name}</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 2 }}>
+                          <span style={{
+                            fontSize: 9, fontFamily: "monospace", fontWeight: 700,
+                            background: `${r.color}20`,
+                            border: `1px solid ${r.color}40`,
+                            color: r.color,
+                            borderRadius: 10,
+                            padding: "1px 7px",
+                          }}>
+                            {r.domain}
+                          </span>
+                          <span style={{
+                            fontSize: 9, fontFamily: "monospace", fontWeight: 700,
+                            background: "rgba(255,255,255,0.05)",
+                            border: "1px solid rgba(255,255,255,0.1)",
+                            color: "rgba(240,244,250,0.5)",
+                            borderRadius: 10,
+                            padding: "1px 7px",
+                          }}>
+                            {r.agentCount} agents
+                          </span>
                         </div>
                       </div>
-                      <p style={{ fontSize: 12, color: "rgba(240,244,250,0.45)", lineHeight: 1.6, margin: 0 }}>
-                        {m.desc}
-                      </p>
-                      <span style={{ fontSize: 12, color: m.color, fontWeight: 600, alignSelf: "flex-end" }}>
-                        Select →
-                      </span>
-                    </button>
-                  );
-                })}
+                    </div>
+                    <p style={{ fontSize: 12, color: "rgba(240,244,250,0.45)", lineHeight: 1.6, margin: 0 }}>
+                      {r.description}
+                    </p>
+                    <span style={{ fontSize: 12, color: r.color, fontWeight: 600, alignSelf: "flex-end" }}>
+                      Select →
+                    </span>
+                  </button>
+                ))}
               </div>
             )}
           </>

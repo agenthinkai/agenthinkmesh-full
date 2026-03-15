@@ -642,3 +642,10 @@
 ## Session: Dynamic roles from DB
 
 - [x] Display all roles/domains from DB on PersonaSelector with live agent counts sorted A-Z
+
+## Session: Roles from DB (Step 1)
+
+- [x] Add roles table to DB schema with fields: id, name, icon, color, domain, persona, description, sortOrder
+- [x] Seed all roles (Doctor, Lawyer, Manager, Banker, etc.) into DB
+- [x] Add listRoles tRPC procedure returning all roles sorted A-Z with agent counts
+- [x] Update PersonaSelector Step 1 to show roles from DB dynamically

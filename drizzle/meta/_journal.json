@@ -120,6 +120,13 @@
       "when": 1773565586551,
       "tag": "0016_icy_silvermane",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "5",
+      "when": 1773588456026,
+      "tag": "0017_living_nekra",
+      "breakpoints": true
     }
   ]
 }

@@ -5,7 +5,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
-import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews, turnaroundSessions } from "../drizzle/schema";
+import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews, turnaroundSessions, roles } from "../drizzle/schema";
 import { turnaroundRouter } from "./routers/turnaround";
 import { identityRouter } from "./routers/identity";
 import { storagePut } from "./storage";
@@ -1640,6 +1640,35 @@ If a section is not applicable (e.g. no financial data provided), set it to null
           .filter((r) => !!r.domain)
           .map((r) => ({ domain: r.domain as string, count: Number(r.count) }))
           .sort((a, b) => a.domain.localeCompare(b.domain));
+      }),
+
+    // Returns all roles from DB sorted A-Z with agent counts per domain
+    listRoles: publicProcedure
+      .query(async () => {
+        const db = await getDb();
+        if (!db) return [] as { id: number; name: string; icon: string; color: string; domain: string; persona: string; description: string; agentCount: number }[];
+        // Fetch all roles
+        const roleRows = await db.select().from(roles).orderBy(roles.name);
+        // Fetch agent counts per domain
+        const countRows = await db
+          .select({ domain: agents.domain, count: sql<number>`COUNT(*)` })
+          .from(agents)
+          .where(eq(agents.status, "active"))
+          .groupBy(agents.domain);
+        const domainCounts: Record<string, number> = {};
+        for (const r of countRows) {
+          if (r.domain) domainCounts[r.domain] = Number(r.count);
+        }
+        return roleRows.map((r) => ({
+          id: r.id,
+          name: r.name,
+          icon: r.icon,
+          color: r.color,
+          domain: r.domain,
+          persona: r.persona,
+          description: r.description,
+          agentCount: domainCounts[r.domain] ?? 0,
+        }));
       }),
   }),
 

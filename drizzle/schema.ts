@@ -86,6 +86,22 @@ export const agents = mysqlTable("agents", {
 export type Agent = typeof agents.$inferSelect;
 export type InsertAgent = typeof agents.$inferInsert;
 
+// ── Roles (personas shown on Step 1 of persona-setup) ────────────────────────
+export const roles = mysqlTable("roles", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 64 }).notNull().unique(), // e.g. Doctor, Lawyer
+  icon: varchar("icon", { length: 8 }).notNull().default("🤖"),
+  color: varchar("color", { length: 16 }).notNull().default("#7BA3D4"),
+  domain: varchar("domain", { length: 64 }).notNull(), // maps to agents.domain
+  persona: varchar("persona", { length: 64 }).notNull(), // e.g. FUND_MANAGER
+  description: text("description").notNull(),
+  sortOrder: int("sortOrder").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Role = typeof roles.$inferSelect;
+export type InsertRole = typeof roles.$inferInsert;
+
 // ── Agent Reputation / Metrics ────────────────────────────────────────────────
 export const agentMetrics = mysqlTable("agent_metrics", {
   id: int("id").autoincrement().primaryKey(),
