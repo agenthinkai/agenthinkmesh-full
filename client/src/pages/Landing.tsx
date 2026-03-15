@@ -287,10 +287,10 @@ function ContactSection() {
                 disabled={sending}
                 style={{
                   padding: "14px 32px",
-                  background: sending ? "#1C3057" : "linear-gradient(135deg, #7BA3D4 0%, #5B8EC4 100%)",
+                  background: sending ? "#1C3057" : "linear-gradient(135deg, #7BA3D4 0%, #4ADE80 100%)",
                   color: sending ? "#637080" : "#0B1629",
                   borderRadius: 10, fontSize: 14, fontWeight: 700, border: "none", cursor: sending ? "not-allowed" : "pointer",
-                  boxShadow: sending ? "none" : "0 2px 16px rgba(123,163,212,0.3)",
+                  boxShadow: sending ? "none" : "0 2px 16px rgba(74,222,128,0.35)",
                   transition: "all 0.2s",
                 }}
               >

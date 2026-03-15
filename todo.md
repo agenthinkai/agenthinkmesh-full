@@ -590,3 +590,8 @@
 - [x] Add Domains dropdown to navbar with all 16 domain tiles (2-column grid, icons, Try the Mesh CTA)
 - [x] Add mobile menu Domains list with all 16 domains
 - [x] Landing page now flows: Hero → Domain Showcase → Bottom CTA → Contact → Footer
+
+## Session: CTA Consistency & Skip Now Removal
+
+- [x] Standardize all CTA buttons on landing page to use the same primary color (blue-to-green gradient)
+- [x] Remove "Skip now" link from /ask page top-right corner

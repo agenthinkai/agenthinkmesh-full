@@ -411,8 +411,6 @@ export default function PersonaSelector() {
     setSelectedAgent(null);
   };
 
-  const handleSkip = () => navigate("/ask");
-
   const domainColor = selectedDomain?.color ?? "#7BA3D4";
   const agents = (agentsQuery.data ?? []) as DomainAgent[];
 
@@ -448,16 +446,7 @@ export default function PersonaSelector() {
           ))}
         </div>
 
-        <button
-          onClick={handleSkip}
-          style={{
-            background: "none", border: "none", cursor: "pointer",
-            fontSize: 13, color: "rgba(255,255,255,0.35)",
-            padding: "6px 0",
-          }}
-        >
-          Skip for now →
-        </button>
+        <div style={{ width: 80 }} />
       </div>
 
       {/* ── Body ── */}

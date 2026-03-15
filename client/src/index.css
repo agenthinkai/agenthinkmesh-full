@@ -625,8 +625,8 @@
   display: inline-flex;
   align-items: center;
   gap: 7px;
-  background: linear-gradient(135deg, #4A7DB5 0%, #2D5A8E 100%);
-  color: #E8F4FF;
+  background: linear-gradient(135deg, #7BA3D4 0%, #4ADE80 100%);
+  color: #0B1629;
   border: none;
   border-radius: 8px;
   padding: 11px 22px;
@@ -634,7 +634,7 @@
   font-weight: 700;
   text-decoration: none;
   white-space: nowrap;
-  box-shadow: 0 4px 16px rgba(45,90,142,0.5);
+  box-shadow: 0 4px 16px rgba(74,222,128,0.35);
   flex-shrink: 0;
 }
 
