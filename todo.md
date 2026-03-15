@@ -548,3 +548,10 @@
 - [x] Wire health-check cron into server startup via node-cron (runs on startup + every 30 min)
 - [x] agent.discover: filter out agents where lastVerifiedAt older than 24h (exclude stale)
 - [x] 55/55 tests pass, 0 TypeScript errors
+
+## Session 48 — UAE Demo Scenario
+
+- [x] TurnaroundUpload: add second demo button "Load UAE Demo" (Khaleeji Properties, Dubai real estate, project financing gap)
+- [x] UAE demo: 600-word synthetic project financing crisis brief (Khaleeji Properties, Dubai Marina tower, AED 380M, RERA refund risk) pre-loaded into Financial Sentinel slot
+- [x] UI: two demo buttons side by side (🇰🇼 Kuwait Retail + 🇦🇪 UAE Real Estate), each with independent loaded/clear state
+- [x] 55/55 tests pass, 0 TypeScript errors

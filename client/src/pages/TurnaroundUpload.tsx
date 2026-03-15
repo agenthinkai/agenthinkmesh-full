@@ -86,7 +86,66 @@ interface UploadedFile {
   slot: string;
 }
 
-// Synthetic GCC demo scenario
+// Synthetic GCC demo scenario — UAE Real Estate
+const UAE_DEMO_COMPANY = "Khaleeji Properties";
+const UAE_DEMO_INDUSTRY = "Real Estate & Construction";
+const UAE_DEMO_CRISIS = "AED 380M mixed-use tower in Dubai Marina is 68% complete but faces a critical project financing gap after the lead lender withdrew. Construction has halted, contractor claims are mounting, and the off-plan buyer refund window opens in 11 weeks.";
+const UAE_DEMO_DOC = `KHALEEJI PROPERTIES — PROJECT FINANCING CRISIS BRIEF (Q4 2025)
+
+COMPANY OVERVIEW
+Khaleeji Properties is a Dubai-based mid-tier real estate developer with 14 years of operating history. The company has delivered 8 residential and commercial projects across Dubai and Abu Dhabi. Current portfolio includes 3 active developments with a combined GDV of AED 1.4B.
+
+CRISIS PROJECT: MARINA PINNACLE TOWER
+- Location: Dubai Marina, Plot JBR-44
+- Asset class: Mixed-use (312 residential units + 4 retail floors + 2 hotel floors)
+- GDV at launch: AED 560M
+- Construction progress: 68% complete (structural work done, MEP and fit-out remaining)
+- Original completion: Q2 2026
+- Revised completion (if financing secured): Q4 2026
+
+FINANCING STRUCTURE (ORIGINAL)
+- Senior construction loan: AED 280M (Emirates NBD Real Estate Finance)
+- Developer equity: AED 95M (fully deployed)
+- Off-plan sales proceeds: AED 185M collected to date (from 218 of 312 units sold)
+
+CRISIS TRIGGER
+Emirates NBD withdrew the remaining AED 110M of the construction facility in September 2025, citing:
+1. 22% cost overrun on structural phase (AED 61M above budget)
+2. Contractor dispute — main contractor (Al Futtaim Engineering) issued a stop-work notice
+3. Two key subcontractors filed DIFC arbitration claims totalling AED 28M
+4. Project management firm resigned in August 2025
+
+CURRENT FINANCIAL POSITION
+- Cash on hand: AED 12.4M
+- Monthly site holding cost (security, insurance, utilities): AED 2.1M
+- Contractor mobilisation cost to restart: AED 8M (estimated)
+- Outstanding contractor claims: AED 41M (disputed)
+- Off-plan buyer refund exposure: AED 185M (if escrow trustee triggers refunds)
+- RERA escrow balance: AED 67M (frozen pending dispute resolution)
+
+OFF-PLAN BUYER RISK
+- 218 buyers hold SPAs with a 24-month delivery clause
+- Delivery deadline: March 2026 (11 weeks from now)
+- If missed, buyers can apply to RERA for refund from escrow
+- Estimated refund liability if all buyers claim: AED 185M
+- Actual escrow balance: AED 67M — shortfall of AED 118M
+
+ACTIONS TAKEN TO DATE
+- Engaged Deloitte Real Estate Advisory for restructuring (October 2025)
+- Approached 4 alternative lenders (2 declined, 2 in due diligence)
+- Initiated mediation with Al Futtaim Engineering through DIAC
+- Submitted RERA extension application (outcome pending)
+- Exploring JV with a larger developer to inject equity and take over project management
+
+KEY RISKS
+1. RERA refund trigger in 11 weeks — existential if escrow shortfall crystallises
+2. Contractor arbitration — AED 28M DIFC claims could freeze remaining assets
+3. Reputational damage — 3 local media stories published; buyer WhatsApp groups active
+4. Contagion to other projects — lenders on 2 other Khaleeji projects reviewing covenants
+5. Key man risk — CEO and CFO both under personal guarantee exposure on the NBD facility
+`;
+
+// Synthetic GCC demo scenario — Kuwait Retail
 const DEMO_COMPANY = "Al-Rashid Retail Group";
 const DEMO_INDUSTRY = "Retail & Consumer Goods";
 const DEMO_CRISIS = "Cash runway under 5 months, accelerating customer churn in core Kuwait City stores, and a supplier credit freeze following delayed payments to 3 key vendors.";
@@ -147,6 +206,7 @@ export default function TurnaroundUpload() {
   const fileInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const [isDemoLoaded, setIsDemoLoaded] = useState(false);
+  const [isDemoUAELoaded, setIsDemoUAELoaded] = useState(false);
   const uploadDocument = trpc.turnaround.uploadDocument.useMutation();
   const createSession = trpc.turnaround.create.useMutation({
     onSuccess: (data) => {
@@ -215,11 +275,39 @@ export default function TurnaroundUpload() {
 
   const canActivate = companyName.trim() && uploadedFiles.some(f => f.slot === "financial-sentinel");
 
+  const handleLoadUAEDemo = async () => {
+    setCompanyName(UAE_DEMO_COMPANY);
+    setIndustry(UAE_DEMO_INDUSTRY);
+    setCrisisType(UAE_DEMO_CRISIS);
+    setIsDemoUAELoaded(true);
+    setIsDemoLoaded(false);
+    toast.success("Demo scenario loaded — Khaleeji Properties, Dubai");
+    try {
+      const encoded = encodeURIComponent(UAE_DEMO_DOC);
+      const base64 = btoa(unescape(encoded));
+      const result = await uploadDocument.mutateAsync({
+        fileName: "Khaleeji_Properties_Crisis_Brief_Q4_2025.txt",
+        mimeType: "text/plain",
+        base64Data: base64,
+      });
+      setUploadedFiles([{
+        fileName: result.fileName,
+        fileUrl: result.url,
+        mimeType: "text/plain",
+        slot: "financial-sentinel",
+      }]);
+      toast.success("Synthetic project financing brief assigned to Financial Sentinel");
+    } catch {
+      toast.error("Could not upload demo document — please upload manually");
+    }
+  };
+
   const handleLoadDemo = async () => {
     setCompanyName(DEMO_COMPANY);
     setIndustry(DEMO_INDUSTRY);
     setCrisisType(DEMO_CRISIS);
     setIsDemoLoaded(true);
+    setIsDemoUAELoaded(false);
     toast.success("Demo scenario loaded — Al-Rashid Retail Group, Kuwait");
     try {
       const encoded = encodeURIComponent(DEMO_DOC);
@@ -274,40 +362,79 @@ export default function TurnaroundUpload() {
           <p style={{ fontSize: 14, color: SILVER_400, lineHeight: 1.7, marginBottom: 20 }}>
             Assign documents to each specialist agent. Financial Sentinel requires at least one document. All other agents will run with whatever context is available.
           </p>
-          {/* Demo mode button */}
-          <div style={{
-            display: "inline-flex", alignItems: "center", gap: 10,
-            padding: "10px 18px", borderRadius: 10,
-            background: isDemoLoaded ? "rgba(34,197,94,0.08)" : "rgba(224,123,84,0.08)",
-            border: `1px solid ${isDemoLoaded ? "rgba(34,197,94,0.3)" : "rgba(224,123,84,0.3)"}`,
-          }}>
-            <span style={{ fontSize: 13, color: isDemoLoaded ? "#4ADE80" : "#E07B54", fontFamily: MONO }}>
-              {isDemoLoaded ? "✓ Demo loaded — Al-Rashid Retail Group" : "⚡ Try a live demo"}
-            </span>
-            {!isDemoLoaded && (
-              <button
-                onClick={handleLoadDemo}
-                disabled={uploadDocument.isPending}
-                style={{
-                  padding: "6px 14px", borderRadius: 7,
-                  background: "#E07B54", border: "none",
-                  color: "#fff", fontSize: 12, fontWeight: 700,
-                  cursor: uploadDocument.isPending ? "not-allowed" : "pointer",
-                  fontFamily: MONO, letterSpacing: "0.04em",
-                  opacity: uploadDocument.isPending ? 0.6 : 1,
-                }}
-              >
-                {uploadDocument.isPending ? "Loading…" : "Load Demo Company"}
-              </button>
-            )}
-            {isDemoLoaded && (
-              <button
-                onClick={() => { setCompanyName(""); setIndustry(""); setCrisisType(""); setUploadedFiles([]); setIsDemoLoaded(false); }}
-                style={{ padding: "4px 10px", borderRadius: 6, background: "none", border: "1px solid rgba(34,197,94,0.3)", color: "#4ADE80", fontSize: 11, cursor: "pointer", fontFamily: MONO }}
-              >
-                Clear
-              </button>
-            )}
+          {/* Demo mode buttons */}
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+            {/* Kuwait demo */}
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 10,
+              padding: "10px 18px", borderRadius: 10,
+              background: isDemoLoaded ? "rgba(34,197,94,0.08)" : "rgba(224,123,84,0.08)",
+              border: `1px solid ${isDemoLoaded ? "rgba(34,197,94,0.3)" : "rgba(224,123,84,0.3)"}`,
+            }}>
+              <span style={{ fontSize: 12, color: isDemoLoaded ? "#4ADE80" : "#E07B54", fontFamily: MONO }}>
+                {isDemoLoaded ? "✓ Kuwait Retail loaded" : "🇰🇼 Kuwait Demo"}
+              </span>
+              {!isDemoLoaded && (
+                <button
+                  onClick={handleLoadDemo}
+                  disabled={uploadDocument.isPending}
+                  style={{
+                    padding: "6px 14px", borderRadius: 7,
+                    background: "#E07B54", border: "none",
+                    color: "#fff", fontSize: 12, fontWeight: 700,
+                    cursor: uploadDocument.isPending ? "not-allowed" : "pointer",
+                    fontFamily: MONO, letterSpacing: "0.04em",
+                    opacity: uploadDocument.isPending ? 0.6 : 1,
+                  }}
+                >
+                  {uploadDocument.isPending && !isDemoUAELoaded ? "Loading…" : "Al-Rashid Retail"}
+                </button>
+              )}
+              {isDemoLoaded && (
+                <button
+                  onClick={() => { setCompanyName(""); setIndustry(""); setCrisisType(""); setUploadedFiles([]); setIsDemoLoaded(false); }}
+                  style={{ padding: "4px 10px", borderRadius: 6, background: "none", border: "1px solid rgba(34,197,94,0.3)", color: "#4ADE80", fontSize: 11, cursor: "pointer", fontFamily: MONO }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+
+            {/* UAE demo */}
+            <div style={{
+              display: "inline-flex", alignItems: "center", gap: 10,
+              padding: "10px 18px", borderRadius: 10,
+              background: isDemoUAELoaded ? "rgba(34,197,94,0.08)" : "rgba(96,165,250,0.08)",
+              border: `1px solid ${isDemoUAELoaded ? "rgba(34,197,94,0.3)" : "rgba(96,165,250,0.3)"}`,
+            }}>
+              <span style={{ fontSize: 12, color: isDemoUAELoaded ? "#4ADE80" : "#60A5FA", fontFamily: MONO }}>
+                {isDemoUAELoaded ? "✓ UAE Real Estate loaded" : "🇦🇪 UAE Demo"}
+              </span>
+              {!isDemoUAELoaded && (
+                <button
+                  onClick={handleLoadUAEDemo}
+                  disabled={uploadDocument.isPending}
+                  style={{
+                    padding: "6px 14px", borderRadius: 7,
+                    background: "#3B82F6", border: "none",
+                    color: "#fff", fontSize: 12, fontWeight: 700,
+                    cursor: uploadDocument.isPending ? "not-allowed" : "pointer",
+                    fontFamily: MONO, letterSpacing: "0.04em",
+                    opacity: uploadDocument.isPending ? 0.6 : 1,
+                  }}
+                >
+                  {uploadDocument.isPending && !isDemoLoaded ? "Loading…" : "Khaleeji Properties"}
+                </button>
+              )}
+              {isDemoUAELoaded && (
+                <button
+                  onClick={() => { setCompanyName(""); setIndustry(""); setCrisisType(""); setUploadedFiles([]); setIsDemoUAELoaded(false); }}
+                  style={{ padding: "4px 10px", borderRadius: 6, background: "none", border: "1px solid rgba(34,197,94,0.3)", color: "#4ADE80", fontSize: 11, cursor: "pointer", fontFamily: MONO }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
