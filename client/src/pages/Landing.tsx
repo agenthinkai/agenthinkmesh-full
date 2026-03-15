@@ -780,44 +780,7 @@ export default function Landing() {
         </div>
       </section>}
 
-      {/* ── Bottom CTA ── */}
-      <section style={{ padding: "80px 24px", textAlign: "center", background: NAVY_800, position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(${NAVY_700} 1px, transparent 1px)`, backgroundSize: "24px 24px", pointerEvents: "none" }} />
-        <div style={{ position: "relative" }}>
-          <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 16, fontWeight: 500 }}>Get started today</div>
-          <h2 style={{ fontSize: "clamp(28px, 5vw, 44px)", fontWeight: 800, letterSpacing: "-0.04em", color: SILVER_50, marginBottom: 16, maxWidth: 600, margin: "0 auto 16px", lineHeight: 1.1 }}>
-            Your mesh is ready.<br />Are you?
-          </h2>
-          <p style={{ fontSize: 15, color: SILVER_300, maxWidth: 460, margin: "0 auto 32px", lineHeight: 1.75 }}>
-            Select your domain, set up your profile, and start executing tasks with 112 specialist agents in under 30 seconds.
-          </p>
-          <div style={{ display: "flex", gap: 16, justifyContent: "center", flexWrap: "wrap" }}>
-            <a href="/persona-setup" style={{
-              display: "inline-block", padding: "14px 36px",
-              background: "linear-gradient(135deg, #7BA3D4 0%, #4ADE80 100%)",
-              color: NAVY_950,
-              borderRadius: 10, fontSize: 15, fontWeight: 700, textDecoration: "none",
-              boxShadow: "0 4px 24px rgba(123,163,212,0.4)",
-            }}>
-              ⚡ Try the Mesh
-            </a>
-            <a href={loginUrl} style={{
-              display: "inline-block", padding: "14px 36px",
-              background: "transparent",
-              color: SILVER_300,
-              borderRadius: 10, fontSize: 15, fontWeight: 600, textDecoration: "none",
-              border: `1px solid ${NAVY_600}`,
-            }}>
-              Sign in →
-            </a>
-          </div>
-          <p style={{ marginTop: 16, fontSize: 11, color: SILVER_500, fontFamily: MONO }}>
-            No credit card required · Free to access · 5 domains · 30 specialist agents
-          </p>
-        </div>
-      </section>
 
-      <NeonDivider />
 
       {/* ── Contact Us ── */}
       <ContactSection />

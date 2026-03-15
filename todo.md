@@ -614,3 +614,8 @@
 ## Session: HowItWorks CTA Button
 
 - [x] Add "Try it yourself" CTA button at the bottom of the How It Works section linking to /persona-setup
+
+## Session: Role-first flow & cleanup
+
+- [x] Remove "Your mesh is ready. Are you?" section from landing page
+- [x] Fix PersonaSelector to show roles (Doctor, Lawyer, Manager, etc.) as Step 1 instead of domains

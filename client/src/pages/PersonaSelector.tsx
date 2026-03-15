@@ -10,7 +10,20 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import Logo from "@/components/Logo";
 
-// ── Domain tiles ──────────────────────────────────────────────────────────────
+// ── Role tiles (Step 1) ─────────────────────────────────────────────────────
+
+const ROLE_TILES = [
+  { id: "doctor",   label: "Doctor",           icon: "🩺", color: "#22D3EE", domain: "Healthcare", desc: "Clinical summaries, drug interactions, ICD coding, patient records" },
+  { id: "lawyer",   label: "Lawyer",           icon: "⚖️", color: "#94A3B8", domain: "Legal",      desc: "Contract review, clause extraction, GCC compliance, risk scoring" },
+  { id: "manager",  label: "Manager",          icon: "🎯", color: "#F87171", domain: "Enterprise", desc: "KPI tracking, budget analysis, project monitoring, meeting summaries" },
+  { id: "analyst",  label: "Financial Analyst",icon: "📈", color: "#4ADE80", domain: "Finance",    desc: "Deal screening, DCF models, comps, macro monitoring" },
+  { id: "banker",   label: "Banker",           icon: "🏦", color: "#60A5FA", domain: "Finance",    desc: "KYC/AML, credit risk, loan structuring, portfolio monitoring" },
+  { id: "investor", label: "Investor",         icon: "💎", color: "#C9A84C", domain: "GCC Wealth", desc: "Private wealth, HNWI profiling, Shariah compliance, family office" },
+  { id: "student",  label: "Student",          icon: "🎓", color: "#818CF8", domain: "Education",  desc: "Research assistance, citations, essay outlining, study planning" },
+  { id: "enterprise",label: "Enterprise",      icon: "🏢", color: "#E879F9", domain: "Enterprise", desc: "HR, procurement, SLA management, workflow automation" },
+];
+
+// ── Domain tiles (Step 2) ─────────────────────────────────────────────────────
 
 const DOMAIN_TILES = [
   {
@@ -242,7 +255,8 @@ function AgentCard({
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function PersonaSelector() {
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
+  const [selectedRole, setSelectedRole] = useState<typeof ROLE_TILES[0] | null>(null);
   const [selectedDomain, setSelectedDomain] = useState<typeof DOMAIN_TILES[0] | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<DomainAgent | null>(null);
   const [, navigate] = useLocation();
@@ -280,10 +294,19 @@ export default function PersonaSelector() {
     },
   });
 
+  const handleRoleClick = (role: typeof ROLE_TILES[0]) => {
+    setSelectedRole(role);
+    // Auto-select the matching domain tile
+    const matchedDomain = DOMAIN_TILES.find(d => d.id === role.domain) ?? null;
+    setSelectedDomain(matchedDomain);
+    setSelectedAgent(null);
+    setStep(2);
+  };
+
   const handleDomainClick = (domain: typeof DOMAIN_TILES[0]) => {
     setSelectedDomain(domain);
     setSelectedAgent(null);
-    setStep(2);
+    setStep(3);
   };
 
   const handleConfirm = () => {
@@ -292,8 +315,8 @@ export default function PersonaSelector() {
   };
 
   const handleBack = () => {
-    setStep(1);
-    setSelectedAgent(null);
+    if (step === 3) { setStep(2); setSelectedAgent(null); }
+    else { setStep(1); setSelectedRole(null); setSelectedDomain(null); }
   };
 
   const domainColor = selectedDomain?.color ?? "#7BA3D4";
@@ -320,7 +343,7 @@ export default function PersonaSelector() {
 
         {/* Step indicator */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {[1, 2].map((s) => (
+          {[1, 2, 3].map((s) => (
             <div key={s} style={{
               width: s === step ? 24 : 8,
               height: 8,
@@ -343,16 +366,103 @@ export default function PersonaSelector() {
         padding: "40px 24px 60px",
       }}>
 
-        {/* ── STEP 1: Domain selection ── */}
+        {/* ── STEP 1: Role selection ── */}
         {step === 1 && (
           <>
             <div style={{ textAlign: "center", marginBottom: 36 }}>
               <h1 style={{ fontSize: "clamp(22px, 4vw, 32px)", fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 10 }}>
-                Choose your domain
+                What best describes your role?
               </h1>
               <p style={{ fontSize: 14, color: "rgba(240,244,250,0.45)", maxWidth: 480, margin: "0 auto", lineHeight: 1.7 }}>
-                Select the industry domain that best matches your use case. The Mesh will activate the specialist agents built for that field.
+                Select your professional role. The Mesh will personalise the agent catalogue to match your domain.
               </p>
+            </div>
+
+            <div style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))",
+              gap: 14,
+            }}>
+              {ROLE_TILES.map((role) => (
+                <button
+                  key={role.id}
+                  onClick={() => handleRoleClick(role)}
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 10,
+                    padding: "20px",
+                    borderRadius: 16,
+                    border: `1.5px solid ${role.color}40`,
+                    background: `${role.color}0A`,
+                    cursor: "pointer",
+                    textAlign: "left",
+                    transition: "all 0.18s ease",
+                    outline: "none",
+                  }}
+                  onMouseEnter={e => {
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 0 0 2px ${role.color}30, 0 8px 32px ${role.color}20`;
+                    (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)";
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = `${role.color}70`;
+                  }}
+                  onMouseLeave={e => {
+                    (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
+                    (e.currentTarget as HTMLButtonElement).style.transform = "none";
+                    (e.currentTarget as HTMLButtonElement).style.borderColor = `${role.color}40`;
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{
+                      width: 44, height: 44, borderRadius: 12,
+                      background: `${role.color}18`,
+                      border: `1px solid ${role.color}30`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 22, flexShrink: 0,
+                    }}>
+                      {role.icon}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: "#F0F4FA" }}>{role.label}</div>
+                      <div style={{ fontSize: 10, color: role.color, fontFamily: "monospace", marginTop: 2 }}>
+                        {role.domain} domain
+                      </div>
+                    </div>
+                  </div>
+                  <p style={{ fontSize: 12, color: "rgba(240,244,250,0.45)", lineHeight: 1.6, margin: 0 }}>
+                    {role.desc}
+                  </p>
+                  <span style={{ fontSize: 12, color: role.color, fontWeight: 600, alignSelf: "flex-end" }}>
+                    Select →
+                  </span>
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ── STEP 2: Domain confirmation ── */}
+        {step === 2 && selectedRole && (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
+              <button
+                onClick={handleBack}
+                style={{
+                  background: "rgba(255,255,255,0.05)",
+                  border: "1px solid rgba(255,255,255,0.1)",
+                  borderRadius: 8, padding: "6px 14px",
+                  color: "rgba(240,244,250,0.6)", fontSize: 13, cursor: "pointer",
+                }}
+              >
+                ← Back
+              </button>
+              <div>
+                <h2 style={{ fontSize: "clamp(18px, 3vw, 26px)", fontWeight: 800, letterSpacing: "-0.03em", margin: 0 }}>
+                  Confirm your domain
+                </h2>
+                <p style={{ fontSize: 13, color: "rgba(240,244,250,0.4)", margin: "4px 0 0" }}>
+                  Based on your role, we recommend the {selectedRole.domain} domain. You can also pick a different one.
+                </p>
+              </div>
             </div>
 
             <div style={{
@@ -362,79 +472,82 @@ export default function PersonaSelector() {
             }}>
               {DOMAIN_TILES.map((tile) => {
                 const agentCount = domainCounts[tile.id] ?? 0;
+                const isRecommended = tile.id === selectedRole.domain;
                 return (
-                <button
-                  key={tile.id}
-                  onClick={() => handleDomainClick(tile)}
-                  style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    gap: 10,
-                    padding: "20px",
-                    borderRadius: 16,
-                    border: `1.5px solid ${tile.border}`,
-                    background: tile.bg,
-                    cursor: "pointer",
-                    textAlign: "left",
-                    transition: "all 0.18s ease",
-                    outline: "none",
-                  }}
-                  onMouseEnter={e => {
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 0 0 2px ${tile.glow}, 0 8px 32px ${tile.glow}`;
-                    (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)";
-                  }}
-                  onMouseLeave={e => {
-                    (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
-                    (e.currentTarget as HTMLButtonElement).style.transform = "none";
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <div style={{
-                      width: 44, height: 44, borderRadius: 12,
-                      background: `${tile.color}18`,
-                      border: `1px solid ${tile.color}30`,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontSize: 22, flexShrink: 0,
-                    }}>
-                      {tile.icon}
-                    </div>
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: "#F0F4FA" }}>{tile.label}</div>
-                      <div style={{ fontSize: 10, color: tile.color, fontFamily: "monospace", marginTop: 2 }}>
-                        {tile.id} domain
+                  <button
+                    key={tile.id}
+                    onClick={() => handleDomainClick(tile)}
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 10,
+                      padding: "20px",
+                      borderRadius: 16,
+                      border: isRecommended ? `2px solid ${tile.color}` : `1.5px solid ${tile.border}`,
+                      background: isRecommended ? `${tile.color}15` : tile.bg,
+                      cursor: "pointer",
+                      textAlign: "left",
+                      transition: "all 0.18s ease",
+                      outline: "none",
+                      boxShadow: isRecommended ? `0 0 0 2px ${tile.glow}` : "none",
+                      position: "relative",
+                    }}
+                    onMouseEnter={e => {
+                      (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)";
+                    }}
+                    onMouseLeave={e => {
+                      (e.currentTarget as HTMLButtonElement).style.transform = "none";
+                    }}
+                  >
+                    {isRecommended && (
+                      <div style={{
+                        position: "absolute", top: 10, right: 10,
+                        fontSize: 9, color: tile.color, fontFamily: "monospace",
+                        background: `${tile.color}20`, border: `1px solid ${tile.color}40`,
+                        borderRadius: 4, padding: "2px 7px", fontWeight: 700,
+                      }}>RECOMMENDED</div>
+                    )}
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <div style={{
+                        width: 44, height: 44, borderRadius: 12,
+                        background: `${tile.color}18`,
+                        border: `1px solid ${tile.color}30`,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontSize: 22, flexShrink: 0,
+                      }}>
+                        {tile.icon}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 15, color: "#F0F4FA" }}>{tile.label}</div>
+                        <div style={{ fontSize: 10, color: tile.color, fontFamily: "monospace", marginTop: 2 }}>
+                          {tile.id} domain
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  <p style={{ fontSize: 12, color: "rgba(240,244,250,0.45)", lineHeight: 1.6, margin: 0 }}>
-                    {tile.description}
-                  </p>
-                  <div style={{
-                    display: "flex", alignItems: "center", justifyContent: "space-between",
-                  }}>
-                    {/* Agent count badge */}
-                    <span style={{
-                      fontSize: 11, fontWeight: 600,
-                      color: agentCount > 0 ? tile.color : "rgba(240,244,250,0.25)",
-                      background: agentCount > 0 ? `${tile.color}15` : "rgba(255,255,255,0.04)",
-                      border: `1px solid ${agentCount > 0 ? tile.color + "30" : "rgba(255,255,255,0.08)"}`,
-                      borderRadius: 20,
-                      padding: "2px 9px",
-                    }}>
-                      {countsQuery.isLoading ? "…" : agentCount > 0 ? `${agentCount} agent${agentCount !== 1 ? "s" : ""}` : "0 agents"}
-                    </span>
-                    <span style={{ fontSize: 12, color: tile.color, fontWeight: 600, marginLeft: "auto" }}>
-                      View agents →
-                    </span>
-                  </div>
-                </button>
-              );
+                    <p style={{ fontSize: 12, color: "rgba(240,244,250,0.45)", lineHeight: 1.6, margin: 0 }}>
+                      {tile.description}
+                    </p>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{
+                        fontSize: 11, fontWeight: 600,
+                        color: agentCount > 0 ? tile.color : "rgba(240,244,250,0.25)",
+                        background: agentCount > 0 ? `${tile.color}15` : "rgba(255,255,255,0.04)",
+                        border: `1px solid ${agentCount > 0 ? tile.color + "30" : "rgba(255,255,255,0.08)"}`,
+                        borderRadius: 20, padding: "2px 9px",
+                      }}>
+                        {countsQuery.isLoading ? "…" : agentCount > 0 ? `${agentCount} agents` : "0 agents"}
+                      </span>
+                      <span style={{ fontSize: 12, color: tile.color, fontWeight: 600 }}>View agents →</span>
+                    </div>
+                  </button>
+                );
               })}
             </div>
           </>
         )}
 
-        {/* ── STEP 2: Agent selection ── */}
-        {step === 2 && selectedDomain && (
+        {/* ── STEP 3: Agent selection ── */}
+        {step === 3 && selectedDomain && (
           <>
             {/* Back + heading */}
             <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 28 }}>
@@ -457,29 +570,13 @@ export default function PersonaSelector() {
                   </h2>
                 </div>
                 <p style={{ fontSize: 13, color: "rgba(240,244,250,0.4)", margin: "4px 0 0" }}>
-                  {selectedDomain.id === "OTHER"
-                    ? "General-purpose agents for research, documents, and tasks"
-                    : `Select an agent to work with in the ${selectedDomain.label} domain`}
+                  Select an agent to work with in the {selectedDomain.label} domain
                 </p>
               </div>
             </div>
 
             {/* Agent grid */}
-            {selectedDomain.id === "OTHER" ? (
-              /* No specific agents for Other — show a simple message */
-              <div style={{
-                padding: "40px 24px", textAlign: "center",
-                background: "rgba(255,255,255,0.02)",
-                border: "1px solid rgba(255,255,255,0.06)",
-                borderRadius: 16, marginBottom: 28,
-              }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>✨</div>
-                <p style={{ fontSize: 14, color: "rgba(240,244,250,0.5)", lineHeight: 1.7 }}>
-                  The Mesh will automatically select the best general-purpose agents for your task.<br />
-                  Just describe what you need on the next screen.
-                </p>
-              </div>
-            ) : agentsQuery.isLoading ? (
+            {agentsQuery.isLoading ? (
               /* Loading skeleton */
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 12, marginBottom: 28 }}>
                 {Array.from({ length: 6 }).map((_, i) => (
