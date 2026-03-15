@@ -1,0 +1,14 @@
+{
+  "query": "SELECT domain, COUNT(*) as count FROM agents WHERE status = 'active' GROUP BY domain ORDER BY count DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT domain, COUNT(*) as count FROM agents WHERE status = 'active' GROUP BY domain ORDER BY count DESC;",
+  "rows": [
+    {
+      "domain": "NULL",
+      "count": "15"
+    }
+  ],
+  "messages": [],
+  "stdout": "domain\tcount\nNULL\t15\n",
+  "stderr": "",
+  "execution_time_ms": 1701
+}

@@ -24,6 +24,17 @@ const DOMAIN_TILES = [
     persona: "BANKER",
   },
   {
+    id: "Finance",
+    label: "Finance / VC",
+    icon: "💰",
+    description: "Deal screening, due diligence, portfolio monitoring, LP reporting, valuations",
+    color: "#4ADE80",
+    bg: "rgba(74,222,128,0.10)",
+    border: "rgba(74,222,128,0.35)",
+    glow: "rgba(74,222,128,0.25)",
+    persona: "FUND_MANAGER",
+  },
+  {
     id: "Fund Manager",
     label: "Fund Manager",
     icon: "📊",
@@ -88,6 +99,17 @@ const DOMAIN_TILES = [
     border: "rgba(148,163,184,0.35)",
     glow: "rgba(148,163,184,0.25)",
     persona: "LAWYER",
+  },
+  {
+    id: "Healthcare",
+    label: "Healthcare",
+    icon: "🏥",
+    description: "Hospital ops, bed management, staffing, patient flow, clinical reporting",
+    color: "#6EE7B7",
+    bg: "rgba(110,231,183,0.10)",
+    border: "rgba(110,231,183,0.35)",
+    glow: "rgba(110,231,183,0.25)",
+    persona: "DOCTOR",
   },
   {
     id: "Retailer",
@@ -475,13 +497,8 @@ export default function PersonaSelector() {
               gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
               gap: 14,
             }}>
-              {DOMAIN_TILES.filter((tile) => {
-                // Hide tiles with zero agents (unless counts haven't loaded yet)
-                if (countsQuery.isLoading) return true;
-                const count = tile.id === "OTHER" ? (domainCounts["OTHER"] ?? 0) : (domainCounts[tile.id] ?? 0);
-                return count > 0;
-              }).map((tile) => {
-                const agentCount = tile.id === "OTHER" ? (domainCounts["OTHER"] ?? 0) : (domainCounts[tile.id] ?? 0);
+              {DOMAIN_TILES.map((tile) => {
+                const agentCount = domainCounts[tile.id] ?? 0;
                 return (
                 <button
                   key={tile.id}
@@ -532,18 +549,16 @@ export default function PersonaSelector() {
                     display: "flex", alignItems: "center", justifyContent: "space-between",
                   }}>
                     {/* Agent count badge */}
-                    {agentCount > 0 && (
-                      <span style={{
-                        fontSize: 11, fontWeight: 600,
-                        color: tile.color,
-                        background: `${tile.color}15`,
-                        border: `1px solid ${tile.color}30`,
-                        borderRadius: 20,
-                        padding: "2px 9px",
-                      }}>
-                        {agentCount} agent{agentCount !== 1 ? "s" : ""}
-                      </span>
-                    )}
+                    <span style={{
+                      fontSize: 11, fontWeight: 600,
+                      color: agentCount > 0 ? tile.color : "rgba(240,244,250,0.25)",
+                      background: agentCount > 0 ? `${tile.color}15` : "rgba(255,255,255,0.04)",
+                      border: `1px solid ${agentCount > 0 ? tile.color + "30" : "rgba(255,255,255,0.08)"}`,
+                      borderRadius: 20,
+                      padding: "2px 9px",
+                    }}>
+                      {countsQuery.isLoading ? "…" : agentCount > 0 ? `${agentCount} agent${agentCount !== 1 ? "s" : ""}` : "0 agents"}
+                    </span>
                     <span style={{ fontSize: 12, color: tile.color, fontWeight: 600, marginLeft: "auto" }}>
                       View agents →
                     </span>

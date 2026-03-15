@@ -1,0 +1,58 @@
+{
+  "query": "SELECT DISTINCT domain FROM agents LIMIT 50;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT DISTINCT domain FROM agents LIMIT 50;",
+  "rows": [
+    {
+      "domain": "Manager"
+    },
+    {
+      "domain": "Marketing Manager"
+    },
+    {
+      "domain": "Legal"
+    },
+    {
+      "domain": "Finance"
+    },
+    {
+      "domain": "NULL"
+    },
+    {
+      "domain": "Retailer"
+    },
+    {
+      "domain": "Banker"
+    },
+    {
+      "domain": "Student"
+    },
+    {
+      "domain": "Fund Manager"
+    },
+    {
+      "domain": "Enterprise"
+    },
+    {
+      "domain": "Investment Analyst"
+    },
+    {
+      "domain": "Doctor"
+    },
+    {
+      "domain": "GCC Wealth"
+    },
+    {
+      "domain": "Healthcare"
+    },
+    {
+      "domain": "Investment Manager"
+    },
+    {
+      "domain": "Office Clerk"
+    }
+  ],
+  "messages": [],
+  "stdout": "domain\nManager\nMarketing Manager\nLegal\nFinance\nNULL\nRetailer\nBanker\nStudent\nFund Manager\nEnterprise\nInvestment Analyst\nDoctor\nGCC Wealth\nHealthcare\nInvestment Manager\nOffice Clerk\n",
+  "stderr": "",
+  "execution_time_ms": 1581
+}
