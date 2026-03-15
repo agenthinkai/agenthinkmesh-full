@@ -608,13 +608,13 @@ export function HowItWorks() {
             How it works
           </div>
           <h2 style={{
-            fontSize: "clamp(28px, 4vw, 44px)", fontWeight: 800,
-            letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.1,
+            fontSize: "clamp(24px, 3.5vw, 40px)", fontWeight: 800,
+            letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15,
             margin: "0 auto 16px",
           }}>
-            From task to institutional output<br />
+            From task to institutional output{" "}
             <span style={{ background: "linear-gradient(135deg, #7BA3D4 0%, #4ADE80 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-              in four steps
+              in 4 steps
             </span>
           </h2>
           <p style={{ fontSize: 15, color: SILVER_300, maxWidth: 520, margin: "0 auto", lineHeight: 1.7 }}>
