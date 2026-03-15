@@ -545,8 +545,6 @@ export default function Landing() {
 
           {/* Desktop nav links */}
           <div className="landing-nav-links" style={{ alignItems: "center", gap: 20 }}>
-            <a href="/portfolio" style={{ fontSize: 13, color: GOLD, textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap", padding: "4px 10px", borderRadius: 6, background: `${GOLD}12`, border: `1px solid ${GOLD}30` }}>Portfolio</a>
-            <a href="/turnaround" style={{ fontSize: 13, color: "#E07B54", textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap", padding: "4px 10px", borderRadius: 6, background: "rgba(224,123,84,0.08)", border: "1px solid rgba(224,123,84,0.25)" }}>Turnaround</a>
             {[["#features", "Features"], ["#domains", "Domains"], ["#how-it-works", "How it works"], ["#contact", "Contact"]].map(([href, label]) => (
               <a key={href} href={href} style={{ fontSize: 13, color: SILVER_300, textDecoration: "none", fontWeight: 500, transition: "color 0.2s", whiteSpace: "nowrap" }}
                 onMouseEnter={e => (e.currentTarget.style.color = SILVER_50)}
@@ -590,7 +588,6 @@ export default function Landing() {
             {[["#features", "Features"], ["#domains", "Domains"], ["#how-it-works", "How it works"], ["#contact", "Contact"]].map(([href, label]) => (
               <a key={href} href={href} onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 15, color: SILVER_300, textDecoration: "none", fontWeight: 500 }}>{label}</a>
             ))}
-            <Link href="/turnaround" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 15, color: "#E07B54", textDecoration: "none", fontWeight: 600 }}>100-Hour Turnaround</Link>
             <Link href="/registry" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 15, color: "#7BA3D4", textDecoration: "none", fontWeight: 600 }}>⬡ Registry</Link>
             <Link href="/annotate" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 15, color: GOLD, textDecoration: "none", fontWeight: 600 }}>ع Arabic Labeling</Link>
             <Link href="/build" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 15, color: SILVER_300, textDecoration: "none", fontWeight: 500 }}>Build</Link>
