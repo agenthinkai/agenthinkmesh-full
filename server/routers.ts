@@ -10,7 +10,7 @@ import { turnaroundRouter } from "./routers/turnaround";
 import { identityRouter } from "./routers/identity";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
-import { eq, desc, gte, sql, and, like, or } from "drizzle-orm";
+import { eq, desc, gte, sql, and, like, or, isNull, lt } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
 import { notifyOwner } from "./_core/notification";
 import * as XLSX from "xlsx";
@@ -1305,7 +1305,16 @@ If a section is not applicable (e.g. no financial data provided), set it to null
           })
           .from(agents)
           .leftJoin(agentMetrics, eq(agents.id, agentMetrics.agentId))
-          .where(eq(agents.status, "active"));
+          .where(
+            and(
+              eq(agents.status, "active"),
+              // exclude stale agents unverified for 24h+
+              or(
+                isNull(agents.lastVerifiedAt), // newly registered, not yet checked
+                gte(agents.lastVerifiedAt, new Date(Date.now() - 24 * 60 * 60 * 1000))
+              )
+            )
+          );
 
         // Score and rank
         const scored = rows.map(row => {

@@ -535,3 +535,16 @@
 - [x] AskScreen: personalised hero text driven by active_persona
 - [x] App.tsx: /persona-setup route registered
 - [x] 55/55 tests pass, 0 TypeScript errors
+
+## Session 47 — Closed Curated Registry
+
+- [x] agents table: add version varchar(32) default "1.0.0"
+- [x] agents table: add lastVerifiedAt timestamp (nullable)
+- [x] agents table: add failCount int default 0
+- [x] agents table: add "degraded" to status enum
+- [x] DB push migration (drizzle/0015_shiny_wolfpack.sql)
+- [x] Seed 15 domain agents (5 GCC Finance, 3 Islamic Finance, 3 Arabic NLP, 4 Legal/Compliance)
+- [x] server/jobs/healthCheck.ts: ping all active/degraded agents every 30 min, update failCount/status/lastVerifiedAt
+- [x] Wire health-check cron into server startup via node-cron (runs on startup + every 30 min)
+- [x] agent.discover: filter out agents where lastVerifiedAt older than 24h (exclude stale)
+- [x] 55/55 tests pass, 0 TypeScript errors

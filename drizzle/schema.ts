@@ -68,10 +68,14 @@ export const agents = mysqlTable("agents", {
   endpointUrl: varchar("endpointUrl", { length: 512 }).notNull(),
   averageLatency: int("averageLatency").notNull().default(500), // ms, self-reported
   pricingModel: mysqlEnum("pricingModel", ["free", "per_task", "subscription"]).notNull().default("free"),
-  status: mysqlEnum("status", ["active", "inactive", "pending"]).notNull().default("active"),
+  status: mysqlEnum("status", ["active", "inactive", "pending", "degraded"]).notNull().default("active"),
   connectionTested: boolean("connectionTested").notNull().default(false), // true if endpoint passed validation
   webhookUrl: varchar("webhookUrl", { length: 512 }), // optional: POST result payload here after task execution
   orgId: varchar("orgId", { length: 64 }), // optional: tenant isolation
+  // Registry versioning & health tracking
+  version: varchar("version", { length: 32 }).notNull().default("1.0.0"),
+  lastVerifiedAt: timestamp("lastVerifiedAt"),
+  failCount: int("failCount").notNull().default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
