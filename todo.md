@@ -601,3 +601,7 @@
 - [x] Replace persona/role names in Domains navbar dropdown with true domain names (Finance, Legal, Healthcare, Enterprise, GCC Wealth, etc.)
 - [x] Redesign PersonaSelector Step 1 to show true domains instead of job titles
 - [x] Ensure domain tile IDs match the agent seeding domain names in the DB
+
+## Session: Remove Domains Dropdown
+
+- [x] Replace Domains dropdown in navbar with a simple anchor link that scrolls to the domain showcase section

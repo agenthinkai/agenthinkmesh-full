@@ -71,94 +71,9 @@ const USE_CASES = [
   { role: "Hospital Ops Director", task: "Analyse this week's bed occupancy data and generate a staffing optimisation report", agents: 8, domain: "Healthcare" },
 ];
 
-// ── True industry domains for navbar dropdown ───────────────────────────────
-const ALL_DOMAINS = [
-  { id: "Finance", label: "Finance", icon: "💹", sub: "VC, Banking, Investment, Fund Management" },
-  { id: "Legal", label: "Legal", icon: "⚖️", sub: "Contract review, compliance, GCC law" },
-  { id: "Healthcare", label: "Healthcare", icon: "🏥", sub: "Hospital ops, clinical, patient flow" },
-  { id: "Enterprise", label: "Enterprise", icon: "🏢", sub: "HR, ops, marketing, procurement" },
-  { id: "GCC Wealth", label: "GCC Wealth", icon: "💎", sub: "Private wealth, Shariah, family office" },
-  { id: "Education", label: "Education", icon: "🎓", sub: "Research, citations, essay, study" },
-];
 
-function DomainsDropdown() {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
-    }
-    document.addEventListener("mousedown", handleClick);
-    return () => document.removeEventListener("mousedown", handleClick);
-  }, []);
 
-  return (
-    <div ref={ref} style={{ position: "relative" }}>
-      <button
-        onClick={() => setOpen(o => !o)}
-        style={{
-          background: "none", border: "none", cursor: "pointer",
-          fontSize: 13, color: SILVER_300, fontWeight: 500, fontFamily: FONT,
-          display: "flex", alignItems: "center", gap: 5, padding: "4px 0",
-          transition: "color 0.2s",
-        }}
-        onMouseEnter={e => (e.currentTarget.style.color = SILVER_50)}
-        onMouseLeave={e => (e.currentTarget.style.color = SILVER_300)}
-      >
-        Domains
-        <span style={{ fontSize: 10, opacity: 0.7, marginTop: 1 }}>{open ? "▲" : "▼"}</span>
-      </button>
-      {open && (
-        <div style={{
-          position: "absolute", top: "calc(100% + 12px)", left: "50%", transform: "translateX(-50%)",
-          background: NAVY_900, border: `1px solid ${NAVY_700}`, borderRadius: 12,
-          padding: "8px 0", minWidth: 220, zIndex: 1000,
-          boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
-        }}>
-          <div style={{ padding: "6px 16px 8px", fontSize: 10, color: SILVER_500, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>6 specialist domains</div>
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            {ALL_DOMAINS.map(d => (
-              <a
-                key={d.id}
-                href={`/domain/${encodeURIComponent(d.id)}`}
-                onClick={() => setOpen(false)}
-                style={{
-                  display: "flex", alignItems: "center", gap: 12,
-                  padding: "9px 16px", fontSize: 13, color: SILVER_300,
-                  textDecoration: "none", fontWeight: 500,
-                  transition: "background 0.15s, color 0.15s",
-                }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = NAVY_800; (e.currentTarget as HTMLElement).style.color = SILVER_50; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = SILVER_300; }}
-              >
-                <span style={{ fontSize: 18, width: 24, textAlign: "center", flexShrink: 0 }}>{d.icon}</span>
-                <div>
-                  <div style={{ fontWeight: 600, lineHeight: 1.2 }}>{d.label}</div>
-                  <div style={{ fontSize: 10, color: SILVER_500, fontFamily: MONO, marginTop: 2 }}>{d.sub}</div>
-                </div>
-              </a>
-            ))}
-          </div>
-          <div style={{ borderTop: `1px solid ${NAVY_700}`, margin: "8px 0 0" }} />
-          <a
-            href="/persona-setup"
-            onClick={() => setOpen(false)}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "center",
-              margin: "8px 12px", padding: "9px 16px",
-              background: "linear-gradient(135deg, #7BA3D4 0%, #4ADE80 100%)",
-              color: NAVY_950, borderRadius: 8, fontSize: 12, fontWeight: 700,
-              textDecoration: "none",
-            }}
-          >
-            ⚡ Try the Mesh
-          </a>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ── Contact Section Component ─────────────────────────────────────────────
 function ContactSection() {
@@ -634,8 +549,10 @@ export default function Landing() {
 
           {/* Desktop nav links */}
           <div className="landing-nav-links" style={{ alignItems: "center", gap: 20 }}>
-            {/* Domains dropdown */}
-            <DomainsDropdown />
+            <a href="#domains" style={{ fontSize: 13, color: SILVER_300, textDecoration: "none", fontWeight: 500, transition: "color 0.2s", whiteSpace: "nowrap" }}
+              onMouseEnter={e => (e.currentTarget.style.color = SILVER_50)}
+              onMouseLeave={e => (e.currentTarget.style.color = SILVER_300)}
+            >Domains</a>
             <a href="#contact" style={{ fontSize: 13, color: SILVER_300, textDecoration: "none", fontWeight: 500, transition: "color 0.2s", whiteSpace: "nowrap" }}
               onMouseEnter={e => (e.currentTarget.style.color = SILVER_50)}
               onMouseLeave={e => (e.currentTarget.style.color = SILVER_300)}
@@ -665,20 +582,8 @@ export default function Landing() {
         {/* Mobile dropdown menu */}
         {mobileMenuOpen && (
           <div className="landing-mobile-menu" style={{ background: NAVY_900, borderTop: `1px solid ${NAVY_700}`, padding: "16px 24px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-            <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600, marginBottom: 4 }}>Domains</div>
-            {ALL_DOMAINS.map(d => (
-              <a key={d.id} href={`/domain/${encodeURIComponent(d.id)}`} onClick={() => setMobileMenuOpen(false)}
-                style={{ fontSize: 14, color: SILVER_300, textDecoration: "none", fontWeight: 500, display: "flex", alignItems: "center", gap: 10 }}>
-                <span style={{ fontSize: 18 }}>{d.icon}</span>
-                <div>
-                  <div style={{ fontWeight: 600 }}>{d.label}</div>
-                  <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO }}>{d.sub}</div>
-                </div>
-              </a>
-            ))}
-            <div style={{ borderTop: `1px solid ${NAVY_700}`, marginTop: 4, paddingTop: 14 }}>
-              <a href="#contact" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 14, color: SILVER_300, textDecoration: "none", fontWeight: 500 }}>Contact</a>
-            </div>
+            <a href="#domains" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 14, color: SILVER_300, textDecoration: "none", fontWeight: 500 }}>Domains</a>
+            <a href="#contact" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 14, color: SILVER_300, textDecoration: "none", fontWeight: 500 }}>Contact</a>
             <a href={loginUrl} style={{ padding: "10px 20px", background: "linear-gradient(135deg, #1C3057 0%, #243B6E 100%)", color: SILVER_50, borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: "none", textAlign: "center" }}>Sign in →</a>
           </div>
         )}
