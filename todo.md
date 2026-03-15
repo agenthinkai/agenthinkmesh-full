@@ -579,3 +579,14 @@
 - [x] User selects an agent from the list
 - [x] Confirm button fires classifyPersona + navigates to /ask with agent pre-selected
 - [x] Pass selected agent context to /ask via URL param (?agent=id&agentName=...)
+
+## Session: Landing Page Cleanup & Navbar Domains Dropdown
+
+- [x] Remove Features section from landing page
+- [x] Remove How it works section from landing page
+- [x] Remove Use cases section from landing page
+- [x] Remove Arabic Data Labeling section from landing page
+- [x] Clean navbar: remove Registry, Arabic Labeling, Build, Features, How it works links
+- [x] Add Domains dropdown to navbar with all 16 domain tiles (2-column grid, icons, Try the Mesh CTA)
+- [x] Add mobile menu Domains list with all 16 domains
+- [x] Landing page now flows: Hero → Domain Showcase → Bottom CTA → Contact → Footer

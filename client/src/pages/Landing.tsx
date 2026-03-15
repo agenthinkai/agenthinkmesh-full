@@ -71,6 +71,103 @@ const USE_CASES = [
   { role: "Hospital Ops Director", task: "Analyse this week's bed occupancy data and generate a staffing optimisation report", agents: 8, domain: "Healthcare" },
 ];
 
+// ── All 14 domain tiles for navbar dropdown ─────────────────────────────────
+const ALL_DOMAINS = [
+  { id: "Banker", label: "Banker", icon: "🏦" },
+  { id: "Finance", label: "Finance / VC", icon: "💰" },
+  { id: "Fund Manager", label: "Fund Manager", icon: "📊" },
+  { id: "Investment Manager", label: "Investment Manager", icon: "💼" },
+  { id: "Investment Analyst", label: "Investment Analyst", icon: "📈" },
+  { id: "Doctor", label: "Doctor", icon: "🩺" },
+  { id: "Student", label: "Student", icon: "🎓" },
+  { id: "Legal", label: "Lawyer", icon: "⚖️" },
+  { id: "Healthcare", label: "Healthcare", icon: "🏥" },
+  { id: "Retailer", label: "Retailer", icon: "🛒" },
+  { id: "Office Clerk", label: "Office Clerk", icon: "📋" },
+  { id: "Manager", label: "Manager", icon: "🎯" },
+  { id: "Marketing Manager", label: "Marketing Manager", icon: "📣" },
+  { id: "Enterprise", label: "Enterprise", icon: "🏢" },
+  { id: "GCC Wealth", label: "GCC Wealth", icon: "💎" },
+  { id: "OTHER", label: "Other / General", icon: "✨" },
+];
+
+function DomainsDropdown() {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  return (
+    <div ref={ref} style={{ position: "relative" }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          background: "none", border: "none", cursor: "pointer",
+          fontSize: 13, color: SILVER_300, fontWeight: 500, fontFamily: FONT,
+          display: "flex", alignItems: "center", gap: 5, padding: "4px 0",
+          transition: "color 0.2s",
+        }}
+        onMouseEnter={e => (e.currentTarget.style.color = SILVER_50)}
+        onMouseLeave={e => (e.currentTarget.style.color = SILVER_300)}
+      >
+        Domains
+        <span style={{ fontSize: 10, opacity: 0.7, marginTop: 1 }}>{open ? "▲" : "▼"}</span>
+      </button>
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 12px)", left: "50%", transform: "translateX(-50%)",
+          background: NAVY_900, border: `1px solid ${NAVY_700}`, borderRadius: 12,
+          padding: "8px 0", minWidth: 220, zIndex: 1000,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+        }}>
+          <div style={{ padding: "6px 16px 8px", fontSize: 10, color: SILVER_500, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600 }}>14 specialist domains</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0 }}>
+            {ALL_DOMAINS.map(d => (
+              <a
+                key={d.id}
+                href={`/domain/${encodeURIComponent(d.id)}`}
+                onClick={() => setOpen(false)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 8,
+                  padding: "8px 16px", fontSize: 12, color: SILVER_300,
+                  textDecoration: "none", fontWeight: 500,
+                  transition: "background 0.15s, color 0.15s",
+                  borderRadius: 0,
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = NAVY_800; (e.currentTarget as HTMLElement).style.color = SILVER_50; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = "transparent"; (e.currentTarget as HTMLElement).style.color = SILVER_300; }}
+              >
+                <span style={{ fontSize: 14 }}>{d.icon}</span>
+                <span>{d.label}</span>
+              </a>
+            ))}
+          </div>
+          <div style={{ borderTop: `1px solid ${NAVY_700}`, margin: "8px 0 0" }} />
+          <a
+            href="/persona-setup"
+            onClick={() => setOpen(false)}
+            style={{
+              display: "flex", alignItems: "center", justifyContent: "center",
+              margin: "8px 12px", padding: "9px 16px",
+              background: "linear-gradient(135deg, #7BA3D4 0%, #4ADE80 100%)",
+              color: NAVY_950, borderRadius: 8, fontSize: 12, fontWeight: 700,
+              textDecoration: "none",
+            }}
+          >
+            ⚡ Try the Mesh
+          </a>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Contact Section Component ─────────────────────────────────────────────
 function ContactSection() {
   const [form, setForm] = useState({ name: "", email: "", company: "", message: "" });
@@ -416,7 +513,7 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
               style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 14, color: "#C8D4E0", fontFamily: FONT, minWidth: 0 }}
               onClick={() => { window.location.href = '/ask'; }}
             />
-            <a href="/ask" className="neon-activate-btn">⚡ Activate mesh</a>
+            <a href="/persona-setup" className="neon-activate-btn">⚡ Try the Mesh</a>
           </div>
         </div>
         <p style={{ fontFamily: MONO, fontSize: 11, color: "#3D4F63", marginBottom: 48 }}>No sign-in required to preview · {stats.verifiedAgents} specialist agents ready</p>
@@ -545,21 +642,12 @@ export default function Landing() {
 
           {/* Desktop nav links */}
           <div className="landing-nav-links" style={{ alignItems: "center", gap: 20 }}>
-            {[["#features", "Features"], ["#domains", "Domains"], ["#how-it-works", "How it works"], ["#contact", "Contact"]].map(([href, label]) => (
-              <a key={href} href={href} style={{ fontSize: 13, color: SILVER_300, textDecoration: "none", fontWeight: 500, transition: "color 0.2s", whiteSpace: "nowrap" }}
-                onMouseEnter={e => (e.currentTarget.style.color = SILVER_50)}
-                onMouseLeave={e => (e.currentTarget.style.color = SILVER_300)}
-              >{label}</a>
-            ))}
-            <Link href="/registry" style={{ fontSize: 13, color: "#7BA3D4", textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap" }}>
-              ⬡ Registry
-            </Link>
-            <Link href="/annotate" style={{ fontSize: 13, color: GOLD, textDecoration: "none", fontWeight: 600, whiteSpace: "nowrap" }}>
-              ع Arabic Labeling
-            </Link>
-            <Link href="/build" style={{ fontSize: 13, color: SILVER_300, textDecoration: "none", fontWeight: 500, whiteSpace: "nowrap" }}>
-              Build
-            </Link>
+            {/* Domains dropdown */}
+            <DomainsDropdown />
+            <a href="#contact" style={{ fontSize: 13, color: SILVER_300, textDecoration: "none", fontWeight: 500, transition: "color 0.2s", whiteSpace: "nowrap" }}
+              onMouseEnter={e => (e.currentTarget.style.color = SILVER_50)}
+              onMouseLeave={e => (e.currentTarget.style.color = SILVER_300)}
+            >Contact</a>
             <a href={loginUrl} style={{
               padding: "8px 18px",
               background: "linear-gradient(135deg, #1C3057 0%, #243B6E 100%)",
@@ -585,12 +673,16 @@ export default function Landing() {
         {/* Mobile dropdown menu */}
         {mobileMenuOpen && (
           <div className="landing-mobile-menu" style={{ background: NAVY_900, borderTop: `1px solid ${NAVY_700}`, padding: "16px 24px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-            {[["#features", "Features"], ["#domains", "Domains"], ["#how-it-works", "How it works"], ["#contact", "Contact"]].map(([href, label]) => (
-              <a key={href} href={href} onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 15, color: SILVER_300, textDecoration: "none", fontWeight: 500 }}>{label}</a>
+            <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 600, marginBottom: 4 }}>Domains</div>
+            {ALL_DOMAINS.map(d => (
+              <a key={d.id} href={`/domain/${encodeURIComponent(d.id)}`} onClick={() => setMobileMenuOpen(false)}
+                style={{ fontSize: 14, color: SILVER_300, textDecoration: "none", fontWeight: 500, display: "flex", alignItems: "center", gap: 8 }}>
+                <span>{d.icon}</span> {d.label}
+              </a>
             ))}
-            <Link href="/registry" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 15, color: "#7BA3D4", textDecoration: "none", fontWeight: 600 }}>⬡ Registry</Link>
-            <Link href="/annotate" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 15, color: GOLD, textDecoration: "none", fontWeight: 600 }}>ع Arabic Labeling</Link>
-            <Link href="/build" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 15, color: SILVER_300, textDecoration: "none", fontWeight: 500 }}>Build</Link>
+            <div style={{ borderTop: `1px solid ${NAVY_700}`, marginTop: 4, paddingTop: 14 }}>
+              <a href="#contact" onClick={() => setMobileMenuOpen(false)} style={{ fontSize: 14, color: SILVER_300, textDecoration: "none", fontWeight: 500 }}>Contact</a>
+            </div>
             <a href={loginUrl} style={{ padding: "10px 20px", background: "linear-gradient(135deg, #1C3057 0%, #243B6E 100%)", color: SILVER_50, borderRadius: 8, fontSize: 14, fontWeight: 600, textDecoration: "none", textAlign: "center" }}>Sign in →</a>
           </div>
         )}
@@ -599,10 +691,7 @@ export default function Landing() {
       {/* ── Hero (VarD Neon) ── */}
       <NeonHero loginUrl={loginUrl} stats={s} />
 
-      <NeonDivider />
-
-      {/* ── How it works ── */}
-      <section id="how-it-works" style={{ padding: "72px 24px", background: NAVY_950 }}>
+      {false && <section id="how-it-works" style={{ padding: "72px 24px", background: NAVY_950 }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>How it works</div>
@@ -618,30 +707,7 @@ export default function Landing() {
             ))}
           </div>
         </div>
-      </section>
-
-      <NeonDivider />
-
-      {/* ── Features ── */}
-      <section id="features" style={{ padding: "72px 24px", background: NAVY_900 }}>
-        <div style={{ maxWidth: 1060, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>Platform capabilities</div>
-            <h2 style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>Built for institutional-grade<br />AI task execution.</h2>
-          </div>
-          <div className="landing-3col-grid">
-            {FEATURES.map((f, i) => (
-              <div key={i} style={{ ...card({ padding: "26px 22px" }) }}>
-                <div style={{ fontSize: 28, marginBottom: 14 }}>{f.icon}</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: SILVER_50, marginBottom: 8 }}>{f.title}</div>
-                <div style={{ fontSize: 13, color: SILVER_300, lineHeight: 1.75 }}>{f.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      <NeonDivider />
+      </section>}
 
       {/* ── Domain showcase ── */}
       <section id="domains" style={{ padding: "72px 24px", background: NAVY_950 }}>
@@ -679,39 +745,10 @@ export default function Landing() {
         </div>
       </section>
 
-      <NeonDivider />
 
-      {/* ── Use cases ── */}
-      <section style={{ padding: "72px 24px", background: NAVY_900 }}>
-        <div style={{ maxWidth: 960, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>Use cases</div>
-            <h2 style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>Real tasks. Real professionals.<br />Real output.</h2>
-          </div>
-          <div className="landing-2col-grid">
-            {USE_CASES.map((uc, i) => (
-              <div key={i} style={{ ...card({ padding: "24px 22px" }) }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14, flexWrap: "wrap" }}>
-                  <span style={{ fontSize: 11, padding: "3px 11px", borderRadius: 999, background: NAVY_700, color: SILVER_300, fontFamily: MONO, border: `1px solid ${NAVY_600}`, fontWeight: 500 }}>
-                    {uc.role}
-                  </span>
-                  <span style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO }}>
-                    {uc.domain} · {uc.agents} agents
-                  </span>
-                </div>
-                <div style={{ fontSize: 14, color: SILVER_300, lineHeight: 1.7, fontStyle: "italic" }}>
-                  &ldquo;{uc.task}&rdquo;
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      <NeonDivider />
-
-      {/* ── Arabic Data Labeling — Flagship Government Section ── */}
-      <section id="arabic-labeling" style={{ padding: "80px 24px", background: "#080F1E", position: "relative", overflow: "hidden" }}>
+      {/* Arabic Labeling section removed */}
+      {false && <section id="arabic-labeling" style={{ padding: "80px 24px", background: "#080F1E", position: "relative", overflow: "hidden" }}>
         <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(${GOLD}18 1px, transparent 1px)`, backgroundSize: "32px 32px", pointerEvents: "none" }} />
         <div style={{ position: "absolute", top: 0, right: 0, width: 480, height: 480, background: `radial-gradient(circle at 80% 20%, ${GOLD}18 0%, transparent 70%)`, pointerEvents: "none" }} />
         <div style={{ position: "absolute", bottom: 0, left: 0, width: 360, height: 360, background: "radial-gradient(circle at 20% 80%, rgba(123,163,212,0.1) 0%, transparent 70%)", pointerEvents: "none" }} />
@@ -837,9 +874,7 @@ export default function Landing() {
             ))}
           </div>
         </div>
-      </section>
-
-      <NeonDivider />
+      </section>}
 
       {/* ── Bottom CTA ── */}
       <section style={{ padding: "80px 24px", textAlign: "center", background: NAVY_800, position: "relative", overflow: "hidden" }}>
