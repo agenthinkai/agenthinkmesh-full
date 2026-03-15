@@ -610,3 +610,7 @@
 
 - [x] Build animated HowItWorks component with 4 steps: select role, pick agents, run & get output, create new agent
 - [x] Integrate HowItWorks section into Landing page between hero and domain showcase
+
+## Session: HowItWorks CTA Button
+
+- [x] Add "Try it yourself" CTA button at the bottom of the How It Works section linking to /persona-setup

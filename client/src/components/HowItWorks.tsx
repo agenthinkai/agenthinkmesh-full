@@ -782,6 +782,68 @@ export function HowItWorks() {
         </div>
       </div>
 
+      {/* ── CTA block ── */}
+      <div style={{
+        textAlign: "center",
+        marginTop: 64,
+        padding: "40px 24px",
+        background: `linear-gradient(135deg, ${NAVY_800} 0%, ${NAVY_900} 100%)`,
+        border: `1px solid ${NAVY_700}`,
+        borderRadius: 20,
+        position: "relative",
+        overflow: "hidden",
+      }}>
+        {/* Subtle glow */}
+        <div style={{
+          position: "absolute", top: "50%", left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: 400, height: 200,
+          background: "radial-gradient(ellipse, rgba(74,222,128,0.06) 0%, transparent 70%)",
+          pointerEvents: "none",
+        }} />
+        <div style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.15em", marginBottom: 12 }}>
+          Ready to experience it?
+        </div>
+        <h3 style={{
+          fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 800,
+          color: SILVER_50, letterSpacing: "-0.02em", marginBottom: 10, lineHeight: 1.2,
+        }}>
+          Your first task is one click away
+        </h3>
+        <p style={{ fontSize: 14, color: SILVER_300, marginBottom: 28, lineHeight: 1.7, maxWidth: 420, margin: "0 auto 28px" }}>
+          Select your role, pick your agents, and run your first task — no setup required.
+        </p>
+        <a
+          href="https://agenthink-7enctkan.manus.space/persona-setup"
+          style={{
+            display: "inline-flex", alignItems: "center", gap: 10,
+            padding: "14px 32px",
+            borderRadius: 12,
+            background: "linear-gradient(135deg, #7BA3D4 0%, #4ADE80 100%)",
+            color: "#04080F",
+            fontSize: 15, fontWeight: 800,
+            textDecoration: "none",
+            letterSpacing: "-0.01em",
+            boxShadow: "0 4px 24px rgba(74,222,128,0.25), 0 2px 8px rgba(0,0,0,0.3)",
+            transition: "transform 0.2s ease, box-shadow 0.2s ease",
+          }}
+          onMouseEnter={e => {
+            (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1.04)";
+            (e.currentTarget as HTMLAnchorElement).style.boxShadow = "0 6px 32px rgba(74,222,128,0.35), 0 2px 12px rgba(0,0,0,0.3)";
+          }}
+          onMouseLeave={e => {
+            (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1)";
+            (e.currentTarget as HTMLAnchorElement).style.boxShadow = "0 4px 24px rgba(74,222,128,0.25), 0 2px 8px rgba(0,0,0,0.3)";
+          }}
+        >
+          <span style={{ fontSize: 18 }}>⚡</span>
+          Try it yourself
+        </a>
+        <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, marginTop: 14 }}>
+          No sign-in required to preview · 92 specialist agents ready
+        </div>
+      </div>
+
       <style>{`
         @keyframes fadeSlideIn {
           from { opacity: 0; transform: translateY(10px); }
