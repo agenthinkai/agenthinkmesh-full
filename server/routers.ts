@@ -851,7 +851,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
           createdAt: row.createdAt,
         };
 
-        const pdfBuffer = generateReportPdf(taskData);
+        const pdfBuffer = await generateReportPdf(taskData);
         const base64 = pdfBuffer.toString("base64");
         return { base64, filename: `AgenThinkMesh-Report-${row.id}.pdf` };
       }),

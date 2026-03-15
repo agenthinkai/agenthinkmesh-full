@@ -73,242 +73,243 @@ export interface TaskData {
   createdAt: Date | number;
 }
 
-export function generateReportPdf(task: TaskData): Buffer {
-  const doc = new PDFDocument({
-    size: "A4",
-    margins: { top: 50, bottom: 50, left: 50, right: 50 },
-    info: {
-      Title: `AgenThinkMesh Report — Task #${task.id}`,
-      Author: "AgenThinkMesh",
-      Subject: task.query.slice(0, 100),
-    },
-  });
-
-  const chunks: Buffer[] = [];
-  doc.on("data", (chunk: Buffer) => chunks.push(chunk));
-
-  const PAGE_W = doc.page.width - 100; // usable width
-
-  // ── Helper functions ────────────────────────────────────────────────────────
-  function sectionTitle(text: string, color: string = CYAN) {
-    doc.moveDown(0.6);
-    const [r, g, b] = hexToRgb(color);
-    doc
-      .fontSize(8)
-      .font("Helvetica-Bold")
-      .fillColor([r, g, b])
-      .text(text.toUpperCase(), { characterSpacing: 1.5 });
-    doc
-      .moveTo(50, doc.y + 3)
-      .lineTo(50 + PAGE_W, doc.y + 3)
-      .strokeColor([r, g, b])
-      .lineWidth(0.5)
-      .stroke();
-    doc.moveDown(0.4);
-  }
-
-  function bodyText(text: string, color: string = WHITE) {
-    const [r, g, b] = hexToRgb(color);
-    doc.fontSize(10).font("Helvetica").fillColor([r, g, b]).text(text, { lineGap: 3 });
-  }
-
-  function bullet(text: string, symbol = "•", color: string = WHITE) {
-    const [r, g, b] = hexToRgb(color);
-    doc
-      .fontSize(10)
-      .font("Helvetica")
-      .fillColor([r, g, b])
-      .text(`${symbol}  ${text}`, { indent: 12, lineGap: 2 });
-  }
-
-  function financialTable(table: FinancialTable) {
-    const colCount = table.years.length + 1;
-    const labelW = PAGE_W * 0.38;
-    const colW = (PAGE_W - labelW) / table.years.length;
-
-    // Header row
-    const [mr, mg, mb] = hexToRgb(MUTED);
-    doc.fontSize(8).font("Helvetica-Bold").fillColor([mr, mg, mb]);
-    doc.text("", 50, doc.y); // reset x
-    doc.text("", { continued: false });
-
-    // Year headers
-    let x = 50 + labelW;
-    const headerY = doc.y;
-    table.years.forEach((yr) => {
-      doc.fontSize(8).font("Helvetica-Bold").fillColor([mr, mg, mb])
-        .text(yr, x, headerY, { width: colW, align: "right" });
-      x += colW;
+/**
+ * Generate a PDF report buffer asynchronously.
+ * PDFKit emits data chunks asynchronously, so we must wait for the
+ * "finish" event before resolving — otherwise Buffer.concat returns 0 bytes.
+ */
+export function generateReportPdf(task: TaskData): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({
+      size: "A4",
+      margins: { top: 50, bottom: 50, left: 50, right: 50 },
+      info: {
+        Title: `AgenThinkMesh Report — Task #${task.id}`,
+        Author: "AgenThinkMesh",
+        Subject: task.query.slice(0, 100),
+      },
     });
-    doc.moveDown(0.3);
 
-    // Data rows
-    table.rows.forEach((row) => {
-      if (doc.y > doc.page.height - 100) doc.addPage();
-      const rowY = doc.y;
-      const isH = row.isHeader;
-      const isBold = row.isBold || isH;
-      const [wr, wg, wb] = hexToRgb(isH ? CYAN : WHITE);
+    const chunks: Buffer[] = [];
+    doc.on("data", (chunk: Buffer) => chunks.push(chunk));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
 
+    const PAGE_W = doc.page.width - 100; // usable width
+
+    // ── Helper functions ────────────────────────────────────────────────────────
+    function sectionTitle(text: string, color: string = CYAN) {
+      doc.moveDown(0.6);
+      const [r, g, b] = hexToRgb(color);
       doc
-        .fontSize(isH ? 8 : 9)
-        .font(isBold ? "Helvetica-Bold" : "Helvetica")
-        .fillColor([wr, wg, wb])
-        .text(row.label, 50, rowY, { width: labelW, lineGap: 1 });
+        .fontSize(8)
+        .font("Helvetica-Bold")
+        .fillColor([r, g, b])
+        .text(text.toUpperCase(), { characterSpacing: 1.5 });
+      doc
+        .moveTo(50, doc.y + 3)
+        .lineTo(50 + PAGE_W, doc.y + 3)
+        .strokeColor([r, g, b])
+        .lineWidth(0.5)
+        .stroke();
+      doc.moveDown(0.4);
+    }
 
-      let cx = 50 + labelW;
-      (row.values ?? []).forEach((val) => {
-        const display = val === null || val === undefined ? "—" : String(val);
+    function bodyText(text: string, color: string = WHITE) {
+      const [r, g, b] = hexToRgb(color);
+      doc.fontSize(10).font("Helvetica").fillColor([r, g, b]).text(text, { lineGap: 3 });
+    }
+
+    function bullet(text: string, symbol = "•", color: string = WHITE) {
+      const [r, g, b] = hexToRgb(color);
+      doc
+        .fontSize(10)
+        .font("Helvetica")
+        .fillColor([r, g, b])
+        .text(`${symbol}  ${text}`, { indent: 12, lineGap: 2 });
+    }
+
+    function financialTable(table: FinancialTable) {
+      const labelW = PAGE_W * 0.38;
+      const colW = (PAGE_W - labelW) / table.years.length;
+
+      // Year headers
+      const [mr, mg, mb] = hexToRgb(MUTED);
+      let x = 50 + labelW;
+      const headerY = doc.y;
+      table.years.forEach((yr) => {
+        doc.fontSize(8).font("Helvetica-Bold").fillColor([mr, mg, mb])
+          .text(yr, x, headerY, { width: colW, align: "right" });
+        x += colW;
+      });
+      doc.moveDown(0.3);
+
+      // Data rows
+      table.rows.forEach((row) => {
+        if (doc.y > doc.page.height - 100) doc.addPage();
+        const rowY = doc.y;
+        const isH = row.isHeader;
+        const isBold = row.isBold || isH;
+        const [wr, wg, wb] = hexToRgb(isH ? CYAN : WHITE);
+
         doc
-          .fontSize(9)
+          .fontSize(isH ? 8 : 9)
           .font(isBold ? "Helvetica-Bold" : "Helvetica")
           .fillColor([wr, wg, wb])
-          .text(display, cx, rowY, { width: colW, align: "right", lineGap: 1 });
-        cx += colW;
+          .text(row.label, 50, rowY, { width: labelW, lineGap: 1 });
+
+        let cx = 50 + labelW;
+        (row.values ?? []).forEach((val) => {
+          const display = val === null || val === undefined ? "—" : String(val);
+          doc
+            .fontSize(9)
+            .font(isBold ? "Helvetica-Bold" : "Helvetica")
+            .fillColor([wr, wg, wb])
+            .text(display, cx, rowY, { width: colW, align: "right", lineGap: 1 });
+          cx += colW;
+        });
+        doc.moveDown(isH ? 0.4 : 0.25);
       });
-      doc.moveDown(isH ? 0.4 : 0.25);
-    });
-  }
-
-  // ── Dark background ─────────────────────────────────────────────────────────
-  const [nr, ng, nb] = hexToRgb(NAVY);
-  doc.rect(0, 0, doc.page.width, doc.page.height).fill([nr, ng, nb]);
-
-  // ── Header ──────────────────────────────────────────────────────────────────
-  const [cr, cg, cb] = hexToRgb(CYAN);
-  doc.fontSize(18).font("Helvetica-Bold").fillColor([cr, cg, cb]).text("AgenThinkMesh", 50, 50);
-  doc.fontSize(9).font("Helvetica").fillColor(hexToRgb(MUTED)).text("Structured Analysis Report", 50, doc.y + 2);
-
-  // Meta row
-  const dateStr = new Date(task.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
-  doc.fontSize(8).fillColor(hexToRgb(MUTED))
-    .text(`Task #${task.id}  ·  ${task.taskType}  ·  ${task.confidence}% confidence  ·  ${task.executionTime}s  ·  ${dateStr}`, 50, doc.y + 4);
-
-  if (task.fileName) {
-    doc.fontSize(8).fillColor(hexToRgb(GREEN)).text(`Attached: ${task.fileName}`, 50, doc.y + 2);
-  }
-
-  // Divider
-  doc.moveDown(0.5);
-  doc.moveTo(50, doc.y).lineTo(50 + PAGE_W, doc.y).strokeColor(hexToRgb(CYAN)).lineWidth(1).stroke();
-  doc.moveDown(0.5);
-
-  // ── Query ───────────────────────────────────────────────────────────────────
-  sectionTitle("Query", CYAN);
-  bodyText(task.query);
-
-  const report = task.structuredReport;
-
-  // ── Executive Summary ────────────────────────────────────────────────────────
-  if (report?.executiveSummary) {
-    sectionTitle("Executive Summary", CYAN);
-    bodyText(report.executiveSummary);
-  }
-
-  // ── Sense Check ─────────────────────────────────────────────────────────────
-  if (report?.senseCheck) {
-    const sc = report.senseCheck;
-    const verdictColor = sc.verdict === "Credible" ? GREEN : sc.verdict === "Unreliable" ? RED : AMBER;
-    sectionTitle("Sense Check", verdictColor);
-    const [vr, vg, vb] = hexToRgb(verdictColor);
-    const icon = sc.verdict === "Credible" ? "✓" : sc.verdict === "Unreliable" ? "✗" : "⚠";
-    doc.fontSize(11).font("Helvetica-Bold").fillColor([vr, vg, vb]).text(`${icon}  ${sc.verdict}`);
-    doc.moveDown(0.3);
-    (sc.observations ?? []).forEach((obs) => bullet(obs, "·", WHITE));
-  }
-
-  // ── Key Metrics ──────────────────────────────────────────────────────────────
-  if (report?.keyMetrics && report.keyMetrics.length > 0) {
-    sectionTitle("Key Metrics", BLUE);
-    const metrics = report.keyMetrics;
-    const colW2 = PAGE_W / Math.min(3, metrics.length);
-    let mx = 50;
-    const myStart = doc.y;
-    metrics.forEach((m, i) => {
-      const trendIcon = m.trend === "up" ? "↑" : m.trend === "down" ? "↓" : "→";
-      const trendColor = m.trend === "up" ? GREEN : m.trend === "down" ? RED : MUTED;
-      doc.fontSize(7).font("Helvetica").fillColor(hexToRgb(MUTED)).text(m.label.toUpperCase(), mx, myStart, { width: colW2, characterSpacing: 0.8 });
-      doc.fontSize(11).font("Helvetica-Bold").fillColor(hexToRgb(WHITE)).text(`${m.value} `, mx, doc.y, { continued: true, width: colW2 });
-      doc.fontSize(11).font("Helvetica-Bold").fillColor(hexToRgb(trendColor)).text(trendIcon, { continued: false });
-      if ((i + 1) % 3 === 0) { mx = 50; doc.moveDown(0.8); } else { mx += colW2; }
-    });
-    doc.moveDown(0.5);
-  }
-
-  // ── Revenue Segments ─────────────────────────────────────────────────────────
-  if (report?.revenueSegments && report.revenueSegments.length > 0) {
-    sectionTitle("Revenue Segment Breakdown", GREEN);
-    report.revenueSegments.forEach((seg) => {
-      const pct = seg.percentage ? `  (${seg.percentage})` : "";
-      doc.fontSize(10).font("Helvetica-Bold").fillColor(hexToRgb(WHITE)).text(`${seg.segment}`, { continued: true });
-      doc.fontSize(10).font("Helvetica").fillColor(hexToRgb(GREEN)).text(`  ${seg.value}${pct}`);
-    });
-  }
-
-  // ── Balance Sheet ────────────────────────────────────────────────────────────
-  if (report?.balanceSheet) {
-    sectionTitle("Derived Balance Sheet", BLUE);
-    financialTable(report.balanceSheet);
-  }
-
-  // ── Cash Flow Statement ──────────────────────────────────────────────────────
-  if (report?.cashFlowStatement) {
-    if (doc.y > doc.page.height - 150) doc.addPage();
-    sectionTitle("Statement of Cash Flows", PURPLE);
-    financialTable(report.cashFlowStatement);
-  }
-
-  // ── DCF Valuation ────────────────────────────────────────────────────────────
-  if (report?.dcfValuation) {
-    if (doc.y > doc.page.height - 200) doc.addPage();
-    const dcf = report.dcfValuation;
-    sectionTitle("DCF Valuation", AMBER);
-    doc.fontSize(10).font("Helvetica-Bold").fillColor(hexToRgb(WHITE))
-      .text(`Implied Valuation: `, { continued: true })
-      .fillColor(hexToRgb(AMBER)).text(dcf.impliedValuation);
-    doc.fontSize(10).font("Helvetica").fillColor(hexToRgb(WHITE))
-      .text(`Range: ${dcf.valuationRange}  ·  WACC: ${dcf.wacc}  ·  Terminal Growth: ${dcf.terminalGrowthRate}`);
-    doc.moveDown(0.3);
-    doc.fontSize(9).font("Helvetica-Bold").fillColor(hexToRgb(MUTED)).text("Assumptions:");
-    (dcf.assumptions ?? []).forEach((a) => bullet(a, "·", MUTED));
-    if (dcf.sensitivityNote) {
-      doc.moveDown(0.3);
-      doc.fontSize(9).font("Helvetica").fillColor(hexToRgb(MUTED)).text(dcf.sensitivityNote, { lineGap: 2 });
     }
-  }
 
-  // ── Key Findings ─────────────────────────────────────────────────────────────
-  if (task.keyFindings && task.keyFindings.length > 0) {
-    if (doc.y > doc.page.height - 150) doc.addPage();
-    sectionTitle("Key Findings", CYAN);
-    task.keyFindings.forEach((f, i) => bullet(f, `${String(i + 1).padStart(2, "0")}`, WHITE));
-  }
+    // ── Dark background ─────────────────────────────────────────────────────────
+    const [nr, ng, nb] = hexToRgb(NAVY);
+    doc.rect(0, 0, doc.page.width, doc.page.height).fill([nr, ng, nb]);
 
-  // ── Risk Factors ─────────────────────────────────────────────────────────────
-  if (task.risks && task.risks.length > 0) {
-    sectionTitle("Risk Factors", AMBER);
-    task.risks.forEach((r) => bullet(r, "▲", AMBER));
-  }
+    // ── Header ──────────────────────────────────────────────────────────────────
+    const [cr, cg, cb] = hexToRgb(CYAN);
+    doc.fontSize(18).font("Helvetica-Bold").fillColor([cr, cg, cb]).text("AgenThinkMesh", 50, 50);
+    doc.fontSize(9).font("Helvetica").fillColor(hexToRgb(MUTED)).text("Structured Analysis Report", 50, doc.y + 2);
 
-  // ── Recommendation ───────────────────────────────────────────────────────────
-  if (task.recommendation) {
-    sectionTitle("Recommendation", GREEN);
-    bodyText(task.recommendation);
-  }
+    // Meta row
+    const dateStr = new Date(task.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    doc.fontSize(8).fillColor(hexToRgb(MUTED))
+      .text(`Task #${task.id}  ·  ${task.taskType}  ·  ${task.confidence}% confidence  ·  ${task.executionTime}s  ·  ${dateStr}`, 50, doc.y + 4);
 
-  // ── Next Steps ───────────────────────────────────────────────────────────────
-  if (report?.nextSteps && report.nextSteps.length > 0) {
-    sectionTitle("Next Steps", GREEN);
-    report.nextSteps.forEach((s, i) => bullet(s, `${i + 1}.`, WHITE));
-  }
+    if (task.fileName) {
+      doc.fontSize(8).fillColor(hexToRgb(GREEN)).text(`Attached: ${task.fileName}`, 50, doc.y + 2);
+    }
 
-  // ── Footer ───────────────────────────────────────────────────────────────────
-  doc.moveDown(1);
-  doc.fontSize(7).font("Helvetica").fillColor(hexToRgb(MUTED))
-    .text(`Generated by AgenThinkMesh  ·  ${new Date().toISOString()}  ·  agenthink-7enctkan.manus.space`, { align: "center" });
+    // Divider
+    doc.moveDown(0.5);
+    doc.moveTo(50, doc.y).lineTo(50 + PAGE_W, doc.y).strokeColor(hexToRgb(CYAN)).lineWidth(1).stroke();
+    doc.moveDown(0.5);
 
-  doc.end();
+    // ── Query ───────────────────────────────────────────────────────────────────
+    sectionTitle("Query", CYAN);
+    bodyText(task.query);
 
-  // Collect all chunks synchronously (PDFKit emits synchronously when no streams)
-  return Buffer.concat(chunks);
+    const report = task.structuredReport;
+
+    // ── Executive Summary ────────────────────────────────────────────────────────
+    if (report?.executiveSummary) {
+      sectionTitle("Executive Summary", CYAN);
+      bodyText(report.executiveSummary);
+    }
+
+    // ── Sense Check ─────────────────────────────────────────────────────────────
+    if (report?.senseCheck) {
+      const sc = report.senseCheck;
+      const verdictColor = sc.verdict === "Credible" ? GREEN : sc.verdict === "Unreliable" ? RED : AMBER;
+      sectionTitle("Sense Check", verdictColor);
+      const [vr, vg, vb] = hexToRgb(verdictColor);
+      const icon = sc.verdict === "Credible" ? "+" : sc.verdict === "Unreliable" ? "x" : "!";
+      doc.fontSize(11).font("Helvetica-Bold").fillColor([vr, vg, vb]).text(`${icon}  ${sc.verdict}`);
+      doc.moveDown(0.3);
+      (sc.observations ?? []).forEach((obs) => bullet(obs, "·", WHITE));
+    }
+
+    // ── Key Metrics ──────────────────────────────────────────────────────────────
+    if (report?.keyMetrics && report.keyMetrics.length > 0) {
+      sectionTitle("Key Metrics", BLUE);
+      const metrics = report.keyMetrics;
+      const colW2 = PAGE_W / Math.min(3, metrics.length);
+      let mx = 50;
+      const myStart = doc.y;
+      metrics.forEach((m, i) => {
+        const trendIcon = m.trend === "up" ? "^" : m.trend === "down" ? "v" : "-";
+        const trendColor = m.trend === "up" ? GREEN : m.trend === "down" ? RED : MUTED;
+        doc.fontSize(7).font("Helvetica").fillColor(hexToRgb(MUTED)).text(m.label.toUpperCase(), mx, myStart, { width: colW2, characterSpacing: 0.8 });
+        doc.fontSize(11).font("Helvetica-Bold").fillColor(hexToRgb(WHITE)).text(`${m.value} `, mx, doc.y, { continued: true, width: colW2 });
+        doc.fontSize(11).font("Helvetica-Bold").fillColor(hexToRgb(trendColor)).text(trendIcon, { continued: false });
+        if ((i + 1) % 3 === 0) { mx = 50; doc.moveDown(0.8); } else { mx += colW2; }
+      });
+      doc.moveDown(0.5);
+    }
+
+    // ── Revenue Segments ─────────────────────────────────────────────────────────
+    if (report?.revenueSegments && report.revenueSegments.length > 0) {
+      sectionTitle("Revenue Segment Breakdown", GREEN);
+      report.revenueSegments.forEach((seg) => {
+        const pct = seg.percentage ? `  (${seg.percentage})` : "";
+        doc.fontSize(10).font("Helvetica-Bold").fillColor(hexToRgb(WHITE)).text(`${seg.segment}`, { continued: true });
+        doc.fontSize(10).font("Helvetica").fillColor(hexToRgb(GREEN)).text(`  ${seg.value}${pct}`);
+      });
+    }
+
+    // ── Balance Sheet ────────────────────────────────────────────────────────────
+    if (report?.balanceSheet) {
+      sectionTitle("Derived Balance Sheet", BLUE);
+      financialTable(report.balanceSheet);
+    }
+
+    // ── Cash Flow Statement ──────────────────────────────────────────────────────
+    if (report?.cashFlowStatement) {
+      if (doc.y > doc.page.height - 150) doc.addPage();
+      sectionTitle("Statement of Cash Flows", PURPLE);
+      financialTable(report.cashFlowStatement);
+    }
+
+    // ── DCF Valuation ────────────────────────────────────────────────────────────
+    if (report?.dcfValuation) {
+      if (doc.y > doc.page.height - 200) doc.addPage();
+      const dcf = report.dcfValuation;
+      sectionTitle("DCF Valuation", AMBER);
+      doc.fontSize(10).font("Helvetica-Bold").fillColor(hexToRgb(WHITE))
+        .text(`Implied Valuation: `, { continued: true })
+        .fillColor(hexToRgb(AMBER)).text(dcf.impliedValuation);
+      doc.fontSize(10).font("Helvetica").fillColor(hexToRgb(WHITE))
+        .text(`Range: ${dcf.valuationRange}  ·  WACC: ${dcf.wacc}  ·  Terminal Growth: ${dcf.terminalGrowthRate}`);
+      doc.moveDown(0.3);
+      doc.fontSize(9).font("Helvetica-Bold").fillColor(hexToRgb(MUTED)).text("Assumptions:");
+      (dcf.assumptions ?? []).forEach((a) => bullet(a, "·", MUTED));
+      if (dcf.sensitivityNote) {
+        doc.moveDown(0.3);
+        doc.fontSize(9).font("Helvetica").fillColor(hexToRgb(MUTED)).text(dcf.sensitivityNote, { lineGap: 2 });
+      }
+    }
+
+    // ── Key Findings ─────────────────────────────────────────────────────────────
+    if (task.keyFindings && task.keyFindings.length > 0) {
+      if (doc.y > doc.page.height - 150) doc.addPage();
+      sectionTitle("Key Findings", CYAN);
+      task.keyFindings.forEach((f, i) => bullet(f, `${String(i + 1).padStart(2, "0")}`, WHITE));
+    }
+
+    // ── Risk Factors ─────────────────────────────────────────────────────────────
+    if (task.risks && task.risks.length > 0) {
+      sectionTitle("Risk Factors", AMBER);
+      task.risks.forEach((r) => bullet(r, "!", AMBER));
+    }
+
+    // ── Recommendation ───────────────────────────────────────────────────────────
+    if (task.recommendation) {
+      sectionTitle("Recommendation", GREEN);
+      bodyText(task.recommendation);
+    }
+
+    // ── Next Steps ───────────────────────────────────────────────────────────────
+    if (report?.nextSteps && report.nextSteps.length > 0) {
+      sectionTitle("Next Steps", GREEN);
+      report.nextSteps.forEach((s, i) => bullet(s, `${i + 1}.`, WHITE));
+    }
+
+    // ── Footer ───────────────────────────────────────────────────────────────────
+    doc.moveDown(1);
+    doc.fontSize(7).font("Helvetica").fillColor(hexToRgb(MUTED))
+      .text(`Generated by AgenThinkMesh  ·  ${new Date().toISOString()}  ·  agenthink-7enctkan.manus.space`, { align: "center" });
+
+    // Finalise — "end" event fires after all chunks are flushed
+    doc.end();
+  });
 }

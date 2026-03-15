@@ -634,3 +634,7 @@
 - [x] Replace Ask page navbar with shared SiteNav
 - [x] Replace PersonaSelector navbar with shared SiteNav
 - [x] Ensure Landing page navbar is sticky on scroll
+
+## Session: Fix PDF Export
+
+- [x] Fix Download PDF button on ResultScreen — PDF not opening / corrupted
