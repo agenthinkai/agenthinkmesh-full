@@ -611,83 +611,33 @@ export default function PersonaSelector() {
                     agent={agent}
                     selected={selectedAgent?.id === agent.id}
                     domainColor={domainColor}
-                    onSelect={() => setSelectedAgent(prev => prev?.id === agent.id ? null : agent)}
+                    onSelect={() => {
+                      setSelectedAgent(agent);
+                      if (selectedDomain) {
+                        classifyPersona.mutate({ selectedPersona: selectedDomain.persona });
+                      }
+                    }}
                   />
                 ))}
               </div>
             )}
 
-            {/* Selected agent summary */}
-            {selectedAgent && (
-              <div style={{
-                padding: "14px 18px",
-                borderRadius: 12,
-                background: `${domainColor}10`,
-                border: `1px solid ${domainColor}30`,
-                marginBottom: 20,
-                display: "flex", alignItems: "center", gap: 12,
-              }}>
-                <div style={{
-                  width: 32, height: 32, borderRadius: 8,
-                  background: `${domainColor}20`,
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  fontSize: 16, flexShrink: 0,
-                }}>
-                  🤖
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600, color: "#F0F4FA" }}>
-                    {selectedAgent.agentName} selected
-                  </div>
-                  <div style={{ fontSize: 11, color: "rgba(240,244,250,0.45)", marginTop: 2 }}>
-                    This agent will be pre-loaded when you enter the Mesh
-                  </div>
-                </div>
+            {/* Loading state while navigating */}
+            {classifyPersona.isPending ? (
+              <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "24px 0" }}>
+                <svg style={{ animation: "spin 1s linear infinite", width: 28, height: 28, color: domainColor }} viewBox="0 0 24 24" fill="none">
+                  <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
+                  <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+                </svg>
+                <span style={{ fontSize: 13, color: domainColor, fontWeight: 600 }}>
+                  {selectedAgent ? `Opening ${selectedAgent.agentName}…` : "Configuring your Mesh…"}
+                </span>
               </div>
-            )}
-
-            {/* Confirm button */}
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
-              <button
-                onClick={handleConfirm}
-                disabled={classifyPersona.isPending}
-                style={{
-                  padding: "14px 40px",
-                  borderRadius: 12,
-                  border: "none",
-                  background: classifyPersona.isPending
-                    ? "rgba(255,255,255,0.08)"
-                    : `linear-gradient(135deg, ${domainColor}CC, ${domainColor}88)`,
-                  color: classifyPersona.isPending ? "rgba(255,255,255,0.3)" : "#fff",
-                  fontWeight: 700,
-                  fontSize: 14,
-                  cursor: classifyPersona.isPending ? "not-allowed" : "pointer",
-                  transition: "all 0.18s ease",
-                  letterSpacing: "0.01em",
-                  boxShadow: classifyPersona.isPending ? "none" : `0 4px 24px ${domainColor}40`,
-                  display: "flex", alignItems: "center", gap: 8,
-                }}
-              >
-                {classifyPersona.isPending ? (
-                  <>
-                    <svg style={{ animation: "spin 1s linear infinite", width: 16, height: 16 }} viewBox="0 0 24 24" fill="none">
-                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="3" strokeOpacity="0.25" />
-                      <path d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                    </svg>
-                    Configuring your Mesh…
-                  </>
-                ) : (
-                  <>
-                    {selectedAgent ? `Enter Mesh with ${selectedAgent.agentName} →` : "Enter the Mesh →"}
-                  </>
-                )}
-              </button>
-              <p style={{ fontSize: 11, color: "rgba(240,244,250,0.25)", textAlign: "center" }}>
-                {selectedAgent
-                  ? "Your selected agent will be pre-loaded and ready to run"
-                  : "You can select an agent above, or proceed and let the Mesh choose automatically"}
+            ) : (
+              <p style={{ fontSize: 12, color: "rgba(240,244,250,0.30)", textAlign: "center", marginTop: 4 }}>
+                Click any agent card to open it directly in the Mesh
               </p>
-            </div>
+            )}
           </>
         )}
       </div>
