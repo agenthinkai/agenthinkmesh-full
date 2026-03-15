@@ -15,14 +15,134 @@ const INDIGO = "#4060FF";
 const WHITE = "#F0F4FA";
 const MUTED = "#8BA3C4";
 
-const EXAMPLE_PROMPTS = [
-  { icon: "🔬", text: "Simulate 500 GCC consumers' reaction to a new fintech product at AED 99/month" },
-  { icon: "📊", text: "Screen this Series A deal: SaaS, $2M ARR, 180% NRR, Dubai-based, seeking $8M" },
-  { icon: "🏥", text: "Analyse pricing sensitivity for a telehealth subscription across UAE, KSA, and Qatar" },
-  { icon: "⚖️", text: "What are the regulatory risks of launching a crypto lending product in the GCC?" },
-  { icon: "📈", text: "Identify the top 3 underserved customer segments for Islamic wealth management in 2025" },
-  { icon: "🤖", text: "Competitive intelligence: who are the top 5 AI agent platforms targeting MENA enterprises?" },
-];
+// ── Agent-specific example prompts ──────────────────────────────────────────
+const AGENT_EXAMPLES: Record<string, { icon: string; text: string }[]> = {
+  "Research Assistant": [
+    { icon: "📚", text: "Summarise the latest research on transformer architectures for NLP" },
+    { icon: "📝", text: "Write an annotated bibliography on climate change mitigation strategies" },
+    { icon: "🔍", text: "Find and compare 5 peer-reviewed studies on intermittent fasting and cognitive performance" },
+    { icon: "✏️", text: "Outline a 3,000-word essay on the ethical implications of AI in healthcare" },
+    { icon: "📖", text: "Explain the concept of quantum entanglement in simple terms with examples" },
+    { icon: "🎓", text: "Generate 20 practice exam questions on macroeconomics with answers" },
+  ],
+  "Citation Manager": [
+    { icon: "📑", text: "Format these 10 sources in APA 7th edition style" },
+    { icon: "🔗", text: "Find the DOI and full citation for a paper on CRISPR gene editing" },
+    { icon: "📚", text: "Check my bibliography for duplicate or missing citations" },
+    { icon: "✅", text: "Convert my Harvard-style references to Chicago author-date format" },
+    { icon: "🗂️", text: "Organise my 30 sources by topic and create a literature map" },
+    { icon: "📋", text: "Generate an in-text citation list for my thesis introduction" },
+  ],
+  "Pricing Intelligence Agent": [
+    { icon: "💰", text: "Analyse competitor pricing for SKU X across 5 major online retailers" },
+    { icon: "📊", text: "Recommend dynamic pricing rules for our top 20 products based on last quarter's elasticity" },
+    { icon: "🏷️", text: "Alert me when any competitor drops price below AED 49 on product category Y" },
+    { icon: "📈", text: "Model the revenue impact of a 10% price increase on our premium tier" },
+    { icon: "🔍", text: "Identify which of our products are priced above market median and by how much" },
+    { icon: "⚡", text: "Suggest promotional discount thresholds that protect margin while beating competitor prices" },
+  ],
+  "Demand Forecaster": [
+    { icon: "📦", text: "Forecast demand for SKU-1042 over the next 30 days using last 12 months of sales" },
+    { icon: "📅", text: "Predict peak demand periods for our winter collection in UAE and KSA" },
+    { icon: "🔄", text: "Identify which SKUs are at risk of stockout in the next 2 weeks" },
+    { icon: "📉", text: "Analyse the demand impact of Ramadan on our food category" },
+    { icon: "🌍", text: "Compare demand trends across Dubai, Riyadh, and Cairo for our electronics range" },
+    { icon: "⚙️", text: "Generate a 90-day demand plan for our top 50 SKUs with safety stock recommendations" },
+  ],
+  "Promotion Planner": [
+    { icon: "🎯", text: "Plan a Ramadan promotion campaign with expected uplift and margin impact" },
+    { icon: "📣", text: "Design a 2-week flash sale strategy for our electronics category" },
+    { icon: "💡", text: "Recommend the optimal discount depth for clearing excess winter inventory" },
+    { icon: "📊", text: "Analyse which past promotions delivered the best ROI in the last 6 months" },
+    { icon: "🗓️", text: "Create a promotional calendar for Q3 aligned with UAE public holidays" },
+    { icon: "🛒", text: "Suggest bundle promotions for our top 10 slow-moving SKUs" },
+  ],
+  "Customer Sentiment Analyzer": [
+    { icon: "⭐", text: "Analyse 500 recent customer reviews and surface the top 5 product complaints" },
+    { icon: "😊", text: "What is the sentiment trend for our brand on social media over the last 30 days?" },
+    { icon: "📉", text: "Identify which product categories have the lowest customer satisfaction scores" },
+    { icon: "💬", text: "Summarise customer feedback themes from our last NPS survey" },
+    { icon: "🔍", text: "Compare sentiment for our brand vs top 3 competitors on Google Reviews" },
+    { icon: "📋", text: "Generate a monthly customer sentiment report with actionable recommendations" },
+  ],
+  "Deal Screener": [
+    { icon: "📊", text: "Screen this Series A deal: SaaS, $2M ARR, 180% NRR, Dubai-based, seeking $8M" },
+    { icon: "🔍", text: "Run a quick due diligence checklist on a fintech startup in the GCC" },
+    { icon: "📈", text: "Compare this deal's metrics against our portfolio benchmarks" },
+    { icon: "⚠️", text: "Flag the top 5 red flags in this pitch deck" },
+    { icon: "💼", text: "Estimate the post-money valuation range for a $3M ARR B2B SaaS at 5x revenue" },
+    { icon: "📋", text: "Generate an investment memo summary for this deal" },
+  ],
+  "Contract Reviewer": [
+    { icon: "⚖️", text: "Review this NDA and flag any non-standard clauses" },
+    { icon: "📄", text: "Summarise the key obligations and risks in this service agreement" },
+    { icon: "🔍", text: "Identify any missing standard clauses in this employment contract" },
+    { icon: "⚠️", text: "What are the termination conditions in this SaaS subscription agreement?" },
+    { icon: "📝", text: "Redline this vendor contract to protect our IP and limit liability" },
+    { icon: "✅", text: "Check this contract for compliance with UAE Commercial Transactions Law" },
+  ],
+  "Clinical Summary Agent": [
+    { icon: "🩺", text: "Summarise this patient's discharge notes into a structured clinical brief" },
+    { icon: "💊", text: "Check for drug interactions between metformin, lisinopril, and atorvastatin" },
+    { icon: "📋", text: "Generate an ICD-10 coding suggestion for this clinical encounter" },
+    { icon: "🔬", text: "Summarise the latest clinical guidelines for managing Type 2 diabetes in the GCC" },
+    { icon: "📊", text: "Analyse this lab report and flag any values outside normal range" },
+    { icon: "📖", text: "Find recent literature on minimally invasive treatment for lumbar disc herniation" },
+  ],
+  "KPI Tracker": [
+    { icon: "📊", text: "Build a KPI dashboard for our sales team with targets and actuals" },
+    { icon: "🎯", text: "Which KPIs are we at risk of missing this quarter?" },
+    { icon: "📈", text: "Analyse the correlation between employee engagement scores and productivity KPIs" },
+    { icon: "⚠️", text: "Alert me when any team KPI drops below 80% of target" },
+    { icon: "📋", text: "Generate a monthly KPI report for the operations department" },
+    { icon: "🔍", text: "Benchmark our NPS score against industry average for B2B SaaS" },
+  ],
+  "Email Drafter": [
+    { icon: "✉️", text: "Draft a professional follow-up email after a client meeting about our Q2 proposal" },
+    { icon: "📝", text: "Write an internal announcement email for our new remote work policy" },
+    { icon: "🤝", text: "Compose a partnership introduction email to a potential distributor in Saudi Arabia" },
+    { icon: "⚠️", text: "Draft a polite but firm overdue payment reminder to a client" },
+    { icon: "🎉", text: "Write a congratulations email to a team member on their promotion" },
+    { icon: "📋", text: "Create a meeting agenda email for our quarterly business review" },
+  ],
+  "Portfolio Analyst": [
+    { icon: "📊", text: "Analyse the risk-adjusted returns of my current portfolio vs S&P 500" },
+    { icon: "📈", text: "Identify the top 3 underperforming holdings and suggest rebalancing options" },
+    { icon: "🔍", text: "Run a stress test on my portfolio for a 20% market correction scenario" },
+    { icon: "💰", text: "Calculate the Sharpe ratio and max drawdown for my equity portfolio" },
+    { icon: "🌍", text: "Assess my portfolio's exposure to GCC market risk" },
+    { icon: "📋", text: "Generate a monthly portfolio performance report with attribution analysis" },
+  ],
+  "Regulatory Compliance Agent": [
+    { icon: "⚖️", text: "What are the DFSA compliance requirements for launching a robo-advisory in Dubai?" },
+    { icon: "📋", text: "Summarise the key AML/KYC obligations for a UAE-licensed fintech" },
+    { icon: "🔍", text: "Check our data privacy policy for PDPL compliance in Saudi Arabia" },
+    { icon: "⚠️", text: "What are the regulatory risks of offering crypto trading to GCC retail investors?" },
+    { icon: "📄", text: "Generate a compliance checklist for launching a new financial product in the UAE" },
+    { icon: "🌍", text: "Compare ADGM and DIFC regulatory frameworks for a new fund manager" },
+  ],
+  "DEFAULT": [
+    { icon: "🔬", text: "Simulate 500 GCC consumers' reaction to a new fintech product at AED 99/month" },
+    { icon: "📊", text: "Screen this Series A deal: SaaS, $2M ARR, 180% NRR, Dubai-based, seeking $8M" },
+    { icon: "🏥", text: "Analyse pricing sensitivity for a telehealth subscription across UAE, KSA, and Qatar" },
+    { icon: "⚖️", text: "What are the regulatory risks of launching a crypto lending product in the GCC?" },
+    { icon: "📈", text: "Identify the top 3 underserved customer segments for Islamic wealth management in 2025" },
+    { icon: "🤖", text: "Competitive intelligence: who are the top 5 AI agent platforms targeting MENA enterprises?" },
+  ],
+};
+
+function getExamplesForAgent(agentName: string | null | undefined): { icon: string; text: string }[] {
+  if (!agentName) return AGENT_EXAMPLES["DEFAULT"];
+  if (AGENT_EXAMPLES[agentName]) return AGENT_EXAMPLES[agentName];
+  // Partial match — find the closest key
+  const lower = agentName.toLowerCase();
+  const match = Object.keys(AGENT_EXAMPLES).find(k =>
+    k !== "DEFAULT" && (lower.includes(k.toLowerCase()) || k.toLowerCase().includes(lower.split(" ")[0]))
+  );
+  return match ? AGENT_EXAMPLES[match] : AGENT_EXAMPLES["DEFAULT"];
+}
+
+const EXAMPLE_PROMPTS = AGENT_EXAMPLES["DEFAULT"];
 
 const AGENT_STEPS = [
   { color: CYAN, name: "Intent Classifier", desc: "Understands your query and selects the right agent mix" },
@@ -532,7 +652,7 @@ export default function AskScreen() {
               gap: 10,
               width: "100%",
             }}>
-              {EXAMPLE_PROMPTS.map((ex, i) => (
+              {getExamplesForAgent(preSelectedAgent?.name).map((ex, i) => (
                 <button
                   key={i}
                   onClick={() => handleExample(ex.text)}
