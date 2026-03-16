@@ -788,3 +788,10 @@
 - [x] Branch analysis prompt in mesh.analyze based on detected intent
 - [x] Update pdfReport.ts to render draft/code/decision outputs correctly (not as analysis report)
 - [x] Ensure PDF title reflects intent type (e.g. "Email Draft" not "Structured Analysis Report")
+
+## Bug Fix: Email draft renders as wall of text
+
+- [x] Fix result page recommendation section to render newlines as paragraph breaks
+- [x] Fix MeshDashboard agent card output to preserve line breaks for draft_document intent
+- [x] Improve LLM draft_document prompt to use explicit blank lines between sections
+- [x] Hide KEY FINDINGS/RISK FACTORS cards for execution outputs (draft, code, decision)

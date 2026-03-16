@@ -270,6 +270,28 @@ export default function ResultScreen() {
 
   const report = task.structuredReport as StructuredReport | null;
 
+  // Detect execution output types — these render the full deliverable, not analysis sections
+  const EXEC_TASK_TYPES = ["Draft", "Code", "Recommendation", "Check", "Plan"];
+  const isExecOutput = EXEC_TASK_TYPES.some((t) => (task.taskType ?? "").includes(t));
+
+  // Render a block of text preserving paragraphs and line breaks (for email drafts, code, etc.)
+  function renderFormattedText(text: string) {
+    const paragraphs = text.split(/\n{2,}/);
+    return paragraphs.map((para, pi) => {
+      const lines = para.split("\n");
+      return (
+        <p key={pi} style={{ color: WHITE, fontSize: 15, lineHeight: 1.85, margin: 0, marginBottom: pi < paragraphs.length - 1 ? 16 : 0 }}>
+          {lines.map((line, li) => (
+            <React.Fragment key={li}>
+              {line}
+              {li < lines.length - 1 && <br />}
+            </React.Fragment>
+          ))}
+        </p>
+      );
+    });
+  }
+
   return (
     <div style={{
       minHeight: "100vh",
@@ -444,7 +466,24 @@ export default function ResultScreen() {
           </>
         )}
 
-        {/* ── Standard sections (always shown) ── */}
+        {/* ── Execution Output (draft, code, decision, compliance, qa) ── */}
+        {isExecOutput && task.recommendation && (
+          <div style={{ background: `${NAVY_800}CC`, border: `1px solid ${CYAN}30`, borderRadius: 16, padding: "32px 36px", marginBottom: 16 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 20 }}>
+              <span style={{ color: CYAN, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.08em" }}>
+                {(task.taskType ?? "").toUpperCase()}
+              </span>
+              <span style={{ flex: 1, height: 1, background: `${CYAN}20` }} />
+            </div>
+            {/* Render the full deliverable with proper paragraph and line break handling */}
+            <div style={{ fontFamily: "'Inter', sans-serif" }}>
+              {renderFormattedText(task.recommendation)}
+            </div>
+          </div>
+        )}
+
+        {/* ── Standard sections (only shown for analysis outputs) ── */}
+        {!isExecOutput && (<>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(380px, 1fr))", gap: 16, marginBottom: 16 }}>
           {/* Key Findings */}
           <div style={{ background: `${NAVY_800}CC`, border: `1px solid ${CYAN}25`, borderRadius: 14, padding: "22px 24px" }}>
@@ -495,13 +534,14 @@ export default function ResultScreen() {
           </div>
         )}
 
-        {/* Recommendation */}
-        {task.recommendation && (
+        {/* Recommendation — only shown for analysis outputs; exec outputs use the block above */}
+        {!isExecOutput && task.recommendation && (
           <div style={{ background: `linear-gradient(135deg, ${CYAN}08, ${BLUE}08)`, border: `1px solid ${CYAN}30`, borderRadius: 14, padding: "22px 24px", marginBottom: 16 }}>
             <div style={{ color: CYAN, fontSize: 11, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.08em", marginBottom: 10 }}>RECOMMENDATION</div>
             <p style={{ color: WHITE, fontSize: 15, lineHeight: 1.7, margin: 0 }}>{task.recommendation}</p>
           </div>
         )}
+        </>)}
 
         {/* Next Steps (from structured report) */}
         {report?.nextSteps && report.nextSteps.length > 0 && (
