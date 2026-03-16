@@ -795,3 +795,13 @@
 - [x] Fix MeshDashboard agent card output to preserve line breaks for draft_document intent
 - [x] Improve LLM draft_document prompt to use explicit blank lines between sections
 - [x] Hide KEY FINDINGS/RISK FACTORS cards for execution outputs (draft, code, decision)
+
+## Feature: financial_model intent type
+
+- [x] Add financial_model to IntentType enum in runAgentTask classifier
+- [x] Add financial_model detection keywords: DCF, valuation, balance sheet, cash flow statement, WACC, terminal value, derive financials, sense check financials
+- [x] Build financial_model output template: Sense Check → Balance Sheet → Cash Flow Statement → DCF Valuation table
+- [x] Add financial_model to mesh.analyze classifier and execSystemPrompts
+- [x] Update ResultScreen to render financial_model outputs with table formatting (pipe tables → HTML tables)
+- [x] Update pdfReport.ts to render financial_model outputs with table formatting (pipe tables → aligned columns)
+- [x] 101 tests passing, 0 TypeScript errors

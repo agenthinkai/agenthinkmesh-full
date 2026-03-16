@@ -202,7 +202,7 @@ export function generateReportPdf(task: TaskData): Promise<Buffer> {
     // ── Execution output path (draft, code, decision, compliance, qa) ────────────
     // When taskType ends in "Draft", "Code", "Recommendation", "Check", or "Plan",
     // the recommendation field holds the full deliverable text — render it directly.
-    const EXEC_TYPES = ["Draft", "Code", "Recommendation", "Check", "Plan"];
+    const EXEC_TYPES = ["Draft", "Code", "Recommendation", "Check", "Plan", "Financial Model", "DCF", "Valuation"];
     const isExecOutput = EXEC_TYPES.some((t) => task.taskType?.includes(t));
 
     if (isExecOutput && task.recommendation) {
@@ -234,6 +234,24 @@ export function generateReportPdf(task: TaskData): Promise<Buffer> {
         }
         if (line.trim().startsWith("•") || line.trim().startsWith("-") || line.trim().startsWith("*")) {
           bullet(line.replace(/^[•\-\*]\s*/, ""), "•", WHITE);
+          continue;
+        }
+        // Pipe-table rows — render as a simple aligned text table
+        if (line.trim().startsWith("|") && line.trim().endsWith("|")) {
+          const isSep = /^\|[-| :]+\|$/.test(line.trim());
+          if (isSep) { continue; } // skip separator lines
+          const cells = line.split("|").filter((_, i, arr) => i > 0 && i < arr.length - 1).map(c => c.trim());
+          const colW = PAGE_W / cells.length;
+          const rowY = doc.y;
+          const isHeaderRow = lines.indexOf(line) === lines.findIndex(l => l.trim().startsWith("|"));
+          cells.forEach((cell, ci) => {
+            const [cr2, cg2, cb2] = hexToRgb(isHeaderRow ? CYAN : WHITE);
+            doc.fontSize(isHeaderRow ? 8 : 9)
+              .font(isHeaderRow ? "Helvetica-Bold" : "Helvetica")
+              .fillColor([cr2, cg2, cb2])
+              .text(cell || "—", 50 + ci * colW, rowY, { width: colW, align: ci === 0 ? "left" : "right", lineGap: 1 });
+          });
+          doc.moveDown(isHeaderRow ? 0.4 : 0.25);
           continue;
         }
         if (line.trim() === "") { doc.moveDown(0.4); continue; }

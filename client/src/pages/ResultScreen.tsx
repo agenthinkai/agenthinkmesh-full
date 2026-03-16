@@ -271,25 +271,73 @@ export default function ResultScreen() {
   const report = task.structuredReport as StructuredReport | null;
 
   // Detect execution output types — these render the full deliverable, not analysis sections
-  const EXEC_TASK_TYPES = ["Draft", "Code", "Recommendation", "Check", "Plan"];
+  const EXEC_TASK_TYPES = ["Draft", "Code", "Recommendation", "Check", "Plan", "Financial Model", "DCF", "Valuation"];
   const isExecOutput = EXEC_TASK_TYPES.some((t) => (task.taskType ?? "").includes(t));
 
   // Render a block of text preserving paragraphs and line breaks (for email drafts, code, etc.)
+  function isTableLine(line: string) { return line.trim().startsWith("|") && line.trim().endsWith("|"); }
+  function isSeparatorLine(line: string) { return /^\|[-| :]+\|$/.test(line.trim()); }
+
+  function renderTable(lines: string[]) {
+    const rows = lines.filter(l => !isSeparatorLine(l));
+    return (
+      <div key={Math.random()} style={{ overflowX: "auto", marginBottom: 16 }}>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13, color: WHITE }}>
+          <tbody>
+            {rows.map((row, ri) => {
+              const cells = row.split("|").filter((_, i, arr) => i > 0 && i < arr.length - 1);
+              const isHeader = ri === 0;
+              return (
+                <tr key={ri} style={{ borderBottom: `1px solid rgba(0,212,255,0.15)` }}>
+                  {cells.map((cell, ci) => (
+                    isHeader
+                      ? <th key={ci} style={{ padding: "8px 12px", textAlign: "left", color: "#00d4ff", fontWeight: 600, background: "rgba(0,212,255,0.07)", whiteSpace: "nowrap" }}>{cell.trim()}</th>
+                      : <td key={ci} style={{ padding: "7px 12px", textAlign: "left", whiteSpace: "nowrap" }}>{cell.trim() || "—"}</td>
+                  ))}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
   function renderFormattedText(text: string) {
     const paragraphs = text.split(/\n{2,}/);
-    return paragraphs.map((para, pi) => {
+    const elements: React.ReactNode[] = [];
+    let tableBuffer: string[] = [];
+
+    function flushTable() {
+      if (tableBuffer.length > 0) {
+        elements.push(renderTable(tableBuffer));
+        tableBuffer = [];
+      }
+    }
+
+    paragraphs.forEach((para, pi) => {
       const lines = para.split("\n");
-      return (
-        <p key={pi} style={{ color: WHITE, fontSize: 15, lineHeight: 1.85, margin: 0, marginBottom: pi < paragraphs.length - 1 ? 16 : 0 }}>
-          {lines.map((line, li) => (
-            <React.Fragment key={li}>
-              {line}
-              {li < lines.length - 1 && <br />}
-            </React.Fragment>
-          ))}
-        </p>
-      );
+      // Check if this paragraph is a table block
+      if (lines.some(l => isTableLine(l))) {
+        flushTable();
+        lines.forEach(l => { if (isTableLine(l) || isSeparatorLine(l)) tableBuffer.push(l); });
+        flushTable();
+      } else {
+        flushTable();
+        elements.push(
+          <p key={pi} style={{ color: WHITE, fontSize: 15, lineHeight: 1.85, margin: 0, marginBottom: 16 }}>
+            {lines.map((line, li) => (
+              <React.Fragment key={li}>
+                {line}
+                {li < lines.length - 1 && <br />}
+              </React.Fragment>
+            ))}
+          </p>
+        );
+      }
     });
+    flushTable();
+    return elements;
   }
 
   return (

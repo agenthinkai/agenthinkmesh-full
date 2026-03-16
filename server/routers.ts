@@ -221,7 +221,7 @@ export const appRouter = router({
 
         // ── Step 1: Intent Classifier (fast pre-pass, ~200 tokens) ────────────
         // Detects what the user actually wants: analysis, draft, code, decision, compliance, qa
-        type IntentType = "analysis" | "draft_document" | "generate_code" | "decision" | "compliance_check" | "qa_test";
+        type IntentType = "analysis" | "draft_document" | "generate_code" | "decision" | "compliance_check" | "qa_test" | "financial_model";
 
         let detectedIntent: IntentType = "analysis";
         let documentType = ""; // e.g. "email", "proposal", "NDA", "letter"
@@ -241,6 +241,7 @@ export const appRouter = router({
                   `- decision: should I, buy or sell, approve or reject, go/no-go, recommend action, what should we do`,
                   `- compliance_check: compliant, regulatory, filing, deadline, ADGM, CMA, CBK, DFSA, KYC, AML, audit`,
                   `- qa_test: test, QA, validate, verify, check if working, find bugs, test cases`,
+                  `- financial_model: DCF, valuation, WACC, terminal value, balance sheet, cash flow statement, income statement, derive financials, sense check financials, financial projections, NPV, IRR, enterprise value, equity value, EBITDA multiple`,
                   ``,
                   `Also extract:`,
                   `- documentType: if draft_document, the type of document (email, proposal, NDA, letter, memo, report, contract, press release). Empty string otherwise.`,
@@ -260,7 +261,7 @@ export const appRouter = router({
                 schema: {
                   type: "object",
                   properties: {
-                    intent: { type: "string", enum: ["analysis", "draft_document", "generate_code", "decision", "compliance_check", "qa_test"] },
+                    intent: { type: "string", enum: ["analysis", "draft_document", "generate_code", "decision", "compliance_check", "qa_test", "financial_model"] },
                     documentType: { type: "string" },
                     codeLanguage: { type: "string" },
                   },
@@ -408,6 +409,73 @@ export const appRouter = router({
             `EDGE CASES: 5 edge cases that are likely to reveal bugs (empty inputs, boundary values, concurrent requests, etc.).`,
             ``,
             `RECOMMENDED FIXES: If issues are identified, list them by priority (Critical / High / Medium) with suggested fixes.`,
+          ].filter(Boolean).join("\n");
+
+        } else if (detectedIntent === "financial_model") {
+          systemPrompt = [
+            agentContext,
+            ``,
+            `The user needs a FINANCIAL MODEL. You are a senior financial analyst. Produce a complete, structured financial analysis with all requested components. Use the uploaded financial data as the basis for all calculations.`,
+            ``,
+            `CRITICAL FORMATTING RULES:`,
+            `1. Use a BLANK LINE between every section.`,
+            `2. Present tables using plain text with | separators and aligned columns.`,
+            `3. All monetary values in USD millions (e.g. $6.26M). All percentages to 1 decimal place.`,
+            `4. NEVER skip a requested section. If data is insufficient, state assumptions clearly.`,
+            ``,
+            `Output format (produce ALL sections):`,
+            ``,
+            `SENSE CHECK:`,
+            `Assess whether the financial projections are realistic. Flag any anomalies, inconsistencies, or aggressive assumptions. For each issue found, state: what it is, why it is a concern, and what a reasonable range would be.`,
+            ``,
+            `DERIVED BALANCE SHEET (USD millions):`,
+            `Present a simplified Balance Sheet for each year in the projection period using this format:`,
+            `| Item                    | 2026 | 2027 | 2028 | 2029 | 2030 |`,
+            `|-------------------------|------|------|------|------|------|`,
+            `| Total Assets            |      |      |      |      |      |`,
+            `| Total Liabilities       |      |      |      |      |      |`,
+            `| Total Equity            |      |      |      |      |      |`,
+            `Derive from the P&L projections. State key assumptions (e.g. capex, depreciation, working capital days).`,
+            ``,
+            `STATEMENT OF CASH FLOWS (USD millions):`,
+            `| Item                              | 2026 | 2027 | 2028 | 2029 | 2030 |`,
+            `|-----------------------------------|------|------|------|------|------|`,
+            `| Operating Cash Flow               |      |      |      |      |      |`,
+            `| Investing Cash Flow               |      |      |      |      |      |`,
+            `| Financing Cash Flow               |      |      |      |      |      |`,
+            `| Net Change in Cash                |      |      |      |      |      |`,
+            ``,
+            `DCF VALUATION:`,
+            `State WACC assumption and rationale (risk-free rate, equity risk premium, beta, cost of debt).`,
+            ``,
+            `| Year | Free Cash Flow (FCFe) | Discount Factor | PV of FCF |`,
+            `|------|-----------------------|-----------------|-----------|`,
+            `| 2026 |                       |                 |           |`,
+            `| 2027 |                       |                 |           |`,
+            `| 2028 |                       |                 |           |`,
+            `| 2029 |                       |                 |           |`,
+            `| 2030 |                       |                 |           |`,
+            ``,
+            `Terminal Value: State terminal growth rate assumption and terminal value calculation.`,
+            `Enterprise Value: Sum of PV of FCFs + PV of Terminal Value.`,
+            `Equity Value: Enterprise Value minus Net Debt.`,
+            ``,
+            `VALUATION SUMMARY:`,
+            `| Metric                  | Value      |`,
+            `|-------------------------|------------|`,
+            `| WACC                    |            |`,
+            `| Terminal Growth Rate    |            |`,
+            `| Enterprise Value        |            |`,
+            `| Net Debt                |            |`,
+            `| Equity Value            |            |`,
+            `| Implied Revenue Multiple|            |`,
+            `| Implied EBITDA Multiple |            |`,
+            ``,
+            `KEY ASSUMPTIONS & RISKS:`,
+            `List the 3-5 most critical assumptions that drive the valuation, and what happens to equity value if each assumption changes by +/- 10%.`,
+            ``,
+            `NEXT STEPS:`,
+            `2-3 specific actions the management team should take based on this analysis.`,
           ].filter(Boolean).join("\n");
 
         } else {
@@ -743,7 +811,7 @@ Return ONLY valid JSON matching this exact schema:
           // Detects if the user wants a deliverable (draft, code, decision, compliance, qa)
           // rather than a research/analysis report. If so, we skip the analysis pipeline
           // and produce the actual deliverable directly.
-          type AnalyzeIntentType = "analysis" | "draft_document" | "generate_code" | "decision" | "compliance_check" | "qa_test";
+          type AnalyzeIntentType = "analysis" | "draft_document" | "generate_code" | "decision" | "compliance_check" | "qa_test" | "financial_model";
           let analyzeIntent: AnalyzeIntentType = "analysis";
           let analyzeDocumentType = "";
           let analyzeCodeLanguage = "";
@@ -762,6 +830,7 @@ Return ONLY valid JSON matching this exact schema:
                     `- decision: should I, buy or sell, approve or reject, go/no-go, recommend action, what should we do`,
                     `- compliance_check: compliant, regulatory, filing, deadline, ADGM, CMA, CBK, DFSA, KYC, AML, audit`,
                     `- qa_test: test, QA, validate, verify, check if working, find bugs, test cases`,
+                    `- financial_model: DCF, valuation, WACC, terminal value, balance sheet, cash flow statement, income statement, derive financials, sense check financials, financial projections, NPV, IRR, enterprise value, equity value, EBITDA multiple`,
                     ``,
                     `Also extract:`,
                     `- documentType: if draft_document, the type of document (email, proposal, NDA, letter, memo, report, contract, press release). Empty string otherwise.`,
@@ -781,7 +850,7 @@ Return ONLY valid JSON matching this exact schema:
                   schema: {
                     type: "object",
                     properties: {
-                      intent: { type: "string", enum: ["analysis", "draft_document", "generate_code", "decision", "compliance_check", "qa_test"] },
+                      intent: { type: "string", enum: ["analysis", "draft_document", "generate_code", "decision", "compliance_check", "qa_test", "financial_model"] },
                       documentType: { type: "string" },
                       codeLanguage: { type: "string" },
                     },
@@ -907,6 +976,70 @@ Return ONLY valid JSON matching this exact schema:
                 ``,
                 `RECOMMENDED FIXES: If issues are identified, list them by priority (Critical / High / Medium) with suggested fixes.`,
               ].join("\n"),
+              financial_model: [
+                `You are a senior financial analyst and valuation expert serving GCC institutional investors.`,
+                `The user needs a FINANCIAL MODEL. Produce a complete, structured financial analysis with all requested components. Use the uploaded financial data as the basis for all calculations.`,
+                ``,
+                `CRITICAL FORMATTING RULES:`,
+                `1. Use a BLANK LINE between every section.`,
+                `2. Present tables using plain text with | separators and aligned columns.`,
+                `3. All monetary values in USD millions (e.g. $6.26M). All percentages to 1 decimal place.`,
+                `4. NEVER skip a requested section. If data is insufficient, state assumptions clearly.`,
+                ``,
+                `Output format (produce ALL sections):`,
+                ``,
+                `SENSE CHECK:`,
+                `Assess whether the financial projections are realistic. Flag any anomalies, inconsistencies, or aggressive assumptions. For each issue found, state: what it is, why it is a concern, and what a reasonable range would be.`,
+                ``,
+                `DERIVED BALANCE SHEET (USD millions):`,
+                `Present a simplified Balance Sheet for each year in the projection period using this format:`,
+                `| Item                    | 2026 | 2027 | 2028 | 2029 | 2030 |`,
+                `|-------------------------|------|------|------|------|------|`,
+                `| Total Assets            |      |      |      |      |      |`,
+                `| Total Liabilities       |      |      |      |      |      |`,
+                `| Total Equity            |      |      |      |      |      |`,
+                `Derive from the P&L projections. State key assumptions (e.g. capex, depreciation, working capital days).`,
+                ``,
+                `STATEMENT OF CASH FLOWS (USD millions):`,
+                `| Item                              | 2026 | 2027 | 2028 | 2029 | 2030 |`,
+                `|-----------------------------------|------|------|------|------|------|`,
+                `| Operating Cash Flow               |      |      |      |      |      |`,
+                `| Investing Cash Flow               |      |      |      |      |      |`,
+                `| Financing Cash Flow               |      |      |      |      |      |`,
+                `| Net Change in Cash                |      |      |      |      |      |`,
+                ``,
+                `DCF VALUATION:`,
+                `State WACC assumption and rationale (risk-free rate, equity risk premium, beta, cost of debt).`,
+                ``,
+                `| Year | Free Cash Flow (FCFe) | Discount Factor | PV of FCF |`,
+                `|------|-----------------------|-----------------|-----------|`,
+                `| 2026 |                       |                 |           |`,
+                `| 2027 |                       |                 |           |`,
+                `| 2028 |                       |                 |           |`,
+                `| 2029 |                       |                 |           |`,
+                `| 2030 |                       |                 |           |`,
+                ``,
+                `Terminal Value: State terminal growth rate assumption and terminal value calculation.`,
+                `Enterprise Value: Sum of PV of FCFs + PV of Terminal Value.`,
+                `Equity Value: Enterprise Value minus Net Debt.`,
+                ``,
+                `VALUATION SUMMARY:`,
+                `| Metric                  | Value      |`,
+                `|-------------------------|------------|`,
+                `| WACC                    |            |`,
+                `| Terminal Growth Rate    |            |`,
+                `| Enterprise Value        |            |`,
+                `| Net Debt                |            |`,
+                `| Equity Value            |            |`,
+                `| Implied Revenue Multiple|            |`,
+                `| Implied EBITDA Multiple |            |`,
+                ``,
+                `KEY ASSUMPTIONS & RISKS:`,
+                `List the 3-5 most critical assumptions that drive the valuation, and what happens to equity value if each assumption changes by +/- 10%.`,
+                ``,
+                `NEXT STEPS:`,
+                `2-3 specific actions the management team should take based on this analysis.`,
+              ].join("\n"),
               analysis: "", // not used in this branch
             };
 
@@ -930,6 +1063,7 @@ Return ONLY valid JSON matching this exact schema:
               decision: "Decision Recommendation",
               compliance_check: "Compliance Check",
               qa_test: "QA Test Plan",
+              financial_model: "Financial Model & DCF Valuation",
               analysis: "Analysis",
             };
 
