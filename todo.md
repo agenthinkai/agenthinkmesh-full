@@ -704,3 +704,7 @@
 
 - [x] Add agent.count tRPC procedure returning total active agent count
 - [x] Add pagination controls to AgentRegistry directory tab (prev/next, page X of Y, total count)
+
+## Landing Page Total Agent Count
+
+- [x] Align agent.count procedure to count all agents (no status filter) so registry shows same total as landing page

@@ -1197,20 +1197,19 @@ If a section is not applicable (e.g. no financial data provided), set it to null
         return rows;
       }),
 
-    // Count active agents (public) — used for pagination
+    // Count all agents (public) — total catalogue, used for pagination header
     count: publicProcedure
       .input(z.object({
         search: z.string().optional(),
         capability: z.string().optional(),
         domain: z.string().optional(),
       }).optional())
-      .query(async ({ input }) => {
+      .query(async () => {
         const db = await getDb();
         if (!db) return 0;
         const [row] = await db
           .select({ total: sql<number>`count(*)` })
-          .from(agents)
-          .where(eq(agents.status, "active"));
+          .from(agents);
         return Number(row?.total ?? 0);
       }),
 

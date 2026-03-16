@@ -1,0 +1,21 @@
+{
+  "query": "SELECT status, COUNT(*) as count FROM agents GROUP BY status;\nSELECT COUNT(*) as total FROM agents;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT status, COUNT(*) as count FROM agents GROUP BY status;\nSELECT COUNT(*) as total FROM agents;",
+  "rows": [
+    {
+      "status": "active",
+      "count": "110"
+    },
+    {
+      "status": "degraded",
+      "count": "11"
+    }
+  ],
+  "messages": [
+    "total",
+    "121"
+  ],
+  "stdout": "status\tcount\nactive\t110\ndegraded\t11\ntotal\n121\n",
+  "stderr": "",
+  "execution_time_ms": 1783
+}
