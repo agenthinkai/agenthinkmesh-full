@@ -734,3 +734,7 @@
 - [x] Build Partner CRM: DB schema (partner_institutions + partnership_requests tables), tRPC procedures, Request Partnership modal
 - [x] PartnerCRM.tsx page at /etf/partners with institution table, stats row, and Request Partnership modal
 - [x] Partners button added to ETFStudio top bar
+
+## Landing Page Finance Spotlight
+
+- [x] Add Finance spotlight card to landing page domain showcase linking to /agents/etf-studio

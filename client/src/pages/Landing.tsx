@@ -570,6 +570,30 @@ export default function Landing() {
             <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>Domain coverage</div>
             <h2 style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>5 verticals. {s.domainContexts} contexts.<br />{s.verifiedAgents} specialist agents.</h2>
           </div>
+          {/* Finance ETF Spotlight */}
+          <div style={{ marginBottom: 32, background: "linear-gradient(135deg, rgba(123,163,212,0.12) 0%, rgba(74,222,128,0.06) 100%)", border: "1px solid rgba(123,163,212,0.35)", borderRadius: 16, padding: "28px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 18, flex: 1, minWidth: 260 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(123,163,212,0.15)", border: "1px solid rgba(123,163,212,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>📊</div>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#7BA3D4" }}>ETF Launch Studio</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "#4ADE80", background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.25)", borderRadius: 4, padding: "2px 6px", fontFamily: MONO, letterSpacing: "0.08em" }}>NEW · FINANCE</span>
+                </div>
+                <div style={{ fontSize: 12, color: "#94A3B8", lineHeight: 1.5, maxWidth: 480 }}>Design, screen, and backtest a Boursa Kuwait ETF in 5 guided stages — Shariah screening, macro overlay, momentum factors, index construction, and NAV accounting.</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+              <div style={{ display: "flex", gap: 6 }}>
+                {["7 ML Models", "Shariah", "BK Premier"].map(tag => (
+                  <span key={tag} style={{ fontSize: 9, color: "#7BA3D4", background: "rgba(123,163,212,0.1)", border: "1px solid rgba(123,163,212,0.2)", borderRadius: 4, padding: "3px 7px", fontFamily: MONO, fontWeight: 600 }}>{tag}</span>
+                ))}
+              </div>
+              <a href="/agents/etf-studio" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 18px", background: "linear-gradient(135deg, #7BA3D4 0%, #4A90D4 100%)", color: "#0B1629", borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: "none", fontFamily: FONT, whiteSpace: "nowrap", boxShadow: "0 4px 16px rgba(123,163,212,0.3)" }}>
+                Launch Studio →
+              </a>
+            </div>
+          </div>
+
           <div className="landing-domains-grid">
             {DOMAINS.map((d, i) => (
               <a key={i} href={`/domain/${encodeURIComponent(d.name)}`}
