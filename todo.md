@@ -667,3 +667,7 @@
 ## Session: Force Majeure Card on Legal Domain Page
 
 - [x] Add Force Majeure agent launch card to /domain/Legal page with description and "Launch Agent" button linking to /agents/force-majeure
+
+## Session: Force Majeure in Lawyer Onboarding
+
+- [x] Show Force Majeure Contract Agent in PersonaSelector Step 2 when Lawyer role is selected

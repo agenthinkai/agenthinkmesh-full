@@ -9,6 +9,19 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import SiteNav from "@/components/SiteNav";
 
+// Force Majeure specialist agent — shown at top of Legal domain Step 2
+const FORCE_MAJEURE_CARD = {
+  id: -1, // sentinel — not a DB agent
+  agentName: "Force Majeure Contract Agent",
+  description: "Extracts FM clauses from PDF/DOCX contracts (Arabic & English), assesses GCC conflict triggers, drafts a notification letter, and produces a board-ready risk summary.",
+  capabilities: JSON.stringify(["clause_extraction", "gcc_conflict", "arabic_rtl", "pdf_export"]),
+  tasksCompleted: null,
+  successRate: null,
+  isBuiltIn: true,
+  isSpecialist: true,
+  route: "/agents/force-majeure",
+};
+
 // ── Domain metadata (icon + colour + description) ─────────────────────────────
 // Keyed by domain name (case-insensitive match attempted)
 const DOMAIN_META: Record<string, { icon: string; color: string; desc: string; persona: string }> = {
@@ -214,8 +227,13 @@ export default function PersonaSelector() {
     setStep(2);
   };
 
-  const handleAgentClick = (agent: DomainAgent) => {
+  const handleAgentClick = (agent: DomainAgent & { isSpecialist?: boolean; route?: string }) => {
     if (!selectedDomain) return;
+    // Specialist agents have their own dedicated route
+    if (agent.isSpecialist && agent.route) {
+      navigate(agent.route);
+      return;
+    }
     const meta = domainMeta(selectedDomain.domain);
     classifyPersona.mutate({ selectedPersona: meta.persona });
     navigate(`/ask?agent=${agent.id}&agentName=${encodeURIComponent(agent.agentName)}`);
@@ -455,6 +473,23 @@ export default function PersonaSelector() {
                 gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
                 gap: 12,
               }}>
+                {/* Force Majeure specialist card — pinned to top for Legal domain */}
+                {selectedDomain.domain === "Legal" && (
+                  <div style={{ position: "relative" }}>
+                    <span style={{
+                      position: "absolute", top: -10, left: 12, zIndex: 1,
+                      fontSize: 9, fontFamily: "monospace", fontWeight: 700,
+                      background: "#C9A84C", color: "#0B1629",
+                      borderRadius: 6, padding: "2px 8px", letterSpacing: 1,
+                    }}>GCC CONFLICT · SPECIALIST</span>
+                    <AgentCard
+                      key="force-majeure"
+                      agent={FORCE_MAJEURE_CARD as unknown as DomainAgent}
+                      roleColor={roleColor}
+                      onSelect={() => handleAgentClick(FORCE_MAJEURE_CARD as unknown as DomainAgent & { isSpecialist: boolean; route: string })}
+                    />
+                  </div>
+                )}
                 {agents.map((agent) => (
                   <AgentCard
                     key={agent.id}
