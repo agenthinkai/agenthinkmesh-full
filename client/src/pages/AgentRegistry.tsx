@@ -46,10 +46,19 @@ export default function AgentRegistry() {
     pricingModel: "free" as "free" | "per_task" | "subscription",
   });
 
+  const PAGE_SIZE = 24;
+  const [page, setPage] = useState(0);
+
   const { data: agentList = [], refetch: refetchList } = trpc.agent.list.useQuery({
-    limit: 50,
-    offset: 0,
+    limit: PAGE_SIZE,
+    offset: page * PAGE_SIZE,
   });
+
+  const { data: totalCount = 0 } = trpc.agent.count.useQuery(undefined, {
+    staleTime: 30_000,
+  });
+
+  const totalPages = Math.max(1, Math.ceil(totalCount / PAGE_SIZE));
 
   const { data: myAgents = [], refetch: refetchMine } = trpc.agent.myAgents.useQuery(
     undefined,
@@ -107,19 +116,16 @@ export default function AgentRegistry() {
     onError: (e) => toast.error(e.message),
   });
 
+  // Client-side filter on current page results
   const filteredAgents = agentList.filter(a => {
     const q = searchQuery.toLowerCase();
-    const nameMatch = a.agentName.toLowerCase().includes(q) ||
+    const nameMatch = !q || a.agentName.toLowerCase().includes(q) ||
       a.developerName.toLowerCase().includes(q) ||
       a.description.toLowerCase().includes(q);
     if (!nameMatch) return false;
     const caps: string[] = (() => { try { return JSON.parse(a.capabilities); } catch { return []; } })();
-    if (capFilter) {
-      if (!caps.some(c => c.toLowerCase().includes(capFilter.toLowerCase()))) return false;
-    }
-    if (domainFilter) {
-      if (!caps.some(c => c.toLowerCase().includes(domainFilter.toLowerCase()))) return false;
-    }
+    if (capFilter && !caps.some(c => c.toLowerCase().includes(capFilter.toLowerCase()))) return false;
+    if (domainFilter && !caps.some(c => c.toLowerCase().includes(domainFilter.toLowerCase()))) return false;
     return true;
   });
 
@@ -248,8 +254,8 @@ export default function AgentRegistry() {
                   Clear
                 </button>
               )}
-              <span style={{ fontSize: 12, color: MUTED, marginLeft: "auto" }}>
-                {filteredAgents.length} agent{filteredAgents.length !== 1 ? "s" : ""}
+              <span style={{ fontSize: 12, color: MUTED, marginLeft: "auto", fontFamily: MONO }}>
+                {page * PAGE_SIZE + 1}–{Math.min((page + 1) * PAGE_SIZE, totalCount)} of {totalCount} agents
               </span>
             </div>
 
@@ -330,6 +336,85 @@ export default function AgentRegistry() {
                     </div>
                   );
                 })}
+              </div>
+            )}
+
+            {/* Pagination controls */}
+            {totalPages > 1 && (
+              <div style={{
+                display: "flex", alignItems: "center", justifyContent: "center",
+                gap: 8, marginTop: 32, flexWrap: "wrap",
+              }}>
+                <button
+                  onClick={() => setPage(0)}
+                  disabled={page === 0}
+                  style={{
+                    padding: "6px 12px", fontSize: 12, fontFamily: MONO,
+                    background: "none", border: `1px solid ${BORDER}`,
+                    borderRadius: 6, color: page === 0 ? BORDER : MUTED,
+                    cursor: page === 0 ? "not-allowed" : "pointer",
+                  }}
+                >«</button>
+                <button
+                  onClick={() => setPage(p => Math.max(0, p - 1))}
+                  disabled={page === 0}
+                  style={{
+                    padding: "6px 14px", fontSize: 12, fontFamily: MONO,
+                    background: "none", border: `1px solid ${BORDER}`,
+                    borderRadius: 6, color: page === 0 ? BORDER : MUTED,
+                    cursor: page === 0 ? "not-allowed" : "pointer",
+                  }}
+                >‹ Prev</button>
+
+                {/* Page number pills */}
+                {Array.from({ length: totalPages }, (_, i) => i)
+                  .filter(i => i === 0 || i === totalPages - 1 || Math.abs(i - page) <= 1)
+                  .reduce<(number | "...")[]>((acc, i, idx, arr) => {
+                    if (idx > 0 && (i as number) - (arr[idx - 1] as number) > 1) acc.push("...");
+                    acc.push(i);
+                    return acc;
+                  }, [])
+                  .map((item, idx) =>
+                    item === "..." ? (
+                      <span key={`ellipsis-${idx}`} style={{ fontSize: 12, color: BORDER, fontFamily: MONO }}>...</span>
+                    ) : (
+                      <button
+                        key={item}
+                        onClick={() => setPage(item as number)}
+                        style={{
+                          padding: "6px 11px", fontSize: 12, fontFamily: MONO,
+                          background: page === item ? INDIGO : "none",
+                          border: `1px solid ${page === item ? INDIGO : BORDER}`,
+                          borderRadius: 6,
+                          color: page === item ? "#0B1629" : MUTED,
+                          cursor: "pointer", fontWeight: page === item ? 700 : 400,
+                          minWidth: 32,
+                        }}
+                      >{(item as number) + 1}</button>
+                    )
+                  )
+                }
+
+                <button
+                  onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                  disabled={page >= totalPages - 1}
+                  style={{
+                    padding: "6px 14px", fontSize: 12, fontFamily: MONO,
+                    background: "none", border: `1px solid ${BORDER}`,
+                    borderRadius: 6, color: page >= totalPages - 1 ? BORDER : MUTED,
+                    cursor: page >= totalPages - 1 ? "not-allowed" : "pointer",
+                  }}
+                >Next ›</button>
+                <button
+                  onClick={() => setPage(totalPages - 1)}
+                  disabled={page >= totalPages - 1}
+                  style={{
+                    padding: "6px 12px", fontSize: 12, fontFamily: MONO,
+                    background: "none", border: `1px solid ${BORDER}`,
+                    borderRadius: 6, color: page >= totalPages - 1 ? BORDER : MUTED,
+                    cursor: page >= totalPages - 1 ? "not-allowed" : "pointer",
+                  }}
+                >»</button>
               </div>
             )}
           </div>

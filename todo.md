@@ -699,3 +699,8 @@
 
 - [x] Add tRPC publicStats procedure returning live agent count and domain count from DB
 - [x] Replace static numbers on landing page with live DB values
+
+## Registry Pagination
+
+- [x] Add agent.count tRPC procedure returning total active agent count
+- [x] Add pagination controls to AgentRegistry directory tab (prev/next, page X of Y, total count)
