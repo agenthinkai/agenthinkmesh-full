@@ -145,6 +145,9 @@ function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText,
   const [elapsed, setElapsed] = useState(0);
   const [intent, setIntent] = useState<string>("analysis");
   const [copied, setCopied] = useState(false);
+  const [savedToVault, setSavedToVault] = useState(false);
+  const [savingToVault, setSavingToVault] = useState(false);
+  const saveAgentOutput = trpc.vault.saveAgentOutput.useMutation();
   const startRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const color = agent.spawned ? "#C9A84C" : "#7BA3D4";
@@ -279,6 +282,41 @@ function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText,
         )
       )}
       {!content && status === "queued" && <div style={{ fontSize: 10, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>Standby…</div>}
+      {status === "done" && content && (
+        <div style={{ marginTop: 10, display: "flex", justifyContent: "flex-end" }}>
+          <button
+            disabled={savedToVault || savingToVault}
+            onClick={async () => {
+              setSavingToVault(true);
+              try {
+                const dateStr = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
+                const intentLabel = intent === "draft_document" ? "Draft" : intent === "generate_code" ? "Code" : intent === "decision" ? "Decision" : intent === "compliance_check" ? "Compliance" : intent === "qa_test" ? "QA" : "Analysis";
+                await saveAgentOutput.mutateAsync({
+                  filename: `${agent.label} — ${intentLabel} — ${dateStr}`,
+                  content,
+                  intent,
+                });
+                setSavedToVault(true);
+              } catch {
+                // silently fail — user can retry
+              } finally {
+                setSavingToVault(false);
+              }
+            }}
+            style={{
+              background: savedToVault ? "rgba(74,222,128,0.15)" : savingToVault ? "rgba(255,255,255,0.05)" : "rgba(123,163,212,0.12)",
+              border: `1px solid ${savedToVault ? "rgba(74,222,128,0.4)" : "rgba(123,163,212,0.3)"}`,
+              borderRadius: 6, padding: "4px 12px", fontSize: 9,
+              color: savedToVault ? "#4ADE80" : savingToVault ? "#637080" : "#7BA3D4",
+              cursor: savedToVault || savingToVault ? "default" : "pointer",
+              fontFamily: "'JetBrains Mono', monospace", fontWeight: 600,
+              transition: "all 0.2s",
+            }}
+          >
+            {savedToVault ? "✓ Saved to Vault" : savingToVault ? "Saving…" : "🗄 Save to Vault"}
+          </button>
+        </div>
+      )}
     </div>
   );
 }

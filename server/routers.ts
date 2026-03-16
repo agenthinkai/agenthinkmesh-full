@@ -1298,6 +1298,28 @@ If a section is not applicable (e.g. no financial data provided), set it to null
         await db.delete(vaultDocuments).where(eq(vaultDocuments.id, input.id));
         return { success: true };
       }),
+
+    // Save agent output text directly to vault (no file upload needed)
+    saveAgentOutput: protectedProcedure
+      .input(z.object({
+        filename: z.string().min(1),   // e.g. "Supplier Email — 16 Mar 2026"
+        content: z.string().min(1),    // the full agent output text
+        intent: z.string().optional(), // e.g. "draft_document", "analysis"
+      }))
+      .mutation(async ({ ctx, input }) => {
+        const db = await getDb();
+        if (!db) throw new Error("Database unavailable");
+        const [result] = await db.insert(vaultDocuments).values({
+          userId: ctx.user.id,
+          filename: input.filename,
+          fileKey: `agent-output/${ctx.user.id}/${Date.now()}`,  // synthetic key for text-only entries
+          fileUrl: "",                   // no file — text-only vault entry
+          mimeType: "text/plain",
+          extractedText: input.content,
+        });
+        const docId = (result as unknown as { insertId: number }).insertId;
+        return { id: docId, success: true };
+      }),
   }),
 
   // ── Agent Registry ────────────────────────────────────────────────────────

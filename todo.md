@@ -774,3 +774,10 @@
 - [x] Update MeshDashboard UI to render execution outputs with appropriate formatting (code blocks, letter layout, verdict badges)
 - [x] Write vitest tests for intent classification logic (30 new tests)
 - [x] Save checkpoint
+
+## Quick-Task Copy + Save to Vault
+
+- [x] Update quickTasks in meshData.ts to execution-framing prompts across all 14 contexts
+- [x] Add Save to Vault button on completed agent output cards (all intent types)
+- [x] Add saveAgentOutput tRPC mutation to create a vault document from agent output text
+- [x] Show success state (✓ Saved to Vault) when output is saved to Vault
