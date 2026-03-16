@@ -671,3 +671,13 @@
 ## Session: Force Majeure in Lawyer Onboarding
 
 - [x] Show Force Majeure Contract Agent in PersonaSelector Step 2 when Lawyer role is selected
+
+## Game Theory Investment Decision Agent
+
+- [x] Build server/gameTheoryRoute.ts — single-pass LLM with JSON schema (6 fields)
+- [x] Register route in server/_core/index.ts
+- [x] Seed agent in DB under Finance domain (isBuiltIn=true)
+- [x] Build client/src/pages/GameTheoryAgent.tsx — verdict + 6 panels, mobile-first
+- [x] Add /agents/game-theory route in App.tsx
+- [x] Pin card to Finance and GCC Wealth domain pages
+- [x] Inject card into PersonaSelector Step 2 for Fund Manager and GCC Wealth roles

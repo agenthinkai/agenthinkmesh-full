@@ -9,6 +9,7 @@ import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
 import { agentRouter } from "../agentRoutes";
 import { forceMajeureRouter } from "../forceMajeureRoute";
+import { gameTheoryRouter } from "../gameTheoryRoute";
 import { startHealthCheckJob } from "../jobs/healthCheck";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -40,6 +41,8 @@ async function startServer() {
   registerOAuthRoutes(app);
   // Force Majeure Contract Agent (must be before generic /api/agents catch-all)
   app.use("/api/agents/force-majeure", forceMajeureRouter);
+  // Game Theory Investment Decision Agent
+  app.use("/api/agents/game-theory", gameTheoryRouter);
   // Embedded specialist agent endpoints
   app.use("/api/agents", agentRouter);
   // tRPC API

@@ -332,7 +332,53 @@ export default function DomainAgents() {
         </section>
       )}
 
-      {/* ── Featured Specialist Agents (Legal only) ── */}
+      {/* ── Specialist Agents (domain-specific) ── */}
+      {(domainName === "Finance" || domainName === "GCC Wealth") && (
+        <section className="px-6 md:px-12 pt-8 pb-0">
+          <div className="max-w-5xl mx-auto">
+            <div className="flex items-center gap-2 mb-4">
+              <h2 className="text-sm font-semibold font-mono uppercase tracking-widest" style={{ color: domainColor }}>Specialist Agents</h2>
+              <span className="text-xs text-white/30 font-mono">(1)</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-2">
+              <Link href="/agents/game-theory">
+                <div
+                  className="group relative p-5 rounded-2xl border transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+                  style={{ background: "rgba(123,163,212,0.06)", borderColor: `${domainColor}55` }}
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border" style={{ color: domainColor, borderColor: `${domainColor}40`, background: `${domainColor}12` }}>
+                      Built-in
+                    </span>
+                    <span className="flex items-center gap-1 text-[10px] font-mono text-emerald-400">
+                      <CheckCircle2 className="w-3 h-3" /> Verified
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-amber-500/40 bg-amber-500/10 text-amber-300">
+                      Game Theory
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-sm text-white mb-1.5">Game Theory Investment Decision Agent</h3>
+                  <p className="text-xs text-white/50 leading-relaxed mb-3 line-clamp-2">
+                    Returns a clear BUY / SELL / HOLD verdict by modelling what rational institutional actors are likely to do — and whether that changes your optimal move.
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {["game_theory", "nash_equilibrium", "gcc_markets"].map((cap) => (
+                      <span key={cap} className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/40 font-mono">{cap}</span>
+                    ))}
+                  </div>
+                  <div
+                    className="flex items-center justify-center gap-2 w-full py-2 rounded-xl text-xs font-semibold transition-all"
+                    style={{ background: `linear-gradient(135deg, ${domainColor}CC, ${domainColor}66)`, color: "#fff" }}
+                  >
+                    <Zap className="w-3.5 h-3.5" /> Launch Agent
+                  </div>
+                </div>
+              </Link>
+            </div>
+          </div>
+        </section>
+      )}
+
       {domainName === "Legal" && (
         <section className="px-6 md:px-12 pt-8 pb-0">
           <div className="max-w-5xl mx-auto">

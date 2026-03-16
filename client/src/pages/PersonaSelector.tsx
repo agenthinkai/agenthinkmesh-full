@@ -9,6 +9,19 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import SiteNav from "@/components/SiteNav";
 
+// Game Theory Investment Decision Agent — shown at top of Finance and GCC Wealth domain Step 2
+const GAME_THEORY_CARD = {
+  id: -2, // sentinel — not a DB agent
+  agentName: "Game Theory Investment Decision Agent",
+  description: "Returns a clear BUY / SELL / HOLD verdict by modelling what rational institutional actors are likely to do — and whether that changes your optimal move.",
+  capabilities: JSON.stringify(["game_theory", "nash_equilibrium", "gcc_markets", "buy_sell_hold"]),
+  tasksCompleted: null,
+  successRate: null,
+  isBuiltIn: true,
+  isSpecialist: true,
+  route: "/agents/game-theory",
+};
+
 // Force Majeure specialist agent — shown at top of Legal domain Step 2
 const FORCE_MAJEURE_CARD = {
   id: -1, // sentinel — not a DB agent
@@ -473,6 +486,23 @@ export default function PersonaSelector() {
                 gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
                 gap: 12,
               }}>
+                {/* Game Theory specialist card — pinned to top for Finance and GCC Wealth domains */}
+                {(selectedDomain.domain === "Finance" || selectedDomain.domain === "GCC Wealth") && (
+                  <div style={{ position: "relative" }}>
+                    <span style={{
+                      position: "absolute", top: -10, left: 12, zIndex: 1,
+                      fontSize: 9, fontFamily: "monospace", fontWeight: 700,
+                      background: "#00C8B4", color: "#070D1A",
+                      borderRadius: 6, padding: "2px 8px", letterSpacing: 1,
+                    }}>GAME THEORY · SPECIALIST</span>
+                    <AgentCard
+                      key="game-theory"
+                      agent={GAME_THEORY_CARD as unknown as DomainAgent}
+                      roleColor={roleColor}
+                      onSelect={() => handleAgentClick(GAME_THEORY_CARD as unknown as DomainAgent & { isSpecialist: boolean; route: string })}
+                    />
+                  </div>
+                )}
                 {/* Force Majeure specialist card — pinned to top for Legal domain */}
                 {selectedDomain.domain === "Legal" && (
                   <div style={{ position: "relative" }}>
