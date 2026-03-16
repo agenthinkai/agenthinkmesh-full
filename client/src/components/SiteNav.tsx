@@ -155,30 +155,19 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
             {/* Avatar trigger */}
             <button
               onClick={() => setDropOpen(o => !o)}
+              title={user?.name ?? "Account"}
               style={{
-                display: "flex", alignItems: "center", gap: 8,
-                background: `linear-gradient(135deg, ${CYAN}20, ${BLUE}20)`,
-                border: `1px solid ${CYAN}40`,
-                borderRadius: 8, padding: "6px 12px", cursor: "pointer",
-                color: WHITE, fontSize: 13, fontWeight: 600, fontFamily: "inherit",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `linear-gradient(135deg, ${CYAN}35, ${BLUE}35)`; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = `linear-gradient(135deg, ${CYAN}20, ${BLUE}20)`; }}
-            >
-              {/* Initials avatar */}
-              <span style={{
-                width: 26, height: 26, borderRadius: "50%",
-                background: `linear-gradient(135deg, ${CYAN}, ${BLUE})`,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 11, fontWeight: 800, color: NAVY, flexShrink: 0,
-              }}>
-                {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
-              </span>
-              <span style={{ maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {user?.name ?? "Account"}
-              </span>
-              <span style={{ fontSize: 10, opacity: 0.6 }}>{dropOpen ? "▲" : "▼"}</span>
+                background: `linear-gradient(135deg, ${CYAN}, ${BLUE})`,
+                border: "none",
+                borderRadius: "50%", width: 34, height: 34, cursor: "pointer",
+                fontSize: 13, fontWeight: 800, color: NAVY, flexShrink: 0,
+                transition: "opacity 0.2s",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.82"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+            >
+              {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
             </button>
 
             {/* Dropdown */}
@@ -197,7 +186,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
                 </div>
                 {/* Dashboard link */}
                 <a
-                  href="/ask"
+                  href="/persona-setup"
                   onClick={() => setDropOpen(false)}
                   style={{
                     display: "block", padding: "10px 16px",
@@ -207,7 +196,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
                   onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLAnchorElement).style.color = WHITE; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; (e.currentTarget as HTMLAnchorElement).style.color = MUTED; }}
                 >
-                  Dashboard →
+                  My Workspace →
                 </a>
                 {/* Logout */}
                 <button

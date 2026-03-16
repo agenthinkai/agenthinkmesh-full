@@ -689,3 +689,8 @@
 ## User Logout
 
 - [x] Add user avatar/name dropdown with logout to SiteNav for all authenticated pages
+
+## Nav / Auth UX
+
+- [x] Redirect after login to /persona-setup instead of /ask
+- [x] Show only avatar icon in nav (no name text) after login
