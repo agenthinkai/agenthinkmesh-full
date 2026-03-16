@@ -143,6 +143,8 @@ function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText,
   const [status, setStatus] = useState<"queued"|"running"|"done"|"error">("queued");
   const [content, setContent] = useState("");
   const [elapsed, setElapsed] = useState(0);
+  const [intent, setIntent] = useState<string>("analysis");
+  const [copied, setCopied] = useState(false);
   const startRef = useRef<number>(0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const color = agent.spawned ? "#C9A84C" : "#7BA3D4";
@@ -159,7 +161,7 @@ function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText,
       timerRef.current = setInterval(() => setElapsed(Math.floor((Date.now() - startRef.current) / 1000)), 1000);
 
       try {
-        const { result } = await runAgentTask.mutateAsync({
+        const { result, intent: detectedIntent } = await runAgentTask.mutateAsync({
           agentLabel: agent.label,
           systemPromptBase,
           taskText,
@@ -168,6 +170,7 @@ function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText,
           activeDocId: activeDocId ?? undefined,
         });
         clearInterval(timerRef.current!);
+        setIntent(detectedIntent ?? "analysis");
         // Typewriter effect for the result
         let i = 0;
         const tw = setInterval(() => {
@@ -214,10 +217,67 @@ function AgentCard({ agent, taskText, contextLabel, systemPromptBase, vaultText,
           {agent.label}
           {agent.spawned && <span style={{ marginLeft: 6, fontSize: 8, padding: "1px 6px", borderRadius: 999, background: "rgba(201,168,76,0.15)", color: "#C9A84C", border: "1px solid rgba(201,168,76,0.3)", fontFamily: "'JetBrains Mono', monospace" }}>⚡ NEW</span>}
         </span>
+        {status === "done" && intent !== "analysis" && (() => {
+          const intentMeta: Record<string, { label: string; color: string; bg: string }> = {
+            draft_document:   { label: "✉ DRAFT",      color: "#C9A84C", bg: "rgba(201,168,76,0.12)" },
+            generate_code:    { label: "</> CODE",      color: "#7DD3FC", bg: "rgba(125,211,252,0.10)" },
+            decision:         { label: "⚖ DECISION",   color: "#A78BFA", bg: "rgba(167,139,250,0.10)" },
+            compliance_check: { label: "✓ COMPLIANCE", color: "#34D399", bg: "rgba(52,211,153,0.10)" },
+            qa_test:          { label: "🧪 QA TEST",   color: "#FB923C", bg: "rgba(251,146,60,0.10)" },
+          };
+          const m = intentMeta[intent];
+          return m ? <span style={{ fontSize: 8, padding: "2px 7px", borderRadius: 999, background: m.bg, color: m.color, fontFamily: "'JetBrains Mono', monospace", fontWeight: 700, border: `1px solid ${m.color}30` }}>{m.label}</span> : null;
+        })()}
         {chip(status)}
         {(status === "done" || status === "running") && <span style={{ fontSize: 9, color: "#94A3B8", fontFamily: "'DM Mono', monospace" }}>{elapsed}s</span>}
       </div>
-      {content && <pre style={{ margin: 0, fontSize: 10, color: "#A8B4C8", lineHeight: 1.7, fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{content}</pre>}
+      {content && (
+        intent === "generate_code" ? (
+          // Code output: syntax-highlighted block with copy button
+          <div style={{ position: "relative" }}>
+            <pre style={{ margin: 0, fontSize: 10, color: "#7DD3FC", lineHeight: 1.7, fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", wordBreak: "break-word", background: "rgba(0,0,0,0.4)", borderRadius: 8, padding: "10px 12px", border: "1px solid rgba(125,211,252,0.15)" }}>{content}</pre>
+            {status === "done" && (
+              <button
+                onClick={() => { navigator.clipboard.writeText(content); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                style={{ position: "absolute", top: 6, right: 6, background: copied ? "rgba(74,222,128,0.2)" : "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 5, padding: "2px 8px", fontSize: 9, color: copied ? "#4ADE80" : "#94A3B8", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace" }}
+              >{copied ? "✓ Copied" : "Copy"}</button>
+            )}
+          </div>
+        ) : intent === "draft_document" ? (
+          // Document draft: clean prose layout with copy button
+          <div style={{ position: "relative" }}>
+            <div style={{ background: "rgba(201,168,76,0.06)", border: "1px solid rgba(201,168,76,0.15)", borderRadius: 8, padding: "10px 12px" }}>
+              <pre style={{ margin: 0, fontSize: 10, color: "#E8D5A3", lineHeight: 1.8, fontFamily: "'Inter', sans-serif", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{content}</pre>
+            </div>
+            {status === "done" && (
+              <button
+                onClick={() => { navigator.clipboard.writeText(content); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+                style={{ position: "absolute", top: 6, right: 6, background: copied ? "rgba(74,222,128,0.2)" : "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.12)", borderRadius: 5, padding: "2px 8px", fontSize: 9, color: copied ? "#4ADE80" : "#94A3B8", cursor: "pointer", fontFamily: "'JetBrains Mono', monospace" }}
+              >{copied ? "✓ Copied" : "Copy"}</button>
+            )}
+          </div>
+        ) : intent === "decision" ? (
+          // Decision: highlight verdict in large text
+          <div>
+            {(() => {
+              const verdictMatch = content.match(/VERDICT:\s*([^\n]+)/);
+              const verdict = verdictMatch?.[1]?.trim() ?? "";
+              const isPositive = /PROCEED|BUY|APPROVE|YES/i.test(verdict);
+              const isNegative = /DO NOT|SELL|REJECT|NO/i.test(verdict);
+              const verdictColor = isPositive ? "#4ADE80" : isNegative ? "#EF4444" : "#F59E0B";
+              return verdict ? (
+                <div style={{ marginBottom: 8, padding: "6px 10px", background: `${verdictColor}15`, border: `1px solid ${verdictColor}40`, borderRadius: 6 }}>
+                  <span style={{ fontSize: 11, fontWeight: 700, color: verdictColor, fontFamily: "'Inter', sans-serif", letterSpacing: "0.05em" }}>{verdict}</span>
+                </div>
+              ) : null;
+            })()}
+            <pre style={{ margin: 0, fontSize: 10, color: "#A8B4C8", lineHeight: 1.7, fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{content}</pre>
+          </div>
+        ) : (
+          // Default: analysis / compliance / qa — monospace pre
+          <pre style={{ margin: 0, fontSize: 10, color: "#A8B4C8", lineHeight: 1.7, fontFamily: "'JetBrains Mono', monospace", whiteSpace: "pre-wrap", wordBreak: "break-word" }}>{content}</pre>
+        )
+      )}
       {!content && status === "queued" && <div style={{ fontSize: 10, color: "#637080", fontFamily: "'JetBrains Mono', monospace" }}>Standby…</div>}
     </div>
   );

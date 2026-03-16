@@ -219,17 +219,182 @@ export const appRouter = router({
         }
         console.log(`[runAgentTask] agent=${input.agentLabel} vaultTextLen=${resolvedVaultText.length} activeDocId=${input.activeDocId}`);
 
-        const systemPrompt = [
+        // ── Step 1: Intent Classifier (fast pre-pass, ~200 tokens) ────────────
+        // Detects what the user actually wants: analysis, draft, code, decision, compliance, qa
+        type IntentType = "analysis" | "draft_document" | "generate_code" | "decision" | "compliance_check" | "qa_test";
+
+        let detectedIntent: IntentType = "analysis";
+        let documentType = ""; // e.g. "email", "proposal", "NDA", "letter"
+        let codeLanguage = ""; // e.g. "Python", "JavaScript"
+
+        try {
+          const intentRes = await invokeLLM({
+            messages: [
+              {
+                role: "system",
+                content: [
+                  `You are an intent classifier for an institutional AI platform. Classify the user's request into exactly one intent type.`,
+                  `Intent types:`,
+                  `- analysis: research, analyse, review, assess, evaluate, compare, summarise, explain, what is, why did`,
+                  `- draft_document: draft, write, compose, create a letter/email/proposal/NDA/contract/memo/report/cover letter/press release`,
+                  `- generate_code: code, script, function, API, SQL, Python, JavaScript, automate, build a tool`,
+                  `- decision: should I, buy or sell, approve or reject, go/no-go, recommend action, what should we do`,
+                  `- compliance_check: compliant, regulatory, filing, deadline, ADGM, CMA, CBK, DFSA, KYC, AML, audit`,
+                  `- qa_test: test, QA, validate, verify, check if working, find bugs, test cases`,
+                  ``,
+                  `Also extract:`,
+                  `- documentType: if draft_document, the type of document (email, proposal, NDA, letter, memo, report, contract, press release). Empty string otherwise.`,
+                  `- codeLanguage: if generate_code, the programming language requested. Default to "Python" if not specified. Empty string otherwise.`,
+                  ``,
+                  `Return ONLY valid JSON: { "intent": "<type>", "documentType": "<type>", "codeLanguage": "<lang>" }`,
+                ].join("\n"),
+              },
+              { role: "user", content: input.taskText },
+            ],
+            max_tokens: 100,
+            response_format: {
+              type: "json_schema",
+              json_schema: {
+                name: "intent_classification",
+                strict: true,
+                schema: {
+                  type: "object",
+                  properties: {
+                    intent: { type: "string", enum: ["analysis", "draft_document", "generate_code", "decision", "compliance_check", "qa_test"] },
+                    documentType: { type: "string" },
+                    codeLanguage: { type: "string" },
+                  },
+                  required: ["intent", "documentType", "codeLanguage"],
+                  additionalProperties: false,
+                },
+              },
+            },
+          });
+          const intentContent = intentRes.choices[0]?.message?.content;
+          const intentParsed = JSON.parse(typeof intentContent === "string" ? intentContent : JSON.stringify(intentContent));
+          detectedIntent = intentParsed.intent as IntentType;
+          documentType = intentParsed.documentType ?? "";
+          codeLanguage = intentParsed.codeLanguage ?? "";
+          console.log(`[runAgentTask] intent=${detectedIntent} docType=${documentType} codeLang=${codeLanguage}`);
+        } catch (e) {
+          console.warn("[runAgentTask] Intent classification failed, defaulting to analysis", e);
+          detectedIntent = "analysis";
+        }
+
+        // ── Step 2: Build system prompt based on detected intent ──────────────
+        const agentContext = [
           input.systemPromptBase,
-          `You are the ${input.agentLabel}. You are operating on an institutional AI platform serving GCC fund managers, legal professionals, healthcare administrators, and enterprise executives. Users are sophisticated decision-makers who need comprehensive, actionable analysis — not summaries.`,
-          `Analyse the following task and respond with this structure. Each section must be substantive and detailed — minimum 3-5 sentences per section, not bullet fragments:`,
-          "SUMMARY: 2-3 sentences capturing the core finding and its significance.",
-          "KEY FINDINGS: 5-8 detailed findings. Each finding must be a complete sentence with specific data, reasoning, or evidence — not a headline.",
-          "ANALYSIS: 3-5 paragraphs of deep analysis. Explain the why behind the findings. Include relevant market context, risk factors, and strategic implications.",
-          "FLAGS: All material risks, red flags, or issues. For each flag, explain the risk mechanism and potential impact. If none, state 'No material flags identified' with a brief explanation.",
-          "NEXT ACTION: 2-3 specific, immediately actionable recommendations with clear rationale for each.",
-          resolvedVaultText ? `\n\n=== DOCUMENT CONTEXT (analyse this data to answer the task) ===\n${resolvedVaultText.slice(0, 10000)}\n=== END DOCUMENT CONTEXT ===` : "",
+          `You are the ${input.agentLabel} operating on an institutional AI platform serving GCC fund managers, legal professionals, healthcare administrators, and enterprise executives.`,
+          resolvedVaultText ? `\n=== DOCUMENT CONTEXT ===\n${resolvedVaultText.slice(0, 8000)}\n=== END DOCUMENT CONTEXT ===` : "",
         ].filter(Boolean).join("\n");
+
+        let systemPrompt: string;
+
+        if (detectedIntent === "draft_document") {
+          const docLabel = documentType || "document";
+          systemPrompt = [
+            agentContext,
+            ``,
+            `The user wants you to DRAFT a ${docLabel}. Do NOT produce an analysis report. Produce the actual ${docLabel}, ready to use.`,
+            ``,
+            `Output format:`,
+            `DOCUMENT TYPE: State the type of document you are drafting (e.g. "Supplier Collaboration Email").`,
+            ``,
+            `DRAFT:`,
+            `[Write the complete, professional ${docLabel} here. Use proper salutation, body paragraphs, and closing for correspondence. Use proper sections for proposals and contracts. The draft must be complete — not a template with placeholders.]`,
+            ``,
+            `KEY POINTS COVERED: 3-5 bullet points summarising what the document achieves.`,
+            ``,
+            `CUSTOMISATION NOTES: 2-3 specific fields the user should personalise (names, dates, figures) before sending.`,
+          ].filter(Boolean).join("\n");
+
+        } else if (detectedIntent === "generate_code") {
+          const lang = codeLanguage || "Python";
+          systemPrompt = [
+            agentContext,
+            ``,
+            `The user wants you to GENERATE CODE in ${lang}. Do NOT produce an analysis report. Produce working, production-ready code.`,
+            ``,
+            `Output format:`,
+            `WHAT THIS CODE DOES: One clear sentence describing the purpose.`,
+            ``,
+            `CODE:`,
+            `\`\`\`${lang.toLowerCase()}`,
+            `[Write the complete, runnable ${lang} code here. Include imports, error handling, and comments. No placeholders — write real, working code.]`,
+            `\`\`\``,
+            ``,
+            `HOW TO RUN: Step-by-step instructions to execute this code (dependencies, environment variables, commands).`,
+            ``,
+            `CUSTOMISATION: 2-3 variables or parameters the user should adjust for their specific use case.`,
+          ].filter(Boolean).join("\n");
+
+        } else if (detectedIntent === "decision") {
+          systemPrompt = [
+            agentContext,
+            ``,
+            `The user needs a DECISION RECOMMENDATION. Give a clear, direct verdict with institutional-grade reasoning. No hedging.`,
+            ``,
+            `Output format:`,
+            `VERDICT: State the recommended action clearly (e.g. PROCEED / DO NOT PROCEED / BUY / SELL / HOLD / APPROVE / REJECT). One sentence maximum.`,
+            ``,
+            `RATIONALE: 2-3 paragraphs explaining the strategic reasoning behind this verdict. Be specific — reference the actual situation described.`,
+            ``,
+            `KEY RISKS: 3-5 risks that could invalidate this recommendation. For each, state the risk and its likelihood.`,
+            ``,
+            `CONDITIONS: What would change this verdict? List 2-3 specific triggers that would flip the recommendation.`,
+            ``,
+            `NEXT ACTION: The single most important thing to do in the next 48 hours.`,
+          ].filter(Boolean).join("\n");
+
+        } else if (detectedIntent === "compliance_check") {
+          systemPrompt = [
+            agentContext,
+            ``,
+            `The user needs a COMPLIANCE ASSESSMENT. Provide a structured regulatory status check with specific action items.`,
+            ``,
+            `Output format:`,
+            `COMPLIANCE STATUS: COMPLIANT / PARTIALLY COMPLIANT / NON-COMPLIANT — one sentence summary.`,
+            ``,
+            `REGULATORY FRAMEWORK: Which regulations, authorities, or frameworks apply (e.g. CMA, ADGM, CBK, DFSA, MOH). List them with brief descriptions.`,
+            ``,
+            `GAPS IDENTIFIED: Specific compliance gaps found. For each gap, state: what is missing, which regulation requires it, and the consequence of non-compliance.`,
+            ``,
+            `REQUIRED ACTIONS: Numbered list of actions to achieve full compliance. Each action must include: what to do, who is responsible, and the deadline or urgency.`,
+            ``,
+            `FILING DEADLINES: Any upcoming regulatory deadlines relevant to this situation.`,
+          ].filter(Boolean).join("\n");
+
+        } else if (detectedIntent === "qa_test") {
+          systemPrompt = [
+            agentContext,
+            ``,
+            `The user needs QA TESTING SUPPORT. Produce a structured test plan and results.`,
+            ``,
+            `Output format:`,
+            `TEST SCOPE: What is being tested and why.`,
+            ``,
+            `TEST CASES: Numbered list of test cases. For each: Test ID, Description, Input, Expected Output, Pass/Fail criteria.`,
+            ``,
+            `CRITICAL PATHS: The 3 most important user flows or functions that must work correctly.`,
+            ``,
+            `EDGE CASES: 5 edge cases that are likely to reveal bugs (empty inputs, boundary values, concurrent requests, etc.).`,
+            ``,
+            `RECOMMENDED FIXES: If issues are identified, list them by priority (Critical / High / Medium) with suggested fixes.`,
+          ].filter(Boolean).join("\n");
+
+        } else {
+          // Default: analysis (existing behaviour)
+          systemPrompt = [
+            agentContext,
+            ``,
+            `Analyse the following task and respond with this structure. Each section must be substantive and detailed — minimum 3-5 sentences per section:`,
+            `SUMMARY: 2-3 sentences capturing the core finding and its significance.`,
+            `KEY FINDINGS: 5-8 detailed findings. Each finding must be a complete sentence with specific data, reasoning, or evidence.`,
+            `ANALYSIS: 3-5 paragraphs of deep analysis. Explain the why behind the findings. Include relevant market context, risk factors, and strategic implications.`,
+            `FLAGS: All material risks, red flags, or issues. For each flag, explain the risk mechanism and potential impact.`,
+            `NEXT ACTION: 2-3 specific, immediately actionable recommendations with clear rationale for each.`,
+          ].filter(Boolean).join("\n");
+        }
 
         // ── Per-user daily rate limit check (10 req/day, 50k token circuit breaker) ──
         const db2 = await getDb();
@@ -270,7 +435,7 @@ export const appRouter = router({
         const today2 = new Date().toISOString().slice(0, 10);
         await recordLlmUsage({ ip: (ctx as any).req?.ip ?? "server", userId: ctx.user.id, endpoint: "mesh-runAgentTask", date: today2 }, tokensUsed);
 
-        return { result };
+        return { result, intent: detectedIntent, documentType, codeLanguage };
       }),
 
     // ── Smart agent routing ─────────────────────────────────────────────────

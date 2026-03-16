@@ -760,3 +760,17 @@
 - [x] Build admin-only UsageDashboard.tsx with daily token consumption charts and high-demand log
 - [x] Add /admin/usage route to App.tsx
 - [x] Add Usage Dashboard link to admin dropdown in SiteNav
+
+## Intent Classifier + Execution Layer (Option A)
+
+- [x] Design 6 intent types: analysis, draft_document, generate_code, decision, compliance_check, qa_test
+- [x] Add fast Intent Classifier pre-pass to runAgentTask (single LLM call, ~200 tokens, JSON schema output)
+- [x] Build output template for draft_document (email, letter, proposal, NDA) — produces actual draft
+- [x] Build output template for generate_code — produces runnable code + explanation
+- [x] Build output template for decision (buy/sell/hold, approve/reject) — verdict + rationale
+- [x] Build output template for compliance_check — status + gaps + actions + deadlines
+- [x] Build output template for qa_test — test cases + results + bugs + fix priority
+- [x] Keep existing analysis template as default fallback
+- [x] Update MeshDashboard UI to render execution outputs with appropriate formatting (code blocks, letter layout, verdict badges)
+- [x] Write vitest tests for intent classification logic (30 new tests)
+- [x] Save checkpoint
