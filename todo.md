@@ -663,3 +663,7 @@
 - [x] Add PDF export of agent output (jsPDF)
 - [x] Wire route /agents/force-majeure in App.tsx
 - [x] Register in agent catalogue (DB seeded, isBuiltIn=true, domain=Legal)
+
+## Session: Force Majeure Card on Legal Domain Page
+
+- [x] Add Force Majeure agent launch card to /domain/Legal page with description and "Launch Agent" button linking to /agents/force-majeure
