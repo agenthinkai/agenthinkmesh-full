@@ -805,3 +805,8 @@
 - [x] Update ResultScreen to render financial_model outputs with table formatting (pipe tables → HTML tables)
 - [x] Update pdfReport.ts to render financial_model outputs with table formatting (pipe tables → aligned columns)
 - [x] 101 tests passing, 0 TypeScript errors
+
+## Feature: Dynamic agent placeholder text
+
+- [x] Add placeholder examples to each agent in meshData.ts (122 agents covered)
+- [x] Wire dynamic placeholder into MeshDashboard textarea — rotates through top 3 agents every 4 seconds when context is selected

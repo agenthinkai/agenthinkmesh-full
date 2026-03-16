@@ -4,10 +4,12 @@ import {
   AgentNode,
   CONTEXTS,
   DOMAIN_MAP,
+  DEFAULT_PLACEHOLDER,
   LayoutNode,
   MeshContext,
   ROLE_CONTEXT_MAP,
   buildLayout,
+  getAgentPlaceholder,
   inferAgents,
 } from "@/lib/meshData";
 import { useCallback, useEffect, useRef, useState, useMemo } from "react";
@@ -986,6 +988,20 @@ export default function MeshDashboard() {
     role ? CONTEXTS[role].agents.map((label, i) => ({ id: "a" + i, label, spawned: false })) : []
   );
 
+  // Dynamic placeholder: rotate through top-3 agents in current context
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  useEffect(() => { setPlaceholderIdx(0); }, [role]);
+  useEffect(() => {
+    if (!agentList.length) return;
+    const timer = setInterval(() => {
+      setPlaceholderIdx(i => (i + 1) % Math.min(3, agentList.length));
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [agentList]);
+  const dynamicPlaceholder = agentList.length > 0
+    ? getAgentPlaceholder(agentList[placeholderIdx]?.label ?? "")
+    : DEFAULT_PLACEHOLDER;
+
   // tRPC mutations
   const routeAgentsMutation = trpc.mesh.routeAgents.useMutation();
   const saveHistory = trpc.mesh.saveTask.useMutation({
@@ -1687,7 +1703,7 @@ export default function MeshDashboard() {
                       value={task}
                       onChange={e => setTask(e.target.value)}
                       onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) run(); }}
-                      placeholder={ctx ? `e.g. ${ctx.quickTasks[0]}…` : "Describe your task — e.g. Screen a Series A deal, Review an employment contract…"}
+                      placeholder={dynamicPlaceholder}
                       rows={4}
                       style={{ width: "100%", border: "none", outline: "none", resize: "none", fontSize: 14, color: "#E8ECF2", fontFamily: "'JetBrains Mono', monospace", lineHeight: 1.7, background: "transparent", boxSizing: "border-box" }}
                     />
