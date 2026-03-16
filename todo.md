@@ -685,3 +685,7 @@
 ## Landing Page Nav
 
 - [x] Add Agent Registry link to landing page top navigation menu
+
+## User Logout
+
+- [x] Add user avatar/name dropdown with logout to SiteNav for all authenticated pages

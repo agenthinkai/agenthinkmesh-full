@@ -1,8 +1,9 @@
 /**
  * SiteNav — shared sticky top navigation bar used across all pages.
- * Shows: Logo | Domains · Contact (scroll anchors on landing, links elsewhere) | Sign In / Dashboard
+ * Shows: Logo | Domains · Contact (scroll anchors on landing, links elsewhere) | Sign In / Dashboard + Logout
  */
 
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Logo from "@/components/Logo";
@@ -19,7 +20,20 @@ interface SiteNavProps {
 }
 
 export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
+  const [dropOpen, setDropOpen] = useState(false);
+  const dropRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (dropRef.current && !dropRef.current.contains(e.target as Node)) {
+        setDropOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
 
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
@@ -135,26 +149,84 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
           </>
         )}
 
-        {/* Auth button */}
+        {/* Auth button / user dropdown */}
         {isAuthenticated ? (
-          <a
-            href="/ask"
-            style={{
-              color: WHITE, fontSize: 14, textDecoration: "none",
-              padding: "7px 18px", borderRadius: 8, fontWeight: 600,
-              background: `linear-gradient(135deg, ${CYAN}30, ${BLUE}30)`,
-              border: `1px solid ${CYAN}50`,
-              transition: "all 0.2s",
-            }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLAnchorElement).style.background = `linear-gradient(135deg, ${CYAN}50, ${BLUE}50)`;
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLAnchorElement).style.background = `linear-gradient(135deg, ${CYAN}30, ${BLUE}30)`;
-            }}
-          >
-            Dashboard →
-          </a>
+          <div ref={dropRef} style={{ position: "relative" }}>
+            {/* Avatar trigger */}
+            <button
+              onClick={() => setDropOpen(o => !o)}
+              style={{
+                display: "flex", alignItems: "center", gap: 8,
+                background: `linear-gradient(135deg, ${CYAN}20, ${BLUE}20)`,
+                border: `1px solid ${CYAN}40`,
+                borderRadius: 8, padding: "6px 12px", cursor: "pointer",
+                color: WHITE, fontSize: 13, fontWeight: 600, fontFamily: "inherit",
+                transition: "all 0.2s",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `linear-gradient(135deg, ${CYAN}35, ${BLUE}35)`; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = `linear-gradient(135deg, ${CYAN}20, ${BLUE}20)`; }}
+            >
+              {/* Initials avatar */}
+              <span style={{
+                width: 26, height: 26, borderRadius: "50%",
+                background: `linear-gradient(135deg, ${CYAN}, ${BLUE})`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 11, fontWeight: 800, color: NAVY, flexShrink: 0,
+              }}>
+                {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+              </span>
+              <span style={{ maxWidth: 120, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {user?.name ?? "Account"}
+              </span>
+              <span style={{ fontSize: 10, opacity: 0.6 }}>{dropOpen ? "▲" : "▼"}</span>
+            </button>
+
+            {/* Dropdown */}
+            {dropOpen && (
+              <div style={{
+                position: "absolute", top: "calc(100% + 8px)", right: 0,
+                background: "#0D1E35", border: `1px solid ${CYAN}25`,
+                borderRadius: 10, minWidth: 180, zIndex: 200,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.5)",
+                overflow: "hidden",
+              }}>
+                {/* User info */}
+                <div style={{ padding: "12px 16px", borderBottom: `1px solid rgba(255,255,255,0.06)` }}>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: WHITE }}>{user?.name ?? "User"}</div>
+                  {user?.email && <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{user.email}</div>}
+                </div>
+                {/* Dashboard link */}
+                <a
+                  href="/ask"
+                  onClick={() => setDropOpen(false)}
+                  style={{
+                    display: "block", padding: "10px 16px",
+                    fontSize: 13, color: MUTED, textDecoration: "none",
+                    transition: "background 0.15s",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLAnchorElement).style.color = WHITE; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; (e.currentTarget as HTMLAnchorElement).style.color = MUTED; }}
+                >
+                  Dashboard →
+                </a>
+                {/* Logout */}
+                <button
+                  onClick={() => { setDropOpen(false); logout(); }}
+                  style={{
+                    display: "block", width: "100%", textAlign: "left",
+                    padding: "10px 16px", background: "none", border: "none",
+                    borderTop: `1px solid rgba(255,255,255,0.06)`,
+                    fontSize: 13, color: "#EF4444", cursor: "pointer",
+                    fontFamily: "inherit", transition: "background 0.15s",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(239,68,68,0.08)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                >
+                  Sign out
+                </button>
+              </div>
+            )}
+          </div>
         ) : (
           <a
             href={getLoginUrl()}
