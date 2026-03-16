@@ -711,7 +711,206 @@ Return ONLY valid JSON matching this exact schema:
 
           const fullQuery = input.query + fileContext;
 
-          // ── Agent 1: Intent Classifier ─────────────────────────────────────────────────────
+          // ── Agent 0: Execution Intent Pre-check ─────────────────────────────────────────────
+          // Detects if the user wants a deliverable (draft, code, decision, compliance, qa)
+          // rather than a research/analysis report. If so, we skip the analysis pipeline
+          // and produce the actual deliverable directly.
+          type AnalyzeIntentType = "analysis" | "draft_document" | "generate_code" | "decision" | "compliance_check" | "qa_test";
+          let analyzeIntent: AnalyzeIntentType = "analysis";
+          let analyzeDocumentType = "";
+          let analyzeCodeLanguage = "";
+
+          try {
+            const execIntentRes = await invokeLLM({
+              messages: [
+                {
+                  role: "system",
+                  content: [
+                    `You are an intent classifier for an institutional AI platform. Classify the user's request into exactly one intent type.`,
+                    `Intent types:`,
+                    `- analysis: research, analyse, review, assess, evaluate, compare, summarise, explain, what is, why did`,
+                    `- draft_document: draft, write, compose, create a letter/email/proposal/NDA/contract/memo/report/cover letter/press release`,
+                    `- generate_code: code, script, function, API, SQL, Python, JavaScript, automate, build a tool`,
+                    `- decision: should I, buy or sell, approve or reject, go/no-go, recommend action, what should we do`,
+                    `- compliance_check: compliant, regulatory, filing, deadline, ADGM, CMA, CBK, DFSA, KYC, AML, audit`,
+                    `- qa_test: test, QA, validate, verify, check if working, find bugs, test cases`,
+                    ``,
+                    `Also extract:`,
+                    `- documentType: if draft_document, the type of document (email, proposal, NDA, letter, memo, report, contract, press release). Empty string otherwise.`,
+                    `- codeLanguage: if generate_code, the programming language requested. Default to "Python" if not specified. Empty string otherwise.`,
+                    ``,
+                    `Return ONLY valid JSON: { "intent": "<type>", "documentType": "<type>", "codeLanguage": "<lang>" }`,
+                  ].join("\n"),
+                },
+                { role: "user", content: input.query },
+              ],
+              max_tokens: 100,
+              response_format: {
+                type: "json_schema",
+                json_schema: {
+                  name: "exec_intent_classification",
+                  strict: true,
+                  schema: {
+                    type: "object",
+                    properties: {
+                      intent: { type: "string", enum: ["analysis", "draft_document", "generate_code", "decision", "compliance_check", "qa_test"] },
+                      documentType: { type: "string" },
+                      codeLanguage: { type: "string" },
+                    },
+                    required: ["intent", "documentType", "codeLanguage"],
+                    additionalProperties: false,
+                  },
+                },
+              },
+            });
+            const execIntentContent = execIntentRes.choices[0]?.message?.content;
+            const execIntentParsed = JSON.parse(typeof execIntentContent === "string" ? execIntentContent : JSON.stringify(execIntentContent));
+            analyzeIntent = execIntentParsed.intent as AnalyzeIntentType;
+            analyzeDocumentType = execIntentParsed.documentType ?? "";
+            analyzeCodeLanguage = execIntentParsed.codeLanguage ?? "";
+            console.log(`[analyze] execIntent=${analyzeIntent} docType=${analyzeDocumentType}`);
+          } catch (e) {
+            console.warn("[analyze] Execution intent pre-check failed, defaulting to analysis", e);
+          }
+
+          // ── Execution path: produce deliverable directly, skip analysis agents ─────────────────
+          if (analyzeIntent !== "analysis") {
+            const docLabel = analyzeDocumentType || "document";
+            const execSystemPrompts: Record<AnalyzeIntentType, string> = {
+              draft_document: [
+                `You are an expert document drafter for GCC institutional professionals.`,
+                `The user wants you to DRAFT a ${docLabel}. Do NOT produce an analysis report. Produce the actual ${docLabel}, ready to use.`,
+                ``,
+                `Output format:`,
+                `DOCUMENT TYPE: State the type of document you are drafting (e.g. "Supplier Collaboration Email").`,
+                ``,
+                `DRAFT:`,
+                `[Write the complete, professional ${docLabel} here. Use proper salutation, body paragraphs, and closing for correspondence. Use proper sections for proposals and contracts. The draft must be complete — not a template with placeholders. Use [Recipient Name], [Your Name], [Company] only where truly unknown.]`,
+                ``,
+                `KEY POINTS COVERED: 3-5 bullet points summarising what the document achieves.`,
+                ``,
+                `CUSTOMISATION NOTES: 2-3 specific fields the user should personalise (names, dates, figures) before sending.`,
+              ].join("\n"),
+              generate_code: [
+                `You are an expert ${analyzeCodeLanguage || "Python"} developer for GCC institutional platforms.`,
+                `The user wants you to GENERATE CODE. Do NOT produce an analysis report. Produce working, runnable code.`,
+                ``,
+                `Output format:`,
+                `WHAT THIS CODE DOES: One paragraph explaining the purpose and approach.`,
+                ``,
+                `CODE:`,
+                `\`\`\`${(analyzeCodeLanguage || "python").toLowerCase()}`,
+                `[Complete, runnable code here. Include comments for key sections. No placeholders — write real working code.]`,
+                `\`\`\``,
+                ``,
+                `HOW TO RUN: Step-by-step instructions to execute this code.`,
+                ``,
+                `CUSTOMISATION: 2-3 specific variables or parameters the user should adjust for their environment.`,
+              ].join("\n"),
+              decision: [
+                `You are a senior institutional advisor for GCC fund managers and executives.`,
+                `The user needs a DECISION RECOMMENDATION. Give a clear, direct verdict with institutional-grade reasoning. No hedging.`,
+                ``,
+                `Output format:`,
+                `VERDICT: State your recommendation in one line (e.g. PROCEED / DO NOT PROCEED / BUY / SELL / HOLD / APPROVE / REJECT).`,
+                ``,
+                `RATIONALE: 3-5 sentences explaining the key reasoning behind the verdict.`,
+                ``,
+                `KEY RISKS: 3-5 risks that could invalidate this recommendation. For each, state the risk and its likelihood.`,
+                ``,
+                `CONDITIONS: What would change this verdict? List 2-3 specific triggers that would flip the recommendation.`,
+                ``,
+                `NEXT ACTION: The single most important immediate step the user should take.`,
+              ].join("\n"),
+              compliance_check: [
+                `You are a GCC regulatory compliance expert (ADGM, DFSA, CMA, CBK, CIMA, MOH).`,
+                `The user needs a COMPLIANCE CHECK. Provide a clear status assessment with actionable guidance.`,
+                ``,
+                `Output format:`,
+                `COMPLIANCE STATUS: COMPLIANT / PARTIALLY COMPLIANT / NON-COMPLIANT / REQUIRES REVIEW`,
+                ``,
+                `REGULATORY FRAMEWORK: Which regulations, laws, or guidelines apply to this situation.`,
+                ``,
+                `GAPS IDENTIFIED: List each compliance gap with its severity (Critical / High / Medium / Low).`,
+                ``,
+                `REQUIRED ACTIONS: Specific steps to achieve or maintain compliance, in priority order.`,
+                ``,
+                `FILING DEADLINES: Any relevant upcoming deadlines or reporting requirements.`,
+              ].join("\n"),
+              qa_test: [
+                `You are a QA engineer and software testing expert.`,
+                `The user needs QA TEST CASES. Produce structured, executable test cases.`,
+                ``,
+                `Output format:`,
+                `TEST SCOPE: What is being tested and what is out of scope.`,
+                ``,
+                `TEST CASES: List each test case with ID, description, steps, expected result, and pass/fail criteria.`,
+                ``,
+                `CRITICAL PATHS: The 3-5 most important user flows that must pass.`,
+                ``,
+                `EDGE CASES: Unusual or boundary conditions that should be tested.`,
+                ``,
+                `RECOMMENDED FIXES: If issues are identified, list them by priority (Critical / High / Medium) with suggested fixes.`,
+              ].join("\n"),
+              analysis: "", // not used in this branch
+            };
+
+            const execRes = await invokeLLM({
+              messages: [
+                { role: "system", content: execSystemPrompts[analyzeIntent] },
+                { role: "user", content: fullQuery },
+              ],
+              max_tokens: 2000,
+            });
+            const execContent = execRes.choices[0]?.message?.content;
+            const execResult = typeof execContent === "string" ? execContent : JSON.stringify(execContent);
+            const execTokens = (execRes as any).usage?.total_tokens ?? 2000;
+            const execDate = new Date().toISOString().slice(0, 10);
+            await recordLlmUsage({ ip: (ctx as any).req?.ip ?? "server", userId: ctx.user.id, endpoint: "mesh-analyze-exec", date: execDate }, execTokens);
+
+            // Map intent to a human-readable task type for the PDF
+            const intentTaskTypeMap: Record<AnalyzeIntentType, string> = {
+              draft_document: `${analyzeDocumentType ? analyzeDocumentType.charAt(0).toUpperCase() + analyzeDocumentType.slice(1) + " " : ""}Draft`,
+              generate_code: `${analyzeCodeLanguage || "Python"} Code`,
+              decision: "Decision Recommendation",
+              compliance_check: "Compliance Check",
+              qa_test: "QA Test Plan",
+              analysis: "Analysis",
+            };
+
+            // Save to meshTasks and return
+            await db.update(meshTasks).set({
+              taskType: intentTaskTypeMap[analyzeIntent],
+              confidenceScore: 90,
+              agentsUsed: 2, // intent classifier + executor
+              executionTimeMs: Date.now() - startTime,
+              keyFindings: JSON.stringify([execResult.slice(0, 200)]),
+              risks: JSON.stringify([]),
+              segmentInsights: JSON.stringify([]),
+              recommendation: execResult,
+              meshRoute: JSON.stringify(["Intent Classifier", "Execution Agent"]),
+              sentimentPositive: 70,
+              sentimentNeutral: 20,
+              sentimentNegative: 10,
+              structuredReport: null,
+              fileUrl: input.fileUrl ?? null,
+              fileName: input.fileName ?? null,
+              status: "complete",
+            }).where(eq(meshTasks.id, taskId));
+
+            return { taskId, status: "complete" as const };
+          }
+
+          // ── Analysis path (original pipeline) ──────────────────────────────────────────────────
+          // Helper: safely extract JSON from LLM response (guards against undefined choices)
+          const safeContent = (res: { choices?: Array<{ message?: { content?: string | unknown } }> }, fallback = "{}"): string => {
+            const content = res?.choices?.[0]?.message?.content;
+            if (typeof content === "string") return content;
+            if (content != null) return JSON.stringify(content);
+            return fallback;
+          };
+
+          // ── Agent 1: Intent Classifier (analysis task type) ─────────────────────────────────
           const intentRes = await invokeLLM({
             messages: [
               { role: "system", content: "You are an intent classifier for an AI agent orchestration platform. Classify the user's query into one of these task types: Synthetic Research, Deal Screening, Market Analysis, Pricing Strategy, Risk Assessment, Competitive Intelligence, Business Strategy, Financial Analysis. Return ONLY a JSON object with fields: taskType (string), confidence (integer 60-95), meshRoute (array of 5 agent name strings appropriate for this task type)." },
@@ -735,13 +934,6 @@ Return ONLY valid JSON matching this exact schema:
               },
             },
           });
-          // Helper: safely extract JSON from LLM response (guards against undefined choices)
-          const safeContent = (res: { choices?: Array<{ message?: { content?: string | unknown } }> }, fallback = "{}"): string => {
-            const content = res?.choices?.[0]?.message?.content;
-            if (typeof content === "string") return content;
-            if (content != null) return JSON.stringify(content);
-            return fallback;
-          };
           const intentRaw = JSON.parse(safeContent(intentRes, '{"taskType":"Business Strategy","confidence":70,"meshRoute":[]}')) as {
             taskType: string;
             confidence: number;

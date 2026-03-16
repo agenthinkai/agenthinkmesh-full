@@ -781,3 +781,10 @@
 - [x] Add Save to Vault button on completed agent output cards (all intent types)
 - [x] Add saveAgentOutput tRPC mutation to create a vault document from agent output text
 - [x] Show success state (✓ Saved to Vault) when output is saved to Vault
+
+## Bug Fix: mesh.analyze pipeline ignores Intent Classifier
+
+- [x] Add Intent Classifier to mesh.analyze procedure (same 6 intents as runAgentTask)
+- [x] Branch analysis prompt in mesh.analyze based on detected intent
+- [x] Update pdfReport.ts to render draft/code/decision outputs correctly (not as analysis report)
+- [x] Ensure PDF title reflects intent type (e.g. "Email Draft" not "Structured Analysis Report")
