@@ -810,3 +810,7 @@
 
 - [x] Add placeholder examples to each agent in meshData.ts (122 agents covered)
 - [x] Wire dynamic placeholder into MeshDashboard textarea — rotates through top 3 agents every 4 seconds when context is selected
+
+## Bug Fix: Role entry screen placeholder text
+
+- [x] Fix role entry screen textarea to show agent-specific placeholder matching pre-loaded agent (AskScreen now uses getAgentPlaceholder from meshData, covers all 122 agents)

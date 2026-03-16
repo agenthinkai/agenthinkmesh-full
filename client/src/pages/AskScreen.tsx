@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useLocation, useSearch } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { getAgentPlaceholder, DEFAULT_PLACEHOLDER } from "@/lib/meshData";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Logo from "@/components/Logo";
@@ -201,6 +202,11 @@ export default function AskScreen() {
 
   // Pre-selected agent from persona-setup (?agent=id&agentName=...)
   const [preSelectedAgent, setPreSelectedAgent] = useState<{ id: string; name: string } | null>(null);
+
+  // Dynamic placeholder based on pre-selected agent
+  const agentPlaceholder = preSelectedAgent?.name
+    ? getAgentPlaceholder(preSelectedAgent.name)
+    : DEFAULT_PLACEHOLDER;
 
   // Pre-fill from ?refine= param and read ?agent= from persona-setup
   useEffect(() => {
@@ -414,7 +420,7 @@ export default function AskScreen() {
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={e => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit(); }}
-            placeholder="Describe your task — e.g. Screen a Series A deal, Simulate consumer reactions, Analyse pricing sensitivity..."
+            placeholder={agentPlaceholder}
             style={{
               width: "100%",
               minHeight: 120,
