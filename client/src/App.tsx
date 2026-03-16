@@ -21,6 +21,7 @@ import TurnaroundUpload from "./pages/TurnaroundUpload";
 import TurnaroundCommand from "./pages/TurnaroundCommand";
 import TurnaroundReport from "./pages/TurnaroundReport";
 import PersonaSelector from "./pages/PersonaSelector";
+import ForceMajeureAgent from "./pages/ForceMajeureAgent";
 import DomainAgents from "./pages/DomainAgents";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./_core/hooks/useAuth";
@@ -77,6 +78,9 @@ function Router() {
 
       {/* Domain agent explorer */}
       <Route path="/domain/:name" component={DomainAgents} />
+
+      {/* Specialist Agents */}
+      <Route path="/agents/force-majeure" component={ForceMajeureAgent} />
 
       {/* 100-Hour Turnaround */}
       <Route path="/turnaround" component={TurnaroundHome} />

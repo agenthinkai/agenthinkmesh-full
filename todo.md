@@ -653,3 +653,13 @@
 ## Session: Role card agent count footer
 
 - [x] Move agent count badge to bottom-left footer of each role card on PersonaSelector
+
+## Force Majeure Contract Agent (Lean Build)
+
+- [x] Seed Force Majeure agent in DB under Legal domain
+- [x] Install pdf-parse and mammoth for PDF/DOCX text extraction
+- [x] Build server/forceMajeureRoute.ts with file upload + 4-layer LLM pipeline
+- [x] Build ForceMajeureAgent.tsx two-panel frontend component with RTL support
+- [x] Add PDF export of agent output (jsPDF)
+- [x] Wire route /agents/force-majeure in App.tsx
+- [x] Register in agent catalogue (DB seeded, isBuiltIn=true, domain=Legal)
