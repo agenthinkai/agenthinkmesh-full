@@ -9,6 +9,19 @@ import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import SiteNav from "@/components/SiteNav";
 
+// ETF Launch Studio — shown at top of Finance and GCC Wealth domain Step 2
+const ETF_STUDIO_CARD = {
+  id: -3, // sentinel — not a DB agent
+  agentName: "ETF Launch Studio",
+  description: "AI-powered ETF design and launch workflow for Boursa Kuwait. Shariah screening (AAOIFI Std 21), macro overlay, factor scoring, 10-year backtest, and NAV accounting — in a single guided 5-stage session.",
+  capabilities: JSON.stringify(["etf-design", "shariah-screening", "backtesting", "nav-accounting", "boursa-kuwait"]),
+  tasksCompleted: null,
+  successRate: null,
+  isBuiltIn: true,
+  isSpecialist: true,
+  route: "/agents/etf-studio",
+};
+
 // Game Theory Investment Decision Agent — shown at top of Finance and GCC Wealth domain Step 2
 const GAME_THEORY_CARD = {
   id: -2, // sentinel — not a DB agent
@@ -486,6 +499,23 @@ export default function PersonaSelector() {
                 gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
                 gap: 12,
               }}>
+                {/* ETF Launch Studio specialist card — pinned to top for Finance and GCC Wealth domains */}
+                {(selectedDomain.domain === "Finance" || selectedDomain.domain === "GCC Wealth") && (
+                  <div style={{ position: "relative" }}>
+                    <span style={{
+                      position: "absolute", top: -10, left: 12, zIndex: 1,
+                      fontSize: 9, fontFamily: "monospace", fontWeight: 700,
+                      background: "#C9A84C", color: "#0B1629",
+                      borderRadius: 6, padding: "2px 8px", letterSpacing: 1,
+                    }}>ETF STUDIO · BOURSA KUWAIT</span>
+                    <AgentCard
+                      key="etf-studio"
+                      agent={ETF_STUDIO_CARD as unknown as DomainAgent}
+                      roleColor={roleColor}
+                      onSelect={() => handleAgentClick(ETF_STUDIO_CARD as unknown as DomainAgent & { isSpecialist: boolean; route: string })}
+                    />
+                  </div>
+                )}
                 {/* Game Theory specialist card — pinned to top for Finance and GCC Wealth domains */}
                 {(selectedDomain.domain === "Finance" || selectedDomain.domain === "GCC Wealth") && (
                   <div style={{ position: "relative" }}>

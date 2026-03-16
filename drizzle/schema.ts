@@ -281,3 +281,35 @@ export const userProfiles = mysqlTable("user_profiles", {
 
 export type UserProfile = typeof userProfiles.$inferSelect;
 export type InsertUserProfile = typeof userProfiles.$inferInsert;
+// ── ETF Partner CRM ───────────────────────────────────────────────────────────
+export const partnerInstitutions = mysqlTable("partner_institutions", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  type: mysqlEnum("type", ["asset_manager", "custodian", "exchange", "regulator", "index_provider", "law_firm", "auditor", "other"]).notNull().default("other"),
+  country: varchar("country", { length: 64 }).notNull().default("Kuwait"),
+  contactName: varchar("contactName", { length: 128 }),
+  contactEmail: varchar("contactEmail", { length: 320 }),
+  website: varchar("website", { length: 256 }),
+  notes: text("notes"),
+  status: mysqlEnum("status", ["prospect", "contacted", "in_discussion", "partner", "declined"]).notNull().default("prospect"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type PartnerInstitution = typeof partnerInstitutions.$inferSelect;
+export type InsertPartnerInstitution = typeof partnerInstitutions.$inferInsert;
+
+export const partnershipRequests = mysqlTable("partnership_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  institutionName: varchar("institutionName", { length: 128 }).notNull(),
+  contactName: varchar("contactName", { length: 128 }).notNull(),
+  contactEmail: varchar("contactEmail", { length: 320 }).notNull(),
+  role: varchar("role", { length: 128 }),
+  message: text("message"),
+  partnerType: mysqlEnum("partnerType", ["asset_manager", "custodian", "exchange", "regulator", "index_provider", "law_firm", "auditor", "other"]).notNull().default("other"),
+  notified: boolean("notified").notNull().default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type PartnershipRequest = typeof partnershipRequests.$inferSelect;
+export type InsertPartnershipRequest = typeof partnershipRequests.$inferInsert;

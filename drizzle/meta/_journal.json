@@ -127,6 +127,13 @@
       "when": 1773588456026,
       "tag": "0017_living_nekra",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "5",
+      "when": 1773650863577,
+      "tag": "0018_stale_captain_midlands",
+      "breakpoints": true
     }
   ]
 }

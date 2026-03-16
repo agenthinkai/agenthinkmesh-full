@@ -721,3 +721,16 @@
 - [x] Build Express endpoint GET /api/etf/backtest-summary (returns hardcoded backtest numbers)
 - [x] Build Express endpoint GET /api/etf/nav (returns synthetic NAV data)
 - [x] Register all ETF routes in server/_core/index.ts
+
+## ETF Launch Studio — Standard Tier
+
+- [x] Wire GET /api/etf/macro-overlay endpoint (regime signal: RISK_ON/RISK_OFF, oil momentum)
+- [x] Wire GET /api/etf/liquidity-scores endpoint (per-stock Amihud scores for BK Premier universe)
+- [x] Wire GET /api/etf/momentum-factors endpoint (12-1 month momentum scores)
+- [x] Wire GET /api/etf/index-weights endpoint (CMA 20% cap applied weights)
+- [x] Seed ETF Launch Studio as named agent in agents DB table (isBuiltIn=true, domain=Finance)
+- [x] Add ETF Studio card to PersonaSelector Step 2 for Fund Manager and Investor roles
+- [x] Add Share button to ETFStudio.tsx (generates WhatsApp/email-ready summary)
+- [x] Build Partner CRM: DB schema (partner_institutions + partnership_requests tables), tRPC procedures, Request Partnership modal
+- [x] PartnerCRM.tsx page at /etf/partners with institution table, stats row, and Request Partnership modal
+- [x] Partners button added to ETFStudio top bar

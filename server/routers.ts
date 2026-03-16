@@ -5,7 +5,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
-import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews, turnaroundSessions, roles } from "../drizzle/schema";
+import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews, turnaroundSessions, roles, partnerInstitutions, partnershipRequests } from "../drizzle/schema";
 import { turnaroundRouter } from "./routers/turnaround";
 import { identityRouter } from "./routers/identity";
 import { storagePut } from "./storage";
@@ -2306,8 +2306,61 @@ If a section is not applicable (e.g. no financial data provided), set it to null
       }),
   }),
 
-  turnaround: turnaroundRouter,
+   turnaround: turnaroundRouter,
   identity: identityRouter,
 
+  // ── ETF Partner CRM ────────────────────────────────────────────────────────
+  partner: router({
+    // List all partner institutions (admin or public read)
+    list: publicProcedure.query(async () => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      return db.select().from(partnerInstitutions).orderBy(desc(partnerInstitutions.createdAt));
+    }),
+
+    // Submit a partnership request (public — no auth required)
+    requestPartnership: publicProcedure
+      .input((input: unknown) => {
+        const i = input as {
+          institutionName: string;
+          contactName: string;
+          contactEmail: string;
+          role?: string;
+          message?: string;
+          partnerType?: string;
+        };
+        if (!i.institutionName || !i.contactName || !i.contactEmail) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "institutionName, contactName, and contactEmail are required" });
+        }
+        return i;
+      })
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        await db.insert(partnershipRequests).values({
+          institutionName: input.institutionName,
+          contactName: input.contactName,
+          contactEmail: input.contactEmail,
+          role: input.role ?? null,
+          message: input.message ?? null,
+          partnerType: (input.partnerType as typeof partnershipRequests.$inferInsert["partnerType"]) ?? "other",
+          notified: false,
+        });
+        // Notify owner
+        await notifyOwner({
+          title: `New ETF Partnership Request — ${input.institutionName}`,
+          content: `From: ${input.contactName} (${input.contactEmail})\nRole: ${input.role ?? "—"}\nType: ${input.partnerType ?? "other"}\n\n${input.message ?? "No message provided."}`,
+        });
+        return { success: true };
+      }),
+
+    // List partnership requests (protected — owner only)
+    listRequests: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      return db.select().from(partnershipRequests).orderBy(desc(partnershipRequests.createdAt));
+    }),
+  }),
 });
 export type AppRouter = typeof appRouter;

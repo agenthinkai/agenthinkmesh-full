@@ -1,0 +1,9 @@
+{
+  "query": "INSERT INTO agents (\n  ownerId, agentName, developerName, description, capabilities, endpointUrl,\n  averageLatency, pricingModel, status, connectionTested, domain,\n  isBuiltIn, isCustom, version, createdAt, updatedAt\n) VALUES (\n  1,\n  'ETF Launch Studio',\n  'AgenThinkMesh Platform',\n  'AI-powered ETF design and launch workflow for Boursa Kuwait. Covers fund configuration, Shariah screening (AAOIFI Std 21), macro overlay, factor scoring, 10-year walk-forward backtest, and NAV accounting — in a single guided 5-stage session.',\n  '[\"etf-design\",\"shariah-screening\",\"backtesting\",\"nav-accounting\",\"factor-analysis\",\"boursa-kuwait\",\"index-construction\"]',\n  '/agents/etf-studio',\n  800,\n  'free',\n  'active',\n  TRUE,\n  'Finance',\n  TRUE,\n  FALSE,\n  '1.0.0',\n  NOW(),\n  NOW()\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute INSERT INTO agents (\n  ownerId, agentName, developerName, description, capabilities, endpointUrl,\n  averageLatency, pricingModel, status, connectionTested, domain,\n  isBuiltIn, isCustom, version, createdAt, updatedAt\n) VALUES (\n  1,\n  'ETF Launch Studio',\n  'AgenThinkMesh Platform',\n  'AI-powered ETF design and launch workflow for Boursa Kuwait. Covers fund configuration, Shariah screening (AAOIFI Std 21), macro overlay, factor scoring, 10-year walk-forward backtest, and NAV accounting — in a single guided 5-stage session.',\n  '[\"etf-design\",\"shariah-screening\",\"backtesting\",\"nav-accounting\",\"factor-analysis\",\"boursa-kuwait\",\"index-construction\"]',\n  '/agents/etf-studio',\n  800,\n  'free',\n  'active',\n  TRUE,\n  'Finance',\n  TRUE,\n  FALSE,\n  '1.0.0',\n  NOW(),\n  NOW()\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1547
+}

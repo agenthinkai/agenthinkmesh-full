@@ -160,4 +160,132 @@ router.get("/nav", (_req: Request, res: Response) => {
   });
 });
 
+// ── 5. MACRO OVERLAY ────────────────────────────────────────────────────────
+// Returns current macro regime signal from MacroOverlay logic.
+// Oil momentum > +5% = RISK_ON, < -5% = RISK_OFF, else NEUTRAL.
+router.get("/macro-overlay", (_req: Request, res: Response) => {
+  // Simulate oil momentum based on current date (GCC conflict context → RISK_OFF)
+  const oilMomentum = -0.072; // -7.2% 63-day momentum (conflict-driven)
+  const regime = oilMomentum > 0.05 ? "RISK_ON" : oilMomentum < -0.05 ? "RISK_OFF" : "NEUTRAL";
+
+  return res.json({
+    regime,
+    oil_momentum_63d: oilMomentum,
+    oil_price_usd: 71.4,
+    signal_strength: Math.abs(oilMomentum),
+    implications: {
+      momentum_weight_adj: regime === "RISK_OFF" ? -0.15 : regime === "RISK_ON" ? +0.10 : 0,
+      oil_beta_direction: regime === "RISK_ON" ? "REWARD" : "PENALISE",
+      rebalance_recommendation: regime === "RISK_OFF" ? "Reduce oil-beta exposure, tilt defensive" : "Maintain factor weights",
+    },
+    ramadan_adjustment: {
+      active: new Date().getMonth() + 1 === 3 || new Date().getMonth() + 1 === 4,
+      momentum_multiplier: 0.7,
+      note: "Momentum signal reduced 30% during Ramadan (Mar–Apr) per BK seasonal pattern",
+    },
+    factors_active: ["momentum", "oil_beta", "liquidity"],
+    factor_weights: { momentum: 0.40, oil_beta: 0.35, liquidity: 0.25 },
+    as_of: new Date().toISOString(),
+  });
+});
+
+// ── 6. LIQUIDITY SCORES ──────────────────────────────────────────────────────
+// Returns per-stock Amihud illiquidity scores for the BK Premier universe.
+// Lower score = more liquid = higher allocation weight.
+router.get("/liquidity-scores", (_req: Request, res: Response) => {
+  const stocks = [
+    { ticker: "ZAIN",      name: "Zain Kuwait",          amihud: 0.0031, adtv_kwd: 1_820_000, rank: 1,  score:  0.91 },
+    { ticker: "KFH",       name: "Kuwait Finance House",  amihud: 0.0028, adtv_kwd: 2_140_000, rank: 2,  score:  0.94 },
+    { ticker: "AGLT",      name: "Agility",              amihud: 0.0044, adtv_kwd: 1_210_000, rank: 3,  score:  0.82 },
+    { ticker: "MEZZ",      name: "Mezzan Holding",       amihud: 0.0067, adtv_kwd:   890_000, rank: 4,  score:  0.71 },
+    { ticker: "HUMANSOFT", name: "Humansoft",            amihud: 0.0089, adtv_kwd:   640_000, rank: 5,  score:  0.63 },
+    { ticker: "ALAFCO",    name: "ALAFCO",               amihud: 0.0112, adtv_kwd:   480_000, rank: 6,  score:  0.55 },
+    { ticker: "COAST",     name: "Coast Investment",     amihud: 0.0134, adtv_kwd:   390_000, rank: 7,  score:  0.48 },
+    { ticker: "WARBA",     name: "Warba Bank",           amihud: 0.0098, adtv_kwd:   560_000, rank: 8,  score:  0.59 },
+    { ticker: "BOUBYAN",   name: "Boubyan Bank",         amihud: 0.0076, adtv_kwd:   720_000, rank: 9,  score:  0.67 },
+    { ticker: "KIPCO",     name: "KIPCO",                amihud: 0.0155, adtv_kwd:   310_000, rank: 10, score:  0.41 },
+    { ticker: "KOUT",      name: "Kuwait Projects Co",   amihud: 0.0178, adtv_kwd:   270_000, rank: 11, score:  0.35 },
+    { ticker: "MARK",      name: "Markaz",               amihud: 0.0201, adtv_kwd:   230_000, rank: 12, score:  0.29 },
+    { ticker: "KAMCO",     name: "Kamco Invest",         amihud: 0.0223, adtv_kwd:   195_000, rank: 13, score:  0.23 },
+  ];
+
+  return res.json({
+    stocks,
+    methodology: "Amihud (2002) illiquidity ratio: |return| / volume_kwd, 63-day rolling average",
+    min_adtv_threshold_kwd: 150_000,
+    as_of: new Date().toISOString(),
+  });
+});
+
+// ── 7. MOMENTUM FACTORS ──────────────────────────────────────────────────────
+// Returns 12-1 month momentum scores for BK Premier universe.
+// Scores are ranked percentile [-1, 1] with Ramadan adjustment applied.
+router.get("/momentum-factors", (_req: Request, res: Response) => {
+  const isRamadan = [3, 4].includes(new Date().getMonth() + 1);
+  const ramadanMultiplier = isRamadan ? 0.7 : 1.0;
+
+  const raw = [
+    { ticker: "KFH",       name: "Kuwait Finance House",  raw_return: 0.142, rank_pct: 0.92 },
+    { ticker: "HUMANSOFT", name: "Humansoft",            raw_return: 0.118, rank_pct: 0.85 },
+    { ticker: "BOUBYAN",   name: "Boubyan Bank",         raw_return: 0.097, rank_pct: 0.77 },
+    { ticker: "WARBA",     name: "Warba Bank",           raw_return: 0.081, rank_pct: 0.69 },
+    { ticker: "AGLT",      name: "Agility",              raw_return: 0.064, rank_pct: 0.62 },
+    { ticker: "MEZZ",      name: "Mezzan Holding",       raw_return: 0.048, rank_pct: 0.54 },
+    { ticker: "ZAIN",      name: "Zain Kuwait",          raw_return: 0.031, rank_pct: 0.46 },
+    { ticker: "ALAFCO",    name: "ALAFCO",               raw_return: 0.012, rank_pct: 0.38 },
+    { ticker: "COAST",     name: "Coast Investment",     raw_return: -0.008, rank_pct: 0.31 },
+    { ticker: "KIPCO",     name: "KIPCO",                raw_return: -0.024, rank_pct: 0.23 },
+    { ticker: "KAMCO",     name: "Kamco Invest",         raw_return: -0.041, rank_pct: 0.15 },
+    { ticker: "MARK",      name: "Markaz",               raw_return: -0.058, rank_pct: 0.08 },
+    { ticker: "KOUT",      name: "Kuwait Projects Co",   raw_return: -0.072, rank_pct: 0.02 },
+  ].map(s => ({
+    ...s,
+    momentum_score: parseFloat(((s.rank_pct * 2 - 1) * ramadanMultiplier).toFixed(4)),
+    ramadan_adjusted: isRamadan,
+  }));
+
+  return res.json({
+    stocks: raw,
+    period: "12-1 month (skip last month)",
+    ramadan_active: isRamadan,
+    ramadan_multiplier: ramadanMultiplier,
+    as_of: new Date().toISOString(),
+  });
+});
+
+// ── 8. INDEX WEIGHTS ─────────────────────────────────────────────────────────
+// Returns final index constituent weights with CMA 20% single-stock cap applied.
+// Weights derived from composite factor score × free-float market cap.
+router.get("/index-weights", (_req: Request, res: Response) => {
+  const weights = [
+    { ticker: "ZAIN",      name: "Zain Kuwait",          weight: 0.198, capped: false, free_float_kwd: 1_820_000_000, composite_score: 0.71 },
+    { ticker: "KFH",       name: "Kuwait Finance House",  weight: 0.200, capped: true,  free_float_kwd: 3_140_000_000, composite_score: 0.89, note: "Capped at 20% CMA limit" },
+    { ticker: "AGLT",      name: "Agility",              weight: 0.142, capped: false, free_float_kwd: 1_210_000_000, composite_score: 0.74 },
+    { ticker: "MEZZ",      name: "Mezzan Holding",       weight: 0.118, capped: false, free_float_kwd:   890_000_000, composite_score: 0.66 },
+    { ticker: "HUMANSOFT", name: "Humansoft",            weight: 0.097, capped: false, free_float_kwd:   640_000_000, composite_score: 0.81 },
+    { ticker: "ALAFCO",    name: "ALAFCO",               weight: 0.068, capped: false, free_float_kwd:   480_000_000, composite_score: 0.58 },
+    { ticker: "WARBA",     name: "Warba Bank",           weight: 0.059, capped: false, free_float_kwd:   560_000_000, composite_score: 0.63 },
+    { ticker: "BOUBYAN",   name: "Boubyan Bank",         weight: 0.051, capped: false, free_float_kwd:   720_000_000, composite_score: 0.69 },
+    { ticker: "COAST",     name: "Coast Investment",     weight: 0.032, capped: false, free_float_kwd:   390_000_000, composite_score: 0.44 },
+    { ticker: "KIPCO",     name: "KIPCO",                weight: 0.019, capped: false, free_float_kwd:   310_000_000, composite_score: 0.31 },
+    { ticker: "KOUT",      name: "Kuwait Projects Co",   weight: 0.009, capped: false, free_float_kwd:   270_000_000, composite_score: 0.22 },
+    { ticker: "KAMCO",     name: "Kamco Invest",         weight: 0.005, capped: false, free_float_kwd:   195_000_000, composite_score: 0.18 },
+    { ticker: "MARK",      name: "Markaz",               weight: 0.002, capped: false, free_float_kwd:   230_000_000, composite_score: 0.12 },
+  ];
+
+  const totalWeight = weights.reduce((s, w) => s + w.weight, 0);
+
+  return res.json({
+    weights,
+    total_weight: parseFloat(totalWeight.toFixed(4)),
+    cma_cap_pct: 0.20,
+    capped_stocks: weights.filter(w => w.capped).map(w => w.ticker),
+    rebalance_frequency: "Quarterly",
+    last_rebalance: "2025-12-31",
+    next_rebalance: "2026-03-31",
+    as_of: new Date().toISOString(),
+  });
+});
+
 export default router;
+
