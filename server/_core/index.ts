@@ -10,6 +10,7 @@ import { serveStatic, setupVite } from "./vite";
 import { agentRouter } from "../agentRoutes";
 import { forceMajeureRouter } from "../forceMajeureRoute";
 import { gameTheoryRouter } from "../gameTheoryRoute";
+import etfRouter from "../etfRoute";
 import { startHealthCheckJob } from "../jobs/healthCheck";
 
 function isPortAvailable(port: number): Promise<boolean> {
@@ -43,6 +44,8 @@ async function startServer() {
   app.use("/api/agents/force-majeure", forceMajeureRouter);
   // Game Theory Investment Decision Agent
   app.use("/api/agents/game-theory", gameTheoryRouter);
+  // ETF Launch Studio endpoints (claude-proxy + data endpoints)
+  app.use("/api/etf", etfRouter);
   // Embedded specialist agent endpoints
   app.use("/api/agents", agentRouter);
   // tRPC API

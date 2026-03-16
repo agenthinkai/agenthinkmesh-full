@@ -338,9 +338,49 @@ export default function DomainAgents() {
           <div className="max-w-5xl mx-auto">
             <div className="flex items-center gap-2 mb-4">
               <h2 className="text-sm font-semibold font-mono uppercase tracking-widest" style={{ color: domainColor }}>Specialist Agents</h2>
-              <span className="text-xs text-white/30 font-mono">(1)</span>
+              <span className="text-xs text-white/30 font-mono">(2)</span>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-2">
+
+              {/* ETF Launch Studio card */}
+              <Link href="/agents/etf-studio">
+                <div
+                  className="group relative p-5 rounded-2xl border transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+                  style={{ background: "rgba(201,168,76,0.06)", borderColor: "#C9A84C55" }}
+                >
+                  {/* NEW badge */}
+                  <div className="absolute top-3 right-3">
+                    <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded-full" style={{ background: "#C9A84C", color: "#0A1628" }}>NEW</span>
+                  </div>
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border" style={{ color: "#C9A84C", borderColor: "#C9A84C40", background: "#C9A84C12" }}>
+                      Built-in
+                    </span>
+                    <span className="flex items-center gap-1 text-[10px] font-mono text-emerald-400">
+                      <CheckCircle2 className="w-3 h-3" /> Verified
+                    </span>
+                    <span className="text-[10px] font-mono px-2 py-0.5 rounded-full border border-yellow-500/40 bg-yellow-500/10 text-yellow-300">
+                      Boursa Kuwait
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-sm text-white mb-1.5">ETF Launch Studio</h3>
+                  <p className="text-xs text-white/50 leading-relaxed mb-3 line-clamp-2">
+                    Kuwait's first AI-managed ETF technology. 5-stage guided setup for CMA-licensed institutions — from licence to live fund.
+                  </p>
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {["5 stages", "7 agents", "7 ML models", "Bilingual AR/EN"].map((cap) => (
+                      <span key={cap} className="text-[10px] px-2 py-0.5 rounded-full bg-white/5 text-white/40 font-mono">{cap}</span>
+                    ))}
+                  </div>
+                  <div
+                    className="flex items-center justify-center gap-2 w-full py-2 rounded-xl text-xs font-semibold transition-all"
+                    style={{ background: "linear-gradient(135deg, #C9A84CCC, #C9A84C66)", color: "#0A1628" }}
+                  >
+                    <Zap className="w-3.5 h-3.5" /> Launch Studio
+                  </div>
+                </div>
+              </Link>
+
               <Link href="/agents/game-theory">
                 <div
                   className="group relative p-5 rounded-2xl border transition-all duration-300 hover:-translate-y-1 cursor-pointer"

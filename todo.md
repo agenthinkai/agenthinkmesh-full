@@ -708,3 +708,16 @@
 ## Landing Page Total Agent Count
 
 - [x] Align agent.count procedure to count all agents (no status filter) so registry shows same total as landing page
+
+## ETF Launch Studio Integration (Lean)
+
+- [x] Upload AgenThinkMesh_ETF_Studio.html to CDN
+- [x] Modify HTML to proxy Claude calls through server instead of direct browser calls
+- [x] Create ETFStudio.tsx page with full-screen iframe and back button
+- [x] Add ETF Launch Studio card to Finance domain page (DomainAgents.tsx)
+- [x] Add /agents/etf-studio route to App.tsx
+- [x] Build Express endpoint POST /api/etf/claude-proxy (fixes API key exposure)
+- [x] Build Express endpoint POST /api/etf/shariah-screen (synthetic data from Python logic)
+- [x] Build Express endpoint GET /api/etf/backtest-summary (returns hardcoded backtest numbers)
+- [x] Build Express endpoint GET /api/etf/nav (returns synthetic NAV data)
+- [x] Register all ETF routes in server/_core/index.ts

@@ -23,6 +23,7 @@ import TurnaroundReport from "./pages/TurnaroundReport";
 import PersonaSelector from "./pages/PersonaSelector";
 import ForceMajeureAgent from "./pages/ForceMajeureAgent";
 import GameTheoryAgent from "./pages/GameTheoryAgent";
+import ETFStudio from "./pages/ETFStudio";
 import DomainAgents from "./pages/DomainAgents";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./_core/hooks/useAuth";
@@ -83,6 +84,7 @@ function Router() {
       {/* Specialist Agents */}
       <Route path="/agents/force-majeure" component={ForceMajeureAgent} />
       <Route path="/agents/game-theory" component={GameTheoryAgent} />
+      <Route path="/agents/etf-studio" component={ETFStudio} />
 
       {/* 100-Hour Turnaround */}
       <Route path="/turnaround" component={TurnaroundHome} />
