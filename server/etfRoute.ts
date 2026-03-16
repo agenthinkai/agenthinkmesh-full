@@ -10,13 +10,14 @@
 
 import { Router, Request, Response } from "express";
 import { invokeLLM } from "./_core/llm";
+import { llmRateLimitMiddleware, recordLlmUsage } from "./llmRateLimit";
 
 const router = Router();
 
 // ── 1. CLAUDE PROXY ──────────────────────────────────────────────────────────
 // Receives { system, messages } from the HTML iframe and calls the LLM server-side.
 // This prevents the Anthropic API key from ever being exposed in the browser.
-router.post("/claude-proxy", async (req: Request, res: Response) => {
+router.post("/claude-proxy", llmRateLimitMiddleware, async (req: Request & { llmTokenCap?: number; llmUsageContext?: any }, res: Response) => {
   try {
     const { system, messages } = req.body as {
       system: string;
@@ -27,6 +28,8 @@ router.post("/claude-proxy", async (req: Request, res: Response) => {
       return res.status(400).json({ error: "Missing system or messages" });
     }
 
+    const tokenCap = Math.min(req.llmTokenCap ?? 2000, 2000);
+
     const response = await invokeLLM({
       messages: [
         { role: "system", content: system },
@@ -35,11 +38,16 @@ router.post("/claude-proxy", async (req: Request, res: Response) => {
           content: m.content,
         })),
       ],
+      max_tokens: tokenCap,
     });
 
     const text =
       response?.choices?.[0]?.message?.content ??
       "I encountered an error. Please try again.";
+
+    // Record usage
+    const tokensUsed = (response as any).usage?.total_tokens ?? tokenCap;
+    if (req.llmUsageContext) await recordLlmUsage(req.llmUsageContext, tokensUsed);
 
     return res.json({ text });
   } catch (err: unknown) {

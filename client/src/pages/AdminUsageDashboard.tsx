@@ -1,0 +1,347 @@
+import { useState, useMemo } from "react";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { useLocation } from "wouter";
+import SiteNav from "@/components/SiteNav";
+
+// ── Helpers ────────────────────────────────────────────────────────────────────
+function fmtNumber(n: number) {
+  return n.toLocaleString();
+}
+
+function ProgressBar({ value, max, color }: { value: number; max: number; color: string }) {
+  const pct = Math.min(100, Math.round((value / max) * 100));
+  return (
+    <div className="w-full bg-white/10 rounded-full h-2 overflow-hidden">
+      <div
+        className={`h-2 rounded-full transition-all ${color}`}
+        style={{ width: `${pct}%` }}
+      />
+    </div>
+  );
+}
+
+const ENDPOINT_COLORS: Record<string, string> = {
+  "mesh-runAgentTask": "bg-teal-400",
+  "game-theory": "bg-blue-400",
+  "force-majeure": "bg-amber-400",
+  "etf-claude-proxy": "bg-purple-400",
+};
+
+function endpointColor(ep: string) {
+  return ENDPOINT_COLORS[ep] ?? "bg-slate-400";
+}
+
+function endpointLabel(ep: string) {
+  const map: Record<string, string> = {
+    "mesh-runAgentTask": "Mesh Agent",
+    "game-theory": "Game Theory",
+    "force-majeure": "Force Majeure",
+    "etf-claude-proxy": "ETF Studio",
+  };
+  return map[ep] ?? ep;
+}
+
+// ── Main component ─────────────────────────────────────────────────────────────
+export default function AdminUsageDashboard() {
+  const { user, loading: authLoading } = useAuth();
+  const [days, setDays] = useState(30);
+
+  const { data: today, isLoading: todayLoading } = trpc.adminUsage.todaySummary.useQuery(undefined, {
+    enabled: user?.role === "admin",
+    refetchInterval: 60_000,
+  });
+
+  const { data: dailyRows, isLoading: dailyLoading } = trpc.adminUsage.dailyStats.useQuery(
+    { days },
+    { enabled: user?.role === "admin" }
+  );
+
+  const { data: userRows, isLoading: userLoading } = trpc.adminUsage.userStats.useQuery(
+    { days },
+    { enabled: user?.role === "admin" }
+  );
+
+  const { data: allUsers, isLoading: usersLoading } = trpc.adminUsage.allUsers.useQuery(undefined, {
+    enabled: user?.role === "admin",
+  });
+
+  const { data: highDemand, isLoading: hdLoading } = trpc.adminUsage.highDemandEvents.useQuery(
+    { limit: 20 },
+    { enabled: user?.role === "admin" }
+  );
+
+  // Aggregate daily rows into per-date totals for the chart
+  const chartData = useMemo(() => {
+    if (!dailyRows) return [];
+    const byDate: Record<string, number> = {};
+    for (const row of dailyRows) {
+      byDate[row.date] = (byDate[row.date] ?? 0) + Number(row.totalTokens);
+    }
+    return Object.entries(byDate)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .slice(-30);
+  }, [dailyRows]);
+
+  const maxDayTokens = useMemo(() => Math.max(...chartData.map(([, v]) => v), 1), [chartData]);
+
+  // Endpoint breakdown for today
+  const endpointBreakdown = useMemo(() => {
+    if (!dailyRows) return [];
+    const today2 = new Date().toISOString().slice(0, 10);
+    const todayRows = dailyRows.filter((r) => r.date === today2);
+    return todayRows.sort((a, b) => Number(b.totalTokens) - Number(a.totalTokens));
+  }, [dailyRows]);
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-[#0a0e1a] flex items-center justify-center">
+        <div className="text-slate-400 text-sm">Loading…</div>
+      </div>
+    );
+  }
+
+  const [, setLocation] = useLocation();
+  if (!user) { setLocation("/"); return null; }
+  if (user.role !== "admin") {
+    return (
+      <div className="min-h-screen bg-[#0a0e1a] flex items-center justify-center">
+        <div className="text-red-400 text-sm">Access restricted to administrators.</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[#0a0e1a] text-slate-100">
+      <SiteNav />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-1">
+            <span className="text-xs font-mono text-teal-400 bg-teal-400/10 border border-teal-400/20 px-2 py-0.5 rounded">ADMIN</span>
+            <span className="text-xs text-slate-500">Usage &amp; Rate Limits</span>
+          </div>
+          <h1 className="text-2xl font-bold text-white">Platform Usage Dashboard</h1>
+          <p className="text-slate-400 text-sm mt-1">
+            Daily token consumption, per-user activity, and rate limit events across all LLM endpoints.
+          </p>
+        </div>
+
+        {/* Today's KPI cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
+          {[
+            {
+              label: "Tokens Today",
+              value: todayLoading ? "—" : fmtNumber(today?.totalTokens ?? 0),
+              sub: `of ${fmtNumber(50000)} daily budget`,
+              accent: "text-teal-400",
+            },
+            {
+              label: "Requests Today",
+              value: todayLoading ? "—" : fmtNumber(today?.requestCount ?? 0),
+              sub: "across all endpoints",
+              accent: "text-blue-400",
+            },
+            {
+              label: "Budget Used",
+              value: todayLoading ? "—" : `${today?.percentUsed ?? 0}%`,
+              sub: today && today.percentUsed >= 80 ? "⚠ Near limit" : "within budget",
+              accent: (today?.percentUsed ?? 0) >= 80 ? "text-amber-400" : "text-green-400",
+            },
+            {
+              label: "Blocked Requests",
+              value: todayLoading ? "—" : fmtNumber(today?.blockedRequests ?? 0),
+              sub: "high-demand events today",
+              accent: "text-red-400",
+            },
+          ].map((card) => (
+            <div key={card.label} className="bg-white/5 border border-white/10 rounded-xl p-4">
+              <div className="text-xs text-slate-500 mb-1">{card.label}</div>
+              <div className={`text-2xl font-bold ${card.accent}`}>{card.value}</div>
+              <div className="text-xs text-slate-500 mt-0.5">{card.sub}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Budget progress bar */}
+        {today && (
+          <div className="bg-white/5 border border-white/10 rounded-xl p-4 mb-8">
+            <div className="flex justify-between text-xs text-slate-400 mb-2">
+              <span>Daily Token Budget</span>
+              <span>{fmtNumber(today.totalTokens)} / {fmtNumber(today.tokenBudget)} tokens</span>
+            </div>
+            <ProgressBar
+              value={today.totalTokens}
+              max={today.tokenBudget}
+              color={today.percentUsed >= 80 ? "bg-amber-400" : "bg-teal-400"}
+            />
+          </div>
+        )}
+
+        {/* Endpoint breakdown today */}
+        {endpointBreakdown.length > 0 && (
+          <div className="bg-white/5 border border-white/10 rounded-xl p-5 mb-8">
+            <h2 className="text-sm font-semibold text-white mb-4">Today by Endpoint</h2>
+            <div className="space-y-3">
+              {endpointBreakdown.map((row) => (
+                <div key={row.endpoint} className="flex items-center gap-3">
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${endpointColor(row.endpoint)}`} />
+                  <div className="w-36 text-xs text-slate-300 truncate">{endpointLabel(row.endpoint)}</div>
+                  <div className="flex-1">
+                    <ProgressBar
+                      value={Number(row.totalTokens)}
+                      max={today?.tokenBudget ?? 50000}
+                      color={endpointColor(row.endpoint)}
+                    />
+                  </div>
+                  <div className="text-xs text-slate-400 w-24 text-right">
+                    {fmtNumber(Number(row.totalTokens))} tk · {Number(row.requestCount)} req
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* 30-day bar chart */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-5 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-white">Daily Token Consumption</h2>
+            <select
+              value={days}
+              onChange={(e) => setDays(Number(e.target.value))}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300"
+            >
+              <option value={7}>Last 7 days</option>
+              <option value={14}>Last 14 days</option>
+              <option value={30}>Last 30 days</option>
+              <option value={60}>Last 60 days</option>
+            </select>
+          </div>
+          {dailyLoading ? (
+            <div className="h-32 flex items-center justify-center text-slate-500 text-xs">Loading…</div>
+          ) : chartData.length === 0 ? (
+            <div className="h-32 flex items-center justify-center text-slate-500 text-xs">No data yet</div>
+          ) : (
+            <div className="flex items-end gap-1 h-32 overflow-x-auto pb-1">
+              {chartData.map(([date, tokens]) => {
+                const pct = Math.max(4, Math.round((tokens / maxDayTokens) * 100));
+                return (
+                  <div key={date} className="flex flex-col items-center gap-1 flex-shrink-0" style={{ minWidth: "24px" }}>
+                    <div
+                      className="w-5 bg-teal-400/70 rounded-t hover:bg-teal-400 transition-colors cursor-default"
+                      style={{ height: `${pct}%` }}
+                      title={`${date}: ${fmtNumber(tokens)} tokens`}
+                    />
+                    <div className="text-[9px] text-slate-600 rotate-45 origin-left whitespace-nowrap">
+                      {date.slice(5)}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Per-user stats */}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+            <h2 className="text-sm font-semibold text-white mb-4">Top Users ({days}d)</h2>
+            {userLoading ? (
+              <div className="text-slate-500 text-xs">Loading…</div>
+            ) : !userRows || userRows.length === 0 ? (
+              <div className="text-slate-500 text-xs">No usage data yet</div>
+            ) : (
+              <div className="space-y-2">
+                {userRows.slice(0, 10).map((row, i) => (
+                  <div key={i} className="flex items-center gap-3 text-xs">
+                    <div className="w-5 h-5 rounded-full bg-teal-400/20 flex items-center justify-center text-teal-400 font-bold flex-shrink-0">
+                      {i + 1}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-slate-200 truncate">{row.userName ?? "Anonymous"}</div>
+                      <div className="text-slate-500 truncate">{row.userEmail ?? row.userId ?? "—"}</div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-teal-400 font-mono">{fmtNumber(Number(row.totalTokens))}</div>
+                      <div className="text-slate-500">{Number(row.requestCount)} req</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* High demand events */}
+          <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+            <h2 className="text-sm font-semibold text-white mb-4">High-Demand Events</h2>
+            {hdLoading ? (
+              <div className="text-slate-500 text-xs">Loading…</div>
+            ) : !highDemand || highDemand.length === 0 ? (
+              <div className="text-slate-500 text-xs">No high-demand events recorded</div>
+            ) : (
+              <div className="space-y-2">
+                {highDemand.map((ev) => (
+                  <div key={ev.id} className="flex items-start gap-3 text-xs border-b border-white/5 pb-2">
+                    <div className="w-2 h-2 rounded-full bg-red-400 mt-1 flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-slate-200 truncate">{ev.userEmail ?? ev.ipAddress}</div>
+                      <div className="text-slate-500">{ev.requestDate} · {endpointLabel(ev.endpoint)}</div>
+                    </div>
+                    <div className="text-red-400 font-mono flex-shrink-0">
+                      {fmtNumber(ev.dailyTotalAtTime)} tk
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* All registered users */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-white mb-4">Registered Users</h2>
+          {usersLoading ? (
+            <div className="text-slate-500 text-xs">Loading…</div>
+          ) : !allUsers || allUsers.length === 0 ? (
+            <div className="text-slate-500 text-xs">No users found</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="text-slate-500 border-b border-white/10">
+                    <th className="text-left py-2 pr-4">Name</th>
+                    <th className="text-left py-2 pr-4">Email</th>
+                    <th className="text-left py-2 pr-4">Role</th>
+                    <th className="text-left py-2 pr-4">Joined</th>
+                    <th className="text-left py-2">Last Sign-in</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {allUsers.map((u) => (
+                    <tr key={u.id} className="border-b border-white/5 hover:bg-white/5">
+                      <td className="py-2 pr-4 text-slate-200">{u.name ?? "—"}</td>
+                      <td className="py-2 pr-4 text-slate-400">{u.email ?? "—"}</td>
+                      <td className="py-2 pr-4">
+                        <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${u.role === "admin" ? "bg-amber-400/20 text-amber-400" : "bg-slate-700 text-slate-400"}`}>
+                          {u.role}
+                        </span>
+                      </td>
+                      <td className="py-2 pr-4 text-slate-500">
+                        {new Date(u.createdAt).toLocaleDateString()}
+                      </td>
+                      <td className="py-2 text-slate-500">
+                        {new Date(u.lastSignedIn).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -7,6 +7,7 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
 import { invokeLLM } from "./_core/llm";
+import { llmRateLimitMiddleware, recordLlmUsage } from "./llmRateLimit";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 16 * 1024 * 1024 } });
@@ -31,12 +32,13 @@ async function extractTextFromBuffer(buffer: Buffer, mimetype: string): Promise<
 }
 
 // ─── LLM helper ──────────────────────────────────────────────────────────────
-async function llm(system: string, user: string, json = false): Promise<string> {
+async function llm(system: string, user: string, json = false, maxTokens = 4000): Promise<string> {
   const response = await invokeLLM({
     messages: [
       { role: "system", content: system },
       { role: "user", content: user },
     ],
+    max_tokens: maxTokens,
     ...(json ? { response_format: { type: "json_object" } } : {}),
   });
   const content = response.choices[0].message.content;
@@ -44,7 +46,7 @@ async function llm(system: string, user: string, json = false): Promise<string> 
 }
 
 // ─── Route: POST /api/agents/force-majeure ────────────────────────────────────
-router.post("/", upload.single("contract"), async (req: Request, res: Response) => {
+router.post("/", llmRateLimitMiddleware, upload.single("contract"), async (req: Request & { llmTokenCap?: number; llmUsageContext?: any }, res: Response) => {
   try {
     if (!req.file) {
       res.status(400).json({ error: "No contract file uploaded." });
@@ -89,18 +91,25 @@ Current GCC conflict conditions (as of 2025-2026):
 - Attacks on GCC infrastructure: ports (Jebel Ali, Dammam), airports (Dubai, Riyadh), and energy facilities (Saudi Aramco, ADNOC)
 - UAE and Saudi Arabia on elevated security alert; some commercial operations suspended or delayed
 
-Your task: Assess whether these conditions constitute a legal trigger under the exact language of the force majeure clause provided.
+Your task: Assess whether these conditions constitute a legal trigger under the exact language of the force majeure clause provided. Write at institutional legal depth — this assessment will be reviewed by GCC-qualified legal counsel and presented to an investment committee.
 Return a JSON object with these exact fields:
 {
   "verdict": "YES" | "PARTIAL" | "NO",
   "confidence": 0-100,
-  "reasoning": "3-5 sentences of precise legal reasoning referencing the clause language",
-  "triggeringEvents": ["list of specific conflict events that qualify under the clause"],
-  "gaps": ["list of reasons the clause may not fully cover these events, if any"],
+  "reasoning": "6-8 sentences of precise legal reasoning. Reference specific clause language verbatim. Cite the exact conflict events that map to clause triggers. Identify any definitional gaps between the clause language and the events. State the legal standard being applied (UNIDROIT, CISG, or applicable GCC civil code).",
+  "triggeringEvents": ["comprehensive list of specific conflict events that qualify under the clause, with brief explanation for each"],
+  "gaps": ["detailed list of reasons the clause may not fully cover these events — include specific legal arguments the counterparty could raise"],
   "clauseStrength": "STRONG" | "MODERATE" | "WEAK"
 }`,
-      `FORCE MAJEURE CLAUSE:\n${extractedClause}\n\nUSER CONTEXT:\n${userContext}\n\nCONTRACT LANGUAGE: ${contractLang}`,
-      true
+      `FORCE MAJEURE CLAUSE:
+${extractedClause}
+
+USER CONTEXT:
+${userContext}
+
+CONTRACT LANGUAGE: ${contractLang}`,
+      true,
+      2000
     );
 
     let triggerData: {
@@ -173,6 +182,9 @@ Return a JSON object with these exact fields:
         recommendedNextAction: { action: "Engage Legal Counsel", detail: "Retain a GCC-qualified legal team to review the clause and validate the trigger assessment before sending the notification letter." },
       };
     }
+
+    // Record usage (4 LLM calls, estimate ~500 tokens each = 2000 total)
+    if (req.llmUsageContext) await recordLlmUsage(req.llmUsageContext, 2000);
 
     res.json({
       success: true,

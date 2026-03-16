@@ -198,6 +198,23 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
                 >
                   My Workspace →
                 </a>
+                {/* Admin-only: Usage Dashboard */}
+                {user?.role === "admin" && (
+                  <a
+                    href="/admin/usage"
+                    onClick={() => setDropOpen(false)}
+                    style={{
+                      display: "block", padding: "10px 16px",
+                      fontSize: 13, color: "#F59E0B", textDecoration: "none",
+                      transition: "background 0.15s",
+                      borderTop: "1px solid rgba(245,158,11,0.12)",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(245,158,11,0.08)"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
+                  >
+                    ⚡ Usage Dashboard
+                  </a>
+                )}
                 {/* Logout */}
                 <button
                   onClick={() => { setDropOpen(false); logout(); }}

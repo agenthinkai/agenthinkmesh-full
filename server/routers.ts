@@ -5,7 +5,8 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
-import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews, turnaroundSessions, roles, partnerInstitutions, partnershipRequests } from "../drizzle/schema";
+import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews, turnaroundSessions, roles, partnerInstitutions, partnershipRequests, llmUsage, highDemandLog } from "../drizzle/schema";
+import { recordLlmUsage } from "./llmRateLimit";
 import { turnaroundRouter } from "./routers/turnaround";
 import { identityRouter } from "./routers/identity";
 import { storagePut } from "./storage";
@@ -220,13 +221,38 @@ export const appRouter = router({
 
         const systemPrompt = [
           input.systemPromptBase,
-          `You are the ${input.agentLabel}. Analyse the following task and respond with exactly this structure:`,
-          "SUMMARY: one sentence.",
-          "KEY FINDINGS: 3-5 bullet points.",
-          "FLAGS: any risks or issues (or 'None identified').",
-          "NEXT ACTION: one recommended step.",
+          `You are the ${input.agentLabel}. You are operating on an institutional AI platform serving GCC fund managers, legal professionals, healthcare administrators, and enterprise executives. Users are sophisticated decision-makers who need comprehensive, actionable analysis — not summaries.`,
+          `Analyse the following task and respond with this structure. Each section must be substantive and detailed — minimum 3-5 sentences per section, not bullet fragments:`,
+          "SUMMARY: 2-3 sentences capturing the core finding and its significance.",
+          "KEY FINDINGS: 5-8 detailed findings. Each finding must be a complete sentence with specific data, reasoning, or evidence — not a headline.",
+          "ANALYSIS: 3-5 paragraphs of deep analysis. Explain the why behind the findings. Include relevant market context, risk factors, and strategic implications.",
+          "FLAGS: All material risks, red flags, or issues. For each flag, explain the risk mechanism and potential impact. If none, state 'No material flags identified' with a brief explanation.",
+          "NEXT ACTION: 2-3 specific, immediately actionable recommendations with clear rationale for each.",
           resolvedVaultText ? `\n\n=== DOCUMENT CONTEXT (analyse this data to answer the task) ===\n${resolvedVaultText.slice(0, 10000)}\n=== END DOCUMENT CONTEXT ===` : "",
         ].filter(Boolean).join("\n");
+
+        // ── Per-user daily rate limit check (10 req/day, 50k token circuit breaker) ──
+        const db2 = await getDb();
+        if (db2) {
+          const today = new Date().toISOString().slice(0, 10);
+          const userId = ctx.user.id;
+          const ip = (ctx as any).req?.ip ?? "server";
+
+          // Check platform daily total
+          const [platformRow] = await db2.select({ total: sql<number>`COALESCE(SUM(${llmUsage.tokensUsed}), 0)` }).from(llmUsage).where(eq(llmUsage.requestDate, today));
+          const platformTotal = Number(platformRow?.total ?? 0);
+          if (platformTotal >= 50000) {
+            await db2.insert(highDemandLog).values({ userId, ipAddress: ip, endpoint: "mesh-runAgentTask", requestDate: today, dailyTotalAtTime: platformTotal });
+            throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "AgenThinkMesh is experiencing high demand today. Your request has been logged. Please try again tomorrow." });
+          }
+
+          // Check per-user daily request count
+          const [userRow] = await db2.select({ count: sql<number>`COUNT(*)` }).from(llmUsage).where(and(eq(llmUsage.userId, userId), eq(llmUsage.requestDate, today)));
+          const userCount = Number(userRow?.count ?? 0);
+          if (userCount >= 10) {
+            throw new TRPCError({ code: "TOO_MANY_REQUESTS", message: "You have reached the daily limit of 10 requests. Please try again tomorrow." });
+          }
+        }
 
         const response = await invokeLLM({
           messages: [
@@ -238,6 +264,12 @@ export const appRouter = router({
 
         const content = response.choices[0]?.message?.content;
         const result = typeof content === "string" ? content : JSON.stringify(content);
+
+        // Record usage
+        const tokensUsed = (response as any).usage?.total_tokens ?? 2000;
+        const today2 = new Date().toISOString().slice(0, 10);
+        await recordLlmUsage({ ip: (ctx as any).req?.ip ?? "server", userId: ctx.user.id, endpoint: "mesh-runAgentTask", date: today2 }, tokensUsed);
+
         return { result };
       }),
 
@@ -2360,6 +2392,137 @@ If a section is not applicable (e.g. no financial data provided), set it to null
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
       return db.select().from(partnershipRequests).orderBy(desc(partnershipRequests.createdAt));
+    }),
+  }),
+
+  // ── Admin Usage Dashboard ──────────────────────────────────────────────────
+  adminUsage: router({
+    // Daily token consumption for the last 30 days
+    dailyStats: protectedProcedure
+      .input(z.object({ days: z.number().min(1).max(90).default(30) }))
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+        const rows = await db
+          .select({
+            date: llmUsage.requestDate,
+            endpoint: llmUsage.endpoint,
+            totalTokens: sql<number>`SUM(${llmUsage.tokensUsed})`,
+            requestCount: sql<number>`COUNT(*)`,
+          })
+          .from(llmUsage)
+          .groupBy(llmUsage.requestDate, llmUsage.endpoint)
+          .orderBy(desc(llmUsage.requestDate))
+          .limit(input.days * 10);
+
+        return rows;
+      }),
+
+    // Per-user stats (last 30 days)
+    userStats: protectedProcedure
+      .input(z.object({ days: z.number().min(1).max(90).default(30) }))
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - input.days);
+        const cutoffStr = cutoff.toISOString().slice(0, 10);
+
+        const rows = await db
+          .select({
+            userId: llmUsage.userId,
+            userName: users.name,
+            userEmail: users.email,
+            totalTokens: sql<number>`SUM(${llmUsage.tokensUsed})`,
+            requestCount: sql<number>`COUNT(*)`,
+          })
+          .from(llmUsage)
+          .leftJoin(users, eq(llmUsage.userId, users.id))
+          .where(gte(llmUsage.requestDate, cutoffStr))
+          .groupBy(llmUsage.userId, users.name, users.email)
+          .orderBy(desc(sql`SUM(${llmUsage.tokensUsed})`));
+
+        return rows;
+      }),
+
+    // Today's summary (for the dashboard header)
+    todaySummary: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      const today = new Date().toISOString().slice(0, 10);
+
+      const [totals] = await db
+        .select({
+          totalTokens: sql<number>`COALESCE(SUM(${llmUsage.tokensUsed}), 0)`,
+          requestCount: sql<number>`COUNT(*)`,
+        })
+        .from(llmUsage)
+        .where(eq(llmUsage.requestDate, today));
+
+      const [blocked] = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(highDemandLog)
+        .where(eq(highDemandLog.requestDate, today));
+
+      return {
+        date: today,
+        totalTokens: Number(totals?.totalTokens ?? 0),
+        requestCount: Number(totals?.requestCount ?? 0),
+        blockedRequests: Number(blocked?.count ?? 0),
+        tokenBudget: 50000,
+        percentUsed: Math.round((Number(totals?.totalTokens ?? 0) / 50000) * 100),
+      };
+    }),
+
+    // Recent high-demand log entries
+    highDemandEvents: protectedProcedure
+      .input(z.object({ limit: z.number().min(1).max(100).default(20) }))
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+        return db
+          .select({
+            id: highDemandLog.id,
+            userId: highDemandLog.userId,
+            userName: users.name,
+            userEmail: users.email,
+            ipAddress: highDemandLog.ipAddress,
+            endpoint: highDemandLog.endpoint,
+            requestDate: highDemandLog.requestDate,
+            dailyTotalAtTime: highDemandLog.dailyTotalAtTime,
+            createdAt: highDemandLog.createdAt,
+          })
+          .from(highDemandLog)
+          .leftJoin(users, eq(highDemandLog.userId, users.id))
+          .orderBy(desc(highDemandLog.createdAt))
+          .limit(input.limit);
+      }),
+
+    // All registered users with their usage stats
+    allUsers: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      return db
+        .select({
+          id: users.id,
+          name: users.name,
+          email: users.email,
+          role: users.role,
+          createdAt: users.createdAt,
+          lastSignedIn: users.lastSignedIn,
+        })
+        .from(users)
+        .orderBy(desc(users.createdAt));
     }),
   }),
 });

@@ -313,3 +313,30 @@ export const partnershipRequests = mysqlTable("partnership_requests", {
 
 export type PartnershipRequest = typeof partnershipRequests.$inferSelect;
 export type InsertPartnershipRequest = typeof partnershipRequests.$inferInsert;
+
+// Rate limiter + usage tracking tables
+export const llmUsage = mysqlTable("llm_usage", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"), // null for unauthenticated requests
+  ipAddress: varchar("ipAddress", { length: 64 }).notNull(),
+  endpoint: varchar("endpoint", { length: 128 }).notNull(), // e.g. "game-theory", "force-majeure", "mesh", "etf"
+  tokensUsed: int("tokensUsed").notNull().default(0),
+  requestDate: varchar("requestDate", { length: 10 }).notNull(), // YYYY-MM-DD for daily bucketing
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type LlmUsage = typeof llmUsage.$inferSelect;
+export type InsertLlmUsage = typeof llmUsage.$inferInsert;
+
+export const highDemandLog = mysqlTable("high_demand_log", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  ipAddress: varchar("ipAddress", { length: 64 }).notNull(),
+  endpoint: varchar("endpoint", { length: 128 }).notNull(),
+  requestDate: varchar("requestDate", { length: 10 }).notNull(),
+  dailyTotalAtTime: int("dailyTotalAtTime").notNull(), // total tokens when limit was hit
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type HighDemandLog = typeof highDemandLog.$inferSelect;
+export type InsertHighDemandLog = typeof highDemandLog.$inferInsert;

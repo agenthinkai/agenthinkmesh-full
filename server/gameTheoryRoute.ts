@@ -6,6 +6,7 @@
  */
 import { Router, Request, Response } from "express";
 import { invokeLLM } from "./_core/llm";
+import { llmRateLimitMiddleware, recordLlmUsage } from "./llmRateLimit";
 
 const router = Router();
 
@@ -28,20 +29,20 @@ You answer four game theory questions before issuing a verdict:
 3. FIRST MOVER — does acting before others help or hurt in this specific situation (first mover advantage vs. coordination trap)
 4. EQUILIBRIUM — the stable outcome where no player benefits from changing their move unilaterally (Nash equilibrium or dominant strategy equilibrium)
 
-Return a JSON object with exactly these fields:
+Return a JSON object with exactly these fields. Every string field must be written at institutional depth — complete sentences, specific actor names, concrete data references, and strategic reasoning. Do not produce headline fragments or vague generalisations:
 {
   "verdict": "BUY" | "SELL" | "HOLD",
-  "verdictRationale": "2-3 sentences. The core investment logic in one paragraph. No bullet points.",
-  "gameTheoryRead": "3-4 sentences. Who the key players are, what they are likely doing right now, and why. Name specific actor types (sovereign funds, family offices, international allocators, etc.).",
-  "firstMoverAssessment": "2-3 sentences. Does acting before others help or hurt in this specific case? Name the mechanism — coordination trap, information cascade, liquidity premium, or first mover advantage.",
-  "equilibrium": "2-3 sentences. The stable outcome if all rational actors follow their dominant strategy. What does the market look like in 30-90 days if everyone acts rationally?",
-  "verdictChangingSignal": "1 sentence only. The single most important signal that would flip this verdict. Be specific — name the event, threshold, or data point.",
+  "verdictRationale": "3-5 sentences minimum. State the verdict, the primary investment logic, and the game-theoretic reason it holds even under adversarial market conditions. Reference the specific asset class, geography, and current macro context.",
+  "gameTheoryRead": "5-7 sentences minimum. Identify at least 3-4 specific institutional actor types active in this market (e.g. GCC sovereign wealth funds, international EM allocators, regional family offices, central bank reserve managers). For each, state their current objective, time horizon, and most likely near-term action. Explain how their collective behaviour creates the market dynamic the user is navigating.",
+  "firstMoverAssessment": "4-5 sentences minimum. Analyse whether acting before others creates an advantage or a trap in this specific situation. Name the exact mechanism at work — coordination trap, information cascade, liquidity premium capture, or first mover advantage. Quantify the timing window if possible (days, weeks, quarters). State clearly whether the user should act now, wait for confirmation, or avoid the move entirely.",
+  "equilibrium": "4-5 sentences minimum. Describe the Nash equilibrium or dominant strategy equilibrium that emerges when all rational actors follow their dominant strategy. What does the asset price, market structure, or competitive landscape look like in 30-90 days? Are there multiple equilibria? Which is most likely given current conditions?",
+  "verdictChangingSignal": "2-3 sentences. Name the single most important signal that would flip this verdict. Be specific — name the event, threshold, data point, or actor behaviour. Explain why this signal is the critical pivot rather than others.",
   "confidence": "High" | "Medium" | "Low",
-  "confidenceRationale": "1 sentence. Why this confidence level — what is the key source of uncertainty or conviction?"
+  "confidenceRationale": "2-3 sentences. Explain the primary source of conviction or uncertainty. Reference the specific information gaps, model assumptions, or geopolitical variables that drive the confidence level."
 }`;
 
 // ─── Route: POST /api/agents/game-theory ─────────────────────────────────────
-router.post("/", async (req: Request, res: Response) => {
+router.post("/", llmRateLimitMiddleware, async (req: Request & { llmTokenCap?: number; llmUsageContext?: any }, res: Response) => {
   try {
     const { situation } = req.body as { situation?: string };
 
@@ -55,11 +56,14 @@ router.post("/", async (req: Request, res: Response) => {
       return;
     }
 
+    const tokenCap = Math.min(req.llmTokenCap ?? 2000, 2000);
+
     const response = await invokeLLM({
       messages: [
         { role: "system", content: SYSTEM_PROMPT },
         { role: "user", content: `INVESTMENT SITUATION:\n\n${situation.trim()}` },
       ],
+      max_tokens: tokenCap,
       response_format: {
         type: "json_schema",
         json_schema: {
@@ -86,6 +90,10 @@ router.post("/", async (req: Request, res: Response) => {
 
     const raw = response.choices[0].message.content;
     const parsed = typeof raw === "string" ? JSON.parse(raw) : raw;
+
+    // Record usage
+    const tokensUsed = (response as any).usage?.total_tokens ?? tokenCap;
+    if (req.llmUsageContext) await recordLlmUsage(req.llmUsageContext, tokensUsed);
 
     res.json({ success: true, ...parsed });
   } catch (err) {

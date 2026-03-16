@@ -742,3 +742,21 @@
 ## Bug Fixes
 
 - [x] Fix missing React key prop warning in Step3Output component
+
+## Full Claude Response Fix
+
+- [x] Audit ETF Studio claude-proxy for max_tokens truncation (no issue — uses 32768 default)
+- [x] Audit Game Theory Agent LLM call for max_tokens truncation — raised to 4000, expanded field depth instructions
+- [x] Audit Force Majeure Agent LLM pipeline for max_tokens truncation — raised to 4000, expanded Layer 2 reasoning depth
+- [x] Audit Mesh /ask page LLM calls for truncation — raised from 2000 to 8000, expanded system prompt for institutional depth
+- [x] Fix all truncation issues so full responses are returned and displayed
+
+## Rate Limiter + Usage Dashboard
+
+- [x] Add llm_usage and high_demand_log tables to drizzle schema and push migration
+- [x] Build llmRateLimit middleware: 10 req/IP/day, 2000 token cap per request
+- [x] Build daily 50k token circuit breaker with high-demand logging
+- [x] Apply rate limiter to Mesh /ask, Game Theory, Force Majeure, ETF claude-proxy
+- [x] Build admin-only UsageDashboard.tsx with daily token consumption charts and high-demand log
+- [x] Add /admin/usage route to App.tsx
+- [x] Add Usage Dashboard link to admin dropdown in SiteNav

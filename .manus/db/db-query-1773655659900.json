@@ -1,0 +1,64 @@
+{
+  "query": "SELECT id, name, email, role, loginMethod, createdAt, lastSignedIn FROM users ORDER BY createdAt ASC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT id, name, email, role, loginMethod, createdAt, lastSignedIn FROM users ORDER BY createdAt ASC;",
+  "rows": [
+    {
+      "id": "1",
+      "name": "Farouq Sultan",
+      "email": "farouqsultan@gmail.com",
+      "role": "admin",
+      "loginMethod": "google",
+      "createdAt": "2026-03-09 11:16:11",
+      "lastSignedIn": "2026-03-16 10:07:14"
+    },
+    {
+      "id": "5",
+      "name": "kishore",
+      "email": "kishore@agenthink.ai",
+      "role": "user",
+      "loginMethod": "email",
+      "createdAt": "2026-03-09 11:18:12",
+      "lastSignedIn": "2026-03-09 11:31:07"
+    },
+    {
+      "id": "30187",
+      "name": "Shoeb Khan",
+      "email": "skhan75@gmail.com",
+      "role": "user",
+      "loginMethod": "google",
+      "createdAt": "2026-03-10 10:30:49",
+      "lastSignedIn": "2026-03-16 10:00:49"
+    },
+    {
+      "id": "120331",
+      "name": "Kishore G",
+      "email": "kish2007@gmail.com",
+      "role": "user",
+      "loginMethod": "google",
+      "createdAt": "2026-03-10 18:39:18",
+      "lastSignedIn": "2026-03-11 02:23:57"
+    },
+    {
+      "id": "210323",
+      "name": "kishore",
+      "email": "kishore@bakalaria.com",
+      "role": "user",
+      "loginMethod": "email",
+      "createdAt": "2026-03-11 07:04:45",
+      "lastSignedIn": "2026-03-16 06:16:01"
+    },
+    {
+      "id": "480001",
+      "name": "Meherprasad",
+      "email": "meher4dublin@gmail.com",
+      "role": "user",
+      "loginMethod": "google",
+      "createdAt": "2026-03-15 21:49:17",
+      "lastSignedIn": "2026-03-15 21:58:18"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tname\temail\trole\tloginMethod\tcreatedAt\tlastSignedIn\n1\tFarouq Sultan\tfarouqsultan@gmail.com\tadmin\tgoogle\t2026-03-09 11:16:11\t2026-03-16 10:07:14\n5\tkishore\tkishore@agenthink.ai\tuser\temail\t2026-03-09 11:18:12\t2026-03-09 11:31:07\n30187\tShoeb Khan\tskhan75@gmail.com\tuser\tgoogle\t2026-03-10 10:30:49\t2026-03-16 10:00:49\n120331\tKishore G\tkish2007@gmail.com\tuser\tgoogle\t2026-03-10 18:39:18\t2026-03-11 02:23:57\n210323\tkishore\tkishore@bakalaria.com\tuser\temail\t2026-03-11 07:04:45\t2026-03-16 06:16:01\n480001\tMeherprasad\tmeher4dublin@gmail.com\tuser\tgoogle\t2026-03-15 21:49:17\t2026-03-15 21:58:18\n",
+  "stderr": "",
+  "execution_time_ms": 1556
+}
