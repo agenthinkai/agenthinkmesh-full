@@ -694,3 +694,8 @@
 
 - [x] Redirect after login to /persona-setup instead of /ask
 - [x] Show only avatar icon in nav (no name text) after login
+
+## Landing Page Dynamic Counts
+
+- [x] Add tRPC publicStats procedure returning live agent count and domain count from DB
+- [x] Replace static numbers on landing page with live DB values

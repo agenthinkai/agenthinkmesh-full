@@ -568,7 +568,7 @@ export default function Landing() {
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
             <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>Domain coverage</div>
-            <h2 style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>5 verticals. 14 contexts.<br />112 specialist agents.</h2>
+            <h2 style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>5 verticals. {s.domainContexts} contexts.<br />{s.verifiedAgents} specialist agents.</h2>
           </div>
           <div className="landing-domains-grid">
             {DOMAINS.map((d, i) => (
@@ -742,7 +742,7 @@ export default function Landing() {
         <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <Logo size={28} />
           <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, textAlign: "center" }}>
-            112 agents · 14 contexts · 5 domains · Institutional AI orchestration
+            {s.verifiedAgents} agents · {s.domainContexts} contexts · 5 domains · Institutional AI orchestration
           </div>
         </div>
       </footer>

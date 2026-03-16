@@ -99,24 +99,27 @@ export const appRouter = router({
       // Fallback values when DB is unavailable
       if (!db) return { tasksRun: 2405, verifiedAgents: 112, domainContexts: 14, avgExecSec: 47 };
 
-      const [taskCount, agentCount, avgExec] = await Promise.all([
+      const [taskCount, agentCount, avgExec, domainCount] = await Promise.all([
         // Total tasks ever run
         db.select({ count: sql<number>`count(*)` }).from(taskHistory),
-        // Active/verified agents
-        db.select({ count: sql<number>`count(*)` }).from(agents).where(eq(agents.status, "active")),
+        // All agents (active + inactive — total catalogue size)
+        db.select({ count: sql<number>`count(*)` }).from(agents),
         // Average execution time in ms across all tasks
         db.select({ avg: sql<number>`avg(${taskHistory.executionTime})` }).from(taskHistory),
+        // Distinct domain values across all agents
+        db.selectDistinct({ domain: agents.domain }).from(agents).where(sql`${agents.domain} is not null`),
       ]);
 
       const rawTasks = Number(taskCount[0]?.count ?? 0);
       const rawAgents = Number(agentCount[0]?.count ?? 0);
       const rawAvgMs = Number(avgExec[0]?.avg ?? 0);
+      const rawDomains = domainCount.length;
 
       return {
         // Show at least the seeded baseline so the page never looks empty
         tasksRun: Math.max(rawTasks, 2405),
         verifiedAgents: Math.max(rawAgents, 112),
-        domainContexts: 14, // fixed — reflects product catalogue
+        domainContexts: Math.max(rawDomains, 14),
         avgExecSec: rawAvgMs > 0 ? Math.round(rawAvgMs / 1000) : 47,
       };
     }),
