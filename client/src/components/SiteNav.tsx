@@ -73,6 +73,26 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
             >
               Contact
             </button>
+            <a
+              href="/registry"
+              style={{
+                color: CYAN, fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, fontWeight: 600,
+                transition: "color 0.2s", fontFamily: "inherit",
+                border: `1px solid ${CYAN}35`,
+                background: `${CYAN}10`,
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = `${CYAN}22`;
+                (e.currentTarget as HTMLAnchorElement).style.color = WHITE;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = `${CYAN}10`;
+                (e.currentTarget as HTMLAnchorElement).style.color = CYAN;
+              }}
+            >
+              Agent Registry
+            </a>
           </>
         ) : (
           <>
@@ -91,6 +111,26 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
             >
               Contact
+            </a>
+            <a
+              href="/registry"
+              style={{
+                color: CYAN, fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, fontWeight: 600,
+                transition: "color 0.2s",
+                border: `1px solid ${CYAN}35`,
+                background: `${CYAN}10`,
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = `${CYAN}22`;
+                (e.currentTarget as HTMLAnchorElement).style.color = WHITE;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = `${CYAN}10`;
+                (e.currentTarget as HTMLAnchorElement).style.color = CYAN;
+              }}
+            >
+              Agent Registry
             </a>
           </>
         )}

@@ -681,3 +681,7 @@
 - [x] Add /agents/game-theory route in App.tsx
 - [x] Pin card to Finance and GCC Wealth domain pages
 - [x] Inject card into PersonaSelector Step 2 for Fund Manager and GCC Wealth roles
+
+## Landing Page Nav
+
+- [x] Add Agent Registry link to landing page top navigation menu
