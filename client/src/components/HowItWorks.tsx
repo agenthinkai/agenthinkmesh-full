@@ -369,7 +369,7 @@ function Step3Output({ active, role, selectedAgents }: {
             {output.findings.map((f, i) => (
               <div key={i} style={{ display: "flex", gap: 8, fontSize: 11, color: SILVER_300 }}>
                 <span style={{ color: "#4ADE80", flexShrink: 0 }}>→</span>
-                {f}
+                <span>{f}</span>
               </div>
             ))}
           </div>

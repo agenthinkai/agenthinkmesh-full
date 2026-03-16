@@ -738,3 +738,7 @@
 ## Landing Page Finance Spotlight
 
 - [x] Add Finance spotlight card to landing page domain showcase linking to /agents/etf-studio
+
+## Bug Fixes
+
+- [x] Fix missing React key prop warning in Step3Output component
