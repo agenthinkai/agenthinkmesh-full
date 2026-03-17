@@ -88,6 +88,26 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               Contact
             </button>
             <a
+              href="/rosie"
+              style={{
+                color: "#A78BFA", fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, fontWeight: 600,
+                transition: "all 0.2s", fontFamily: "inherit",
+                border: "1px solid rgba(167,139,250,0.3)",
+                background: "rgba(167,139,250,0.08)",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(167,139,250,0.18)";
+                (e.currentTarget as HTMLAnchorElement).style.color = WHITE;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(167,139,250,0.08)";
+                (e.currentTarget as HTMLAnchorElement).style.color = "#A78BFA";
+              }}
+            >
+              🧬 Rosie Protocol
+            </a>
+            <a
               href="/registry"
               style={{
                 color: CYAN, fontSize: 14, textDecoration: "none",
@@ -125,6 +145,26 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
             >
               Contact
+            </a>
+            <a
+              href="/rosie"
+              style={{
+                color: "#A78BFA", fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, fontWeight: 600,
+                transition: "all 0.2s",
+                border: "1px solid rgba(167,139,250,0.3)",
+                background: "rgba(167,139,250,0.08)",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(167,139,250,0.18)";
+                (e.currentTarget as HTMLAnchorElement).style.color = WHITE;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(167,139,250,0.08)";
+                (e.currentTarget as HTMLAnchorElement).style.color = "#A78BFA";
+              }}
+            >
+              🧬 Rosie Protocol
             </a>
             <a
               href="/registry"

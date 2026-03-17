@@ -867,3 +867,7 @@
 - [x] Add admin tRPC procedures: workflow.listBetaRequests, workflow.updateBetaStatus, workflow.listOrgs, workflow.addOrg
 - [x] Wire notifyOwner() into requestBeta procedure (instant owner alert on new application)
 - [x] Tests for new admin procedures (covered by existing workflow.test.ts suite — 112/112 passing)
+
+## Session N+2 — Navbar Enhancement
+
+- [x] Add Rosie Protocol link to Landing page top navbar (purple pill, appears on all pages via SiteNav)
