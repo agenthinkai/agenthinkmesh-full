@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
 
-const ETF_HTML_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663268376562/7EnctkaNppkKLbjFfnH6YY/AgenThinkMesh_ETF_Studio_aa59be69.html";
+// Use the server-side proxy so the HTML is served with text/html Content-Type.
+// The CDN stores the file as application/octet-stream which causes browsers to download it.
+const ETF_HTML_URL = "/api/etf/studio-html";
 
 const SHARE_TEXT = `AgenThinkMesh — ETF Launch Studio
 

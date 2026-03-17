@@ -295,5 +295,28 @@ router.get("/index-weights", (_req: Request, res: Response) => {
   });
 });
 
+// ── 9. STUDIO HTML PROXY ────────────────────────────────────────────────────
+// Fetches the ETF Studio HTML from CDN and re-serves it with text/html Content-Type.
+// The CDN stores the file as application/octet-stream which causes browsers to
+// download it instead of rendering it. This proxy corrects the Content-Type.
+const ETF_HTML_CDN = "https://d2xsxph8kpxj0f.cloudfront.net/310519663268376562/7EnctkaNppkKLbjFfnH6YY/AgenThinkMesh_ETF_Studio_aa59be69.html";
+
+router.get("/studio-html", async (_req: Request, res: Response) => {
+  try {
+    const upstream = await fetch(ETF_HTML_CDN);
+    if (!upstream.ok) {
+      return res.status(502).send("Failed to fetch ETF Studio HTML from CDN");
+    }
+    const html = await upstream.text();
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    return res.send(html);
+  } catch (err) {
+    console.error("[ETF studio-html proxy]", err);
+    return res.status(500).send("ETF Studio HTML proxy error");
+  }
+});
+
 export default router;
+
 
