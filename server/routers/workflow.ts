@@ -13,7 +13,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
+import { protectedProcedure, publicProcedure, router, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   workflowRuns,
@@ -308,5 +308,80 @@ export const workflowRouter = router({
       } catch { /* non-critical */ }
 
       return { success: true, message: "Your request has been received. We will review and respond within 48 hours." };
+    }),
+
+  // ── Admin: list all beta access requests ─────────────────────────────────────
+  listBetaRequests: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return [];
+    const rows = await db.select().from(betaAccessRequests).orderBy(desc(betaAccessRequests.createdAt)).limit(200);
+    return rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      firm: r.firm,
+      role: r.role,
+      email: r.email,
+      linkedinUrl: r.linkedinUrl,
+      useCase: r.useCase,
+      status: r.status,
+      createdAt: r.createdAt,
+    }));
+  }),
+
+  // ── Admin: approve or reject a beta request ───────────────────────────────────
+  updateBetaStatus: adminProcedure
+    .input(z.object({
+      id: z.number().int().positive(),
+      status: z.enum(["approved", "rejected", "pending"]),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      await db.update(betaAccessRequests)
+        .set({ status: input.status })
+        .where(eq(betaAccessRequests.id, input.id));
+      return { success: true };
+    }),
+
+  // ── Admin: list all organisations in whitelist ────────────────────────────────
+  listOrgs: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return [];
+    const rows = await db.select().from(organizations).orderBy(desc(organizations.createdAt)).limit(100);
+    return rows.map(r => ({
+      id: r.id,
+      name: r.name,
+      slug: r.slug,
+      approvedDomains: JSON.parse(r.approvedDomains || "[]") as string[],
+      dailyTokenLimit: r.dailyTokenLimit,
+      dailyTokensUsed: r.dailyTokensUsed,
+      status: r.status,
+      plan: r.plan,
+      createdAt: r.createdAt,
+    }));
+  }),
+
+  // ── Admin: add a new organisation to whitelist ────────────────────────────────
+  addOrg: adminProcedure
+    .input(z.object({
+      name: z.string().min(2).max(128),
+      domain: z.string().min(3).max(128).regex(/^[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/, "Invalid domain format (e.g. nbk.com)"),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      const slug = input.name.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").slice(0, 48);
+      const domain = "@" + input.domain.toLowerCase();
+      await db.insert(organizations).values({
+        name: input.name,
+        slug,
+        approvedDomains: JSON.stringify([domain]),
+        dailyTokenLimit: 50000,
+        dailyTokensUsed: 0,
+        quotaResetDate: new Date().toISOString().split("T")[0],
+        status: "active",
+        plan: "trial",
+      });
+      return { success: true, slug };
     }),
 });

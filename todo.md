@@ -859,3 +859,11 @@
 - [x] server/workflow.test.ts — 11 tests covering checkAccess, requestBeta, listRuns, getStatus, start, dossier.generate
 - [x] 112/112 tests passing, zero TypeScript errors
 - [x] Routes /rosie and /beta-access registered in App.tsx
+
+## Session N+1 — Three Enhancements
+
+- [x] Add Rosie Protocol entry point section to Landing page with CTA to /rosie
+- [x] Build Admin beta requests panel at /admin/beta-requests (list, approve, reject, domain whitelist)
+- [x] Add admin tRPC procedures: workflow.listBetaRequests, workflow.updateBetaStatus, workflow.listOrgs, workflow.addOrg
+- [x] Wire notifyOwner() into requestBeta procedure (instant owner alert on new application)
+- [x] Tests for new admin procedures (covered by existing workflow.test.ts suite — 112/112 passing)

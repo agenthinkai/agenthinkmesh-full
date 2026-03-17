@@ -594,6 +594,30 @@ export default function Landing() {
             </div>
           </div>
 
+          {/* Rosie Protocol Spotlight */}
+          <div style={{ marginBottom: 32, background: "linear-gradient(135deg, rgba(56,189,248,0.10) 0%, rgba(167,139,250,0.08) 100%)", border: "1px solid rgba(56,189,248,0.30)", borderRadius: 16, padding: "28px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 18, flex: 1, minWidth: 260 }}>
+              <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(56,189,248,0.12)", border: "1px solid rgba(56,189,248,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>🧬</div>
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "#38BDF8" }}>Rosie Protocol</span>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "#A78BFA", background: "rgba(167,139,250,0.12)", border: "1px solid rgba(167,139,250,0.25)", borderRadius: 4, padding: "2px 6px", fontFamily: MONO, letterSpacing: "0.08em" }}>NEW · HEALTHCARE</span>
+                </div>
+                <div style={{ fontSize: 12, color: "#94A3B8", lineHeight: 1.5, maxWidth: 520 }}>A 6-agent sequential AI pipeline for cancer treatment research. Intake → Literature Review → Mutation Analysis → Structural Binding → Therapeutic Strategy → Validation. Shared blackboard memory. Institutional PDF dossier export.</div>
+              </div>
+            </div>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+              <div style={{ display: "flex", gap: 6 }}>
+                {["6 Agents", "Blackboard AI", "PDF Dossier"].map(tag => (
+                  <span key={tag} style={{ fontSize: 9, color: "#38BDF8", background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.2)", borderRadius: 4, padding: "3px 7px", fontFamily: MONO, fontWeight: 600 }}>{tag}</span>
+                ))}
+              </div>
+              <a href="/rosie" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 18px", background: "linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%)", color: "#050D1A", borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: "none", fontFamily: FONT, whiteSpace: "nowrap", boxShadow: "0 4px 16px rgba(56,189,248,0.25)" }}>
+                Run Protocol →
+              </a>
+            </div>
+          </div>
+
           <div className="landing-domains-grid">
             {DOMAINS.map((d, i) => (
               <a key={i} href={`/domain/${encodeURIComponent(d.name)}`}

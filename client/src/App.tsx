@@ -29,6 +29,7 @@ import AdminUsageDashboard from "./pages/AdminUsageDashboard";
 import DomainAgents from "./pages/DomainAgents";
 import BetaAccess from "./pages/BetaAccess";
 import RosieProtocol from "./pages/RosieProtocol";
+import AdminBetaRequests from "./pages/AdminBetaRequests";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./_core/hooks/useAuth";
 
@@ -96,6 +97,7 @@ function Router() {
       <Route path="/beta-access" component={BetaAccess} />
       {/* Admin */}
       <Route path="/admin/usage" component={AdminUsageDashboard} />
+      <Route path="/admin/beta-requests" component={AdminBetaRequests} />
 
       {/* 100-Hour Turnaround */}
       <Route path="/turnaround" component={TurnaroundHome} />
