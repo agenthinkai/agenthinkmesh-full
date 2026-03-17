@@ -340,3 +340,116 @@ export const highDemandLog = mysqlTable("high_demand_log", {
 
 export type HighDemandLog = typeof highDemandLog.$inferSelect;
 export type InsertHighDemandLog = typeof highDemandLog.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SEQUENTIAL OUTCOME ENGINE — DATA MODELS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── Organization (multi-tenant, Fortress Gateway) ─────────────────────────────
+export const organizations = mysqlTable("organizations", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  slug: varchar("slug", { length: 64 }).notNull().unique(), // e.g. "nbk", "vets"
+  // Approved email domains (JSON string[]) e.g. ["@nbk.com","@nbk.com.kw"]
+  approvedDomains: text("approvedDomains").notNull(),
+  // Token quota management
+  dailyTokenLimit: int("dailyTokenLimit").notNull().default(50000),
+  dailyTokensUsed: int("dailyTokensUsed").notNull().default(0),
+  quotaResetDate: varchar("quotaResetDate", { length: 10 }), // YYYY-MM-DD
+  // Status
+  status: mysqlEnum("status", ["active", "suspended", "trial"]).notNull().default("trial"),
+  plan: mysqlEnum("plan", ["trial", "standard", "enterprise"]).notNull().default("trial"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type Organization = typeof organizations.$inferSelect;
+export type InsertOrganization = typeof organizations.$inferInsert;
+
+// ── Beta Access Request (Fortress Gateway waitlist) ───────────────────────────
+export const betaAccessRequests = mysqlTable("beta_access_requests", {
+  id: int("id").autoincrement().primaryKey(),
+  name: varchar("name", { length: 128 }).notNull(),
+  firm: varchar("firm", { length: 128 }).notNull(),
+  role: varchar("role", { length: 128 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  linkedinUrl: varchar("linkedinUrl", { length: 512 }),
+  useCase: text("useCase").notNull(),
+  status: mysqlEnum("status", ["pending", "approved", "rejected"]).notNull().default("pending"),
+  reviewedBy: int("reviewedBy"), // FK → users.id (admin who reviewed)
+  reviewNote: text("reviewNote"),
+  notified: boolean("notified").notNull().default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type BetaAccessRequest = typeof betaAccessRequests.$inferSelect;
+export type InsertBetaAccessRequest = typeof betaAccessRequests.$inferInsert;
+
+// ── Workflow Run (top-level session for multiAgentSolve) ──────────────────────
+export const workflowRuns = mysqlTable("workflow_runs", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: varchar("sessionId", { length: 64 }).notNull().unique(), // UUID
+  workflowType: varchar("workflowType", { length: 64 }).notNull(), // e.g. "rosie_protocol"
+  userId: int("userId").notNull(),
+  organizationId: int("organizationId"), // FK → organizations.id (nullable for non-org users)
+  // Execution state
+  status: mysqlEnum("status", ["pending", "running", "complete", "failed", "paused"]).notNull().default("pending"),
+  currentStep: int("currentStep").notNull().default(0), // 0-indexed step number
+  totalSteps: int("totalSteps").notNull().default(6),
+  // Blackboard memory — full shared context object (JSON)
+  blackboardMemory: text("blackboardMemory").notNull(),
+  // Source documents (JSON array of { fileName, fileUrl, extractedText })
+  sourceDocuments: text("sourceDocuments").notNull(),
+  // Risk flags accumulated across all steps (JSON string[])
+  riskFlags: text("riskFlags").notNull(),
+  // Route log — which agents ran in order (JSON string[])
+  routeLog: text("routeLog").notNull(),
+  // Token tracking
+  totalTokensUsed: int("totalTokensUsed").notNull().default(0),
+  // Failure tracking
+  failedAtStep: int("failedAtStep"), // step index where failure occurred
+  failureReason: text("failureReason"),
+  retryCount: int("retryCount").notNull().default(0),
+  // Timing
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  durationMs: int("durationMs"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type WorkflowRun = typeof workflowRuns.$inferSelect;
+export type InsertWorkflowRun = typeof workflowRuns.$inferInsert;
+
+// ── Workflow Step (per-agent execution record) ────────────────────────────────
+export const workflowSteps = mysqlTable("workflow_steps", {
+  id: int("id").autoincrement().primaryKey(),
+  workflowRunId: int("workflowRunId").notNull(), // FK → workflow_runs.id
+  sessionId: varchar("sessionId", { length: 64 }).notNull(), // denormalized for easy lookup
+  stepIndex: int("stepIndex").notNull(), // 0-indexed position in pipeline
+  agentName: varchar("agentName", { length: 128 }).notNull(), // e.g. "Intake Agent"
+  agentRole: varchar("agentRole", { length: 128 }), // e.g. "Case Parser"
+  // Execution
+  status: mysqlEnum("status", ["pending", "running", "complete", "failed", "skipped"]).notNull().default("pending"),
+  // Structured handoff output (JSON)
+  // { summary, entities, unresolvedQuestions, confidenceLevel, warnings, rawOutput }
+  structuredOutput: text("structuredOutput"),
+  // Input summary (what was passed in from blackboard)
+  inputSummary: text("inputSummary"),
+  // Metrics
+  tokensUsed: int("tokensUsed").notNull().default(0),
+  durationMs: int("durationMs"),
+  confidenceLevel: int("confidenceLevel"), // 0-100
+  warningCount: int("warningCount").notNull().default(0),
+  // Error info
+  errorMessage: text("errorMessage"),
+  retryCount: int("retryCount").notNull().default(0),
+  // Timing
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type WorkflowStep = typeof workflowSteps.$inferSelect;
+export type InsertWorkflowStep = typeof workflowSteps.$inferInsert;

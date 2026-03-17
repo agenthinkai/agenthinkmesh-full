@@ -9,6 +9,8 @@ import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotat
 import { recordLlmUsage } from "./llmRateLimit";
 import { turnaroundRouter } from "./routers/turnaround";
 import { identityRouter } from "./routers/identity";
+import { workflowRouter } from "./routers/workflow";
+import { dossierPdfRouter } from "./routers/dossierPdf";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
 import { eq, desc, gte, sql, and, like, or, isNull, lt } from "drizzle-orm";
@@ -2906,8 +2908,10 @@ If a section is not applicable (e.g. no financial data provided), set it to null
       }),
   }),
 
-   turnaround: turnaroundRouter,
+  turnaround: turnaroundRouter,
   identity: identityRouter,
+  workflow: workflowRouter,
+  dossier: dossierPdfRouter,
 
   // ── ETF Partner CRM ────────────────────────────────────────────────────────
   partner: router({

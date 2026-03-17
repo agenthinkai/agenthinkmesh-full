@@ -141,6 +141,20 @@
       "when": 1773657568240,
       "tag": "0019_volatile_silhouette",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "5",
+      "when": 1773753226148,
+      "tag": "0020_gorgeous_goliath",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "5",
+      "when": 1773753258691,
+      "tag": "0021_green_power_pack",
+      "breakpoints": true
     }
   ]
 }

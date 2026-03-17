@@ -27,6 +27,8 @@ import ETFStudio from "./pages/ETFStudio";
 import PartnerCRM from "./pages/PartnerCRM";
 import AdminUsageDashboard from "./pages/AdminUsageDashboard";
 import DomainAgents from "./pages/DomainAgents";
+import BetaAccess from "./pages/BetaAccess";
+import RosieProtocol from "./pages/RosieProtocol";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./_core/hooks/useAuth";
 
@@ -88,6 +90,10 @@ function Router() {
       <Route path="/agents/game-theory" component={GameTheoryAgent} />
       <Route path="/agents/etf-studio" component={ETFStudio} />
       <Route path="/etf/partners" component={PartnerCRM} />
+
+      {/* Rosie Protocol — Sequential Outcome Engine */}
+      <Route path="/rosie" component={RosieProtocol} />
+      <Route path="/beta-access" component={BetaAccess} />
       {/* Admin */}
       <Route path="/admin/usage" component={AdminUsageDashboard} />
 

@@ -1,0 +1,80 @@
+CREATE TABLE `beta_access_requests` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`name` varchar(128) NOT NULL,
+	`firm` varchar(128) NOT NULL,
+	`role` varchar(128) NOT NULL,
+	`email` varchar(320) NOT NULL,
+	`linkedinUrl` varchar(512),
+	`useCase` text NOT NULL,
+	`status` enum('pending','approved','rejected') NOT NULL DEFAULT 'pending',
+	`reviewedBy` int,
+	`reviewNote` text,
+	`notified` boolean NOT NULL DEFAULT false,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `beta_access_requests_id` PRIMARY KEY(`id`)
+);
+--> statement-breakpoint
+CREATE TABLE `organizations` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`name` varchar(128) NOT NULL,
+	`slug` varchar(64) NOT NULL,
+	`approvedDomains` text NOT NULL DEFAULT ('[]'),
+	`dailyTokenLimit` int NOT NULL DEFAULT 50000,
+	`dailyTokensUsed` int NOT NULL DEFAULT 0,
+	`quotaResetDate` varchar(10),
+	`status` enum('active','suspended','trial') NOT NULL DEFAULT 'trial',
+	`plan` enum('trial','standard','enterprise') NOT NULL DEFAULT 'trial',
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `organizations_id` PRIMARY KEY(`id`),
+	CONSTRAINT `organizations_slug_unique` UNIQUE(`slug`)
+);
+--> statement-breakpoint
+CREATE TABLE `workflow_runs` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`sessionId` varchar(64) NOT NULL,
+	`workflowType` varchar(64) NOT NULL,
+	`userId` int NOT NULL,
+	`organizationId` int,
+	`status` enum('pending','running','complete','failed','paused') NOT NULL DEFAULT 'pending',
+	`currentStep` int NOT NULL DEFAULT 0,
+	`totalSteps` int NOT NULL DEFAULT 6,
+	`blackboardMemory` text NOT NULL DEFAULT ('{}'),
+	`sourceDocuments` text NOT NULL DEFAULT ('[]'),
+	`riskFlags` text NOT NULL DEFAULT ('[]'),
+	`routeLog` text NOT NULL DEFAULT ('[]'),
+	`totalTokensUsed` int NOT NULL DEFAULT 0,
+	`failedAtStep` int,
+	`failureReason` text,
+	`retryCount` int NOT NULL DEFAULT 0,
+	`startedAt` timestamp,
+	`completedAt` timestamp,
+	`durationMs` int,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	`updatedAt` timestamp NOT NULL DEFAULT (now()) ON UPDATE CURRENT_TIMESTAMP,
+	CONSTRAINT `workflow_runs_id` PRIMARY KEY(`id`),
+	CONSTRAINT `workflow_runs_sessionId_unique` UNIQUE(`sessionId`)
+);
+--> statement-breakpoint
+CREATE TABLE `workflow_steps` (
+	`id` int AUTO_INCREMENT NOT NULL,
+	`workflowRunId` int NOT NULL,
+	`sessionId` varchar(64) NOT NULL,
+	`stepIndex` int NOT NULL,
+	`agentName` varchar(128) NOT NULL,
+	`agentRole` varchar(128),
+	`status` enum('pending','running','complete','failed','skipped') NOT NULL DEFAULT 'pending',
+	`structuredOutput` text,
+	`inputSummary` text,
+	`tokensUsed` int NOT NULL DEFAULT 0,
+	`durationMs` int,
+	`confidenceLevel` int,
+	`warningCount` int NOT NULL DEFAULT 0,
+	`errorMessage` text,
+	`retryCount` int NOT NULL DEFAULT 0,
+	`startedAt` timestamp,
+	`completedAt` timestamp,
+	`createdAt` timestamp NOT NULL DEFAULT (now()),
+	CONSTRAINT `workflow_steps_id` PRIMARY KEY(`id`)
+);

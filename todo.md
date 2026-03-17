@@ -814,3 +814,48 @@
 ## Bug Fix: Role entry screen placeholder text
 
 - [x] Fix role entry screen textarea to show agent-specific placeholder matching pre-loaded agent (AskScreen now uses getAgentPlaceholder from meshData, covers all 122 agents)
+
+## Session N — Stateful Sequential Outcome Engine (Rosie Protocol)
+
+### Phase 1: DB Schema
+- [x] Add organizations table (domain whitelist, token quotas, plan, status)
+- [x] Add beta_access_requests table (name, firm, role, email, linkedinUrl, useCase, status)
+- [x] Add workflow_runs table (sessionId, userId, workflowType, status, blackboardMemory, currentStep, failedAtStep, failureReason, durationMs)
+- [x] Add workflow_steps table (sessionId, stepIndex, agentName, agentRole, status, confidenceLevel, warningCount, tokensUsed, durationMs, structuredOutput, errorMessage)
+- [x] Run db:push / direct SQL migration for all 4 tables
+
+### Phase 2: multiAgentSolve Backend
+- [x] Create server/multiAgentSolve.ts — sequential executor with blackboard memory
+- [x] Structured handoff: each agent receives full blackboard from prior agents
+- [x] Retry logic: failed steps can be retried from the failed step index
+- [x] Logging: all steps persisted to workflow_steps table in real time
+- [x] 6 agents: Intake, Research, Mutation, Structural, Therapeutic, Validation
+
+### Phase 3: Fortress Gateway
+- [x] Domain whitelist check against organizations table (agenthink.ai always approved)
+- [x] Org token quota enforcement (dailyTokenLimit vs dailyTokensUsed)
+- [x] Beta access request procedure (workflow.requestBeta)
+- [x] BetaAccess.tsx page at /beta-access with form validation and success state
+
+### Phase 4: Workflow Rail UI
+- [x] RosieProtocol.tsx page at /rosie
+- [x] Horizontal pipeline rail with 6 agent nodes, status colors, pulse animation for running
+- [x] Connector arrows between nodes with gradient color based on status
+- [x] Live dossier panel: per-agent structured output with entity tags, warnings, confidence
+- [x] Right side panel: pipeline progress list, token usage bars, risk flags, disclaimer
+- [x] PDF export button (gold) in top bar when run is complete
+- [x] New Run button to reset state
+
+### Phase 5: Institutional PDF Export
+- [x] server/routers/dossierPdf.ts — PDFKit-based Clinical Dossier generator
+- [x] Cover page: navy/gold design, route map, metadata box, disclaimer
+- [x] 6 agent sections (Sections 1–6): confidence badge, entity tags, nested outputs, warnings
+- [x] Section 7: accumulated risk flags across full pipeline
+- [x] Section 8: methodology, known limitations, mandatory legal disclaimer
+- [x] PDF uploaded to S3, URL returned for browser download
+- [x] dossierPdfRouter wired into appRouter
+
+### Phase 6: Tests & Delivery
+- [x] server/workflow.test.ts — 11 tests covering checkAccess, requestBeta, listRuns, getStatus, start, dossier.generate
+- [x] 112/112 tests passing, zero TypeScript errors
+- [x] Routes /rosie and /beta-access registered in App.tsx
