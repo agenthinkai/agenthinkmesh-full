@@ -68,12 +68,12 @@ const FEATURES = [
   { icon: "🔀", title: "Parallel Execution", desc: "All agents run concurrently with a 400ms stagger. A 9-agent task that would take 45 minutes sequentially completes in under 60 seconds." },
   { icon: "📡", title: "Live Streaming Output", desc: "Watch each agent's reasoning stream token-by-token in real time. Structured output: Summary, Key Findings, Flags, and Next Action — every time." },
   { icon: "🗂️", title: "Document Vault", desc: "Upload PDFs, Word docs, CSVs, and spreadsheets. The vault indexes your documents and prepends relevant context to every agent's prompt automatically." },
-  { icon: "🌐", title: "14 Domain Contexts", desc: "Switch between Finance, Legal, Healthcare, Enterprise, and GCC Wealth instantly. Each context loads domain-specific agents, prompts, and suggested tasks." },
+  { icon: "🌐", title: "14 Domain Contexts", desc: "Switch between Finance, Legal, Healthcare, Enterprise, GCC Wealth, Insurance, and AdMesh instantly. Each context loads domain-specific agents, prompts, and suggested tasks." },
   { icon: "📊", title: "Task History & Export", desc: "Every executed task is saved to your account. Search, review, and re-run previous tasks. Export any output as a structured PDF report." },
 ];
 
 const HOW_IT_WORKS = [
-  { step: "01", title: "Select your domain context", desc: "Choose from 14 pre-configured contexts across Finance, Legal, Healthcare, Enterprise, and GCC Wealth. Each loads the right specialist agents automatically." },
+  { step: "01", title: "Select your domain context", desc: "Choose from 14 pre-configured contexts across Finance, Legal, Healthcare, Enterprise, GCC Wealth, Insurance, and AdMesh. Each loads the right specialist agents automatically." },
   { step: "02", title: "Describe your task", desc: "Type a natural language task or select from suggested tasks. The mesh reads your input and spawns additional specialist agents as needed — in real time." },
   { step: "03", title: "Receive parallel structured output", desc: "All agents execute concurrently and stream their findings. Review each agent's output, export the full report as PDF, and save to your task history." },
 ];
