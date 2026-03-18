@@ -915,3 +915,36 @@
 ## Sprint — Pre-Login Gate
 
 - [x] Pre-login gate interstitial: GateScreen component shown on /ask, /rosie, /history, /annotate for unauthenticated users
+
+## Sprint — Portfolio Intelligence Engine
+
+- [ ] Agent registry: 12 agents across 4 clusters (Intake, Risk, Performance, Decision)
+- [ ] DB: guardian_alerts table
+- [ ] Backend: IC Decision Engine 8-agent pipeline (portfolioICDecision)
+- [ ] Backend: Crisis Simulation 4-agent pipeline (portfolioCrisis)
+- [ ] Backend: Guardian Mode trigger engine + tRPC procedures
+- [ ] Backend: portfolio tRPC router wired into appRouter
+- [ ] Frontend: /portfolio home (3 entry points: IC Decision, Guardian, Crisis)
+- [ ] Frontend: /portfolio/result/:id — IC Decision output screen (INVEST/WATCH/REJECT badge, agent chain, confidence)
+- [ ] Frontend: /portfolio/guardian — live dashboard (status, alerts, trigger history, animated agents)
+- [ ] Frontend: /portfolio/crisis/:id — Crisis Simulation output screen
+- [ ] Routes wired in App.tsx
+- [ ] Tests for portfolio procedures
+- [ ] TypeScript: zero errors
+
+## Portfolio Intelligence Engine — Sprint Complete
+
+- [x] Database schema: portfolio_runs, portfolio_steps, guardian_alerts, agent_registry tables
+- [x] Backend: portfolioEngine.ts — IC Decision, Crisis Simulation, Guardian Mode pipelines
+- [x] Backend: portfolioStreamRoute.ts — SSE streaming with pipeline_start, step_start, step_complete, complete events
+- [x] Backend: portfolioRouter (portfolioIntel) — startRun, getRunResult, listRuns, getGuardianAlerts, acknowledgeAlert, getWorkflowChains, listAgents
+- [x] Backend: assertWorkflowAccess billing gateway wired into all workflow entry points
+- [x] Frontend: PortfolioIntel.tsx — 3-workflow selector (IC Decision, Guardian, Crisis) with agent registry preview
+- [x] Frontend: PortfolioIntelRun.tsx — live SSE run page with pipeline rail, IC Decision banner, live dossier, export button
+- [x] Frontend: PortfolioGuardian.tsx — Guardian dashboard with simulated heartbeat, metrics grid, alert feed, config panel
+- [x] Frontend: PortfolioHome.tsx — added Portfolio Intelligence Engine card linking to /portfolio/intel
+- [x] Fix: SSE URL mismatch corrected (/api/portfolio/stream/:runType/:runId)
+- [x] Fix: pipeline_start event added to stream route so frontend initializes step list
+- [x] Fix: complete event enriched with icDecision, confidenceScore, riskScore fields
+- [x] Routes: /portfolio/intel, /portfolio/intel/run/:runType/:runId, /portfolio/guardian added to App.tsx
+- [x] Tests: 112/112 passing, 0 TypeScript errors

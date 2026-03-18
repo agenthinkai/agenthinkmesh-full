@@ -16,6 +16,9 @@ import PortfolioUpload from "./pages/PortfolioUpload";
 import PortfolioAnalyzing from "./pages/PortfolioAnalyzing";
 import PortfolioReport from "./pages/PortfolioReport";
 import PortfolioVault from "./pages/PortfolioVault";
+import PortfolioIntel from "./pages/PortfolioIntel";
+import PortfolioIntelRun from "./pages/PortfolioIntelRun";
+import PortfolioGuardian from "./pages/PortfolioGuardian";
 import TurnaroundHome from "./pages/TurnaroundHome";
 import TurnaroundUpload from "./pages/TurnaroundUpload";
 import TurnaroundCommand from "./pages/TurnaroundCommand";
@@ -76,6 +79,9 @@ function Router() {
 
       {/* Portfolio Intelligence */}
       <Route path="/portfolio" component={PortfolioHome} />
+      <Route path="/portfolio/intel" component={PortfolioIntel} />
+      <Route path="/portfolio/intel/run/:runType/:runId" component={PortfolioIntelRun} />
+      <Route path="/portfolio/guardian" component={PortfolioGuardian} />
       <Route path="/portfolio-review/upload" component={PortfolioUpload} />
       <Route path="/portfolio-review/analyzing/:id" component={PortfolioAnalyzing} />
       <Route path="/portfolio-review/report/:id" component={PortfolioReport} />

@@ -21,6 +21,19 @@ const FONT = "'Inter', system-ui, -apple-system, sans-serif";
 
 const WORKFLOWS = [
   {
+    id: "portfolio-intel",
+    icon: "⚖️",
+    title: "Portfolio Intelligence Engine",
+    subtitle: "IC Decision · Guardian · Crisis Simulation",
+    description:
+      "Three institutional-grade workflows powered by 12 specialist agents. Run IC Decision Engine (INVEST/WATCH/REJECT), Guardian Mode (always-on monitoring), or Crisis Simulation (stress testing).",
+    badge: "Live",
+    badgeColor: "#4ADE80",
+    href: "/portfolio/intel",
+    accent: GOLD,
+    accentLight: GOLD_LIGHT,
+  },
+  {
     id: "portfolio-review",
     icon: "📋",
     title: "Portfolio Review",
@@ -289,9 +302,9 @@ export default function PortfolioHome() {
           flexWrap: "wrap",
         }}>
           {[
-            { label: "Analysis Agents", value: "5 Specialists" },
-            { label: "Avg. Report Time", value: "< 3 minutes" },
-            { label: "Report Length", value: "25–30 pages" },
+            { label: "Analysis Agents", value: "12 Specialists" },
+            { label: "IC Decision Time", value: "< 5 minutes" },
+            { label: "Active Workflows", value: "3 Live" },
             { label: "Supported Formats", value: "PDF, DOCX, XLSX, PPTX" },
           ].map(stat => (
             <div key={stat.label}>
