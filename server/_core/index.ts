@@ -12,6 +12,7 @@ import { forceMajeureRouter } from "../forceMajeureRoute";
 import { gameTheoryRouter } from "../gameTheoryRoute";
 import etfRouter from "../etfRoute";
 import { startHealthCheckJob } from "../jobs/healthCheck";
+import workflowStreamRouter from "../workflowStreamRoute";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -46,6 +47,8 @@ async function startServer() {
   app.use("/api/agents/game-theory", gameTheoryRouter);
   // ETF Launch Studio endpoints (claude-proxy + data endpoints)
   app.use("/api/etf", etfRouter);
+  // Workflow SSE streaming endpoint
+  app.use("/api/workflow", workflowStreamRouter);
   // Embedded specialist agent endpoints
   app.use("/api/agents", agentRouter);
   // tRPC API

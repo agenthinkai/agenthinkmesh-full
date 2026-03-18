@@ -25,6 +25,7 @@ export default function AdminBetaRequests() {
   const [newDomain, setNewDomain] = useState("");
   const [newOrgName, setNewOrgName] = useState("");
   const [addingDomain, setAddingDomain] = useState(false);
+  const [whitelistBanner, setWhitelistBanner] = useState<string | null>(null);
 
   // Fetch beta requests
   const { data: requests, isLoading: reqLoading, refetch: refetchRequests } =
@@ -36,7 +37,14 @@ export default function AdminBetaRequests() {
 
   // Update beta request status
   const updateStatus = trpc.workflow.updateBetaStatus.useMutation({
-    onSuccess: () => refetchRequests(),
+    onSuccess: (data) => {
+      refetchRequests();
+      refetchOrgs();
+      if (data.autoWhitelistedDomain) {
+        setWhitelistBanner(`✓ Domain ${data.autoWhitelistedDomain} added to whitelist automatically.`);
+        setTimeout(() => setWhitelistBanner(null), 6000);
+      }
+    },
   });
 
   // Add domain to whitelist
@@ -104,6 +112,23 @@ export default function AdminBetaRequests() {
           <div style={{ fontSize: 11, color: "rgba(240,244,250,0.3)" }}>Logged in as {user.name}</div>
         </div>
       </div>
+
+      {/* Auto-whitelist banner */}
+      {whitelistBanner && (
+        <div style={{
+          position: "fixed", top: 64, left: "50%", transform: "translateX(-50%)",
+          zIndex: 1000, padding: "12px 24px",
+          background: "rgba(74,222,128,0.12)",
+          border: "1px solid rgba(74,222,128,0.4)",
+          borderRadius: 10, fontSize: 13, fontWeight: 600,
+          color: "#4ADE80", fontFamily: "Inter, sans-serif",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+          animation: "slideIn 0.3s ease",
+          whiteSpace: "nowrap",
+        }}>
+          {whitelistBanner}
+        </div>
+      )}
 
       <div style={{ maxWidth: 1000, margin: "0 auto", padding: "32px 24px" }}>
 

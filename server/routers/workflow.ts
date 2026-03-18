@@ -337,10 +337,50 @@ export const workflowRouter = router({
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      // Fetch the request to get email + firm name
+      const [req] = await db.select().from(betaAccessRequests).where(eq(betaAccessRequests.id, input.id)).limit(1);
+      if (!req) throw new TRPCError({ code: "NOT_FOUND", message: "Beta request not found" });
+
+      // Update status
       await db.update(betaAccessRequests)
         .set({ status: input.status })
         .where(eq(betaAccessRequests.id, input.id));
-      return { success: true };
+
+      let autoWhitelistedDomain: string | null = null;
+
+      // Auto-whitelist domain on approval
+      if (input.status === "approved" && req.email) {
+        const atIdx = req.email.indexOf("@");
+        if (atIdx !== -1) {
+          const domain = "@" + req.email.slice(atIdx + 1).toLowerCase();
+
+          // Check if this domain is already in any org's approved list
+          const allOrgs = await db.select({ approvedDomains: organizations.approvedDomains }).from(organizations);
+          const alreadyExists = allOrgs.some(o => {
+            const domains: string[] = JSON.parse(o.approvedDomains || "[]");
+            return domains.includes(domain);
+          });
+
+          if (!alreadyExists) {
+            const firmName = (req.firm || req.email.slice(atIdx + 1).split(".")[0]).trim();
+            const slug = firmName.toLowerCase().replace(/[^a-z0-9]/g, "-").replace(/-+/g, "-").slice(0, 40) + "-" + Date.now().toString(36);
+            await db.insert(organizations).values({
+              name: firmName,
+              slug,
+              approvedDomains: JSON.stringify([domain]),
+              dailyTokenLimit: 50000,
+              dailyTokensUsed: 0,
+              quotaResetDate: new Date().toISOString().split("T")[0],
+              status: "active",
+              plan: "trial",
+            });
+            autoWhitelistedDomain = domain;
+          }
+        }
+      }
+
+      return { success: true, autoWhitelistedDomain };
     }),
 
   // ── Admin: list all organisations in whitelist ────────────────────────────────

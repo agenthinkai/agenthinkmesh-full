@@ -871,3 +871,9 @@
 ## Session N+2 — Navbar Enhancement
 
 - [x] Add Rosie Protocol link to Landing page top navbar (purple pill, appears on all pages via SiteNav)
+
+## Sprint — Three Fixes
+
+- [x] Fix 1: SSE streaming for Workflow Rail — EventSource, step_start/step_complete/complete events, live node animation + commitFlash
+- [x] Fix 2: Vault → Rosie intake connection — three-tab selector (Type/Vault/Upload), vault.list query, vault.upload mutation
+- [x] Fix 3: Auto-whitelist on beta approval — domain extracted from email, org inserted, green banner confirmation in admin panel
