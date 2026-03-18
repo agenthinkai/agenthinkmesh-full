@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
+import GateScreen from "@/components/GateScreen";
 import { useLocation } from "wouter";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -303,6 +304,10 @@ export default function RosieProtocol() {
   const selectedAgent = selectedStep !== null ? pipelineDisplay[selectedStep] : null;
 
   // ── Auth guard ────────────────────────────────────────────────────────────
+
+  if (!authLoading && !user) {
+    return <GateScreen feature="Rosie Protocol" />;
+  }
 
   if (authLoading || accessLoading) {
     return (

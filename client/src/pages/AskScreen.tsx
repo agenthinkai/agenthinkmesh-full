@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { getAgentPlaceholder, DEFAULT_PLACEHOLDER } from "@/lib/meshData";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import GateScreen from "@/components/GateScreen";
 import Logo from "@/components/Logo";
 import SiteNav from "@/components/SiteNav";
 
@@ -158,7 +159,12 @@ export default function AskScreen() {
   const [query, setQuery] = useState("");
   const [, navigate] = useLocation();
   const search = useSearch();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, loading: authLoading } = useAuth();
+
+  // Show gate screen for unauthenticated users (after auth check completes)
+  if (!authLoading && !isAuthenticated) {
+    return <GateScreen feature="AI Agent Mesh" />;
+  }
 
   // ── Mesh Identity Layer hooks ──────────────────────────────────────────────
   const identityProfile = trpc.identity.getProfile.useQuery(undefined, {

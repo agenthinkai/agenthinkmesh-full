@@ -911,3 +911,7 @@
 - [x] Landing hero: add "Free for 60 days. 50 runs. No credit card required." above signup CTA
 - [x] First screen after login: welcome banner "Your 60-day free access is active. You have 50 runs across all workflows."
 - [x] PlanUsageBadge: change "Trial · 50 left" to "Free · 50 runs · X days left"
+
+## Sprint — Pre-Login Gate
+
+- [x] Pre-login gate interstitial: GateScreen component shown on /ask, /rosie, /history, /annotate for unauthenticated users

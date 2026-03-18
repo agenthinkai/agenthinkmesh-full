@@ -2,6 +2,7 @@ import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import GateScreen from "@/components/GateScreen";
 import Logo from "@/components/Logo";
 import { Link } from "wouter";
 
@@ -163,6 +164,10 @@ export default function AnnotationStudio() {
         <div style={{ color: "#8494AA", fontFamily: MONO, fontSize: 13 }}>Loading...</div>
       </div>
     );
+  }
+
+  if (!user) {
+    return <GateScreen feature="Arabic Annotation Studio" />;
   }
 
   return (

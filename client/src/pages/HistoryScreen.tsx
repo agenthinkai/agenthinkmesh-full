@@ -1,7 +1,7 @@
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
-import { getLoginUrl } from "@/const";
+import GateScreen from "@/components/GateScreen";
 import Logo from "@/components/Logo";
 
 const NAVY_950 = "#0B1629";
@@ -50,24 +50,7 @@ export default function HistoryScreen() {
   });
 
   if (!isAuthenticated) {
-    return (
-      <div style={{
-        minHeight: "100vh",
-        background: `linear-gradient(160deg, ${NAVY_950}, ${NAVY_900})`,
-        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-        fontFamily: "'Inter', sans-serif",
-      }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ color: WHITE, fontSize: 20, fontWeight: 700, marginBottom: 8 }}>Sign in to view your history</div>
-          <div style={{ color: MUTED, fontSize: 14, marginBottom: 24 }}>Your past queries and results are saved to your account.</div>
-          <a href={getLoginUrl()} style={{
-            padding: "12px 28px", borderRadius: 10,
-            background: `linear-gradient(135deg, ${CYAN}, ${BLUE})`,
-            color: NAVY_950, fontWeight: 700, fontSize: 15, textDecoration: "none",
-          }}>Sign in</a>
-        </div>
-      </div>
-    );
+    return <GateScreen feature="Task History" />;
   }
 
   return (
