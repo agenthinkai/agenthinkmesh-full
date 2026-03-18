@@ -55,6 +55,12 @@ const DOMAINS = [
     agents: ["RiskIntakeParser", "TakafulClassifier", "ShariaComplianceAgent", "PricingActuary", "TreatyAnalyst", "CatastropheModeler"],
     link: "/insurance",
   },
+  {
+    icon: "🎯", name: "AdMesh", color: "#F97316", lightBg: "rgba(249,115,22,0.08)",
+    contexts: ["Brand Campaigns", "Product Launches", "Seasonal Promotions", "Competitor Response"],
+    agents: ["Ingestor", "Analyzer", "Strategist", "Copywriter", "Scoring", "VideoProducer"],
+    link: "/admesh",
+  },
 ];
 
 const FEATURES = [

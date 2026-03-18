@@ -15,6 +15,7 @@ import { startHealthCheckJob } from "../jobs/healthCheck";
 import workflowStreamRouter from "../workflowStreamRoute";
 import portfolioStreamRouter from "../portfolioStreamRoute";
 import insuranceStreamRouter from "../insuranceStreamRoute";
+import admeshStreamRouter from "../admeshStreamRoute";
 import { registerStripeWebhookRoute } from "../stripeWebhookRoute";
 import { startDripScheduler } from "../emailDrip";
 
@@ -59,6 +60,8 @@ async function startServer() {
   app.use("/api/portfolio", portfolioStreamRouter);
   // Insurance & Reinsurance Intelligence Engine SSE streaming endpoint
   app.use("/api/insurance", insuranceStreamRouter);
+  // AdMesh Creative Intelligence SSE streaming endpoint
+  app.use("/api/admesh", admeshStreamRouter);
   // Embedded specialist agent endpoints
   app.use("/api/agents", agentRouter);
   // tRPC API

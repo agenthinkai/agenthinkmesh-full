@@ -14,6 +14,7 @@ import { dossierPdfRouter } from "./routers/dossierPdf";
 import { billingRouter } from "./routers/billing";
 import { portfolioRouter } from "./routers/portfolio";
 import { insuranceRouter } from "./routers/insurance";
+import { admeshRouter } from "./routers/admesh";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
 import { eq, desc, gte, sql, and, like, or, isNull, lt } from "drizzle-orm";
@@ -2926,6 +2927,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
   billing: billingRouter,
   portfolioIntel: portfolioRouter,
   insurance: insuranceRouter,
+  admesh: admeshRouter,
   // ── ETF Partner CRMM ────────────────────────────────────────────────────────
   partner: router({
     // List all partner institutions (admin or public read)

@@ -824,3 +824,20 @@
     overflow: hidden;
   }
 }
+
+/* ── AdMesh Arabic RTL Support ───────────────────────────────────────────── */
+.font-arabic {
+  font-family: "Noto Naskh Arabic", "Amiri", "Cairo", serif;
+  font-size: 1.05em;
+  line-height: 1.8;
+  letter-spacing: 0;
+}
+
+[dir="rtl"] {
+  text-align: right;
+}
+
+[dir="rtl"] .font-arabic {
+  font-size: 1.1em;
+  line-height: 1.9;
+}

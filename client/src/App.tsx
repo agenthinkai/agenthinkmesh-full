@@ -22,6 +22,8 @@ import PortfolioGuardian from "./pages/PortfolioGuardian";
 import InsuranceHome from "./pages/InsuranceHome";
 import InsuranceRun from "./pages/InsuranceRun";
 import TakafulAlerts from "./pages/TakafulAlerts";
+import AdMeshHome from "./pages/AdMeshHome";
+import AdMeshRun from "./pages/AdMeshRun";
 import TurnaroundHome from "./pages/TurnaroundHome";
 import TurnaroundUpload from "./pages/TurnaroundUpload";
 import TurnaroundCommand from "./pages/TurnaroundCommand";
@@ -94,6 +96,10 @@ function Router() {
       <Route path="/insurance" component={InsuranceHome} />
       <Route path="/insurance/run/:runType/:runId" component={InsuranceRun} />
       <Route path="/insurance/takaful-alerts" component={TakafulAlerts} />
+
+      {/* AdMesh — AI Creative Intelligence */}
+      <Route path="/admesh" component={AdMeshHome} />
+      <Route path="/admesh/run/:runId" component={AdMeshRun} />
 
       {/* Mesh Identity Layer */}
       <Route path="/persona-setup" component={PersonaSelector} />

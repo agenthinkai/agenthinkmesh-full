@@ -581,3 +581,65 @@ export const takafulAlerts = mysqlTable("takaful_alerts", {
 });
 export type TakafulAlert = typeof takafulAlerts.$inferSelect;
 export type InsertTakafulAlert = typeof takafulAlerts.$inferInsert;
+
+// ─── AdMesh — AI Creative Intelligence ────────────────────────────────────────
+export const admeshRuns = mysqlTable("admesh_runs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: varchar("userId", { length: 64 }).notNull(),
+  brandName: varchar("brandName", { length: 128 }).notNull(),
+  brandVoice: varchar("brandVoice", { length: 64 }).notNull().default("premium"),
+  category: varchar("category", { length: 128 }).notNull(),
+  market: varchar("market", { length: 64 }).notNull().default("Kuwait"),
+  competitors: text("competitors"),
+  languages: varchar("languages", { length: 32 }).notNull().default("en,ar"),
+  mode: mysqlEnum("mode", ["demo", "live"]).notNull().default("demo"),
+  status: mysqlEnum("status", ["pending", "running", "complete", "failed"]).notNull().default("pending"),
+  competitorInsights: text("competitorInsights"),
+  strategy: text("strategy"),
+  performanceInsights: text("performanceInsights"),
+  blackboard: text("blackboard"),
+  totalTokens: int("totalTokens"),
+  durationMs: int("durationMs"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+export type AdmeshRun = typeof admeshRuns.$inferSelect;
+export type InsertAdmeshRun = typeof admeshRuns.$inferInsert;
+
+export const admeshSteps = mysqlTable("admesh_steps", {
+  id: int("id").autoincrement().primaryKey(),
+  runId: int("runId").notNull(),
+  agentId: varchar("agentId", { length: 32 }).notNull(),
+  agentName: varchar("agentName", { length: 128 }).notNull(),
+  status: mysqlEnum("status", ["pending", "running", "complete", "failed"]).notNull().default("pending"),
+  output: text("output"),
+  tokensUsed: int("tokensUsed").notNull().default(0),
+  durationMs: int("durationMs"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+export type AdmeshStep = typeof admeshSteps.$inferSelect;
+export type InsertAdmeshStep = typeof admeshSteps.$inferInsert;
+
+export const admeshAds = mysqlTable("admesh_ads", {
+  id: int("id").autoincrement().primaryKey(),
+  runId: int("runId").notNull(),
+  language: mysqlEnum("language", ["en", "ar"]).notNull(),
+  adIndex: int("adIndex").notNull(),
+  hook: text("hook").notNull(),
+  body: text("body").notNull(),
+  cta: varchar("cta", { length: 255 }).notNull(),
+  visualDirection: text("visualDirection"),
+  targetAudience: varchar("targetAudience", { length: 255 }),
+  hookScore: int("hookScore"),
+  clarityScore: int("clarityScore"),
+  brandFitScore: int("brandFitScore"),
+  localRelevanceScore: int("localRelevanceScore"),
+  ctrPotentialScore: int("ctrPotentialScore"),
+  overallScore: int("overallScore"),
+  isTopPick: boolean("isTopPick").notNull().default(false),
+  isApproved: boolean("isApproved").notNull().default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type AdmeshAd = typeof admeshAds.$inferSelect;
+export type InsertAdmeshAd = typeof admeshAds.$inferInsert;

@@ -975,3 +975,19 @@
 
 - [x] Add Insurance link to SiteNav top navigation
 - [x] Add Insurance domain card to Landing page
+
+## AdMesh — AI Creative Intelligence Module
+
+- [x] DB schema: admesh_runs, admesh_steps, admesh_ads tables
+- [x] shared/admeshAgents.ts — 7-agent registry + X-cite mock data
+- [x] server/admeshEngine.ts — 7-agent pipeline with LLM prompts (parallel wave 1, sequential wave 2)
+- [x] server/admeshStreamRoute.ts — SSE stream route at /api/admesh/stream/:runId
+- [x] server/routers/admesh.ts — tRPC procedures (startRun, listRuns, getAds, getStoryboards, approveAd)
+- [x] Wire admeshRouter into routers.ts and admeshStreamRoute into server index
+- [x] client/src/pages/AdMeshHome.tsx — entry page at /admesh with brand input form + 5 voice presets
+- [x] client/src/pages/AdMeshRun.tsx — live run page with pipeline rail + 4-tab output (pipeline/ads/storyboards/performance)
+- [x] Arabic RTL ad card rendering in AdMeshRun.tsx (dir=rtl + Noto Naskh Arabic font)
+- [ ] PDF export of ad brief (strategy + 10 ad cards + storyboards) — deferred to Phase 4
+- [x] Add AdMesh to SiteNav (orange pill) and Landing page domain cards
+- [x] Wire /admesh and /admesh/run/:runId routes in App.tsx
+- [x] TypeScript check and tests pass — 134/134

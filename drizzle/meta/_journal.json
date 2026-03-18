@@ -169,6 +169,13 @@
       "when": 1773841719455,
       "tag": "0023_lucky_pandemic",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "5",
+      "when": 1773846707000,
+      "tag": "0024_even_gamora",
+      "breakpoints": true
     }
   ]
 }
