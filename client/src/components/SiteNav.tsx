@@ -89,6 +89,26 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               Contact
             </button>
             <a
+              href="/insurance"
+              style={{
+                color: "#0EA5E9", fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, fontWeight: 600,
+                transition: "all 0.2s", fontFamily: "inherit",
+                border: "1px solid rgba(14,165,233,0.3)",
+                background: "rgba(14,165,233,0.08)",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(14,165,233,0.18)";
+                (e.currentTarget as HTMLAnchorElement).style.color = WHITE;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(14,165,233,0.08)";
+                (e.currentTarget as HTMLAnchorElement).style.color = "#0EA5E9";
+              }}
+            >
+              🏛️ Insurance
+            </a>
+            <a
               href="/rosie"
               style={{
                 color: "#A78BFA", fontSize: 14, textDecoration: "none",
@@ -146,6 +166,26 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
             >
               Contact
+            </a>
+            <a
+              href="/insurance"
+              style={{
+                color: "#0EA5E9", fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, fontWeight: 600,
+                transition: "all 0.2s",
+                border: "1px solid rgba(14,165,233,0.3)",
+                background: "rgba(14,165,233,0.08)",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(14,165,233,0.18)";
+                (e.currentTarget as HTMLAnchorElement).style.color = WHITE;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(14,165,233,0.08)";
+                (e.currentTarget as HTMLAnchorElement).style.color = "#0EA5E9";
+              }}
+            >
+              🏛️ Insurance
             </a>
             <a
               href="/rosie"

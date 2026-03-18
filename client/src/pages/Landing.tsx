@@ -49,6 +49,12 @@ const DOMAINS = [
     contexts: ["Private Wealth", "Investment Banking", "Family Office", "Fund Distribution"],
     agents: ["Client Profiler", "Suitability Checker", "Portfolio Builder", "Deal Originator", "Asset Allocator", "Investor Matcher"],
   },
+  {
+    icon: "🏛️", name: "Insurance", color: "#0EA5E9", lightBg: "rgba(14,165,233,0.08)",
+    contexts: ["Direct Insurance", "Reinsurance", "Takaful", "Broking"],
+    agents: ["RiskIntakeParser", "TakafulClassifier", "ShariaComplianceAgent", "PricingActuary", "TreatyAnalyst", "CatastropheModeler"],
+    link: "/insurance",
+  },
 ];
 
 const FEATURES = [
@@ -621,7 +627,7 @@ export default function Landing() {
 
           <div className="landing-domains-grid">
             {DOMAINS.map((d, i) => (
-              <a key={i} href={`/domain/${encodeURIComponent(d.name)}`}
+              <a key={i} href={(d as { link?: string }).link ?? `/domain/${encodeURIComponent(d.name)}`}
                 style={{ textDecoration: "none", display: "block", background: d.lightBg, border: `1px solid ${d.color}33`, borderRadius: 14, padding: "22px 18px", transition: "border-color 0.2s, transform 0.2s", cursor: "pointer" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${d.color}66`; (e.currentTarget as HTMLElement).style.transform = "translateY(-3px)"; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = `${d.color}33`; (e.currentTarget as HTMLElement).style.transform = "none"; }}

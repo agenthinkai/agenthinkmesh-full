@@ -970,3 +970,8 @@
 - [x] TakafulAlerts.tsx — Shariah compliance monitoring dashboard at /insurance/takaful-alerts
 - [x] Wire /insurance, /insurance/run/:runType/:runId, /insurance/takaful-alerts routes in App.tsx
 - [x] TypeScript check and tests pass — 134/134
+
+## Insurance Navigation & Landing Page
+
+- [x] Add Insurance link to SiteNav top navigation
+- [x] Add Insurance domain card to Landing page
