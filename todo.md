@@ -948,3 +948,17 @@
 - [x] Fix: complete event enriched with icDecision, confidenceScore, riskScore fields
 - [x] Routes: /portfolio/intel, /portfolio/intel/run/:runType/:runId, /portfolio/guardian added to App.tsx
 - [x] Tests: 112/112 passing, 0 TypeScript errors
+
+## Insurance & Reinsurance Intelligence Engine — Phase 1 (Backend)
+
+- [x] DB schema: insurance_runs, insurance_steps, takaful_alerts tables created and pushed
+- [x] shared/insuranceAgents.ts: 10-agent registry across 4 clusters (intake, underwriting, reinsurance, decision)
+- [x] 5 workflow chains defined: underwriting (7 agents), treaty (5), claims (4), compliance (3), cat_model (4)
+- [x] server/insuranceEngine.ts: full pipeline engine with LLM prompts for all 10 agents (blackboard pattern)
+- [x] server/insuranceStreamRoute.ts: SSE streaming route at /api/insurance/stream/:runType/:runId
+- [x] server/routers/insurance.ts: tRPC router — listAgents, getWorkflowChains, startRun, getRunResult, listRuns, getTakafulAlerts, acknowledgeAlert
+- [x] server/_core/index.ts: insurance SSE route registered at /api/insurance
+- [x] server/routers.ts: insuranceRouter merged into appRouter as "insurance"
+- [x] server/insurance.test.ts: 22 tests covering agent registry, workflow chains, cluster validation
+- [x] 134/134 tests passing, 0 TypeScript errors
+- [ ] Phase 2: Frontend — Insurance Home, Underwriting Run page, Treaty Analysis run page, Takaful Compliance dashboard

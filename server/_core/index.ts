@@ -14,6 +14,7 @@ import etfRouter from "../etfRoute";
 import { startHealthCheckJob } from "../jobs/healthCheck";
 import workflowStreamRouter from "../workflowStreamRoute";
 import portfolioStreamRouter from "../portfolioStreamRoute";
+import insuranceStreamRouter from "../insuranceStreamRoute";
 import { registerStripeWebhookRoute } from "../stripeWebhookRoute";
 import { startDripScheduler } from "../emailDrip";
 
@@ -56,6 +57,8 @@ async function startServer() {
   app.use("/api/workflow", workflowStreamRouter);
   // Portfolio Intelligence Engine SSE streaming endpoint
   app.use("/api/portfolio", portfolioStreamRouter);
+  // Insurance & Reinsurance Intelligence Engine SSE streaming endpoint
+  app.use("/api/insurance", insuranceStreamRouter);
   // Embedded specialist agent endpoints
   app.use("/api/agents", agentRouter);
   // tRPC API

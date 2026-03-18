@@ -162,6 +162,13 @@
       "when": 1773818535453,
       "tag": "0022_amazing_vengeance",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "5",
+      "when": 1773841719455,
+      "tag": "0023_lucky_pandemic",
+      "breakpoints": true
     }
   ]
 }

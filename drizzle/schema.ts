@@ -521,3 +521,63 @@ export const emailEvents = mysqlTable("email_events", {
 });
 export type EmailEvent = typeof emailEvents.$inferSelect;
 export type InsertEmailEvent = typeof emailEvents.$inferInsert;
+
+// ── Insurance & Reinsurance Intelligence Engine ───────────────────────────────
+
+export const insuranceRuns = mysqlTable("insurance_runs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: varchar("userId", { length: 64 }).notNull(),
+  runType: mysqlEnum("runType", ["underwriting", "claims", "treaty", "compliance", "cat_model"]).notNull(),
+  status: mysqlEnum("status", ["pending", "running", "complete", "failed"]).notNull().default("pending"),
+  inputSummary: text("inputSummary"),
+  // Decision outputs
+  uwDecision: mysqlEnum("uwDecision", ["APPROVE", "REFER", "DECLINE"]),
+  confidenceScore: int("confidenceScore"),       // 0-100
+  premiumIndication: varchar("premiumIndication", { length: 64 }), // e.g. "USD 1.2M"
+  riskScore: int("riskScore"),                   // 0-100
+  takafulCompliant: boolean("takafulCompliant"),
+  threatLevel: mysqlEnum("threatLevel", ["low", "medium", "high", "critical"]),
+  // Treaty / Reinsurance outputs
+  treatyRecommendation: varchar("treatyRecommendation", { length: 32 }), // ACCEPT / DECLINE / NEGOTIATE
+  cessionRate: varchar("cessionRate", { length: 32 }),
+  // Full blackboard JSON
+  blackboard: text("blackboard"),
+  // Metrics
+  totalTokens: int("totalTokens"),
+  durationMs: int("durationMs"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+export type InsuranceRun = typeof insuranceRuns.$inferSelect;
+export type InsertInsuranceRun = typeof insuranceRuns.$inferInsert;
+
+export const insuranceSteps = mysqlTable("insurance_steps", {
+  id: int("id").autoincrement().primaryKey(),
+  runId: int("runId").notNull(),
+  agentId: varchar("agentId", { length: 32 }).notNull(),
+  agentName: varchar("agentName", { length: 128 }).notNull(),
+  status: mysqlEnum("status", ["pending", "running", "complete", "failed"]).notNull().default("pending"),
+  output: text("output"),       // JSON blob
+  tokensUsed: int("tokensUsed").notNull().default(0),
+  durationMs: int("durationMs"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+});
+export type InsuranceStep = typeof insuranceSteps.$inferSelect;
+export type InsertInsuranceStep = typeof insuranceSteps.$inferInsert;
+
+export const takafulAlerts = mysqlTable("takaful_alerts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: varchar("userId", { length: 64 }).notNull(),
+  insuranceRunId: int("insuranceRunId"),
+  alertType: varchar("alertType", { length: 64 }).notNull(), // e.g. "gharar", "riba", "maysir", "non_halal_investment"
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).notNull().default("warning"),
+  title: varchar("title", { length: 255 }).notNull(),
+  description: text("description"),
+  recommendedAction: text("recommendedAction"),
+  isAcknowledged: boolean("isAcknowledged").notNull().default(false),
+  acknowledgedAt: timestamp("acknowledgedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type TakafulAlert = typeof takafulAlerts.$inferSelect;
+export type InsertTakafulAlert = typeof takafulAlerts.$inferInsert;
