@@ -905,3 +905,9 @@
 - [x] Remove domain whitelist from normal access — billing gateway replaces it for all workflows
 - [x] Tests: 112/112 passing, zero TypeScript errors
 - [x] TypeScript: zero errors
+
+## Sprint — Trial Visibility UI
+
+- [x] Landing hero: add "Free for 60 days. 50 runs. No credit card required." above signup CTA
+- [x] First screen after login: welcome banner "Your 60-day free access is active. You have 50 runs across all workflows."
+- [x] PlanUsageBadge: change "Trial · 50 left" to "Free · 50 runs · X days left"

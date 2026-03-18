@@ -184,6 +184,22 @@ export default function AskScreen() {
     }
   }, [isAuthenticated, identityProfile.data, identityProfile.isLoading, identityProfile.isFetching, navigate]);
 
+  // Welcome banner — shown once per session for trial users
+  const [welcomeDismissed, setWelcomeDismissed] = useState(() => {
+    return sessionStorage.getItem("atm_welcome_dismissed") === "1";
+  });
+  const usageStatus = trpc.billing.getUsageStatus.useQuery(undefined, {
+    enabled: isAuthenticated,
+    staleTime: 60_000,
+  });
+  const isTrialUser = usageStatus.data?.planTier === "trial";
+  const trialRunsLeft = usageStatus.data?.trialRunsRemaining ?? 50;
+  const trialDaysLeft = usageStatus.data?.daysUntilTrialExpiry ?? 60;
+  const handleDismissWelcome = () => {
+    sessionStorage.setItem("atm_welcome_dismissed", "1");
+    setWelcomeDismissed(true);
+  };
+
   // Nudge banner state
   const [nudgeDismissed, setNudgeDismissed] = useState(false);
   const nudgeMessage = identityProfile.data?.nudgeMessage ?? null;
@@ -313,6 +329,34 @@ export default function AskScreen() {
 
       {/* Shared sticky navbar */}
       <SiteNav />
+
+      {/* Welcome banner — shown once per session for trial users */}
+      {isAuthenticated && isTrialUser && !welcomeDismissed && (
+        <div style={{
+          position: "relative", zIndex: 10,
+          background: "linear-gradient(90deg, #00D4FF12 0%, #4060FF12 100%)",
+          borderBottom: "1px solid #00D4FF30",
+          padding: "10px 24px",
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+          flexWrap: "wrap",
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontSize: 16 }}>🎉</span>
+            <span style={{ fontSize: 13, fontWeight: 600, color: "#00D4FF", fontFamily: "'Inter', sans-serif" }}>
+              Your 60-day free access is active.
+            </span>
+            <span style={{ fontSize: 13, color: "#8BA3C4", fontFamily: "'Inter', sans-serif" }}>
+              You have <strong style={{ color: "#F0F4FA" }}>{trialRunsLeft} runs</strong> across all workflows
+              {trialDaysLeft !== null && <> · <strong style={{ color: "#F0F4FA" }}>{trialDaysLeft} days</strong> remaining</>}.
+            </span>
+          </div>
+          <button
+            onClick={handleDismissWelcome}
+            style={{ background: "none", border: "none", cursor: "pointer", color: "#3D4F63", fontSize: 18, lineHeight: 1, padding: "0 4px", flexShrink: 0 }}
+            aria-label="Dismiss welcome banner"
+          >×</button>
+        </div>
+      )}
 
       {/* Main content */}
       <main style={{

@@ -31,11 +31,15 @@ export function PlanUsageBadge() {
       usage = "";
     } else if (trialRunsRemaining <= 10) {
       pillClass = "bg-amber-900/40 border-amber-700/50 text-amber-300";
-      label = "Trial";
-      usage = `${trialRunsRemaining} left`;
+      label = "Free";
+      usage = daysUntilTrialExpiry != null
+        ? `${trialRunsRemaining} runs · ${daysUntilTrialExpiry} days left`
+        : `${trialRunsRemaining} runs left`;
     } else {
-      label = "Trial";
-      usage = `${trialRunsRemaining} left`;
+      label = "Free";
+      usage = daysUntilTrialExpiry != null
+        ? `${trialRunsRemaining} runs · ${daysUntilTrialExpiry} days left`
+        : `${trialRunsRemaining} runs left`;
     }
   } else if (planTier === "standard") {
     pillClass = "bg-blue-900/40 border-blue-700/50 text-blue-300";

@@ -425,6 +425,7 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
             <a href="/persona-setup" className="neon-activate-btn">⚡ Try the Mesh</a>
           </div>
         </div>
+        <p style={{ fontFamily: MONO, fontSize: 12, color: "#4ADE80", marginBottom: 6, fontWeight: 700, letterSpacing: "0.04em" }}>Free for 60 days. 50 runs. No credit card required.</p>
         <p style={{ fontFamily: MONO, fontSize: 11, color: "#3D4F63", marginBottom: 48 }}>No sign-in required to preview · {stats.verifiedAgents} specialist agents ready</p>
 
         {/* Stats row */}
