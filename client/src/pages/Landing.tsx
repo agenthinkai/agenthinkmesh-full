@@ -424,7 +424,7 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
 
         {/* Subtext */}
         <p style={{ fontSize: 16, color: "#6B7A8D", maxWidth: 480, lineHeight: 1.75, marginBottom: 40 }}>
-          Describe any complex business task. <strong style={{ color: "#A8C4E0" }}>AgenThinkMesh</strong> activates the right specialist agents across Finance, Legal, Healthcare, and GCC Wealth — delivering institutional-grade results in seconds.
+          Describe any complex business task. <strong style={{ color: "#A8C4E0" }}>AgenThinkMesh</strong> activates the right specialist agents across Finance, Legal, Healthcare, GCC Wealth, Insurance, and AdMesh — delivering institutional-grade results in seconds.
         </p>
 
         {/* Search bar */}

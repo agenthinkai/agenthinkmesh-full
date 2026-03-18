@@ -995,3 +995,7 @@
 ## AdMesh Landing Page Use-Case Card
 
 - [x] Add AdMesh Brand Manager persona card to Landing page USE_CASES section (new "Real tasks. Real domains." section wired with all 5 use cases)
+
+## Landing Hero Subtitle Update
+
+- [x] Update hero subtitle to include Insurance and AdMesh alongside Finance, Legal, Healthcare, GCC Wealth
