@@ -991,3 +991,7 @@
 - [x] Add AdMesh to SiteNav (orange pill) and Landing page domain cards
 - [x] Wire /admesh and /admesh/run/:runId routes in App.tsx
 - [x] TypeScript check and tests pass — 134/134
+
+## AdMesh Landing Page Use-Case Card
+
+- [x] Add AdMesh Brand Manager persona card to Landing page USE_CASES section (new "Real tasks. Real domains." section wired with all 5 use cases)

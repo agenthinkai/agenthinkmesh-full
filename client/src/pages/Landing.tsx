@@ -83,6 +83,7 @@ const USE_CASES = [
   { role: "GCC Relationship Manager", task: "Profile a new Saudi HNWI client, check Shariah suitability, and draft a portfolio proposal", agents: 7, domain: "GCC Wealth" },
   { role: "In-House Counsel", task: "Review this vendor contract for liability exposure and flag non-standard clauses", agents: 6, domain: "Legal" },
   { role: "Hospital Ops Director", task: "Analyse this week's bed occupancy data and generate a staffing optimisation report", agents: 8, domain: "Healthcare" },
+  { role: "Brand Manager · X-cite Kuwait", task: "Generate a Ramadan campaign brief with 10 bilingual ads (EN + Arabic Gulf), competitor gap analysis vs Eureka and Sharaf DG, and 2 video storyboards — in under 60 seconds", agents: 7, domain: "AdMesh" },
 ];
 
 
@@ -792,6 +793,44 @@ export default function Landing() {
       </section>}
 
 
+
+      {/* ── Enterprise Use Cases ── */}
+      <section style={{ padding: "72px 24px", background: NAVY_800 }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 40 }}>
+            <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 500, marginBottom: 10 }}>How enterprise teams use AgenThinkMesh</div>
+            <h2 style={{ fontSize: "clamp(22px, 3.5vw, 32px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.2, margin: 0 }}>Real tasks. Real domains. Real results.</h2>
+          </div>
+          <div className="landing-domains-grid">
+            {USE_CASES.map((uc, i) => {
+              const domainColors: Record<string, string> = {
+                Finance: "#7BA3D4",
+                "GCC Wealth": "#C9A84C",
+                Legal: "#8BBFD4",
+                Healthcare: "#7DC4A8",
+                AdMesh: "#F97316",
+              };
+              const color = domainColors[uc.domain] ?? GOLD;
+              return (
+                <div key={i} style={{ background: "#0F1E38", border: `1px solid ${NAVY_700}`, borderRadius: 14, padding: "24px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: SILVER_50 }}>{uc.role}</span>
+                    <span style={{ fontSize: 10, fontFamily: MONO, fontWeight: 600, color, background: `${color}18`, border: `1px solid ${color}40`, borderRadius: 6, padding: "2px 8px" }}>{uc.domain}</span>
+                  </div>
+                  <div style={{ fontSize: 13, color: SILVER_300, lineHeight: 1.7, fontStyle: "italic", flex: 1 }}>
+                    &ldquo;{uc.task}&rdquo;
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <span style={{ fontSize: 10, color: SILVER_500, fontFamily: MONO }}>{uc.agents} agents</span>
+                    <span style={{ width: 3, height: 3, borderRadius: "50%", background: SILVER_500, display: "inline-block" }} />
+                    <span style={{ fontSize: 10, color: color, fontFamily: MONO }}>auto-spawned</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
       {/* ── Contact Us ── */}
       <ContactSection />
