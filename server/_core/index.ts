@@ -13,6 +13,8 @@ import { gameTheoryRouter } from "../gameTheoryRoute";
 import etfRouter from "../etfRoute";
 import { startHealthCheckJob } from "../jobs/healthCheck";
 import workflowStreamRouter from "../workflowStreamRoute";
+import { registerStripeWebhookRoute } from "../stripeWebhookRoute";
+import { startDripScheduler } from "../emailDrip";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -37,6 +39,8 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
   // Configure body parser with larger size limit for file uploads
+  // Stripe webhook MUST be registered before express.json() to receive raw body
+  registerStripeWebhookRoute(app);
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
   // OAuth callback under /api/oauth/callback
@@ -77,6 +81,7 @@ async function startServer() {
     console.log(`Server running on http://localhost:${port}/`);
     // Start the agent registry health-check cron job
     startHealthCheckJob();
+    startDripScheduler();
   });
 }
 

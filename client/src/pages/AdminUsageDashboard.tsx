@@ -71,6 +71,20 @@ export default function AdminUsageDashboard() {
     { enabled: user?.role === "admin" }
   );
 
+  const { data: trialMetrics } = trpc.billing.listTrialMetrics.useQuery(undefined, {
+    enabled: user?.role === "admin",
+  });
+
+  const { data: revenueMetrics } = trpc.billing.listRevenueMetrics.useQuery(undefined, {
+    enabled: user?.role === "admin",
+  });
+
+  const { data: usersWithPlan } = trpc.billing.listUsersWithPlan.useQuery(undefined, {
+    enabled: user?.role === "admin",
+  });
+
+  const assignEnterprise = trpc.billing.assignEnterprise.useMutation();
+
   // Aggregate daily rows into per-date totals for the chart
   const chartData = useMemo(() => {
     if (!dailyRows) return [];
@@ -341,6 +355,117 @@ export default function AdminUsageDashboard() {
             </div>
           )}
         </div>
+        {/* ── Trial Metrics ─────────────────────────────────────────────── */}
+        <div className="mb-10">
+          <h2 className="text-lg font-semibold text-slate-200 mb-4">Trial Funnel</h2>
+          {trialMetrics ? (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                {[
+                  { label: "Active Trials", value: trialMetrics.activeTrials, color: "text-cyan-400" },
+                  { label: "Expired Trials", value: trialMetrics.expiredTrials, color: "text-red-400" },
+                  { label: "Converted Users", value: trialMetrics.convertedUsers, color: "text-green-400" },
+                  { label: "Conversion Rate", value: `${trialMetrics.conversionRate}%`, color: "text-amber-400" },
+                ].map(m => (
+                  <div key={m.label} className="bg-white/5 rounded-xl p-4 border border-white/10">
+                    <div className={`text-2xl font-bold ${m.color}`}>{m.value}</div>
+                    <div className="text-slate-500 text-xs mt-1">{m.label}</div>
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mb-6">
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                  <div className="text-xl font-bold text-slate-200">{trialMetrics.avgRunsPerTrial}</div>
+                  <div className="text-slate-500 text-xs mt-1">Avg runs per trial</div>
+                </div>
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                  <div className="text-xl font-bold text-amber-400">{trialMetrics.nearExpiry}</div>
+                  <div className="text-slate-500 text-xs mt-1">Expiring within 7 days</div>
+                </div>
+                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
+                  <div className="text-xl font-bold text-slate-200">{trialMetrics.totalTrialUsers}</div>
+                  <div className="text-slate-500 text-xs mt-1">Total trial signups</div>
+                </div>
+              </div>
+            </>
+          ) : (
+            <div className="text-slate-500 text-sm">Loading trial metrics…</div>
+          )}
+        </div>
+
+        {/* ── Revenue Metrics ───────────────────────────────────────────────── */}
+        <div className="mb-10">
+          <h2 className="text-lg font-semibold text-slate-200 mb-4">Revenue</h2>
+          {revenueMetrics ? (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              {[
+                { label: "MRR", value: `$${revenueMetrics.mrr}`, color: "text-green-400" },
+                { label: "Total Revenue", value: `$${revenueMetrics.totalRevenue}`, color: "text-cyan-400" },
+                { label: "Active Subscriptions", value: revenueMetrics.activeSubscriptions, color: "text-blue-400" },
+                { label: "Standard / Pro / Ent", value: `${revenueMetrics.standardCount} / ${revenueMetrics.proCount} / ${revenueMetrics.enterpriseCount}`, color: "text-amber-400" },
+              ].map(m => (
+                <div key={m.label} className="bg-white/5 rounded-xl p-4 border border-white/10">
+                  <div className={`text-2xl font-bold ${m.color}`}>{m.value}</div>
+                  <div className="text-slate-500 text-xs mt-1">{m.label}</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-slate-500 text-sm">Loading revenue metrics…</div>
+          )}
+        </div>
+
+        {/* ── Users with Plan ───────────────────────────────────────────────── */}
+        <div className="mb-10">
+          <h2 className="text-lg font-semibold text-slate-200 mb-4">User Plans</h2>
+          {usersWithPlan && usersWithPlan.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 text-slate-500 text-left">
+                    <th className="pb-2 pr-4">User</th>
+                    <th className="pb-2 pr-4">Plan</th>
+                    <th className="pb-2 pr-4">Runs Used</th>
+                    <th className="pb-2 pr-4">Trial Remaining</th>
+                    <th className="pb-2 pr-4">Converted</th>
+                    <th className="pb-2">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usersWithPlan.map((u) => (
+                    <tr key={u.id} className="border-b border-white/5 hover:bg-white/5">
+                      <td className="py-2 pr-4 text-slate-200">{u.name ?? u.email ?? `#${u.id}`}</td>
+                      <td className="py-2 pr-4">
+                        <span className={`px-2 py-0.5 rounded text-[10px] font-medium ${
+                          u.planTier === "enterprise" ? "bg-amber-400/20 text-amber-400" :
+                          u.planTier === "pro" ? "bg-purple-400/20 text-purple-400" :
+                          u.planTier === "standard" ? "bg-blue-400/20 text-blue-400" :
+                          "bg-slate-700 text-slate-400"
+                        }`}>{u.planTier}</span>
+                      </td>
+                      <td className="py-2 pr-4 text-slate-400">{u.totalCompletedRuns ?? 0}</td>
+                      <td className="py-2 pr-4 text-slate-400">{u.planTier === "trial" ? (u.trialRunsRemaining ?? 0) : "—"}</td>
+                      <td className="py-2 pr-4 text-slate-500">{u.convertedAt ? new Date(u.convertedAt).toLocaleDateString() : "—"}</td>
+                      <td className="py-2">
+                        {u.planTier !== "enterprise" && (
+                          <button
+                            onClick={() => assignEnterprise.mutate({ userId: u.id })}
+                            className="text-xs text-amber-400 hover:text-amber-300 underline"
+                          >
+                            → Enterprise
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-slate-500 text-sm">No users found.</div>
+          )}
+        </div>
+
       </div>
     </div>
   );

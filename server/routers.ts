@@ -11,6 +11,7 @@ import { turnaroundRouter } from "./routers/turnaround";
 import { identityRouter } from "./routers/identity";
 import { workflowRouter } from "./routers/workflow";
 import { dossierPdfRouter } from "./routers/dossierPdf";
+import { billingRouter } from "./routers/billing";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
 import { eq, desc, gte, sql, and, like, or, isNull, lt } from "drizzle-orm";
@@ -190,6 +191,10 @@ export const appRouter = router({
         activeDocId: z.number().optional(), // server-side fallback: fetch text directly from DB
       }))
       .mutation(async ({ ctx, input }) => {
+        // Billing Gateway — trial/plan access check
+        const { assertWorkflowAccess } = await import("./billing");
+        await assertWorkflowAccess(ctx.user.id);
+
         // Resolve vault text: prefer client-provided text, fall back to DB lookup
         let resolvedVaultText = input.vaultText || "";
         if (!resolvedVaultText && input.activeDocId) {
@@ -780,6 +785,10 @@ Return ONLY valid JSON matching this exact schema:
         return { query: query.trim(), fileUrl: fileUrl ?? null, fileName: fileName ?? null };
       })
       .mutation(async ({ ctx, input }) => {
+        // Billing Gateway
+        const { assertWorkflowAccess } = await import("./billing");
+        await assertWorkflowAccess(ctx.user.id);
+
         const db = await getDb();
         if (!db) throw new Error("Database unavailable");
         const startTime = Date.now();
@@ -2912,6 +2921,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
   identity: identityRouter,
   workflow: workflowRouter,
   dossier: dossierPdfRouter,
+  billing: billingRouter,
 
   // ── ETF Partner CRM ────────────────────────────────────────────────────────
   partner: router({

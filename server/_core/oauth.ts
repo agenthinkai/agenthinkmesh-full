@@ -1,6 +1,7 @@
 import { COOKIE_NAME, ONE_YEAR_MS } from "@shared/const";
 import type { Express, Request, Response } from "express";
 import * as db from "../db";
+import { assignTrialOnFirstLogin } from "../billing";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
 
@@ -49,6 +50,12 @@ export function registerOAuthRoutes(app: Express) {
         loginMethod: userInfo.loginMethod ?? userInfo.platform ?? null,
         lastSignedIn: new Date(),
       });
+
+      // Assign free trial on first login (idempotent — no-op on subsequent logins)
+      const freshUser = await db.getUserByOpenId(userInfo.openId);
+      if (freshUser) {
+        await assignTrialOnFirstLogin(freshUser.id);
+      }
 
       const sessionToken = await sdk.createSessionToken(userInfo.openId, {
         name: userInfo.name || "",

@@ -118,14 +118,9 @@ export const workflowRouter = router({
     .mutation(async ({ ctx, input }) => {
       const email = ctx.user.email ?? "";
 
-      // Fortress Gateway — domain check
-      const approved = await isEmailDomainApproved(email);
-      if (!approved) {
-        throw new TRPCError({
-          code: "FORBIDDEN",
-          message: "FORTRESS_GATEWAY: Your email domain is not approved for access. Please request beta access.",
-        });
-      }
+      // Billing Gateway — trial/plan access check
+      const { assertWorkflowAccess } = await import("../billing");
+      await assertWorkflowAccess(ctx.user.id);
 
       // Workflow type validation
       if (!WORKFLOW_REGISTRY[input.workflowType]) {

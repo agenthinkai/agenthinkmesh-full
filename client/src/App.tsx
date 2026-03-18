@@ -30,6 +30,7 @@ import DomainAgents from "./pages/DomainAgents";
 import BetaAccess from "./pages/BetaAccess";
 import RosieProtocol from "./pages/RosieProtocol";
 import AdminBetaRequests from "./pages/AdminBetaRequests";
+import Upgrade from "./pages/Upgrade";
 import NotFound from "./pages/NotFound";
 import { useAuth } from "./_core/hooks/useAuth";
 
@@ -98,6 +99,8 @@ function Router() {
       {/* Admin */}
       <Route path="/admin/usage" component={AdminUsageDashboard} />
       <Route path="/admin/beta-requests" component={AdminBetaRequests} />
+      <Route path="/upgrade" component={Upgrade} />
+      <Route path="/upgrade/success" component={Upgrade} />
 
       {/* 100-Hour Turnaround */}
       <Route path="/turnaround" component={TurnaroundHome} />

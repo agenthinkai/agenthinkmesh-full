@@ -21,6 +21,29 @@ export const users = mysqlTable("users", {
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
+
+  // ── Billing & Trial ──────────────────────────────────────────────────────────
+  planTier: mysqlEnum("planTier", ["trial", "standard", "pro", "enterprise"]).notNull().default("trial"),
+  trialRunsRemaining: int("trialRunsRemaining").notNull().default(50),
+  trialStartedAt: timestamp("trialStartedAt"),
+  trialExpiresAt: timestamp("trialExpiresAt"),
+  monthlyRunsLimit: int("monthlyRunsLimit"),
+  monthlyRunsUsed: int("monthlyRunsUsed").notNull().default(0),
+  billingCycleAnchor: timestamp("billingCycleAnchor"),
+  convertedAt: timestamp("convertedAt"),
+  stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 255 }),
+
+  // ── Email drip tracking ───────────────────────────────────────────────────────
+  emailDay1SentAt: timestamp("emailDay1SentAt"),
+  emailDay15SentAt: timestamp("emailDay15SentAt"),
+  emailDay45SentAt: timestamp("emailDay45SentAt"),
+  emailDay55SentAt: timestamp("emailDay55SentAt"),
+  emailDay60SentAt: timestamp("emailDay60SentAt"),
+
+  // ── Usage totals ──────────────────────────────────────────────────────────────
+  totalCompletedRuns: int("totalCompletedRuns").notNull().default(0),
+  totalAgentsFired: int("totalAgentsFired").notNull().default(0),
 });
 
 export type User = typeof users.$inferSelect;
@@ -453,3 +476,48 @@ export const workflowSteps = mysqlTable("workflow_steps", {
 
 export type WorkflowStep = typeof workflowSteps.$inferSelect;
 export type InsertWorkflowStep = typeof workflowSteps.$inferInsert;
+
+// ── Subscriptions ─────────────────────────────────────────────────────────────
+export const subscriptions = mysqlTable("subscriptions", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  planTier: mysqlEnum("planTier", ["trial", "standard", "pro", "enterprise"]).notNull(),
+  status: mysqlEnum("status", ["active", "cancelled", "past_due", "trialing", "incomplete"]).notNull().default("active"),
+  monthlyRunsLimit: int("monthlyRunsLimit"),
+  stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
+  stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 255 }),
+  currentPeriodStart: timestamp("currentPeriodStart"),
+  currentPeriodEnd: timestamp("currentPeriodEnd"),
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  cancelledAt: timestamp("cancelledAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Subscription = typeof subscriptions.$inferSelect;
+export type InsertSubscription = typeof subscriptions.$inferInsert;
+
+// ── Payments ──────────────────────────────────────────────────────────────────
+export const payments = mysqlTable("payments", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  amountUsd: decimal("amountUsd", { precision: 10, scale: 2 }).notNull(),
+  currency: varchar("currency", { length: 8 }).notNull().default("USD"),
+  status: varchar("status", { length: 32 }).notNull(), // succeeded, pending, failed
+  provider: varchar("provider", { length: 32 }).notNull().default("stripe"),
+  providerPaymentId: varchar("providerPaymentId", { length: 255 }),
+  planTier: mysqlEnum("planTier", ["standard", "pro", "enterprise"]),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = typeof payments.$inferInsert;
+
+// ── Email Events (drip deduplication) ────────────────────────────────────────
+export const emailEvents = mysqlTable("email_events", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  emailType: varchar("emailType", { length: 64 }).notNull(), // day_1, day_15, day_45, day_55, day_60
+  status: varchar("status", { length: 32 }).notNull().default("sent"), // sent, failed, skipped
+  sentAt: timestamp("sentAt").defaultNow().notNull(),
+});
+export type EmailEvent = typeof emailEvents.$inferSelect;
+export type InsertEmailEvent = typeof emailEvents.$inferInsert;

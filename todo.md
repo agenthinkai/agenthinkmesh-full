@@ -877,3 +877,31 @@
 - [x] Fix 1: SSE streaming for Workflow Rail — EventSource, step_start/step_complete/complete events, live node animation + commitFlash
 - [x] Fix 2: Vault → Rosie intake connection — three-tab selector (Type/Vault/Upload), vault.list query, vault.upload mutation
 - [x] Fix 3: Auto-whitelist on beta approval — domain extracted from email, org inserted, green banner confirmation in admin panel
+
+## Sprint — Free Trial + Billing System
+
+- [x] DB: extend users table with plan_tier, trial_runs_remaining, trial_started_at, trial_expires_at, monthly_runs_limit, monthly_runs_used, billing_cycle_anchor, converted_at, stripe_customer_id, stripe_subscription_id, email tracking fields, total_completed_runs, total_agents_fired
+- [x] DB: create subscriptions table
+- [x] DB: create payments table
+- [x] DB: create email_events table
+- [x] DB: backfill existing users to trial plan safely
+- [x] Backend: trial assignment on first login (OAuth callback)
+- [x] Backend: assertWorkflowAccess(userId) gateway helper
+- [x] Backend: run decrement helper (atomic, after completion only)
+- [x] Backend: monthly reset logic (auto-reset on read)
+- [x] Backend: billing tRPC router (getUsageStatus, getUpgradeSummary, createCheckoutSession, assignEnterprise, listTrialMetrics, listRevenueMetrics)
+- [x] Stripe: createCheckoutSession stub, webhook handler stub, subscription persistence (keys to be added via secrets panel)
+- [x] Stripe: env vars via webdev_request_secrets (pending user adding keys)
+- [x] Email: provider abstraction (Resend-ready), sendEmail helper
+- [x] Email: 5 drip email templates (Day 1, 15, 45, 55, 60)
+- [x] Email: scheduled drip job, duplicate prevention via email_events
+- [x] Frontend: PlanUsageBadge component in SiteNav (colour-coded pill, links to /upgrade)
+- [x] Frontend: /upgrade conversion screen (navy/gold, 3 plan cards, usage summary)
+- [x] Frontend: usePlanStatus() hook (covered by PlanUsageBadge + Upgrade.tsx queries)
+- [x] Frontend: redirect to /upgrade on TRIAL_ENDED / LIMIT_REACHED (gateway throws FORBIDDEN, UI catches and redirects)
+- [x] Admin: extend /admin/usage with trial funnel metrics and revenue analytics
+- [x] Admin: enterprise plan assignment UI (one-click → Enterprise button per user)
+- [x] Wire assertWorkflowAccess into runAgentTask and mesh.analyze (primary entry points)
+- [x] Remove domain whitelist from normal access — billing gateway replaces it for all workflows
+- [x] Tests: 112/112 passing, zero TypeScript errors
+- [x] TypeScript: zero errors

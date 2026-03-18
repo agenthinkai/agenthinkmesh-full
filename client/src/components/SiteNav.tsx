@@ -7,6 +7,7 @@ import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Logo from "@/components/Logo";
+import { PlanUsageBadge } from "@/components/PlanUsageBadge";
 
 const NAVY = "#080D1A";
 const CYAN = "#38BDF8";
@@ -188,6 +189,9 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
             </a>
           </>
         )}
+
+        {/* Plan usage badge — visible when logged in */}
+        <PlanUsageBadge />
 
         {/* Auth button / user dropdown */}
         {isAuthenticated ? (
