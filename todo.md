@@ -962,3 +962,11 @@
 - [x] server/insurance.test.ts: 22 tests covering agent registry, workflow chains, cluster validation
 - [x] 134/134 tests passing, 0 TypeScript errors
 - [ ] Phase 2: Frontend — Insurance Home, Underwriting Run page, Treaty Analysis run page, Takaful Compliance dashboard
+
+## Insurance & Reinsurance Intelligence Engine — Phase 2 (Frontend)
+
+- [x] InsuranceHome.tsx — 5-workflow selector at /insurance with agent cluster preview and stats bar
+- [x] InsuranceRun.tsx — live SSE run page with APPROVE/REFER/DECLINE and ACCEPT/DECLINE/NEGOTIATE banners
+- [x] TakafulAlerts.tsx — Shariah compliance monitoring dashboard at /insurance/takaful-alerts
+- [x] Wire /insurance, /insurance/run/:runType/:runId, /insurance/takaful-alerts routes in App.tsx
+- [x] TypeScript check and tests pass — 134/134

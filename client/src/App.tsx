@@ -19,6 +19,9 @@ import PortfolioVault from "./pages/PortfolioVault";
 import PortfolioIntel from "./pages/PortfolioIntel";
 import PortfolioIntelRun from "./pages/PortfolioIntelRun";
 import PortfolioGuardian from "./pages/PortfolioGuardian";
+import InsuranceHome from "./pages/InsuranceHome";
+import InsuranceRun from "./pages/InsuranceRun";
+import TakafulAlerts from "./pages/TakafulAlerts";
 import TurnaroundHome from "./pages/TurnaroundHome";
 import TurnaroundUpload from "./pages/TurnaroundUpload";
 import TurnaroundCommand from "./pages/TurnaroundCommand";
@@ -86,6 +89,11 @@ function Router() {
       <Route path="/portfolio-review/analyzing/:id" component={PortfolioAnalyzing} />
       <Route path="/portfolio-review/report/:id" component={PortfolioReport} />
       <Route path="/vault" component={PortfolioVault} />
+
+      {/* Insurance & Reinsurance Intelligence */}
+      <Route path="/insurance" component={InsuranceHome} />
+      <Route path="/insurance/run/:runType/:runId" component={InsuranceRun} />
+      <Route path="/insurance/takaful-alerts" component={TakafulAlerts} />
 
       {/* Mesh Identity Layer */}
       <Route path="/persona-setup" component={PersonaSelector} />
