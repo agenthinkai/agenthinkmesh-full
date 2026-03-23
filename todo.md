@@ -1019,3 +1019,21 @@
 - [x] Create OpenClawOverview.tsx at /openclaw with sidebar console layout
 - [x] Wire /openclaw, /openclaw/discovery, /openclaw/bridge, /openclaw/policy, /openclaw/manifests in App.tsx
 - [x] TypeScript check: 0 errors — 134/134 tests passing
+
+## OpenClaw — Make It Functional
+
+- [ ] Add openclaw.listAgents tRPC procedure (reads real agents from DB, adds clawReady flag)
+- [ ] Add openclaw.testAgent tRPC procedure (POSTs test payload to agent endpoint, returns latency + response)
+- [ ] Update DiscoveryPage to use trpc.openclaw.listAgents instead of mock meshData
+- [ ] Add live test panel to DiscoveryPage (select agent, edit payload, fire, see response)
+- [ ] TypeScript check and tests pass
+
+## OpenClaw — Make It Functional (Completed)
+
+- [x] Add openclaw.listAgents tRPC procedure (reads real agents from DB, adds clawReady flag)
+- [x] Add openclaw.testAgent tRPC procedure (POSTs test payload to agent endpoint, returns latency + response)
+- [x] Add openclaw.getManifest tRPC procedure (returns OpenClaw v1 manifest for any agent by ID)
+- [x] Add openclaw.getStats tRPC procedure (total agents, claw-ready count, verticals breakdown)
+- [x] Update DiscoveryPage to use trpc.openclaw.listAgents instead of mock meshData
+- [x] Add live test panel to DiscoveryPage (Manifest tab + Live Test tab with payload editor, fire button, latency + response display)
+- [x] TypeScript check and tests pass — 134/134
