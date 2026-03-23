@@ -24,6 +24,11 @@ import InsuranceRun from "./pages/InsuranceRun";
 import TakafulAlerts from "./pages/TakafulAlerts";
 import AdMeshHome from "./pages/AdMeshHome";
 import AdMeshRun from "./pages/AdMeshRun";
+import OpenClawOverview from "./pages/OpenClawOverview";
+import DiscoveryPage from "./pages/DiscoveryPage";
+import BridgePage from "./pages/BridgePage";
+import PolicyPage from "./pages/PolicyPage";
+import ManifestsPage from "./pages/ManifestsPage";
 import TurnaroundHome from "./pages/TurnaroundHome";
 import TurnaroundUpload from "./pages/TurnaroundUpload";
 import TurnaroundCommand from "./pages/TurnaroundCommand";
@@ -100,6 +105,13 @@ function Router() {
       {/* AdMesh — AI Creative Intelligence */}
       <Route path="/admesh" component={AdMeshHome} />
       <Route path="/admesh/run/:runId" component={AdMeshRun} />
+
+      {/* OpenClaw — A2A Integration Console */}
+      <Route path="/openclaw" component={OpenClawOverview} />
+      <Route path="/openclaw/discovery" component={DiscoveryPage} />
+      <Route path="/openclaw/bridge" component={BridgePage} />
+      <Route path="/openclaw/policy" component={PolicyPage} />
+      <Route path="/openclaw/manifests" component={ManifestsPage} />
 
       {/* Mesh Identity Layer */}
       <Route path="/persona-setup" component={PersonaSelector} />

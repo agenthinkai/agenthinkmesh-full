@@ -89,6 +89,26 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               Contact
             </button>
             <a
+              href="/openclaw"
+              style={{
+                color: "#22D3EE", fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, fontWeight: 600,
+                transition: "all 0.2s", fontFamily: "inherit",
+                border: "1px solid rgba(34,211,238,0.3)",
+                background: "rgba(34,211,238,0.08)",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(34,211,238,0.18)";
+                (e.currentTarget as HTMLAnchorElement).style.color = WHITE;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(34,211,238,0.08)";
+                (e.currentTarget as HTMLAnchorElement).style.color = "#22D3EE";
+              }}
+            >
+              ⬡ OpenClaw
+            </a>
+            <a
               href="/admesh"
               style={{
                 color: "#F97316", fontSize: 14, textDecoration: "none",
@@ -186,6 +206,26 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
             >
               Contact
+            </a>
+            <a
+              href="/openclaw"
+              style={{
+                color: "#22D3EE", fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, fontWeight: 600,
+                transition: "all 0.2s",
+                border: "1px solid rgba(34,211,238,0.3)",
+                background: "rgba(34,211,238,0.08)",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(34,211,238,0.18)";
+                (e.currentTarget as HTMLAnchorElement).style.color = WHITE;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(34,211,238,0.08)";
+                (e.currentTarget as HTMLAnchorElement).style.color = "#22D3EE";
+              }}
+            >
+              ⬡ OpenClaw
             </a>
             <a
               href="/admesh"

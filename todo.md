@@ -999,3 +999,23 @@
 ## Landing Hero Subtitle Update
 
 - [x] Update hero subtitle to include Insurance and AdMesh alongside Finance, Legal, Healthcare, GCC Wealth
+
+## OpenClaw Integration Merge
+
+- [ ] Copy DiscoveryPage.tsx, BridgePage.tsx, PolicyPage.tsx, ManifestsPage.tsx to client/src/pages/
+- [ ] Copy meshData.ts to client/src/lib/
+- [ ] Add OpenClaw CSS utility classes to index.css
+- [ ] Merge OpenClaw nav items into SiteNav
+- [ ] Add /openclaw Overview page and 5 routes to App.tsx
+- [ ] TypeScript check and tests pass
+
+## OpenClaw Integration Merge
+
+- [x] Extract openclaw-for-agenthink-mesh.zip and review all files
+- [x] Copy DiscoveryPage, BridgePage, PolicyPage, ManifestsPage into client/src/pages/
+- [x] Merge OpenClaw meshData.ts with original (preserve DOMAIN_MAP, CONTEXTS, AGENT_PLACEHOLDERS, ROLE_CONTEXT_MAP, AgentNode, LayoutNode)
+- [x] Add OpenClaw CSS utility classes to index.css
+- [x] Add ⬡ OpenClaw nav link to SiteNav (both landing and non-landing branches)
+- [x] Create OpenClawOverview.tsx at /openclaw with sidebar console layout
+- [x] Wire /openclaw, /openclaw/discovery, /openclaw/bridge, /openclaw/policy, /openclaw/manifests in App.tsx
+- [x] TypeScript check: 0 errors — 134/134 tests passing
