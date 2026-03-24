@@ -643,3 +643,55 @@ export const admeshAds = mysqlTable("admesh_ads", {
 });
 export type AdmeshAd = typeof admeshAds.$inferSelect;
 export type InsertAdmeshAd = typeof admeshAds.$inferInsert;
+
+// ── Deal Screener — Council of 10 ────────────────────────────────────────────
+export const dealScreenings = mysqlTable("deal_screenings", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),              // FK → users.id
+  dealId: varchar("dealId", { length: 64 }).notNull().unique(), // UUID generated server-side
+  dealName: varchar("dealName", { length: 255 }).notNull(),
+  dealText: text("dealText").notNull(),         // raw input (pasted or extracted from PDF)
+  pdfFileKey: varchar("pdfFileKey", { length: 512 }), // S3 key if PDF was uploaded
+  pdfFileUrl: text("pdfFileUrl"),               // S3 URL if PDF was uploaded
+
+  // Verdict
+  verdict: mysqlEnum("verdict", ["APPROVED", "APPROVED_WITH_CONDITIONS", "REJECTED", "VETOED"]).notNull(),
+
+  // Vote counts
+  yesCount: int("yesCount").notNull().default(0),
+  noCount: int("noCount").notNull().default(0),
+  hardYesCount: int("hardYesCount").notNull().default(0),
+  softYesCount: int("softYesCount").notNull().default(0),
+  softNoCount: int("softNoCount").notNull().default(0),
+  hardNoCount: int("hardNoCount").notNull().default(0),
+
+  // Confidence
+  confidenceScore: decimal("confidenceScore", { precision: 4, scale: 3 }).notNull(), // 0.000–1.000
+
+  // Special flags
+  gccVetoTriggered: boolean("gccVetoTriggered").notNull().default(false),
+  tiebreakerTriggered: boolean("tiebreakerTriggered").notNull().default(false),
+  tiebreakerSwingAgent: varchar("tiebreakerSwingAgent", { length: 64 }), // persona ID that was flipped
+
+  // Aggregated outputs (JSON)
+  conditionsToProceed: text("conditionsToProceed").notNull(), // JSON string[]
+  blockingIssues: text("blockingIssues").notNull(),           // JSON string[]
+  votes: text("votes").notNull(),                             // JSON PersonaVote[]
+
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type DealScreening = typeof dealScreenings.$inferSelect;
+export type InsertDealScreening = typeof dealScreenings.$inferInsert;
+
+// ── Deal Screener — Rate Limit Tracker ───────────────────────────────────────
+export const dealScreeningRateLimit = mysqlTable("deal_screening_rate_limit", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  windowStart: timestamp("windowStart").notNull(), // start of the 1-hour window
+  count: int("count").notNull().default(1),        // screens in this window
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type DealScreeningRateLimit = typeof dealScreeningRateLimit.$inferSelect;
+export type InsertDealScreeningRateLimit = typeof dealScreeningRateLimit.$inferInsert;

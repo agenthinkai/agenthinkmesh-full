@@ -67,6 +67,13 @@ const DOMAINS = [
     agents: ["ArabicLocalizer", "PlatformFormatter", "BrandSafetyGuard", "InfluencerScout", "CrisisMonitor"],
     link: "/social",
   },
+  {
+    icon: "🔬", name: "Deal Screener", color: "#4A9EFF", lightBg: "rgba(74,158,255,0.08)",
+    contexts: ["VC / PE", "Sovereign Wealth", "Family Office", "Corporate Venture"],
+    agents: ["GCC Regulatory", "Shariah Compliance", "CFO", "Contrarian", "Exit Strategist", "Devil's Advocate"],
+    link: "/deals",
+    description: "Council of 10 · IC-ready deal verdicts in 60 seconds",
+  },
 ];
 
 const FEATURES = [

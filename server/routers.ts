@@ -17,6 +17,7 @@ import { insuranceRouter } from "./routers/insurance";
 import { admeshRouter } from "./routers/admesh";
 import { openclawRouter } from "./routers/openclaw";
 import { socialMediaRouter } from "./routers/socialMedia";
+import { dealScreenerRouter } from "./routers/dealScreener";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
 import { eq, desc, gte, sql, and, like, or, isNull, lt } from "drizzle-orm";
@@ -2932,6 +2933,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
   admesh: admeshRouter,
   openclaw: openclawRouter,
   socialMedia: socialMediaRouter,
+  dealScreener: dealScreenerRouter,
   // ── ETF Partner CRMM ────────────────────────────────────────────────────────
   partner: router({
     // List all partner institutions (admin or public read)

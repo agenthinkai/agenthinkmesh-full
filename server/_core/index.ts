@@ -19,6 +19,7 @@ import admeshStreamRouter from "../admeshStreamRoute";
 import { socialMediaStreamRouter } from "../socialMediaStreamRoute";
 import { registerStripeWebhookRoute } from "../stripeWebhookRoute";
 import { startDripScheduler } from "../emailDrip";
+import dealScreenerUploadRouter from "../dealScreenerUploadRoute";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -65,6 +66,8 @@ async function startServer() {
   app.use("/api/admesh", admeshStreamRouter);
   // Social Media Intelligence SSE streaming endpoint
   app.use("/api/social", socialMediaStreamRouter);
+  // Deal Screener PDF upload endpoint
+  app.use("/api/deals", dealScreenerUploadRouter);
   // Embedded specialist agent endpoints
   app.use("/api/agents", agentRouter);
   // tRPC API

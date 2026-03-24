@@ -47,6 +47,7 @@ import RosieProtocol from "./pages/RosieProtocol";
 import AdminBetaRequests from "./pages/AdminBetaRequests";
 import Upgrade from "./pages/Upgrade";
 import NotFound from "./pages/NotFound";
+import DealScreener from "./pages/DealScreener";
 import { useAuth } from "./_core/hooks/useAuth";
 
 function Router() {
@@ -151,6 +152,9 @@ function Router() {
       <Route path="/registry" component={AgentRegistry} />
       <Route path="/build" component={Build} />
       <Route path="/annotate" component={AnnotationStudio} />
+
+      {/* Deal Screener — Council of 10 */}
+      <Route path="/deals" component={DealScreener} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

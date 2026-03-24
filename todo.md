@@ -1093,3 +1093,51 @@
 - [x] Fix ManifestsPage.tsx — apply consistent dark styling
 - [x] Fix OpenClawOverview.tsx — apply consistent dark styling
 - [x] Set defaultTheme="dark" in ThemeProvider (App.tsx) — all pages now use dark CSS variables
+
+## Deal Screener — Council of 10 Module (Mar 24 2026)
+
+### Phase 1: Schema & Dependencies
+- [x] Install dependencies: @anthropic-ai/sdk, pdf-parse, multer, zod, @types/pdf-parse, @types/multer
+- [x] Add dealScreenings table to drizzle/schema.ts
+- [x] Run pnpm db:push to migrate (tables created via SQL)
+- [x] Create server/councilEngine.ts scaffold
+
+### Phase 2: Council Engine
+- [x] Define 10 persona system prompts in councilEngine.ts
+- [x] Implement parallel Anthropic calls with Promise.allSettled + 15s timeout
+- [x] Implement fallback to SOFT_NO (confidence 0.2) on timeout/error
+- [x] Implement JSON parsing with zod validation (strip markdown backticks)
+- [x] Implement consensus rules (APPROVED / APPROVED_WITH_CONDITIONS / REJECTED / VETOED)
+- [x] Implement tiebreaker logic (7 YES / 3 NO priority queue)
+- [x] Implement aggregation (conditions_to_proceed, blocking_issues, confidence_score)
+
+### Phase 3: tRPC Procedures
+- [x] trpc.dealScreener.screen — protected, calls councilEngine, persists to DB
+- [x] trpc.dealScreener.history — protected, returns user's deal history
+- [x] trpc.dealScreener.getById — protected, returns full IC report by dealId
+- [x] PDF upload endpoint (POST /api/deals/upload-pdf) — multer, pdf-parse, 5MB cap, first 1500 chars
+- [x] Rate limiting: 20 screens/hour per authenticated user
+
+### Phase 4: Frontend
+- [x] Create client/src/pages/DealScreener.tsx — full Bloomberg terminal dark UI
+- [x] DealForm component — deal name, textarea (3000 chars), PDF upload, submit button
+- [x] PersonaLoadingGrid component — 10 cards animating during screening
+- [x] VerdictBadge component — APPROVED / APPROVED_WITH_CONDITIONS / REJECTED / VETOED
+- [x] VoteCard component — persona name, vote badge, confidence %, rationale, key_flags
+- [x] ConditionsPanel and BlockersPanel components
+- [x] GCC Veto banner (red) and Tiebreaker banner (purple)
+- [x] JsonCopyButton — copy full IC report JSON
+- [x] HistoryTable — deal name, verdict, yes/no, confidence, date
+- [x] Register /deals route in App.tsx
+
+### Phase 5: Rate Limiting & Tests
+- [x] Add ANTHROPIC_API_KEY to server/_core/env.ts
+- [x] TypeScript check — 0 errors across all 4 target files
+- [x] Vitest: councilEngine consensus logic unit tests (6 tests, all passing)
+- [x] Fix loading state flow in DealScreener.tsx (onSubmitStart/onError props)
+- [x] Add Deal Screener card to Landing.tsx DOMAINS grid (/deals)
+
+### Phase 6: Seed & Delivery
+- [ ] Seed script: 2 example deals with pre-computed council results
+- [x] Final QA: 140/140 tests pass, tsc EXIT:0
+- [ ] Checkpoint and deliver (pending ANTHROPIC_API_KEY secret)
