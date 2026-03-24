@@ -1,0 +1,9 @@
+{
+  "query": "\nINSERT INTO agents (\n  ownerId, agentName, developerName, description, capabilities,\n  endpointUrl, averageLatency, pricingModel, status,\n  connectionTested, domain, isBuiltIn, isCustom, version\n) VALUES (\n  1,\n  'Bakalaria WhatsApp Order Agent',\n  'Bakalaria',\n  'AI-powered WhatsApp order extraction agent. Connects to WhatsApp groups, monitors messages and screenshots using OCR + AI, and delivers structured order data (Order IDs, items, quantities, units) as daily Excel reports. GCC-native, supports Arabic and English.',\n  '[\"whatsapp_monitoring\",\"order_extraction\",\"ocr\",\"arabic_nlp\",\"excel_export\",\"group_monitoring\",\"screenshot_analysis\"]',\n  'https://bakalaria-pj6tba6s.manus.space',\n  800,\n  'free',\n  'active',\n  false,\n  'Enterprise',\n  false,\n  false,\n  '1.0.0'\n);\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute \nINSERT INTO agents (\n  ownerId, agentName, developerName, description, capabilities,\n  endpointUrl, averageLatency, pricingModel, status,\n  connectionTested, domain, isBuiltIn, isCustom, version\n) VALUES (\n  1,\n  'Bakalaria WhatsApp Order Agent',\n  'Bakalaria',\n  'AI-powered WhatsApp order extraction agent. Connects to WhatsApp groups, monitors messages and screenshots using OCR + AI, and delivers structured order data (Order IDs, items, quantities, units) as daily Excel reports. GCC-native, supports Arabic and English.',\n  '[\"whatsapp_monitoring\",\"order_extraction\",\"ocr\",\"arabic_nlp\",\"excel_export\",\"group_monitoring\",\"screenshot_analysis\"]',\n  'https://bakalaria-pj6tba6s.manus.space',\n  800,\n  'free',\n  'active',\n  false,\n  'Enterprise',\n  false,\n  false,\n  '1.0.0'\n);\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1861
+}

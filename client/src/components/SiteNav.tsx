@@ -129,6 +129,26 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               🎯 AdMesh
             </a>
             <a
+              href="/social"
+              style={{
+                color: "#EC4899", fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, fontWeight: 600,
+                transition: "all 0.2s", fontFamily: "inherit",
+                border: "1px solid rgba(236,72,153,0.3)",
+                background: "rgba(236,72,153,0.08)",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(236,72,153,0.18)";
+                (e.currentTarget as HTMLAnchorElement).style.color = WHITE;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(236,72,153,0.08)";
+                (e.currentTarget as HTMLAnchorElement).style.color = "#EC4899";
+              }}
+            >
+              📲 Social AI
+            </a>
+            <a
               href="/insurance"
               style={{
                 color: "#0EA5E9", fontSize: 14, textDecoration: "none",
@@ -246,6 +266,26 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               }}
             >
               🎯 AdMesh
+            </a>
+            <a
+              href="/social"
+              style={{
+                color: "#EC4899", fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, fontWeight: 600,
+                transition: "all 0.2s",
+                border: "1px solid rgba(236,72,153,0.3)",
+                background: "rgba(236,72,153,0.08)",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(236,72,153,0.18)";
+                (e.currentTarget as HTMLAnchorElement).style.color = WHITE;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(236,72,153,0.08)";
+                (e.currentTarget as HTMLAnchorElement).style.color = "#EC4899";
+              }}
+            >
+              📲 Social AI
             </a>
             <a
               href="/insurance"

@@ -13,6 +13,7 @@ import { getDb } from "../db";
 import { agents, agentMetrics } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
 import { invokeGoogleAgent, type GoogleAgentType } from "../googleA2AAdapter";
+import { ENV } from "../_core/env";
 import { GOOGLE_AGENT_LIST, getGoogleAgentManifest } from "../../shared/googleAgentManifests";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -290,7 +291,7 @@ export const openclawRouter = router({
           context: input.context,
           inputData: input.inputData,
         },
-        input.apiKey ?? "demo"
+        input.apiKey ?? ENV.googleApiKey ?? "demo"
       );
       return result;
     }),
@@ -310,7 +311,7 @@ export const openclawRouter = router({
           agentType: input.agentType,
           instruction: "Connection test — respond with agent status and capabilities summary.",
         },
-        "demo"
+        ENV.googleApiKey ?? "demo"
       );
       return {
         ok: result.success,

@@ -1057,3 +1057,23 @@
 - [x] BridgePage.tsx — Google A2A tab with agent selector, live invoke panel, test connection, structured artifact display
 - [x] OpenClawOverview.tsx — Google A2A banner with 6 agent cards and Open Bridge CTA
 - [x] TypeScript: 0 errors | Tests: 134/134 passed
+
+## All 3 Suggestions — Implementation
+
+- [ ] Add GOOGLE_API_KEY secret and wire into Google A2A adapter
+- [ ] 5 Social Media agents: Arabic Content Localizer, Cross-Platform Publisher, Brand Safety Guardian, Influencer Discovery, Crisis Detection
+- [ ] Register Bakalaria as OpenClaw external agent in the database
+
+## All 3 Suggestions — Complete (Mar 24 2026)
+
+- [x] GOOGLE_API_KEY wired into Google A2A adapter via ENV.googleApiKey (live mode auto-activates)
+- [x] 5 Social Media agent pipelines: Arabic Localizer, Cross-Platform Publisher, Brand Safety Guardian, Influencer Discovery, Crisis Detection
+- [x] server/socialMediaEngine.ts — parallel wave 1 + sequential wave 2 pipeline
+- [x] server/socialMediaStreamRoute.ts — SSE at /api/social/stream/:runType/:runId
+- [x] server/routers/socialMedia.ts — tRPC procedures wired into appRouter
+- [x] client/src/pages/SocialMediaHome.tsx — entry page at /social with 5 workflow cards
+- [x] client/src/pages/SocialMediaRun.tsx — live SSE run page with workflow-specific output sections
+- [x] Social AI pink pill added to SiteNav (both branches)
+- [x] Routes /social and /social/run/:runType/:runId wired in App.tsx
+- [x] Bakalaria registered in agents DB as OpenClaw external agent (Enterprise domain, 7 capabilities)
+- [x] 134/134 tests passing, 0 TypeScript errors

@@ -24,6 +24,8 @@ import InsuranceRun from "./pages/InsuranceRun";
 import TakafulAlerts from "./pages/TakafulAlerts";
 import AdMeshHome from "./pages/AdMeshHome";
 import AdMeshRun from "./pages/AdMeshRun";
+import SocialMediaHome from "./pages/SocialMediaHome";
+import SocialMediaRun from "./pages/SocialMediaRun";
 import OpenClawOverview from "./pages/OpenClawOverview";
 import DiscoveryPage from "./pages/DiscoveryPage";
 import BridgePage from "./pages/BridgePage";
@@ -105,6 +107,10 @@ function Router() {
       {/* AdMesh — AI Creative Intelligence */}
       <Route path="/admesh" component={AdMeshHome} />
       <Route path="/admesh/run/:runId" component={AdMeshRun} />
+
+      {/* Social Media Intelligence */}
+      <Route path="/social" component={SocialMediaHome} />
+      <Route path="/social/run/:runType/:runId" component={SocialMediaRun} />
 
       {/* OpenClaw — A2A Integration Console */}
       <Route path="/openclaw" component={OpenClawOverview} />
