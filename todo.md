@@ -1077,3 +1077,10 @@
 - [x] Routes /social and /social/run/:runType/:runId wired in App.tsx
 - [x] Bakalaria registered in agents DB as OpenClaw external agent (Enterprise domain, 7 capabilities)
 - [x] 134/134 tests passing, 0 TypeScript errors
+
+## Social AI Landing Page + Bakalaria Test (Mar 24 2026)
+
+- [x] Add Social AI domain card to Landing page DOMAINS array
+- [x] Update hero subtitle to include Social AI
+- [x] Add Social AI Brand Manager use-case card to Real Tasks section
+- [x] Mark Bakalaria as connection-tested in the agents DB (connectionTested=true, lastVerifiedAt=NOW)

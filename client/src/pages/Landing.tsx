@@ -61,6 +61,12 @@ const DOMAINS = [
     agents: ["Ingestor", "Analyzer", "Strategist", "Copywriter", "Scoring", "VideoProducer"],
     link: "/admesh",
   },
+  {
+    icon: "📲", name: "Social AI", color: "#EC4899", lightBg: "rgba(236,72,153,0.08)",
+    contexts: ["Arabic Localisation", "Cross-Platform Publishing", "Brand Safety", "Influencer Discovery", "Crisis Detection"],
+    agents: ["ArabicLocalizer", "PlatformFormatter", "BrandSafetyGuard", "InfluencerScout", "CrisisMonitor"],
+    link: "/social",
+  },
 ];
 
 const FEATURES = [
@@ -68,12 +74,12 @@ const FEATURES = [
   { icon: "🔀", title: "Parallel Execution", desc: "All agents run concurrently with a 400ms stagger. A 9-agent task that would take 45 minutes sequentially completes in under 60 seconds." },
   { icon: "📡", title: "Live Streaming Output", desc: "Watch each agent's reasoning stream token-by-token in real time. Structured output: Summary, Key Findings, Flags, and Next Action — every time." },
   { icon: "🗂️", title: "Document Vault", desc: "Upload PDFs, Word docs, CSVs, and spreadsheets. The vault indexes your documents and prepends relevant context to every agent's prompt automatically." },
-  { icon: "🌐", title: "14 Domain Contexts", desc: "Switch between Finance, Legal, Healthcare, Enterprise, GCC Wealth, Insurance, and AdMesh instantly. Each context loads domain-specific agents, prompts, and suggested tasks." },
+  { icon: "🌐", title: "14 Domain Contexts", desc: "Switch between Finance, Legal, Healthcare, Enterprise, GCC Wealth, Insurance, AdMesh, and Social AI instantly. Each context loads domain-specific agents, prompts, and suggested tasks." },
   { icon: "📊", title: "Task History & Export", desc: "Every executed task is saved to your account. Search, review, and re-run previous tasks. Export any output as a structured PDF report." },
 ];
 
 const HOW_IT_WORKS = [
-  { step: "01", title: "Select your domain context", desc: "Choose from 14 pre-configured contexts across Finance, Legal, Healthcare, Enterprise, GCC Wealth, Insurance, and AdMesh. Each loads the right specialist agents automatically." },
+  { step: "01", title: "Select your domain context", desc: "Choose from 14 pre-configured contexts across Finance, Legal, Healthcare, Enterprise, GCC Wealth, Insurance, AdMesh, and Social AI. Each loads the right specialist agents automatically." },
   { step: "02", title: "Describe your task", desc: "Type a natural language task or select from suggested tasks. The mesh reads your input and spawns additional specialist agents as needed — in real time." },
   { step: "03", title: "Receive parallel structured output", desc: "All agents execute concurrently and stream their findings. Review each agent's output, export the full report as PDF, and save to your task history." },
 ];
@@ -83,12 +89,9 @@ const USE_CASES = [
   { role: "GCC Relationship Manager", task: "Profile a new Saudi HNWI client, check Shariah suitability, and draft a portfolio proposal", agents: 7, domain: "GCC Wealth" },
   { role: "In-House Counsel", task: "Review this vendor contract for liability exposure and flag non-standard clauses", agents: 6, domain: "Legal" },
   { role: "Hospital Ops Director", task: "Analyse this week's bed occupancy data and generate a staffing optimisation report", agents: 8, domain: "Healthcare" },
-  { role: "Brand Manager · X-cite Kuwait", task: "Generate a Ramadan campaign brief with 10 bilingual ads (EN + Arabic Gulf), competitor gap analysis vs Eureka and Sharaf DG, and 2 video storyboards — in under 60 seconds", agents: 7, domain: "AdMesh" },
+  { role: "Brand Manager \u00b7 X-cite Kuwait", task: "Generate a Ramadan campaign brief with 10 bilingual ads (EN + Arabic Gulf), competitor gap analysis vs Eureka and Sharaf DG, and 2 video storyboards \u2014 in under 60 seconds", agents: 7, domain: "AdMesh" },
+  { role: "Social Media Manager \u00b7 GCC Retail Brand", task: "Localise this Eid campaign into Kuwaiti, Saudi, and Emirati Arabic dialects, check brand safety against our blocklist, and schedule cross-platform posts for Instagram, X, TikTok, Snapchat, and LinkedIn", agents: 5, domain: "Social AI" },
 ];
-
-
-
-
 
 // ── Contact Section Component ─────────────────────────────────────────────
 function ContactSection() {
@@ -424,7 +427,7 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
 
         {/* Subtext */}
         <p style={{ fontSize: 16, color: "#6B7A8D", maxWidth: 480, lineHeight: 1.75, marginBottom: 40 }}>
-          Describe any complex business task. <strong style={{ color: "#A8C4E0" }}>AgenThinkMesh</strong> activates the right specialist agents across Finance, Legal, Healthcare, GCC Wealth, Insurance, and AdMesh — delivering institutional-grade results in seconds.
+          Describe any complex business task. <strong style={{ color: "#A8C4E0" }}>AgenThinkMesh</strong> activates the right specialist agents across Finance, Legal, Healthcare, GCC Wealth, Insurance, AdMesh, and Social AI — delivering institutional-grade results in seconds.
         </p>
 
         {/* Search bar */}
