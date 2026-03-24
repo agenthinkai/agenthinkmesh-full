@@ -97,6 +97,18 @@ export function generateReportPdf(task: TaskData): Promise<Buffer> {
 
     const PAGE_W = doc.page.width - 100; // usable width
 
+    // Paint dark background on every new page (including page 1 via the initial call below)
+    const [nr0, ng0, nb0] = hexToRgb(NAVY);
+    function paintPageBackground() {
+      const savedY = doc.y;
+      doc.save();
+      doc.rect(0, 0, doc.page.width, doc.page.height).fill([nr0, ng0, nb0]);
+      doc.restore();
+      // Reset y position after background fill
+      doc.y = savedY;
+    }
+    doc.on("pageAdded", paintPageBackground);
+
     // ── Helper functions ────────────────────────────────────────────────────────
     function sectionTitle(text: string, color: string = CYAN) {
       doc.moveDown(0.6);
@@ -172,9 +184,8 @@ export function generateReportPdf(task: TaskData): Promise<Buffer> {
       });
     }
 
-    // ── Dark background ─────────────────────────────────────────────────────────
-    const [nr, ng, nb] = hexToRgb(NAVY);
-    doc.rect(0, 0, doc.page.width, doc.page.height).fill([nr, ng, nb]);
+    // ── Dark background (page 1) ────────────────────────────────────────────────
+    paintPageBackground();
 
     // ── Header ──────────────────────────────────────────────────────────────────
     const [cr, cg, cb] = hexToRgb(CYAN);
