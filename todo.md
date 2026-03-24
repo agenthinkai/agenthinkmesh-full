@@ -1084,3 +1084,12 @@
 - [x] Update hero subtitle to include Social AI
 - [x] Add Social AI Brand Manager use-case card to Real Tasks section
 - [x] Mark Bakalaria as connection-tested in the agents DB (connectionTested=true, lastVerifiedAt=NOW)
+
+## OpenClaw Font & Theme Fix (Mar 24 2026)
+
+- [x] Fix BridgePage.tsx — apply dark theme, Inter font, AgenThinkMesh color palette
+- [x] Fix DiscoveryPage.tsx — apply consistent dark styling
+- [x] Fix PolicyPage.tsx — apply consistent dark styling
+- [x] Fix ManifestsPage.tsx — apply consistent dark styling
+- [x] Fix OpenClawOverview.tsx — apply consistent dark styling
+- [x] Set defaultTheme="dark" in ThemeProvider (App.tsx) — all pages now use dark CSS variables

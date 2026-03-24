@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { HowItWorks } from "@/components/HowItWorks";
 import SiteNav from "@/components/SiteNav";
 
-// ── Brand palette (matches logo: deep navy + silver/platinum) ──────────────
+// -- Brand palette (matches logo: deep navy + silver/platinum) --------------
 const NAVY_950 = "#0B1629";
 const NAVY_900 = "#0F1E38";
 const NAVY_800 = "#152542";
@@ -93,7 +93,7 @@ const USE_CASES = [
   { role: "Social Media Manager \u00b7 GCC Retail Brand", task: "Localise this Eid campaign into Kuwaiti, Saudi, and Emirati Arabic dialects, check brand safety against our blocklist, and schedule cross-platform posts for Instagram, X, TikTok, Snapchat, and LinkedIn", agents: 5, domain: "Social AI" },
 ];
 
-// ── Contact Section Component ─────────────────────────────────────────────
+// Contact Section Component
 function ContactSection() {
   const [form, setForm] = useState({ name: "", email: "", company: "", message: "" });
   const [submitted, setSubmitted] = useState(false);
@@ -230,7 +230,7 @@ function ContactSection() {
   );
 }
 
-// ── Reusable Neon Divider ────────────────────────────────────────────────────
+// -- Reusable Neon Divider ----------------------------------------------------
 function NeonDivider() {
   return (
     <div style={{ position: "relative", height: 1, overflow: "visible" }}>
@@ -251,7 +251,7 @@ function NeonDivider() {
   );
 }
 
-// ── Neon Hero Component (VarD) ────────────────────────────────────────────────
+// -- Neon Hero Component (VarD) ------------------------------------------------
 // Agent card colors match mockup2-neural-dark.html exactly:
 // Card 1 (Deal Screener / Finance) → green  #4ADE80
 // Card 2 (Legal Reviewer)          → blue   #7BA3D4
@@ -407,7 +407,7 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
 
   return (
     <section className="neon-hero-split">
-      {/* ── LEFT PANEL ── */}
+      {/* -- LEFT PANEL -- */}
       <div className="neon-hero-left">
         {/* Vertical accent line */}
         <div style={{ position: "absolute", left: 0, top: "15%", bottom: "15%", width: 2, background: "linear-gradient(to bottom, transparent, #7BA3D4, #4ADE80, transparent)", borderRadius: 2 }} />
@@ -460,7 +460,7 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
         </div>
       </div>
 
-      {/* ── RIGHT PANEL: Canvas + Floating Agent Cards ── */}
+      {/* -- RIGHT PANEL: Canvas + Floating Agent Cards -- */}
       <div className="neon-hero-right">
         {/* Left-fade overlay so canvas blends into left panel (desktop) */}
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #060D1A 0%, transparent 28%)", zIndex: 2, pointerEvents: "none" }} />
@@ -554,10 +554,10 @@ export default function Landing() {
   return (
     <div style={{ minHeight: "100vh", background: NAVY_950, fontFamily: FONT, color: SILVER_100, overflowX: "hidden" }}>
 
-      {/* ── Shared sticky navbar ── */}
+      {/* -- Shared sticky navbar -- */}
       <SiteNav isLandingPage />
 
-      {/* ── Hero (VarD Neon) ── */}
+      {/* -- Hero (VarD Neon) -- */}
       <NeonHero loginUrl={loginUrl} stats={s} />
 
       <HowItWorks />
@@ -580,7 +580,7 @@ export default function Landing() {
         </div>
       </section>}
 
-      {/* ── Domain showcase ── */}
+      {/* -- Domain showcase -- */}
       <section id="domains" style={{ padding: "72px 24px", background: NAVY_950 }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 48 }}>
@@ -797,7 +797,7 @@ export default function Landing() {
 
 
 
-      {/* ── Enterprise Use Cases ── */}
+      {/* -- Enterprise Use Cases -- */}
       <section style={{ padding: "72px 24px", background: NAVY_800 }}>
         <div style={{ maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 40 }}>
@@ -835,12 +835,12 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ── Contact Us ── */}
+      {/* -- Contact Us -- */}
       <ContactSection />
 
       <NeonDivider />
 
-      {/* ── Footer ── */}
+      {/* -- Footer -- */}
       <footer style={{ padding: "20px 24px", background: NAVY_950 }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <Logo size={28} />
