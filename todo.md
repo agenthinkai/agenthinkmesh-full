@@ -1037,3 +1037,23 @@
 - [x] Update DiscoveryPage to use trpc.openclaw.listAgents instead of mock meshData
 - [x] Add live test panel to DiscoveryPage (Manifest tab + Live Test tab with payload editor, fire button, latency + response display)
 - [x] TypeScript check and tests pass — 134/134
+
+## Google A2A Adapter — OpenClaw Bridge
+
+- [ ] server/googleA2AAdapter.ts — Google A2A protocol adapter with 6 agent type handlers
+- [ ] shared/googleAgentManifests.ts — Pre-built OpenClaw manifests for Gemini, Search, Workspace, Vertex AI, Maps, NotebookLM
+- [ ] openclaw.listGoogleAgents tRPC procedure
+- [ ] openclaw.invokeGoogleAgent tRPC procedure (routes task via A2A adapter)
+- [ ] openclaw.testGoogleAgent tRPC procedure (test connection + latency)
+- [ ] Update BridgePage.tsx — Google Agents panel with live invoke UI
+- [ ] Update OpenClawOverview.tsx — Google A2A integration section
+- [ ] TypeScript check and tests pass
+
+## Google A2A Adapter — OpenClaw Bridge
+
+- [x] server/googleA2AAdapter.ts — A2A protocol adapter (demo + live mode, 6 Google agent types)
+- [x] shared/googleAgentManifests.ts — pre-built OpenClaw manifests for Gemini, Search, Workspace, Vertex AI, Maps, NotebookLM
+- [x] openclaw.listGoogleAgents, invokeGoogleAgent, testGoogleAgent, getGoogleAgentManifest tRPC procedures
+- [x] BridgePage.tsx — Google A2A tab with agent selector, live invoke panel, test connection, structured artifact display
+- [x] OpenClawOverview.tsx — Google A2A banner with 6 agent cards and Open Bridge CTA
+- [x] TypeScript: 0 errors | Tests: 134/134 passed

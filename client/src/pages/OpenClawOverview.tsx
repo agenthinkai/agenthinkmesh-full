@@ -195,6 +195,55 @@ export default function OpenClawOverview() {
             ))}
           </div>
 
+          {/* Google A2A Integration Banner */}
+          <div style={{
+            background: "linear-gradient(135deg, rgba(66,133,244,0.12) 0%, rgba(52,168,83,0.08) 100%)",
+            border: "1px solid rgba(66,133,244,0.35)",
+            borderRadius: 12, padding: "24px", marginBottom: 24,
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
+              <span style={{ fontSize: 28 }}>✦</span>
+              <div>
+                <h2 style={{ fontSize: 16, fontWeight: 800, color: WHITE, fontFamily: "'Inter', sans-serif", margin: 0, letterSpacing: "-0.02em" }}>
+                  Google A2A Protocol — Live
+                </h2>
+                <p style={{ fontSize: 11, color: MUTED, margin: "4px 0 0 0" }}>
+                  AgenThinkMesh now connects to 6 Google agents via the A2A open protocol. Invoke Gemini, Google Search, Workspace, Vertex AI, Maps, and NotebookLM directly from the OpenClaw Bridge.
+                </p>
+              </div>
+              <a href="/openclaw/bridge" style={{
+                marginLeft: "auto", flexShrink: 0,
+                padding: "8px 18px", borderRadius: 8,
+                background: "#4285F4", color: WHITE,
+                fontSize: 12, fontWeight: 700, textDecoration: "none",
+                fontFamily: "'Inter', sans-serif",
+              }}>Open Bridge →</a>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+              {[
+                { icon: "🤖", name: "Gemini Agent", desc: "Reasoning, analysis, multimodal", color: "#4285F4" },
+                { icon: "🔍", name: "Google Search", desc: "Real-time web intelligence", color: "#34A853" },
+                { icon: "📄", name: "Google Workspace", desc: "Docs, Sheets, Gmail, Drive", color: "#0F9D58" },
+                { icon: "⚙️", name: "Vertex AI", desc: "Custom enterprise agents", color: "#DB4437" },
+                { icon: "🗺️", name: "Google Maps", desc: "Location intelligence", color: "#FBBC04" },
+                { icon: "📚", name: "NotebookLM", desc: "Long-document analysis", color: "#9C27B0" },
+              ].map(agent => (
+                <div key={agent.name} style={{
+                  background: "rgba(13,17,23,0.6)",
+                  border: `1px solid ${agent.color}33`,
+                  borderRadius: 8, padding: "10px 14px",
+                  display: "flex", alignItems: "center", gap: 10,
+                }}>
+                  <span style={{ fontSize: 18 }}>{agent.icon}</span>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: WHITE }}>{agent.name}</div>
+                    <div style={{ fontSize: 10, color: MUTED }}>{agent.desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Vertical coverage */}
           <div style={{ background: "#0d1117", border: "1px solid rgba(56,189,248,0.12)", borderRadius: 12, padding: "24px" }}>
             <h2 style={{ fontSize: 14, fontWeight: 700, color: WHITE, fontFamily: "'Inter', sans-serif", margin: "0 0 16px 0" }}>

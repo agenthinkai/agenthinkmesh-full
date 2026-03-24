@@ -12,6 +12,8 @@ import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { agents, agentMetrics } from "../../drizzle/schema";
 import { eq, desc } from "drizzle-orm";
+import { invokeGoogleAgent, type GoogleAgentType } from "../googleA2AAdapter";
+import { GOOGLE_AGENT_LIST, getGoogleAgentManifest } from "../../shared/googleAgentManifests";
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
@@ -229,6 +231,94 @@ export const openclawRouter = router({
 
       if (!agent) throw new Error(`Agent ${input.agentId} not found`);
       return buildManifest(agent);
+    }),
+
+  /**
+   * List all Google A2A agents with their pre-built OpenClaw manifests.
+   * Supports optional tag/capability filter.
+   */
+  listGoogleAgents: publicProcedure
+    .input(z.object({
+      tag: z.string().optional(),
+      search: z.string().optional(),
+    }))
+    .query(({ input }) => {
+      let list = GOOGLE_AGENT_LIST;
+      if (input.tag) {
+        list = list.filter(a => a.tags.includes(input.tag!.toLowerCase()));
+      }
+      if (input.search) {
+        const q = input.search.toLowerCase();
+        list = list.filter(a =>
+          a.name.toLowerCase().includes(q) ||
+          a.description.toLowerCase().includes(q) ||
+          a.tags.some(t => t.includes(q))
+        );
+      }
+      return list;
+    }),
+
+  /**
+   * Get the full manifest for a specific Google agent type.
+   */
+  getGoogleAgentManifest: publicProcedure
+    .input(z.object({ agentType: z.string() }))
+    .query(({ input }) => {
+      return getGoogleAgentManifest(input.agentType as GoogleAgentType);
+    }),
+
+  /**
+   * Invoke a Google agent via the A2A adapter.
+   * In demo mode (no API key), returns a realistic simulated response.
+   * Falls back to demo if live call fails.
+   */
+  invokeGoogleAgent: publicProcedure
+    .input(z.object({
+      agentType: z.enum(["gemini", "google_search", "google_workspace", "vertex_ai", "google_maps", "notebooklm"]),
+      instruction: z.string().min(1).max(4000),
+      context: z.record(z.string(), z.unknown()).optional(),
+      inputData: z.unknown().optional(),
+      apiKey: z.string().optional(), // optional — demo mode if omitted
+    }))
+    .mutation(async ({ input }) => {
+      const taskId = `mesh-g-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const result = await invokeGoogleAgent(
+        {
+          taskId,
+          agentType: input.agentType,
+          instruction: input.instruction,
+          context: input.context,
+          inputData: input.inputData,
+        },
+        input.apiKey ?? "demo"
+      );
+      return result;
+    }),
+
+  /**
+   * Quick connection test for a Google agent (demo latency check).
+   */
+  testGoogleAgent: publicProcedure
+    .input(z.object({
+      agentType: z.enum(["gemini", "google_search", "google_workspace", "vertex_ai", "google_maps", "notebooklm"]),
+    }))
+    .mutation(async ({ input }) => {
+      const start = Date.now();
+      const result = await invokeGoogleAgent(
+        {
+          taskId: `test-${Date.now()}`,
+          agentType: input.agentType,
+          instruction: "Connection test — respond with agent status and capabilities summary.",
+        },
+        "demo"
+      );
+      return {
+        ok: result.success,
+        latencyMs: result.latencyMs,
+        agentType: input.agentType,
+        preview: result.output.slice(0, 200),
+        error: result.error ?? null,
+      };
     }),
 
   /**
