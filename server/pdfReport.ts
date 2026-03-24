@@ -99,6 +99,9 @@ export function generateReportPdf(task: TaskData): Promise<Buffer> {
 
     // Paint dark background on every new page (including page 1 via the initial call below)
     const [nr0, ng0, nb0] = hexToRgb(NAVY);
+    let pageNumber = 1;
+    const dateStr2 = new Date(task.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+
     function paintPageBackground() {
       const savedY = doc.y;
       doc.save();
@@ -107,7 +110,30 @@ export function generateReportPdf(task: TaskData): Promise<Buffer> {
       // Reset y position after background fill
       doc.y = savedY;
     }
-    doc.on("pageAdded", paintPageBackground);
+
+    function drawContinuationHeader() {
+      pageNumber++;
+      // Background first
+      paintPageBackground();
+      // Slim header bar
+      const [cr2, cg2, cb2] = hexToRgb(CYAN);
+      const [mr2, mg2, mb2] = hexToRgb(MUTED);
+      // Left: brand name
+      doc.fontSize(9).font("Helvetica-Bold").fillColor([cr2, cg2, cb2])
+        .text("AgenThinkMesh", 50, 20, { continued: true })
+        .font("Helvetica").fillColor([mr2, mg2, mb2]).fontSize(8)
+        .text(`  ·  Task #${task.id}  ·  ${task.taskType}  ·  ${dateStr2}`, { continued: false });
+      // Right: page number
+      doc.fontSize(8).font("Helvetica").fillColor([mr2, mg2, mb2])
+        .text(`Page ${pageNumber}`, 50, 20, { width: PAGE_W, align: "right" });
+      // Divider line
+      doc.moveTo(50, 34).lineTo(50 + PAGE_W, 34)
+        .strokeColor([cr2, cg2, cb2]).lineWidth(0.4).stroke();
+      // Push cursor below the header
+      doc.y = 46;
+    }
+
+    doc.on("pageAdded", drawContinuationHeader);
 
     // ── Helper functions ────────────────────────────────────────────────────────
     function sectionTitle(text: string, color: string = CYAN) {

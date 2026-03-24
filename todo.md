@@ -1141,3 +1141,7 @@
 - [ ] Seed script: 2 example deals with pre-computed council results
 - [x] Final QA: 140/140 tests pass, tsc EXIT:0
 - [ ] Checkpoint and deliver (pending ANTHROPIC_API_KEY secret)
+
+## PDF Page Header (Mar 24 2026)
+
+- [x] Add slim branded header (AgenThinkMesh + task ID) to pages 2+ via pageAdded event
