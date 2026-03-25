@@ -695,3 +695,59 @@ export const dealScreeningRateLimit = mysqlTable("deal_screening_rate_limit", {
 
 export type DealScreeningRateLimit = typeof dealScreeningRateLimit.$inferSelect;
 export type InsertDealScreeningRateLimit = typeof dealScreeningRateLimit.$inferInsert;
+
+// ── Intelligence Agent — Analyses ────────────────────────────────────────────
+export const intelAnalyses = mysqlTable("intel_analyses", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  institution: varchar("institution", { length: 255 }).notNull(),
+  domain: varchar("domain", { length: 128 }),
+  aum: varchar("aum", { length: 64 }),
+  inputText: text("inputText"),
+  result: text("result").notNull(),
+  modules: text("modules"),
+  lens: text("lens"),
+  isInternal: boolean("isInternal").notNull().default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type IntelAnalysis = typeof intelAnalyses.$inferSelect;
+export type InsertIntelAnalysis = typeof intelAnalyses.$inferInsert;
+
+// ── Intelligence Agent — Tracked Institutions ─────────────────────────────────
+export const intelTracked = mysqlTable("intel_tracked", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  institution: varchar("institution", { length: 255 }).notNull(),
+  domain: varchar("domain", { length: 128 }),
+  aum: varchar("aum", { length: 64 }),
+  lastAnalysis: text("lastAnalysis"),
+  lastFetchedContent: text("lastFetchedContent"),
+  trackingSource: varchar("trackingSource", { length: 64 }).default("news_api"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type IntelTracked = typeof intelTracked.$inferSelect;
+export type InsertIntelTracked = typeof intelTracked.$inferInsert;
+
+// ── Intelligence Agent — Analysis History (diffs) ─────────────────────────────
+export const intelHistory = mysqlTable("intel_history", {
+  id: int("id").autoincrement().primaryKey(),
+  trackedInstitutionId: int("trackedInstitutionId").notNull(),
+  result: text("result").notNull(),
+  diff: text("diff"),
+  fetchedContent: text("fetchedContent"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type IntelHistory = typeof intelHistory.$inferSelect;
+export type InsertIntelHistory = typeof intelHistory.$inferInsert;
+
+// ── Intelligence Agent — Weekly Briefs ────────────────────────────────────────
+export const intelBriefs = mysqlTable("intel_briefs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  content: text("content").notNull(),
+  weekOf: timestamp("weekOf").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type IntelBrief = typeof intelBriefs.$inferSelect;
+export type InsertIntelBrief = typeof intelBriefs.$inferInsert;

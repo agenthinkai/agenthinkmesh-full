@@ -48,6 +48,11 @@ import AdminBetaRequests from "./pages/AdminBetaRequests";
 import Upgrade from "./pages/Upgrade";
 import NotFound from "./pages/NotFound";
 import DealScreener from "./pages/DealScreener";
+import IntelligenceHome from "./pages/IntelligenceHome";
+import IntelligenceTracking from "./pages/IntelligenceTracking";
+import IntelligenceBriefs from "./pages/IntelligenceBriefs";
+import IntelligenceHistory from "./pages/IntelligenceHistory";
+import IntelligenceAdmin from "./pages/IntelligenceAdmin";
 import { useAuth } from "./_core/hooks/useAuth";
 
 function Router() {
@@ -155,6 +160,13 @@ function Router() {
 
       {/* Deal Screener — Council of 10 */}
       <Route path="/deals" component={DealScreener} />
+
+      {/* Intelligence Agent — AI Programme Monitoring */}
+      <Route path="/intelligence" component={IntelligenceHome} />
+      <Route path="/intelligence/tracking" component={IntelligenceTracking} />
+      <Route path="/intelligence/briefs" component={IntelligenceBriefs} />
+      <Route path="/intelligence/history" component={IntelligenceHistory} />
+      <Route path="/intelligence/admin" component={IntelligenceAdmin} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

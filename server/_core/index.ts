@@ -20,6 +20,7 @@ import { socialMediaStreamRouter } from "../socialMediaStreamRoute";
 import { registerStripeWebhookRoute } from "../stripeWebhookRoute";
 import { startDripScheduler } from "../emailDrip";
 import dealScreenerUploadRouter from "../dealScreenerUploadRoute";
+import intelligenceParseRouter from "../intelligenceParseRoute";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -68,6 +69,8 @@ async function startServer() {
   app.use("/api/social", socialMediaStreamRouter);
   // Deal Screener PDF upload endpoint
   app.use("/api/deals", dealScreenerUploadRouter);
+  // Intelligence Agent document parse endpoint
+  app.use("/api/intelligence/parse-document", intelligenceParseRouter);
   // Embedded specialist agent endpoints
   app.use("/api/agents", agentRouter);
   // tRPC API
