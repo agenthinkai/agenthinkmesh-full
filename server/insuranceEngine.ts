@@ -166,7 +166,8 @@ async function runInsuranceAgent(
     .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
     .join("\n");
 
-  const response = await invokeLLM({
+  const response = await invokeLLM({ // Insurance streaming: haiku for speed
+    model: "claude-haiku-3-5",
     messages: [
       { role: "system", content: systemPrompt },
       {

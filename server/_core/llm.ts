@@ -57,6 +57,8 @@ export type ToolChoice =
 
 export type InvokeParams = {
   messages: Message[];
+  /** Override the default model for this specific call. */
+  model?: string;
   tools?: Tool[];
   toolChoice?: ToolChoice;
   tool_choice?: ToolChoice;
@@ -265,11 +267,15 @@ const normalizeResponseFormat = ({
   };
 };
 
+/** Default model used when no override is specified in InvokeParams. */
+export const DEFAULT_MODEL = "claude-sonnet-4-5";
+
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   assertApiKey();
 
   const {
     messages,
+    model,
     tools,
     toolChoice,
     tool_choice,
@@ -280,7 +286,7 @@ export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
   } = params;
 
   const payload: Record<string, unknown> = {
-    model: "gemini-2.5-flash",
+    model: model ?? DEFAULT_MODEL,
     messages: messages.map(normalizeMessage),
   };
 

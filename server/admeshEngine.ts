@@ -143,7 +143,8 @@ async function runAnalyzer(config: AdmeshRunConfig, bb: Blackboard): Promise<unk
     )
     .join("\n\n");
 
-  const resp = await invokeLLM({
+  const resp = await invokeLLM({ // AdMesh streaming: haiku for speed
+    model: "claude-haiku-3-5",
     messages: [
       {
         role: "system",
@@ -189,7 +190,8 @@ Return a JSON object with:
 }
 
 async function runStrategist(config: AdmeshRunConfig, bb: Blackboard): Promise<unknown> {
-  const resp = await invokeLLM({
+  const resp = await invokeLLM({ // AdMesh streaming: haiku for speed
+    model: "claude-haiku-3-5",
     messages: [
       {
         role: "system",
@@ -248,7 +250,8 @@ Create a creative strategy brief. Return JSON:
 }
 
 async function runCopywriter(config: AdmeshRunConfig, bb: Blackboard): Promise<unknown> {
-  const resp = await invokeLLM({
+  const resp = await invokeLLM({ // AdMesh streaming: haiku for speed
+    model: "claude-haiku-3-5",
     messages: [
       {
         role: "system",
@@ -335,7 +338,8 @@ Rules:
 }
 
 async function runScoring(config: AdmeshRunConfig, bb: Blackboard): Promise<unknown> {
-  const resp = await invokeLLM({
+  const resp = await invokeLLM({ // AdMesh streaming: haiku for speed
+    model: "claude-haiku-3-5",
     messages: [
       {
         role: "system",
@@ -431,7 +435,8 @@ async function runVideoProducer(config: AdmeshRunConfig, bb: Blackboard): Promis
     return { storyboards: 0, mode: "demo" };
   }
 
-  const resp = await invokeLLM({
+  const resp = await invokeLLM({ // AdMesh streaming: haiku for speed
+    model: "claude-haiku-3-5",
     messages: [
       {
         role: "system",
@@ -516,7 +521,8 @@ async function runPerformance(config: AdmeshRunConfig, bb: Blackboard): Promise<
   const roas = config.performanceROAS ?? benchmarks.avgROAS;
   const cpm = config.performanceCPM ?? benchmarks.avgCPM;
 
-  const resp = await invokeLLM({
+  const resp = await invokeLLM({ // AdMesh streaming: haiku for speed
+    model: "claude-haiku-3-5",
     messages: [
       {
         role: "system",

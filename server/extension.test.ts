@@ -200,7 +200,7 @@ describe("mesh.runAgentTask", () => {
     const mockLLMResponse = {
       id: "test-id",
       created: Date.now(),
-      model: "gemini-2.5-flash",
+      model: "claude-sonnet-4-5",
       choices: [
         {
           index: 0,
@@ -249,7 +249,7 @@ describe("mesh.runAgentTask", () => {
           json: async () => ({
             id: "test",
             created: Date.now(),
-            model: "gemini-2.5-flash",
+            model: "claude-sonnet-4-5",
             choices: [
               {
                 index: 0,

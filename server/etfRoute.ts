@@ -31,6 +31,7 @@ router.post("/claude-proxy", llmRateLimitMiddleware, async (req: Request & { llm
     const tokenCap = Math.min(req.llmTokenCap ?? 2000, 2000);
 
     const response = await invokeLLM({
+      model: "claude-opus-4-5", // ETF Studio: most complex reasoning task
       messages: [
         { role: "system", content: system },
         ...messages.map((m) => ({
