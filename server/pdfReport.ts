@@ -417,3 +417,182 @@ export function generateReportPdf(task: TaskData): Promise<Buffer> {
     doc.end();
   });
 }
+
+// ── MVNO Report Types ─────────────────────────────────────────────────────────
+
+export interface MvnoAgentResults {
+  onboarding: { status: string; flags: string[]; action: string };
+  billing: { healthScore: number; issues: string[]; recommendation: string };
+  plan: { currentPlanFit: string; churnRisk: string; action: string };
+  remittance: { primaryCorridor: string; monthlyVolume: string; bundleMatch: string; saving: string };
+  fraud: { riskLevel: string; flags: string[]; action: string };
+}
+
+export interface MvnoReportData {
+  runId: string;
+  subscriber: {
+    name: string;
+    nationality: string;
+    msisdn: string;
+    plan: string;
+    simStatus: string;
+    kycStatus: string;
+    monthlyArpu: number;
+    notes?: string;
+  };
+  agentResults: MvnoAgentResults;
+  overallRecommendation: string;
+}
+
+/**
+ * Generate a PDF report buffer for an MVNO intelligence run.
+ */
+export function generateMvnoPdf(data: MvnoReportData): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const doc = new PDFDocument({ size: "A4", margin: 48, bufferPages: true });
+    const chunks: Buffer[] = [];
+    doc.on("data", (c: Buffer) => chunks.push(c));
+    doc.on("end", () => resolve(Buffer.concat(chunks)));
+    doc.on("error", reject);
+
+    const TEAL  = "#00c4a0";
+    const GOLD2 = "#d4a843";
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+    const pageBg = () => {
+      doc.rect(0, 0, doc.page.width, doc.page.height).fill(hexToRgb(NAVY));
+    };
+    const sectionTitle = (title: string, color: string) => {
+      doc.moveDown(0.8);
+      doc.fontSize(9).font("Helvetica-Bold").fillColor(hexToRgb(color))
+        .text(title.toUpperCase(), { characterSpacing: 1.5 });
+      doc.moveDown(0.2);
+    };
+    const bodyText = (text: string) => {
+      doc.fontSize(11).font("Helvetica").fillColor(hexToRgb(WHITE)).text(text, { lineGap: 3 });
+      doc.moveDown(0.4);
+    };
+    const bullet = (text: string, prefix: string, color: string) => {
+      doc.fontSize(10).font("Helvetica-Bold").fillColor(hexToRgb(color)).text(prefix + " ", { continued: true });
+      doc.font("Helvetica").fillColor(hexToRgb(WHITE)).text(text, { lineGap: 2 });
+    };
+    const metricRow = (label: string, value: string, color: string) => {
+      doc.fontSize(9).font("Helvetica-Bold").fillColor(hexToRgb(MUTED)).text(label + ": ", { continued: true });
+      doc.font("Helvetica-Bold").fillColor(hexToRgb(color)).text(value);
+    };
+
+    // ── Page 1 ────────────────────────────────────────────────────────────────
+    pageBg();
+
+    // Header bar
+    doc.rect(48, 48, doc.page.width - 96, 3)
+      .fill(hexToRgb(TEAL));
+
+    // Title block
+    doc.moveDown(0.5);
+    doc.fontSize(8).font("Helvetica").fillColor(hexToRgb(MUTED))
+      .text(`AgenThinkMesh · MVNO Intelligence Report · Kuwait · ${new Date().toLocaleDateString("en-KW", { timeZone: "Asia/Kuwait" })}  ·  CONFIDENTIAL`);
+    doc.moveDown(0.3);
+    doc.fontSize(22).font("Helvetica-Bold").fillColor(hexToRgb(GOLD2))
+      .text("Kuwait MVNO Intelligence");
+    doc.fontSize(16).font("Helvetica").fillColor(hexToRgb(WHITE))
+      .text(`Subscriber Report: ${data.subscriber.name}`);
+    doc.moveDown(0.6);
+
+    // Overall recommendation banner
+    const recoColors: Record<string, string> = {
+      SUSPEND_SUBSCRIBER: RED,
+      KYC_FAILED: RED,
+      URGENT_RETENTION: AMBER,
+      HEALTHY_SUBSCRIBER: TEAL,
+      REVIEW_REQUIRED: PURPLE,
+    };
+    const recoColor = recoColors[data.overallRecommendation] ?? MUTED;
+    doc.fontSize(13).font("Helvetica-Bold").fillColor(hexToRgb(recoColor))
+      .text(`▶  ${data.overallRecommendation.replace(/_/g, " ")}`);
+    doc.moveDown(0.4);
+
+    // Subscriber profile
+    sectionTitle("Subscriber Profile", CYAN);
+    metricRow("Name",        data.subscriber.name,        WHITE);
+    metricRow("Nationality", data.subscriber.nationality,  WHITE);
+    metricRow("MSISDN",      data.subscriber.msisdn,       WHITE);
+    metricRow("Plan",        data.subscriber.plan.replace(/_/g, " ").toUpperCase(), GOLD2);
+    metricRow("SIM Status",  data.subscriber.simStatus.toUpperCase(), WHITE);
+    metricRow("KYC Status",  data.subscriber.kycStatus.toUpperCase(),
+      data.subscriber.kycStatus === "verified" ? TEAL : AMBER);
+    metricRow("Monthly ARPU", `KWD ${data.subscriber.monthlyArpu.toFixed(2)}`, WHITE);
+    if (data.subscriber.notes) {
+      doc.moveDown(0.2);
+      doc.fontSize(10).font("Helvetica-Oblique").fillColor(hexToRgb(MUTED))
+        .text(data.subscriber.notes, { lineGap: 2 });
+    }
+
+    // ── Agent 1: Onboarding ───────────────────────────────────────────────────
+    sectionTitle("Agent 1 — KYC & Onboarding", TEAL);
+    const ob = data.agentResults.onboarding;
+    metricRow("Status", ob.status.toUpperCase(),
+      ob.status === "approved" ? TEAL : ob.status === "rejected" ? RED : AMBER);
+    if (ob.flags.length) {
+      doc.moveDown(0.2);
+      ob.flags.forEach(f => bullet(f, "⚑", AMBER));
+    }
+    doc.moveDown(0.2);
+    bodyText(ob.action);
+
+    // ── Agent 2: Billing ──────────────────────────────────────────────────────
+    sectionTitle("Agent 2 — Billing & Support", GOLD2);
+    const bl = data.agentResults.billing;
+    const blColor = bl.healthScore >= 70 ? TEAL : bl.healthScore >= 40 ? AMBER : RED;
+    metricRow("Health Score", `${bl.healthScore}/100`, blColor);
+    if (bl.issues.length) {
+      doc.moveDown(0.2);
+      bl.issues.forEach(i => bullet(i, "!", AMBER));
+    }
+    doc.moveDown(0.2);
+    bodyText(bl.recommendation);
+
+    // ── Agent 3: Plan ─────────────────────────────────────────────────────────
+    sectionTitle("Agent 3 — Plan Optimisation", PURPLE);
+    const pl = data.agentResults.plan;
+    metricRow("Plan Fit",   pl.currentPlanFit.toUpperCase(),
+      pl.currentPlanFit === "good" ? TEAL : GOLD2);
+    metricRow("Churn Risk", pl.churnRisk.toUpperCase(),
+      pl.churnRisk === "low" ? TEAL : pl.churnRisk === "medium" ? AMBER : RED);
+    doc.moveDown(0.2);
+    bodyText(pl.action);
+
+    // ── Agent 4: Remittance ───────────────────────────────────────────────────
+    sectionTitle("Agent 4 — Remittance Intelligence", CYAN);
+    const rm = data.agentResults.remittance;
+    metricRow("Primary Corridor", rm.primaryCorridor, WHITE);
+    metricRow("Monthly Volume",   rm.monthlyVolume,   WHITE);
+    metricRow("Estimated Saving", rm.saving,          TEAL);
+    doc.moveDown(0.2);
+    bodyText(rm.bundleMatch);
+
+    // ── Agent 5: Fraud ────────────────────────────────────────────────────────
+    sectionTitle("Agent 5 — Fraud Detection", RED);
+    const fr = data.agentResults.fraud;
+    metricRow("Risk Level", fr.riskLevel.toUpperCase(),
+      fr.riskLevel === "clean" ? TEAL : fr.riskLevel === "monitor" ? AMBER : RED);
+    if (fr.flags.length) {
+      doc.moveDown(0.2);
+      fr.flags.forEach(f => bullet(f, "⚑", RED));
+    }
+    doc.moveDown(0.2);
+    bodyText(fr.action);
+
+    // ── Footer ────────────────────────────────────────────────────────────────
+    doc.moveDown(1.5);
+    doc.rect(48, doc.y, doc.page.width - 96, 1).fill(hexToRgb(MUTED));
+    doc.moveDown(0.4);
+    doc.fontSize(7).font("Helvetica").fillColor(hexToRgb(MUTED))
+      .text(
+        `Generated by AgenThinkMesh MVNO Intelligence  ·  Run ID: ${data.runId}  ·  ${new Date().toISOString()}  ·  farouq@agenthinkmesh.com`,
+        { align: "center" }
+      );
+
+    doc.end();
+  });
+}

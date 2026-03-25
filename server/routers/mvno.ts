@@ -103,9 +103,42 @@ export const mvnoRouter = router({
 
   /**
    * Return the 6 pre-built mock subscriber profiles for demo.
-   * Public — no auth required for the demo grid.
    */
   mockSubscribers: protectedProcedure.query(() => {
     return MOCK_SUBSCRIBERS;
   }),
+
+  /**
+   * Generate a PDF report for a completed MVNO run.
+   * Returns base64-encoded PDF.
+   */
+  exportPdf: protectedProcedure
+    .input(z.object({ runId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      const rows = await db
+        .select()
+        .from(mvnoAgentRuns)
+        .where(eq(mvnoAgentRuns.id, input.runId))
+        .limit(1);
+
+      if (rows.length === 0) throw new TRPCError({ code: "NOT_FOUND", message: "Run not found" });
+      const row = rows[0];
+      if (row.userId !== ctx.user.id) throw new TRPCError({ code: "FORBIDDEN" });
+
+      const { generateMvnoPdf } = await import("../pdfReport.js");
+      const reportData = {
+        runId: row.id,
+        subscriber: JSON.parse(row.subscriberContext),
+        agentResults: JSON.parse(row.agentResults),
+        overallRecommendation: row.overallRecommendation,
+      };
+      const pdfBuffer = await generateMvnoPdf(reportData);
+      return {
+        base64: pdfBuffer.toString("base64"),
+        filename: `AgenThinkMesh-MVNO-${reportData.subscriber.name.replace(/\s+/g, "-")}-${row.id.slice(0, 8)}.pdf`,
+      };
+    }),
 });

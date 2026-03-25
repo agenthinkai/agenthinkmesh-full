@@ -72,6 +72,38 @@ const FLAG: Record<string, string> = {
 
 // ── Sub-components ────────────────────────────────────────────────────────────
 
+// PDF Export Button — calls trpc.mvno.exportPdf and triggers browser download
+function PdfExportButton({ runId, subscriberName }: { runId: string; subscriberName: string }) {
+  const exportMutation = trpc.mvno.exportPdf.useMutation({
+    onSuccess: (data) => {
+      const bytes = Uint8Array.from(atob(data.base64), c => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = data.filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+  });
+  return (
+    <button
+      onClick={() => exportMutation.mutate({ runId })}
+      disabled={exportMutation.isPending}
+      style={{
+        padding: "10px 24px",
+        background: exportMutation.isPending ? `${GOLD}44` : `${GOLD}22`,
+        border: `1px solid ${GOLD}44`, color: GOLD,
+        borderRadius: 4, fontFamily: MONO, fontSize: 11,
+        cursor: exportMutation.isPending ? "not-allowed" : "pointer",
+        letterSpacing: "0.08em", opacity: exportMutation.isPending ? 0.7 : 1,
+      }}
+    >
+      {exportMutation.isPending ? "⟳ GENERATING PDF…" : "↓ EXPORT PDF REPORT"}
+    </button>
+  );
+}
+
 function AgentCard({ agentKey, label, icon, color, result }: {
   agentKey: string; label: string; icon: string; color: string;
   result: AgentResults | null;
@@ -585,27 +617,44 @@ export default function Telco() {
               ))}
             </div>
 
-            {/* JSON export */}
-            <div style={{ marginTop: 24, textAlign: "center" }}>
-              <button
-                onClick={() => {
-                  const blob = new Blob([JSON.stringify(displayResult, null, 2)], { type: "application/json" });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = `mvno-report-${displayResult.subscriber.name.replace(/\s+/g, "-")}.json`;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                }}
-                style={{
-                  padding: "10px 24px", background: `${GOLD}22`,
-                  border: `1px solid ${GOLD}44`, color: GOLD,
-                  borderRadius: 4, fontFamily: MONO, fontSize: 11,
-                  cursor: "pointer", letterSpacing: "0.08em",
-                }}
-              >
-                ↓ EXPORT JSON REPORT
-              </button>
+            {/* PDF export + CTA */}
+            <div style={{ marginTop: 32, display: "flex", flexDirection: "column", alignItems: "center", gap: 20 }}>
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", justifyContent: "center" }}>
+                <PdfExportButton runId={displayResult.runId} subscriberName={displayResult.subscriber.name} />
+              </div>
+              {/* Deploy CTA */}
+              <div style={{
+                background: `linear-gradient(135deg, ${BG2} 0%, rgba(212,168,67,0.06) 100%)`,
+                border: `1px solid ${GOLD}33`,
+                borderRadius: 10, padding: "32px 36px",
+                textAlign: "center", maxWidth: 560, width: "100%",
+              }}>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.14em", marginBottom: 10 }}>
+                  POWERED BY AGENTHINK MESH
+                </div>
+                <h3 style={{ margin: "0 0 10px", fontSize: 20, fontWeight: 700, color: TEXT }}>
+                  Deploy this intelligence layer
+                </h3>
+                <p style={{ color: TEXT2, fontSize: 13, lineHeight: 1.7, margin: "0 0 20px" }}>
+                  Institutional-grade MVNO subscriber intelligence for GCC telecom operators.
+                  5 parallel AI agents. Real-time KYC, billing, fraud, and remittance signals.
+                </p>
+                <a
+                  href="mailto:farouq@agenthinkmesh.com?subject=Deploy%20MVNO%20Intelligence%20for%20our%20institution"
+                  style={{
+                    display: "inline-block", padding: "11px 28px",
+                    background: `linear-gradient(135deg, ${GOLD}, #a8742a)`,
+                    color: "#000", borderRadius: 6,
+                    fontFamily: MONO, fontSize: 11, fontWeight: 700,
+                    textDecoration: "none", letterSpacing: "0.06em",
+                  }}
+                >
+                  Deploy for your institution →
+                </a>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginTop: 12 }}>
+                  farouq@agenthinkmesh.com · kishore@agenthinkmesh.com
+                </div>
+              </div>
             </div>
           </div>
         )}

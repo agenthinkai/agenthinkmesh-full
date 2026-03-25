@@ -107,7 +107,7 @@ async function callAgent<T>(
   try {
     const response = await withTimeout(
       client.messages.create({
-        model: "claude-3-5-haiku-20241022",
+        model: "claude-sonnet-4-5",
         max_tokens: 512,
         messages: [{ role: "user", content: userContent }],
         system: systemPrompt,
