@@ -535,19 +535,19 @@ function SummaryOutputCard({ r, animDelay }: { r: AnalysisResult; animDelay: num
       </div>
       <div style={S.cardBody}>
         <p style={{ fontSize: 14, lineHeight: 1.75, color: "var(--intel-text)", margin: 0 }}>
-          {r.executive_summary}
+          {r.summary}
         </p>
-        {r.gcc_lens && (
-          <div style={{ display: "flex", gap: 8, marginTop: 14, flexWrap: "wrap" }}>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--intel-muted)", background: "var(--intel-ink3)", border: "1px solid var(--intel-border)", borderRadius: 4, padding: "3px 8px" }}>
-              {r.gcc_lens.regulatory_alignment}
-            </span>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--intel-teal)", background: "rgba(0,196,160,0.08)", border: "1px solid rgba(0,196,160,0.2)", borderRadius: 4, padding: "3px 8px" }}>
-              Localisation {r.gcc_lens.localisation_score}/10
-            </span>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--intel-muted)", background: "var(--intel-ink3)", border: "1px solid var(--intel-border)", borderRadius: 4, padding: "3px 8px" }}>
-              {r.build_buy_stance?.stance ?? "—"} stance
-            </span>
+        {r.key_quote && (
+          <blockquote style={{ fontFamily: SERIF, fontStyle: "italic", fontSize: 14, color: "var(--intel-gold)", lineHeight: 1.7, margin: "14px 0 0", borderLeft: "2px solid var(--intel-gold)", paddingLeft: 14 }}>
+            "{r.key_quote}"
+          </blockquote>
+        )}
+        {r.comparable_gcc_institutions && r.comparable_gcc_institutions.length > 0 && (
+          <div style={{ display: "flex", gap: 6, marginTop: 14, flexWrap: "wrap", alignItems: "center" }}>
+            <span style={{ fontFamily: MONO, fontSize: 9, color: "var(--intel-muted)", letterSpacing: "0.1em", textTransform: "uppercase" }}>Comparable GCC:</span>
+            {r.comparable_gcc_institutions.map((inst, i) => (
+              <span key={i} style={{ fontFamily: MONO, fontSize: 10, color: "var(--intel-teal)", background: "rgba(0,196,160,0.08)", border: "1px solid rgba(0,196,160,0.2)", borderRadius: 4, padding: "2px 7px" }}>{inst}</span>
+            ))}
           </div>
         )}
       </div>
@@ -569,9 +569,12 @@ function UseCasesOutputCard({ useCases, animDelay }: { useCases: AnalysisResult[
           {useCases.map((u, i) => (
             <div key={i} style={{ background: "var(--intel-ink3)", border: "1px solid var(--intel-border2)", borderRadius: 8, padding: "12px 14px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, gap: 6 }}>
-                <span style={{ fontFamily: SYNE, fontWeight: 700, fontSize: 13, color: "var(--intel-text)" }}>{u.title}</span>
+                <span style={{ fontFamily: SYNE, fontWeight: 700, fontSize: 13, color: "var(--intel-text)" }}>{u.name}</span>
                 <MaturityBadge level={u.maturity} />
               </div>
+              {u.metric && (
+                <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--intel-teal)", marginBottom: 5 }}>{u.metric}</div>
+              )}
               <p style={{ fontSize: 12, color: "var(--intel-muted)", lineHeight: 1.6, margin: 0 }}>{u.description}</p>
             </div>
           ))}
@@ -581,23 +584,18 @@ function UseCasesOutputCard({ useCases, animDelay }: { useCases: AnalysisResult[
   );
 }
 
-function TechStackOutputCard({ techStack, buildBuy, animDelay }: { techStack: AnalysisResult["tech_stack"]; buildBuy: AnalysisResult["build_buy_stance"]; animDelay: number }) {
+function TechStackOutputCard({ techStack, buildVsBuy, animDelay }: { techStack: AnalysisResult["tech_stack"]; buildVsBuy?: string; animDelay: number }) {
   if (!techStack?.length) return null;
   return (
     <div style={{ ...S.card, animationDelay: `${animDelay}s` }}>
       <div style={S.cardHead}>
         <CardIcon color="blue">⬡</CardIcon>
         <CardTitle>Tech Stack &amp; Build/Buy</CardTitle>
-        {buildBuy && (
-          <span style={{ fontFamily: MONO, fontSize: 10, color: "var(--intel-blue)", background: "rgba(74,158,255,0.1)", border: "1px solid rgba(74,158,255,0.25)", borderRadius: 4, padding: "2px 8px", marginLeft: "auto" }}>
-            {buildBuy.stance} · {buildBuy.confidence}
-          </span>
-        )}
       </div>
       <div style={S.cardBody}>
-        {buildBuy?.rationale && (
+        {buildVsBuy && (
           <p style={{ fontFamily: SERIF, fontStyle: "italic", fontSize: 14, color: "var(--intel-muted)", lineHeight: 1.7, margin: "0 0 14px", borderLeft: "2px solid var(--intel-gold)", paddingLeft: 12 }}>
-            "{buildBuy.rationale}"
+            "{buildVsBuy}"
           </p>
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -605,10 +603,10 @@ function TechStackOutputCard({ techStack, buildBuy, animDelay }: { techStack: An
             <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 12px", background: "var(--intel-ink3)", borderRadius: 7, border: "1px solid var(--intel-border2)" }}>
               <div style={{ flex: 1 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3, flexWrap: "wrap" }}>
-                  <span style={{ fontFamily: SYNE, fontWeight: 700, fontSize: 13, color: "var(--intel-teal)" }}>{t.vendor}</span>
+                  <span style={{ fontFamily: SYNE, fontWeight: 700, fontSize: 13, color: "var(--intel-teal)" }}>{t.value}</span>
                   <span style={{ fontFamily: MONO, fontSize: 9, color: "var(--intel-muted)", background: "var(--intel-border)", borderRadius: 3, padding: "2px 6px" }}>{t.category}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 9, color: t.decision === "build" ? "var(--intel-gold)" : "var(--intel-blue)", background: t.decision === "build" ? "rgba(201,168,76,0.1)" : "rgba(74,158,255,0.1)", border: `1px solid ${t.decision === "build" ? "rgba(201,168,76,0.25)" : "rgba(74,158,255,0.25)"}`, borderRadius: 3, padding: "2px 6px" }}>{t.decision} · {t.confidence}</span>
                 </div>
-                <p style={{ fontSize: 12, color: "var(--intel-muted)", margin: 0, fontStyle: "italic" }}>{t.evidence}</p>
               </div>
             </div>
           ))}
@@ -625,6 +623,7 @@ function GTMOutputCard({ signals, animDelay }: { signals: AnalysisResult["gtm_si
       <div style={S.cardHead}>
         <CardIcon color="gold">◎</CardIcon>
         <CardTitle>GTM Signals for AgenThinkMesh</CardTitle>
+        <CardCount n={signals.length} />
       </div>
       <div style={S.cardBody}>
         {signals.map((s, i) => (
@@ -634,7 +633,10 @@ function GTMOutputCard({ signals, animDelay }: { signals: AnalysisResult["gtm_si
             </div>
             <div>
               <div style={{ fontFamily: SYNE, fontWeight: 700, fontSize: 13, color: "var(--intel-text)", marginBottom: 4 }}>{s.signal}</div>
-              <div style={{ fontSize: 12, color: "var(--intel-muted)", lineHeight: 1.6 }}>{s.implication}</div>
+              <div style={{ display: "flex", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                <span style={{ fontFamily: MONO, fontSize: 9, color: "var(--intel-teal)", background: "rgba(0,196,160,0.08)", border: "1px solid rgba(0,196,160,0.2)", borderRadius: 3, padding: "2px 6px" }}>Target: {s.target}</span>
+              </div>
+              <div style={{ fontSize: 12, color: "var(--intel-muted)", lineHeight: 1.6 }}>{s.action}</div>
             </div>
           </div>
         ))}
@@ -643,8 +645,11 @@ function GTMOutputCard({ signals, animDelay }: { signals: AnalysisResult["gtm_si
   );
 }
 
-function CoverageGapsOutputCard({ gaps, nextMoves, animDelay }: { gaps: AnalysisResult["coverage_gaps"]; nextMoves: AnalysisResult["recommended_next_moves"]; animDelay: number }) {
+function CoverageGapsOutputCard({ gaps, animDelay }: { gaps: AnalysisResult["coverage_gaps"]; animDelay: number }) {
   if (!gaps?.length) return null;
+  const priorityColor: Record<string, string> = { high: "var(--intel-red)", medium: "var(--intel-gold)", low: "var(--intel-muted)" };
+  const priorityBg: Record<string, string> = { high: "rgba(255,90,90,0.08)", medium: "rgba(201,168,76,0.08)", low: "rgba(107,117,133,0.08)" };
+  const priorityBorder: Record<string, string> = { high: "rgba(255,90,90,0.2)", medium: "rgba(201,168,76,0.2)", low: "rgba(107,117,133,0.2)" };
   return (
     <div style={{ ...S.card, animationDelay: `${animDelay}s` }}>
       <div style={S.cardHead}>
@@ -653,25 +658,17 @@ function CoverageGapsOutputCard({ gaps, nextMoves, animDelay }: { gaps: Analysis
         <CardCount n={gaps.length} />
       </div>
       <div style={S.cardBody}>
-        <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: nextMoves?.length ? 16 : 0 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {gaps.map((g, i) => (
-            <span key={i} style={{ fontFamily: MONO, fontSize: 11, color: "var(--intel-red)", background: "rgba(255,90,90,0.08)", border: "1px solid rgba(255,90,90,0.2)", borderRadius: 5, padding: "4px 10px" }}>{g}</span>
+            <div key={i} style={{ padding: "10px 12px", background: "var(--intel-ink3)", borderRadius: 7, border: `1px solid ${priorityBorder[g.priority] ?? priorityBorder.medium}` }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
+                <span style={{ fontFamily: SYNE, fontWeight: 700, fontSize: 13, color: "var(--intel-text)", flex: 1 }}>{g.domain}</span>
+                <span style={{ fontFamily: MONO, fontSize: 9, color: priorityColor[g.priority] ?? priorityColor.medium, background: priorityBg[g.priority] ?? priorityBg.medium, border: `1px solid ${priorityBorder[g.priority] ?? priorityBorder.medium}`, borderRadius: 3, padding: "2px 6px", textTransform: "uppercase", letterSpacing: "0.06em" }}>{g.priority}</span>
+              </div>
+              <div style={{ fontSize: 12, color: "var(--intel-muted)", lineHeight: 1.6 }}>{g.suggestion}</div>
+            </div>
           ))}
         </div>
-        {nextMoves && nextMoves.length > 0 && (
-          <>
-            <div style={{ fontFamily: MONO, fontSize: 9, color: "var(--intel-muted)", letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 10, marginTop: 4 }}>Recommended Next Moves</div>
-            {nextMoves.map((m, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, marginBottom: 10 }}>
-                <div style={{ width: 20, height: 20, borderRadius: "50%", background: "rgba(74,158,255,0.12)", border: "1px solid rgba(74,158,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 9, fontWeight: 700, color: "var(--intel-blue)", fontFamily: MONO, flexShrink: 0 }}>{i + 1}</div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 700, color: "var(--intel-text)", marginBottom: 2 }}>{m.action}</div>
-                  <div style={{ fontSize: 12, color: "var(--intel-muted)" }}>{m.rationale}</div>
-                </div>
-              </div>
-            ))}
-          </>
-        )}
       </div>
     </div>
   );
@@ -681,15 +678,15 @@ function CoverageGapsOutputCard({ gaps, nextMoves, animDelay }: { gaps: Analysis
 interface AnalysisResult {
   institution?: string;
   domain?: string;
-  aum?: string;
-  executive_summary?: string;
-  use_cases?: Array<{ title: string; description: string; maturity: string }>;
-  tech_stack?: Array<{ vendor: string; category: string; evidence: string }>;
-  build_buy_stance?: { stance: string; confidence: string; rationale: string };
-  gtm_signals?: Array<{ signal: string; implication: string }>;
-  coverage_gaps?: string[];
-  recommended_next_moves?: Array<{ action: string; priority: string; rationale: string }>;
-  gcc_lens?: { regulatory_alignment: string; sovereign_ai_stance: string; localisation_score: number };
+  aum?: string | null;
+  summary?: string;
+  use_cases?: Array<{ name: string; metric?: string | null; description: string; maturity: string }>;
+  tech_stack?: Array<{ category: string; value: string; decision: string; confidence: string }>;
+  build_vs_buy_stance?: string;
+  gtm_signals?: Array<{ signal: string; target: string; action: string }>;
+  coverage_gaps?: Array<{ domain: string; priority: string; suggestion: string }>;
+  comparable_gcc_institutions?: string[];
+  key_quote?: string | null;
 }
 
 // ── Module & lens config ──────────────────────────────────────────────────────
@@ -810,11 +807,14 @@ export default function IntelligenceHome() {
       </style></head><body>
         <h1>${result.institution ?? "Intelligence Brief"}</h1>
         <p style="color:#6b7585; font-size:12px;">${result.domain ?? ""} ${result.aum ? "· " + result.aum : ""} · Generated ${new Date().toLocaleDateString()}</p>
-        <h2>Executive Summary</h2><p>${result.executive_summary ?? ""}</p>
-        ${result.use_cases?.length ? `<h2>AI Use Cases</h2>${result.use_cases.map(u => `<div class="item"><strong>${u.title}</strong> <span class="tag">${u.maturity}</span><p>${u.description}</p></div>`).join("")}` : ""}
-        ${result.tech_stack?.length ? `<h2>Tech Stack</h2>${result.tech_stack.map(t => `<div class="item"><strong>${t.vendor}</strong> <span class="tag">${t.category}</span><p>${t.evidence}</p></div>`).join("")}` : ""}
-        ${result.gtm_signals?.length ? `<h2>GTM Signals</h2>${result.gtm_signals.map(s => `<div class="item"><strong>${s.signal}</strong><p>${s.implication}</p></div>`).join("")}` : ""}
-        ${result.coverage_gaps?.length ? `<h2>Coverage Gaps</h2><p>${result.coverage_gaps.map(g => `<span class="tag">${g}</span>`).join(" ")}</p>` : ""}
+        <h2>Executive Summary</h2><p>${result.summary ?? ""}</p>
+        ${result.key_quote ? `<blockquote style="border-left:2px solid #c9a84c; padding-left:12px; color:#c9a84c; font-style:italic;">${result.key_quote}</blockquote>` : ""}
+        ${result.use_cases?.length ? `<h2>AI Use Cases</h2>${result.use_cases.map(u => `<div class="item"><strong>${u.name}</strong> <span class="tag">${u.maturity}</span>${u.metric ? ` <span class="tag">${u.metric}</span>` : ""}<p>${u.description}</p></div>`).join("")}` : ""}
+        ${result.tech_stack?.length ? `<h2>Tech Stack</h2>${result.tech_stack.map(t => `<div class="item"><strong>${t.value}</strong> <span class="tag">${t.category}</span> <span class="tag">${t.decision} · ${t.confidence}</span></div>`).join("")}` : ""}
+        ${result.build_vs_buy_stance ? `<h2>Build vs Buy Stance</h2><p>${result.build_vs_buy_stance}</p>` : ""}
+        ${result.gtm_signals?.length ? `<h2>GTM Signals</h2>${result.gtm_signals.map(s => `<div class="item"><strong>${s.signal}</strong> <span class="tag">Target: ${s.target}</span><p>${s.action}</p></div>`).join("")}` : ""}
+        ${result.coverage_gaps?.length ? `<h2>Coverage Gaps</h2>${result.coverage_gaps.map(g => `<div class="item"><strong>${g.domain}</strong> <span class="tag">${g.priority}</span><p>${g.suggestion}</p></div>`).join("")}` : ""}
+        ${result.comparable_gcc_institutions?.length ? `<h2>Comparable GCC Institutions</h2><p>${result.comparable_gcc_institutions.join(" · ")}</p>` : ""}
         <div style="margin-top:40px; padding:20px; background:#13161c; border:1px solid rgba(201,168,76,0.2); border-radius:10px; text-align:center;">
           <p style="color:#c9a84c; font-weight:700; margin-bottom:4px;">AgenThinkMesh Intelligence Agent</p>
           <p style="color:#6b7585; font-size:11px;">farouq@agenthinkmesh.com</p>
@@ -1044,9 +1044,9 @@ export default function IntelligenceHome() {
 
             <SummaryOutputCard r={result} animDelay={0.05} />
             <UseCasesOutputCard useCases={result.use_cases} animDelay={0.1} />
-            <TechStackOutputCard techStack={result.tech_stack} buildBuy={result.build_buy_stance} animDelay={0.15} />
+            <TechStackOutputCard techStack={result.tech_stack} buildVsBuy={result.build_vs_buy_stance} animDelay={0.15} />
             <GTMOutputCard signals={result.gtm_signals} animDelay={0.2} />
-            <CoverageGapsOutputCard gaps={result.coverage_gaps} nextMoves={result.recommended_next_moves} animDelay={0.25} />
+            <CoverageGapsOutputCard gaps={result.coverage_gaps} animDelay={0.25} />
 
             {/* Footer CTA */}
             <div style={S.footerCta}>

@@ -1170,3 +1170,20 @@
 - [ ] Add Telco nav item to SiteNav.tsx
 - [ ] Extend pdfReport.ts for mvno report type
 - [ ] Final QA: tsc 0 errors, 140+ tests pass
+
+## Intelligence Agent UI Replacement (Mar 25 2026)
+
+- [ ] Create IntelBrandTopbar.tsx — AT brandmark, AgenThinkMesh, live badge, Book Demo button
+- [ ] Create IntelExampleCards.tsx — 3 pre-loaded cards (NBIM, Mubadala, ADQ), click to fill textarea
+- [ ] Create IntelInputPanel.tsx — source tabs, DM Mono textarea, char count, Clear button
+- [ ] Create IntelConfigToggles.tsx — Analysis Modules + GCC Lens toggle panels
+- [ ] Create IntelProgressSteps.tsx — 6 animated steps, gold-to-teal progress bar
+- [ ] Create SummaryCard.tsx — institution name, domain, AUM, 3-sentence summary, blockquote
+- [ ] Create UseCasesCard.tsx — grid, maturity badges
+- [ ] Create TechStackCard.tsx — build/buy stance, stack rows with badges
+- [ ] Create GTMSignalsCard.tsx — numbered signals, GCC peer chips
+- [ ] Create CoverageGapsCard.tsx — priority-colored left borders
+- [ ] Create IntelFooterCTA.tsx — gold-bordered panel, demo buttons, contact emails
+- [ ] Rewrite IntelligenceHome.tsx to compose all components, preserve tRPC hooks
+- [ ] Add PDF export button wired to existing pdfReport.ts
+- [ ] tsc: 0 errors, all 140 tests pass

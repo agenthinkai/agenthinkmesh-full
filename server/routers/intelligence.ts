@@ -15,45 +15,64 @@ import { invokeLLM } from "../_core/llm";
 const AnalysisResultSchema = z.object({
   institution: z.string(),
   domain: z.string().optional(),
-  aum: z.string().optional(),
-  executive_summary: z.string(),
-  use_cases: z.array(z.object({ title: z.string(), description: z.string(), maturity: z.string() })),
-  tech_stack: z.array(z.object({ vendor: z.string(), category: z.string(), evidence: z.string() })),
-  build_buy_stance: z.object({ stance: z.string(), confidence: z.string(), rationale: z.string() }),
-  gtm_signals: z.array(z.object({ signal: z.string(), implication: z.string() })),
-  coverage_gaps: z.array(z.string()),
-  recommended_next_moves: z.array(z.object({ action: z.string(), priority: z.string(), rationale: z.string() })),
-  gcc_lens: z.object({
-    regulatory_alignment: z.string(),
-    sovereign_ai_stance: z.string(),
-    localisation_score: z.number(),
-  }).optional(),
+  aum: z.string().optional().nullable(),
+  summary: z.string(),
+  use_cases: z.array(z.object({
+    name: z.string(),
+    metric: z.string().optional().nullable(),
+    description: z.string(),
+    maturity: z.enum(["production", "pilot", "unknown"]).default("unknown"),
+  })),
+  tech_stack: z.array(z.object({
+    category: z.string(),
+    value: z.string(),
+    decision: z.enum(["buy", "build", "hybrid"]).default("buy"),
+    confidence: z.enum(["high", "medium", "low"]).default("medium"),
+  })),
+  build_vs_buy_stance: z.string().optional(),
+  gtm_signals: z.array(z.object({
+    signal: z.string(),
+    target: z.string(),
+    action: z.string(),
+  })),
+  coverage_gaps: z.array(z.object({
+    domain: z.string(),
+    priority: z.enum(["high", "medium", "low"]).default("medium"),
+    suggestion: z.string(),
+  })),
+  comparable_gcc_institutions: z.array(z.string()).optional(),
+  key_quote: z.string().optional().nullable(),
 });
 
 // ── System prompt ─────────────────────────────────────────────────────────────
 
-const SYSTEM_PROMPT = `You are an expert AI programme intelligence analyst specialising in GCC sovereign wealth funds, government entities, and large institutional investors. Your role is to extract structured intelligence from raw text (LinkedIn posts, articles, conference notes, press releases, internal documents) about an institution's AI programme.
+const SYSTEM_PROMPT = `You are an institutional AI intelligence analyst for AgenThinkMesh, a multi-agent platform serving GCC sovereign wealth funds, fund managers, and enterprises.
 
-Return ONLY valid JSON matching this exact schema:
+Analyse the provided text about an institution's AI programme. Respond ONLY with valid JSON. No markdown, no backticks, no preamble.
+
 {
-  "institution": "string",
-  "domain": "string (e.g. Sovereign Wealth Fund, Central Bank, Government Entity)",
-  "aum": "string (e.g. $700B, unknown)",
-  "executive_summary": "string (2-3 sentences, direct and analytical)",
-  "use_cases": [{ "title": "string", "description": "string", "maturity": "Pilot|Production|Exploring|Unknown" }],
-  "tech_stack": [{ "vendor": "string", "category": "string (e.g. LLM Provider, MLOps, Data Platform)", "evidence": "string" }],
-  "build_buy_stance": { "stance": "Build|Buy|Hybrid|Unknown", "confidence": "High|Medium|Low", "rationale": "string" },
-  "gtm_signals": [{ "signal": "string", "implication": "string (what this means for vendors/partners)" }],
-  "coverage_gaps": ["string (areas with no visible AI activity)"],
-  "recommended_next_moves": [{ "action": "string", "priority": "High|Medium|Low", "rationale": "string" }],
-  "gcc_lens": {
-    "regulatory_alignment": "string (SAMA, CBUAE, ADGM, DFSA, etc.)",
-    "sovereign_ai_stance": "string",
-    "localisation_score": number (0-10, 10 = fully localised Arabic AI)
-  }
+  "institution": "full institution name",
+  "domain": "sector (e.g. Sovereign Wealth Fund, Pension Fund, Family Office)",
+  "aum": "AUM if mentioned, else null",
+  "summary": "3-sentence executive summary: what they built, key results, AI maturity signal",
+  "use_cases": [
+    { "name": "string", "metric": "quantified outcome or null", "description": "1 sentence", "maturity": "production|pilot|unknown" }
+  ],
+  "tech_stack": [
+    { "category": "e.g. Foundation Model", "value": "vendor/tech name", "decision": "buy|build|hybrid", "confidence": "high|medium|low" }
+  ],
+  "build_vs_buy_stance": "1-2 sentence characterisation of their overall philosophy",
+  "gtm_signals": [
+    { "signal": "specific insight for AgenThinkMesh in GCC", "target": "which GCC institution type this applies to", "action": "what AgenThinkMesh should do" }
+  ],
+  "coverage_gaps": [
+    { "domain": "area where this institution has AI", "priority": "high|medium|low", "suggestion": "what AgenThinkMesh should build/position" }
+  ],
+  "comparable_gcc_institutions": ["2-4 GCC institutions with similar profile"],
+  "key_quote": "most impactful single quote or data point, or null"
 }
 
-Be analytical, specific, and direct. Do not hedge or pad. If information is absent, say "Not evidenced" rather than speculating.`;
+Be commercially precise. Infer reasonably where data is absent. Keep suggestions actionable for a GCC AI agent platform.`;
 
 // ── Few-shot examples ─────────────────────────────────────────────────────────
 
@@ -69,23 +88,26 @@ Text: "NBIM has deployed an internal LLM-based document analysis tool built on A
       institution: "NBIM",
       domain: "Sovereign Wealth Fund",
       aum: "$1.6T",
-      executive_summary: "NBIM has moved beyond exploration into production deployment of LLM-based document analysis on Azure OpenAI, focused on ESG processing. Agentic equity research workflows are in early exploration with no vendor commitment, reflecting a deliberate build-first posture.",
+      summary: "NBIM has moved beyond exploration into production deployment of LLM-based document analysis on Azure OpenAI, focused on ESG processing. Agentic equity research workflows are in early exploration with no vendor commitment. This reflects a deliberate build-first posture with 213,000 hours saved and $100M/year in trading cost reductions.",
       use_cases: [
-        { title: "ESG Document Analysis", description: "LLM processes ESG reports from portfolio companies at scale", maturity: "Production" },
-        { title: "Agentic Equity Research", description: "Exploring multi-step agent workflows for equity research automation", maturity: "Exploring" },
+        { name: "ESG Document Analysis", metric: "7,000 companies screened across 60 countries", description: "LLM processes ESG reports from portfolio companies at scale", maturity: "production" },
+        { name: "Agentic Equity Research", metric: null, description: "Exploring multi-step agent workflows for equity research automation", maturity: "pilot" },
+        { name: "Trade Optimization", metric: "NOK 4-6 billion saved", description: "Predictive models reduce market impact during large block trades", maturity: "production" },
       ],
       tech_stack: [
-        { vendor: "Microsoft Azure OpenAI", category: "LLM Provider", evidence: "CTO confirmed Azure OpenAI deployment" },
+        { category: "Foundation Model", value: "Anthropic Claude", decision: "buy", confidence: "high" },
+        { category: "Cloud Infrastructure", value: "Microsoft Azure", decision: "buy", confidence: "high" },
       ],
-      build_buy_stance: { stance: "Build", confidence: "High", rationale: "CTO explicitly stated preference for internal capability building over off-the-shelf solutions" },
+      build_vs_buy_stance: "Strong build-first philosophy — CTO explicitly stated preference for internal capability building. Azure OpenAI provides the foundation model layer while all agent logic is built internally.",
       gtm_signals: [
-        { signal: "No vendor commitment for agentic workflows", implication: "Window open for specialised agentic platform vendors to engage before decision is made" },
+        { signal: "No vendor commitment for agentic workflows", target: "GCC sovereign wealth funds exploring agentic platforms", action: "Engage with AgenThinkMesh agentic workflow POC for equity research before incumbent is selected" },
       ],
-      coverage_gaps: ["Trading and portfolio optimisation AI", "Natural language interfaces for fund managers", "Arabic language capability"],
-      recommended_next_moves: [
-        { action: "Engage CTO office with agentic workflow POC for equity research", priority: "High", rationale: "Active exploration phase with no incumbent — ideal entry point" },
+      coverage_gaps: [
+        { domain: "Arabic language AI", priority: "high", suggestion: "Position AgenThinkMesh Arabic-native agents as differentiated offering for GCC SWFs" },
+        { domain: "Portfolio company AI governance", priority: "medium", suggestion: "Build cross-portfolio AI monitoring dashboard for SWF holding structures" },
       ],
-      gcc_lens: { regulatory_alignment: "N/A — Norwegian sovereign fund", sovereign_ai_stance: "Build-first, data sovereignty focused", localisation_score: 1 },
+      comparable_gcc_institutions: ["Mubadala", "PIF", "ADIA", "QIA"],
+      key_quote: "This ship is sailing, get on board or find a new place to work — CEO Nicolai Tangen on AI adoption",
     }),
   },
 ];
@@ -129,28 +151,28 @@ async function runAnalysis(institution: string, text: string, modules: string[],
 
 function computeDiff(prev: Record<string, unknown>, curr: Record<string, unknown>): Record<string, unknown> {
   const diff: Record<string, unknown> = {};
-  const prevUseCases = (prev.use_cases as Array<{ title: string }> | undefined) ?? [];
-  const currUseCases = (curr.use_cases as Array<{ title: string }> | undefined) ?? [];
-  const prevTitles = new Set(prevUseCases.map((u) => u.title));
-  const currTitles = new Set(currUseCases.map((u) => u.title));
-  const newUseCases = currUseCases.filter((u) => !prevTitles.has(u.title));
-  const removedUseCases = prevUseCases.filter((u) => !currTitles.has(u.title));
+  const prevUseCases = (prev.use_cases as Array<{ name: string }> | undefined) ?? [];
+  const currUseCases = (curr.use_cases as Array<{ name: string }> | undefined) ?? [];
+  const prevNames = new Set(prevUseCases.map((u) => u.name));
+  const currNames = new Set(currUseCases.map((u) => u.name));
+  const newUseCases = currUseCases.filter((u) => !prevNames.has(u.name));
+  const removedUseCases = prevUseCases.filter((u) => !currNames.has(u.name));
   if (newUseCases.length || removedUseCases.length) {
     diff.use_cases = { added: newUseCases, removed: removedUseCases };
   }
-  const prevStack = (prev.tech_stack as Array<{ vendor: string }> | undefined) ?? [];
-  const currStack = (curr.tech_stack as Array<{ vendor: string }> | undefined) ?? [];
-  const prevVendors = new Set(prevStack.map((t) => t.vendor));
-  const currVendors = new Set(currStack.map((t) => t.vendor));
-  const newVendors = currStack.filter((t) => !prevVendors.has(t.vendor));
-  const removedVendors = prevStack.filter((t) => !currVendors.has(t.vendor));
+  const prevStack = (prev.tech_stack as Array<{ value: string }> | undefined) ?? [];
+  const currStack = (curr.tech_stack as Array<{ value: string }> | undefined) ?? [];
+  const prevVendors = new Set(prevStack.map((t) => t.value));
+  const currVendors = new Set(currStack.map((t) => t.value));
+  const newVendors = currStack.filter((t) => !prevVendors.has(t.value));
+  const removedVendors = prevStack.filter((t) => !currVendors.has(t.value));
   if (newVendors.length || removedVendors.length) {
     diff.tech_stack = { added: newVendors, removed: removedVendors };
   }
-  const prevStance = (prev.build_buy_stance as { stance?: string } | undefined)?.stance;
-  const currStance = (curr.build_buy_stance as { stance?: string } | undefined)?.stance;
+  const prevStance = (prev.build_vs_buy_stance as string | undefined);
+  const currStance = (curr.build_vs_buy_stance as string | undefined);
   if (prevStance !== currStance) {
-    diff.build_buy_stance = { from: prevStance, to: currStance };
+    diff.build_vs_buy_stance = { from: prevStance, to: currStance };
   }
   return diff;
 }
