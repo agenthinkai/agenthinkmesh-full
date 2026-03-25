@@ -267,7 +267,8 @@ const normalizeResponseFormat = ({
   };
 };
 
-/** Default model used when no override is specified in InvokeParams. */
+// Default: claude-sonnet-4-5
+// Override per module: opus for ETF, haiku for streaming
 export const DEFAULT_MODEL = "claude-sonnet-4-5";
 
 export async function invokeLLM(params: InvokeParams): Promise<InvokeResult> {
