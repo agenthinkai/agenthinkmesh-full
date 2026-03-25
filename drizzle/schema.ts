@@ -751,3 +751,33 @@ export const intelBriefs = mysqlTable("intel_briefs", {
 });
 export type IntelBrief = typeof intelBriefs.$inferSelect;
 export type InsertIntelBrief = typeof intelBriefs.$inferInsert;
+
+// ── Kuwait MVNO Intelligence ──────────────────────────────────────────────────
+
+export const mvnoSubscribers = mysqlTable("mvno_subscribers", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  subscriberName: varchar("subscriberName", { length: 255 }).notNull(),
+  msisdn: varchar("msisdn", { length: 20 }).notNull(),
+  simStatus: mysqlEnum("simStatus", ["active", "suspended", "ported_out"]).notNull().default("active"),
+  plan: mysqlEnum("plan", ["basic", "worker", "remittance_plus"]).notNull().default("basic"),
+  nationality: varchar("nationality", { length: 100 }),
+  kycStatus: mysqlEnum("kycStatus", ["pending", "verified", "rejected"]).notNull().default("pending"),
+  monthlyArpu: decimal("monthlyArpu", { precision: 10, scale: 2 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type MvnoSubscriber = typeof mvnoSubscribers.$inferSelect;
+export type InsertMvnoSubscriber = typeof mvnoSubscribers.$inferInsert;
+
+export const mvnoAgentRuns = mysqlTable("mvno_agent_runs", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  subscriberContext: text("subscriberContext").notNull(), // JSON blob
+  agentResults: text("agentResults").notNull(),           // JSON blob
+  overallRecommendation: varchar("overallRecommendation", { length: 100 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type MvnoAgentRun = typeof mvnoAgentRuns.$inferSelect;
+export type InsertMvnoAgentRun = typeof mvnoAgentRuns.$inferInsert;

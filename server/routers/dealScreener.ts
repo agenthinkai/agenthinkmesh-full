@@ -13,18 +13,41 @@ import { dealScreenings, dealScreeningRateLimit } from "../../drizzle/schema";
 import { runCouncil } from "../councilEngine";
 import { randomUUID } from "crypto";
 
-// ── Rate limit: 20 screens per user per hour ──────────────────────────────────
+// ── Plan-based daily rate limits ─────────────────────────────────────────────
 
-const RATE_LIMIT_MAX = 20;
-const RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+type PlanTier = "trial" | "standard" | "pro" | "enterprise" | null | undefined;
 
-async function checkAndIncrementRateLimit(userId: number): Promise<void> {
+function getDailyLimit(plan: PlanTier): number {
+  if (plan === "enterprise") return Infinity;
+  if (plan === "pro") return 50;
+  return 3; // trial, standard, null, undefined → free tier
+}
+
+function getPlanLabel(plan: PlanTier): string {
+  if (plan === "enterprise") return "enterprise";
+  if (plan === "pro") return "pro";
+  return "free";
+}
+
+/** Returns midnight UTC today as a Date (start of current 24h window). */
+function todayMidnightUTC(): Date {
+  const d = new Date();
+  d.setUTCHours(0, 0, 0, 0);
+  return d;
+}
+
+async function checkAndIncrementRateLimit(
+  userId: number,
+  plan: PlanTier
+): Promise<void> {
   const db = await getDb();
   if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
+  const limit = getDailyLimit(plan);
+  if (limit === Infinity) return; // enterprise: skip check
 
-  // Find existing rate limit record for this user in the current window
+  const windowStart = todayMidnightUTC();
+
   const existing = await db
     .select()
     .from(dealScreeningRateLimit)
@@ -38,22 +61,25 @@ async function checkAndIncrementRateLimit(userId: number): Promise<void> {
 
   if (existing.length > 0) {
     const record = existing[0];
-    if (record.count >= RATE_LIMIT_MAX) {
+    if (record.count >= limit) {
       throw new TRPCError({
         code: "TOO_MANY_REQUESTS",
-        message: `Rate limit exceeded. You can screen up to ${RATE_LIMIT_MAX} deals per hour. Please try again later.`,
+        message: JSON.stringify({
+          code: "RATE_LIMIT_EXCEEDED",
+          plan: getPlanLabel(plan),
+          limit,
+          remaining: 0,
+        }),
       });
     }
-    // Increment count
     await db
       .update(dealScreeningRateLimit)
       .set({ count: record.count + 1 })
       .where(eq(dealScreeningRateLimit.id, record.id));
   } else {
-    // Create new window record
     await db.insert(dealScreeningRateLimit).values({
       userId,
-      windowStart: new Date(),
+      windowStart,
       count: 1,
     });
   }
@@ -79,8 +105,8 @@ export const dealScreenerRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-      // Rate limit check
-      await checkAndIncrementRateLimit(ctx.user.id);
+      // Rate limit check (plan-based daily limit)
+      await checkAndIncrementRateLimit(ctx.user.id, ctx.user.planTier as PlanTier);
 
       const dealId = randomUUID();
 
@@ -193,9 +219,17 @@ export const dealScreenerRouter = router({
    */
   rateLimit: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return { remaining: RATE_LIMIT_MAX, resetAt: null };
+    const plan = ctx.user.planTier as PlanTier;
+    const limit = getDailyLimit(plan);
+    const planLabel = getPlanLabel(plan);
 
-    const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_MS);
+    if (limit === Infinity) {
+      return { remaining: Infinity, limit: -1, plan: planLabel, resetAt: null };
+    }
+
+    if (!db) return { remaining: limit, limit, plan: planLabel, resetAt: null };
+
+    const windowStart = todayMidnightUTC();
     const existing = await db
       .select()
       .from(dealScreeningRateLimit)
@@ -208,12 +242,14 @@ export const dealScreenerRouter = router({
       .limit(1);
 
     if (existing.length === 0) {
-      return { remaining: RATE_LIMIT_MAX, resetAt: null };
+      return { remaining: limit, limit, plan: planLabel, resetAt: null };
     }
 
     const record = existing[0];
-    const remaining = Math.max(0, RATE_LIMIT_MAX - record.count);
-    const resetAt = new Date(record.windowStart.getTime() + RATE_LIMIT_WINDOW_MS);
-    return { remaining, resetAt };
+    const remaining = Math.max(0, limit - record.count);
+    // Reset at next midnight UTC
+    const tomorrow = new Date(windowStart);
+    tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+    return { remaining, limit, plan: planLabel, resetAt: tomorrow };
   }),
 });

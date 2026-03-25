@@ -53,6 +53,7 @@ import IntelligenceTracking from "./pages/IntelligenceTracking";
 import IntelligenceBriefs from "./pages/IntelligenceBriefs";
 import IntelligenceHistory from "./pages/IntelligenceHistory";
 import IntelligenceAdmin from "./pages/IntelligenceAdmin";
+import Telco from "./pages/Telco";
 import { useAuth } from "./_core/hooks/useAuth";
 
 function Router() {
@@ -167,6 +168,9 @@ function Router() {
       <Route path="/intelligence/briefs" component={IntelligenceBriefs} />
       <Route path="/intelligence/history" component={IntelligenceHistory} />
       <Route path="/intelligence/admin" component={IntelligenceAdmin} />
+
+      {/* MVNO Intelligence — Kuwait Telco */}
+      <Route path="/telco" component={Telco} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

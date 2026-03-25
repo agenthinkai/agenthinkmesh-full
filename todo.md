@@ -1145,3 +1145,28 @@
 ## PDF Page Header (Mar 24 2026)
 
 - [x] Add slim branded header (AgenThinkMesh + task ID) to pages 2+ via pageAdded event
+
+## Three-Task Build (Mar 25 2026)
+
+### Task 1 — Intelligence Agent UI Upgrade
+- [ ] Load Google Fonts (Syne, DM Mono, Cormorant Garamond) in client/index.html
+- [ ] Add design tokens to client/src/index.css (--ink, --gold, --teal, etc.)
+- [ ] Create client/src/components/intelligence/ directory with 6 card components
+- [ ] Rebuild IntelligenceHome.tsx with gold/teal design, 3 example cards, 6-step progress, PDF export, Book Demo CTA
+- [ ] Wire analysis to existing trpc.intelligence.analyse procedure
+
+### Task 2 — Tiered Rate Limiting on Deal Screener
+- [ ] Update deal_screening_rate_limit table (daily window, plan column)
+- [ ] Replace flat 20/hour limit with plan-based daily limits in dealScreener.ts
+- [ ] Update DealScreener.tsx: remaining badge + upgrade modal
+
+### Task 3 — Kuwait MVNO Intelligence Module
+- [ ] Add mvno_subscribers and mvno_agent_runs tables via SQL
+- [ ] Create server/mvnoEngine.ts (5 parallel agents, 15s timeout)
+- [ ] Create server/routers/mvno.ts (4 tRPC procedures + 6 mock subscribers)
+- [ ] Register mvnoRouter in server/routers.ts
+- [ ] Create client/src/pages/Telco.tsx (MVNO dashboard)
+- [ ] Register /telco route in App.tsx
+- [ ] Add Telco nav item to SiteNav.tsx
+- [ ] Extend pdfReport.ts for mvno report type
+- [ ] Final QA: tsc 0 errors, 140+ tests pass

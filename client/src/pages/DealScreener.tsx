@@ -520,12 +520,31 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError }: {
   const fileRef = useRef<HTMLInputElement>(null);
 
   const { data: rateData } = trpc.dealScreener.rateLimit.useQuery();
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+
+  // Colour-code the badge: green >50%, amber <50%, red <3 remaining
+  const getBadgeColor = () => {
+    if (!rateData || rateData.limit === -1) return "#00c4a0"; // enterprise = teal
+    const pct = rateData.remaining / rateData.limit;
+    if (rateData.remaining < 3) return "#ff5a5a";
+    if (pct < 0.5) return "#f59e0b";
+    return "#00c4a0";
+  };
 
   const screenMutation = trpc.dealScreener.screen.useMutation({
     onSuccess: (data) => {
       onResult(data as CouncilResult);
     },
     onError: (err) => {
+      // Check if this is a rate limit error
+      try {
+        const parsed = JSON.parse(err.message);
+        if (parsed.code === "RATE_LIMIT_EXCEEDED") {
+          setShowUpgradeModal(true);
+          onSubmitError("Daily limit reached");
+          return;
+        }
+      } catch { /* not JSON, treat as regular error */ }
       setError(err.message);
       onSubmitError(err.message);
     },
@@ -584,8 +603,72 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError }: {
           Receive an IC-ready decision report with verdict, risks, and conditions.
         </p>
         {rateData && (
-          <div style={{ marginTop: 12, fontFamily: MONO, fontSize: 10, color: MUTED }}>
-            {rateData.remaining}/{20} screens remaining this hour
+          <div style={{ marginTop: 12, display: "flex", justifyContent: "center", gap: 8, alignItems: "center" }}>
+            <div style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "4px 10px",
+              borderRadius: 4,
+              border: `1px solid ${getBadgeColor()}33`,
+              background: `${getBadgeColor()}11`,
+              fontFamily: MONO,
+              fontSize: 10,
+              color: getBadgeColor(),
+              letterSpacing: "0.08em",
+            }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: getBadgeColor(), display: "inline-block" }} />
+              {rateData.limit === -1
+                ? "UNLIMITED · ENTERPRISE"
+                : `${rateData.remaining} / ${rateData.limit} SCREENS REMAINING TODAY · ${rateData.plan.toUpperCase()}`
+              }
+            </div>
+          </div>
+        )}
+
+        {/* Upgrade modal */}
+        {showUpgradeModal && (
+          <div style={{
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            zIndex: 1000,
+          }} onClick={() => setShowUpgradeModal(false)}>
+            <div style={{
+              background: BG2, border: `1px solid #ff5a5a55`,
+              borderRadius: 8, padding: "32px 36px", maxWidth: 420, width: "90%",
+              textAlign: "center",
+            }} onClick={e => e.stopPropagation()}>
+              <div style={{ fontSize: 28, marginBottom: 12 }}>🚫</div>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: "#ff5a5a", letterSpacing: "0.12em", marginBottom: 8 }}>DAILY LIMIT REACHED</div>
+              <h3 style={{ color: TEXT, fontSize: 18, fontWeight: 700, margin: "0 0 12px" }}>Daily limit reached</h3>
+              <p style={{ color: TEXT2, fontSize: 13, lineHeight: 1.6, margin: "0 0 24px" }}>
+                Upgrade to <strong style={{ color: ACCENT }}>Pro</strong> for 50 screens/day or
+                <strong style={{ color: ACCENT }}> Enterprise</strong> for unlimited access.
+              </p>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+                <a
+                  href="mailto:farouq@agenthinkmesh.com?subject=Upgrade%20Deal%20Screener%20Plan"
+                  style={{
+                    padding: "10px 20px", background: ACCENT, color: BG,
+                    borderRadius: 4, fontFamily: MONO, fontSize: 11,
+                    fontWeight: 600, textDecoration: "none", letterSpacing: "0.06em",
+                  }}
+                >
+                  Contact us to upgrade
+                </a>
+                <button
+                  onClick={() => setShowUpgradeModal(false)}
+                  style={{
+                    padding: "10px 20px", background: "transparent",
+                    border: `1px solid ${BORDER}`, color: TEXT2,
+                    borderRadius: 4, fontFamily: MONO, fontSize: 11,
+                    cursor: "pointer", letterSpacing: "0.06em",
+                  }}
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
           </div>
         )}
       </div>

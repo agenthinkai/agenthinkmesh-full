@@ -228,6 +228,26 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
             >
               🔍 Intel Agent
             </a>
+            <a
+              href="/telco"
+              style={{
+                color: "#d4a843", fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, fontWeight: 600,
+                transition: "all 0.2s", fontFamily: "inherit",
+                border: "1px solid rgba(212,168,67,0.3)",
+                background: "rgba(212,168,67,0.08)",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(212,168,67,0.18)";
+                (e.currentTarget as HTMLAnchorElement).style.color = WHITE;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(212,168,67,0.08)";
+                (e.currentTarget as HTMLAnchorElement).style.color = "#d4a843";
+              }}
+            >
+              📡 MVNO Intel
+            </a>
           </>
         ) : (
           <>
@@ -386,6 +406,26 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               }}
             >
               🔍 Intel Agent
+            </a>
+            <a
+              href="/telco"
+              style={{
+                color: "#d4a843", fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, fontWeight: 600,
+                transition: "all 0.2s",
+                border: "1px solid rgba(212,168,67,0.3)",
+                background: "rgba(212,168,67,0.08)",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(212,168,67,0.18)";
+                (e.currentTarget as HTMLAnchorElement).style.color = WHITE;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(212,168,67,0.08)";
+                (e.currentTarget as HTMLAnchorElement).style.color = "#d4a843";
+              }}
+            >
+              📡 MVNO Intel
             </a>
           </>
         )}

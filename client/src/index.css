@@ -861,3 +861,20 @@
 @keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
 @keyframes slide-in-right { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 @keyframes fade-up { from { transform: translateY(8px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* ── Intelligence Agent design tokens ───────────────────────────────────── */
+:root {
+  --intel-ink:    #0b0d10;
+  --intel-ink2:   #13161c;
+  --intel-ink3:   #1a1e27;
+  --intel-border: #252b36;
+  --intel-border2:#1d2230;
+  --intel-gold:   #c9a84c;
+  --intel-gold2:  #e8c96a;
+  --intel-teal:   #00c4a0;
+  --intel-blue:   #4a9eff;
+  --intel-red:    #ff5a5a;
+  --intel-text:   #e2e6ef;
+  --intel-muted:  #6b7585;
+  --intel-dim:    #333844;
+}
