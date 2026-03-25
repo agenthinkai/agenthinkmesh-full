@@ -629,7 +629,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError }: {
         {/* Upgrade modal */}
         {showUpgradeModal && (
           <div style={{
-            position: "fixed", inset: 0, background: "rgba(0,0,0,0.7)",
+            position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)",
             display: "flex", alignItems: "center", justifyContent: "center",
             zIndex: 1000,
           }} onClick={() => setShowUpgradeModal(false)}>
@@ -641,9 +641,13 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError }: {
               <div style={{ fontSize: 28, marginBottom: 12 }}>🚫</div>
               <div style={{ fontFamily: MONO, fontSize: 10, color: "#ff5a5a", letterSpacing: "0.12em", marginBottom: 8 }}>DAILY LIMIT REACHED</div>
               <h3 style={{ color: TEXT, fontSize: 18, fontWeight: 700, margin: "0 0 12px" }}>Daily limit reached</h3>
-              <p style={{ color: TEXT2, fontSize: 13, lineHeight: 1.6, margin: "0 0 24px" }}>
-                Upgrade to <strong style={{ color: ACCENT }}>Pro</strong> for 50 screens/day or
-                <strong style={{ color: ACCENT }}> Enterprise</strong> for unlimited access.
+              <p style={{ color: TEXT2, fontSize: 13, lineHeight: 1.6, margin: "0 0 8px" }}>
+                You've used all your screens for today. Upgrade to{" "}
+                <strong style={{ color: ACCENT }}>Pro</strong> for 50 screens/day or{" "}
+                <strong style={{ color: ACCENT }}>Enterprise</strong> for unlimited access.
+              </p>
+              <p style={{ fontFamily: MONO, fontSize: 10, color: MUTED, margin: "0 0 24px", letterSpacing: "0.04em" }}>
+                Your limit resets at midnight UTC
               </p>
               <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
                 <a
@@ -665,7 +669,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError }: {
                     cursor: "pointer", letterSpacing: "0.06em",
                   }}
                 >
-                  Dismiss
+                  OK, got it
                 </button>
               </div>
             </div>

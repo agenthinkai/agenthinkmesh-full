@@ -1,7 +1,8 @@
 /**
- * IntelligenceHome — Rebuilt with gold/teal design system
- * Fonts: Syne (headings) · DM Mono (labels/code) · Cormorant Garamond (quotes)
+ * IntelligenceHome — Upgraded UI per spec
+ * Fonts: Syne (headings/brand) · DM Mono (labels/code) · Cormorant Garamond (hero/quotes)
  * Tokens: --intel-* CSS variables defined in index.css
+ * tRPC procedures: unchanged
  */
 import { useState, useRef, useEffect } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -10,7 +11,7 @@ import SiteNav from "@/components/SiteNav";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
-// ── Fonts ─────────────────────────────────────────────────────────────────────
+// ── Font families ─────────────────────────────────────────────────────────────
 const SYNE = "'Syne', 'Inter', sans-serif";
 const MONO = "'DM Mono', 'JetBrains Mono', monospace";
 const SERIF = "'Cormorant Garamond', Georgia, serif";
@@ -24,6 +25,10 @@ const STEPS = [
   "Cross-referencing AgenThinkMesh coverage gaps",
   "Composing intelligence brief",
 ];
+
+// ── Source tab types ──────────────────────────────────────────────────────────
+const SOURCE_TABS = ["Post", "Article", "Notes", "Report"] as const;
+type SourceTab = typeof SOURCE_TABS[number];
 
 // ── Example data ──────────────────────────────────────────────────────────────
 const EXAMPLES = [
@@ -45,7 +50,7 @@ Their production AI agents include:
 - Negotiations: Simulator that predicts 80%+ of opposing party arguments and provides strategic plans
 - Trade optimization: Saved NOK 4-6 billion by reducing market impact through predictive models
 
-Their primary AI model is Anthropic's Claude, integrated across all devices. Infrastructure is cloud-based with a strong bias toward internally built solutions. They have saved 213,000 hours through AI — equivalent to 100+ full-time employees. Trading cost savings are already at $100M/year with a $400M target. 20% efficiency target across the organisation.`,
+Their primary AI model is Anthropic's Claude, integrated across all devices. Infrastructure is cloud-based with a strong bias toward internally built solutions. They have saved 213,000 hours through AI — equivalent to 100+ full-time employees. Trading cost savings are already at $100M/year with a $400M target.`,
   },
   {
     flag: "🇦🇪",
@@ -79,7 +84,39 @@ ADQ is targeting 30% operational efficiency improvement across portfolio compani
   },
 ];
 
-// ── Inline styles helper ──────────────────────────────────────────────────────
+// ── Module & lens config ──────────────────────────────────────────────────────
+const MODULES = [
+  { id: "use_cases", label: "Use Cases" },
+  { id: "tech_stack", label: "Tech Stack" },
+  { id: "build_buy", label: "Build/Buy" },
+  { id: "gtm_signals", label: "GTM Signals" },
+  { id: "coverage_gaps", label: "Coverage Gaps", gold: true },
+  { id: "next_moves", label: "Next Moves" },
+];
+
+const LENSES = [
+  { id: "swf", label: "Sovereign" },
+  { id: "fm", label: "Fund Managers" },
+  { id: "corp", label: "Corporate" },
+  { id: "bank", label: "Banking" },
+];
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+interface AnalysisResult {
+  institution?: string;
+  domain?: string;
+  aum?: string | null;
+  summary?: string;
+  use_cases?: Array<{ name: string; metric?: string | null; description: string; maturity: string }>;
+  tech_stack?: Array<{ category: string; value: string; decision: string; confidence: string }>;
+  build_vs_buy_stance?: string;
+  gtm_signals?: Array<{ signal: string; target: string; action: string }>;
+  coverage_gaps?: Array<{ domain: string; priority: string; suggestion: string }>;
+  comparable_gcc_institutions?: string[];
+  key_quote?: string | null;
+}
+
+// ── Inline styles ─────────────────────────────────────────────────────────────
 const S = {
   page: {
     minHeight: "100vh",
@@ -92,12 +129,13 @@ const S = {
     margin: "0 auto",
     padding: "40px 24px 80px",
   } as React.CSSProperties,
-  // topbar
+
+  // ── Topbar ──────────────────────────────────────────────────────────────────
   topbar: {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 40,
+    marginBottom: 48,
     flexWrap: "wrap" as const,
     gap: 12,
   } as React.CSSProperties,
@@ -110,14 +148,20 @@ const S = {
     width: 36,
     height: 36,
     borderRadius: 8,
-    background: "linear-gradient(135deg, var(--intel-gold) 0%, var(--intel-teal) 100%)",
+    background: "linear-gradient(135deg, #c9a84c 0%, #00c4a0 100%)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 800,
-    color: "var(--intel-ink)",
+    color: "#000",
     fontFamily: SYNE,
+    flexShrink: 0,
+  } as React.CSSProperties,
+  brandTextWrap: {
+    display: "flex",
+    flexDirection: "column" as const,
+    gap: 2,
   } as React.CSSProperties,
   brandName: {
     fontFamily: SYNE,
@@ -125,19 +169,60 @@ const S = {
     fontSize: 15,
     color: "var(--intel-text)",
     letterSpacing: "-0.01em",
+    lineHeight: 1,
+  } as React.CSSProperties,
+  brandTagline: {
+    fontFamily: MONO,
+    fontSize: 9,
+    color: "var(--intel-muted)",
+    letterSpacing: "0.12em",
+    textTransform: "uppercase" as const,
+    lineHeight: 1,
+  } as React.CSSProperties,
+  topbarRight: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
   } as React.CSSProperties,
   liveBadge: {
+    display: "flex",
+    alignItems: "center",
+    gap: 5,
     fontFamily: MONO,
     fontSize: 9,
     fontWeight: 500,
     color: "var(--intel-teal)",
-    background: "rgba(0,196,160,0.12)",
-    border: "1px solid rgba(0,196,160,0.3)",
+    background: "rgba(0,196,160,0.10)",
+    border: "1px solid rgba(0,196,160,0.25)",
     borderRadius: 4,
-    padding: "2px 7px",
+    padding: "3px 8px",
     letterSpacing: "0.1em",
   } as React.CSSProperties,
-  // hero
+  liveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: "50%",
+    background: "var(--intel-teal)",
+    animation: "intel-pulse-dot 1.8s ease-in-out infinite",
+    flexShrink: 0,
+  } as React.CSSProperties,
+  bookDemoBtn: {
+    padding: "7px 16px",
+    background: "linear-gradient(135deg, var(--intel-gold) 0%, #a8742a 100%)",
+    border: "none",
+    borderRadius: 6,
+    color: "#000",
+    fontSize: 12,
+    fontWeight: 700,
+    fontFamily: SYNE,
+    letterSpacing: "0.02em",
+    cursor: "pointer",
+    textDecoration: "none",
+    display: "inline-flex",
+    alignItems: "center",
+  } as React.CSSProperties,
+
+  // ── Hero ────────────────────────────────────────────────────────────────────
   eyebrow: {
     fontFamily: MONO,
     fontSize: 10,
@@ -145,44 +230,41 @@ const S = {
     color: "var(--intel-gold)",
     letterSpacing: "0.18em",
     textTransform: "uppercase" as const,
-    marginBottom: 14,
+    marginBottom: 16,
   } as React.CSSProperties,
   heroTitle: {
-    fontFamily: SYNE,
-    fontWeight: 800,
-    fontSize: "clamp(28px,4vw,44px)",
-    letterSpacing: "-0.03em",
-    lineHeight: 1.1,
+    fontFamily: SERIF,
+    fontWeight: 300,
+    fontSize: "clamp(32px,4.5vw,52px)",
+    letterSpacing: "-0.01em",
+    lineHeight: 1.15,
     color: "var(--intel-text)",
-    margin: "0 0 16px",
+    margin: "0 0 18px",
   } as React.CSSProperties,
   heroSub: {
-    fontSize: 15,
+    fontSize: 14,
     color: "var(--intel-muted)",
     lineHeight: 1.75,
-    maxWidth: 580,
-    margin: "0 0 36px",
+    maxWidth: 600,
+    margin: "0 0 40px",
   } as React.CSSProperties,
-  // example cards
+
+  // ── Example cards ───────────────────────────────────────────────────────────
   exGrid: {
     display: "grid",
     gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
     gap: 12,
     marginBottom: 32,
   } as React.CSSProperties,
-  exCard: {
-    background: "var(--intel-ink2)",
-    border: "1px solid var(--intel-border)",
+  exCard: (hovered: boolean): React.CSSProperties => ({
+    background: hovered ? "var(--intel-ink3)" : "var(--intel-ink2)",
+    border: `1px solid ${hovered ? "var(--intel-gold)" : "var(--intel-border)"}`,
     borderRadius: 10,
     padding: "14px 16px",
     cursor: "pointer",
     transition: "border-color 0.2s, background 0.2s",
-    position: "relative" as const,
-  } as React.CSSProperties,
-  exCardHover: {
-    borderColor: "var(--intel-gold)",
-    background: "var(--intel-ink3)",
-  } as React.CSSProperties,
+    position: "relative",
+  }),
   exFlag: {
     fontSize: 22,
     marginBottom: 8,
@@ -216,7 +298,7 @@ const S = {
     borderRadius: 3,
     padding: "2px 6px",
   } as React.CSSProperties,
-  exLoadBtn: {
+  exArrowBtn: {
     position: "absolute" as const,
     top: 12,
     right: 12,
@@ -233,7 +315,8 @@ const S = {
     alignItems: "center",
     justifyContent: "center",
   } as React.CSSProperties,
-  // input panel
+
+  // ── Input panel ─────────────────────────────────────────────────────────────
   inputPanel: {
     background: "var(--intel-ink2)",
     border: "1px solid var(--intel-border)",
@@ -245,10 +328,15 @@ const S = {
     display: "flex",
     alignItems: "center",
     justifyContent: "space-between",
-    padding: "14px 18px",
+    padding: "12px 18px",
     borderBottom: "1px solid var(--intel-border)",
     flexWrap: "wrap" as const,
     gap: 8,
+  } as React.CSSProperties,
+  inputHeaderLeft: {
+    display: "flex",
+    alignItems: "center",
+    gap: 14,
   } as React.CSSProperties,
   panelTitle: {
     fontFamily: MONO,
@@ -258,19 +346,33 @@ const S = {
     letterSpacing: "0.12em",
     textTransform: "uppercase" as const,
   } as React.CSSProperties,
+  sourceTab: (active: boolean): React.CSSProperties => ({
+    fontFamily: MONO,
+    fontSize: 10,
+    fontWeight: 500,
+    color: active ? "var(--intel-gold)" : "var(--intel-muted)",
+    background: "transparent",
+    border: "none",
+    borderBottom: active ? "1px solid var(--intel-gold)" : "1px solid transparent",
+    padding: "2px 6px",
+    cursor: "pointer",
+    letterSpacing: "0.06em",
+    transition: "color 0.15s, border-color 0.15s",
+  }),
   textarea: {
     width: "100%",
     background: "transparent",
     border: "none",
     outline: "none",
     color: "var(--intel-text)",
-    fontSize: 13,
+    fontSize: 12.5,
     lineHeight: 1.7,
-    fontFamily: "'Inter', sans-serif",
+    fontFamily: MONO,
     resize: "vertical" as const,
     padding: "16px 18px",
-    minHeight: 200,
+    minHeight: 140,
     boxSizing: "border-box" as const,
+    caretColor: "var(--intel-gold)",
   } as React.CSSProperties,
   inputFooter: {
     display: "flex",
@@ -283,8 +385,10 @@ const S = {
     fontFamily: MONO,
     fontSize: 10,
     color: "var(--intel-muted)",
+    opacity: 0.6,
   } as React.CSSProperties,
-  // config row
+
+  // ── Config row ──────────────────────────────────────────────────────────────
   configRow: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
@@ -310,61 +414,66 @@ const S = {
     flexWrap: "wrap" as const,
     gap: 6,
   } as React.CSSProperties,
-  // run button
+
+  // ── Run button ──────────────────────────────────────────────────────────────
   runBtn: (loading: boolean): React.CSSProperties => ({
     width: "100%",
     padding: "14px 24px",
     background: loading
       ? "var(--intel-ink3)"
-      : "linear-gradient(135deg, var(--intel-gold) 0%, #e8a020 100%)",
+      : "linear-gradient(135deg, #c9a84c 0%, #a8742a 100%)",
     border: loading ? "1px solid var(--intel-border)" : "none",
     borderRadius: 10,
-    color: loading ? "var(--intel-muted)" : "var(--intel-ink)",
-    fontSize: 14,
+    color: loading ? "var(--intel-muted)" : "#000",
+    fontSize: 13,
     fontWeight: 800,
     fontFamily: SYNE,
-    letterSpacing: "0.02em",
+    letterSpacing: "0.08em",
+    textTransform: "uppercase" as const,
     cursor: loading ? "not-allowed" : "pointer",
-    transition: "all 0.2s",
+    transition: "transform 0.2s, box-shadow 0.2s",
     boxShadow: loading ? "none" : "0 4px 24px rgba(201,168,76,0.35)",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
   }),
-  // progress
+
+  // ── Progress panel ──────────────────────────────────────────────────────────
   progressPanel: {
     background: "var(--intel-ink2)",
     border: "1px solid var(--intel-border)",
     borderRadius: 10,
-    padding: "16px 18px",
+    padding: "18px 20px",
     marginBottom: 16,
   } as React.CSSProperties,
   stepLine: (active: boolean, done: boolean): React.CSSProperties => ({
     fontFamily: MONO,
     fontSize: 11,
     color: done ? "var(--intel-teal)" : active ? "var(--intel-text)" : "var(--intel-dim)",
-    marginBottom: 6,
+    marginBottom: 8,
     display: "flex",
     alignItems: "center",
     gap: 8,
     transition: "color 0.3s",
+    animation: active ? "intel-fade-in 0.3s ease forwards" : "none",
   }),
   progBarWrap: {
-    height: 3,
+    height: 1,
     background: "var(--intel-border)",
-    borderRadius: 2,
-    marginTop: 12,
+    borderRadius: 1,
+    marginTop: 14,
     overflow: "hidden",
   } as React.CSSProperties,
   progBar: (pct: number): React.CSSProperties => ({
     height: "100%",
     width: `${pct}%`,
-    background: "linear-gradient(90deg, var(--intel-gold), var(--intel-teal))",
-    borderRadius: 2,
+    background: "linear-gradient(90deg, #c9a84c, #00c4a0)",
+    borderRadius: 1,
     transition: "width 0.4s ease",
   }),
-  // output topbar
+
+  // ── Output topbar ───────────────────────────────────────────────────────────
   outputTopbar: {
     display: "flex",
     alignItems: "center",
@@ -374,26 +483,30 @@ const S = {
     gap: 10,
   } as React.CSSProperties,
   outputLabel: {
-    fontFamily: SYNE,
-    fontWeight: 700,
-    fontSize: 18,
-    color: "var(--intel-text)",
-    letterSpacing: "-0.01em",
+    fontFamily: MONO,
+    fontSize: 10,
+    fontWeight: 500,
+    color: "var(--intel-muted)",
+    letterSpacing: "0.14em",
+    textTransform: "uppercase" as const,
   } as React.CSSProperties,
   actionBtn: (variant: "outline" | "gold"): React.CSSProperties => ({
     padding: "7px 14px",
     borderRadius: 7,
     fontSize: 12,
-    fontWeight: 600,
     fontFamily: MONO,
     cursor: "pointer",
     letterSpacing: "0.04em",
     transition: "all 0.2s",
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 4,
     ...(variant === "gold"
       ? {
-          background: "rgba(201,168,76,0.15)",
-          border: "1px solid rgba(201,168,76,0.35)",
-          color: "var(--intel-gold)",
+          background: "linear-gradient(135deg, #c9a84c 0%, #a8742a 100%)",
+          border: "none",
+          color: "#000",
+          fontWeight: 700,
         }
       : {
           background: "transparent",
@@ -401,7 +514,8 @@ const S = {
           color: "var(--intel-muted)",
         }),
   }),
-  // output card
+
+  // ── Output card ─────────────────────────────────────────────────────────────
   card: {
     background: "var(--intel-ink2)",
     border: "1px solid var(--intel-border)",
@@ -421,12 +535,13 @@ const S = {
   cardBody: {
     padding: "16px 18px",
   } as React.CSSProperties,
-  // footer CTA
+
+  // ── Footer CTA ──────────────────────────────────────────────────────────────
   footerCta: {
     background: "linear-gradient(135deg, var(--intel-ink2) 0%, rgba(201,168,76,0.06) 100%)",
-    border: "1px solid rgba(201,168,76,0.2)",
-    borderRadius: 16,
-    padding: "40px 36px",
+    border: "1px solid rgba(201,168,76,0.25)",
+    borderRadius: 14,
+    padding: "44px 40px",
     textAlign: "center" as const,
     marginTop: 40,
   } as React.CSSProperties,
@@ -447,7 +562,7 @@ function TogBtn({ label, active, gold, onClick }: { label: string; active: boole
         transition: "all 0.15s",
         letterSpacing: "0.04em",
         background: active
-          ? gold ? "rgba(201,168,76,0.18)" : "rgba(0,196,160,0.12)"
+          ? gold ? "rgba(201,168,76,0.06)" : "rgba(0,196,160,0.06)"
           : "transparent",
         border: active
           ? gold ? "1px solid rgba(201,168,76,0.4)" : "1px solid rgba(0,196,160,0.3)"
@@ -462,8 +577,7 @@ function TogBtn({ label, active, gold, onClick }: { label: string; active: boole
   );
 }
 
-// ── Output cards ──────────────────────────────────────────────────────────────
-
+// ── Output card sub-components ────────────────────────────────────────────────
 function CardIcon({ color, children }: { color: string; children: React.ReactNode }) {
   const bg: Record<string, string> = {
     gold: "rgba(201,168,76,0.15)",
@@ -508,9 +622,8 @@ function CardCount({ n }: { n: number }) {
 
 function MaturityBadge({ level }: { level: string }) {
   const map: Record<string, { bg: string; fg: string }> = {
-    production: { bg: "rgba(74,222,128,0.12)", fg: "#4ade80" },
-    pilot: { bg: "rgba(201,168,76,0.12)", fg: "var(--intel-gold)" },
-    exploring: { bg: "rgba(74,158,255,0.12)", fg: "var(--intel-blue)" },
+    production: { bg: "rgba(0,196,160,0.12)", fg: "var(--intel-teal)" },
+    pilot: { bg: "rgba(74,158,255,0.12)", fg: "var(--intel-blue)" },
     unknown: { bg: "rgba(107,117,133,0.12)", fg: "var(--intel-muted)" },
   };
   const key = level?.toLowerCase() ?? "unknown";
@@ -534,19 +647,19 @@ function SummaryOutputCard({ r, animDelay }: { r: AnalysisResult; animDelay: num
         </CardTitle>
       </div>
       <div style={S.cardBody}>
-        <p style={{ fontSize: 14, lineHeight: 1.75, color: "var(--intel-text)", margin: 0 }}>
+        <p style={{ fontFamily: SERIF, fontSize: 17, fontWeight: 300, lineHeight: 1.75, color: "var(--intel-text)", margin: 0 }}>
           {r.summary}
         </p>
         {r.key_quote && (
-          <blockquote style={{ fontFamily: SERIF, fontStyle: "italic", fontSize: 14, color: "var(--intel-gold)", lineHeight: 1.7, margin: "14px 0 0", borderLeft: "2px solid var(--intel-gold)", paddingLeft: 14 }}>
+          <blockquote style={{ fontFamily: SERIF, fontStyle: "italic", fontSize: 15, color: "var(--intel-gold)", lineHeight: 1.7, margin: "16px 0 0", borderLeft: "2px solid var(--intel-gold)", paddingLeft: 14 }}>
             "{r.key_quote}"
           </blockquote>
         )}
         {r.comparable_gcc_institutions && r.comparable_gcc_institutions.length > 0 && (
-          <div style={{ display: "flex", gap: 6, marginTop: 14, flexWrap: "wrap", alignItems: "center" }}>
+          <div style={{ display: "flex", gap: 6, marginTop: 16, flexWrap: "wrap", alignItems: "center" }}>
             <span style={{ fontFamily: MONO, fontSize: 9, color: "var(--intel-muted)", letterSpacing: "0.1em", textTransform: "uppercase" }}>Comparable GCC:</span>
             {r.comparable_gcc_institutions.map((inst, i) => (
-              <span key={i} style={{ fontFamily: MONO, fontSize: 10, color: "var(--intel-teal)", background: "rgba(0,196,160,0.08)", border: "1px solid rgba(0,196,160,0.2)", borderRadius: 4, padding: "2px 7px" }}>{inst}</span>
+              <span key={i} style={{ fontFamily: MONO, fontSize: 10, color: "var(--intel-teal)", background: "rgba(0,196,160,0.08)", border: "1px solid rgba(0,196,160,0.2)", borderRadius: 100, padding: "2px 10px" }}>{inst}</span>
             ))}
           </div>
         )}
@@ -567,15 +680,15 @@ function UseCasesOutputCard({ useCases, animDelay }: { useCases: AnalysisResult[
       <div style={S.cardBody}>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 10 }}>
           {useCases.map((u, i) => (
-            <div key={i} style={{ background: "var(--intel-ink3)", border: "1px solid var(--intel-border2)", borderRadius: 8, padding: "12px 14px" }}>
+            <div key={i} style={{ background: "var(--intel-ink3)", border: "1px solid var(--intel-border)", borderRadius: 8, padding: "12px 14px" }}>
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6, gap: 6 }}>
-                <span style={{ fontFamily: SYNE, fontWeight: 700, fontSize: 13, color: "var(--intel-text)" }}>{u.name}</span>
+                <span style={{ fontFamily: SYNE, fontWeight: 700, fontSize: 11, color: "var(--intel-text)" }}>{u.name}</span>
                 <MaturityBadge level={u.maturity} />
               </div>
               {u.metric && (
-                <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--intel-teal)", marginBottom: 5 }}>{u.metric}</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--intel-teal)", marginBottom: 5 }}>{u.metric}</div>
               )}
-              <p style={{ fontSize: 12, color: "var(--intel-muted)", lineHeight: 1.6, margin: 0 }}>{u.description}</p>
+              <p style={{ fontSize: 11, color: "var(--intel-muted)", lineHeight: 1.6, margin: 0 }}>{u.description}</p>
             </div>
           ))}
         </div>
@@ -586,6 +699,8 @@ function UseCasesOutputCard({ useCases, animDelay }: { useCases: AnalysisResult[
 
 function TechStackOutputCard({ techStack, buildVsBuy, animDelay }: { techStack: AnalysisResult["tech_stack"]; buildVsBuy?: string; animDelay: number }) {
   if (!techStack?.length) return null;
+  const decisionColor: Record<string, string> = { buy: "var(--intel-blue)", build: "var(--intel-red)", hybrid: "var(--intel-gold)" };
+  const decisionBg: Record<string, string> = { buy: "rgba(74,158,255,0.1)", build: "rgba(255,90,90,0.1)", hybrid: "rgba(201,168,76,0.1)" };
   return (
     <div style={{ ...S.card, animationDelay: `${animDelay}s` }}>
       <div style={S.cardHead}>
@@ -594,20 +709,16 @@ function TechStackOutputCard({ techStack, buildVsBuy, animDelay }: { techStack: 
       </div>
       <div style={S.cardBody}>
         {buildVsBuy && (
-          <p style={{ fontFamily: SERIF, fontStyle: "italic", fontSize: 14, color: "var(--intel-muted)", lineHeight: 1.7, margin: "0 0 14px", borderLeft: "2px solid var(--intel-gold)", paddingLeft: 12 }}>
-            "{buildVsBuy}"
-          </p>
+          <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--intel-muted)", background: "var(--intel-ink3)", borderRadius: 6, padding: "8px 12px", marginBottom: 14 }}>
+            {buildVsBuy}
+          </div>
         )}
         <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
           {techStack.map((t, i) => (
-            <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 12px", background: "var(--intel-ink3)", borderRadius: 7, border: "1px solid var(--intel-border2)" }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3, flexWrap: "wrap" }}>
-                  <span style={{ fontFamily: SYNE, fontWeight: 700, fontSize: 13, color: "var(--intel-teal)" }}>{t.value}</span>
-                  <span style={{ fontFamily: MONO, fontSize: 9, color: "var(--intel-muted)", background: "var(--intel-border)", borderRadius: 3, padding: "2px 6px" }}>{t.category}</span>
-                  <span style={{ fontFamily: MONO, fontSize: 9, color: t.decision === "build" ? "var(--intel-gold)" : "var(--intel-blue)", background: t.decision === "build" ? "rgba(201,168,76,0.1)" : "rgba(74,158,255,0.1)", border: `1px solid ${t.decision === "build" ? "rgba(201,168,76,0.25)" : "rgba(74,158,255,0.25)"}`, borderRadius: 3, padding: "2px 6px" }}>{t.decision} · {t.confidence}</span>
-                </div>
-              </div>
+            <div key={i} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 12px", background: "var(--intel-ink3)", borderRadius: 7, border: "1px solid var(--intel-border)" }}>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--intel-muted)", width: 130, flexShrink: 0 }}>{t.category}</div>
+              <div style={{ fontFamily: SYNE, fontWeight: 700, fontSize: 12, color: "var(--intel-text)", flex: 1 }}>{t.value}</div>
+              <span style={{ fontFamily: MONO, fontSize: 9, color: decisionColor[t.decision] ?? decisionColor.buy, background: decisionBg[t.decision] ?? decisionBg.buy, border: `1px solid ${decisionColor[t.decision] ?? decisionColor.buy}35`, borderRadius: 3, padding: "2px 6px", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t.decision}</span>
             </div>
           ))}
         </div>
@@ -627,14 +738,14 @@ function GTMOutputCard({ signals, animDelay }: { signals: AnalysisResult["gtm_si
       </div>
       <div style={S.cardBody}>
         {signals.map((s, i) => (
-          <div key={i} style={{ display: "flex", gap: 14, marginBottom: 14 }}>
+          <div key={i} style={{ display: "flex", gap: 14, marginBottom: i < signals.length - 1 ? 16 : 0 }}>
             <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--intel-gold)", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: 4, padding: "3px 7px", flexShrink: 0, alignSelf: "flex-start", marginTop: 2 }}>
               {String(i + 1).padStart(2, "0")}
             </div>
             <div>
-              <div style={{ fontFamily: SYNE, fontWeight: 700, fontSize: 13, color: "var(--intel-text)", marginBottom: 4 }}>{s.signal}</div>
-              <div style={{ display: "flex", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
-                <span style={{ fontFamily: MONO, fontSize: 9, color: "var(--intel-teal)", background: "rgba(0,196,160,0.08)", border: "1px solid rgba(0,196,160,0.2)", borderRadius: 3, padding: "2px 6px" }}>Target: {s.target}</span>
+              <div style={{ fontFamily: SYNE, fontWeight: 700, fontSize: 13, color: "var(--intel-text)", marginBottom: 5 }}>{s.signal}</div>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--intel-muted)", marginBottom: 4 }}>
+                Target: <span style={{ color: "var(--intel-teal)" }}>{s.target}</span>
               </div>
               <div style={{ fontSize: 12, color: "var(--intel-muted)", lineHeight: 1.6 }}>{s.action}</div>
             </div>
@@ -649,7 +760,7 @@ function CoverageGapsOutputCard({ gaps, animDelay }: { gaps: AnalysisResult["cov
   if (!gaps?.length) return null;
   const priorityColor: Record<string, string> = { high: "var(--intel-red)", medium: "var(--intel-gold)", low: "var(--intel-muted)" };
   const priorityBg: Record<string, string> = { high: "rgba(255,90,90,0.08)", medium: "rgba(201,168,76,0.08)", low: "rgba(107,117,133,0.08)" };
-  const priorityBorder: Record<string, string> = { high: "rgba(255,90,90,0.2)", medium: "rgba(201,168,76,0.2)", low: "rgba(107,117,133,0.2)" };
+  const priorityBorder: Record<string, string> = { high: "rgba(255,90,90,0.35)", medium: "rgba(201,168,76,0.35)", low: "rgba(107,117,133,0.35)" };
   return (
     <div style={{ ...S.card, animationDelay: `${animDelay}s` }}>
       <div style={S.cardHead}>
@@ -660,7 +771,7 @@ function CoverageGapsOutputCard({ gaps, animDelay }: { gaps: AnalysisResult["cov
       <div style={S.cardBody}>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {gaps.map((g, i) => (
-            <div key={i} style={{ padding: "10px 12px", background: "var(--intel-ink3)", borderRadius: 7, border: `1px solid ${priorityBorder[g.priority] ?? priorityBorder.medium}` }}>
+            <div key={i} style={{ padding: "10px 12px 10px 14px", background: "var(--intel-ink3)", borderRadius: 7, border: "1px solid var(--intel-border)", borderLeft: `3px solid ${priorityColor[g.priority] ?? priorityColor.medium}` }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 5 }}>
                 <span style={{ fontFamily: SYNE, fontWeight: 700, fontSize: 13, color: "var(--intel-text)", flex: 1 }}>{g.domain}</span>
                 <span style={{ fontFamily: MONO, fontSize: 9, color: priorityColor[g.priority] ?? priorityColor.medium, background: priorityBg[g.priority] ?? priorityBg.medium, border: `1px solid ${priorityBorder[g.priority] ?? priorityBorder.medium}`, borderRadius: 3, padding: "2px 6px", textTransform: "uppercase", letterSpacing: "0.06em" }}>{g.priority}</span>
@@ -674,38 +785,6 @@ function CoverageGapsOutputCard({ gaps, animDelay }: { gaps: AnalysisResult["cov
   );
 }
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-interface AnalysisResult {
-  institution?: string;
-  domain?: string;
-  aum?: string | null;
-  summary?: string;
-  use_cases?: Array<{ name: string; metric?: string | null; description: string; maturity: string }>;
-  tech_stack?: Array<{ category: string; value: string; decision: string; confidence: string }>;
-  build_vs_buy_stance?: string;
-  gtm_signals?: Array<{ signal: string; target: string; action: string }>;
-  coverage_gaps?: Array<{ domain: string; priority: string; suggestion: string }>;
-  comparable_gcc_institutions?: string[];
-  key_quote?: string | null;
-}
-
-// ── Module & lens config ──────────────────────────────────────────────────────
-const MODULES = [
-  { id: "use_cases", label: "Use Cases" },
-  { id: "tech_stack", label: "Tech Stack" },
-  { id: "build_buy", label: "Build/Buy" },
-  { id: "gtm_signals", label: "GTM Signals" },
-  { id: "coverage_gaps", label: "Coverage Gaps", gold: true },
-  { id: "next_moves", label: "Next Moves" },
-];
-
-const LENSES = [
-  { id: "swf", label: "Sovereign" },
-  { id: "fm", label: "Fund Managers" },
-  { id: "corp", label: "Corporate" },
-  { id: "bank", label: "Banking" },
-];
-
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function IntelligenceHome() {
   const { isAuthenticated, loading } = useAuth();
@@ -715,6 +794,7 @@ export default function IntelligenceHome() {
   const [domain, setDomain] = useState("");
   const [aum, setAum] = useState("");
   const [text, setText] = useState("");
+  const [sourceTab, setSourceTab] = useState<SourceTab>("Post");
   const [modules, setModules] = useState<string[]>(MODULES.map(m => m.id));
   const [lens, setLens] = useState<string[]>(["swf", "fm"]);
   const [isInternal, setIsInternal] = useState(false);
@@ -726,6 +806,7 @@ export default function IntelligenceHome() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const stepTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // ── tRPC mutations (unchanged) ──────────────────────────────────────────────
   const analyseMutation = trpc.intelligence.analyse.useMutation({
     onSuccess: (data) => {
       if (stepTimer.current) clearInterval(stepTimer.current);
@@ -752,7 +833,7 @@ export default function IntelligenceHome() {
     onError: (err) => toast.error(err.message),
   });
 
-  // Animate steps while loading
+  // ── Step animation ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (view === "progress") {
       setStepIdx(0);
@@ -766,6 +847,7 @@ export default function IntelligenceHome() {
     return () => { if (stepTimer.current) clearInterval(stepTimer.current); };
   }, [view]);
 
+  // ── Handlers ────────────────────────────────────────────────────────────────
   const handleExample = (ex: typeof EXAMPLES[0]) => {
     setInstitution(ex.institution);
     setDomain(ex.domain);
@@ -805,19 +887,20 @@ export default function IntelligenceHome() {
         .item { margin-bottom: 12px; padding: 10px 14px; background: #13161c; border-radius: 8px; border: 1px solid #252b36; }
         .label { font-size: 10px; color: #6b7585; font-family: monospace; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 4px; }
       </style></head><body>
+        <p style="color:#6b7585; font-size:11px; margin-bottom:4px;">AgenThinkMesh · Market Intelligence Brief · ${new Date().toLocaleDateString()} · Confidential</p>
         <h1>${result.institution ?? "Intelligence Brief"}</h1>
-        <p style="color:#6b7585; font-size:12px;">${result.domain ?? ""} ${result.aum ? "· " + result.aum : ""} · Generated ${new Date().toLocaleDateString()}</p>
+        <p style="color:#6b7585; font-size:12px;">${result.domain ?? ""} ${result.aum ? "· " + result.aum : ""}</p>
         <h2>Executive Summary</h2><p>${result.summary ?? ""}</p>
         ${result.key_quote ? `<blockquote style="border-left:2px solid #c9a84c; padding-left:12px; color:#c9a84c; font-style:italic;">${result.key_quote}</blockquote>` : ""}
-        ${result.use_cases?.length ? `<h2>AI Use Cases</h2>${result.use_cases.map(u => `<div class="item"><strong>${u.name}</strong> <span class="tag">${u.maturity}</span>${u.metric ? ` <span class="tag">${u.metric}</span>` : ""}<p>${u.description}</p></div>`).join("")}` : ""}
+        ${result.use_cases?.length ? `<h2>AI Use Cases (${result.use_cases.length})</h2>${result.use_cases.map(u => `<div class="item"><strong>${u.name}</strong> <span class="tag">${u.maturity}</span>${u.metric ? ` <span class="tag">${u.metric}</span>` : ""}<p>${u.description}</p></div>`).join("")}` : ""}
         ${result.tech_stack?.length ? `<h2>Tech Stack</h2>${result.tech_stack.map(t => `<div class="item"><strong>${t.value}</strong> <span class="tag">${t.category}</span> <span class="tag">${t.decision} · ${t.confidence}</span></div>`).join("")}` : ""}
         ${result.build_vs_buy_stance ? `<h2>Build vs Buy Stance</h2><p>${result.build_vs_buy_stance}</p>` : ""}
         ${result.gtm_signals?.length ? `<h2>GTM Signals</h2>${result.gtm_signals.map(s => `<div class="item"><strong>${s.signal}</strong> <span class="tag">Target: ${s.target}</span><p>${s.action}</p></div>`).join("")}` : ""}
-        ${result.coverage_gaps?.length ? `<h2>Coverage Gaps</h2>${result.coverage_gaps.map(g => `<div class="item"><strong>${g.domain}</strong> <span class="tag">${g.priority}</span><p>${g.suggestion}</p></div>`).join("")}` : ""}
+        ${result.coverage_gaps?.length ? `<h2>Coverage Gaps (${result.coverage_gaps.length})</h2>${result.coverage_gaps.map(g => `<div class="item"><strong>${g.domain}</strong> <span class="tag">${g.priority}</span><p>${g.suggestion}</p></div>`).join("")}` : ""}
         ${result.comparable_gcc_institutions?.length ? `<h2>Comparable GCC Institutions</h2><p>${result.comparable_gcc_institutions.join(" · ")}</p>` : ""}
         <div style="margin-top:40px; padding:20px; background:#13161c; border:1px solid rgba(201,168,76,0.2); border-radius:10px; text-align:center;">
           <p style="color:#c9a84c; font-weight:700; margin-bottom:4px;">AgenThinkMesh Intelligence Agent</p>
-          <p style="color:#6b7585; font-size:11px;">farouq@agenthinkmesh.com</p>
+          <p style="color:#6b7585; font-size:11px;">farouq@agenthinkmesh.com · kishore@agenthinkmesh.com</p>
         </div>
       </body></html>
     `;
@@ -837,7 +920,7 @@ export default function IntelligenceHome() {
     const formData = new FormData();
     formData.append("file", file);
     try {
-      const res = await fetch("/api/parse-document", { method: "POST", body: formData });
+      const res = await fetch("/api/intelligence/parse-document", { method: "POST", body: formData });
       const data = await res.json() as { text?: string; error?: string };
       if (data.text) {
         setText(data.text.slice(0, 12000));
@@ -851,59 +934,74 @@ export default function IntelligenceHome() {
     }
   };
 
+  // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <div style={S.page}>
-      {/* CSS animation keyframe */}
       <style>{`
         @keyframes intel-fade-in {
           from { opacity: 0; transform: translateY(10px); }
           to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes intel-pulse-dot {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(0.8); }
+        }
+        .intel-run-btn:not(:disabled):hover {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 32px rgba(201,168,76,0.45) !important;
         }
       `}</style>
 
       <SiteNav />
 
       <div style={S.wrap}>
-        {/* Topbar brand */}
+
+        {/* ── Topbar ── */}
         <div style={S.topbar}>
           <div style={S.brand}>
             <div style={S.brandMark}>AT</div>
-            <div>
-              <div style={S.brandName}>Intelligence Agent</div>
-              <div style={{ fontFamily: MONO, fontSize: 9, color: "var(--intel-muted)" }}>GCC Institutional AI Programme Analysis</div>
+            <div style={S.brandTextWrap}>
+              <div style={S.brandName}>AgenThinkMesh</div>
+              <div style={S.brandTagline}>Institutional AI Infrastructure · GCC</div>
             </div>
-            <div style={S.liveBadge}>LIVE</div>
           </div>
-          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <a href="/intelligence/tracking" style={{ fontFamily: MONO, fontSize: 11, color: "var(--intel-muted)", textDecoration: "none" }}>Track →</a>
-            <a href="/intelligence/briefs" style={{ fontFamily: MONO, fontSize: 11, color: "var(--intel-muted)", textDecoration: "none" }}>Briefs →</a>
-            <a href="/intelligence/history" style={{ fontFamily: MONO, fontSize: 11, color: "var(--intel-muted)", textDecoration: "none" }}>History →</a>
+          <div style={S.topbarRight}>
+            <div style={S.liveBadge}>
+              <div style={S.liveDot} />
+              LIVE
+            </div>
+            <a
+              href="mailto:farouq@agenthinkmesh.com?subject=Book Demo — AgenThinkMesh Intelligence Agent"
+              style={S.bookDemoBtn}
+            >
+              Book Demo
+            </a>
           </div>
         </div>
 
-        {/* Hero */}
-        <div style={S.eyebrow}>AI Programme Intelligence · GCC Sovereign &amp; Institutional</div>
+        {/* ── Hero ── */}
+        <div style={S.eyebrow}>Market Intelligence Agent</div>
         <h1 style={S.heroTitle}>
-          Extract structured intelligence<br />
-          <span style={{ background: "linear-gradient(90deg, var(--intel-gold), var(--intel-teal))", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-            from any institutional text
-          </span>
+          What are peer institutions{" "}
+          <em style={{ fontStyle: "italic", color: "var(--intel-gold)" }}>actually deploying?</em>
         </h1>
         <p style={S.heroSub}>
-          Identify AI use cases, tech stack, build/buy stance, GTM signals, and coverage gaps — with a GCC sovereign wealth fund lens. Powered by 6 specialist analysis agents.
+          Paste any article, LinkedIn post, or conference notes about an institution's AI programme.
+          Get a structured intelligence brief — use cases, tech stack, build/buy stance, and GCC market
+          signals — in under 30 seconds.
         </p>
 
-        {/* Auth gate */}
+        {/* ── Auth gate ── */}
         {!loading && !isAuthenticated && (
           <div style={{ background: "var(--intel-ink2)", border: "1px solid rgba(201,168,76,0.2)", borderRadius: 12, padding: "24px 28px", marginBottom: 32, textAlign: "center" }}>
             <div style={{ fontSize: 14, color: "var(--intel-muted)", marginBottom: 14 }}>Sign in to run analyses and save your history</div>
-            <a href={loginUrl} style={{ display: "inline-block", padding: "10px 28px", background: "linear-gradient(135deg, var(--intel-gold) 0%, #e8a020 100%)", color: "var(--intel-ink)", borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: "none", fontFamily: SYNE }}>
+            <a href={loginUrl} style={{ display: "inline-block", padding: "10px 28px", background: "linear-gradient(135deg, var(--intel-gold) 0%, #a8742a 100%)", color: "#000", borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: "none", fontFamily: SYNE }}>
               Sign In to Continue
             </a>
           </div>
         )}
 
-        {/* Example cards */}
+        {/* ── Example cards ── */}
         <div style={{ fontFamily: MONO, fontSize: 9, color: "var(--intel-muted)", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 12 }}>
           Pre-loaded examples — click to load
         </div>
@@ -911,12 +1009,18 @@ export default function IntelligenceHome() {
           {EXAMPLES.map((ex, i) => (
             <div
               key={ex.shortName}
-              style={{ ...S.exCard, ...(hoveredEx === i ? S.exCardHover : {}) }}
+              style={S.exCard(hoveredEx === i)}
               onClick={() => handleExample(ex)}
               onMouseEnter={() => setHoveredEx(i)}
               onMouseLeave={() => setHoveredEx(null)}
             >
-              <button style={S.exLoadBtn} onClick={e => { e.stopPropagation(); handleExample(ex); }}>→</button>
+              <button
+                style={S.exArrowBtn}
+                onClick={(e) => { e.stopPropagation(); handleExample(ex); }}
+                aria-label={`Load ${ex.shortName} example`}
+              >
+                →
+              </button>
               <span style={S.exFlag}>{ex.flag}</span>
               <div style={S.exName}>{ex.institution}</div>
               <div style={S.exType}>{ex.domain} · {ex.aum}</div>
@@ -927,7 +1031,7 @@ export default function IntelligenceHome() {
           ))}
         </div>
 
-        {/* Input / Progress / Output */}
+        {/* ── Input / Progress / Output ── */}
         {view === "input" && (
           <>
             {/* Institution row */}
@@ -943,16 +1047,25 @@ export default function IntelligenceHome() {
                     value={f.val}
                     onChange={e => f.set(e.target.value)}
                     placeholder={f.ph}
-                    style={{ width: "100%", background: "var(--intel-ink2)", border: "1px solid var(--intel-border)", borderRadius: 7, padding: "9px 12px", color: "var(--intel-text)", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                    style={{ width: "100%", background: "var(--intel-ink2)", border: "1px solid var(--intel-border)", borderRadius: 7, padding: "9px 12px", color: "var(--intel-text)", fontSize: 13, outline: "none", boxSizing: "border-box", fontFamily: MONO }}
                   />
                 </div>
               ))}
             </div>
 
-            {/* Text input */}
+            {/* Text input panel */}
             <div style={S.inputPanel}>
               <div style={S.inputHeader}>
-                <div style={S.panelTitle}>Source Text *</div>
+                <div style={S.inputHeaderLeft}>
+                  <div style={S.panelTitle}>INPUT</div>
+                  <div style={{ display: "flex", gap: 4 }}>
+                    {SOURCE_TABS.map(tab => (
+                      <button key={tab} style={S.sourceTab(sourceTab === tab)} onClick={() => setSourceTab(tab)}>
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
+                </div>
                 <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                   {isInternal && <span style={{ fontFamily: MONO, fontSize: 9, color: "var(--intel-gold)", background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.25)", borderRadius: 3, padding: "2px 6px" }}>INTERNAL DOC</span>}
                   <button
@@ -967,17 +1080,17 @@ export default function IntelligenceHome() {
               <textarea
                 value={text}
                 onChange={e => { setText(e.target.value); setIsInternal(false); }}
-                placeholder="Paste LinkedIn posts, articles, conference notes, press releases, or upload a PDF/DOCX document…&#10;&#10;Or click one of the pre-loaded examples above to see the agent in action."
-                rows={10}
+                placeholder={`Paste a ${sourceTab.toLowerCase()} about an institution's AI programme…\n\nOr click one of the pre-loaded examples above.`}
+                rows={8}
                 style={S.textarea}
               />
               <div style={S.inputFooter}>
-                <span style={S.charCount}>{text.length.toLocaleString()} characters</span>
+                <span style={S.charCount}>{text.length.toLocaleString()} chars</span>
                 <button onClick={handleReset} style={{ background: "transparent", border: "none", color: "var(--intel-muted)", fontSize: 11, fontFamily: MONO, cursor: "pointer" }}>↺ Clear</button>
               </div>
             </div>
 
-            {/* Config */}
+            {/* Config toggles */}
             <div style={S.configRow}>
               <div style={S.configPanel}>
                 <div style={S.configLabel}>Analysis Modules</div>
@@ -999,25 +1112,38 @@ export default function IntelligenceHome() {
 
             {/* Run button */}
             <button
+              className="intel-run-btn"
               onClick={handleAnalyse}
               disabled={analyseMutation.isPending || !isAuthenticated}
               style={S.runBtn(analyseMutation.isPending)}
             >
-              <svg width="14" height="14" viewBox="0 0 16 16"><path d="M3 2L13 8L3 14V2Z" fill="currentColor" /></svg>
-              Run Intelligence Analysis
+              {analyseMutation.isPending ? (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style={{ animation: "spin 1s linear infinite" }}>
+                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" strokeDasharray="31.4" strokeDashoffset="10" />
+                  </svg>
+                  ANALYSING...
+                </>
+              ) : (
+                <>
+                  <svg width="14" height="14" viewBox="0 0 16 16"><path d="M3 2L13 8L3 14V2Z" fill="currentColor" /></svg>
+                  RUN INTELLIGENCE ANALYSIS
+                </>
+              )}
             </button>
           </>
         )}
 
+        {/* ── Progress ── */}
         {view === "progress" && (
           <div style={S.progressPanel}>
-            <div style={{ fontFamily: MONO, fontSize: 9, color: "var(--intel-muted)", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 12 }}>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: "var(--intel-muted)", letterSpacing: "0.14em", textTransform: "uppercase", marginBottom: 14 }}>
               Analysing · {institution}
             </div>
             {STEPS.map((step, i) => (
               <div key={i} style={S.stepLine(i === stepIdx, i < stepIdx)}>
-                <span style={{ fontFamily: MONO, fontSize: 9, color: i <= stepIdx ? "var(--intel-teal)" : "var(--intel-dim)" }}>
-                  {i < stepIdx ? "✓" : i === stepIdx ? "▶" : "○"}
+                <span style={{ fontFamily: MONO, fontSize: 10, color: i < stepIdx ? "var(--intel-teal)" : i === stepIdx ? "var(--intel-gold)" : "var(--intel-dim)", flexShrink: 0 }}>
+                  {i < stepIdx ? "✓" : i === stepIdx ? "◈" : "○"}
                 </span>
                 {step}
               </div>
@@ -1028,6 +1154,7 @@ export default function IntelligenceHome() {
           </div>
         )}
 
+        {/* ── Output ── */}
         {view === "output" && result && (
           <>
             <div style={S.outputTopbar}>
@@ -1036,7 +1163,7 @@ export default function IntelligenceHome() {
                 <button onClick={handleReset} style={S.actionBtn("outline")}>↺ New Analysis</button>
                 <button onClick={handleTrack} style={S.actionBtn("outline")}>+ Track</button>
                 <button onClick={handleExportPDF} style={S.actionBtn("gold")}>
-                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none" style={{ marginRight: 4 }}><path d="M2 9h8M6 1v6M3.5 4.5L6 7l2.5-2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                  <svg width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2 9h8M6 1v6M3.5 4.5L6 7l2.5-2.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
                   Export PDF
                 </button>
               </div>
@@ -1050,32 +1177,31 @@ export default function IntelligenceHome() {
 
             {/* Footer CTA */}
             <div style={S.footerCta}>
-              <div style={{ fontFamily: MONO, fontSize: 9, color: "var(--intel-gold)", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 12 }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: "var(--intel-gold)", letterSpacing: "0.18em", textTransform: "uppercase", marginBottom: 14 }}>
                 Built for GCC Institutional Investors
               </div>
-              <h2 style={{ fontFamily: SYNE, fontWeight: 800, fontSize: "clamp(22px,3vw,32px)", letterSpacing: "-0.02em", color: "var(--intel-text)", margin: "0 0 12px" }}>
-                See AgenThinkMesh deployed<br />
-                <em style={{ fontFamily: SERIF, fontWeight: 400, fontStyle: "italic", color: "var(--intel-gold)" }}>for your institution</em>
+              <h2 style={{ fontFamily: SERIF, fontWeight: 300, fontSize: "clamp(20px,3vw,26px)", color: "var(--intel-text)", margin: "0 0 14px", lineHeight: 1.3 }}>
+                See AgenThinkMesh deployed for your firm
               </h2>
               <p style={{ fontSize: 14, color: "var(--intel-muted)", lineHeight: 1.75, maxWidth: 480, margin: "0 auto 24px" }}>
-                160+ specialist agents across finance, compliance, ESG, and risk — pre-configured for GCC sovereign and institutional mandates. Custom deployment in under 2 weeks.
+                160+ specialist agents across finance, compliance, ESG, and risk — pre-configured for GCC sovereign and institutional mandates.
               </p>
               <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
                 <a
-                  href={`mailto:farouq@agenthinkmesh.com?subject=Book Demo${result.institution ? ` — ${result.institution}` : ""}&body=I'd like to book a demo of AgenThinkMesh Intelligence Agent.`}
-                  style={{ padding: "12px 28px", background: "linear-gradient(135deg, var(--intel-gold) 0%, #e8a020 100%)", color: "var(--intel-ink)", borderRadius: 8, fontSize: 13, fontWeight: 800, textDecoration: "none", fontFamily: SYNE }}
+                  href={`mailto:farouq@agenthinkmesh.com?subject=Request Live Demo${result.institution ? ` — ${result.institution}` : ""}&body=I'd like to book a demo of AgenThinkMesh Intelligence Agent.`}
+                  style={{ padding: "12px 28px", background: "linear-gradient(135deg, #c9a84c 0%, #a8742a 100%)", color: "#000", borderRadius: 8, fontSize: 13, fontWeight: 800, textDecoration: "none", fontFamily: SYNE, letterSpacing: "0.02em" }}
                 >
                   Request a Live Demo
                 </a>
                 <a
-                  href="mailto:farouq@agenthinkmesh.com"
+                  href="mailto:farouq@agenthinkmesh.com?subject=Platform Overview — AgenThinkMesh"
                   style={{ padding: "12px 28px", background: "transparent", border: "1px solid rgba(201,168,76,0.3)", color: "var(--intel-gold)", borderRadius: 8, fontSize: 13, fontWeight: 700, textDecoration: "none", fontFamily: SYNE }}
                 >
-                  Contact Sales
+                  View Platform Overview
                 </a>
               </div>
-              <div style={{ fontFamily: MONO, fontSize: 11, color: "var(--intel-muted)", marginTop: 16 }}>
-                Direct enquiries: <a href="mailto:farouq@agenthinkmesh.com" style={{ color: "var(--intel-gold)", textDecoration: "none" }}>farouq@agenthinkmesh.com</a>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: "var(--intel-muted)", marginTop: 18, opacity: 0.7 }}>
+                farouq@agenthinkmesh.com · kishore@agenthinkmesh.com
               </div>
             </div>
           </>

@@ -90,7 +90,8 @@ async function checkAndIncrementRateLimit(
 export const dealScreenerRouter = router({
   /**
    * Screen a deal through the Council of 10.
-   * Rate limited to 20 screens/hour per user.
+   * Rate limited by plan: free=3/day · pro=50/day · enterprise=unlimited.
+   * Window resets at midnight UTC.
    */
   screen: protectedProcedure
     .input(

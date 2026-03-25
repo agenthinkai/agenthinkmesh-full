@@ -688,8 +688,8 @@ export type InsertDealScreening = typeof dealScreenings.$inferInsert;
 export const dealScreeningRateLimit = mysqlTable("deal_screening_rate_limit", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull(),
-  windowStart: timestamp("windowStart").notNull(), // start of the 1-hour window
-  count: int("count").notNull().default(1),        // screens in this window
+  windowStart: timestamp("windowStart").notNull(), // midnight UTC — start of daily window
+  count: int("count").notNull().default(1),        // screens used today
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 
