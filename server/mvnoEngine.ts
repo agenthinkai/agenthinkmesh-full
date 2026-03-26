@@ -7,7 +7,8 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+import { ENV } from "./_core/env";
+const client = new Anthropic({ apiKey: ENV.anthropicApiKey });
 
 const TIMEOUT_MS = 15_000;
 

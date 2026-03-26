@@ -6,6 +6,7 @@
 
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
+import { ENV } from "./_core/env";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -184,7 +185,7 @@ Respond ONLY with valid JSON matching this exact schema, no markdown, no explana
 // ── Anthropic client ──────────────────────────────────────────────────────────
 
 const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
+  apiKey: ENV.anthropicApiKey,
 });
 
 const TIMEOUT_MS = 15_000;
