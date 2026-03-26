@@ -103,6 +103,8 @@ export const mvnoRouter = router({
 
   /**
    * Return the 6 pre-built mock subscriber profiles for demo.
+   * TODO: replace mockSubscribers with real
+   * data source when MVNO goes live
    */
   mockSubscribers: protectedProcedure.query(() => {
     return MOCK_SUBSCRIBERS;
