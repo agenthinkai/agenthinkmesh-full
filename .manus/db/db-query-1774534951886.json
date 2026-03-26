@@ -1,0 +1,9 @@
+{
+  "query": "\nALTER TABLE forecasts\n  ADD COLUMN IF NOT EXISTS geography VARCHAR(100),\n  ADD COLUMN IF NOT EXISTS currency VARCHAR(10),\n  ADD COLUMN IF NOT EXISTS baseRevenue DECIMAL(15,2),\n  ADD COLUMN IF NOT EXISTS ebitdaMargin DECIMAL(5,4),\n  ADD COLUMN IF NOT EXISTS growthRate DECIMAL(5,4),\n  ADD COLUMN IF NOT EXISTS assumptions TEXT;\n\nALTER TABLE forecast_history\n  ADD COLUMN IF NOT EXISTS month VARCHAR(20),\n  ADD COLUMN IF NOT EXISTS revenue DECIMAL(15,2),\n  ADD COLUMN IF NOT EXISTS ebitda DECIMAL(15,2),\n  ADD COLUMN IF NOT EXISTS sortOrder INT;\n",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute \nALTER TABLE forecasts\n  ADD COLUMN IF NOT EXISTS geography VARCHAR(100),\n  ADD COLUMN IF NOT EXISTS currency VARCHAR(10),\n  ADD COLUMN IF NOT EXISTS baseRevenue DECIMAL(15,2),\n  ADD COLUMN IF NOT EXISTS ebitdaMargin DECIMAL(5,4),\n  ADD COLUMN IF NOT EXISTS growthRate DECIMAL(5,4),\n  ADD COLUMN IF NOT EXISTS assumptions TEXT;\n\nALTER TABLE forecast_history\n  ADD COLUMN IF NOT EXISTS month VARCHAR(20),\n  ADD COLUMN IF NOT EXISTS revenue DECIMAL(15,2),\n  ADD COLUMN IF NOT EXISTS ebitda DECIMAL(15,2),\n  ADD COLUMN IF NOT EXISTS sortOrder INT;\n",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 3302
+}

@@ -58,6 +58,7 @@ import ForecastDashboard from "./pages/ForecastDashboard";
 import ForecastNew from "./pages/ForecastNew";
 import ForecastDetail from "./pages/ForecastDetail";
 import KnowledgeVault from "./pages/KnowledgeVault";
+import { DemoBanner } from "./pages/Home";
 import { useAuth } from "./_core/hooks/useAuth";
 
 function Router() {
@@ -199,6 +200,7 @@ function App() {
       <ThemeProvider defaultTheme="dark">
         <TooltipProvider>
           <Toaster />
+          <DemoBanner />
           <Router />
         </TooltipProvider>
       </ThemeProvider>

@@ -1210,3 +1210,23 @@
 - [x] Knowledge Vault nav link added to SiteNav (amber color, brain emoji)
 - [x] 6 vitest tests for Knowledge Vault router — all passing
 - [x] TypeScript: 0 errors
+
+## GTM Readiness — Priority Build Order
+
+### Step 2 (Priority 1): ForecastMesh Demo Data Seeder
+- [x] 8 enterprise forecast scenarios (Kuwait logistics, Saudi healthcare, UAE cold chain, KSA govtech, Kuwait telecom infra, KSA pharma, KSA media, UAE renewable)
+- [x] 12 probability history entries per scenario (realistic monthly movement)
+- [x] Financial columns added: geography, currency, baseRevenue, ebitdaMargin, growthRate, assumptions
+- [x] Seed script runs idempotently (DELETE + re-insert per scenario)
+
+### Step 3 (Priority 2): Demo Mode on Landing Page
+- [x] "Try Demo" button on landing hero section
+- [x] Demo Mode creates a guest session with pre-loaded synthetic data
+- [x] Demo banner shown across all pages when in demo mode
+- [x] "Exit Demo / Sign Up" CTA in demo banner
+
+### Step 1 (Priority 3): RAG Context Wiring into Agents
+- [ ] Add knowledgeVault.search call inside forecast.runAgentAnalysis procedure
+- [ ] Add knowledgeVault.search call inside mesh.runAgentTask procedure
+- [ ] Inject top 3 relevant scenarios as context prefix in system prompt
+- [ ] Log which scenarios were used as RAG context in agent output

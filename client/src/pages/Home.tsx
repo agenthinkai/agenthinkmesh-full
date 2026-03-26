@@ -6,15 +6,62 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import {
   Brain, Zap, FileText, Shield, ArrowRight, CheckCircle2,
   Users, BarChart3, Globe, Mail, Building2, MessageSquare,
-  ChevronRight, Layers, Network, Cpu
+  ChevronRight, Layers, Network, Cpu, Play, X, TrendingUp,
+  Database, Activity
 } from "lucide-react";
+
+// ── Demo Mode Context ────────────────────────────────────────────────────────
+// Demo mode is stored in sessionStorage so it persists across page navigations
+// but resets when the browser tab is closed.
+export function isDemoMode(): boolean {
+  return sessionStorage.getItem("atm_demo_mode") === "1";
+}
+export function setDemoMode(on: boolean) {
+  if (on) sessionStorage.setItem("atm_demo_mode", "1");
+  else sessionStorage.removeItem("atm_demo_mode");
+}
+
+// ── Demo Banner (shown on all pages when demo mode is active) ────────────────
+export function DemoBanner() {
+  const [, navigate] = useLocation();
+  const [visible, setVisible] = useState(isDemoMode());
+  if (!visible) return null;
+  return (
+    <div className="fixed top-0 left-0 right-0 z-[100] flex items-center justify-between gap-3 px-4 py-2 bg-gradient-to-r from-violet-600 to-cyan-600 text-white text-xs font-medium shadow-lg">
+      <div className="flex items-center gap-2">
+        <Play className="w-3 h-3 flex-shrink-0" />
+        <span>
+          <strong>Demo Mode</strong> — You're exploring AgenThinkMesh with pre-loaded GCC enterprise data.
+          All outputs are synthetic.
+        </span>
+      </div>
+      <div className="flex items-center gap-2 flex-shrink-0">
+        <a href={getLoginUrl()}>
+          <Button size="sm" variant="outline" className="h-6 px-3 text-xs border-white/40 bg-white/10 text-white hover:bg-white/20 hover:border-white/60">
+            Sign Up Free
+          </Button>
+        </a>
+        <button
+          onClick={() => { setDemoMode(false); setVisible(false); }}
+          className="w-5 h-5 rounded flex items-center justify-center hover:bg-white/20 transition-colors"
+          aria-label="Exit demo"
+        >
+          <X className="w-3 h-3" />
+        </button>
+      </div>
+    </div>
+  );
+}
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
+  const [, navigate] = useLocation();
+  const [demoLaunching, setDemoLaunching] = useState(false);
+
   // Contact form state
   const [contactForm, setContactForm] = useState({
     name: "",
@@ -39,6 +86,14 @@ export default function Home() {
     e.preventDefault();
     submitContact.mutate(contactForm);
   };
+
+  function handleTryDemo() {
+    setDemoLaunching(true);
+    setDemoMode(true);
+    setTimeout(() => {
+      navigate("/forecast");
+    }, 600);
+  }
 
   return (
     <div className="min-h-screen bg-[#080B14] text-white overflow-x-hidden">
@@ -67,11 +122,31 @@ export default function Home() {
               </Button>
             </Link>
           ) : (
-            <a href={getLoginUrl()}>
-              <Button size="sm" className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 border-0 text-white shadow-lg shadow-violet-500/20 text-xs">
-                Get Started <ArrowRight className="w-3 h-3 ml-1" />
+            <>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleTryDemo}
+                disabled={demoLaunching}
+                className="border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 hover:text-white text-xs"
+              >
+                {demoLaunching ? (
+                  <span className="flex items-center gap-1.5">
+                    <span className="w-3 h-3 border border-violet-400/40 border-t-violet-400 rounded-full animate-spin" />
+                    Loading…
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-1.5">
+                    <Play className="w-3 h-3" /> Try Demo
+                  </span>
+                )}
               </Button>
-            </a>
+              <a href={getLoginUrl()}>
+                <Button size="sm" className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 border-0 text-white shadow-lg shadow-violet-500/20 text-xs">
+                  Get Started <ArrowRight className="w-3 h-3 ml-1" />
+                </Button>
+              </a>
+            </>
           )}
         </div>
       </nav>
@@ -111,11 +186,31 @@ export default function Home() {
                 </Button>
               </Link>
             ) : (
-              <a href={getLoginUrl()}>
-                <Button size="lg" className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 border-0 text-white shadow-xl shadow-violet-500/25 px-8">
-                  Start for Free <ArrowRight className="w-4 h-4 ml-2" />
+              <>
+                <a href={getLoginUrl()}>
+                  <Button size="lg" className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 border-0 text-white shadow-xl shadow-violet-500/25 px-8">
+                    Start for Free <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                </a>
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={handleTryDemo}
+                  disabled={demoLaunching}
+                  className="border-violet-500/30 bg-violet-500/10 text-violet-300 hover:bg-violet-500/20 hover:text-white px-8"
+                >
+                  {demoLaunching ? (
+                    <span className="flex items-center gap-2">
+                      <span className="w-4 h-4 border-2 border-violet-400/40 border-t-violet-400 rounded-full animate-spin" />
+                      Launching demo…
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <Play className="w-4 h-4" /> Try Live Demo
+                    </span>
+                  )}
                 </Button>
-              </a>
+              </>
             )}
             <a href="#contact">
               <Button size="lg" variant="outline" className="border-white/10 bg-transparent text-white/70 hover:text-white hover:border-white/20 px-8">
@@ -139,6 +234,82 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* ── DEMO PREVIEW STRIP ── */}
+      {!isAuthenticated && (
+        <section className="py-16 px-6 md:px-12 border-t border-white/5 bg-gradient-to-b from-violet-950/20 to-transparent">
+          <div className="max-w-5xl mx-auto">
+            <div className="text-center mb-10">
+              <p className="text-xs text-violet-400 font-mono uppercase tracking-widest mb-3">Live Demo</p>
+              <h2 className="text-3xl font-bold tracking-tight mb-3">See it working — no sign-up required</h2>
+              <p className="text-sm text-white/50 max-w-xl mx-auto">
+                Explore 8 real GCC enterprise scenarios across ForecastMesh, MVNO Intelligence, and Deal Screening — all pre-loaded with authentic synthetic data.
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              {[
+                {
+                  icon: <TrendingUp className="w-5 h-5 text-violet-400" />,
+                  title: "ForecastMesh",
+                  desc: "8 GCC enterprise probability forecasts with 30–60 day history, agent analysis, and trigger alerts",
+                  badge: "8 scenarios",
+                  href: "/forecast",
+                },
+                {
+                  icon: <Database className="w-5 h-5 text-cyan-400" />,
+                  title: "Knowledge Vault",
+                  desc: "460 GCC synthetic scenarios across Deal Screening, MVNO, Insurance, Legal, Wealth Management",
+                  badge: "460 scenarios",
+                  href: "/knowledge-vault",
+                },
+                {
+                  icon: <Activity className="w-5 h-5 text-emerald-400" />,
+                  title: "Agent Mesh",
+                  desc: "Run multi-agent tasks with GCC-grounded context. Deal screening, MVNO analysis, IC reports.",
+                  badge: "120+ agents",
+                  href: "/mesh",
+                },
+              ].map((item) => (
+                <button
+                  key={item.title}
+                  onClick={handleTryDemo}
+                  className="text-left p-5 rounded-2xl bg-white/[0.03] border border-white/8 hover:border-violet-500/30 hover:-translate-y-1 transition-all duration-300 group"
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center">{item.icon}</div>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 font-mono">{item.badge}</span>
+                  </div>
+                  <h3 className="font-semibold text-sm mb-1.5 group-hover:text-violet-300 transition-colors">{item.title}</h3>
+                  <p className="text-xs text-white/45 leading-relaxed">{item.desc}</p>
+                  <div className="flex items-center gap-1 mt-3 text-xs text-violet-400/60 group-hover:text-violet-400 transition-colors">
+                    <Play className="w-3 h-3" /> Launch demo
+                  </div>
+                </button>
+              ))}
+            </div>
+            <div className="text-center">
+              <Button
+                size="lg"
+                onClick={handleTryDemo}
+                disabled={demoLaunching}
+                className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 border-0 text-white shadow-xl shadow-violet-500/25 px-10"
+              >
+                {demoLaunching ? (
+                  <span className="flex items-center gap-2">
+                    <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    Launching…
+                  </span>
+                ) : (
+                  <span className="flex items-center gap-2">
+                    <Play className="w-4 h-4" /> Launch Full Demo — No Sign-Up
+                  </span>
+                )}
+              </Button>
+              <p className="text-xs text-white/30 mt-3">All data is synthetic. No account required.</p>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ── FEATURES ── */}
       <section id="features" className="py-24 px-6 md:px-12 border-t border-white/5">
@@ -204,8 +375,8 @@ export default function Home() {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
             {[
               { color: "from-violet-500 to-purple-600", icon: "💼", domain: "Finance", contexts: ["VC / PE Fund", "Sovereign Wealth", "Fund Manager"] },
-              { color: "from-cyan-500 to-blue-600", icon: "⚖️", domain: "Legal", contexts: ["Law Firm", "In-House Counsel"] },
-              { color: "from-emerald-500 to-teal-600", icon: "🏥", domain: "Healthcare", contexts: ["Hospital Ops", "Clinical Research"] },
+              { color: "from-cyan-500 to-blue-600", icon: "📡", domain: "Telecom", contexts: ["MVNO Strategy", "Network Ops", "Churn Analysis"] },
+              { color: "from-emerald-500 to-teal-600", icon: "🏥", domain: "Insurance", contexts: ["Underwriting", "Claims AI", "Risk Scoring"] },
               { color: "from-orange-500 to-amber-600", icon: "🏢", domain: "Enterprise", contexts: ["Strategy", "Operations"] },
               { color: "from-pink-500 to-rose-600", icon: "🌍", domain: "GCC Wealth", contexts: ["Family Office", "Private Banking"] },
             ].map((d) => (

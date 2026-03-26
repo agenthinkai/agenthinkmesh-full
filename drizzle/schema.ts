@@ -801,6 +801,13 @@ export const forecasts = mysqlTable("forecasts", {
   agentsJson: text("agentsJson"),
   documentUrl: varchar("documentUrl", { length: 512 }),
   isSeeded: boolean("isSeeded").notNull().default(false),
+  // Financial fields (for seeded demo scenarios)
+  geography: varchar("geography", { length: 100 }),
+  currency: varchar("currency", { length: 10 }),
+  baseRevenue: decimal("baseRevenue", { precision: 15, scale: 2 }),
+  ebitdaMargin: decimal("ebitdaMargin", { precision: 5, scale: 4 }),
+  growthRate: decimal("growthRate", { precision: 5, scale: 4 }),
+  assumptions: text("assumptions"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -833,6 +840,11 @@ export const forecastHistory = mysqlTable("forecast_history", {
   agentSource: varchar("agentSource", { length: 100 }),
   eventType: mysqlEnum("eventType", ["agent_update", "manual_update", "trigger_fired", "document_added", "status_change"]).notNull().default("agent_update"),
   recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+  // Financial history fields (for seeded demo scenarios)
+  month: varchar("month", { length: 20 }),
+  revenue: decimal("revenue", { precision: 15, scale: 2 }),
+  ebitda: decimal("ebitda", { precision: 15, scale: 2 }),
+  sortOrder: int("sortOrder"),
 });
 export type ForecastHistory = typeof forecastHistory.$inferSelect;
 export type InsertForecastHistory = typeof forecastHistory.$inferInsert;
