@@ -2,9 +2,11 @@
  * ForecastMesh Engine
  * 5 parallel agents → consensus engine → trigger detection
  * All LLM calls are server-side via invokeLLM.
+ * RAG context from Knowledge Vault is injected into each agent's system prompt.
  */
 
 import { invokeLLM } from "./_core/llm";
+import { getRAGContext, injectRAGContext } from "./ragContext";
 import { z } from "zod";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -52,6 +54,7 @@ export interface ForecastEngineResult {
   consensus: ConsensusResult;
   triggers: TriggerEvent[];
   status: "on_track" | "watchlist" | "at_risk" | "critical";
+  ragScenarioIds: string[];
 }
 
 // ─── Agent Definitions ────────────────────────────────────────────────────────
@@ -138,9 +141,12 @@ const RESPONSE_SCHEMA = {
 async function callAgent(
   agent: typeof AGENTS[0],
   input: ForecastInput,
+  ragContext: string,
   timeoutMs = 15000
 ): Promise<AgentResult> {
   const userMessage = buildUserMessage(input);
+  // Inject RAG context at the top of the system prompt
+  const systemPromptWithRAG = injectRAGContext(agent.systemPrompt, ragContext);
 
   const timeoutPromise = new Promise<never>((_, reject) =>
     setTimeout(() => reject(new Error("timeout")), timeoutMs)
@@ -150,7 +156,7 @@ async function callAgent(
     const result = await Promise.race([
       invokeLLM({
         messages: [
-          { role: "system", content: agent.systemPrompt },
+          { role: "system", content: systemPromptWithRAG },
           { role: "user", content: userMessage },
         ],
         response_format: RESPONSE_SCHEMA,
@@ -303,9 +309,13 @@ export async function runForecastEngine(
   input: ForecastInput,
   previousProbability?: number
 ): Promise<ForecastEngineResult> {
+  // Retrieve RAG context once — shared across all 5 agents to avoid 5x DB queries
+  const ragQuery = `${input.title} ${input.businessArea ?? ""} ${input.forecastType.replace(/_/g, " ")}`.trim();
+  const { ragContext, ragScenarioIds } = await getRAGContext(ragQuery, 3);
+
   // Run all 5 agents in parallel with 15s timeout each
   const settled = await Promise.allSettled(
-    AGENTS.map((agent) => callAgent(agent, input, 15000))
+    AGENTS.map((agent) => callAgent(agent, input, ragContext, 15000))
   );
 
   const agentResults: AgentResult[] = settled.map((r, i) =>
@@ -326,5 +336,5 @@ export async function runForecastEngine(
   const triggers = detectTriggers(consensus, previousProbability, input.deadline);
   const status = deriveStatus(consensus.weighted_probability);
 
-  return { consensus, triggers, status };
+  return { consensus, triggers, status, ragScenarioIds };
 }

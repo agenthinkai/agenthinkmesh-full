@@ -58,6 +58,7 @@ import ForecastDashboard from "./pages/ForecastDashboard";
 import ForecastNew from "./pages/ForecastNew";
 import ForecastDetail from "./pages/ForecastDetail";
 import KnowledgeVault from "./pages/KnowledgeVault";
+import Pricing from "./pages/Pricing";
 import { DemoBanner } from "./pages/Home";
 import { useAuth } from "./_core/hooks/useAuth";
 
@@ -186,6 +187,9 @@ function Router() {
 
       {/* Knowledge Vault — RAG Grounding Layer */}
       <Route path="/knowledge-vault" component={KnowledgeVault} />
+
+      {/* Pricing */}
+      <Route path="/pricing" component={Pricing} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

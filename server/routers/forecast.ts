@@ -305,6 +305,14 @@ export const forecastRouter = router({
         .orderBy(desc(forecastTriggers.firedAt))
         .limit(20);
 
+      // Fetch financial history for Revenue + EBITDA charts
+      const historyRows = await db
+        .select()
+        .from(forecastHistory)
+        .where(eq(forecastHistory.forecastId, input.forecastId))
+        .orderBy(forecastHistory.sortOrder, forecastHistory.recordedAt)
+        .limit(60);
+
       return {
         ...forecast,
         currentProbability: parseFloat(forecast.currentProbability ?? "0.5"),
@@ -320,6 +328,15 @@ export const forecastRouter = router({
           recommendedActions: JSON.parse(a.recommendedActions || "[]") as string[],
         })),
         triggers,
+        history: historyRows.map(h => ({
+          id: h.id,
+          month: h.month ?? null,
+          revenue: h.revenue ? parseFloat(h.revenue) : null,
+          ebitda: h.ebitda ? parseFloat(h.ebitda) : null,
+          probability: parseFloat(h.probability ?? "0.5"),
+          sortOrder: h.sortOrder ?? null,
+          recordedAt: h.recordedAt,
+        })),
       };
     }),
 

@@ -291,6 +291,17 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
             >
               🧠 Knowledge Vault
             </a>
+            <a
+              href="/pricing"
+              style={{
+                color: MUTED, fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, transition: "color 0.2s",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = WHITE)}
+              onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
+            >
+              Pricing
+            </a>
           </>
         ) : (
           <>
@@ -509,6 +520,17 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               }}
             >
               🧠 Knowledge Vault
+            </a>
+            <a
+              href="/pricing"
+              style={{
+                color: MUTED, fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, transition: "color 0.2s",
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = WHITE)}
+              onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
+            >
+              Pricing
             </a>
           </>
         )}

@@ -8,6 +8,10 @@ import { useRoute } from "wouter";
 import { trpc } from "@/lib/trpc";
 import SiteNav from "@/components/SiteNav";
 import { useAuth } from "@/_core/hooks/useAuth";
+import {
+  ComposedChart, Bar, Line, XAxis, YAxis, CartesianGrid,
+  Tooltip, Legend, ResponsiveContainer
+} from "recharts";
 
 const NAVY = "#080D1A";
 const CARD = "#0D1E35";
@@ -373,6 +377,86 @@ export default function ForecastDetail() {
             )}
           </div>
         </div>
+
+        {/* Revenue + EBITDA Financial Chart */}
+        {forecast.history && forecast.history.some((h: { revenue: number | null }) => h.revenue != null) && (() => {
+          const currency = (forecast as { currency?: string }).currency ?? "USD";
+          const chartData = [...forecast.history]
+            .filter((h: { month: string | null; revenue: number | null }) => h.month && h.revenue != null)
+            .sort((a, b) =>
+              (a.sortOrder ?? 0) - (b.sortOrder ?? 0)
+            )
+            .map((h) => ({
+              month: h.month,
+              revenue: h.revenue != null ? Math.round(h.revenue / 1000) : null,
+              ebitda: h.ebitda != null ? Math.round(h.ebitda / 1000) : null,
+              ebitdaMargin: (h.revenue && h.ebitda && h.revenue > 0)
+                ? Math.round((h.ebitda / h.revenue) * 100)
+                : null,
+            }));
+
+          return (
+            <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 12, padding: "20px", marginTop: 20 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, color: WHITE, marginBottom: 4 }}>📊 Financial Performance</div>
+              <div style={{ fontSize: 11, color: MUTED, marginBottom: 16 }}>Revenue &amp; EBITDA — {currency} (thousands)</div>
+              <ResponsiveContainer width="100%" height={240}>
+                <ComposedChart data={chartData} margin={{ top: 4, right: 40, left: 0, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fill: MUTED, fontSize: 10 }}
+                    axisLine={{ stroke: "rgba(255,255,255,0.08)" }}
+                    tickLine={false}
+                  />
+                  <YAxis
+                    yAxisId="left"
+                    tick={{ fill: MUTED, fontSize: 10 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v: number) => `${v}k`}
+                  />
+                  <YAxis
+                    yAxisId="right"
+                    orientation="right"
+                    tick={{ fill: MUTED, fontSize: 10 }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v: number) => `${v}%`}
+                    domain={[0, 100]}
+                  />
+                  <Tooltip
+                    contentStyle={{ background: "#0D1E35", border: "1px solid rgba(52,211,153,0.2)", borderRadius: 8, fontSize: 12 }}
+                    labelStyle={{ color: WHITE, fontWeight: 700 }}
+                    itemStyle={{ color: MUTED }}
+                    formatter={(value: number, name: string) => {
+                      if (name === "ebitdaMargin") return [`${value}%`, "EBITDA Margin"];
+                      return [`${value}k ${currency}`, name === "revenue" ? "Revenue" : "EBITDA"];
+                    }}
+                  />
+                  <Legend
+                    wrapperStyle={{ fontSize: 11, color: MUTED, paddingTop: 8 }}
+                    formatter={(value: string) => ({
+                      revenue: "Revenue",
+                      ebitda: "EBITDA",
+                      ebitdaMargin: "EBITDA Margin %",
+                    }[value] ?? value)}
+                  />
+                  <Bar yAxisId="left" dataKey="revenue" fill="rgba(56,189,248,0.7)" radius={[3,3,0,0]} name="revenue" />
+                  <Bar yAxisId="left" dataKey="ebitda" fill="rgba(52,211,153,0.7)" radius={[3,3,0,0]} name="ebitda" />
+                  <Line
+                    yAxisId="right"
+                    type="monotone"
+                    dataKey="ebitdaMargin"
+                    stroke={GOLD}
+                    strokeWidth={2}
+                    dot={{ fill: GOLD, r: 3 }}
+                    name="ebitdaMargin"
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

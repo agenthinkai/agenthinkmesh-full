@@ -26,6 +26,7 @@ import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
 import { eq, desc, gte, sql, and, like, or, isNull, lt } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
+import { getRAGContext, injectRAGContext } from "./ragContext";
 import { notifyOwner } from "./_core/notification";
 import * as XLSX from "xlsx";
 import { PDFParse } from "pdf-parse";
@@ -236,6 +237,12 @@ export const appRouter = router({
         }
         console.log(`[runAgentTask] agent=${input.agentLabel} vaultTextLen=${resolvedVaultText.length} activeDocId=${input.activeDocId}`);
 
+        // ── RAG: Retrieve top-3 relevant GCC scenarios from Knowledge Vault ─────────
+        const { ragContext: meshRagContext } = await getRAGContext(
+          `${input.agentLabel} ${input.taskText.slice(0, 200)}`,
+          3
+        );
+
         // ── Step 1: Intent Classifier (fast pre-pass, ~200 tokens) ────────────
         // Detects what the user actually wants: analysis, draft, code, decision, compliance, qa
         type IntentType = "analysis" | "draft_document" | "generate_code" | "decision" | "compliance_check" | "qa_test" | "financial_model";
@@ -299,12 +306,14 @@ export const appRouter = router({
           detectedIntent = "analysis";
         }
 
-        // ── Step 2: Build system prompt based on detected intent ──────────────
-        const agentContext = [
+         // ── Step 2: Build system prompt based on detected intent ──────────
+        const agentContextBase = [
           input.systemPromptBase,
           `You are the ${input.agentLabel} operating on an institutional AI platform serving GCC fund managers, legal professionals, healthcare administrators, and enterprise executives.`,
           resolvedVaultText ? `\n=== DOCUMENT CONTEXT ===\n${resolvedVaultText.slice(0, 8000)}\n=== END DOCUMENT CONTEXT ===` : "",
         ].filter(Boolean).join("\n");
+        // Inject RAG context (GCC institutional scenarios) at the top of the system prompt
+        const agentContext = injectRAGContext(agentContextBase, meshRagContext);
 
         let systemPrompt: string;
 

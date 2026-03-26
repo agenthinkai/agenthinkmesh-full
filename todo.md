@@ -1226,10 +1226,20 @@
 - [x] "Exit Demo / Sign Up" CTA in demo banner
 
 ### Step 1 (Priority 3): RAG Context Wiring into Agents
-- [ ] Add knowledgeVault.search call inside forecast.runAgentAnalysis procedure
-- [ ] Add knowledgeVault.search call inside mesh.runAgentTask procedure
-- [ ] Inject top 3 relevant scenarios as context prefix in system prompt
-- [ ] Log which scenarios were used as RAG context in agent output
+- [x] Add knowledgeVault.search call inside forecast.runAgentAnalysis procedure (via ragContext.ts helper)
+- [x] Add knowledgeVault.search call inside mesh.runAgentTask procedure
+- [x] Inject top 3 relevant scenarios as context prefix in system prompt
+- [x] Log which scenarios were used as RAG context in agent output
+
+### Task 2 — Revenue + EBITDA Charts in ForecastDetail
+- [x] Add history (month, revenue, ebitda, sortOrder) to forecast.getById return value
+- [x] Add ComposedChart (Revenue Bar + EBITDA Bar + EBITDA Margin Line) to ForecastDetail.tsx
+- [x] Secondary Y-axis for EBITDA margin %
+
+### Task 3 — Pricing Page
+- [x] Create client/src/pages/Pricing.tsx (3 tiers: Starter $499, Professional $1999, Enterprise custom)
+- [x] Add /pricing route to App.tsx
+- [x] Add Pricing link to SiteNav (both landing and non-landing sections)
 
 ## Demo Mode — Remaining 5 Gaps (Mar 26 2026)
 
