@@ -1,0 +1,1052 @@
+[
+  {
+    "scenario_id": "D5-001",
+    "matter_name": "Al Nakheel Logistics Group — SPA Review",
+    "jurisdiction": "ADGM",
+    "matter_type": "M&A SPA review",
+    "parties": {
+      "buyer": "Gulf Horizon Capital Partners",
+      "seller": "Al Nakheel Family Holdings WLL"
+    },
+    "key_legal_issues": [
+      "Seller warranty on fleet ownership is incomplete — 14 vehicles are registered in the personal name of the founder rather than the company, requiring title transfer before closing",
+      "Material adverse change clause as drafted does not exclude industry-wide logistics disruptions — buyer requested carve-out for GCC geopolitical events is under negotiation",
+      "Non-compete covenant of 36 months covers all of Kuwait, KSA, and UAE — likely unenforceable as drafted under ADGM Employment Regulations if founder is also an employee post-close",
+      "Completion accounts mechanism uses Kuwait GAAP rather than IFRS — adjustment methodology is disputed between parties' accountants"
+    ],
+    "governing_law": "ADGM law",
+    "dispute_resolution": "arbitration",
+    "risk_rating": "Medium",
+    "recommended_action": "Require vehicle title transfer to company as condition precedent; revise non-compete to Kuwait only for 24 months to ensure enforceability under ADGM standards.",
+    "estimated_resolution_timeline": "45–60 days to closing subject to title transfer completion"
+  },
+  {
+    "scenario_id": "D5-002",
+    "matter_name": "Rawabi Medical Centers — NHIF Dispute",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "claimant": "Rawabi Medical Centers Co.",
+      "respondent": "National Health Insurance Fund"
+    },
+    "key_legal_issues": [
+      "NHIF has unilaterally reduced reimbursement rates for 6 chronic disease management codes effective retroactively — Rawabi claims SAR 2.8M in underpayments",
+      "NHIF disputes that the retroactive rate reduction constitutes a breach of the framework agreement — NHIF asserts regulatory authority to revise tariffs without consent",
+      "Rawabi's framework agreement does not contain a tariff stability clause — absence of contractual protection weakens the commercial claim",
+      "Administrative appeal to NHIF disputes committee was rejected — commercial court is the next available forum"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "litigation",
+    "risk_rating": "High",
+    "recommended_action": "File urgent commercial court application for interim injunction to prevent further retroactive deductions pending full hearing; simultaneously engage NHIF through Ministry of Health escalation channel.",
+    "estimated_resolution_timeline": "12–18 months for commercial court judgment; 6 months for potential MOHP administrative resolution"
+  },
+  {
+    "scenario_id": "D5-003",
+    "matter_name": "Salam Printing — Founder Succession Transfer",
+    "jurisdiction": "Kuwait civil court",
+    "matter_type": "M&A SPA review",
+    "parties": {
+      "buyer": "Murooj Investment Company KSCC",
+      "seller": "Hamad Yousuf Al Badr (individual)"
+    },
+    "key_legal_issues": [
+      "Kuwait Companies Law requires shareholder approval by 75% majority for share transfer in a WLL — minority shareholder holding 20% has not confirmed approval, creating closing risk",
+      "Founder's personal guarantee on KWD 380K bank facility with NBK must be released before closing — NBK has not confirmed release timeline",
+      "Three of six printing equipment items are subject to lease agreements that contain change-of-control clauses requiring lessor consent",
+      "Employment contracts for 14 Kuwaiti staff contain provisions referencing the founder personally — novation to new owner required under Kuwait Labour Law"
+    ],
+    "governing_law": "Kuwait law",
+    "dispute_resolution": "litigation",
+    "risk_rating": "Medium",
+    "recommended_action": "Obtain notarized minority shareholder approval immediately; engage NBK for personal guarantee release letter as a condition precedent to closing; novate all employment contracts at closing.",
+    "estimated_resolution_timeline": "30–45 days subject to NBK cooperation"
+  },
+  {
+    "scenario_id": "D5-004",
+    "matter_name": "Tamayuz Education Group — MOE Fee Dispute",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "claimant": "Tamayuz Education Group",
+      "respondent": "Ministry of Education"
+    },
+    "key_legal_issues": [
+      "MOE rejected Tamayuz's 8% annual fee increase application for the 2024–2025 academic year, approving only 3% — SAR 12M revenue impact over the school year",
+      "MOE's fee approval framework does not provide a right of appeal within the administrative structure — commercial court jurisdiction is disputed by MOE",
+      "Tamayuz's operating cost submissions to MOE were prepared without IFRS-compliant financial statements — MOE has cited this as grounds for the reduced approval",
+      "NSPK private school licensing terms do not include an explicit fee stabilization guarantee — contractual basis for the claim is weak"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "litigation",
+    "risk_rating": "High",
+    "recommended_action": "Prepare IFRS-compliant cost submission for resubmission to MOE before next academic year review; engage specialist education regulatory counsel to assess administrative court jurisdiction before commercial court filing.",
+    "estimated_resolution_timeline": "18–24 months for full resolution; administrative resubmission outcome within 90 days"
+  },
+  {
+    "scenario_id": "D5-005",
+    "matter_name": "Gulf Star Food Industries — Distribution Agreement Dispute",
+    "jurisdiction": "DIFC",
+    "matter_type": "joint venture agreement",
+    "parties": {
+      "party_a": "Gulf Star Food Industries LLC",
+      "party_b": "Al Baraka Trading Company FZCO"
+    },
+    "key_legal_issues": [
+      "Al Baraka claims Gulf Star breached exclusivity provisions by supplying a Sharjah retailer outside the designated distribution territory",
+      "Gulf Star disputes that the Sharjah retailer falls within Al Baraka's exclusive territory — the distribution agreement uses ambiguous geographic descriptions that do not reference Emirate boundaries",
+      "Al Baraka is claiming SAR 4.2M in lost profits — causation between the alleged breach and lost sales is disputed and requires expert evidence",
+      "The distribution agreement was executed in 2019 and has not been renewed — Al Baraka argues it remains in force by conduct while Gulf Star contends it expired"
+    ],
+    "governing_law": "DIFC law",
+    "dispute_resolution": "arbitration",
+    "risk_rating": "Medium",
+    "recommended_action": "Commission independent expert report on territorial boundary interpretation before filing defense; assess settlement exposure at AED 800K–1.4M to avoid 18-month arbitration process.",
+    "estimated_resolution_timeline": "18–24 months for full DIFC arbitration; 3–6 months for mediated settlement"
+  },
+  {
+    "scenario_id": "D5-006",
+    "matter_name": "Al Jazeera Energy Services — KOC Contract Renewal",
+    "jurisdiction": "Kuwait civil court",
+    "matter_type": "M&A SPA review",
+    "parties": {
+      "party_a": "Al Jazeera Energy Services WLL",
+      "party_b": "Kuwait Oil Company KSC"
+    },
+    "key_legal_issues": [
+      "KOC has issued a framework agreement renewal with a 12% reduction in unit rates — Al Jazeera disputes the basis for rate reduction given unchanged scope and cost inflation",
+      "KOC's standard contract terms include a unilateral rate revision clause that Al Jazeera signed in 2019 — enforceability of this clause under Kuwait Civil Law is uncertain given its breadth",
+      "KOC has imposed new ESG reporting requirements in the renewed framework — compliance cost is estimated at KWD 240K annually and was not flagged during negotiations",
+      "KOC procurement manager rotation has changed the primary relationship contact — new manager is enforcing contract terms more strictly than predecessor"
+    ],
+    "governing_law": "Kuwait law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "Medium",
+    "recommended_action": "Seek direct meeting between Al Jazeera CEO and KOC Procurement Director to negotiate rate reduction to 6% with ESG cost reimbursement mechanism — avoid formal dispute given KOC relationship dependency.",
+    "estimated_resolution_timeline": "60–90 days through commercial negotiation; avoid litigation given KOC contract dependency"
+  },
+  {
+    "scenario_id": "D5-007",
+    "matter_name": "Nakheel Urban Mobility — RTA Permit Dispute",
+    "jurisdiction": "DIFC",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Nakheel Urban Mobility LLC",
+      "respondent": "Roads and Transport Authority Dubai"
+    },
+    "key_legal_issues": [
+      "RTA has issued a notice of permit breach following 3 rider incidents in restricted zones — Nakheel disputes that the incidents occurred within restricted zones based on GPS data",
+      "RTA's permit terms include a strict liability provision for zone violations regardless of rider fault — Nakheel's GPS evidence may not override this contractual provision",
+      "RTA has indicated it may suspend the exclusive zone permit for 30 days pending investigation — permit suspension would halt 100% of operations and trigger investor default clauses",
+      "Nakheel's Series A term sheet includes a regulatory breach default provision giving investors redemption rights if permit is suspended for more than 14 days"
+    ],
+    "governing_law": "UAE law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Immediately engage RTA through formal written response with GPS evidence; retain UAE administrative law counsel to challenge strict liability interpretation; notify investors proactively to manage default clause risk.",
+    "estimated_resolution_timeline": "30–45 days for RTA investigation; suspension risk within 14 days if not resolved"
+  },
+  {
+    "scenario_id": "D5-008",
+    "matter_name": "Murooj Technology Solutions — Ministry Contract Dispute",
+    "jurisdiction": "Kuwait civil court",
+    "matter_type": "M&A SPA review",
+    "parties": {
+      "party_a": "Murooj Technology Solutions WLL",
+      "party_b": "Ministry of Finance Kuwait"
+    },
+    "key_legal_issues": [
+      "Ministry of Finance has withheld KWD 420K in invoices for ERP customization work claiming deliverables did not meet technical specifications — Murooj disputes the specification interpretation",
+      "Ministry's technical review committee used evaluation criteria not included in the original SOW — Murooj argues the criteria were introduced post-delivery",
+      "Government contract dispute resolution under Kuwait law requires mandatory internal ministry committee review before court access — Murooj has not completed this step",
+      "Payment delay of 280 days has caused Murooj's credit facility to be drawn to 94% — working capital crisis is imminent if not resolved within 45 days"
+    ],
+    "governing_law": "Kuwait law",
+    "dispute_resolution": "litigation",
+    "risk_rating": "High",
+    "recommended_action": "File formal ministry committee dispute application immediately to preserve court rights; simultaneously engage Ministry procurement director for commercial resolution given working capital urgency.",
+    "estimated_resolution_timeline": "6–9 months for ministry committee process; 18–24 months if escalated to commercial court"
+  },
+  {
+    "scenario_id": "D5-009",
+    "matter_name": "Barr Al Aman Development — Zoning Challenge",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "real estate title",
+    "parties": {
+      "applicant": "Barr Al Aman Real Estate Development Co.",
+      "respondent": "Jeddah Municipality"
+    },
+    "key_legal_issues": [
+      "Jeddah Municipality amended the zoning classification of two Barr Al Aman land plots from residential to mixed-use commercial, halting SAR 38M in planned residential development",
+      "The zoning amendment was issued without the mandatory 30-day public notice period required under the Saudi Urban Planning Law — procedural breach is documentable",
+      "Barr Al Aman has construction permits already issued on the basis of prior residential zoning — validity of issued permits after zoning change is disputed",
+      "The land plots were acquired based on a municipality pre-approval letter that confirmed residential zoning — Barr Al Aman has a reliance argument on municipality's own representations"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "litigation",
+    "risk_rating": "High",
+    "recommended_action": "File administrative court challenge to zoning amendment based on procedural breach of notice period; preserve construction permits validity through immediate submission of appeal to Municipality technical committee.",
+    "estimated_resolution_timeline": "12–18 months for administrative court judgment; interim permit suspension risk within 60 days"
+  },
+  {
+    "scenario_id": "D5-010",
+    "matter_name": "Thuraya Medical Supplies — Exclusive Distribution Termination",
+    "jurisdiction": "Kuwait civil court",
+    "matter_type": "M&A SPA review",
+    "parties": {
+      "party_a": "Thuraya Medical Supplies Co. WLL",
+      "party_b": "Medika GmbH (Germany)"
+    },
+    "key_legal_issues": [
+      "German manufacturer Medika has served notice of termination of exclusive distribution agreement citing non-performance of minimum purchase obligations in 2023",
+      "Thuraya argues the minimum purchase shortfall was caused by MOH budget freeze in Q3 2023 — a force majeure event not covered by the agreement's limited force majeure clause",
+      "Medika's termination notice period is 6 months — during this period Thuraya is seeking injunctive relief to prevent Medika from appointing an alternative Kuwait distributor",
+      "The distribution agreement is governed by German law — Thuraya's Kuwait counsel is not qualified to advise on German law interpretation, requiring German co-counsel"
+    ],
+    "governing_law": "German law",
+    "dispute_resolution": "arbitration",
+    "risk_rating": "High",
+    "recommended_action": "Retain German co-counsel immediately to assess force majeure argument under German law; file urgent ICC arbitration application for interim relief preventing alternative distributor appointment.",
+    "estimated_resolution_timeline": "ICC interim relief: 30 days; full arbitration: 18–24 months"
+  },
+  {
+    "scenario_id": "D5-011",
+    "matter_name": "Rimal Construction Group — Subcontractor Dispute",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "M&A SPA review",
+    "parties": {
+      "party_a": "Rimal Construction Group Co.",
+      "party_b": "Al Muqrin Subcontracting Co."
+    },
+    "key_legal_issues": [
+      "Al Muqrin is claiming SAR 8.4M for work completed on 3 Rimal sites alleging non-payment beyond 90 days — Rimal disputes the claim quantum by SAR 2.1M citing defective work deductions",
+      "Rimal applied backcharge deductions without serving the contractually required 14-day defect notice — procedural breach weakens Rimal's counterclaim",
+      "Al Muqrin has filed a labor complaint with HRSD against Rimal for delayed worker wage payments — this parallel proceeding creates additional regulatory risk",
+      "Two of three disputed sites are REDF-funded projects subject to REDF audit — any commercial court judgment against Rimal would trigger REDF vendor review"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "Medium",
+    "recommended_action": "Resolve HRSD labor complaint immediately through direct payment to prevent regulatory escalation; settle commercial dispute at SAR 5.8M to avoid REDF vendor review trigger.",
+    "estimated_resolution_timeline": "HRSD complaint: 30 days; commercial settlement: 60–90 days"
+  },
+  {
+    "scenario_id": "D5-012",
+    "matter_name": "Mashaer Transport Group — MOI Permit Lapse",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Mashaer Transport Group Co.",
+      "respondent": "Ministry of Interior Saudi Arabia"
+    },
+    "key_legal_issues": [
+      "MOI has issued a SAR 480K fine for operating 28 buses with expired vehicle registration during a 14-day permit renewal delay — Mashaer disputes the fine calculation methodology",
+      "MOI enforcement action includes a 90-day ban on new bus fleet registrations — Mashaer needs 40 new bus registrations for the upcoming Hajj season contract",
+      "The permit lapse was caused by an MOI portal system outage during the renewal window — Mashaer has documentary evidence of the outage but MOI has not accepted force majeure",
+      "Hajj season contract with Ministry of Hajj includes a compliance warranty — the MOI fine may constitute a breach of this warranty triggering penalty clauses"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "File formal administrative appeal with MOI Technical Committee with documented evidence of portal outage; simultaneously engage Ministry of Hajj to seek waiver of compliance warranty breach pending MOI resolution.",
+    "estimated_resolution_timeline": "MOI administrative appeal: 45–60 days; Hajj Ministry engagement: immediate"
+  },
+  {
+    "scenario_id": "D5-013",
+    "matter_name": "Layali Hospitality Group — Franchise Agreement Review",
+    "jurisdiction": "Kuwait civil court",
+    "matter_type": "joint venture agreement",
+    "parties": {
+      "party_a": "Layali Hospitality Group WLL",
+      "party_b": "Mena Dining Brands LLC (Dubai)"
+    },
+    "key_legal_issues": [
+      "Master franchise agreement requires Layali to open 3 additional franchise locations in Kuwait within 24 months — Layali has opened only 1 due to mall leasing delays",
+      "Mena Dining Brands is claiming material breach and seeking to terminate the Bahrain expansion exclusivity that was conditional on Kuwait performance",
+      "Kuwait shopping mall landlords have imposed build-out specifications that conflict with the franchisor's brand standards — Layali argues this constitutes a force majeure event",
+      "Franchise royalty calculation methodology has been disputed for 3 years — Layali claims AED 280K in royalty overpayments; Mena Dining disputes this calculation"
+    ],
+    "governing_law": "UAE law",
+    "dispute_resolution": "arbitration",
+    "risk_rating": "Medium",
+    "recommended_action": "Negotiate a 12-month extension on Kuwait expansion timeline with modified performance milestones; resolve royalty dispute through agreed independent accountant review.",
+    "estimated_resolution_timeline": "90 days for negotiated extension; 12 months for royalty dispute if not settled"
+  },
+  {
+    "scenario_id": "D5-014",
+    "matter_name": "Majd Pharmaceutical Manufacturing — SFDA GMP Finding",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Majd Pharmaceutical Manufacturing Co.",
+      "respondent": "Saudi Food and Drug Authority"
+    },
+    "key_legal_issues": [
+      "SFDA GMP inspection found 3 critical observations and 7 major observations — Majd has 30 days to submit a corrective action plan or face production suspension for 4 product lines",
+      "One critical observation relates to batch release testing methodology — SFDA is questioning whether 12 batches released in 2023 met specification and may require product recall",
+      "SFDA's recall authority under the Food and Drug Law is broad and can be exercised without judicial process — Majd's ability to challenge a recall notice in real time is limited",
+      "Two of the 4 product lines at risk supply the MOH — any production suspension triggers MOH supply contract force majeure provisions"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Submit comprehensive CAPA within 21 days retaining SFDA-accredited regulatory consultant; proactively notify MOH of potential supply disruption to manage relationship before formal SFDA action.",
+    "estimated_resolution_timeline": "CAPA review: 45 days; potential production suspension: risk within 30 days if CAPA inadequate"
+  },
+  {
+    "scenario_id": "D5-015",
+    "matter_name": "Bader Insurance Brokers — CMA License Renewal",
+    "jurisdiction": "Kuwait civil court",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Bader Insurance Brokers Co. WLL",
+      "respondent": "Capital Markets Authority Kuwait"
+    },
+    "key_legal_issues": [
+      "Kuwait CMA has queried Bader's fitness and propriety documentation during license renewal — the founder's 2008 regulatory censure in Bahrain has surfaced in the CMA due diligence",
+      "CMA regulations require disclosure of all prior regulatory actions in all jurisdictions — the 2008 Bahrain censure was not disclosed in the original 2012 Kuwait license application",
+      "CMA is considering whether the non-disclosure constitutes material misrepresentation justifying license suspension pending investigation",
+      "Bader's 340 corporate clients have insurance policies that require a licensed broker — any license suspension would trigger mass policy transfer to competitor brokers"
+    ],
+    "governing_law": "Kuwait law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Engage Kuwait CMA through formal voluntary disclosure letter acknowledging the 2008 Bahrain matter and providing full context; retain CMA-specialist regulatory counsel immediately before CMA issues formal inquiry.",
+    "estimated_resolution_timeline": "CMA investigation: 90–180 days; suspension risk: material if proactive disclosure not made within 14 days"
+  },
+  {
+    "scenario_id": "D5-016",
+    "matter_name": "Imdad Supply Chain Solutions — Technology Platform IP Dispute",
+    "jurisdiction": "DIFC",
+    "matter_type": "M&A SPA review",
+    "parties": {
+      "party_a": "Imdad Supply Chain Solutions LLC",
+      "party_b": "LogiTech Systems FZ LLC"
+    },
+    "key_legal_issues": [
+      "Former technology vendor LogiTech is claiming ownership of the proprietary supply chain platform developed during a 3-year development engagement — LogiTech argues the IP assignment clause in the 2016 services agreement was not effective",
+      "Imdad's legal position is that the 2019 addendum to the services agreement clearly assigned all IP to Imdad — LogiTech disputes the addendum's authority as it was signed by a project manager, not an authorized signatory",
+      "LogiTech has registered a UAE copyright for the platform software modules as a defensive measure — Imdad's ability to freely rebuild the platform is now constrained pending resolution",
+      "Imdad's planned AED 8M platform rebuild will replicate certain elements of the disputed software — LogiTech has issued a cease and desist for any rebuild activity using the disputed codebase"
+    ],
+    "governing_law": "DIFC law",
+    "dispute_resolution": "arbitration",
+    "risk_rating": "High",
+    "recommended_action": "Commission independent IP counsel to assess validity of LogiTech's copyright registration; structure platform rebuild using entirely new codebase to eliminate infringement risk while arbitration proceeds.",
+    "estimated_resolution_timeline": "Interim injunction application: 30 days; full DIFC arbitration: 18–24 months"
+  },
+  {
+    "scenario_id": "D5-017",
+    "matter_name": "Al Baraka Steel Fabrication — Minority Shareholder Challenge",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "M&A SPA review",
+    "parties": {
+      "party_a": "Majority shareholders — Al Baraka family",
+      "party_b": "Ibrahim Al Baraka (minority shareholder)"
+    },
+    "key_legal_issues": [
+      "Minority sibling holding 15% has filed a commercial court application challenging the sale price as unfair — he commissioned an independent valuation at SAR 280M against the agreed SAR 299M EV",
+      "Under Saudi Companies Law, a minority shareholder dissenting from a share sale can seek judicial valuation — the court-appointed valuer's process is unpredictable in timeline and methodology",
+      "The shareholder agreement does not contain a drag-along clause — buyer requires unanimous shareholder consent for the full share transfer to proceed",
+      "Minority shareholder is demanding a 22% price premium for his shares as the condition for his consent — this is not commercially justifiable given his lack of operational involvement"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Negotiate a controlled premium of 8–10% for the minority stake to secure consent and avoid judicial valuation risk; engage tribal mediation channel through family elder to reach consensus outside court.",
+    "estimated_resolution_timeline": "Mediated resolution: 60–90 days; court valuation process: 12–18 months"
+  },
+  {
+    "scenario_id": "D5-018",
+    "matter_name": "Durrat Al Khaleej Real Estate — Tenant Default",
+    "jurisdiction": "Kuwait civil court",
+    "matter_type": "real estate title",
+    "parties": {
+      "landlord": "Durrat Al Khaleej Real Estate Co. WLL",
+      "tenant": "Al Watan Financial Services Co. KSCC"
+    },
+    "key_legal_issues": [
+      "Al Watan Financial Services has defaulted on 4 months of office rent totalling KWD 68,000 and is disputing the lease renewal terms",
+      "Al Watan has counterclaimed KWD 24,000 for alleged defective air conditioning that caused equipment damage — the counterclaim is being used as a set-off defense",
+      "Kuwait tenancy law provides significant protections for commercial tenants — eviction proceedings require a court order and minimum 6-month notice even for non-payment",
+      "Al Watan holds CMA-licensed financial services operations in the premises — eviction creates a risk of CMA licensing disruption that Al Watan is leveraging in negotiations"
+    ],
+    "governing_law": "Kuwait law",
+    "dispute_resolution": "litigation",
+    "risk_rating": "Medium",
+    "recommended_action": "File urgent summary judgment application for KWD 44,000 net of counterclaim; simultaneously serve formal eviction notice to start 6-month clock; reject settlement below KWD 56,000.",
+    "estimated_resolution_timeline": "Summary judgment: 90–120 days; eviction order: 9–12 months from filing"
+  },
+  {
+    "scenario_id": "D5-019",
+    "matter_name": "Siraj Renewable Energy Solutions — DEWA Contractor Dispute",
+    "jurisdiction": "DIFC",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Siraj Renewable Energy Solutions LLC",
+      "respondent": "Dubai Electricity and Water Authority"
+    },
+    "key_legal_issues": [
+      "DEWA has refused to grant approved contractor status citing a technical non-compliance in Siraj's quality management system documentation submitted in 2022",
+      "Siraj re-submitted corrected documentation in 2023 — DEWA has not responded within the regulatory 90-day review period creating a deemed refusal under DEWA's own procedures",
+      "Without DEWA approval, Siraj cannot connect solar installations to the Dubai grid — AED 140M in LOI pipeline is at risk of cancellation",
+      "DEWA's contractor approval process has no formal appeal mechanism — judicial review is the only available remedy and is untested for DEWA contractor decisions"
+    ],
+    "governing_law": "UAE law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Escalate formally to DEWA CEO office with documentation of 90-day deemed refusal; simultaneously engage UAE Federal Courts for judicial review application to create procedural pressure on DEWA.",
+    "estimated_resolution_timeline": "DEWA escalation: 45–60 days; judicial review: 12–18 months"
+  },
+  {
+    "scenario_id": "D5-020",
+    "matter_name": "Noor Healthcare REIT — Lease Renegotiation Dispute",
+    "jurisdiction": "ADGM",
+    "matter_type": "real estate title",
+    "parties": {
+      "landlord": "Noor Healthcare REIT",
+      "tenant": "Gulf Medical Group LLC"
+    },
+    "key_legal_issues": [
+      "Gulf Medical Group is seeking to renegotiate its triple net lease terms citing COVID-19 related revenue impact — the lease contains no force majeure clause for pandemic events",
+      "Gulf Medical Group has withheld SAR 480K in rent citing alleged property maintenance failures by the REIT — the triple net structure explicitly assigns maintenance to the tenant",
+      "ADGM's REIT regulations require the fund to maintain minimum occupancy and rental income thresholds for regulatory compliance — any lease restructuring must be reported to FSRA",
+      "Gulf Medical Group's financial position has deteriorated — debt service coverage ratio is 0.9x against a lease covenant of 1.2x, triggering a lease default notice right"
+    ],
+    "governing_law": "ADGM law",
+    "dispute_resolution": "arbitration",
+    "risk_rating": "Medium",
+    "recommended_action": "Issue formal default notice triggering 30-day cure period; offer controlled rent deferral of 15% for 12 months in exchange for lease extension and enhanced maintenance obligations; notify FSRA proactively.",
+    "estimated_resolution_timeline": "Negotiated restructuring: 60 days; formal arbitration if not resolved: 18–24 months"
+  },
+  {
+    "scenario_id": "D5-021",
+    "matter_name": "Kanz Wealth Technology — CBK Licensing Dispute",
+    "jurisdiction": "Kuwait civil court",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Kanz Wealth Technology Co. WLL",
+      "respondent": "Central Bank of Kuwait"
+    },
+    "key_legal_issues": [
+      "CBK has issued an informal query regarding whether Kanz's robo-advisory activities require a full investment management license rather than the lighter robo-advisory license held",
+      "Kanz's platform offers discretionary rebalancing features — CBK's position is that discretionary investment management without a full CMA license is a regulatory breach",
+      "The distinction between automated advisory and discretionary management is not clearly defined in Kuwait's 2021 fintech regulatory framework — interpretation is contested",
+      "CBK has informally indicated it may suspend the robo-advisory license pending formal review — 2,400 client accounts would need to be transferred to a licensed manager"
+    ],
+    "governing_law": "Kuwait law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Submit formal legal opinion from Kuwait regulatory counsel to CBK distinguishing automated rebalancing from discretionary management; request formal written ruling from CBK before any operational changes.",
+    "estimated_resolution_timeline": "CBK informal review: 60–90 days; license suspension risk: material without proactive engagement"
+  },
+  {
+    "scenario_id": "D5-022",
+    "matter_name": "Bayt Al Shifa Pharmacy Chain — SFDA Pricing Dispute",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Bayt Al Shifa Pharmacy Chain Co.",
+      "respondent": "Saudi Food and Drug Authority"
+    },
+    "key_legal_issues": [
+      "SFDA has issued a SAR 680K administrative fine for selling 8 prescription medications above the regulated maximum retail price — Bayt Al Shifa disputes the pricing violation for 5 of 8 products",
+      "The pricing violations relate to medications where the regulated price was updated in an SFDA circular not received by Bayt Al Shifa through the standard notification channel",
+      "SFDA's administrative fine appeal process requires suspension of operations at 2 branches pending appeal — Bayt Al Shifa disputes the branch suspension authority",
+      "NUPCO framework supply agreement may be at risk if SFDA fine is not resolved — NUPCO contract includes a clean regulatory record warranty"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "Medium",
+    "recommended_action": "File administrative appeal for 5 disputed products with evidence of notification failure; negotiate immediate payment of undisputed 3-product fine to prevent branch suspension and NUPCO contract risk.",
+    "estimated_resolution_timeline": "Administrative appeal: 90 days; branch suspension risk: within 30 days if not resolved"
+  },
+  {
+    "scenario_id": "D5-023",
+    "matter_name": "Ruwad Facilities Management — ADNOC Contract Dispute",
+    "jurisdiction": "ADGM",
+    "matter_type": "M&A SPA review",
+    "parties": {
+      "party_a": "Ruwad Facilities Management LLC",
+      "party_b": "ADNOC Group Facilities"
+    },
+    "key_legal_issues": [
+      "ADNOC has claimed AED 2.4M in performance deductions under the existing subcontract for failing to meet Emiratization KPIs — Ruwad disputes both the deduction amount and the KPI measurement methodology",
+      "The subcontract KPI framework was incorporated by reference to an ADNOC internal standard not shared with Ruwad at contract execution — Ruwad argues it cannot be bound by undisclosed standards",
+      "ADNOC has exercised a step-in right for 2 facility management teams — Ruwad disputes the step-in trigger conditions were met under the contract",
+      "Main FM contract tender for ADNOC campus is pending — any formal dispute with ADNOC could disqualify Ruwad from the tender evaluation"
+    ],
+    "governing_law": "ADGM law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Resolve through direct ADNOC executive engagement — avoid formal dispute to protect tender eligibility; accept AED 1.2M settlement on deductions while formally objecting to step-in rights exercise in writing.",
+    "estimated_resolution_timeline": "Commercial resolution: 45–60 days; formal arbitration: 18–24 months with tender disqualification risk"
+  },
+  {
+    "scenario_id": "D5-024",
+    "matter_name": "Talal Food Processing — LuLu Supply Agreement Dispute",
+    "jurisdiction": "Kuwait civil court",
+    "matter_type": "joint venture agreement",
+    "parties": {
+      "party_a": "Talal Food Processing Industries WLL",
+      "party_b": "LuLu Hypermarket Kuwait"
+    },
+    "key_legal_issues": [
+      "LuLu has unilaterally reduced its annual hummus purchase commitment by 35% citing shelf space reallocation — Talal claims this breaches the annual purchase commitment in the supply agreement",
+      "LuLu's supply agreement contains a shelf space allocation clause giving LuLu discretion to modify — Talal argues this clause does not override the minimum purchase commitment",
+      "Talal has 3 months of excess inventory accumulated on the basis of LuLu's original commitment — working capital impact is KWD 120K",
+      "The supply agreement renewal is due in 4 months — formal dispute would likely result in non-renewal, which would be more damaging than the current purchase reduction"
+    ],
+    "governing_law": "Kuwait law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "Medium",
+    "recommended_action": "Pursue commercial resolution through senior buyer relationship at LuLu; propose promotional program to move excess inventory before raising formal dispute — prioritize renewal over recovery of current shortfall.",
+    "estimated_resolution_timeline": "Commercial resolution: 30–45 days; formal dispute inadvisable given renewal dependency"
+  },
+  {
+    "scenario_id": "D5-025",
+    "matter_name": "Wajha Digital Identity Solutions — PDPL Compliance Review",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Wajha Digital Identity Solutions Co.",
+      "respondent": "Saudi Data and Artificial Intelligence Authority"
+    },
+    "key_legal_issues": [
+      "SDAIA has initiated a PDPL compliance audit following a complaint from a financial institution client regarding data retention practices",
+      "Wajha retains identity verification records for 7 years — PDPL Article 18 requires data deletion when the purpose for which data was collected is fulfilled, which SDAIA interprets as 90 days post-verification",
+      "1.2M identity verification records are at issue — SDAIA's potential remediation order could require mass deletion affecting Wajha's fraud detection analytics system",
+      "NCA separately regulates identity data under the Cybersecurity Framework — dual regulatory exposure creates coordination risk if SDAIA and NCA issue conflicting orders"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Submit PDPL compliance representation to SDAIA proposing a 2-year data retention standard with documented legal basis; simultaneously align with NCA on acceptable retention period to prevent conflicting regulatory directions.",
+    "estimated_resolution_timeline": "SDAIA audit response: 45 days; formal enforcement action risk: within 90 days if response inadequate"
+  },
+  {
+    "scenario_id": "D5-026",
+    "matter_name": "Hayat Home Care Services — DHA Staff Credential Dispute",
+    "jurisdiction": "DIFC",
+    "matter_type": "employment dispute",
+    "parties": {
+      "party_a": "Hayat Home Care Services LLC",
+      "party_b": "Samer Khalil (former Head of Clinical Operations)"
+    },
+    "key_legal_issues": [
+      "Former Head of Clinical Operations is claiming AED 380K in unpaid bonus and wrongful termination damages — termination was for cause citing undisclosed credential gap in his DHA registration",
+      "Hayat's termination for cause relies on the DHA credential gap — the gap was identified during a routine DHA audit, not through Hayat's own screening process, which weakens the for-cause argument",
+      "The employment contract was drafted under UAE Labour Law but the bonus agreement was a separate document governed by DIFC law — jurisdictional conflict between UAE Labour Court and DIFC Court is unresolved",
+      "DHA has separately issued a compliance notice to Hayat for failing to verify DHA credentials at the point of appointment — regulatory exposure is independent of the employment claim"
+    ],
+    "governing_law": "UAE law",
+    "dispute_resolution": "arbitration",
+    "risk_rating": "Medium",
+    "recommended_action": "Separate the DHA regulatory matter from the employment dispute; negotiate AED 180K settlement of employment claim to avoid DIFC court proceedings; address DHA compliance notice independently.",
+    "estimated_resolution_timeline": "Employment settlement: 45 days; DHA compliance: 60 days"
+  },
+  {
+    "scenario_id": "D5-027",
+    "matter_name": "Mazaya Digital Payments — CBK Provisional License Conditions",
+    "jurisdiction": "Kuwait civil court",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Mazaya Digital Payments Co. WLL",
+      "respondent": "Central Bank of Kuwait"
+    },
+    "key_legal_issues": [
+      "CBK provisional e-payment license includes a condition requiring a Kuwaiti banking institution as a settlement bank — Mazaya's preferred settlement bank NBK has declined the relationship citing AML risk appetite",
+      "Without a settlement bank, Mazaya's provisional license cannot convert to full license — CBK has set a 90-day deadline before provisional license is revoked",
+      "Mazaya's 1,400 merchant contracts contain a license continuity warranty — any license revocation would trigger immediate mass contract termination",
+      "CBK has informally indicated that Boubyan Bank may be willing to act as settlement bank — relationship introduction has not been facilitated despite Mazaya's requests"
+    ],
+    "governing_law": "Kuwait law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Request formal CBK facilitation of Boubyan Bank introduction; simultaneously approach Warba Bank and Kuwait International Bank as alternative settlement bank candidates; submit formal CBK extension request for the 90-day deadline.",
+    "estimated_resolution_timeline": "Settlement bank resolution: 45–60 days; license revocation risk: within 90 days"
+  },
+  {
+    "scenario_id": "D5-028",
+    "matter_name": "Qimam Aviation Services — GACA Concession Dispute",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "M&A SPA review",
+    "parties": {
+      "party_a": "Qimam Aviation Services Co.",
+      "party_b": "GACA (General Authority of Civil Aviation)"
+    },
+    "key_legal_issues": [
+      "GACA has unilaterally introduced new environmental compliance requirements into the concession agreement without the contractually required mutual amendment process",
+      "The new environmental requirements will cost SAR 28M to implement — Qimam argues this is a material change to the concession economics that triggers a price adjustment mechanism",
+      "The concession agreement's price adjustment mechanism requires GACA's consent — GACA is refusing to trigger the mechanism claiming the environmental requirements are regulatory obligations outside the concession scope",
+      "Qimam's project finance lenders have a GACA concession compliance covenant — any formal dispute with GACA could trigger a technical default under the financing documents"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Notify project finance lenders proactively with a detailed explanation before engaging GACA formally; propose a joint working group with GACA to assess cost-sharing for environmental compliance rather than immediate dispute filing.",
+    "estimated_resolution_timeline": "GACA working group: 90 days; formal dispute: 18–24 months with lender default risk"
+  },
+  {
+    "scenario_id": "D5-029",
+    "matter_name": "Tamam Home Furniture — Sharjah Lease Dispute",
+    "jurisdiction": "DIFC",
+    "matter_type": "real estate title",
+    "parties": {
+      "landlord": "Sharjah City Centre Mall Management",
+      "tenant": "Tamam Home Furniture LLC"
+    },
+    "key_legal_issues": [
+      "Sharjah City Centre is seeking to increase Tamam's annual rent from AED 380K to AED 520K upon lease renewal — a 37% increase Tamam rejects as commercially unviable",
+      "The existing lease contains a rent review clause permitting increases up to 15% annually — the landlord's 37% demand exceeds the contractually permitted cap",
+      "Tamam has invested AED 680K in showroom fit-out — walking away from the lease would crystallize this as a sunk cost, reducing Tamam's negotiating leverage",
+      "Sharjah Rent Disputes Committee has jurisdiction for commercial lease disputes — the DIFC clause in Tamam's lease may not be enforceable for a Sharjah-located property"
+    ],
+    "governing_law": "UAE law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "Low",
+    "recommended_action": "File Sharjah Rent Disputes Committee application citing the 15% contractual cap; simultaneously negotiate lease transfer to a smaller showroom unit at the same mall to reduce rental commitment.",
+    "estimated_resolution_timeline": "Rent Disputes Committee: 60–90 days; lease negotiation: parallel track"
+  },
+  {
+    "scenario_id": "D5-030",
+    "matter_name": "Hilal Healthcare Staffing — DHA Licensing Review",
+    "jurisdiction": "DIFC",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Hilal Healthcare Staffing LLC",
+      "respondent": "Dubai Health Authority"
+    },
+    "key_legal_issues": [
+      "DHA has initiated a review of Hilal's staffing license following a patient complaint against a placed nurse whose DHA license had lapsed by 14 days at the time of the incident",
+      "Hilal's license monitoring system failed to flag the nurse's license expiry — DHA is holding Hilal responsible for the placement of an unlicensed practitioner",
+      "DHA's potential sanction includes suspension of Hilal's staffing license for 90 days — 680 placements with 8 hospital clients would need to be transferred to alternative staffing arrangements",
+      "The hospital client involved in the incident has separately threatened legal action for breach of the staffing agreement warranty of licensure compliance"
+    ],
+    "governing_law": "UAE law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Immediately implement automated DHA license monitoring system and submit evidence to DHA within 30 days; negotiate directly with the hospital client for a goodwill payment of AED 80K to prevent formal legal action.",
+    "estimated_resolution_timeline": "DHA review: 60 days; hospital client claim: 90 days"
+  },
+  {
+    "scenario_id": "D5-031",
+    "matter_name": "Al Rawabi Specialty Chemicals — MEW Environmental Breach",
+    "jurisdiction": "Kuwait civil court",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Al Rawabi Specialty Chemicals Co. WLL",
+      "respondent": "Ministry of Electricity and Water Kuwait"
+    },
+    "key_legal_issues": [
+      "MEW inspection found chemical storage containers with inadequate secondary containment within 80 meters of a KOC pipeline easement — Al Rawabi has received a KWD 85K fine and 30-day remediation order",
+      "The secondary containment deficiency arose from a facility expansion that was not submitted to MEW for approval — unpermitted expansion creates additional regulatory exposure",
+      "KOC has been notified of the MEW finding and is reviewing whether Al Rawabi's vendor status is affected — KOC vendor review could jeopardize KWD 4.8M in annual revenue",
+      "Remediation within 30 days requires construction of secondary containment bunds — planning permission from Ahmadi Governorate is a prerequisite that typically takes 45 days"
+    ],
+    "governing_law": "Kuwait law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Apply immediately for Ahmadi Governorate emergency planning permission citing the MEW compliance deadline; simultaneously notify KOC proactively with a detailed remediation plan to protect vendor status.",
+    "estimated_resolution_timeline": "MEW remediation: 45 days with emergency planning; KOC vendor review: 30 days"
+  },
+  {
+    "scenario_id": "D5-032",
+    "matter_name": "Marsa Ports Logistics — JAFZA Customs Broker License",
+    "jurisdiction": "DIFC",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Marsa Ports Logistics LLC",
+      "respondent": "Dubai Customs JAFZA"
+    },
+    "key_legal_issues": [
+      "Dubai Customs has downgraded Marsa's preferred customs broker status following 3 late declaration filings in Q3 2023 — the downgrade increases customs clearance processing time from 2 hours to 8 hours",
+      "The 3 late filings were caused by Dubai Customs' own e-clearance system outage — Marsa has documentary evidence but Dubai Customs' SLA excludes system outage periods from the compliance clock",
+      "88% of Marsa's clients have SLA commitments requiring 4-hour customs clearance — the downgrade directly triggers SLA breaches across the client portfolio",
+      "Dubai Customs' preferred broker reinstatement process requires 6 months of clean filing history — 6 months of SLA breach exposure is commercially unacceptable"
+    ],
+    "governing_law": "UAE law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "File formal reconsideration application with Dubai Customs Director-General with documented e-clearance outage evidence; simultaneously notify all 340 clients of temporary clearance time extension with force majeure framing.",
+    "estimated_resolution_timeline": "Dubai Customs reconsideration: 30–45 days; SLA breach exposure: ongoing until reinstatement"
+  },
+  {
+    "scenario_id": "D5-033",
+    "matter_name": "Ithmar Education Group — MOE Acquisition Approval",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "M&A SPA review",
+    "parties": {
+      "buyer": "GCC Education Holdings Ltd",
+      "seller": "Ithmar Education Group (GCC-based holding company)"
+    },
+    "key_legal_issues": [
+      "Saudi MOE approval is required for any change of control in a licensed private school operator — the approval application was filed 4 months ago with no response beyond an acknowledgment",
+      "MOE's internal review process does not have a statutory response deadline — the absence of a timeline creates closing uncertainty for buyer and seller",
+      "The SPA's longstop date for MOE approval is 6 months from signing — if approval is not received within 30 days the longstop triggers and buyer has termination rights",
+      "One of 9 schools has a lease agreement with a municipality entity that contains a change-of-control consent requirement — the municipality has not been approached for consent"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "Medium",
+    "recommended_action": "Escalate MOE application through Ministry liaison at Deputy Minister level; immediately approach municipality for lease consent in parallel; request SPA longstop extension of 3 months from buyer as a protective measure.",
+    "estimated_resolution_timeline": "MOE approval: 60–90 days with escalation; longstop risk: within 30 days"
+  },
+  {
+    "scenario_id": "D5-034",
+    "matter_name": "Rawabet Healthcare Network — Insurance Panel Dispute",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "joint venture agreement",
+    "parties": {
+      "party_a": "Rawabet Healthcare Network Co.",
+      "party_b": "Bupa Arabia for Cooperative Insurance"
+    },
+    "key_legal_issues": [
+      "Bupa Arabia has issued notice of removal of Rawabet from its approved healthcare provider panel effective 60 days — removal would eliminate 28% of Rawabet's annual revenue",
+      "Bupa cites Rawabet's failure to implement the mandatory electronic prior authorization system by the CCHI-mandated deadline as grounds for removal",
+      "Rawabet argues it received the CCHI deadline extension communication that Bupa is denying — the communication record is disputed",
+      "Panel removal without the contractually required 6-month notice period constitutes a breach — Rawabet's contract contains a minimum notice provision that Bupa's 60-day notice does not satisfy"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Immediately file formal dispute under the panel agreement notice provision; simultaneously accelerate e-prior authorization system implementation to demonstrate compliance before the 60-day removal date.",
+    "estimated_resolution_timeline": "Mediation: 45 days; panel removal risk: within 60 days if not resolved"
+  },
+  {
+    "scenario_id": "D5-035",
+    "matter_name": "Midan Sports and Wellness — Lease Assignment Dispute",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "real estate title",
+    "parties": {
+      "party_a": "Midan Sports and Wellness Co.",
+      "party_b": "Riyadh Mall Management Company"
+    },
+    "key_legal_issues": [
+      "Riyadh Mall has refused consent for Midan's assignment of 2 gym leases to the incoming PE buyer — mall consent is required under the lease assignment clause",
+      "Mall management is demanding a SAR 1.2M lease assignment fee not contemplated in the original lease — Midan disputes any assignment fee obligation",
+      "PE buyer's acquisition is conditional on successful lease assignment — failure to obtain consent would result in deal collapse",
+      "Saudi Commercial Court has precedent for voiding unreasonable assignment consent refusals — Midan's legal position is arguable but litigation timeline is incompatible with the deal closing schedule"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Negotiate a SAR 400K assignment fee as a commercial resolution to avoid litigation; structure as a one-time lease amendment payment rather than an assignment fee to protect future assignments.",
+    "estimated_resolution_timeline": "Commercial resolution: 30 days; litigation: 12–18 months — incompatible with deal timeline"
+  },
+  {
+    "scenario_id": "D5-036",
+    "matter_name": "Durra Healthcare Analytics — MOH Data Contract Review",
+    "jurisdiction": "Kuwait civil court",
+    "matter_type": "joint venture agreement",
+    "parties": {
+      "party_a": "Durra Healthcare Analytics Co. WLL",
+      "party_b": "Kuwait Ministry of Health"
+    },
+    "key_legal_issues": [
+      "MOH is seeking to introduce data sovereignty provisions into the existing analytics platform contract requiring all patient data to be stored on MOH-controlled servers",
+      "Durra's current architecture uses a cloud-based platform — compliance with the new data sovereignty requirement would require a KWD 480K infrastructure rebuild not contemplated in the contract",
+      "MOH argues the data sovereignty requirement is a regulatory obligation under the Kuwait Data Protection Law that overrides the contractual data processing arrangements",
+      "Durra's contract does not contain a change-in-law cost allocation mechanism — the party bearing the rebuilding cost is disputed"
+    ],
+    "governing_law": "Kuwait law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "Medium",
+    "recommended_action": "Propose a hybrid architecture that meets MOH data residency requirements at KWD 180K cost — significantly below the full rebuild cost; seek a 50% cost-sharing mechanism from MOH as a change-in-law accommodation.",
+    "estimated_resolution_timeline": "Commercial resolution: 60 days; technical implementation: 90 days"
+  },
+  {
+    "scenario_id": "D5-037",
+    "matter_name": "Andalus Catering Services — Post-Acquisition Shareholder Dispute",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "M&A SPA review",
+    "parties": {
+      "buyer": "Gulf Hospitality Capital Co.",
+      "party_b": "Ibrahim and Khalid Al Zahrawi (minority shareholders)"
+    },
+    "key_legal_issues": [
+      "Two minority siblings holding a combined 30% stake are challenging the acquisition price in commercial court claiming they were not properly consulted during the sale process",
+      "Saudi Companies Law requires a shareholders meeting to approve a majority share transfer — the meeting minutes provided by seller show only 60% attendance, creating a procedural validity question",
+      "Minority shareholders are seeking a judicial valuation at SAR 240M against the SAR 200M agreed EV — the SAR 40M gap is the subject of the dispute",
+      "The acquisition completion accounts have not been finalized — minority shareholders are using this as additional leverage to delay completion account sign-off"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Engage a respected Saudi tribal mediator to facilitate a family resolution before the commercial court case advances; offer a SAR 12M price increase to resolve the minority claim and avoid judicial valuation risk.",
+    "estimated_resolution_timeline": "Mediated resolution: 60–90 days; commercial court judgment: 18–24 months"
+  },
+  {
+    "scenario_id": "D5-038",
+    "matter_name": "Barq EV Charging Network — RTA Compliance Dispute",
+    "jurisdiction": "DIFC",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Barq EV Charging Network LLC",
+      "respondent": "Roads and Transport Authority Dubai"
+    },
+    "key_legal_issues": [
+      "RTA has issued a notice of non-compliance with EV charger safety standards for 48 of 340 charging points — compliance requires AED 2.8M in hardware replacement",
+      "The safety standard was updated in 2023 after Barq's charger procurement — Barq argues the standard change requires a transition period under RTA's own implementation guidelines",
+      "RTA's notice requires decommissioning of non-compliant chargers within 30 days — decommissioning 48 of 340 chargers reduces network utilization revenue by 14%",
+      "Emaar and MAF partnership agreements require Barq to maintain RTA-compliant chargers — failure to comply risks partnership agreement termination"
+    ],
+    "governing_law": "UAE law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Apply for RTA 90-day compliance transition period citing 2023 standard change timing; immediately notify Emaar and MAF proactively with compliance timeline to protect partnership agreements.",
+    "estimated_resolution_timeline": "RTA transition period application: 30 days; hardware replacement: 90 days"
+  },
+  {
+    "scenario_id": "D5-039",
+    "matter_name": "Noor Al Bait Smart Home — IP Assignment Dispute",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "M&A SPA review",
+    "parties": {
+      "party_a": "Noor Al Bait Smart Home Co.",
+      "party_b": "Al Mukhtar Technology Solutions"
+    },
+    "key_legal_issues": [
+      "Former integration partner Al Mukhtar is claiming co-ownership of 3 home automation system modules developed during a 2021 joint development agreement",
+      "The joint development agreement's IP ownership clause is ambiguous — it assigns IP to the commissioning party for bespoke developments but does not clearly define which modules were bespoke versus standard",
+      "Noor Al Bait has 340 villa installations using the disputed modules — any injunction on the IP would affect all installed systems",
+      "Al Mukhtar has filed a claim with the Saudi commercial court — the claim amount is SAR 4.8M representing a royalty calculation on all 340 installations"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "Medium",
+    "recommended_action": "Commission independent technical expert to categorize each module as bespoke or standard under the JDA definition; negotiate lump-sum settlement of SAR 800K to clear all claims before new platform development proceeds.",
+    "estimated_resolution_timeline": "Technical expert review: 45 days; settlement: 60–90 days; litigation: 18 months"
+  },
+  {
+    "scenario_id": "D5-040",
+    "matter_name": "Rawasi Digital Advertising — Client Data Dispute",
+    "jurisdiction": "DIFC",
+    "matter_type": "employment dispute",
+    "parties": {
+      "party_a": "Rawasi Digital Advertising LLC",
+      "party_b": "Former Chief Data Officer"
+    },
+    "key_legal_issues": [
+      "Departing CDO has taken copies of Rawasi's proprietary Arabic audience segmentation data to a competitor — Rawasi is seeking an urgent injunction and damages",
+      "The CDO's employment contract contains a confidentiality clause but no explicit data ownership provision for data developed during employment",
+      "The DIFC Employment Law confidentiality provisions are narrower than Rawasi's contractual clause — extent of enforceable protection is uncertain",
+      "Rawasi's AED 280M managed spend business relies on the audience segmentation data as its primary differentiator — ongoing competitive damage is ongoing and unquantified"
+    ],
+    "governing_law": "DIFC law",
+    "dispute_resolution": "arbitration",
+    "risk_rating": "High",
+    "recommended_action": "File DIFC Court urgent injunction application within 48 hours; simultaneously commission forensic IT analysis of data exfiltration scope; add explicit data ownership and IP assignment clauses to all future employment contracts.",
+    "estimated_resolution_timeline": "Urgent injunction: 5–7 days; full arbitration: 12–18 months"
+  },
+  {
+    "scenario_id": "D5-041",
+    "matter_name": "Gulf Bridge Telecom Infrastructure — CITRA Regulatory Review",
+    "jurisdiction": "Kuwait civil court",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Gulf Bridge Telecom Infrastructure Co. WLL",
+      "respondent": "Communications and Information Technology Regulatory Authority"
+    },
+    "key_legal_issues": [
+      "CITRA has initiated a review of Gulf Bridge's tower sharing agreements alleging that the pricing methodology discriminates against Ooredoo Kuwait relative to Zain — CITRA's equal access mandate requires identical pricing for equivalent services",
+      "Gulf Bridge's pricing reflects different infrastructure upgrade contributions by the two operators — Zain contributed KWD 1.8M to tower upgrades that Ooredoo did not participate in",
+      "CITRA's equal access regulations do not explicitly address differential pricing for differential investment contributions — the regulatory gap is being interpreted against Gulf Bridge",
+      "CITRA's potential remedy includes mandated price equalization and retroactive rebates — estimated exposure of KWD 2.4M in retroactive Ooredoo rebates"
+    ],
+    "governing_law": "Kuwait law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "Medium",
+    "recommended_action": "Submit formal CITRA representation with documented Zain infrastructure contribution justification; propose a prospective pricing equalization that does not trigger retroactive rebates.",
+    "estimated_resolution_timeline": "CITRA review: 90–120 days; retroactive rebate risk: material if not proactively justified"
+  },
+  {
+    "scenario_id": "D5-042",
+    "matter_name": "Masaar AgriTech — MOCCAE Incentive Dispute",
+    "jurisdiction": "DIFC",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Masaar AgriTech LLC",
+      "respondent": "Ministry of Climate Change and Environment"
+    },
+    "key_legal_issues": [
+      "MOCCAE has declined to approve Masaar's AED 12M food security incentive application citing failure to meet the 90% UAE-origin produce requirement — Masaar's seeds are imported from Netherlands",
+      "Masaar argues that the UAE-origin requirement applies to the growing location, not the seed origin — MOCCAE's interpretation requires seed origin to also be UAE, which is technically impossible for leafy green varieties",
+      "The incentive program guidelines were published with ambiguous language on the origin requirement — Masaar relied on an informal MOCCAE official interpretation that is now disputed",
+      "Masaar has structured its second facility business case around the MOCCAE incentive — denial creates a SAR 12M funding gap that jeopardizes the expansion"
+    ],
+    "governing_law": "UAE law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "Medium",
+    "recommended_action": "File formal MOCCAE appeal with legal opinion on UAE-origin requirement interpretation; engage UAE AgriTech industry association to support a clarification request to MOCCAE on seed origin policy.",
+    "estimated_resolution_timeline": "MOCCAE appeal: 60–90 days; policy clarification: 120 days"
+  },
+  {
+    "scenario_id": "D5-043",
+    "matter_name": "Jabal Al Noor Mining Services — Ma'aden Contract Extension",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "joint venture agreement",
+    "parties": {
+      "party_a": "Jabal Al Noor Mining Services Co.",
+      "party_b": "Ma'aden — Saudi Arabian Mining Company"
+    },
+    "key_legal_issues": [
+      "Ma'aden has tendered the drilling services contract renewal competitively rather than extending directly with Jabal Al Noor — the incumbency advantage was not protected by the expiring contract",
+      "Jabal Al Noor's existing drill rig acquisition financing is contingent on Ma'aden contract renewal — if the tender is lost, project finance covenants are breached",
+      "Ma'aden's tender specification requires MISA Level 3 mining certification that Jabal Al Noor does not currently hold — the certification was not previously required under the existing contract",
+      "Jabal Al Noor has submitted a bid that is 8% above the competitor estimate — price competitiveness is a concern given the new MISA certification requirement disadvantage"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Apply for MISA Level 3 certification on an expedited basis; negotiate a bridging arrangement with Ma'aden for a 6-month extension of current contract pending certification; simultaneously notify project finance lenders of the covenant risk.",
+    "estimated_resolution_timeline": "MISA certification: 4–6 months; Ma'aden extension negotiation: 30 days"
+  },
+  {
+    "scenario_id": "D5-044",
+    "matter_name": "Baraem Childcare Centers — MOE License Transfer",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "M&A SPA review",
+    "parties": {
+      "buyer": "Al Noor Education Investments Co.",
+      "seller": "Baraem Childcare Centers LLC"
+    },
+    "key_legal_issues": [
+      "Saudi MOE nursery license is issued in the personal name of the founder — transfer of the license to a corporate buyer is not a standard MOE process and requires individual assessment",
+      "MOE has informally indicated that the nursery license may need to be surrendered and reapplied for by the new owner — reapplication process takes 8–12 months and does not guarantee approval",
+      "The SPA is structured as a share purchase — MOE may not recognize that a share purchase changes the licensee, or may treat it as a change of control requiring MOE approval",
+      "22 centers operate on the basis of the single founder license — any gap in license continuity would require immediate operational suspension of all 22 centers"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Obtain formal MOE written guidance on share purchase versus asset purchase treatment before proceeding; restructure as an asset purchase with license reapplication timeline built into the completion conditions.",
+    "estimated_resolution_timeline": "MOE guidance: 30–45 days; license reapplication: 8–12 months post-closing"
+  },
+  {
+    "scenario_id": "D5-045",
+    "matter_name": "Naseem Marine Services — P&I Club Dispute",
+    "jurisdiction": "Kuwait civil court",
+    "matter_type": "M&A SPA review",
+    "parties": {
+      "party_a": "Naseem Marine Services WLL",
+      "party_b": "International Group P&I Club (London)"
+    },
+    "key_legal_issues": [
+      "P&I Club is disputing coverage for a KWD 280K third-party liability claim arising from a vessel collision in Kuwaiti territorial waters — Club argues the vessel was operating outside its declared trade route",
+      "Naseem's certificate of entry declares Kuwait and offshore Gulf operations — the collision occurred in a Kuwait Oil Company exclusion zone not disclosed to the P&I Club at entry",
+      "P&I Club's right to void coverage for material non-disclosure is broad under English law — the governing law of the P&I entry is English, not Kuwaiti",
+      "KOC exclusion zone operation was required under the KOC framework agreement — Naseem argues the non-disclosure was inadvertent given the operational necessity"
+    ],
+    "governing_law": "English law",
+    "dispute_resolution": "arbitration",
+    "risk_rating": "High",
+    "recommended_action": "Retain English marine law counsel immediately; argue inadvertent non-disclosure with documentation of KOC operational necessity; negotiate ex-gratia settlement with P&I Club at 60% of claim to avoid voiding coverage.",
+    "estimated_resolution_timeline": "P&I negotiation: 90 days; London arbitration if not settled: 18–24 months"
+  },
+  {
+    "scenario_id": "D5-046",
+    "matter_name": "Raha Water Parks Group — Abu Dhabi Municipality Lease Dispute",
+    "jurisdiction": "ADGM",
+    "matter_type": "real estate title",
+    "parties": {
+      "party_a": "Raha Water Parks Group LLC",
+      "party_b": "Abu Dhabi City Municipality"
+    },
+    "key_legal_issues": [
+      "Abu Dhabi municipality has issued notice to increase annual land lease from AED 2.8M to AED 4.4M upon renewal — a 57% increase Raha rejects as inconsistent with the lease escalation mechanism",
+      "The lease escalation mechanism is based on Abu Dhabi CPI — CPI-based increase would yield only AED 3.1M, not AED 4.4M",
+      "Municipality argues that the land has been reclassified to a tourism zone with higher land use fees — the reclassification occurred post-execution and was not provided for in the lease",
+      "Raha's park operations depend on the Abu Dhabi site for 58% of revenue — losing the lease would be existential for the business"
+    ],
+    "governing_law": "UAE law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Accept CPI-based increase of AED 3.1M as the contractually correct calculation; formally reject AED 4.4M through written correspondence citing lease mechanism; engage Abu Dhabi Tourism Authority as a mediating party given the tourism zone reclassification.",
+    "estimated_resolution_timeline": "Municipality negotiation: 60 days; formal dispute: 12–18 months"
+  },
+  {
+    "scenario_id": "D5-047",
+    "matter_name": "Tamkin Digital Government Solutions — Data Breach Notification",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Tamkin Digital Government Solutions Co.",
+      "respondent": "National Cybersecurity Authority"
+    },
+    "key_legal_issues": [
+      "A cyber incident at Tamkin exposed citizen transaction data from 3 government ministry clients — NCA notification was made 96 hours after detection, exceeding the mandatory 72-hour notification window",
+      "NCA is investigating whether the late notification constitutes a PDPL breach subject to SAR 5M administrative fine",
+      "Two of three affected government ministry clients have issued breach notices under their data processing agreements — potential contractual damages exposure of SAR 8M",
+      "Tamkin's directors face personal liability under PDPL Article 38 for failure to implement adequate data protection measures — criminal prosecution risk is non-zero"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "Submit comprehensive NCA incident report immediately with full root cause analysis and remediation plan; retain criminal defense counsel for directors as a precautionary measure; engage government ministry clients for confidential breach resolution.",
+    "estimated_resolution_timeline": "NCA investigation: 90–120 days; ministry client claims: 60 days; criminal risk assessment: immediate"
+  },
+  {
+    "scenario_id": "D5-048",
+    "matter_name": "Wajd Digital Media Group — GCAM Content Takedown",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Wajd Digital Media Group Co.",
+      "respondent": "General Commission for Audiovisual Media"
+    },
+    "key_legal_issues": [
+      "GCAM has issued a takedown order for 3 YouTube channels totalling 12M subscribers citing content standard violations — the content in question is 18-month-old comedy programming",
+      "Wajd disputes that the referenced content violates current GCAM standards — the content was approved under 2022 guidelines that were subsequently revised",
+      "GCAM's retroactive enforcement against previously compliant content raises a legitimate rule of law argument — enforcement against compliant historical content is legally contestable",
+      "Revenue impact of the 3-channel takedown is SAR 8.4M annually — growth equity investor default clauses may be triggered if revenue falls below the covenant threshold"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "High",
+    "recommended_action": "File urgent GCAM appeal with documentation of 2022 compliance approval; engage Saudi media law counsel to challenge retroactive enforcement; notify investors proactively with revenue impact quantification before covenant review date.",
+    "estimated_resolution_timeline": "GCAM appeal: 30–45 days; court challenge if rejected: 12 months; investor covenant: immediate management"
+  },
+  {
+    "scenario_id": "D5-049",
+    "matter_name": "Majd Cybersecurity Consulting — NCA Contract Dispute",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "joint venture agreement",
+    "parties": {
+      "party_a": "Majd Cybersecurity Consulting Co.",
+      "party_b": "General Directorate of Passport (Jawazat)"
+    },
+    "key_legal_issues": [
+      "Jawazat has withheld SAR 3.2M in cybersecurity audit fees citing a deliverable quality dispute — Majd disputes the quality assessment basis used by Jawazat's internal technical review team",
+      "Jawazat's technical review team applied NIST CSF evaluation criteria not specified in the original SOW — Majd's deliverables were prepared against NCA Essential Cybersecurity Controls as contractually specified",
+      "Government payment withholding requires mandatory ministry dispute committee process before court — Majd has not yet initiated this process",
+      "CSO key person who managed the Jawazat relationship has resigned — his departure weakens the client relationship for the dispute resolution process"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "Medium",
+    "recommended_action": "File ministry dispute committee application immediately; retain the departed CSO as a paid consultant specifically for the dispute resolution process to preserve the client relationship context.",
+    "estimated_resolution_timeline": "Ministry dispute committee: 6–9 months; commercial court escalation: 18–24 months"
+  },
+  {
+    "scenario_id": "D5-050",
+    "matter_name": "Ihsan Social Enterprise Fund — GAZT Tax Dispute",
+    "jurisdiction": "KSA commercial court",
+    "matter_type": "regulatory breach",
+    "parties": {
+      "party_a": "Ihsan Social Enterprise Fund",
+      "respondent": "General Authority of Zakat and Tax"
+    },
+    "key_legal_issues": [
+      "GAZT is challenging Ihsan's claim to the 30% impact investment tax deduction on SAR 22M in LP commitments — GAZT argues that 4 of 14 investees do not qualify as social enterprises under GAZT's narrow definition",
+      "The GAZT social enterprise definition requires a primary social purpose test — 4 investees have commercial revenue exceeding 50% of total income, which GAZT interprets as failing the primary social purpose test",
+      "Ihsan's LPs have claimed the deduction on their 2022 tax returns — if GAZT prevails, each LP faces a SAR 1.6M average tax reassessment",
+      "GAZT's position creates a retroactive uncertainty for all impact investment vehicles in Saudi Arabia — the fund management industry has flagged this as a systemic issue requiring GAZT policy clarification"
+    ],
+    "governing_law": "Saudi Arabian law",
+    "dispute_resolution": "mediation",
+    "risk_rating": "Medium",
+    "recommended_action": "File formal GAZT objection with legal opinion on social enterprise definition interpretation; coordinate with NCSC to seek ministry-level clarification on the qualifying criteria before the LP reassessment notices are issued.",
+    "estimated_resolution_timeline": "GAZT objection: 90 days; LP reassessment risk: within 6 months if not resolved"
+  }
+]

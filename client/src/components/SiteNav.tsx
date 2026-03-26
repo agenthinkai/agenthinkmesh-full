@@ -248,6 +248,46 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
             >
               📡 MVNO Intel
             </a>
+            <a
+              href="/forecast"
+              style={{
+                color: "#34D399", fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, fontWeight: 600,
+                transition: "all 0.2s", fontFamily: "inherit",
+                border: "1px solid rgba(52,211,153,0.3)",
+                background: "rgba(52,211,153,0.08)",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(52,211,153,0.18)";
+                (e.currentTarget as HTMLAnchorElement).style.color = WHITE;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(52,211,153,0.08)";
+                (e.currentTarget as HTMLAnchorElement).style.color = "#34D399";
+              }}
+            >
+              📊 ForecastMesh
+            </a>
+            <a
+              href="/knowledge-vault"
+              style={{
+                color: "#F59E0B", fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, fontWeight: 600,
+                transition: "all 0.2s", fontFamily: "inherit",
+                border: "1px solid rgba(245,158,11,0.3)",
+                background: "rgba(245,158,11,0.08)",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(245,158,11,0.18)";
+                (e.currentTarget as HTMLAnchorElement).style.color = WHITE;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(245,158,11,0.08)";
+                (e.currentTarget as HTMLAnchorElement).style.color = "#F59E0B";
+              }}
+            >
+              🧠 Knowledge Vault
+            </a>
           </>
         ) : (
           <>
@@ -426,6 +466,46 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               }}
             >
               📡 MVNO Intel
+            </a>
+            <a
+              href="/forecast"
+              style={{
+                color: "#34D399", fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, fontWeight: 600,
+                transition: "all 0.2s",
+                border: "1px solid rgba(52,211,153,0.3)",
+                background: "rgba(52,211,153,0.08)",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(52,211,153,0.18)";
+                (e.currentTarget as HTMLAnchorElement).style.color = WHITE;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(52,211,153,0.08)";
+                (e.currentTarget as HTMLAnchorElement).style.color = "#34D399";
+              }}
+            >
+              📊 ForecastMesh
+            </a>
+            <a
+              href="/knowledge-vault"
+              style={{
+                color: "#F59E0B", fontSize: 14, textDecoration: "none",
+                padding: "6px 14px", borderRadius: 8, fontWeight: 600,
+                transition: "all 0.2s",
+                border: "1px solid rgba(245,158,11,0.3)",
+                background: "rgba(245,158,11,0.08)",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(245,158,11,0.18)";
+                (e.currentTarget as HTMLAnchorElement).style.color = WHITE;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(245,158,11,0.08)";
+                (e.currentTarget as HTMLAnchorElement).style.color = "#F59E0B";
+              }}
+            >
+              🧠 Knowledge Vault
             </a>
           </>
         )}

@@ -1,0 +1,1202 @@
+[
+  {
+    "scenario_id": "D6-001",
+    "company_name": "Al Saqr Trading and Contracting Group",
+    "fiscal_year": 2024,
+    "revenue_forecast_kwd": 48500000,
+    "ebitda_margin_forecast_pct": 14,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "KWD/USD peg maintained at 0.307",
+      "headcount_growth_pct": 8,
+      "capex_plan_kwd": 3200000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 12,
+      "commentary": "Revenue growth driven by two new MOW framework contract wins in Q1 2024 and full-year contribution of the Ahmadi industrial maintenance division acquired in Q3 2023"
+    },
+    "top_3_budget_risks": [
+      "Government payment cycle extension from 180 to 220 days under new MOF cash management directive will increase working capital requirement by KWD 2.1M",
+      "Steel and aluminum input costs are projected 14% above 2023 average — fixed-price contracts representing 38% of backlog are exposed to full margin impact",
+      "Planned capex for fleet expansion is dependent on Q2 bank credit facility renewal at current terms — any covenant tightening would defer KWD 1.8M in equipment investment"
+    ],
+    "cfo_commentary": "The 2024 budget reflects a measured growth trajectory anchored on government contract wins while acknowledging the working capital headwinds from extended payment cycles. We have structured our capex plan to preserve liquidity through H1 before deploying the fleet expansion in H2 once the credit facility is confirmed. Our primary focus this year is margin defense on our fixed-price backlog.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-002",
+    "company_name": "Rawabi Healthcare Holdings",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 892000000,
+    "ebitda_margin_forecast_pct": 19,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg maintained at 3.75",
+      "headcount_growth_pct": 12,
+      "capex_plan_sar": 68000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 18,
+      "commentary": "Growth driven by 4 new clinic openings in H1 2024 and NHIF panel expansion from 8 to 14 insurance providers — NHIF volume increase accounts for SAR 48M of incremental revenue"
+    },
+    "top_3_budget_risks": [
+      "NHIF reimbursement rate review scheduled for Q3 2024 — a 5% rate reduction would compress EBITDA margin by 2.1 percentage points on the 62% of revenue that is NHIF-linked",
+      "Physician recruitment pipeline for 3 new specialist clinics is 40% complete — delayed recruitment would defer SAR 28M in planned H2 revenue",
+      "MOH privatization program acceleration may require additional CBAHI accreditation investment of SAR 12M not in the current capex budget"
+    ],
+    "cfo_commentary": "The 2024 budget is ambitious but executable if physician recruitment stays on track through Q2. The NHIF rate review is our most significant external risk and we have modeled a downside scenario that preserves 16% EBITDA margin under a 7% rate reduction. Our capex plan prioritizes the 4 new clinics over technology investment, which we will revisit in 2025.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-003",
+    "company_name": "Khaleeji Logistics and Cold Chain WLL",
+    "fiscal_year": 2024,
+    "revenue_forecast_kwd": 32800000,
+    "ebitda_margin_forecast_pct": 20,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "KWD/USD peg maintained",
+      "headcount_growth_pct": 15,
+      "capex_plan_kwd": 8400000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 22,
+      "commentary": "Revenue growth reflects full-year operation of the Abu Dhabi cold store opened in Q3 2023 and the addition of 3 new pharmaceutical distribution clients generating KWD 4.2M in incremental annual revenue"
+    },
+    "top_3_budget_risks": [
+      "Abu Dhabi cold store is operating at 68% utilization against a 85% break-even assumption — ramp-up has been slower than projected due to MOHAP pharmaceutical import delays",
+      "DEWA electricity tariff increase of 8% effective January 2024 adds KWD 280K to annual energy costs not reflected in the approved budget",
+      "Muscat hub development is 3 months behind schedule — SAR 6M in planned H2 Oman revenue has been deferred to 2025"
+    ],
+    "cfo_commentary": "The Abu Dhabi utilization ramp is our most critical near-term metric — every 5 percentage points of utilization improvement adds KWD 420K in EBITDA. We are in active discussions with 4 pharmaceutical clients to accelerate MOHAP-cleared import volumes through our facility. The Muscat delay is disappointing but does not affect our Kuwait base business.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-004",
+    "company_name": "Al Baraka Industrial Holdings",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 1240000000,
+    "ebitda_margin_forecast_pct": 16,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 6,
+      "capex_plan_sar": 95000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 9,
+      "commentary": "Moderate growth underpinned by Aramco Jafurah gas field fabrication orders booked in Q4 2023 and a SAR 180M SABIC maintenance framework renewal on improved terms"
+    },
+    "top_3_budget_risks": [
+      "Global steel prices remain volatile — current budget assumes SAR 1,840 per ton average for 2024 against a spot price of SAR 1,980, creating a SAR 28M cost variance risk on open orders",
+      "Aramco capex deferral program announced in Q1 2024 may delay SAR 95M in Jafurah fabrication orders originally scheduled for H1 delivery",
+      "Jubail Industrial City labor availability is tightening as NEOM and Red Sea Project draw skilled fabricators from the Eastern Province — wage inflation of 12% above budget is a risk"
+    ],
+    "cfo_commentary": "The Aramco relationship remains our cornerstone and the Jafurah program provides multi-year revenue visibility despite near-term timing uncertainty. Steel price hedging through our SABIC supply agreement covers 60% of 2024 requirements at SAR 1,810 per ton — better than our budget assumption. Our focus this year is margin preservation through materials procurement efficiency.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-005",
+    "company_name": "Noor Retail Group Kuwait",
+    "fiscal_year": 2024,
+    "revenue_forecast_kwd": 18600000,
+    "ebitda_margin_forecast_pct": 12,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "KWD stable",
+      "headcount_growth_pct": 5,
+      "capex_plan_kwd": 1400000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 8,
+      "commentary": "Growth driven by The Avenues Mall lease renewal on improved terms and the opening of 2 new Salmiya locations — same-store-sales growth of 4.2% reflects resilient consumer spending in the Kuwait retail market"
+    },
+    "top_3_budget_risks": [
+      "Kuwait expat workforce reduction under MOI Kuwaitization targets may reduce disposable income in our core mid-market customer segment — estimated 3% revenue impact if expat purchasing power declines",
+      "E-commerce penetration in Kuwait apparel is growing at 28% annually — our online channel at 12% of revenue requires KWD 480K investment not in current capex to remain competitive",
+      "Electricity subsidy rationalization under Kuwait Vision 2035 fiscal reform could increase mall occupancy costs if DEWA-equivalent commercial tariffs are introduced"
+    ],
+    "cfo_commentary": "Our 2024 budget reflects a measured approach — we are investing in the physical store experience while we develop our e-commerce capability. The Avenues lease renewal at KWD 38 per sqm is 8% below our previous rate, which provides meaningful margin relief. We are monitoring the Kuwaitization employment trends closely as our consumer base skews 60% expatriate.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-006",
+    "company_name": "Tamayuz Real Estate Development Company",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 680000000,
+    "ebitda_margin_forecast_pct": 22,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg maintained",
+      "headcount_growth_pct": 10,
+      "capex_plan_sar": 420000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 24,
+      "commentary": "Revenue growth driven by delivery of 340 units in the Riyadh North project and 180 units in the Khobar residential complex — both projects were sold at 94% pre-completion in 2023"
+    },
+    "top_3_budget_risks": [
+      "REDF mortgage rate increases of 160bps since 2022 are slowing unit sales velocity in the SAR 1.2M+ segment — 68 unsold units in the Khobar complex at SAR 1.4M average represent SAR 95M in deferred revenue",
+      "Construction cost inflation in the Eastern Province is running 12% above national average — Phase 2 Khobar capex of SAR 180M has a SAR 22M cost overrun risk",
+      "Jeddah municipality zoning review affecting 2 land plots represents a potential SAR 38M revenue deferral if not resolved before Q3"
+    ],
+    "cfo_commentary": "The 2024 budget is heavily weighted to H2 unit deliveries — 68% of planned revenue falls in Q3 and Q4. Our primary execution focus is completing the Khobar complex on time and managing the Eastern Province contractor cost environment. We have structured a SAR 95M bridge facility to manage the Khobar unsold inventory through the current mortgage rate cycle.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-007",
+    "company_name": "Gulf Star Food Industries LLC",
+    "fiscal_year": 2024,
+    "revenue_forecast_aed": 112000000,
+    "ebitda_margin_forecast_pct": 19,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "AED/USD peg at 3.67",
+      "headcount_growth_pct": 7,
+      "capex_plan_aed": 8500000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 19,
+      "commentary": "Revenue growth reflects the full-year contribution of the Oman distribution agreement and a 34% increase in online gifting channel revenue driven by Ramadan 2024 campaign performance"
+    },
+    "top_3_budget_risks": [
+      "Premium date and nut commodity prices are 18% above 2023 average — input cost inflation on 30% of externally sourced ingredients creates AED 4.2M margin risk on fixed-price hotel supply contracts",
+      "UAE food safety regulatory update effective July 2024 requires new allergen labeling on all packaging — repackaging cost estimated at AED 1.8M is partially included in capex but disrupts production for 3 weeks",
+      "UK export distribution partner has indicated review of the distribution agreement following a change in UK customs brokerage costs post-Brexit — AED 12M in UK export revenue is at risk of channel disruption"
+    ],
+    "cfo_commentary": "Our Ramadan channel performed exceptionally in 2024 — branded gift box revenue grew 42% and now represents 28% of total revenue. We are investing AED 3.2M in production capacity for gifting SKUs in H2 to position for Ramadan 2025. The UK channel review is a near-term concern but we have identified two alternative European distributors as contingency.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-008",
+    "company_name": "Mashaer Transport and Logistics Group",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 338000000,
+    "ebitda_margin_forecast_pct": 16,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 4,
+      "capex_plan_sar": 48000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 9,
+      "commentary": "Revenue growth reflects the Ministry of Hajj contract CPI escalation of 4.2% and a 22% increase in Umrah transport volume as the Kingdom targets 15M Umrah pilgrims in 2024"
+    },
+    "top_3_budget_risks": [
+      "Fleet replacement capex of SAR 48M requires SAR 34M in new debt financing — current interest rate environment at 6.2% adds SAR 2.1M in annual financing cost versus the 2021 refinancing assumption",
+      "Makkah peak season driver availability is tightening — Hajj season requires 1,800 licensed drivers against a confirmed availability of 1,420 to date",
+      "Ministry of Hajj contract tender in 2027 will require a SAR 12M technology upgrade investment for fleet tracking and digital pilgrim management — this investment is not in the 2024 capex plan"
+    ],
+    "cfo_commentary": "The Umrah volume growth is our most significant positive variance driver — each additional 1M pilgrims adds approximately SAR 8M in transport revenue on our existing contract structure. Fleet replacement is a capital allocation priority for H1 before the Hajj season. We are in early discussions with the Ministry about a 2027 contract structure that would include technology investment cost recovery.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-009",
+    "company_name": "Al Waha Agricultural Industries Co.",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 228000000,
+    "ebitda_margin_forecast_pct": 17,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 3,
+      "capex_plan_sar": 22000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 9,
+      "commentary": "Moderate growth driven by Panda and Othaim volume contract renewals on improved terms and a 16% increase in Riyadh fresh chicken market share following a competitor biosecurity incident in Q4 2023"
+    },
+    "top_3_budget_risks": [
+      "Global soybean prices remain 22% above 5-year average — the 30% of feed sourced externally exposes SAR 8.4M in annual feed cost to commodity price risk",
+      "MEWA water allocation review scheduled for Q2 2024 — any reduction in farm water allocation would require costly efficiency investment not in the current capex plan",
+      "Avian influenza regional risk level remains elevated — a single biosecurity breach at any of 3 farms would trigger mandatory culling and SAR 28M in emergency insurance claims"
+    ],
+    "cfo_commentary": "The competitor biosecurity incident in Q4 2023 created a market share opportunity we have capitalized on, but it also underscores our own biosecurity investment imperative. We have allocated SAR 4.8M of the capex budget to biosecurity enhancement across all 3 farms. Feed cost management is our primary operational focus — our vertical integration covers 70% of requirement, which is our key margin protection.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-010",
+    "company_name": "Durrat Al Khaleej Properties WLL",
+    "fiscal_year": 2024,
+    "revenue_forecast_kwd": 4600000,
+    "ebitda_margin_forecast_pct": 80,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "KWD stable",
+      "headcount_growth_pct": 0,
+      "capex_plan_kwd": 420000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 5,
+      "commentary": "Modest revenue growth driven by the Sharq office lease renewal at a 12% rate increase and successful lease-up of 2 previously vacant retail strips in Salmiya at above-budget rental rates"
+    },
+    "top_3_budget_risks": [
+      "40% of the portfolio WALE expires within 18 months — lease renewal risk during a period of softening Kuwait office demand could result in KWD 320K in revenue shortfall",
+      "MEP systems age across 3 buildings has increased maintenance capex by KWD 85K above the budgeted maintenance reserve",
+      "Government tenant representing 34% of portfolio occupancy is under ministry budget review — non-renewal of 2 government leases would reduce annual NOI by KWD 680K"
+    ],
+    "cfo_commentary": "Portfolio performance in 2024 is driven by the successful Sharq office re-leasing and the Salmiya retail recovery. Our primary focus is the government tenant renewal negotiations commencing in Q3 — we are investing in building upgrade presentations to support our renewal case. The maintenance capex overrun is being addressed through a planned MEP refurbishment program in Q4.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-011",
+    "company_name": "Siraj Energy Solutions Group",
+    "fiscal_year": 2024,
+    "revenue_forecast_aed": 104000000,
+    "ebitda_margin_forecast_pct": 16,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "AED/USD peg at 3.67",
+      "headcount_growth_pct": 18,
+      "capex_plan_aed": 22000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 18,
+      "commentary": "Revenue growth reflects 3 large DEWA-approved commercial solar installations completed in H1 and the first phase of a KSA industrial client installation contributing AED 14M in H2"
+    },
+    "top_3_budget_risks": [
+      "KSA contractor registration is pending — AED 32M in LOI pipeline in Saudi Arabia is at risk of cancellation if MISA approval is not received before Q3 2024",
+      "Chinese solar panel manufacturers have entered UAE EPC market directly at prices 18% below local contractors — margin compression on new bids is evident in Q1 2024 tender results",
+      "Solar-as-a-service financing requires AED 80M in project finance — bank appetite for solar asset financing in GCC is limited to 4 institutions, creating concentration and timing risk"
+    ],
+    "cfo_commentary": "The UAE market remains solid but the Chinese EPC competition is real and intensifying. Our response is to invest in O&M and solar-as-a-service as higher-margin recurring revenue streams rather than competing on EPC price alone. The KSA registration delay is our most critical near-term constraint — we have engaged a Riyadh regulatory specialist to accelerate the MISA process.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-012",
+    "company_name": "Rawabi Medical Centers Group",
+    "fiscal_year": 2025,
+    "revenue_forecast_sar": 980000000,
+    "ebitda_margin_forecast_pct": 18,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 78,
+      "fx_assumption": "SAR/USD peg maintained",
+      "headcount_growth_pct": 14,
+      "capex_plan_sar": 88000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 10,
+      "commentary": "Growth reflects 6 additional clinic openings planned for 2025 and the full-year revenue contribution of the 4 H1 2024 clinics — organic same-clinic revenue growth is budgeted at 8%"
+    },
+    "top_3_budget_risks": [
+      "Vision 2030 healthcare workforce Saudization target of 35% for administrative staff requires SAR 18M in additional staffing costs not fully offset by Saudization subsidy programs",
+      "COO search has been running 6 months without a successful hire — management capacity risk could limit clinic opening pace to 4 rather than 6 in 2025",
+      "NHIF tariff revision expected in 2025 may reduce reimbursement rates across 8 high-volume procedure codes — downside scenario models SAR 48M revenue impact"
+    ],
+    "cfo_commentary": "The 2025 budget is predicated on maintaining our clinic opening pace and the COO hire by end of Q1. If the COO hire slips, we will revise the opening plan to 4 clinics and absorb a SAR 36M revenue deferral. The NHIF tariff risk is systemic across the private healthcare sector and we are engaging the NHIF directly through the Saudi Private Hospitals Association to provide cost transparency data.",
+    "board_recommendation": "Revise"
+  },
+  {
+    "scenario_id": "D6-013",
+    "company_name": "Al Kout Industrial and Chemical Group",
+    "fiscal_year": 2024,
+    "revenue_forecast_kwd": 10200000,
+    "ebitda_margin_forecast_pct": 24,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "KWD peg stable",
+      "headcount_growth_pct": 2,
+      "capex_plan_kwd": 680000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 4,
+      "commentary": "Modest growth driven by KOC framework agreement CPI escalation of 3.8% and a new KIPIC nitrogen supply contract commencing Q2 2024 — offset by the planned compressor overhaul downtime in Q1"
+    },
+    "top_3_budget_risks": [
+      "Compressor overhaul in Q1 will reduce production capacity by 35% for 6 weeks — KWD 180K in lost revenue and KWD 92K in overhaul cost are included in budget but schedule slippage would compound the impact",
+      "MOH medical oxygen tender renewal due Q4 2024 — while renewal is expected, any delay in tender award would create a revenue gap from January 2025",
+      "MEW water allocation restrictions in Shuaiba may affect cooling water availability for production — contingency capex of KWD 120K for alternative cooling not in current plan"
+    ],
+    "cfo_commentary": "2024 is an investment year for plant reliability — the compressor overhaul is planned and budgeted, and the new KIPIC contract offsets the production downtime impact. Our focus is executing the overhaul within the 6-week window to minimize revenue impact. The MOH tender renewal is our most important relationship management priority in H2.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-014",
+    "company_name": "Tamkin Digital Government Solutions",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 68000000,
+    "ebitda_margin_forecast_pct": 21,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 22,
+      "capex_plan_sar": 12000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 17,
+      "commentary": "Revenue growth driven by 5 new government ministry contracts signed in H2 2023 contributing their first full year in 2024 — platform transaction volume has grown from 1.8M to projected 3.2M citizen transactions"
+    },
+    "top_3_budget_risks": [
+      "Government payment cycles averaging 180 days create a SAR 22M working capital gap at projected 2024 revenue levels — the SAR 30M growth equity raise must close by Q2 to fund operations through H2",
+      "Arabic NLP module development team of 4 ML engineers is at risk of competitive departure — technology salary inflation in Riyadh is 28% above 2023 levels requiring unbudgeted SAR 2.4M in retention packages",
+      "Saudi Aramco Digital and stc Digital competing platforms are being deployed in 3 of Tamkin's 14 government clients — revenue concentration risk from potential client displacement is SAR 14M"
+    ],
+    "cfo_commentary": "The working capital cycle is our most pressing operational constraint — we invoice government clients promptly but collect on a 180-day lag that compounds as we grow. The growth equity close is critical to H2 operations and we are in advanced due diligence with 2 investors. Our technology team retention is a priority spend that we cannot defer given the competitive environment.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-015",
+    "company_name": "Layali Hospitality and Food Group WLL",
+    "fiscal_year": 2024,
+    "revenue_forecast_kwd": 7480000,
+    "ebitda_margin_forecast_pct": 17,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "KWD stable",
+      "headcount_growth_pct": 6,
+      "capex_plan_kwd": 680000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 9,
+      "commentary": "Revenue growth driven by 2 new Salmiya locations contributing 8 months of trading in 2024 and a 12% same-store-sales increase at The Avenues flagship locations during Ramadan and National Day periods"
+    },
+    "top_3_budget_risks": [
+      "Kuwait MOI work permit processing delays are extending kitchen staff onboarding to 90 days — new restaurant openings are being delayed by staffing gaps rather than construction timelines",
+      "Master franchise brand performance decline in its home market is reducing the brand's social media equity — Kuwait consumer awareness survey shows 14% decline in brand consideration scores",
+      "Food commodity inflation of 9% above 2023 is compressing gross margins — menu price increases are constrained by competitive dynamics in The Avenues tenant mix"
+    ],
+    "cfo_commentary": "The Ramadan trading performance gives us confidence in the core Kuwait dining market — our 4 Avenues locations are among the top 10 performers in the mall by revenue per sqm. The franchise brand headwind is our strategic concern for 2025 planning — we are evaluating whether to invest in growing our proprietary concepts to reduce franchise dependency. Staff onboarding delays are being managed through pre-approval of work permits before site opening.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-016",
+    "company_name": "Majd Pharmaceutical Manufacturing Company",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 184000000,
+    "ebitda_margin_forecast_pct": 18,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 5,
+      "capex_plan_sar": 28000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 10,
+      "commentary": "Revenue growth driven by 8 new NUPCO-listed SKUs contributing their first full year and the WHO prequalification for 12 products opening export channel to 4 African markets contributing SAR 14M"
+    },
+    "top_3_budget_risks": [
+      "SFDA GMP re-inspection in Q3 2024 — any critical finding requiring production line shutdown would defer SAR 22M in H2 revenue and trigger force majeure on NUPCO supply contracts",
+      "API sourcing disruption: 3 Chinese API suppliers are experiencing export quota restrictions — alternative EU sourcing at 32% cost premium would add SAR 8.4M to annual cost of goods",
+      "SFDA price increase applications for 6 high-volume generics are pending approval for 14 months — any rejection would constrain revenue growth to volume-only for those SKUs"
+    ],
+    "cfo_commentary": "The WHO prequalification export revenue is a significant strategic milestone — SAR 14M in year 1 from African markets validates our export thesis and provides geographic diversification for the first time. Our SFDA re-inspection preparation is consuming significant management bandwidth this quarter and we have engaged an SFDA-accredited consultant to support our CAPA documentation. API supply security is our most operationally urgent challenge.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-017",
+    "company_name": "Ruwad Facilities Management LLC",
+    "fiscal_year": 2024,
+    "revenue_forecast_aed": 146000000,
+    "ebitda_margin_forecast_pct": 14,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "AED/USD peg at 3.67",
+      "headcount_growth_pct": 12,
+      "capex_plan_aed": 18000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 18,
+      "commentary": "Revenue growth driven by 2 new Abu Dhabi Housing Authority framework contracts commencing Q1 2024 and the full-year contribution of the Yas Island facilities contract won in Q3 2023"
+    },
+    "top_3_budget_risks": [
+      "ADNOC campus FM tender result is expected Q3 2024 — a win adds AED 36M in annual revenue but requires AED 12M in immediate operational setup investment not in current capex",
+      "Emiratization compliance cost for 2024 is projected at AED 4.8M against a budget of AED 3.2M — additional UAE national hires at premium compensation are required to maintain ADNOA green zone",
+      "IoT building management system implementation has encountered integration challenges with legacy TAMM government building infrastructure — AED 2.4M in additional engineering cost risk"
+    ],
+    "cfo_commentary": "The ADNOC tender is our transformative opportunity for 2024 — a win would increase revenue by 25% and provide a platform for organic growth within the ADNOC ecosystem. We have pre-positioned AED 4M in operational setup funding to enable a rapid mobilization response if we win. Our Emiratization cost overrun is a sector-wide challenge and we are building this into our 2025 budget baseline.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-018",
+    "company_name": "Bayt Al Shifa Healthcare Retail Group",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 202000000,
+    "ebitda_margin_forecast_pct": 12,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 8,
+      "capex_plan_sar": 18000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 9,
+      "commentary": "Revenue growth driven by 4 new Riyadh pharmacy locations opened in H2 2023 contributing their first full year and a 14% increase in prescription volume from NUPCO referral program"
+    },
+    "top_3_budget_risks": [
+      "SFDA price regulation review for 12 high-volume generic categories may reduce revenue per prescription by SAR 2.8 on average — 58% of revenue is prescription-linked, creating SAR 12M exposure",
+      "E-pharmacy platforms Nahdi Online and Al Dawaa app are capturing 18% of OTC and beauty category revenue in the Riyadh market — the 28% OTC component of our revenue is structurally at risk",
+      "Saudi pharmacist attrition of 22% annually creates a recurring SAR 4.2M cost in recruitment and training — retention investment not in current budget"
+    ],
+    "cfo_commentary": "The pharmacy market fundamentals remain strong — prescription volume growth from NUPCO and Vision 2030 healthcare access expansion are structural tailwinds. Our strategic response to e-pharmacy competition is investing in loyalty programs and in-store clinical services that digital channels cannot replicate. The SFDA pricing review is beyond our control but we are engaging the Saudi Private Pharmacy Association for industry-level advocacy.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-019",
+    "company_name": "Naseem Al Raha School Transport Company",
+    "fiscal_year": 2024,
+    "revenue_forecast_kwd": 5880000,
+    "ebitda_margin_forecast_pct": 19,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "KWD stable",
+      "headcount_growth_pct": 3,
+      "capex_plan_kwd": 1200000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 5,
+      "commentary": "Moderate revenue growth reflecting 3 new school contract wins in the Mishref area and a 5% average rate increase across the portfolio — offset by the planned retirement of 18 older buses reducing capacity by 6%"
+    },
+    "top_3_budget_risks": [
+      "Driver recruitment pipeline is 14 short of the 420 required for full 2024 academic year operations — each driver vacancy costs KWD 4,200 in daily route outsourcing cost",
+      "Fuel costs are budgeted at KWD 0.28 per liter — Kuwait government fuel subsidy reform discussions could increase commercial vehicle fuel costs to KWD 0.38, adding KWD 280K annually",
+      "MOE school safety inspection has flagged 12 buses for GPS tracker upgrade by September 2024 — KWD 36K compliance cost not in current capex"
+    ],
+    "cfo_commentary": "The business performed in line with expectations in 2023 and our 2024 focus is operational continuity through the ownership transition. Driver recruitment is our most pressing operational challenge before the September school year start — we have contracted with 2 Kuwaiti recruitment agencies to accelerate the process. The fuel subsidy reform is a long-discussed structural change and we are building a contingency into our Q4 reforecast.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-020",
+    "company_name": "Midan Sports and Wellness Company",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 72000000,
+    "ebitda_margin_forecast_pct": 19,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 24,
+      "capex_plan_sar": 28000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 12,
+      "commentary": "Revenue growth driven by 3 new Riyadh gym openings and female membership growth of 38% — female members now represent 32% of active membership base up from 28% in 2023"
+    },
+    "top_3_budget_risks": [
+      "Monthly membership churn of 4.8% requires acquiring 6,800 new members per month to maintain base — customer acquisition cost has increased 22% in 2024 as competition from Fitness Time intensifies",
+      "SAR 22M of the SAR 28M capex budget is committed to 3 new gym build-outs — any construction delay pushes revenue into 2025 and creates capex-revenue timing mismatch",
+      "Digital fitness platform development budget of SAR 6M is insufficient for a competitive product — management is seeking an additional SAR 4M supplementary approval"
+    ],
+    "cfo_commentary": "Female membership growth is our most exciting trend — the Vision 2030 social reform effect on gym participation is real and accelerating. Our challenge is churn management — we are investing SAR 2.4M in a member engagement program in H2 to improve retention. The digital platform supplementary request will be addressed separately once we have reviewed the product specification from the technology team.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-021",
+    "company_name": "Al Nakheel Marine and Industrial Group",
+    "fiscal_year": 2024,
+    "revenue_forecast_kwd": 9200000,
+    "ebitda_margin_forecast_pct": 35,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "KWD stable",
+      "headcount_growth_pct": 5,
+      "capex_plan_kwd": 4200000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 10,
+      "commentary": "Revenue growth driven by 3 additional vessels commissioned under the KOC framework agreement and an incremental KNPC maintenance charter adding KWD 480K in annual revenue"
+    },
+    "top_3_budget_risks": [
+      "KOC charter rate renegotiation due Q3 2024 — KOC has indicated a 5% rate reduction proposal that would reduce annual revenue by KWD 280K",
+      "New vessel acquisition capex of KWD 4.2M requires KWD 2.9M in asset-backed financing — marine asset lending appetite among Kuwait banks is limited to 2 institutions",
+      "Two vessels approaching 15-year class renewal in 2025 — pre-emptive dry-dock capex of KWD 480K should be brought forward to Q4 2024 to minimize operational disruption"
+    ],
+    "cfo_commentary": "The marine charter business is performing consistently — KOC is a reliable counterparty and our vessel utilization of 94% reflects the strength of the framework arrangement. The rate renegotiation is a normal cycle event and we expect to settle at a 3% reduction rather than the 5% opening position. The vessel financing will be placed with National Bank of Kuwait against the charter income stream.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-022",
+    "company_name": "Rawda Digital Media and Technology Group",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 92000000,
+    "ebitda_margin_forecast_pct": 16,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 28,
+      "capex_plan_sar": 22000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 12,
+      "commentary": "Revenue growth driven by SVOD platform launch contributing SAR 8M in subscription revenue and a 22% increase in YouTube advertising revenue from Ramadan 2024 campaign performance"
+    },
+    "top_3_budget_risks": [
+      "SVOD subscriber acquisition cost of SAR 68 per subscriber is 42% above the business case assumption — cumulative subscriber deficit of 28,000 versus plan at end of Q1 2024",
+      "GCAM content review of 3 channels following a competitor regulatory action has created a compliance uncertainty that is impacting advertiser booking confidence in Q2",
+      "8 talent contract renewals in H2 2024 are expected to cost SAR 4.2M above the budgeted talent cost — creator market compensation inflation is significant"
+    ],
+    "cfo_commentary": "The SVOD launch has created strategic momentum but the subscriber acquisition economics need to improve before we increase the marketing spend. We are redesigning the onboarding funnel and piloting a family subscription plan at SAR 49 per month that we believe will improve conversion and reduce churn. The GCAM compliance review is being managed proactively — we have appointed a dedicated regulatory affairs manager to handle ongoing GCAM engagement.",
+    "board_recommendation": "Revise"
+  },
+  {
+    "scenario_id": "D6-023",
+    "company_name": "Watani Agricultural Distribution Company",
+    "fiscal_year": 2024,
+    "revenue_forecast_kwd": 25600000,
+    "ebitda_margin_forecast_pct": 11,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "KWD stable",
+      "headcount_growth_pct": 2,
+      "capex_plan_kwd": 280000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 7,
+      "commentary": "Revenue growth reflects new exclusive agency agreement for Netherlands premium strawberry and tomato varieties contributing KWD 1.4M and volume growth from the LuLu Kuwait supply expansion"
+    },
+    "top_3_budget_risks": [
+      "Red Sea shipping disruptions are adding 14 days to Egypt and Jordan produce transit times — extended transit increases spoilage rate from 3.2% to 5.8%, adding KWD 280K in annual wastage cost",
+      "Kuwait Ministry of Commerce price monitoring has introduced informal guidance on tomato and onion margins — effective margin ceiling on key commodities reduces blended EBITDA margin by 0.8 percentage points",
+      "Customs clearance delays during Ramadan have historically caused 6-day backlogs — 2024 Ramadan falls in peak summer, compounding the customs and perishability risk"
+    ],
+    "cfo_commentary": "The distribution business remains resilient despite the external logistics headwinds. Our cold chain investment over the past 2 years has reduced spoilage from 4.8% to 3.2% at normal transit times — the Red Sea situation is reverting this improvement temporarily. We are exploring Egyptian rail transit as an alternative to Red Sea shipping for select high-value produce categories.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-024",
+    "company_name": "Gulf Star Technology and Digital Services",
+    "fiscal_year": 2024,
+    "revenue_forecast_aed": 58000000,
+    "ebitda_margin_forecast_pct": 20,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "AED/USD peg at 3.67",
+      "headcount_growth_pct": 18,
+      "capex_plan_aed": 8400000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 53,
+      "commentary": "Revenue growth reflects the acquisition of a 280-vendor B2B technology marketplace in Q1 2024 contributing AED 18M in annualized GMV-based revenue and organic product growth of 22% in the core SaaS business"
+    },
+    "top_3_budget_risks": [
+      "Marketplace integration is 6 weeks behind schedule — AED 6M in planned H1 marketplace revenue is at risk of deferral to H2 due to vendor onboarding delays",
+      "SAMA financing product regulatory approval for the SME technology financing product has not been sought — launch planned for Q3 without confirmed regulatory pathway creates compliance risk",
+      "Amazon Business UAE market entry in 2023 is already affecting marketplace vendor pricing — take rate compression from 2.8% to 2.4% is evident in Q1 2024 results"
+    ],
+    "cfo_commentary": "The marketplace acquisition was transformative and has accelerated our revenue trajectory significantly. The integration delay is being addressed by redeploying 4 engineers from the product team to the marketplace onboarding workflow. The Amazon Business competition is real but our GCC-specific Arabic UX and local vendor relationships provide differentiation that we will invest in deepening through H2.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-025",
+    "company_name": "Baraka Renewable Power Holdings",
+    "fiscal_year": 2024,
+    "revenue_forecast_aed": 28000000,
+    "ebitda_margin_forecast_pct": 88,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "AED/USD peg at 3.67",
+      "headcount_growth_pct": 8,
+      "capex_plan_aed": 85000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 17,
+      "commentary": "Revenue growth reflects the full-year contribution of Plant 3 commissioned in Q2 2023 and the planned acquisition of a 4th plant adding 22MWp in H2 2024 contributing AED 4M in partial-year revenue"
+    },
+    "top_3_budget_risks": [
+      "4th plant acquisition at AED 85M EV requires AED 60M in project finance — 2 of 3 approached banks have indicated 18-week credit committee timelines, creating a Q3 closing risk",
+      "Solar panel degradation at 0.4% annually has reduced Plant 1 generation by 1.8% below original PPA assumptions — revenue is AED 280K below Plant 1 original projection",
+      "Sand and dust storm damage to Plant 2 tracker system in Q1 2024 cost AED 480K in repairs — insurance claim is pending but business interruption exposure during repair was AED 180K"
+    ],
+    "cfo_commentary": "The renewable portfolio continues to perform as a predictable income generator with ADDC PPA revenues matching covenant expectations. The 4th plant acquisition is our strategic priority for H2 — we are progressing project finance with FAB and Emirates NBD simultaneously to ensure competitive terms and timing. The tracker repair is covered by our all-risk policy and will not affect full-year EBITDA materially.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-026",
+    "company_name": "Rimal Construction and Development Group",
+    "fiscal_year": 2025,
+    "revenue_forecast_sar": 168000000,
+    "ebitda_margin_forecast_pct": 14,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 78,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 4,
+      "capex_plan_sar": 12000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 15,
+      "commentary": "Revenue growth reflects a SAR 125M new project award from REDF Phase 4 housing program and completion of the Khobar residential complex Phase 1 — backlog at January 2025 stands at SAR 420M"
+    },
+    "top_3_budget_risks": [
+      "Eastern Province subcontractor labor market is tightening — day rate inflation for skilled trades is running 16% above 2024, adding SAR 8.4M to project costs on open subcontracts",
+      "REDF disbursement schedule has historically been 45-day delayed relative to program milestones — SAR 28M in H1 revenue is dependent on REDF milestone sign-offs proceeding on schedule",
+      "Interest rate environment at 6.2% has increased Rimal's revolving credit facility cost by SAR 3.2M annually versus the 2022 refinancing assumption"
+    ],
+    "cfo_commentary": "The REDF Phase 4 award validates our position as a preferred contractor in the affordable housing program. Backlog coverage of 2.5x provides strong revenue visibility for 2025. Our primary execution risk is the subcontractor cost environment in the Eastern Province — we are negotiating early rate locks with 3 key subcontractors for the 2025 project calendar to reduce exposure.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-027",
+    "company_name": "Hilal Healthcare Staffing Solutions LLC",
+    "fiscal_year": 2024,
+    "revenue_forecast_aed": 48000000,
+    "ebitda_margin_forecast_pct": 13,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "AED/USD peg at 3.67",
+      "headcount_growth_pct": 22,
+      "capex_plan_aed": 6000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 14,
+      "commentary": "Revenue growth driven by 3 new hospital group partnerships adding 140 placements in H1 2024 and a 12% increase in average placement fee following DHA fee schedule revision"
+    },
+    "top_3_budget_risks": [
+      "Digital matching platform MVP launch is 3 months delayed — AED 4M in efficiency savings budgeted for H2 from reduced manual placement cost will not be realized in 2024",
+      "DHA license processing time has increased to 68 days from 45 days — placement revenue is delayed by 23 days per hire, increasing working capital requirement by AED 2.8M",
+      "KSA expansion requires a SCFHS-registered entity — registration process is 9 months and prevents revenue contribution from Saudi placements before Q4 2024"
+    ],
+    "cfo_commentary": "Placement volumes are tracking above plan at 720 active placements versus a budget of 680. The platform delay is disappointing but does not affect our core business model in the near term — manual placement economics remain sound at current scale. Our KSA expansion timeline has been extended to Q1 2025 following the SCFHS registration timeline assessment.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-028",
+    "company_name": "Salam Printing and Packaging Industries WLL",
+    "fiscal_year": 2024,
+    "revenue_forecast_kwd": 4100000,
+    "ebitda_margin_forecast_pct": 18,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "KWD stable",
+      "headcount_growth_pct": 3,
+      "capex_plan_kwd": 680000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 8,
+      "commentary": "Revenue growth driven by a new MOH pharmaceutical labeling contract commencing Q2 2024 and capacity expansion through the installation of a 4th offset press in Q1 — utilization rate increased from 94% to 98%"
+    },
+    "top_3_budget_risks": [
+      "Petroleum-based ink and solvent costs are 14% above 2023 average — KWD 48K in additional input cost not fully offset by the price increase applied to commercial print clients",
+      "4th offset press financing of KWD 380K is structured as a 3-year equipment lease — new accounting treatment under IFRS 16 adds KWD 120K in depreciation not previously in the EBITDA calculation",
+      "Founder transition to new ownership is creating client relationship uncertainty — 2 of 6 exclusive manufacturer relationships have been flagged as requiring direct introduction from the founder before year-end"
+    ],
+    "cfo_commentary": "The MOH pharmaceutical labeling contract is a significant quality signal for our business — government healthcare procurement is the most demanding quality standard in Kuwait and winning it validates our HACCP process certification. The 4th press has absorbed our previously unmet demand from the government sector. Founder relationship transition is our primary operational risk and we have structured a 24-month advisory arrangement to manage this systematically.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-029",
+    "company_name": "Tatweer Water Technologies LLC",
+    "fiscal_year": 2024,
+    "revenue_forecast_aed": 34000000,
+    "ebitda_margin_forecast_pct": 16,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "AED/USD peg at 3.67",
+      "headcount_growth_pct": 20,
+      "capex_plan_aed": 12000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 21,
+      "commentary": "Revenue growth driven by 28 new hotel and industrial client installations in 2024 and a growing IoT monitoring subscription revenue stream from 84 active installations generating AED 2.8M in recurring revenue"
+    },
+    "top_3_budget_risks": [
+      "DEWA approved contractor status remains pending after 18 months — without DEWA approval, AED 22M in pipeline projects tied to DEWA-connected developers cannot proceed",
+      "Manufacturing scale-up from 18 to 45 units per month requires AED 8M of the AED 12M capex — production delays will limit H2 installation capacity to 32 units per month against a budget of 45",
+      "Field technician team of 6 is insufficient to service 84 active installations quarterly — customer satisfaction scores are declining as service response times extend to 12 days"
+    ],
+    "cfo_commentary": "The IoT subscription revenue milestone is our most strategically significant achievement in 2024 — AED 2.8M in recurring revenue from existing installations provides a growing income floor that improves our financial stability. The DEWA contractor approval remains our critical path item for 2025 scale — we have escalated to the DEWA CEO office and expect a decision before Q3. Manufacturing expansion is on track for Q2 commissioning.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-030",
+    "company_name": "Imdad Supply Chain Solutions LLC",
+    "fiscal_year": 2024,
+    "revenue_forecast_aed": 198000000,
+    "ebitda_margin_forecast_pct": 22,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "AED/USD peg at 3.67",
+      "headcount_growth_pct": 8,
+      "capex_plan_aed": 8000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 7,
+      "commentary": "Moderate revenue growth reflecting 4 new client additions in pharmaceutical and industrial sectors and volume growth from 3 existing FMCG clients expanding UAE distribution footprints"
+    },
+    "top_3_budget_risks": [
+      "Technology platform rebuild of AED 8M is fully committed in capex — any delay in go-live beyond Q4 2024 will push the enterprise client RFP competitiveness improvement into 2025",
+      "Founder transition with 12-month advisory agreement creates relationship continuity risk — 4 clients with personal founder relationships are scheduled for formal relationship transfer meetings in Q2",
+      "KSA expansion through 4 existing clients has been delayed to Q1 2025 — AED 14M in planned 2024 KSA revenue has been deferred"
+    ],
+    "cfo_commentary": "The technology platform rebuild is the most important investment we are making in 2024 — our current 7-year-old system is a competitive liability and the rebuild positions us for enterprise client RFPs in 2025. The KSA deferral reduces our 2024 revenue by AED 14M but the market entry preparation is proceeding well. Client retention through the founder transition has been better than expected with all 28 clients confirming renewal intention.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-031",
+    "company_name": "Noor Al Bait Smart Home Technologies",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 54000000,
+    "ebitda_margin_forecast_pct": 18,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 22,
+      "capex_plan_sar": 15000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 13,
+      "commentary": "Revenue growth driven by 3 new luxury compound contracts in north Riyadh and the launch of the Arabic home control platform beta with 280 active villa installations — beta revenue is contributing SAR 6M in partial year"
+    },
+    "top_3_budget_risks": [
+      "Arabic platform beta has encountered Arabic voice recognition accuracy issues at 78% versus a product requirement of 92% — resolution requires an additional SAR 2.8M in NLP development investment not in current budget",
+      "B2B developer partnership program has onboarded 2 of 8 targeted developers — SAR 22M in pipeline revenue from developer partnerships is at risk of deferral to 2025 if onboarding pace does not accelerate",
+      "4 senior integration engineers received competing offers in Q1 2024 — retention package cost of SAR 1.6M is partially included in budget but 2 engineers remain uncommitted"
+    ],
+    "cfo_commentary": "The Arabic platform launch is our most strategic milestone of 2024 despite the voice recognition challenge — the market response from luxury villa developers has been exceptional and validates our positioning. We are accelerating the NLP investment through a partnership with a Riyadh university AI lab that reduces our development cost by 40%. Engineer retention is non-negotiable and we are implementing equity participation for the top 6 technical staff.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-032",
+    "company_name": "Andalus Catering and Food Services Group",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 210000000,
+    "ebitda_margin_forecast_pct": 15,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 6,
+      "capex_plan_sar": 8000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 8,
+      "commentary": "Revenue growth reflects 5 new industrial camp catering contracts in the Makkah region driven by NEOM auxiliary construction workforce and a 6% volume increase at 3 MOH hospital catering facilities"
+    },
+    "top_3_budget_risks": [
+      "HRSD Saudization enforcement in the catering sector has increased — compliance requires hiring 80 Saudi nationals by Q3 2024 at a cost premium of SAR 6.4M above the expat baseline",
+      "Food commodity inflation of 11% in 2024 is compressing gross margins on 22 fixed-price contracts — SAR 8.4M in annualized margin impact is being partially mitigated through CPI escalation negotiations",
+      "Shareholder dispute is ongoing with 2 minority siblings — management distraction is measurable and one senior operations director has resigned citing governance uncertainty"
+    ],
+    "cfo_commentary": "The MOH hospital catering relationships are performing strongly and Makkah region industrial growth is a structural tailwind. Our primary concern is the management bandwidth consumed by the shareholder dispute — we are pursuing mediated resolution through a Jeddah-based business family mediator and expect resolution before Q3. Saudization compliance is our most costly regulatory challenge and we are working with HRSD on a phased implementation plan.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-033",
+    "company_name": "Qimam Aviation Services Company",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 358000000,
+    "ebitda_margin_forecast_pct": 26,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 8,
+      "capex_plan_sar": 42000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 5,
+      "commentary": "Modest revenue growth reflecting KAIA passenger throughput recovery to 98% of pre-COVID levels and the CPI escalation clause in the GACA concession adding SAR 12M in revenue"
+    },
+    "top_3_budget_risks": [
+      "GACA's new environmental compliance requirements will cost SAR 28M to implement — capex budget must be supplemented by SAR 18M requiring board approval for the revised plan",
+      "Jet fuel handling volume is growing faster than staff capacity — SAR 8.4M in additional ground handling capex is required before peak Hajj season to prevent safety incidents",
+      "GACA concession renegotiation due 2033 requires a SAR 12M technology platform upgrade in 2024 to demonstrate operational capability for the rebid — this investment competes with the environmental compliance capex"
+    ],
+    "cfo_commentary": "The concession business is performing exactly as modeled — KAIA passenger recovery provides the volume growth and the CPI clause provides the revenue inflation protection we built into the acquisition thesis. The environmental compliance requirement is our only material surprise for 2024 and we are in discussion with GACA about a cost-sharing mechanism given the regulatory origin of the requirement. We will present a supplementary capex request to the Board in Q2.",
+    "board_recommendation": "Revise"
+  },
+  {
+    "scenario_id": "D6-034",
+    "company_name": "Wajha Digital Identity Technologies",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 44000000,
+    "ebitda_margin_forecast_pct": 21,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 25,
+      "capex_plan_sar": 25000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 16,
+      "commentary": "Revenue growth driven by 8 new SAMA-licensed fintech client integrations and a 24% volume increase in identity verifications from existing banking clients following open banking mandate expansion"
+    },
+    "top_3_budget_risks": [
+      "Biometric authentication product requires SAR 18M of the SAR 25M capex — core business expansion receives only SAR 7M, which limits sales team scaling and enterprise client onboarding capacity",
+      "PDPL compliance audit by SDAIA has been initiated — legal and compliance costs of SAR 3.2M in external advisory are not in the current budget",
+      "Saudi Aramco Digital is building a competing identity platform with government database access — 3 Wajha enterprise clients have received Aramco Digital demonstrations in Q1 2024"
+    ],
+    "cfo_commentary": "The SAMA open banking mandate is the strongest structural demand driver we have ever experienced — enterprise client pipeline has grown 48% in 12 months. The biometric product development timeline is our most critical resource allocation decision for 2024 — we are evaluating whether to phase the SAR 18M investment or seek a strategic technology partner to share the development risk. The PDPL audit will be managed with external regulatory counsel.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-035",
+    "company_name": "Rawabet Healthcare Network Company",
+    "fiscal_year": 2025,
+    "revenue_forecast_sar": 148000000,
+    "ebitda_margin_forecast_pct": 19,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 78,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 16,
+      "capex_plan_sar": 48000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 19,
+      "commentary": "Revenue growth planned through addition of 3 new specialist clinics in Riyadh in H1 2025 and the full-year contribution of a dermatology clinic acquired in Q3 2024 — organic volume growth budgeted at 9%"
+    },
+    "top_3_budget_risks": [
+      "3 acquisition targets for buy-and-build strategy have been identified but none contracted — SAR 48M capex assumes 2 clinic acquisitions at an average SAR 18M EV by Q2 2025",
+      "Bupa Arabia panel removal threat requires resolution before Q1 2025 — loss of Bupa panel would reduce revenue by SAR 34M representing 23% of 2025 budget",
+      "Specialist physician supply is tightening in Riyadh as KFSH expansion absorbs consultant-grade Saudi physicians — 4 planned specialist hires have extended to 5-month timelines"
+    ],
+    "cfo_commentary": "The 2025 budget is our most ambitious to date and is predicated on both organic clinic performance and successful execution of 2 acquisitions. The Bupa Arabia panel dispute is our most urgent operational priority — resolution before Q1 2025 is non-negotiable for budget delivery. We have retained healthcare sector M&A advisors to accelerate the clinic acquisition pipeline and expect 2 term sheets by end of Q1 2025.",
+    "board_recommendation": "Revise"
+  },
+  {
+    "scenario_id": "D6-036",
+    "company_name": "Majd Gulf Cybersecurity Consulting",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 54000000,
+    "ebitda_margin_forecast_pct": 20,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 28,
+      "capex_plan_sar": 18000000
+    },
+    "variance_from_prior_year": {
+      "revenue_forecast_pct": 13,
+      "commentary": "Revenue growth driven by 6 new government ministry engagements under NCA framework and the launch of the Security Operations Center contributing SAR 8M in its first 8 months of operation"
+    },
+    "top_3_budget_risks": [
+      "SOC buildout has consumed SAR 11M of the SAR 18M capex in H1 — remaining SAR 7M must fund commercial expansion and UAE market entry, creating resource tension",
+      "Cybersecurity talent market in Riyadh is extremely competitive — 8 of 24 planned hires have not been filled by end of Q1, deferring SAR 6M in associated revenue",
+      "Government payment cycles averaging 180 days have created a SAR 14M working capital gap — bridge financing of SAR 8M from the growth equity round must close before Q3"
+    ],
+    "cfo_commentary": "The SOC is operational and already generating recurring managed security service revenue from 6 clients — this recurring revenue model is the most significant strategic improvement in our business mix. The talent shortage is our primary constraint and we have started a graduate development program with King Abdulaziz University to build a proprietary pipeline of Saudi cybersecurity talent. Government working capital remains the defining operational challenge of our business model.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-037",
+    "company_name": "Ithmar Education Investments Group",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 208000000,
+    "ebitda_margin_forecast_pct": 21,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 6,
+      "capex_plan_sar": 32000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 9,
+      "commentary": "Revenue growth driven by MOE-approved fee increases of 6% across 7 of 9 campuses and enrollment growth of 4.2% from waitlist conversion — international student enrollment has grown 18% as Riyadh family relocations accelerate"
+    },
+    "top_3_budget_risks": [
+      "MOE fee increase approval process for 2025 is increasingly scrutinized — 2025 application must be submitted with IFRS-compliant financial statements to support the full 8% requested increase",
+      "Teacher retention investment of SAR 12M is required to match international curriculum teacher salary inflation — 3 competitor schools have offered 20% premiums to Ithmar teachers",
+      "Capex plan for campus expansion assumes a SAR 20M facility lease in north Riyadh — landlord is seeking SAR 24M annual lease, creating a SAR 4M annual cost overrun risk"
+    ],
+    "cfo_commentary": "The education business continues to demonstrate exceptional demand resilience — we have turned away 2,100 applicants for the 2024 academic year across our 9 campuses. The teacher retention investment is non-discretionary and will be funded through reallocation from the technology capex budget. MOE fee approval is our most important external engagement for 2025 planning and we are preparing the submission now rather than waiting until Q3.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-038",
+    "company_name": "Noor Hospitality and Catering WLL",
+    "fiscal_year": 2024,
+    "revenue_forecast_kwd": 8200000,
+    "ebitda_margin_forecast_pct": 16,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "KWD stable",
+      "headcount_growth_pct": 8,
+      "capex_plan_kwd": 480000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 20,
+      "commentary": "Revenue growth reflects the addition of 4 new catering contracts in the Kuwait City corporate sector and expansion of the Salmiya restaurant to include a Ramadan tent operation generating KWD 480K in seasonal revenue"
+    },
+    "top_3_budget_risks": [
+      "Kuwait municipality new commercial kitchen licensing requirements effective July 2024 require KWD 120K in equipment upgrades not in current capex plan",
+      "Staff accommodation costs in Kuwait City have increased 22% — expat employee housing allowances are KWD 48K above budget annually",
+      "The Ramadan tent operation is a weather-dependent revenue stream — forecasted KWD 480K is based on 2023 weather conditions; any major weather event would eliminate this revenue"
+    ],
+    "cfo_commentary": "The 2024 budget reflects our strongest performance trajectory since 2019. The corporate catering contracts are sticky and recurring — average tenure of our corporate catering relationships is 5.2 years. Our primary operational challenge is managing the increasing cost of expatriate staffing in Kuwait and we are exploring a Kuwaiti hospitality training program to develop domestic talent over the next 3 years.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-039",
+    "company_name": "Gulf Bridge Telecom Infrastructure WLL",
+    "fiscal_year": 2024,
+    "revenue_forecast_kwd": 6200000,
+    "ebitda_margin_forecast_pct": 66,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "KWD stable",
+      "headcount_growth_pct": 5,
+      "capex_plan_kwd": 4200000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 11,
+      "commentary": "Revenue growth driven by 18 new tower additions in the 60-tower expansion program and tenancy ratio improvement from 1.4x to 1.6x as Ooredoo Kuwait signs 24 additional co-location agreements"
+    },
+    "top_3_budget_risks": [
+      "60-tower expansion municipal permitting has averaged 22 months per site versus a budget of 18 months — 12 towers planned for H2 2024 commissioning are at risk of slipping to 2025",
+      "5G equipment installation at 28 existing tower sites requires structural reinforcement at 8 towers — additional engineering cost of KWD 280K not in current capex",
+      "CITRA regulatory review of tower sharing pricing has created uncertainty — any mandated pricing change could reduce annual revenue by KWD 240K from the Ooredoo agreement"
+    ],
+    "cfo_commentary": "The tenancy ratio improvement to 1.6x is on track with our strategic plan — each additional 0.1x improvement in tenancy ratio adds KWD 180K in EBITDA with near-zero incremental cost. Municipal permitting remains our most significant operational constraint and we have engaged a specialized Kuwait permitting consultant to accelerate the 60-tower expansion timeline. 5G reinforcement engineering is a one-time cost that positions the towers for 20 years of 5G revenue.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-040",
+    "company_name": "Tamam Home Furnishings LLC",
+    "fiscal_year": 2024,
+    "revenue_forecast_aed": 104000000,
+    "ebitda_margin_forecast_pct": 13,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "AED/USD peg at 3.67",
+      "headcount_growth_pct": 10,
+      "capex_plan_aed": 6400000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 13,
+      "commentary": "Revenue growth driven by 2 new showroom openings in Abu Dhabi and Al Ain and e-commerce channel growth of 38% YoY now representing 22% of total revenue — online average order value of AED 3,800 is above in-store average"
+    },
+    "top_3_budget_risks": [
+      "Chinese furniture platforms TikTok Shop and Shein Home are aggressively pricing into the AED 500–1,500 furniture range — this segment represents 28% of Tamam's revenue and is experiencing volume pressure",
+      "Inventory holding cost at AED 14M with a 90-day average turn cycle requires AED 4.2M in revolving working capital facility — current facility utilization is 88% leaving limited headroom",
+      "Abu Dhabi showroom lease negotiation is ongoing at AED 380K annually above the original business case — showroom-level EBITDA in Abu Dhabi will not reach breakeven until month 22 rather than month 14"
+    ],
+    "cfo_commentary": "The e-commerce channel acceleration is our most positive strategic development — online revenue has grown from 14% to 22% of total with superior margins due to lower occupancy cost. We are investing AED 2.4M in the digital channel in 2024 including augmented reality room visualization to differentiate from the commodity Chinese platforms. The Abu Dhabi showroom lease overrun is being managed through enhanced in-store services to justify the premium positioning.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-041",
+    "company_name": "Rawdah Organic Farms and Export Company",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 76000000,
+    "ebitda_margin_forecast_pct": 21,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75; GBP/SAR assumption at 4.72",
+      "headcount_growth_pct": 8,
+      "capex_plan_sar": 18000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 12,
+      "commentary": "Revenue growth driven by UK export distribution expansion adding SAR 8M and the certification of 180 additional hectares to GlobalGAP organic standard contributing increased premium pricing on domestic sales"
+    },
+    "top_3_budget_risks": [
+      "April temperature spike in the Madinah region was the highest in 14 years — early indications suggest date palm yield will be 18% below budget, creating SAR 8.4M in revenue risk",
+      "GBP depreciation of 6% versus SAR since budget setting reduces UK export revenue by SAR 1.1M on a currency-only basis",
+      "Branded retail packaging investment of SAR 12M capex requires 8-month design and production lead time — any delay in packaging finalization pushes branded launch revenue from Q3 to Q1 2025"
+    ],
+    "cfo_commentary": "The April temperature event is our most significant agricultural risk in 2024 — we are undertaking an emergency crop assessment with our SFDA-certified agricultural advisor and will present a revised harvest forecast to the Board in June. The branded packaging investment is proceeding on schedule and we are confident of a Q3 retail launch. UK export distribution is performing above expectation and we are in discussions with 2 additional European distributors.",
+    "board_recommendation": "Revise"
+  },
+  {
+    "scenario_id": "D6-042",
+    "company_name": "Baraha Veterinary Services Group LLC",
+    "fiscal_year": 2024,
+    "revenue_forecast_aed": 40000000,
+    "ebitda_margin_forecast_pct": 19,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "AED/USD peg at 3.67",
+      "headcount_growth_pct": 24,
+      "capex_plan_aed": 20000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 18,
+      "commentary": "Revenue growth driven by 2 new clinic openings in Dubai Marina and Mirdif and a 22% increase in specialist referral procedures — neurology and oncology referrals are growing at 34% as pet owners invest in advanced veterinary care"
+    },
+    "top_3_budget_risks": [
+      "Pet insurance partnership negotiations have not concluded — SAR 21.6M ARR assumption in the 2025 budget from the insurance product is not supportable without a signed insurer agreement by Q3 2024",
+      "Specialist veterinarian recruitment for 4 new positions has averaged 7.4 months — 2 positions remain unfilled, deferring SAR 2.8M in specialist procedure revenue",
+      "MOHAP Ministry of Climate Change license for RAK expansion is pending — 2 new RAK clinics budgeted for H2 2024 opening are at risk of slipping to Q1 2025"
+    ],
+    "cfo_commentary": "The specialist referral business is our highest-margin growth segment — oncology and neurology procedure revenue is growing faster than any other service line and positions us for the premium pet care market. Our insurance partnership priority for 2024 is to sign a term sheet before Q3 — we are in active discussions with 3 UAE-licensed insurers. The RAK license application has been submitted and we are providing regular updates to MOHAP.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-043",
+    "company_name": "Mawasim Events and Entertainment Group LLC",
+    "fiscal_year": 2024,
+    "revenue_forecast_aed": 32000000,
+    "ebitda_margin_forecast_pct": 16,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "AED/USD peg at 3.67",
+      "headcount_growth_pct": 15,
+      "capex_plan_aed": 6000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 14,
+      "commentary": "Revenue growth driven by Ramadan 2024 experience producing AED 6.4M in gate and F&B revenue and 3 new government cultural event commissions from Abu Dhabi Events"
+    },
+    "top_3_budget_risks": [
+      "Ticketing platform development of AED 6M capex is the full budget — any engineering cost overrun would require a supplementary board approval, delaying the platform launch beyond Q4",
+      "KSA Ramadan experience concept requires MISA event management license and Saudi municipality approvals — timeline is 8 months, pushing KSA revenue contribution to Ramadan 2025",
+      "Dubai Culture 2025 event commissioning budget is under review — 3 planned event commissions representing AED 8.4M are not yet contracted for 2025"
+    ],
+    "cfo_commentary": "Ramadan 2024 was our strongest event performance since company inception — 180,000 attendees and an NPS of 74 exceeded all targets. The ticketing platform is our most important infrastructure investment and we are managing the development timeline tightly to ensure a Q4 launch before planning for Ramadan 2025. KSA expansion is a 2025 priority and the license process is underway.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-044",
+    "company_name": "Ruwwad Human Resource Solutions",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 198000000,
+    "ebitda_margin_forecast_pct": 10,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 4,
+      "capex_plan_sar": 3200000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 7,
+      "commentary": "Revenue growth driven by 12 new employer client contracts and a 6% increase in managed headcount from 4,200 to 4,460 workers — growth is slower than prior years due to Saudization pressure on the construction segment"
+    },
+    "top_3_budget_risks": [
+      "HRSD Saudization ratio increase from 8% to 12% for FM and construction effective July 2024 will require 168 additional Saudi national placements at an average SAR 4,200 per month premium over expat workers",
+      "Worker accommodation cost inflation of 18% in Riyadh has added SAR 4.8M to annual cost base — only 60% has been recovered through client rate renegotiations",
+      "Worker welfare audit by HRSD scheduled for Q3 2024 — any finding requiring immediate remediation of accommodation facilities could cost SAR 2.8M in unbudgeted infrastructure upgrade"
+    ],
+    "cfo_commentary": "The HR outsourcing business model is under structural cost pressure from rising Saudization ratios and accommodation inflation simultaneously. We are managing margin through selective client repricing — 22 of 68 client contracts have been renegotiated with cost pass-through provisions effective 2024. The HRSD audit preparation is a Q2 priority and we have commissioned an independent accommodation audit to identify any gaps before the official inspection.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-045",
+    "company_name": "Najd Oil Field Services Company",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 108000000,
+    "ebitda_margin_forecast_pct": 19,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 7,
+      "capex_plan_sar": 35000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 10,
+      "commentary": "Revenue growth driven by Ma'aden gold field expansion drilling program adding SAR 12M and Aramco Jafurah gas field support services expanding the existing framework scope by SAR 8M"
+    },
+    "top_3_budget_risks": [
+      "Ma'aden contract renewal competitive tender has been initiated unexpectedly — SAR 42M in contracted revenue for 2025 is at risk if the tender is lost to a lower-priced competitor",
+      "Drill rig acquisition financing of SAR 35M capex requires 70% LTV project finance — bank appetite for mining equipment financing in Saudi Arabia is limited and interest rates at 6.2% add SAR 2.1M in annual financing cost",
+      "Gold price correction below USD 1,800/oz would likely trigger junior mining client project deferrals — 18% of revenue from 3 junior mining clients is at risk if gold pricing weakens materially"
+    ],
+    "cfo_commentary": "The Ma'aden tender development is our most urgent strategic issue — we have been the incumbent for 6 years and are preparing a bid that demonstrates our operational track record and site knowledge as key differentiators. The drill rig financing is being placed with SAIB bank against the Ma'aden income stream and we expect credit committee approval before Q2. Gold price risk is monitored monthly and we maintain a 3-month revenue reserve as a buffer.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-046",
+    "company_name": "Watheeq Human Capital Solutions LLC",
+    "fiscal_year": 2024,
+    "revenue_forecast_aed": 16400000,
+    "ebitda_margin_forecast_pct": 21,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "AED/USD peg at 3.67",
+      "headcount_growth_pct": 18,
+      "capex_plan_aed": 1800000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 15,
+      "commentary": "Revenue growth driven by Nafis-mandate-driven demand for Emirati executive search — 12 new institutional clients from Abu Dhabi free zone authorities and 3 ADNOC subsidiaries — and a 14% increase in average placement fee"
+    },
+    "top_3_budget_risks": [
+      "Nafis enforcement consistency has been uneven in 2024 — 4 private sector clients have deferred Emiratization hiring pending clearer penalty enforcement, creating AED 1.8M in revenue uncertainty",
+      "Emirati candidate database of 4,200 is fully marketed — additional candidate acquisition requires AED 680K in outreach programs not in current capex, without which revenue growth ceiling is reached",
+      "Abu Dhabi expansion requires a second office and 4 additional consultants — office setup and hiring cost of AED 820K is in capex plan but is dependent on Abu Dhabi ADGM license approval"
+    ],
+    "cfo_commentary": "The Nafis mandate environment is the strongest demand driver we have experienced — institutional clients are treating Emiratization as a compliance imperative rather than a voluntary initiative. Our candidate database is our most valuable asset and we are investing in a university partnership with UAE national universities to develop a proprietary candidate pipeline. Abu Dhabi expansion is a Q2 priority with office setup targeting April 2024.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-047",
+    "company_name": "Al Rawabi Specialty Chemicals WLL",
+    "fiscal_year": 2024,
+    "revenue_forecast_kwd": 8900000,
+    "ebitda_margin_forecast_pct": 19,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "KWD stable",
+      "headcount_growth_pct": 3,
+      "capex_plan_kwd": 680000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 6,
+      "commentary": "Moderate revenue growth reflecting KOC framework CPI escalation of 3.8% and a new MEW water treatment chemical supply agreement contributing KWD 380K from Q2 2024"
+    },
+    "top_3_budget_risks": [
+      "MEW environmental compliance remediation requires secondary containment construction before Q3 2024 — Ahmadi Governorate planning permission is on the critical path with a KWD 85K fine risk if not completed",
+      "European raw material import costs have increased 16% in KWD terms due to EUR/KWD movement — 68% of chemical inputs are EUR-denominated, creating KWD 320K in unbudgeted import cost",
+      "KOC vendor review following the MEW environmental finding could delay framework agreement renewal by 6 months — KWD 2.4M in H2 KOC revenue is at risk if vendor status is temporarily suspended"
+    ],
+    "cfo_commentary": "The MEW compliance situation is our most urgent operational priority — we have mobilized a construction team and engaged the Ahmadi Governorate for emergency permitting. Our KOC relationship management is running in parallel — we have provided KOC with a detailed remediation timeline and expect the vendor status review to conclude positively before Q3. The EUR currency exposure is a structural issue we are addressing through forward contract hedging with Ahli Bank.",
+    "board_recommendation": "Revise"
+  },
+  {
+    "scenario_id": "D6-048",
+    "company_name": "Tamayuz Digital Learning Platform",
+    "fiscal_year": 2024,
+    "revenue_forecast_sar": 32000000,
+    "ebitda_margin_forecast_pct": 16,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "SAR/USD peg at 3.75",
+      "headcount_growth_pct": 20,
+      "capex_plan_sar": 14000000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 14,
+      "commentary": "Revenue growth driven by 38 new enterprise corporate licensing clients and HRDF accreditation enabling employers to claim government reimbursement for training — HRDF-linked courses now represent 44% of corporate revenue"
+    },
+    "top_3_budget_risks": [
+      "AI adaptive learning module development requires SAR 14M capex with a team of 4 ML engineers — all 4 engineers are new hires in Q1 2024 with no prior product delivery at Tamayuz, creating delivery risk",
+      "Coursera Arabic content expansion announced in March 2024 is targeting the same enterprise corporate segment — 3 Tamayuz enterprise clients have received Coursera demonstrations in Q2",
+      "HRDF reimbursement rate for e-learning courses was reduced from 70% to 50% in the Q1 2024 HRDF policy update — employer willingness to pay at current pricing may be affected as the subsidy reduces"
+    ],
+    "cfo_commentary": "The HRDF accreditation was our most important commercial milestone of 2023 and the reimbursement rate reduction is a near-term headwind we did not model. We are repricing our enterprise packages to reflect the new 50% reimbursement level and expect limited enterprise client attrition. The AI module is our 2025 growth driver — we are managing the development team closely and have brought in an experienced AI product consultant to support the first 6 months.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-049",
+    "company_name": "Al Saqr Family Holdings Investment Office",
+    "fiscal_year": 2025,
+    "revenue_forecast_kwd": 12400000,
+    "ebitda_margin_forecast_pct": 72,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 78,
+      "fx_assumption": "KWD stable; USD/KWD peg maintained",
+      "headcount_growth_pct": 5,
+      "capex_plan_kwd": 8400000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 8,
+      "commentary": "Revenue growth driven by Boursa Kuwait dividend income growth of 12% and rental income increase from commercial property portfolio following successful lease renewals at above-market rates in the Sharq district"
+    },
+    "top_3_budget_risks": [
+      "KIA investment mandate review in Q2 2025 may redirect Kuwaiti institutional equity flows — Boursa Kuwait dividend income of KWD 3.8M is correlated with institutional participation in the market",
+      "USD sukuk portfolio of KWD 4.2M matures in H1 2025 — reinvestment at current lower yield environment will reduce annual income by KWD 180K",
+      "Generational transfer planning requires independent family office valuation — professional advisory cost of KWD 120K and potential family governance restructuring cost of KWD 280K are not in the 2025 budget"
+    ],
+    "cfo_commentary": "The 2025 budget for the family office reflects our transition from growth-oriented investing to a more balanced income-preservation mandate as the principal approaches retirement. The sukuk reinvestment decision will be the most consequential asset allocation choice of the year — we are evaluating a 5-year ijara sukuk ladder with Boubyan Bank as the primary vehicle for the reinvested capital. Generational transfer planning costs are real and will be addressed in a supplementary budget request.",
+    "board_recommendation": "Approve"
+  },
+  {
+    "scenario_id": "D6-050",
+    "company_name": "Rawabi Connect Telecom Services",
+    "fiscal_year": 2024,
+    "revenue_forecast_aed": 38000000,
+    "ebitda_margin_forecast_pct": 14,
+    "key_assumptions": {
+      "oil_price_usd_bbl": 82,
+      "fx_assumption": "AED/USD peg at 3.67",
+      "headcount_growth_pct": 10,
+      "capex_plan_aed": 4200000
+    },
+    "variance_from_prior_year": {
+      "revenue_variance_pct": 12,
+      "commentary": "Revenue growth driven by 28,000 net new subscriber additions in H1 2024 and a 6% ARPU improvement from data bundle upsell program — bulk employer SIM agreements with 3 Abu Dhabi contractors added 8,200 subscribers in Q2"
+    },
+    "top_3_budget_risks": [
+      "TDRA proposed MVNO minimum ARPU floor regulation, if enacted in 2024, would require immediate repricing and estimated 22% subscriber loss — revenue impact would be AED 8.4M in the year of implementation",
+      "du network wholesale rate renegotiation due Q4 2024 — any increase in access charges would compress the AED 14 average ARPU model to below EBITDA breakeven at current scale",
+      "Monthly subscriber churn of 4.9% requires 7,200 gross additions per month to maintain current base — marketing spend is budgeted at AED 2.8M but Q1 CAC tracking 18% above assumption"
+    ],
+    "cfo_commentary": "The employer bulk SIM program has proven to be our most cost-efficient acquisition channel — corporate SIM agreements through Abu Dhabi contractors cost AED 18 per subscriber versus AED 62 through retail channels. We are prioritizing 3 additional contractor partnerships in H2 to replicate this model. The TDRA minimum ARPU regulation is our most significant external risk and we are actively engaging the TDRA consultation process to provide industry input.",
+    "board_recommendation": "Approve"
+  }
+]

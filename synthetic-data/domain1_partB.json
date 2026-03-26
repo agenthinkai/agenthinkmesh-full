@@ -1,0 +1,366 @@
+[
+  {
+    "scenario_id": "D1-038",
+    "company_name": "Barq EV Charging Network",
+    "sector": "Tech",
+    "deal_type": "Growth Equity",
+    "geography": "UAE",
+    "executive_summary": "Barq EV Charging Network operates 340 AC and DC fast charging points across Dubai, Abu Dhabi, and Sharjah at mall car parks, hotel facilities, and DEWA-approved locations. The company holds an ESMA-certified operator license and has partnership agreements with Emaar, Majid Al Futtaim, and ENOC. Management seeks AED 40M to expand to 1,000 charging points by end 2025 and launch a B2B fleet charging subscription product. EV registrations in UAE grew 148% in 2023 to 24,000 vehicles.",
+    "key_financials": {
+      "revenue_aed": 14000000,
+      "ebitda_aed": 1400000,
+      "ebitda_margin_pct": 10,
+      "asking_multiple_x": 35.0,
+      "implied_ev_aed": 49000000
+    },
+    "investment_thesis": [
+      "UAE EV penetration at 2.1% of new car sales is at an inflection point \u2014 government mandate for 42,000 EVs on UAE roads by 2025 creates guaranteed demand growth for charging infrastructure",
+      "Emaar and MAF partnership agreements provide 180 prime charging locations that are impossible to replicate \u2014 mall landlords will not grant competing operators equivalent placement",
+      "B2B fleet charging subscriptions offer predictable MRR \u2014 12 corporate fleet operators have expressed interest in subscription arrangements totalling AED 3.2M annually"
+    ],
+    "key_risks": [
+      "35x EBITDA entry multiple is unsustainable \u2014 requires 10x EBITDA growth to reach market-rate valuation; dependent on simultaneously achieving volume, utilization, and fleet subscription targets",
+      "Utilization rates average 11% across the network \u2014 at current AED 0.90/kWh revenue and 340 chargers, the business is deeply loss-making on a per-unit basis",
+      "DEWA's own charging network expansion could crowd out private operators if government pricing is subsidized below commercial break-even rates"
+    ],
+    "ic_recommendation": "Pass \u2014 current unit economics and valuation are not investable",
+    "analyst_name": "Tariq Al Hashimi",
+    "date": "2024-03-22"
+  },
+  {
+    "scenario_id": "D1-039",
+    "company_name": "Salam Printing and Packaging",
+    "sector": "Retail",
+    "deal_type": "PE Buyout",
+    "geography": "Kuwait",
+    "executive_summary": "Salam Printing and Packaging is a Kuwait-based commercial printer and flexible packaging manufacturer serving FMCG brands, pharmaceutical companies, and government entities with product labels, flexible pouches, and commercial print materials. The company operates 3 offset presses and 2 flexographic printing lines with 100% utilization for the past 18 months. The founder is 71 with no succession plan. Revenue has compounded at 11% annually for 4 years driven by local FMCG brand growth and pharmaceutical labeling mandates.",
+    "key_financials": {
+      "revenue_kwd": 3800000,
+      "ebitda_kwd": 722000,
+      "ebitda_margin_pct": 19,
+      "asking_multiple_x": 6.5,
+      "implied_ev_kwd": 4693000
+    },
+    "investment_thesis": [
+      "100% capacity utilization for 18 months with customer waitlist demonstrates immediate revenue upside from capex investment in a 4th offset press",
+      "MOH pharmaceutical labeling mandate requires Arabic bilingual labels on all pharmaceuticals sold in Kuwait \u2014 creates non-discretionary recurring demand from pharmaceutical distributors",
+      "6.5x EBITDA entry multiple is at a significant discount to regional print and packaging comparable transactions averaging 8\u20139x \u2014 valuation discipline provides margin of safety"
+    ],
+    "key_risks": [
+      "Founder holds all customer relationships personally \u2014 transition risk is the primary value risk; structured 24-month earnout with relationship transfer milestones is essential",
+      "Equipment age: 2 of 3 offset presses are 12 years old and approaching end of economic life \u2014 maintenance capex of KWD 180,000 annually is likely to step up",
+      "Digital print disruption: short-run digital printing is displacing offset for runs below 5,000 units \u2014 18% of current revenue is in this at-risk segment"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Tariq Al Badr",
+    "date": "2022-07-25"
+  },
+  {
+    "scenario_id": "D1-040",
+    "company_name": "Midan Sports and Wellness",
+    "sector": "Retail",
+    "deal_type": "Growth Equity",
+    "geography": "KSA",
+    "executive_summary": "Midan Sports and Wellness operates 12 premium fitness centers in Riyadh and Jeddah targeting Saudi nationals and expatriates aged 20\u201345 under a proprietary brand. Average monthly membership is SAR 380 with 14,200 active members. Management seeks SAR 28M to open 8 new sites and develop a digital fitness platform. Saudi Vision 2030 targets 40% of the population exercising weekly by 2030 from a 2016 baseline of 13% \u2014 the government is actively co-investing in sports infrastructure.",
+    "key_financials": {
+      "revenue_sar": 64512000,
+      "ebitda_sar": 12902400,
+      "ebitda_margin_pct": 20,
+      "asking_multiple_x": 11.0,
+      "implied_ev_sar": 141926400
+    },
+    "investment_thesis": [
+      "Vision 2030 sports participation target creates a policy-driven secular growth tailwind \u2014 GEA sports infrastructure co-investment and public awareness campaigns are pre-selling gym membership demand",
+      "Saudi female membership segment is underpenetrated \u2014 mixed-gender gym adoption is accelerating post-2017 social reform; female members represent only 28% of Midan's base against a 50% target",
+      "Digital fitness platform optionality creates a capital-light revenue layer that could add SAR 18M ARR without proportional headcount or real estate cost"
+    ],
+    "key_risks": [
+      "Real estate cost for 8 new sites is SAR 22M of the SAR 28M raise \u2014 leaving only SAR 6M for digital platform and working capital; growth equity is underfunded for the stated ambition",
+      "Monthly membership churn of 4.8% is above the 3.5% industry benchmark \u2014 retention investment is required before expansion",
+      "Competition is intensifying rapidly: Fitness Time and Lean Nation are expanding aggressively in Riyadh with pricing 20% below Midan's premium positioning"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Randa Al Shehri",
+    "date": "2023-07-11"
+  },
+  {
+    "scenario_id": "D1-041",
+    "company_name": "Watani Agri Distribution",
+    "sector": "F&B",
+    "deal_type": "PE Buyout",
+    "geography": "Kuwait",
+    "executive_summary": "Watani Agri Distribution is Kuwait's largest independent fresh produce importer and distributor, supplying 420 supermarkets, hotels, and institutional catering companies with fruits, vegetables, and dairy products sourced from Egypt, Jordan, Netherlands, and India. The company operates 4 cold storage facilities with 12,000 pallet capacity and holds exclusive import agency agreements with 6 European produce exporters. The founding Al Watani family is seeking a majority sale after 3 decades of operation.",
+    "key_financials": {
+      "revenue_kwd": 24000000,
+      "ebitda_kwd": 2400000,
+      "ebitda_margin_pct": 10,
+      "asking_multiple_x": 7.0,
+      "implied_ev_kwd": 16800000
+    },
+    "investment_thesis": [
+      "Exclusive European import agency agreements are transferable on change of control and represent an 8-year established relationship advantage unavailable to new market entrants",
+      "Kuwait food import dependency at 90% of consumption creates structural non-discretionary demand \u2014 the business is largely recession-proof",
+      "4 cold storage facilities with 12,000 pallet capacity represent replacement value of KWD 6.8M \u2014 asset backing provides meaningful downside protection"
+    ],
+    "key_risks": [
+      "Thin 10% EBITDA margins leave minimal buffer for commodity price, currency, or freight cost increases \u2014 any combination of adverse inputs could compress EBITDA to zero",
+      "Kuwait Customs clearance process has historically been subject to delays during Ramadan and summer months, creating spoilage risk on perishable inventory",
+      "Ministry of Commerce price monitoring on basic food commodities creates implicit pricing ceiling that limits pass-through during cost inflation periods"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Sulaiman Al Enezi",
+    "date": "2022-06-14"
+  },
+  {
+    "scenario_id": "D1-042",
+    "company_name": "Noor Healthcare REIT Seed",
+    "sector": "Healthcare",
+    "deal_type": "Co-investment",
+    "geography": "UAE",
+    "executive_summary": "Noor Healthcare REIT Seed is an Abu Dhabi-based healthcare real estate vehicle acquiring and leasing specialist medical properties to hospital operators and diagnostic centers under long-term triple net lease structures. An ADGM-domiciled fund holds 65% and is seeking a 20% co-investor for a AED 260M AUM seed portfolio comprising 4 acquired properties in Abu Dhabi and Dubai. All 4 properties are fully leased with 8.2-year average remaining lease tenure and 3% annual rent escalation clauses.",
+    "key_financials": {
+      "revenue_aed": 18000000,
+      "ebitda_aed": 15300000,
+      "ebitda_margin_pct": 85,
+      "asking_multiple_x": 17.0,
+      "implied_ev_aed": 260100000
+    },
+    "investment_thesis": [
+      "Triple net lease structure transfers all property maintenance, insurance, and tax obligations to tenants \u2014 85% EBITDA margin reflects near-zero operational cost at the REIT level",
+      "8.2-year average lease tenure with 3% annual escalation provides a long-dated income stream \u2014 modeled IRR of 9.4% with minimal operational execution risk",
+      "ADGM REIT framework provides tax-efficient distribution structure with no UAE corporate tax on qualifying real estate income"
+    ],
+    "key_risks": [
+      "Healthcare tenant credit risk: if a hospital operator faces financial distress, rental income is at risk; two of four tenants are single-hospital operators without diversified revenue",
+      "17x EBITDA entry reflects income-producing asset premium \u2014 any yield expansion in UAE real estate markets would compress capital value",
+      "REIT liquidity is limited \u2014 co-investor exit dependent on either REIT listing on ADX or secondary sale to another institutional investor"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Shaikha Al Dhaheri",
+    "date": "2024-02-05"
+  },
+  {
+    "scenario_id": "D1-043",
+    "company_name": "Tamkin Digital Government Solutions",
+    "sector": "Tech",
+    "deal_type": "Growth Equity",
+    "geography": "KSA",
+    "executive_summary": "Tamkin Digital Government Solutions is a Riyadh-based govtech company providing citizen service automation, document digitization, and e-workflow platforms to Saudi municipal governments, Vision Realization Offices, and semi-government entities. The company holds active contracts with 14 government bodies and processes 2.4M citizen transactions annually. Management seeks SAR 30M to scale to 30 government clients and develop an AI-powered Arabic language processing module for document automation.",
+    "key_financials": {
+      "revenue_sar": 58000000,
+      "ebitda_sar": 11600000,
+      "ebitda_margin_pct": 20,
+      "asking_multiple_x": 13.0,
+      "implied_ev_sar": 150800000
+    },
+    "investment_thesis": [
+      "Saudi Vision 2030 government digitization mandate requires all government services to be 100% digital by 2025 \u2014 Tamkin's platform is a compliance vehicle, not a discretionary purchase",
+      "Government contract stickiness is structural \u2014 once a ministry digitizes workflows on Tamkin's platform, migrating 10 years of transaction data to a competitor is a multi-year project",
+      "Arabic NLP module is a differentiator that global enterprise software vendors have consistently under-invested in \u2014 opportunity to dominate a linguistically protected niche"
+    ],
+    "key_risks": [
+      "Government payment cycles average 180 days \u2014 SAR 30M growth equity round must include a working capital facility to fund operations between invoicing and collection",
+      "Saudi Aramco Digital and stc Digital are building competing govtech platforms with government balance sheet backing \u2014 competing with sovereign capital is structurally difficult",
+      "AI Arabic NLP module development is technically complex \u2014 dependence on a 4-person ML team for a mission-critical product creates delivery and key person risk"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Majed Al Harbi",
+    "date": "2023-11-08"
+  },
+  {
+    "scenario_id": "D1-044",
+    "company_name": "Andalus Catering Services",
+    "sector": "F&B",
+    "deal_type": "PE Buyout",
+    "geography": "KSA",
+    "executive_summary": "Andalus Catering Services is a Jeddah-based institutional catering company providing food services to hospitals, schools, industrial camps, and government facilities across Makkah and Jeddah regions. The company manages 38 catering contracts serving 24,000 daily covers. Revenue is contracted on 3-year agreements with CPI-linked escalation clauses. The founding family is in a second-generation dispute and has agreed to a full exit as the resolution mechanism. Andalus is the approved caterer for 3 MOH hospitals under long-term health ministry framework agreements.",
+    "key_financials": {
+      "revenue_sar": 195000000,
+      "ebitda_sar": 27300000,
+      "ebitda_margin_pct": 14,
+      "asking_multiple_x": 7.5,
+      "implied_ev_sar": 204750000
+    },
+    "investment_thesis": [
+      "MOH hospital catering agreements provide sovereign-backed revenue certainty \u2014 3 hospital contracts alone represent SAR 68M or 35% of total revenue on multi-year terms",
+      "38 contracts with CPI escalation clauses provide inflation protection \u2014 food cost increases in 2022\u20132023 were substantially passed through without client attrition",
+      "Industrial camp catering in Makkah region benefits from Hajj infrastructure development construction boom \u2014 temporary worker camp contracts are growing 18% annually"
+    ],
+    "key_risks": [
+      "Family dispute creates management instability risk during transition \u2014 two siblings holding minority stakes have indicated they may not cooperate with the buyer's transition plan",
+      "Food safety incident risk: a single contamination event at a hospital catering facility would trigger MOH contract termination and reputational damage across the portfolio",
+      "Labour cost sensitivity: 89% of kitchen staff are non-Saudi; Saudization pressure in the catering sector is increasing under HRSD enforcement"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Ibrahim Al Zahrani",
+    "date": "2022-08-15"
+  },
+  {
+    "scenario_id": "D1-045",
+    "company_name": "Majd Marine Cargo Insurance",
+    "sector": "Retail",
+    "deal_type": "Secondary",
+    "geography": "Kuwait",
+    "executive_summary": "Majd Marine Cargo Insurance is a Kuwait-based specialist marine and cargo insurance underwriting company licensed by CIMA with a portfolio of KWD 12.4M gross written premium. A regional insurance holding company is divesting the subsidiary as part of a portfolio rationalization. The company has a 14-year loss ratio average of 58% against a GCC marine market average of 67%, reflecting disciplined underwriting. Net assets stand at KWD 8.2M against a KWD 6.8M purchase price being offered.",
+    "key_financials": {
+      "revenue_kwd": 12400000,
+      "ebitda_kwd": 2232000,
+      "ebitda_margin_pct": 18,
+      "asking_multiple_x": 3.0,
+      "implied_ev_kwd": 6696000
+    },
+    "investment_thesis": [
+      "Purchase price of KWD 6.8M against net assets of KWD 8.2M represents a 17% discount to book \u2014 buying a profitable insurance business below net asset value is structurally unusual",
+      "14-year combined ratio discipline demonstrates underwriting quality \u2014 58% average loss ratio is 9 percentage points better than GCC market benchmark",
+      "CIMA insurance license for marine underwriting is a multi-year achievement with significant regulatory capital requirements \u2014 replacing this license from scratch would cost more than the acquisition price"
+    ],
+    "key_risks": [
+      "Marine cargo insurance is inherently volatile \u2014 a single large loss year can swing the combined ratio from 58% to 95% and eliminate multiple years of underwriting profit",
+      "Kuwait maritime trade flows are concentrated in oil-related cargo \u2014 any disruption to Kuwaiti oil exports would materially reduce the insurable marine cargo universe",
+      "Post-acquisition integration of underwriting team into a new ownership structure carries retention risk for 3 senior underwriters who hold Lloyd's market relationships"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Hanan Al Fulaij",
+    "date": "2023-04-04"
+  },
+  {
+    "scenario_id": "D1-046",
+    "company_name": "Qusoor Heritage Hotels",
+    "sector": "Retail",
+    "deal_type": "Growth Equity",
+    "geography": "KSA",
+    "executive_summary": "Qusoor Heritage Hotels is a Riyadh-based boutique hotel operator managing 3 heritage properties in AlUla, Diriyah, and Historic Jeddah under long-term lease agreements with the Royal Commission for AlUla, Diriyah Gate Development Authority, and Jeddah Historic District Authority. Average daily rates are SAR 1,800 with 74% annual occupancy. Management seeks SAR 45M to secure 3 additional heritage property leases and develop a luxury camp concept in AlUla. Saudi cultural tourism is the fastest-growing segment under Vision 2030.",
+    "key_financials": {
+      "revenue_sar": 58000000,
+      "ebitda_sar": 13340000,
+      "ebitda_margin_pct": 23,
+      "asking_multiple_x": 12.0,
+      "implied_ev_sar": 160080000
+    },
+    "investment_thesis": [
+      "Royal Commission and DGDA lease agreements for heritage properties are exclusive by definition \u2014 no competing operator can run a hotel inside the designated historic zones without authority approval",
+      "AlUla international visitor target of 2M by 2035 from 110,000 in 2019 represents an 18x volume increase; existing hotel capacity is structurally undersupplied relative to this target",
+      "Heritage luxury tourism commands ADR of SAR 1,800\u20133,200 compared to SAR 650 for Riyadh business hotels \u2014 margin profile is fundamentally superior"
+    ],
+    "key_risks": [
+      "Heritage property lease terms are granted by government authorities whose priorities can change \u2014 lease renewal risk at end of term is a genuine concern given the political nature of these assets",
+      "AlUla is a single-destination risk: 2 of 3 current hotels are in AlUla, which has 4-month peak season concentration between October and March",
+      "International luxury hospitality brand competition is intensifying \u2014 Aman, Six Senses, and Rosewood are all entering Saudi heritage sites with deeper operational expertise"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Bandar Al Dosari",
+    "date": "2023-10-22"
+  },
+  {
+    "scenario_id": "D1-047",
+    "company_name": "Kanz Wealth Technology",
+    "sector": "Tech",
+    "deal_type": "Growth Equity",
+    "geography": "Kuwait",
+    "executive_summary": "Kanz Wealth Technology is a Kuwait City-based robo-advisory and digital wealth management platform licensed by CMA Kuwait offering Shariah-compliant automated portfolio management to retail investors with minimum investment of KWD 250. The platform manages KWD 18M in AUM across 2,400 client accounts. Management seeks KWD 2.2M to enhance the platform, launch a self-directed trading feature, and expand to Bahrain.",
+    "key_financials": {
+      "revenue_kwd": 153000,
+      "ebitda_kwd": -45000,
+      "ebitda_margin_pct": -29,
+      "asking_multiple_x": null,
+      "implied_ev_kwd": 3300000
+    },
+    "investment_thesis": [
+      "CMA Kuwait robo-advisory license is one of only 3 granted since the 2021 regulatory framework \u2014 first-mover regulatory positioning in a market that will scale as Kuwait's young demographic enters the investment lifecycle",
+      "Shariah-compliant automated portfolio management is absent from Kuwait's digital financial services \u2014 the target market of 180,000 Kuwaiti retail investors under 40 is entirely unserved digitally",
+      "Bahrain CMA digital asset management framework is navigable within 6 months \u2014 regional expansion would double addressable market without material technology rebuild"
+    ],
+    "key_risks": [
+      "Business is currently loss-making \u2014 KWD 18M AUM at 0.85% fee generates only KWD 153K revenue against an operating cost base of KWD 198K; path to profitability requires 3x AUM growth",
+      "Kuwaiti retail investor adoption of digital financial products has been slower than regional peers \u2014 cultural preference for advisor-led, relationship-based wealth management is a demand-side constraint",
+      "CMA Kuwait has informally indicated appetite to issue additional robo-advisory licenses \u2014 first-mover advantage may be shorter-lived than management assumes"
+    ],
+    "ic_recommendation": "Hold \u2014 revisit at KWD 40M AUM with demonstrated path to profitability",
+    "analyst_name": "Nour Al Rasheed",
+    "date": "2024-03-28"
+  },
+  {
+    "scenario_id": "D1-048",
+    "company_name": "Mashaer Transport Group",
+    "sector": "Logistics",
+    "deal_type": "PE Buyout",
+    "geography": "KSA",
+    "executive_summary": "Mashaer Transport Group is a Makkah-based passenger and pilgrim transport company operating 1,200 buses under long-term Ministry of Hajj and Umrah contracts for Hajj season operations and year-round Umrah transport services. The company also provides school bus services under MOE contracts in Makkah and Madinah regions. The founding family seeks majority sale with the operational management team retained. Annual Hajj contract revenue of SAR 85M is fixed-price with a 5-year master transport agreement renewed in 2022.",
+    "key_financials": {
+      "revenue_sar": 310000000,
+      "ebitda_sar": 46500000,
+      "ebitda_margin_pct": 15,
+      "asking_multiple_x": 8.0,
+      "implied_ev_sar": 372000000
+    },
+    "investment_thesis": [
+      "Ministry of Hajj and Umrah 5-year master transport agreement provides SAR 85M in annually contracted revenue through 2027 \u2014 sovereign counterparty risk is effectively zero",
+      "1,200-bus fleet represents replacement value of SAR 240M \u2014 asset backing provides significant downside protection in a distressed scenario",
+      "Umrah visitor numbers growing from 8M to target 30M annually under Vision 2030 \u2014 additional transport capacity contracts are directly available to incumbents with proven operational track records"
+    ],
+    "key_risks": [
+      "Ministry of Hajj contract renewal in 2027 is subject to competitive tender \u2014 while Mashaer is the incumbent, tender pricing could compress margins if competition intensifies",
+      "Fleet age: average bus age of 5.8 years requires SAR 48M in replacement capex over the next 3 years to maintain Ministry contractual standards",
+      "Hajj season concentration: 45% of annual revenue is earned in the 30-day Hajj window \u2014 any health crisis, weather event, or geopolitical disruption to Hajj would be catastrophic"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Faris Al Ghamdi",
+    "date": "2023-02-14"
+  },
+  {
+    "scenario_id": "D1-049",
+    "company_name": "Burj Medical Diagnostics",
+    "sector": "Healthcare",
+    "deal_type": "Growth Equity",
+    "geography": "UAE",
+    "executive_summary": "Burj Medical Diagnostics is a Dubai-based diagnostic laboratory network operating 6 collection centers and 2 processing labs with DHA accreditation and CAP certification. The company processes 1.8M tests annually for hospitals, corporate clients, and direct-to-consumer channels. Management seeks AED 32M to open 4 additional collection centers, acquire a radiology center, and launch an at-home sample collection service.",
+    "key_financials": {
+      "revenue_aed": 78000000,
+      "ebitda_aed": 15600000,
+      "ebitda_margin_pct": 20,
+      "asking_multiple_x": 12.0,
+      "implied_ev_aed": 187200000
+    },
+    "investment_thesis": [
+      "CAP certification is held by fewer than 15 UAE laboratories \u2014 it is required for hospital reference lab contracts and insurance panel inclusion, and takes 2 years to obtain",
+      "At-home sample collection is structurally growing post-COVID \u2014 consumer willingness to pay AED 40\u201380 for home collection has been validated in UAE market by Aster and Prime",
+      "Corporate health check contracts with 68 companies provide recurring B2B revenue base of AED 18M annually that is low-churn and procurement-driven"
+    ],
+    "key_risks": [
+      "Radiology center acquisition is speculative \u2014 no target has been identified; AED 14M acquisition budget within the growth equity round assumes a deal that has not been sourced",
+      "Insurance reimbursement rate compression: HAAD and DHA have reduced reimbursement rates for 14 high-volume test categories in 2023 \u2014 further reductions would impact 32% of revenue",
+      "International laboratory chains \u2014 Synlab and Cerba \u2014 are entering UAE through acquisitions; their capital advantage could compress pricing in the corporate health check segment"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Leila Al Nuaimi",
+    "date": "2023-08-28"
+  },
+  {
+    "scenario_id": "D1-050",
+    "company_name": "Durrat Al Khaleej Real Estate",
+    "sector": "Real Estate",
+    "deal_type": "PE Buyout",
+    "geography": "Kuwait",
+    "executive_summary": "Durrat Al Khaleej Real Estate is a Kuwait City-based commercial real estate owner and operator managing a portfolio of 8 office buildings and 3 retail strips totalling 42,000 sqm of lettable area across Sharq, Salmiya, and Kuwait City CBD. Portfolio occupancy stands at 88% with a weighted average lease expiry of 2.8 years. The founding family seeks a full exit; an independent RICS valuation places the portfolio at KWD 34.2M against an asking price of KWD 31.5M.",
+    "key_financials": {
+      "revenue_kwd": 4200000,
+      "ebitda_kwd": 3400000,
+      "ebitda_margin_pct": 81,
+      "asking_multiple_x": 9.3,
+      "implied_ev_kwd": 31500000
+    },
+    "investment_thesis": [
+      "Asking price of KWD 31.5M represents an 8% discount to RICS independent valuation of KWD 34.2M \u2014 acquiring at below appraised value provides immediate mark-to-market upside",
+      "Sharq district office demand is structurally supported by the Kuwait Financial Centre and proximity to Ministry headquarters \u2014 vacancy in this submarket runs structurally below the Kuwait average",
+      "2.8-year WALE provides near-term lease rollover opportunity to reset rents to current market rates, which are 12\u201318% above in-place rents for Sharq grade-A office"
+    ],
+    "key_risks": [
+      "Kuwait commercial real estate market is illiquid \u2014 exit optionality is limited to direct sale to a local family or institution; listed REIT exit is a 3\u20135 year process",
+      "Government office demand, which drives 34% of portfolio occupancy, is subject to ministry budget cycles \u2014 any austerity measure could trigger lease non-renewals",
+      "2.8-year WALE means 40% of the portfolio is up for renewal within 18 months \u2014 occupancy risk during a repositioning or rental renegotiation period is material"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Khaled Al Khaled",
+    "date": "2022-05-30"
+  }
+]

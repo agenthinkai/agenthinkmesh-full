@@ -1,0 +1,1548 @@
+[
+  {
+    "scenario_id": "D7-001",
+    "brand_name": "Baraem Fresh Juice",
+    "market": "Kuwait",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat"
+    ],
+    "sentiment_score": 78,
+    "share_of_voice_pct": {
+      "baraem_fresh_juice": 34,
+      "competitor_1": "Freez",
+      "competitor_1_sov_pct": 28,
+      "competitor_2": "Rani",
+      "competitor_2_sov_pct": 22
+    },
+    "top_performing_content_type": "Ramadan campaign",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "18\u201334",
+      "gender_split": "55% female, 45% male",
+      "nationality_mix": "62% Kuwaiti, 28% Arab expat, 10% South Asian"
+    },
+    "recommended_action": "Double down on Snapchat Stories for product launch content \u2014 68% of Kuwait youth daily Snapchat usage occurs between 8\u201311pm, aligning with post-Iftar consumption peak.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 12,
+      "engagement_rate_pct": 4.8,
+      "cpm_usd": 3.2
+    }
+  },
+  {
+    "scenario_id": "D7-002",
+    "brand_name": "Al Safa Dairy Products",
+    "market": "KSA",
+    "platform_mix": [
+      "Instagram",
+      "TikTok",
+      "X"
+    ],
+    "sentiment_score": 71,
+    "share_of_voice_pct": {
+      "al_safa": 18,
+      "competitor_1": "Almarai",
+      "competitor_1_sov_pct": 48,
+      "competitor_2": "Nadec",
+      "competitor_2_sov_pct": 24
+    },
+    "top_performing_content_type": "influencer",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "20\u201340",
+      "gender_split": "52% female, 48% male",
+      "nationality_mix": "74% Saudi, 18% Arab expat, 8% South Asian"
+    },
+    "recommended_action": "Invest in micro-influencer partnerships with Saudi family lifestyle creators \u2014 accounts with 50K\u2013200K followers generate 3.2x higher engagement per SAR of spend than celebrity endorsements in the dairy category.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 6,
+      "engagement_rate_pct": 2.9,
+      "cpm_usd": 4.1
+    }
+  },
+  {
+    "scenario_id": "D7-003",
+    "brand_name": "Hayat Telecom",
+    "market": "UAE",
+    "platform_mix": [
+      "Instagram",
+      "TikTok",
+      "X"
+    ],
+    "sentiment_score": 58,
+    "share_of_voice_pct": {
+      "hayat_telecom": 12,
+      "competitor_1": "du",
+      "competitor_1_sov_pct": 42,
+      "competitor_2": "Etisalat e&",
+      "competitor_2_sov_pct": 38
+    },
+    "top_performing_content_type": "product launch",
+    "crisis_flag": true,
+    "crisis_description": "Viral TikTok video showing poor customer service call center experience garnered 280K views and 4,200 negative comments within 48 hours.",
+    "audience_demographics": {
+      "age_range": "22\u201338",
+      "gender_split": "58% male, 42% female",
+      "nationality_mix": "28% Emirati, 38% Arab expat, 24% South Asian, 10% other"
+    },
+    "recommended_action": "Activate crisis response protocol immediately \u2014 publish a CEO video apology within 24 hours and deploy a dedicated social media response team to address the 4,200 negative comments individually within 72 hours.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": -3,
+      "engagement_rate_pct": 1.8,
+      "cpm_usd": 6.8
+    }
+  },
+  {
+    "scenario_id": "D7-004",
+    "brand_name": "Nakheel Dates and Gifting",
+    "market": "UAE",
+    "platform_mix": [
+      "Instagram",
+      "TikTok"
+    ],
+    "sentiment_score": 88,
+    "share_of_voice_pct": {
+      "nakheel_dates": 42,
+      "competitor_1": "Al Foah",
+      "competitor_1_sov_pct": 32,
+      "competitor_2": "Bateel",
+      "competitor_2_sov_pct": 18
+    },
+    "top_performing_content_type": "Ramadan campaign",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "28\u201350",
+      "gender_split": "48% female, 52% male",
+      "nationality_mix": "45% Emirati, 32% GCC Arab, 15% Arab expat, 8% other"
+    },
+    "recommended_action": "Launch an Eid corporate gifting pre-order campaign in March targeting procurement managers at UAE government entities \u2014 corporate gifting accounts for 38% of revenue and is untapped on social channels.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 22,
+      "engagement_rate_pct": 6.4,
+      "cpm_usd": 2.8
+    }
+  },
+  {
+    "scenario_id": "D7-005",
+    "brand_name": "Wajd Fashion House",
+    "market": "KSA",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 82,
+    "share_of_voice_pct": {
+      "wajd_fashion": 22,
+      "competitor_1": "Shukr",
+      "competitor_1_sov_pct": 18,
+      "competitor_2": "Modanisa",
+      "competitor_2_sov_pct": 28
+    },
+    "top_performing_content_type": "influencer",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "18\u201335",
+      "gender_split": "82% female, 18% male",
+      "nationality_mix": "88% Saudi, 8% Arab expat, 4% other"
+    },
+    "recommended_action": "Invest in Saudi female micro-influencer network for Hajj and Umrah modest wear content \u2014 pilgrim fashion is a growing content category with high purchase intent and no dominant brand voice.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 18,
+      "engagement_rate_pct": 5.2,
+      "cpm_usd": 3.6
+    }
+  },
+  {
+    "scenario_id": "D7-006",
+    "brand_name": "Rawabi Coffee Roasters",
+    "market": "Kuwait",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat"
+    ],
+    "sentiment_score": 86,
+    "share_of_voice_pct": {
+      "rawabi_coffee": 28,
+      "competitor_1": "Caribou Coffee",
+      "competitor_1_sov_pct": 34,
+      "competitor_2": "Tim Hortons Kuwait",
+      "competitor_2_sov_pct": 22
+    },
+    "top_performing_content_type": "CSR",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "20\u201338",
+      "gender_split": "54% female, 46% male",
+      "nationality_mix": "58% Kuwaiti, 28% Arab expat, 14% South Asian"
+    },
+    "recommended_action": "Amplify the Kuwait pearl diving heritage CSR narrative on Instagram Reels \u2014 content connecting Kuwaiti coffee culture to diwaniya tradition is generating 4.8x average engagement and building authentic brand equity.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 14,
+      "engagement_rate_pct": 5.8,
+      "cpm_usd": 2.4
+    }
+  },
+  {
+    "scenario_id": "D7-007",
+    "brand_name": "Majd Insurance Digital",
+    "market": "KSA",
+    "platform_mix": [
+      "X",
+      "Instagram",
+      "TikTok"
+    ],
+    "sentiment_score": 62,
+    "share_of_voice_pct": {
+      "majd_insurance": 8,
+      "competitor_1": "Tawuniya",
+      "competitor_1_sov_pct": 38,
+      "competitor_2": "Bupa Arabia",
+      "competitor_2_sov_pct": 32
+    },
+    "top_performing_content_type": "product launch",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "25\u201345",
+      "gender_split": "62% male, 38% female",
+      "nationality_mix": "80% Saudi, 14% Arab expat, 6% South Asian"
+    },
+    "recommended_action": "Shift content strategy from product features to insurance literacy \u2014 Saudi consumers rank insurance education 3.2x more engaging than product promotion in financial services.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 4,
+      "engagement_rate_pct": 1.6,
+      "cpm_usd": 5.2
+    }
+  },
+  {
+    "scenario_id": "D7-008",
+    "brand_name": "Thuraya Home Appliances",
+    "market": "Kuwait",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 74,
+    "share_of_voice_pct": {
+      "thuraya_home": 16,
+      "competitor_1": "X-cite",
+      "competitor_1_sov_pct": 44,
+      "competitor_2": "Best Al Yousifi",
+      "competitor_2_sov_pct": 28
+    },
+    "top_performing_content_type": "product launch",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "25\u201345",
+      "gender_split": "58% female, 42% male",
+      "nationality_mix": "52% Kuwaiti, 32% Arab expat, 16% South Asian"
+    },
+    "recommended_action": "Launch a new home setup TikTok series targeting newly married Kuwaiti couples \u2014 the first home content category has zero brand ownership in Kuwait and a proven 6.2% engagement rate across GCC markets.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 8,
+      "engagement_rate_pct": 3.4,
+      "cpm_usd": 3.8
+    }
+  },
+  {
+    "scenario_id": "D7-009",
+    "brand_name": "Falak Financial Services",
+    "market": "UAE",
+    "platform_mix": [
+      "Instagram",
+      "X",
+      "TikTok"
+    ],
+    "sentiment_score": 65,
+    "share_of_voice_pct": {
+      "falak_financial": 6,
+      "competitor_1": "Emirates NBD",
+      "competitor_1_sov_pct": 38,
+      "competitor_2": "FAB",
+      "competitor_2_sov_pct": 32
+    },
+    "top_performing_content_type": "influencer",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "28\u201345",
+      "gender_split": "55% male, 45% female",
+      "nationality_mix": "32% Emirati, 38% Arab expat, 20% South Asian, 10% other"
+    },
+    "recommended_action": "Partner with UAE-based Arabic finance content creators on TikTok \u2014 personal finance education content in Arabic is the fastest-growing content category in UAE with CPM of AED 8.2 versus AED 24 for traditional financial services display advertising.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 5,
+      "engagement_rate_pct": 2.1,
+      "cpm_usd": 6.4
+    }
+  },
+  {
+    "scenario_id": "D7-010",
+    "brand_name": "Rawda Wellness Centers",
+    "market": "KSA",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 84,
+    "share_of_voice_pct": {
+      "rawda_wellness": 24,
+      "competitor_1": "Fitness Time",
+      "competitor_1_sov_pct": 42,
+      "competitor_2": "Lean Nation",
+      "competitor_2_sov_pct": 22
+    },
+    "top_performing_content_type": "influencer",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "18\u201335",
+      "gender_split": "62% female, 38% male",
+      "nationality_mix": "84% Saudi, 12% Arab expat, 4% other"
+    },
+    "recommended_action": "Invest in Saudi female fitness influencer partnerships on Snapchat \u2014 Saudi female gym membership content generates 8.4x average category engagement rate reflecting the social novelty of female public fitness in the post-2017 reform era.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 28,
+      "engagement_rate_pct": 7.2,
+      "cpm_usd": 2.6
+    }
+  },
+  {
+    "scenario_id": "D7-011",
+    "brand_name": "Simsim Electronics Retail",
+    "market": "KSA",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 72,
+    "share_of_voice_pct": {
+      "simsim_electronics": 14,
+      "competitor_1": "Jarir Bookstore",
+      "competitor_1_sov_pct": 38,
+      "competitor_2": "Extra",
+      "competitor_2_sov_pct": 32
+    },
+    "top_performing_content_type": "product launch",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "16\u201335",
+      "gender_split": "68% male, 32% female",
+      "nationality_mix": "72% Saudi, 18% Arab expat, 10% South Asian"
+    },
+    "recommended_action": "Create a dedicated Saudi gaming content vertical on TikTok \u2014 gaming content generates 6.8x category average engagement in KSA and Simsim's gaming accessory range has no current social media voice.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 10,
+      "engagement_rate_pct": 3.8,
+      "cpm_usd": 4.2
+    }
+  },
+  {
+    "scenario_id": "D7-012",
+    "brand_name": "Baraem Children's Fashion",
+    "market": "Kuwait",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat"
+    ],
+    "sentiment_score": 88,
+    "share_of_voice_pct": {
+      "baraem_fashion": 32,
+      "competitor_1": "Mothercare Kuwait",
+      "competitor_1_sov_pct": 28,
+      "competitor_2": "Early Learning Centre",
+      "competitor_2_sov_pct": 18
+    },
+    "top_performing_content_type": "Ramadan campaign",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "25\u201340",
+      "gender_split": "88% female, 12% male",
+      "nationality_mix": "65% Kuwaiti, 24% Arab expat, 11% other"
+    },
+    "recommended_action": "Launch an Eid children's fashion lookbook on Instagram in partnership with 8 Kuwaiti mommy bloggers \u2014 the Eid outfit reveal content format is Kuwait's highest-engagement seasonal content category with 9.2% average engagement rate.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 20,
+      "engagement_rate_pct": 6.8,
+      "cpm_usd": 2.2
+    }
+  },
+  {
+    "scenario_id": "D7-013",
+    "brand_name": "Majd Al Khaleej Real Estate",
+    "market": "UAE",
+    "platform_mix": [
+      "Instagram",
+      "X",
+      "TikTok"
+    ],
+    "sentiment_score": 68,
+    "share_of_voice_pct": {
+      "majd_real_estate": 8,
+      "competitor_1": "Emaar",
+      "competitor_1_sov_pct": 42,
+      "competitor_2": "Aldar",
+      "competitor_2_sov_pct": 28
+    },
+    "top_performing_content_type": "CSR",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "30\u201350",
+      "gender_split": "58% male, 42% female",
+      "nationality_mix": "38% Arab expat, 28% South Asian, 22% Emirati, 12% other"
+    },
+    "recommended_action": "Develop an Arabic-language real estate education series on TikTok covering UAE property investment regulations for expat buyers \u2014 this underserved content need has 340K monthly search volume with zero quality Arabic content available.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 6,
+      "engagement_rate_pct": 2.4,
+      "cpm_usd": 5.8
+    }
+  },
+  {
+    "scenario_id": "D7-014",
+    "brand_name": "Noor Al Khaleeji Bank",
+    "market": "Kuwait",
+    "platform_mix": [
+      "Instagram",
+      "X",
+      "Snapchat"
+    ],
+    "sentiment_score": 70,
+    "share_of_voice_pct": {
+      "noor_bank": 12,
+      "competitor_1": "NBK",
+      "competitor_1_sov_pct": 38,
+      "competitor_2": "KFH",
+      "competitor_2_sov_pct": 32
+    },
+    "top_performing_content_type": "CSR",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "25\u201350",
+      "gender_split": "55% male, 45% female",
+      "nationality_mix": "72% Kuwaiti, 20% Arab expat, 8% South Asian"
+    },
+    "recommended_action": "Build a Kuwait financial literacy content series on Instagram targeting young Kuwaiti professionals \u2014 savings and investment education content generates 4.2x higher engagement than product promotion for Kuwaiti banks.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 5,
+      "engagement_rate_pct": 2.2,
+      "cpm_usd": 4.8
+    }
+  },
+  {
+    "scenario_id": "D7-015",
+    "brand_name": "Rawnaq Restaurant Group",
+    "market": "KSA",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 80,
+    "share_of_voice_pct": {
+      "rawnaq_restaurant": 18,
+      "competitor_1": "Kudu",
+      "competitor_1_sov_pct": 36,
+      "competitor_2": "Herfy",
+      "competitor_2_sov_pct": 28
+    },
+    "top_performing_content_type": "influencer",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "16\u201335",
+      "gender_split": "52% male, 48% female",
+      "nationality_mix": "78% Saudi, 14% Arab expat, 8% South Asian"
+    },
+    "recommended_action": "Deploy a TikTok food challenge campaign for the signature dish \u2014 Saudi food challenge content generates average 2.8M views per viral challenge and drives measurable same-day restaurant visit uplift of 22% in tracked markets.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 24,
+      "engagement_rate_pct": 6.2,
+      "cpm_usd": 2.8
+    }
+  },
+  {
+    "scenario_id": "D7-016",
+    "brand_name": "Al Baraka Organic Foods",
+    "market": "UAE",
+    "platform_mix": [
+      "Instagram",
+      "TikTok"
+    ],
+    "sentiment_score": 82,
+    "share_of_voice_pct": {
+      "al_baraka_organic": 22,
+      "competitor_1": "Kibsons",
+      "competitor_1_sov_pct": 34,
+      "competitor_2": "Organic Foods and Cafe",
+      "competitor_2_sov_pct": 28
+    },
+    "top_performing_content_type": "CSR",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "25\u201345",
+      "gender_split": "64% female, 36% male",
+      "nationality_mix": "28% Emirati, 42% Arab expat, 18% Western expat, 12% other"
+    },
+    "recommended_action": "Create a UAE food security content series highlighting the brand's contribution to domestic agricultural production \u2014 UAE National Food Security Strategy content generates strong organic reach from MOCCAE endorsement channels.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 18,
+      "engagement_rate_pct": 5.4,
+      "cpm_usd": 3.2
+    }
+  },
+  {
+    "scenario_id": "D7-017",
+    "brand_name": "Tamayuz Luxury Cars",
+    "market": "Kuwait",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "X"
+    ],
+    "sentiment_score": 76,
+    "share_of_voice_pct": {
+      "tamayuz_cars": 20,
+      "competitor_1": "Al Sayer Group",
+      "competitor_1_sov_pct": 36,
+      "competitor_2": "Behbehani Motors",
+      "competitor_2_sov_pct": 28
+    },
+    "top_performing_content_type": "product launch",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "25\u201350",
+      "gender_split": "72% male, 28% female",
+      "nationality_mix": "78% Kuwaiti, 14% Arab expat, 8% other"
+    },
+    "recommended_action": "Invest in Kuwait car community Snapchat content featuring Friday morning drive gatherings in Jahra and Khaitan \u2014 authentic community documentation generates 5.8x higher engagement than studio car photography for Kuwaiti automotive brands.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 12,
+      "engagement_rate_pct": 4.2,
+      "cpm_usd": 4.6
+    }
+  },
+  {
+    "scenario_id": "D7-018",
+    "brand_name": "Hayat Pharmacy Chain",
+    "market": "KSA",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 74,
+    "share_of_voice_pct": {
+      "hayat_pharmacy": 14,
+      "competitor_1": "Nahdi",
+      "competitor_1_sov_pct": 44,
+      "competitor_2": "Al Dawaa",
+      "competitor_2_sov_pct": 32
+    },
+    "top_performing_content_type": "CSR",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "22\u201345",
+      "gender_split": "60% female, 40% male",
+      "nationality_mix": "80% Saudi, 14% Arab expat, 6% other"
+    },
+    "recommended_action": "Launch a chronic disease management content series featuring Saudi pharmacist experts \u2014 diabetes and blood pressure management content generates the highest save rate in Saudi health content at 12.4%, indicating purchase intent.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 8,
+      "engagement_rate_pct": 3.2,
+      "cpm_usd": 3.8
+    }
+  },
+  {
+    "scenario_id": "D7-019",
+    "brand_name": "Siraj Solar Technologies",
+    "market": "UAE",
+    "platform_mix": [
+      "Instagram",
+      "X",
+      "TikTok"
+    ],
+    "sentiment_score": 78,
+    "share_of_voice_pct": {
+      "siraj_solar": 18,
+      "competitor_1": "Enova",
+      "competitor_1_sov_pct": 32,
+      "competitor_2": "Yellow Door Energy",
+      "competitor_2_sov_pct": 28
+    },
+    "top_performing_content_type": "CSR",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "28\u201350",
+      "gender_split": "62% male, 38% female",
+      "nationality_mix": "32% Emirati, 38% Arab expat, 18% Western expat, 12% South Asian"
+    },
+    "recommended_action": "Build a UAE net-zero progress content series aligned with COP28 legacy narrative \u2014 solar technology content tied to the UAE climate commitment generates 4.8x organic reach from government and international media amplification.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 14,
+      "engagement_rate_pct": 4.4,
+      "cpm_usd": 3.6
+    }
+  },
+  {
+    "scenario_id": "D7-020",
+    "brand_name": "Nakheel Furniture Kuwait",
+    "market": "Kuwait",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 72,
+    "share_of_voice_pct": {
+      "nakheel_furniture": 18,
+      "competitor_1": "IKEA Kuwait",
+      "competitor_1_sov_pct": 52,
+      "competitor_2": "Marina Home",
+      "competitor_2_sov_pct": 18
+    },
+    "top_performing_content_type": "influencer",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "24\u201342",
+      "gender_split": "72% female, 28% male",
+      "nationality_mix": "58% Kuwaiti, 28% Arab expat, 14% other"
+    },
+    "recommended_action": "Create a diwaniya room design content series on Instagram \u2014 the diwaniya is a uniquely Kuwaiti living space with zero dedicated social media content, representing an authentic brand story that IKEA cannot credibly own.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 9,
+      "engagement_rate_pct": 3.8,
+      "cpm_usd": 3.4
+    }
+  },
+  {
+    "scenario_id": "D7-021",
+    "brand_name": "Rawabi Digital Bank",
+    "market": "KSA",
+    "platform_mix": [
+      "Instagram",
+      "X",
+      "TikTok",
+      "Snapchat"
+    ],
+    "sentiment_score": 76,
+    "share_of_voice_pct": {
+      "rawabi_digital": 10,
+      "competitor_1": "STC Pay",
+      "competitor_1_sov_pct": 36,
+      "competitor_2": "stcpay",
+      "competitor_2_sov_pct": 28
+    },
+    "top_performing_content_type": "product launch",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "18\u201335",
+      "gender_split": "52% male, 48% female",
+      "nationality_mix": "82% Saudi, 12% Arab expat, 6% other"
+    },
+    "recommended_action": "Deploy a Snapchat-first instant account opening campaign targeting Saudi youth under 25 \u2014 Snapchat penetration among Saudi 18\u201324 is 92% and digital bank account opening content in a Story format reduces cost per acquisition by 44% versus Instagram.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 32,
+      "engagement_rate_pct": 5.8,
+      "cpm_usd": 2.8
+    }
+  },
+  {
+    "scenario_id": "D7-022",
+    "brand_name": "Khaleeji Perfume House",
+    "market": "UAE",
+    "platform_mix": [
+      "Instagram",
+      "TikTok",
+      "Snapchat"
+    ],
+    "sentiment_score": 86,
+    "share_of_voice_pct": {
+      "khaleeji_perfume": 28,
+      "competitor_1": "Ajmal",
+      "competitor_1_sov_pct": 34,
+      "competitor_2": "Arabian Oud",
+      "competitor_2_sov_pct": 24
+    },
+    "top_performing_content_type": "influencer",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "22\u201345",
+      "gender_split": "58% female, 42% male",
+      "nationality_mix": "38% Emirati and GCC, 36% Arab expat, 16% South Asian, 10% other"
+    },
+    "recommended_action": "Launch a fragrance heritage storytelling series on Instagram connecting oud traditions to specific GCC geographic regions \u2014 regional oud content generates the highest save rate in UAE luxury category at 14.2% indicating strong gifting purchase intent.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 22,
+      "engagement_rate_pct": 7.4,
+      "cpm_usd": 3.0
+    }
+  },
+  {
+    "scenario_id": "D7-023",
+    "brand_name": "Masaar Healthy Kitchen",
+    "market": "KSA",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 80,
+    "share_of_voice_pct": {
+      "masaar_kitchen": 20,
+      "competitor_1": "Freshii KSA",
+      "competitor_1_sov_pct": 22,
+      "competitor_2": "Lychee",
+      "competitor_2_sov_pct": 24
+    },
+    "top_performing_content_type": "influencer",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "20\u201338",
+      "gender_split": "64% female, 36% male",
+      "nationality_mix": "80% Saudi, 12% Arab expat, 8% other"
+    },
+    "recommended_action": "Create a Saudi sports nutrition content series in partnership with Saudi Pro League players \u2014 the Vision 2030 sports participation mandate is driving a 28% annual increase in health food searches and no brand has claimed sports nutrition authority in Arabic.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 26,
+      "engagement_rate_pct": 6.4,
+      "cpm_usd": 2.6
+    }
+  },
+  {
+    "scenario_id": "D7-024",
+    "brand_name": "Watan Telecom B2B",
+    "market": "Kuwait",
+    "platform_mix": [
+      "X",
+      "Instagram"
+    ],
+    "sentiment_score": 64,
+    "share_of_voice_pct": {
+      "watan_telecom": 14,
+      "competitor_1": "Zain Business",
+      "competitor_1_sov_pct": 44,
+      "competitor_2": "Ooredoo Business",
+      "competitor_2_sov_pct": 34
+    },
+    "top_performing_content_type": "CSR",
+    "crisis_flag": true,
+    "crisis_description": "A government ministry client publicly posted on X about a 14-hour network outage affecting critical government operations, generating 1,200 retweets and ministry-level attention.",
+    "audience_demographics": {
+      "age_range": "28\u201350",
+      "gender_split": "65% male, 35% female",
+      "nationality_mix": "68% Kuwaiti, 24% Arab expat, 8% South Asian"
+    },
+    "recommended_action": "Issue immediate technical resolution statement on X within 6 hours; publish a post-incident report within 72 hours with root cause analysis and SLA compensation commitment \u2014 B2B crisis management requires technical credibility, not emotional marketing.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": -2,
+      "engagement_rate_pct": 1.4,
+      "cpm_usd": 7.2
+    }
+  },
+  {
+    "scenario_id": "D7-025",
+    "brand_name": "Jawhara Jewelry UAE",
+    "market": "UAE",
+    "platform_mix": [
+      "Instagram",
+      "TikTok",
+      "Snapchat"
+    ],
+    "sentiment_score": 84,
+    "share_of_voice_pct": {
+      "jawhara_jewelry": 24,
+      "competitor_1": "Damas",
+      "competitor_1_sov_pct": 38,
+      "competitor_2": "Malabar Gold",
+      "competitor_2_sov_pct": 24
+    },
+    "top_performing_content_type": "Ramadan campaign",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "22\u201345",
+      "gender_split": "76% female, 24% male",
+      "nationality_mix": "38% Emirati and GCC, 32% Arab expat, 22% South Asian, 8% other"
+    },
+    "recommended_action": "Develop a wedding jewelry consultation content series on TikTok \u2014 UAE wedding season content generates 9.2% average engagement in the jewelry category and Jawhara has no current video presence in the bridal segment.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 18,
+      "engagement_rate_pct": 5.8,
+      "cpm_usd": 3.2
+    }
+  },
+  {
+    "scenario_id": "D7-026",
+    "brand_name": "Baraa Sports Retail",
+    "market": "KSA",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 78,
+    "share_of_voice_pct": {
+      "baraa_sports": 16,
+      "competitor_1": "Sun and Sand Sports",
+      "competitor_1_sov_pct": 36,
+      "competitor_2": "Extra Sports",
+      "competitor_2_sov_pct": 28
+    },
+    "top_performing_content_type": "product launch",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "16\u201335",
+      "gender_split": "62% male, 38% female",
+      "nationality_mix": "76% Saudi, 16% Arab expat, 8% other"
+    },
+    "recommended_action": "Build a Saudi women's sports participation content series \u2014 female athlete content from Saudi creators generates 8.8x category average engagement post-2017 and has zero competitive brand ownership among sports retailers.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 20,
+      "engagement_rate_pct": 5.4,
+      "cpm_usd": 3.0
+    }
+  },
+  {
+    "scenario_id": "D7-027",
+    "brand_name": "Safa Hypermarket",
+    "market": "Kuwait",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 70,
+    "share_of_voice_pct": {
+      "safa_hypermarket": 16,
+      "competitor_1": "LuLu Kuwait",
+      "competitor_1_sov_pct": 48,
+      "competitor_2": "Sultan Center",
+      "competitor_2_sov_pct": 26
+    },
+    "top_performing_content_type": "Ramadan campaign",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "25\u201345",
+      "gender_split": "60% female, 40% male",
+      "nationality_mix": "54% Kuwaiti, 30% Arab expat, 16% South Asian"
+    },
+    "recommended_action": "Launch a weekly Snapchat flash deal series specifically for Kuwaiti national brand products \u2014 local brand promotion generates 3.8x higher share rate than international brand promotion among Kuwaiti shoppers.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 8,
+      "engagement_rate_pct": 3.2,
+      "cpm_usd": 3.6
+    }
+  },
+  {
+    "scenario_id": "D7-028",
+    "brand_name": "Rimal Contracting Group",
+    "market": "KSA",
+    "platform_mix": [
+      "X",
+      "Instagram"
+    ],
+    "sentiment_score": 68,
+    "share_of_voice_pct": {
+      "rimal_contracting": 12,
+      "competitor_1": "El Seif Engineering",
+      "competitor_1_sov_pct": 32,
+      "competitor_2": "Saudi Bin Laden Group",
+      "competitor_2_sov_pct": 28
+    },
+    "top_performing_content_type": "CSR",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "28\u201355",
+      "gender_split": "78% male, 22% female",
+      "nationality_mix": "72% Saudi, 20% Arab expat, 8% other"
+    },
+    "recommended_action": "Develop a REDF affordable housing impact content series on X \u2014 B2B construction brands that document social impact outcomes attract Vision 2030 procurement committee attention and generate earned media from government social channels.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 5,
+      "engagement_rate_pct": 1.8,
+      "cpm_usd": 5.4
+    }
+  },
+  {
+    "scenario_id": "D7-029",
+    "brand_name": "Noor Children's Academy",
+    "market": "UAE",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 86,
+    "share_of_voice_pct": {
+      "noor_academy": 22,
+      "competitor_1": "GEMS Education",
+      "competitor_1_sov_pct": 44,
+      "competitor_2": "Taaleem",
+      "competitor_2_sov_pct": 22
+    },
+    "top_performing_content_type": "CSR",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "28\u201345",
+      "gender_split": "72% female, 28% male",
+      "nationality_mix": "32% Arab expat, 28% South Asian, 22% Emirati, 18% other"
+    },
+    "recommended_action": "Build a bilingual Arabic-English early childhood development content series on Instagram \u2014 educational parenting content in Arabic is the fastest-growing parenting content category in UAE with 6.4% average engagement.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 16,
+      "engagement_rate_pct": 5.6,
+      "cpm_usd": 3.0
+    }
+  },
+  {
+    "scenario_id": "D7-030",
+    "brand_name": "Majd Travel and Tourism",
+    "market": "Kuwait",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 80,
+    "share_of_voice_pct": {
+      "majd_travel": 20,
+      "competitor_1": "Al Mulla Travel",
+      "competitor_1_sov_pct": 36,
+      "competitor_2": "Orient Pearl Travel",
+      "competitor_2_sov_pct": 26
+    },
+    "top_performing_content_type": "influencer",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "22\u201345",
+      "gender_split": "54% female, 46% male",
+      "nationality_mix": "72% Kuwaiti, 20% Arab expat, 8% other"
+    },
+    "recommended_action": "Launch a Kuwait-to-Europe summer travel series on Snapchat featuring Kuwaiti travel vloggers \u2014 summer European travel is Kuwait's highest-spend tourism segment and authentic Kuwaiti traveler content generates 7.2% engagement versus 2.1% for promotional content.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 14,
+      "engagement_rate_pct": 4.8,
+      "cpm_usd": 3.2
+    }
+  },
+  {
+    "scenario_id": "D7-031",
+    "brand_name": "Tamam Furniture Online",
+    "market": "UAE",
+    "platform_mix": [
+      "Instagram",
+      "TikTok",
+      "Snapchat"
+    ],
+    "sentiment_score": 76,
+    "share_of_voice_pct": {
+      "tamam_furniture": 14,
+      "competitor_1": "IKEA UAE",
+      "competitor_1_sov_pct": 48,
+      "competitor_2": "2XL Furniture",
+      "competitor_2_sov_pct": 22
+    },
+    "top_performing_content_type": "influencer",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "24\u201342",
+      "gender_split": "68% female, 32% male",
+      "nationality_mix": "38% Arab expat, 28% South Asian, 22% Emirati, 12% other"
+    },
+    "recommended_action": "Create an augmented reality home visualization TikTok series \u2014 AR try-before-you-buy furniture content generates 12.4% save rate in UAE and would differentiate from IKEA's planning app with a more visually compelling social-first format.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 14,
+      "engagement_rate_pct": 4.6,
+      "cpm_usd": 3.4
+    }
+  },
+  {
+    "scenario_id": "D7-032",
+    "brand_name": "Al Nakheel Marine Tourism",
+    "market": "UAE",
+    "platform_mix": [
+      "Instagram",
+      "TikTok",
+      "Snapchat"
+    ],
+    "sentiment_score": 84,
+    "share_of_voice_pct": {
+      "al_nakheel_marine": 26,
+      "competitor_1": "Yellow Boats Dubai",
+      "competitor_1_sov_pct": 34,
+      "competitor_2": "Xclusive Yachts",
+      "competitor_2_sov_pct": 26
+    },
+    "top_performing_content_type": "influencer",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "24\u201345",
+      "gender_split": "52% male, 48% female",
+      "nationality_mix": "38% Western expat, 28% Arab expat, 22% Emirati, 12% other"
+    },
+    "recommended_action": "Develop a Dubai creek heritage marine tour content series targeting Arab heritage travelers \u2014 creek dhow content resonates with Emirati and GCC Arab travelers seeking authentic Dubai cultural experiences and generates 5.8x higher organic reach than luxury yacht content.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 22,
+      "engagement_rate_pct": 6.8,
+      "cpm_usd": 2.8
+    }
+  },
+  {
+    "scenario_id": "D7-033",
+    "brand_name": "Bader Dairy Kuwait",
+    "market": "Kuwait",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat"
+    ],
+    "sentiment_score": 78,
+    "share_of_voice_pct": {
+      "bader_dairy": 28,
+      "competitor_1": "Almarai Kuwait",
+      "competitor_1_sov_pct": 48,
+      "competitor_2": "Nada Dairy",
+      "competitor_2_sov_pct": 18
+    },
+    "top_performing_content_type": "Ramadan campaign",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "25\u201345",
+      "gender_split": "65% female, 35% male",
+      "nationality_mix": "62% Kuwaiti, 26% Arab expat, 12% South Asian"
+    },
+    "recommended_action": "Position as Kuwait's national dairy brand with a Kuwait farming heritage content series \u2014 Almarai's Saudi origin is a vulnerability in the Kuwaiti market; local production authenticity content generates 4.2x higher brand preference score among Kuwaiti consumers.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 10,
+      "engagement_rate_pct": 4.0,
+      "cpm_usd": 3.0
+    }
+  },
+  {
+    "scenario_id": "D7-034",
+    "brand_name": "Rayyan Electric Vehicles",
+    "market": "UAE",
+    "platform_mix": [
+      "Instagram",
+      "TikTok",
+      "X"
+    ],
+    "sentiment_score": 82,
+    "share_of_voice_pct": {
+      "rayyan_ev": 12,
+      "competitor_1": "Tesla UAE",
+      "competitor_1_sov_pct": 48,
+      "competitor_2": "BYD UAE",
+      "competitor_2_sov_pct": 22
+    },
+    "top_performing_content_type": "product launch",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "25\u201345",
+      "gender_split": "68% male, 32% female",
+      "nationality_mix": "32% Emirati, 36% Arab expat, 20% Western expat, 12% South Asian"
+    },
+    "recommended_action": "Create a UAE EV charging infrastructure anxiety content series addressing range anxiety for UAE roads \u2014 charging location content is the highest search volume EV-related query in UAE and no brand owns this educational space.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 28,
+      "engagement_rate_pct": 5.8,
+      "cpm_usd": 3.6
+    }
+  },
+  {
+    "scenario_id": "D7-035",
+    "brand_name": "Sabah Catering Services",
+    "market": "Kuwait",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 74,
+    "share_of_voice_pct": {
+      "sabah_catering": 18,
+      "competitor_1": "Ghabga Catering",
+      "competitor_1_sov_pct": 38,
+      "competitor_2": "Saffar Catering",
+      "competitor_2_sov_pct": 28
+    },
+    "top_performing_content_type": "Ramadan campaign",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "28\u201350",
+      "gender_split": "62% female, 38% male",
+      "nationality_mix": "68% Kuwaiti, 22% Arab expat, 10% other"
+    },
+    "recommended_action": "Build a traditional Kuwaiti Ghabga content series featuring heritage recipes \u2014 Ghabga late-night gathering content is uniquely Kuwait and generates the highest brand recall scores among Kuwaiti consumers versus any other catering content format.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 12,
+      "engagement_rate_pct": 4.4,
+      "cpm_usd": 3.2
+    }
+  },
+  {
+    "scenario_id": "D7-036",
+    "brand_name": "Rawasi Fashion KSA",
+    "market": "KSA",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 66,
+    "share_of_voice_pct": {
+      "rawasi_fashion": 12,
+      "competitor_1": "H&M KSA",
+      "competitor_1_sov_pct": 32,
+      "competitor_2": "Zara KSA",
+      "competitor_2_sov_pct": 38
+    },
+    "top_performing_content_type": "influencer",
+    "crisis_flag": true,
+    "crisis_description": "An influencer post featuring a model in traditional Saudi dress was criticized on X as culturally inaccurate by Saudi heritage accounts, generating 8,400 negative reactions.",
+    "audience_demographics": {
+      "age_range": "16\u201335",
+      "gender_split": "78% female, 22% male",
+      "nationality_mix": "82% Saudi, 12% Arab expat, 6% other"
+    },
+    "recommended_action": "Remove the contested post immediately and issue a cultural authenticity commitment statement; appoint a Saudi cultural heritage consultant for all future heritage-inspired content before publication.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": -4,
+      "engagement_rate_pct": 1.6,
+      "cpm_usd": 7.8
+    }
+  },
+  {
+    "scenario_id": "D7-037",
+    "brand_name": "Tamkin IT Solutions",
+    "market": "KSA",
+    "platform_mix": [
+      "X",
+      "Instagram"
+    ],
+    "sentiment_score": 72,
+    "share_of_voice_pct": {
+      "tamkin_it": 8,
+      "competitor_1": "STC Solutions",
+      "competitor_1_sov_pct": 42,
+      "competitor_2": "IBM KSA",
+      "competitor_2_sov_pct": 28
+    },
+    "top_performing_content_type": "CSR",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "25\u201350",
+      "gender_split": "68% male, 32% female",
+      "nationality_mix": "74% Saudi, 18% Arab expat, 8% other"
+    },
+    "recommended_action": "Build a Saudi digital transformation success story content series on X \u2014 government client case studies documenting Vision 2030 digital outcomes generate 6.2x higher B2B brand consideration than product-focused content in the Saudi IT sector.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 6,
+      "engagement_rate_pct": 2.4,
+      "cpm_usd": 5.2
+    }
+  },
+  {
+    "scenario_id": "D7-038",
+    "brand_name": "Baraka Water Sports UAE",
+    "market": "UAE",
+    "platform_mix": [
+      "Instagram",
+      "TikTok",
+      "Snapchat"
+    ],
+    "sentiment_score": 82,
+    "share_of_voice_pct": {
+      "baraka_water_sports": 22,
+      "competitor_1": "Surf House Dubai",
+      "competitor_1_sov_pct": 28,
+      "competitor_2": "Aquaventure",
+      "competitor_2_sov_pct": 34
+    },
+    "top_performing_content_type": "influencer",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "18\u201338",
+      "gender_split": "54% male, 46% female",
+      "nationality_mix": "34% Western expat, 28% Arab expat, 24% Emirati, 14% South Asian"
+    },
+    "recommended_action": "Launch a UAE water sports safety education series on TikTok \u2014 safety content in the water sports category generates 8.4x higher organic reach than promotional content and is shared by Dubai Tourism and DCD official channels.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 24,
+      "engagement_rate_pct": 6.4,
+      "cpm_usd": 2.8
+    }
+  },
+  {
+    "scenario_id": "D7-039",
+    "brand_name": "Hayat Digital Payments Kuwait",
+    "market": "Kuwait",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "X"
+    ],
+    "sentiment_score": 68,
+    "share_of_voice_pct": {
+      "hayat_payments": 10,
+      "competitor_1": "KNET",
+      "competitor_1_sov_pct": 44,
+      "competitor_2": "Tap Payments",
+      "competitor_2_sov_pct": 28
+    },
+    "top_performing_content_type": "product launch",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "20\u201340",
+      "gender_split": "55% male, 45% female",
+      "nationality_mix": "62% Kuwaiti, 26% Arab expat, 12% South Asian"
+    },
+    "recommended_action": "Launch a Kuwait small business payment success stories series on Instagram \u2014 SME merchant testimonial content drives 4.2x higher B2B payment platform conversion than feature-focused advertising in the Kuwait fintech market.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 8,
+      "engagement_rate_pct": 2.8,
+      "cpm_usd": 4.6
+    }
+  },
+  {
+    "scenario_id": "D7-040",
+    "brand_name": "Al Waha Agricultural Exports",
+    "market": "KSA",
+    "platform_mix": [
+      "Instagram",
+      "X",
+      "TikTok"
+    ],
+    "sentiment_score": 78,
+    "share_of_voice_pct": {
+      "al_waha_agri": 18,
+      "competitor_1": "Al Rajhi Agriculture",
+      "competitor_1_sov_pct": 32,
+      "competitor_2": "Qassim Farms",
+      "competitor_2_sov_pct": 22
+    },
+    "top_performing_content_type": "CSR",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "25\u201350",
+      "gender_split": "58% male, 42% female",
+      "nationality_mix": "80% Saudi, 14% Arab expat, 6% other"
+    },
+    "recommended_action": "Build a Saudi food security documentary content series on TikTok featuring farm-to-table Qassim produce \u2014 Vision 2030 food security content is actively amplified by MOCCAE and MOA government social channels at zero cost.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 12,
+      "engagement_rate_pct": 4.0,
+      "cpm_usd": 3.4
+    }
+  },
+  {
+    "scenario_id": "D7-041",
+    "brand_name": "Rawabi Wellness and Spa",
+    "market": "UAE",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 86,
+    "share_of_voice_pct": {
+      "rawabi_wellness": 24,
+      "competitor_1": "Talise Spa Jumeirah",
+      "competitor_1_sov_pct": 38,
+      "competitor_2": "Anantara Spa",
+      "competitor_2_sov_pct": 24
+    },
+    "top_performing_content_type": "influencer",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "25\u201350",
+      "gender_split": "72% female, 28% male",
+      "nationality_mix": "34% Arab expat, 28% Western expat, 24% Emirati, 14% other"
+    },
+    "recommended_action": "Create an Arabic language wellness ritual content series drawing from Gulf healing traditions \u2014 hammam, henna, and oud rituals as wellness content is generating 8.2% engagement among Emirati and GCC Arab audiences with no luxury brand ownership.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 20,
+      "engagement_rate_pct": 6.8,
+      "cpm_usd": 3.0
+    }
+  },
+  {
+    "scenario_id": "D7-042",
+    "brand_name": "Thuraya Digital Learning",
+    "market": "Kuwait",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 74,
+    "share_of_voice_pct": {
+      "thuraya_learning": 16,
+      "competitor_1": "Mawdoo3",
+      "competitor_1_sov_pct": 28,
+      "competitor_2": "Edraak",
+      "competitor_2_sov_pct": 24
+    },
+    "top_performing_content_type": "CSR",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "16\u201335",
+      "gender_split": "56% female, 44% male",
+      "nationality_mix": "64% Kuwaiti, 24% Arab expat, 12% other"
+    },
+    "recommended_action": "Launch a Kuwait professional certification content series on Instagram targeting young Kuwaiti job seekers \u2014 CPA, CFA, and PMP certification content generates 5.2x higher engagement among Kuwaiti professionals than general learning platform promotion.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 10,
+      "engagement_rate_pct": 3.6,
+      "cpm_usd": 3.8
+    }
+  },
+  {
+    "scenario_id": "D7-043",
+    "brand_name": "Nakheel Smart Home Solutions",
+    "market": "KSA",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 80,
+    "share_of_voice_pct": {
+      "nakheel_smart_home": 18,
+      "competitor_1": "Samsung SmartThings KSA",
+      "competitor_1_sov_pct": 36,
+      "competitor_2": "Xiaomi Smart KSA",
+      "competitor_2_sov_pct": 28
+    },
+    "top_performing_content_type": "product launch",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "24\u201345",
+      "gender_split": "64% male, 36% female",
+      "nationality_mix": "80% Saudi, 14% Arab expat, 6% other"
+    },
+    "recommended_action": "Create a Saudi new home smart setup content series in Arabic \u2014 NEOM and new residential development move-in content is generating 6.4% engagement and Nakheel's Arabic UX differentiates it from Korean and Chinese competitors in this format.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 18,
+      "engagement_rate_pct": 5.0,
+      "cpm_usd": 3.4
+    }
+  },
+  {
+    "scenario_id": "D7-044",
+    "brand_name": "Rawda Health Insurance",
+    "market": "UAE",
+    "platform_mix": [
+      "Instagram",
+      "X",
+      "TikTok"
+    ],
+    "sentiment_score": 62,
+    "share_of_voice_pct": {
+      "rawda_health": 8,
+      "competitor_1": "Daman",
+      "competitor_1_sov_pct": 44,
+      "competitor_2": "AXA Gulf",
+      "competitor_2_sov_pct": 30
+    },
+    "top_performing_content_type": "CSR",
+    "crisis_flag": true,
+    "crisis_description": "Multiple Arabic-language X posts from UAE residents complaining about rejected medical claims went viral with the hashtag #RawdaRejects generating 18,000 impressions in 48 hours.",
+    "audience_demographics": {
+      "age_range": "28\u201350",
+      "gender_split": "52% male, 48% female",
+      "nationality_mix": "32% Arab expat, 28% South Asian, 22% Emirati, 18% other"
+    },
+    "recommended_action": "Activate a dedicated Arabic social media claims support account within 24 hours; resolve publicly visible complaint cases individually and transparently on X; publish claims approval rate data as a credibility-building counter-narrative.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": -6,
+      "engagement_rate_pct": 1.2,
+      "cpm_usd": 8.4
+    }
+  },
+  {
+    "scenario_id": "D7-045",
+    "brand_name": "Wajd Halal Food Delivery",
+    "market": "KSA",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 80,
+    "share_of_voice_pct": {
+      "wajd_halal": 14,
+      "competitor_1": "HungerStation",
+      "competitor_1_sov_pct": 46,
+      "competitor_2": "Jahez",
+      "competitor_2_sov_pct": 28
+    },
+    "top_performing_content_type": "Ramadan campaign",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "18\u201338",
+      "gender_split": "52% male, 48% female",
+      "nationality_mix": "82% Saudi, 12% Arab expat, 6% South Asian"
+    },
+    "recommended_action": "Build a Suhoor meal discovery content series launching 2 weeks before Ramadan \u2014 Suhoor restaurant content is the most underserved food delivery category on Saudi social media with 3.8M monthly searches and zero dominant brand voice.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 22,
+      "engagement_rate_pct": 6.0,
+      "cpm_usd": 2.8
+    }
+  },
+  {
+    "scenario_id": "D7-046",
+    "brand_name": "Simsim Digital Banking",
+    "market": "Kuwait",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "X"
+    ],
+    "sentiment_score": 74,
+    "share_of_voice_pct": {
+      "simsim_banking": 8,
+      "competitor_1": "NBK Online",
+      "competitor_1_sov_pct": 38,
+      "competitor_2": "Boubyan Digital",
+      "competitor_2_sov_pct": 32
+    },
+    "top_performing_content_type": "product launch",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "18\u201338",
+      "gender_split": "55% male, 45% female",
+      "nationality_mix": "68% Kuwaiti, 22% Arab expat, 10% other"
+    },
+    "recommended_action": "Launch a Kuwait youth financial independence content series on Snapchat \u2014 first salary, first investment, and first savings account content generates the highest conversion rate for digital banking acquisition among 18\u201325 year old Kuwaitis.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 16,
+      "engagement_rate_pct": 4.2,
+      "cpm_usd": 3.6
+    }
+  },
+  {
+    "scenario_id": "D7-047",
+    "brand_name": "Mashaer Pilgrim Services",
+    "market": "KSA",
+    "platform_mix": [
+      "Instagram",
+      "X",
+      "TikTok"
+    ],
+    "sentiment_score": 84,
+    "share_of_voice_pct": {
+      "mashaer_pilgrim": 28,
+      "competitor_1": "Al Rajhi Pilgrim Services",
+      "competitor_1_sov_pct": 32,
+      "competitor_2": "Nusuk Platform",
+      "competitor_2_sov_pct": 28
+    },
+    "top_performing_content_type": "CSR",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "30\u201360",
+      "gender_split": "54% male, 46% female",
+      "nationality_mix": "38% Saudi, 34% Arab expat, 18% South Asian, 10% other"
+    },
+    "recommended_action": "Develop a multilingual Hajj preparation content series in Arabic, Urdu, and Malay \u2014 South Asian and Southeast Asian pilgrims represent 42% of annual Hajj volume and are entirely underserved by Arabic-only Hajj service content.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 18,
+      "engagement_rate_pct": 5.6,
+      "cpm_usd": 3.0
+    }
+  },
+  {
+    "scenario_id": "D7-048",
+    "brand_name": "Rawnaq Luxury Real Estate UAE",
+    "market": "UAE",
+    "platform_mix": [
+      "Instagram",
+      "TikTok",
+      "X"
+    ],
+    "sentiment_score": 76,
+    "share_of_voice_pct": {
+      "rawnaq_real_estate": 10,
+      "competitor_1": "Emaar Premium",
+      "competitor_1_sov_pct": 44,
+      "competitor_2": "DAMAC Properties",
+      "competitor_2_sov_pct": 30
+    },
+    "top_performing_content_type": "influencer",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "30\u201355",
+      "gender_split": "58% male, 42% female",
+      "nationality_mix": "28% Arab expat, 24% Western expat, 22% Emirati, 16% South Asian, 10% other"
+    },
+    "recommended_action": "Launch a luxury Dubai lifestyle content series targeting GCC Arab HNW buyers through Arabic Instagram \u2014 GCC Arab buyers represent the fastest-growing luxury real estate buyer segment in Dubai with AED 2.8M average transaction value.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 12,
+      "engagement_rate_pct": 3.8,
+      "cpm_usd": 4.8
+    }
+  },
+  {
+    "scenario_id": "D7-049",
+    "brand_name": "Thuraya Organic Beauty",
+    "market": "Kuwait",
+    "platform_mix": [
+      "Instagram",
+      "Snapchat",
+      "TikTok"
+    ],
+    "sentiment_score": 88,
+    "share_of_voice_pct": {
+      "thuraya_beauty": 26,
+      "competitor_1": "Huda Beauty",
+      "competitor_1_sov_pct": 38,
+      "competitor_2": "Kay Beauty",
+      "competitor_2_sov_pct": 20
+    },
+    "top_performing_content_type": "influencer",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "16\u201338",
+      "gender_split": "88% female, 12% male",
+      "nationality_mix": "62% Kuwaiti, 26% Arab expat, 12% other"
+    },
+    "recommended_action": "Build a natural Arabic beauty ingredients content series featuring Kuwaiti beauty traditions \u2014 rose water, saffron, and turmeric beauty rituals as modern skincare content generate 9.4% engagement among Gulf Arab women and has no competitive brand owner.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 28,
+      "engagement_rate_pct": 7.8,
+      "cpm_usd": 2.4
+    }
+  },
+  {
+    "scenario_id": "D7-050",
+    "brand_name": "Noor Energy Solutions KSA",
+    "market": "KSA",
+    "platform_mix": [
+      "Instagram",
+      "X",
+      "TikTok"
+    ],
+    "sentiment_score": 76,
+    "share_of_voice_pct": {
+      "noor_energy": 14,
+      "competitor_1": "ACWA Power",
+      "competitor_1_sov_pct": 42,
+      "competitor_2": "Saudi Aramco Energy",
+      "competitor_2_sov_pct": 30
+    },
+    "top_performing_content_type": "CSR",
+    "crisis_flag": false,
+    "audience_demographics": {
+      "age_range": "25\u201355",
+      "gender_split": "62% male, 38% female",
+      "nationality_mix": "76% Saudi, 16% Arab expat, 8% other"
+    },
+    "recommended_action": "Build a Saudi household solar ROI calculator content series on TikTok \u2014 residential solar education content is the fastest-growing energy content category in KSA with 4.2M monthly searches and no accessible Arabic financial ROI content available.",
+    "kpi_trend": {
+      "follower_growth_90d_pct": 16,
+      "engagement_rate_pct": 4.6,
+      "cpm_usd": 3.6
+    }
+  }
+]

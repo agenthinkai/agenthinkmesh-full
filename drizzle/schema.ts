@@ -781,3 +781,108 @@ export const mvnoAgentRuns = mysqlTable("mvno_agent_runs", {
 
 export type MvnoAgentRun = typeof mvnoAgentRuns.$inferSelect;
 export type InsertMvnoAgentRun = typeof mvnoAgentRuns.$inferInsert;
+
+// ─── ForecastMesh Tables ──────────────────────────────────────────────────────
+
+export const forecasts = mysqlTable("forecasts", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  title: varchar("title", { length: 255 }).notNull(),
+  forecastType: mysqlEnum("forecastType", ["deadline_risk", "budget_risk", "target_probability"]).notNull(),
+  question: text("question").notNull(),
+  description: text("description"),
+  deadline: timestamp("deadline"),
+  threshold: decimal("threshold", { precision: 15, scale: 2 }),
+  businessArea: varchar("businessArea", { length: 100 }),
+  currentProbability: decimal("currentProbability", { precision: 5, scale: 4 }).notNull().default("0.5000"),
+  previousProbability: decimal("previousProbability", { precision: 5, scale: 4 }),
+  confidenceScore: decimal("confidenceScore", { precision: 5, scale: 4 }).notNull().default("0.5000"),
+  status: mysqlEnum("status", ["on_track", "watchlist", "at_risk", "critical", "resolved"]).notNull().default("watchlist"),
+  agentsJson: text("agentsJson"),
+  documentUrl: varchar("documentUrl", { length: 512 }),
+  isSeeded: boolean("isSeeded").notNull().default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Forecast = typeof forecasts.$inferSelect;
+export type InsertForecast = typeof forecasts.$inferInsert;
+
+export const forecastAgents = mysqlTable("forecast_agents", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  forecastId: varchar("forecastId", { length: 36 }).notNull().references(() => forecasts.id, { onDelete: "cascade" }),
+  agentName: varchar("agentName", { length: 100 }).notNull(),
+  agentRole: varchar("agentRole", { length: 100 }).notNull(),
+  probabilityEstimate: decimal("probabilityEstimate", { precision: 5, scale: 4 }).notNull(),
+  confidence: decimal("confidence", { precision: 5, scale: 4 }).notNull(),
+  upwardForces: text("upwardForces").notNull(),
+  downwardForces: text("downwardForces").notNull(),
+  summary: text("summary").notNull(),
+  recommendedActions: text("recommendedActions").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type ForecastAgent = typeof forecastAgents.$inferSelect;
+export type InsertForecastAgent = typeof forecastAgents.$inferInsert;
+
+export const forecastHistory = mysqlTable("forecast_history", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  forecastId: varchar("forecastId", { length: 36 }).notNull().references(() => forecasts.id, { onDelete: "cascade" }),
+  probability: decimal("probability", { precision: 5, scale: 4 }).notNull(),
+  confidence: decimal("confidence", { precision: 5, scale: 4 }).notNull(),
+  delta: decimal("delta", { precision: 5, scale: 4 }).notNull().default("0.0000"),
+  cause: varchar("cause", { length: 255 }).notNull(),
+  agentSource: varchar("agentSource", { length: 100 }),
+  eventType: mysqlEnum("eventType", ["agent_update", "manual_update", "trigger_fired", "document_added", "status_change"]).notNull().default("agent_update"),
+  recordedAt: timestamp("recordedAt").defaultNow().notNull(),
+});
+export type ForecastHistory = typeof forecastHistory.$inferSelect;
+export type InsertForecastHistory = typeof forecastHistory.$inferInsert;
+
+export const forecastTriggers = mysqlTable("forecast_triggers", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  forecastId: varchar("forecastId", { length: 36 }).notNull().references(() => forecasts.id, { onDelete: "cascade" }),
+  triggerType: mysqlEnum("triggerType", ["probability_drop", "low_confidence", "status_worsened", "deadline_approaching"]).notNull(),
+  threshold: decimal("threshold", { precision: 5, scale: 4 }),
+  firedAt: timestamp("firedAt").defaultNow().notNull(),
+  description: text("description").notNull(),
+  actionsTaken: text("actionsTaken"),
+  resolved: boolean("resolved").notNull().default(false),
+  resolvedAt: timestamp("resolvedAt"),
+});
+export type ForecastTrigger = typeof forecastTriggers.$inferSelect;
+export type InsertForecastTrigger = typeof forecastTriggers.$inferInsert;
+
+export const forecastDocuments = mysqlTable("forecast_documents", {
+  id: varchar("id", { length: 36 }).primaryKey(),
+  forecastId: varchar("forecastId", { length: 36 }).notNull().references(() => forecasts.id, { onDelete: "cascade" }),
+  filename: varchar("filename", { length: 255 }).notNull(),
+  s3Url: varchar("s3Url", { length: 512 }).notNull(),
+  extractedText: text("extractedText"),
+  uploadedAt: timestamp("uploadedAt").defaultNow().notNull(),
+});
+export type ForecastDocument = typeof forecastDocuments.$inferSelect;
+export type InsertForecastDocument = typeof forecastDocuments.$inferInsert;
+
+// ── Knowledge Vault (RAG Synthetic Data) ─────────────────────────────────────
+export const knowledgeScenarios = mysqlTable("knowledge_scenarios", {
+  id: int("id").autoincrement().primaryKey(),
+  scenarioId: varchar("scenarioId", { length: 32 }).notNull().unique(),
+  domain: mysqlEnum("domain", [
+    "deal_screening",
+    "wealth_management",
+    "insurance_underwriting",
+    "mvno_intelligence",
+    "legal_review",
+    "budget_forecasting",
+    "social_media",
+    "ic_reports"
+  ]).notNull(),
+  title: varchar("title", { length: 512 }).notNull(),
+  summary: text("summary").notNull(),
+  content: text("content").notNull(),
+  geography: varchar("geography", { length: 128 }),
+  sector: varchar("sector", { length: 128 }),
+  tags: text("tags"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type KnowledgeScenario = typeof knowledgeScenarios.$inferSelect;
+export type InsertKnowledgeScenario = typeof knowledgeScenarios.$inferInsert;

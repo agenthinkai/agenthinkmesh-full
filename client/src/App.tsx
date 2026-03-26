@@ -54,6 +54,10 @@ import IntelligenceBriefs from "./pages/IntelligenceBriefs";
 import IntelligenceHistory from "./pages/IntelligenceHistory";
 import IntelligenceAdmin from "./pages/IntelligenceAdmin";
 import Telco from "./pages/Telco";
+import ForecastDashboard from "./pages/ForecastDashboard";
+import ForecastNew from "./pages/ForecastNew";
+import ForecastDetail from "./pages/ForecastDetail";
+import KnowledgeVault from "./pages/KnowledgeVault";
 import { useAuth } from "./_core/hooks/useAuth";
 
 function Router() {
@@ -171,6 +175,16 @@ function Router() {
 
       {/* MVNO Intelligence — Kuwait Telco */}
       <Route path="/telco" component={Telco} />
+
+      {/* ForecastMesh — Probability Forecasting Engine */}
+      <Route path="/forecast" component={ForecastDashboard} />
+      <Route path="/forecast/new" component={ForecastNew} />
+      <Route path="/forecast/:id" component={ForecastDetail} />
+      <Route path="/forecast/:id/activity" component={ForecastDetail} />
+      <Route path="/forecast/:id/actions" component={ForecastDetail} />
+
+      {/* Knowledge Vault — RAG Grounding Layer */}
+      <Route path="/knowledge-vault" component={KnowledgeVault} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

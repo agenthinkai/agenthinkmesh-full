@@ -1,0 +1,30 @@
+{
+  "query": "SELECT domain, COUNT(*) as count FROM knowledge_scenarios GROUP BY domain ORDER BY domain;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT domain, COUNT(*) as count FROM knowledge_scenarios GROUP BY domain ORDER BY domain;",
+  "rows": [
+    {
+      "domain": "insurance_underwriting",
+      "count": "60"
+    },
+    {
+      "domain": "mvno_intelligence",
+      "count": "50"
+    },
+    {
+      "domain": "legal_review",
+      "count": "50"
+    },
+    {
+      "domain": "budget_forecasting",
+      "count": "50"
+    },
+    {
+      "domain": "ic_reports",
+      "count": "50"
+    }
+  ],
+  "messages": [],
+  "stdout": "domain\tcount\ninsurance_underwriting\t60\nmvno_intelligence\t50\nlegal_review\t50\nbudget_forecasting\t50\nic_reports\t50\n",
+  "stderr": "",
+  "execution_time_ms": 1570
+}

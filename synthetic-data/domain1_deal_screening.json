@@ -1,0 +1,39 @@
+[
+  {
+    "scenario_id": "D1-001",
+    "company_name": "Al Nakheel Logistics Group",
+    "sector": "Logistics",
+    "deal_type": "PE Buyout",
+    "geography": "Kuwait",
+    "executive_summary": "Al Nakheel Logistics Group is a Kuwait-based third-party logistics provider with operations spanning Kuwait, KSA, and Bahrain. The company operates a fleet of 340 vehicles and manages 3 bonded warehouses in Shuwaikh and Mina Abdullah. Revenue has grown at 14% CAGR over three years driven by e-commerce fulfillment and government contract wins. Seller is the founding Al Nakheel family seeking partial liquidity ahead of a generational transition.",
+    "key_financials": {"revenue_kwd": 8400000, "ebitda_kwd": 1680000, "ebitda_margin_pct": 20, "asking_multiple_x": 7.5, "implied_ev_kwd": 12600000},
+    "investment_thesis": ["Dominant position in Kuwait bonded logistics with 22% market share and long-term MOD and MOH supply contracts providing revenue visibility", "E-commerce tailwind: Kuwait online retail penetration growing from 8% to projected 19% by 2026, directly benefiting last-mile fulfillment capacity", "Platform acquisition opportunity — fragmented GCC logistics market supports a buy-and-build strategy anchored on Al Nakheel's existing licenses and relationships"],
+    "key_risks": ["Customer concentration: top 3 clients represent 41% of revenue; loss of any single government contract would materially impact EBITDA", "Fleet age: average vehicle age of 7.2 years requires KWD 1.2M capex over 24 months to maintain operational standards", "Family governance transition risk — two sons with divergent views on post-sale management roles may create operational instability post-close"],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Faisal Al Mutairi",
+    "date": "2023-03-14"
+  },
+  {
+    "scenario_id": "D1-002",
+    "company_name": "Rawabi Medical Centers",
+    "sector": "Healthcare",
+    "deal_type": "Growth Equity",
+    "geography": "KSA",
+    "executive_summary": "Rawabi Medical Centers is a Riyadh-based outpatient clinic network with 11 branches across Riyadh and Jeddah. The company specializes in chronic disease management, women's health, and preventive care aligned with Vision 2030 health sector privatization priorities. Management is seeking SAR 45M growth capital to expand to 20 branches by 2026 and develop a proprietary digital health platform. Existing shareholders include a prominent Al-Rajhi family office holding 35%.",
+    "key_financials": {"revenue_sar": 62000000, "ebitda_sar": 11160000, "ebitda_margin_pct": 18, "asking_multiple_x": 9.2, "implied_ev_sar": 102720000},
+    "investment_thesis": ["Vision 2030 healthcare privatization creates structural tailwind — NHIF expansion mandates increased private sector capacity, directly benefiting Rawabi's outpatient model", "Defensible unit economics: average clinic reaches EBITDA breakeven at month 14 with SAR 3.2M investment, demonstrated across last 6 openings", "Digital health optionality — management's EMR and telemedicine roadmap positions the platform for a SaaS licensing model to smaller clinic networks"],
+    "key_risks": ["NHIF reimbursement rate risk: 38% of revenue is NHIF-linked; any tariff revision downward would compress margins materially", "Physician retention: 4 senior consultants represent disproportionate patient loyalty; non-compete structures are currently inadequate", "Execution risk on expansion — management team has not previously scaled beyond 12 units; COO hire is outstanding"],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Noura Al Qahtani",
+    "date": "2023-07-22"
+  },
+  {
+    "scenario_id": "D1-003",
+    "company_name": "Gulf Star Food Industries",
+    "sector": "F&B",
+    "deal_type": "Co-investment",
+    "geography": "UAE",
+    "executive_summary": "Gulf Star Food Industries is a Dubai-based manufacturer and distributor of Arabic sweets, bakery products, and packaged dates targeting retail, hospitality, and gifting channels across UAE and Oman. The company supplies 340 hotels and 1,200 retail outlets including Carrefour and LuLu Hypermarket. A lead PE investor has structured a co-investment round at AED 185M EV seeking a minority co-investor for 15% of the equity. Revenue is highly seasonal with 34% concentration in Ramadan and Eid periods.",
+    "key_financials": {"revenue_aed": 94000000, "ebitda_aed": 16920000, "ebitda_margin_pct": 18, "asking_multiple_x": 10.9, "implied_ev_aed": 185000000},
+    "investment_thesis": ["Gifting culture in GCC creates durable demand ceiling — corporate and personal gifting of dates and Arabic sweets is a social obligation insulated from discretionary spending cycles", "Export optionality to diaspora markets in UK, Germany, and North America is underdeveloped; management has received inbound from two UK distributors", "Lead investor brings operational expertise; co-investment structure offers PE-level returns with reduced execution responsibility"],
+    "key_risks": ["Seasonal concentration creates working capital strain — the business draws 60% of its annual credit facility in Q1 ahead of Ramadan", "Input cost exposure: dates and premium nuts are commodity-priced; margin compression in h

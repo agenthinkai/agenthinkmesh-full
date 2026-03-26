@@ -1,0 +1,46 @@
+{
+  "query": "SELECT domain, COUNT(*) as seeded, \n  CASE domain\n    WHEN 'deal_screening' THEN 75\n    WHEN 'wealth_management' THEN 75\n    WHEN 'insurance_underwriting' THEN 60\n    WHEN 'mvno_intelligence' THEN 50\n    WHEN 'legal_review' THEN 50\n    WHEN 'budget_forecasting' THEN 50\n    WHEN 'social_media' THEN 50\n    WHEN 'ic_reports' THEN 50\n  END as target,\n  CASE domain\n    WHEN 'deal_screening' THEN 75\n    WHEN 'wealth_management' THEN 75\n    WHEN 'insurance_underwriting' THEN 60\n    WHEN 'mvno_intelligence' THEN 50\n    WHEN 'legal_review' THEN 50\n    WHEN 'budget_forecasting' THEN 50\n    WHEN 'social_media' THEN 50\n    WHEN 'ic_reports' THEN 50\n  END - COUNT(*) as missing\nFROM knowledge_scenarios \nGROUP BY domain \nORDER BY domain;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT domain, COUNT(*) as seeded, \n  CASE domain\n    WHEN 'deal_screening' THEN 75\n    WHEN 'wealth_management' THEN 75\n    WHEN 'insurance_underwriting' THEN 60\n    WHEN 'mvno_intelligence' THEN 50\n    WHEN 'legal_review' THEN 50\n    WHEN 'budget_forecasting' THEN 50\n    WHEN 'social_media' THEN 50\n    WHEN 'ic_reports' THEN 50\n  END as target,\n  CASE domain\n    WHEN 'deal_screening' THEN 75\n    WHEN 'wealth_management' THEN 75\n    WHEN 'insurance_underwriting' THEN 60\n    WHEN 'mvno_intelligence' THEN 50\n    WHEN 'legal_review' THEN 50\n    WHEN 'budget_forecasting' THEN 50\n    WHEN 'social_media' THEN 50\n    WHEN 'ic_reports' THEN 50\n  END - COUNT(*) as missing\nFROM knowledge_scenarios \nGROUP BY domain \nORDER BY domain;",
+  "rows": [
+    {
+      "domain": "deal_screening",
+      "seeded": "74",
+      "target": "75",
+      "missing": "1"
+    },
+    {
+      "domain": "insurance_underwriting",
+      "seeded": "60",
+      "target": "60",
+      "missing": "0"
+    },
+    {
+      "domain": "mvno_intelligence",
+      "seeded": "50",
+      "target": "50",
+      "missing": "0"
+    },
+    {
+      "domain": "legal_review",
+      "seeded": "50",
+      "target": "50",
+      "missing": "0"
+    },
+    {
+      "domain": "budget_forecasting",
+      "seeded": "50",
+      "target": "50",
+      "missing": "0"
+    },
+    {
+      "domain": "ic_reports",
+      "seeded": "50",
+      "target": "50",
+      "missing": "0"
+    }
+  ],
+  "messages": [],
+  "stdout": "domain\tseeded\ttarget\tmissing\ndeal_screening\t74\t75\t1\ninsurance_underwriting\t60\t60\t0\nmvno_intelligence\t50\t50\t0\nlegal_review\t50\t50\t0\nbudget_forecasting\t50\t50\t0\nic_reports\t50\t50\t0\n",
+  "stderr": "",
+  "execution_time_ms": 1560
+}

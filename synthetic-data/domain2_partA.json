@@ -1,0 +1,853 @@
+[
+  {
+    "scenario_id": "D2-001",
+    "client_name": "Abdulaziz Al Saqr",
+    "nationality": "Kuwaiti",
+    "age_bracket": "45-55",
+    "net_worth_range": "KD 2M-10M",
+    "liquidity_preference": "medium",
+    "risk_appetite": "balanced",
+    "current_portfolio_allocation": {
+      "equities_pct": 35,
+      "fixed_income_pct": 20,
+      "real_estate_pct": 30,
+      "alternatives_pct": 10,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "generational wealth",
+      "business succession"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "succession planning",
+    "recommended_agent_action": "flag inheritance structure \u2014 review waqf establishment options for real estate portfolio and initiate family investment policy statement"
+  },
+  {
+    "scenario_id": "D2-002",
+    "client_name": "Maryam Al Rashidi",
+    "nationality": "Kuwaiti",
+    "age_bracket": "35-45",
+    "net_worth_range": "KD 500K-2M",
+    "liquidity_preference": "high",
+    "risk_appetite": "growth",
+    "current_portfolio_allocation": {
+      "equities_pct": 55,
+      "fixed_income_pct": 5,
+      "real_estate_pct": 15,
+      "alternatives_pct": 20,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "retirement",
+      "philanthropy"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "market volatility",
+    "recommended_agent_action": "rebalance \u2014 reduce alternatives exposure from 20% to 12% and increase sukuk allocation to provide downside buffer given current Gulf equity market volatility"
+  },
+  {
+    "scenario_id": "D2-003",
+    "client_name": "Fahad Al Mutairi",
+    "nationality": "Kuwaiti",
+    "age_bracket": "55-65",
+    "net_worth_range": "KD 10M+",
+    "liquidity_preference": "low",
+    "risk_appetite": "conservative",
+    "current_portfolio_allocation": {
+      "equities_pct": 15,
+      "fixed_income_pct": 40,
+      "real_estate_pct": 35,
+      "alternatives_pct": 5,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "generational wealth",
+      "philanthropy"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "succession planning",
+    "recommended_agent_action": "schedule IC briefing \u2014 review sukuk ladder maturity profile against anticipated family distribution timeline and assess waqf structure for Mishref residential properties"
+  },
+  {
+    "scenario_id": "D2-004",
+    "client_name": "Noura Al Sabah",
+    "nationality": "Kuwaiti",
+    "age_bracket": "35-45",
+    "net_worth_range": "KD 2M-10M",
+    "liquidity_preference": "high",
+    "risk_appetite": "growth",
+    "current_portfolio_allocation": {
+      "equities_pct": 50,
+      "fixed_income_pct": 10,
+      "real_estate_pct": 10,
+      "alternatives_pct": 25,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "retirement",
+      "generational wealth"
+    ],
+    "shariah_compliance_required": false,
+    "key_concern": "currency risk",
+    "recommended_agent_action": "rebalance \u2014 USD-denominated alternatives exposure at 25% is creating FX concentration risk against KWD base; recommend partial hedge via GCC equity sukuk in KWD"
+  },
+  {
+    "scenario_id": "D2-005",
+    "client_name": "Bader Al Fulaij",
+    "nationality": "Kuwaiti",
+    "age_bracket": "55-65",
+    "net_worth_range": "KD 10M+",
+    "liquidity_preference": "low",
+    "risk_appetite": "conservative",
+    "current_portfolio_allocation": {
+      "equities_pct": 20,
+      "fixed_income_pct": 45,
+      "real_estate_pct": 25,
+      "alternatives_pct": 5,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "generational wealth",
+      "business succession"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "succession planning",
+    "recommended_agent_action": "flag inheritance structure \u2014 three adult sons with divergent risk appetites require a family investment charter; recommend engaging a GCC family governance advisor alongside wealth review"
+  },
+  {
+    "scenario_id": "D2-006",
+    "client_name": "Latifa Al Hamdan",
+    "nationality": "Kuwaiti",
+    "age_bracket": "45-55",
+    "net_worth_range": "KD 500K-2M",
+    "liquidity_preference": "medium",
+    "risk_appetite": "balanced",
+    "current_portfolio_allocation": {
+      "equities_pct": 30,
+      "fixed_income_pct": 25,
+      "real_estate_pct": 30,
+      "alternatives_pct": 5,
+      "cash_pct": 10
+    },
+    "investment_goals": [
+      "retirement",
+      "philanthropy"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "market volatility",
+    "recommended_agent_action": "review sukuk allocation \u2014 current fixed income is entirely in conventional bonds; transition to AAOIFI-compliant sukuk required to align with Shariah mandate"
+  },
+  {
+    "scenario_id": "D2-007",
+    "client_name": "Mohammed Al Kharafi",
+    "nationality": "Kuwaiti",
+    "age_bracket": "55-65",
+    "net_worth_range": "KD 10M+",
+    "liquidity_preference": "low",
+    "risk_appetite": "conservative",
+    "current_portfolio_allocation": {
+      "equities_pct": 25,
+      "fixed_income_pct": 30,
+      "real_estate_pct": 35,
+      "alternatives_pct": 8,
+      "cash_pct": 2
+    },
+    "investment_goals": [
+      "generational wealth",
+      "business succession"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "regulatory exposure",
+    "recommended_agent_action": "schedule IC briefing \u2014 concentrated real estate holdings in three Gulf markets require regulatory review following ADGM beneficial ownership disclosure requirements effective Q1 2024"
+  },
+  {
+    "scenario_id": "D2-008",
+    "client_name": "Sara Al Enezi",
+    "nationality": "Kuwaiti",
+    "age_bracket": "35-45",
+    "net_worth_range": "KD 500K-2M",
+    "liquidity_preference": "high",
+    "risk_appetite": "growth",
+    "current_portfolio_allocation": {
+      "equities_pct": 60,
+      "fixed_income_pct": 5,
+      "real_estate_pct": 10,
+      "alternatives_pct": 20,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "retirement",
+      "generational wealth"
+    ],
+    "shariah_compliance_required": false,
+    "key_concern": "market volatility",
+    "recommended_agent_action": "rebalance \u2014 60% equities concentration with 40% in US tech is creating single-market risk; recommend rotating 15% into GCC dividend equities for income diversification"
+  },
+  {
+    "scenario_id": "D2-009",
+    "client_name": "Waleed Al Jassar",
+    "nationality": "Kuwaiti",
+    "age_bracket": "45-55",
+    "net_worth_range": "KD 2M-10M",
+    "liquidity_preference": "medium",
+    "risk_appetite": "balanced",
+    "current_portfolio_allocation": {
+      "equities_pct": 40,
+      "fixed_income_pct": 20,
+      "real_estate_pct": 25,
+      "alternatives_pct": 10,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "business succession",
+      "retirement"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "succession planning",
+    "recommended_agent_action": "flag inheritance structure \u2014 family holding company in Cayman Islands requires review for Kuwait CMA compliance under new cross-border investment disclosure rules effective 2024"
+  },
+  {
+    "scenario_id": "D2-010",
+    "client_name": "Dalal Al Babtain",
+    "nationality": "Kuwaiti",
+    "age_bracket": "45-55",
+    "net_worth_range": "KD 2M-10M",
+    "liquidity_preference": "medium",
+    "risk_appetite": "balanced",
+    "current_portfolio_allocation": {
+      "equities_pct": 35,
+      "fixed_income_pct": 30,
+      "real_estate_pct": 20,
+      "alternatives_pct": 10,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "philanthropy",
+      "retirement"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "market volatility",
+    "recommended_agent_action": "review sukuk allocation \u2014 recommend restructuring fixed income into a 3-year ijara sukuk ladder from Kuwait Finance House and Boubyan Bank issuances to improve yield visibility"
+  },
+  {
+    "scenario_id": "D2-011",
+    "client_name": "Turki Al Faisal",
+    "nationality": "Saudi",
+    "age_bracket": "45-55",
+    "net_worth_range": "KD 2M-10M",
+    "liquidity_preference": "medium",
+    "risk_appetite": "balanced",
+    "current_portfolio_allocation": {
+      "equities_pct": 40,
+      "fixed_income_pct": 20,
+      "real_estate_pct": 25,
+      "alternatives_pct": 10,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "generational wealth",
+      "retirement"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "succession planning",
+    "recommended_agent_action": "flag inheritance structure \u2014 Saudi inheritance law under Hanbali fiqh requires male and female heir allocation review; recommend engaging a Saudi notary and Shariah scholar for estate plan"
+  },
+  {
+    "scenario_id": "D2-012",
+    "client_name": "Reem Al Qahtani",
+    "nationality": "Saudi",
+    "age_bracket": "35-45",
+    "net_worth_range": "KD 500K-2M",
+    "liquidity_preference": "high",
+    "risk_appetite": "growth",
+    "current_portfolio_allocation": {
+      "equities_pct": 55,
+      "fixed_income_pct": 10,
+      "real_estate_pct": 15,
+      "alternatives_pct": 15,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "retirement",
+      "philanthropy"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "market volatility",
+    "recommended_agent_action": "rebalance \u2014 Tadawul exposure at 35% of equities allocation is above strategic limit; recommend rotating 10% into international Shariah-compliant equities for geographic diversification"
+  },
+  {
+    "scenario_id": "D2-013",
+    "client_name": "Khalid Al Angari",
+    "nationality": "Saudi",
+    "age_bracket": "55-65",
+    "net_worth_range": "KD 10M+",
+    "liquidity_preference": "low",
+    "risk_appetite": "conservative",
+    "current_portfolio_allocation": {
+      "equities_pct": 20,
+      "fixed_income_pct": 35,
+      "real_estate_pct": 35,
+      "alternatives_pct": 5,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "generational wealth",
+      "business succession"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "succession planning",
+    "recommended_agent_action": "schedule IC briefing \u2014 illiquid real estate at 35% requires liquidity event planning ahead of anticipated generational transfer; review REIT conversion feasibility for Jeddah commercial assets"
+  },
+  {
+    "scenario_id": "D2-014",
+    "client_name": "Hessa Al Dosari",
+    "nationality": "Saudi",
+    "age_bracket": "35-45",
+    "net_worth_range": "KD 500K-2M",
+    "liquidity_preference": "high",
+    "risk_appetite": "growth",
+    "current_portfolio_allocation": {
+      "equities_pct": 50,
+      "fixed_income_pct": 10,
+      "real_estate_pct": 10,
+      "alternatives_pct": 25,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "retirement",
+      "generational wealth"
+    ],
+    "shariah_compliance_required": false,
+    "key_concern": "currency risk",
+    "recommended_agent_action": "rebalance \u2014 SAR-pegged portfolio with 25% in USD private equity creates implicit USD dependency; recommend SAR-denominated sukuk to reduce currency concentration"
+  },
+  {
+    "scenario_id": "D2-015",
+    "client_name": "Abdullah Al Otaibi",
+    "nationality": "Saudi",
+    "age_bracket": "45-55",
+    "net_worth_range": "KD 2M-10M",
+    "liquidity_preference": "medium",
+    "risk_appetite": "balanced",
+    "current_portfolio_allocation": {
+      "equities_pct": 38,
+      "fixed_income_pct": 22,
+      "real_estate_pct": 28,
+      "alternatives_pct": 8,
+      "cash_pct": 4
+    },
+    "investment_goals": [
+      "business succession",
+      "generational wealth"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "succession planning",
+    "recommended_agent_action": "flag inheritance structure \u2014 family trading business held personally by client requires incorporation into a family holding company before estate plan can be properly structured"
+  },
+  {
+    "scenario_id": "D2-016",
+    "client_name": "Nora Al Shehri",
+    "nationality": "Saudi",
+    "age_bracket": "45-55",
+    "net_worth_range": "KD 500K-2M",
+    "liquidity_preference": "medium",
+    "risk_appetite": "balanced",
+    "current_portfolio_allocation": {
+      "equities_pct": 30,
+      "fixed_income_pct": 30,
+      "real_estate_pct": 25,
+      "alternatives_pct": 5,
+      "cash_pct": 10
+    },
+    "investment_goals": [
+      "retirement",
+      "philanthropy"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "market volatility",
+    "recommended_agent_action": "review sukuk allocation \u2014 cash position at 10% is above strategic target; deploy SAR 120K into 2-year SABIC sukuk at current 5.4% yield to improve portfolio income"
+  },
+  {
+    "scenario_id": "D2-017",
+    "client_name": "Meshal Al Harbi",
+    "nationality": "Saudi",
+    "age_bracket": "35-45",
+    "net_worth_range": "KD 2M-10M",
+    "liquidity_preference": "high",
+    "risk_appetite": "growth",
+    "current_portfolio_allocation": {
+      "equities_pct": 55,
+      "fixed_income_pct": 8,
+      "real_estate_pct": 12,
+      "alternatives_pct": 20,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "retirement",
+      "generational wealth"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "market volatility",
+    "recommended_agent_action": "rebalance \u2014 GCC tech equities at 28% of equity allocation are overweight relative to sector benchmark; recommend trimming and rotating into MENA healthcare equities for defensive positioning"
+  },
+  {
+    "scenario_id": "D2-018",
+    "client_name": "Lujain Al Zahrani",
+    "nationality": "Saudi",
+    "age_bracket": "35-45",
+    "net_worth_range": "KD 500K-2M",
+    "liquidity_preference": "high",
+    "risk_appetite": "growth",
+    "current_portfolio_allocation": {
+      "equities_pct": 60,
+      "fixed_income_pct": 5,
+      "real_estate_pct": 10,
+      "alternatives_pct": 20,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "retirement",
+      "philanthropy"
+    ],
+    "shariah_compliance_required": false,
+    "key_concern": "market volatility",
+    "recommended_agent_action": "rebalance \u2014 alternatives at 20% concentrated in US venture capital creates illiquidity mismatch against stated high liquidity preference; recommend partial redemption and redeployment into listed GCC equities"
+  },
+  {
+    "scenario_id": "D2-019",
+    "client_name": "Faisal Al Ghamdi",
+    "nationality": "Saudi",
+    "age_bracket": "55-65",
+    "net_worth_range": "KD 10M+",
+    "liquidity_preference": "low",
+    "risk_appetite": "conservative",
+    "current_portfolio_allocation": {
+      "equities_pct": 18,
+      "fixed_income_pct": 42,
+      "real_estate_pct": 30,
+      "alternatives_pct": 5,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "generational wealth",
+      "business succession"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "succession planning",
+    "recommended_agent_action": "schedule IC briefing \u2014 client approaching retirement with SAR 28M in illiquid real estate; recommend phased divestment plan with proceeds into income-generating sukuk over 36-month horizon"
+  },
+  {
+    "scenario_id": "D2-020",
+    "client_name": "Maha Al Shamrani",
+    "nationality": "Saudi",
+    "age_bracket": "45-55",
+    "net_worth_range": "KD 2M-10M",
+    "liquidity_preference": "medium",
+    "risk_appetite": "balanced",
+    "current_portfolio_allocation": {
+      "equities_pct": 35,
+      "fixed_income_pct": 25,
+      "real_estate_pct": 28,
+      "alternatives_pct": 7,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "philanthropy",
+      "retirement"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "regulatory exposure",
+    "recommended_agent_action": "review sukuk allocation \u2014 client has expressed intent to establish a charitable endowment; review waqf vehicle options under Saudi Awqaf Authority and AAOIFI endowment sukuk structures"
+  },
+  {
+    "scenario_id": "D2-021",
+    "client_name": "Hamdan Al Nuaimi",
+    "nationality": "Emirati",
+    "age_bracket": "45-55",
+    "net_worth_range": "KD 2M-10M",
+    "liquidity_preference": "medium",
+    "risk_appetite": "balanced",
+    "current_portfolio_allocation": {
+      "equities_pct": 35,
+      "fixed_income_pct": 20,
+      "real_estate_pct": 32,
+      "alternatives_pct": 8,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "generational wealth",
+      "business succession"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "succession planning",
+    "recommended_agent_action": "flag inheritance structure \u2014 UAE personal status law applicable to Muslim nationals requires estate planning review; recommend family council formation and investment policy statement for 3 adult children"
+  },
+  {
+    "scenario_id": "D2-022",
+    "client_name": "Shaikha Al Dhaheri",
+    "nationality": "Emirati",
+    "age_bracket": "35-45",
+    "net_worth_range": "KD 500K-2M",
+    "liquidity_preference": "high",
+    "risk_appetite": "growth",
+    "current_portfolio_allocation": {
+      "equities_pct": 50,
+      "fixed_income_pct": 10,
+      "real_estate_pct": 15,
+      "alternatives_pct": 20,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "retirement",
+      "generational wealth"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "market volatility",
+    "recommended_agent_action": "rebalance \u2014 Abu Dhabi real estate at 15% is concentrated in a single residential property; recommend diversification into REIT units listed on ADX for liquidity and yield improvement"
+  },
+  {
+    "scenario_id": "D2-023",
+    "client_name": "Khalifa Al Mazrouei",
+    "nationality": "Emirati",
+    "age_bracket": "55-65",
+    "net_worth_range": "KD 10M+",
+    "liquidity_preference": "low",
+    "risk_appetite": "conservative",
+    "current_portfolio_allocation": {
+      "equities_pct": 22,
+      "fixed_income_pct": 38,
+      "real_estate_pct": 30,
+      "alternatives_pct": 5,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "generational wealth",
+      "philanthropy"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "succession planning",
+    "recommended_agent_action": "schedule IC briefing \u2014 client holds 4 Abu Dhabi commercial properties; recommend review of ADX REIT conversion structure to facilitate partial liquidity ahead of estate distribution"
+  },
+  {
+    "scenario_id": "D2-024",
+    "client_name": "Maitha Al Mansoori",
+    "nationality": "Emirati",
+    "age_bracket": "35-45",
+    "net_worth_range": "KD 500K-2M",
+    "liquidity_preference": "high",
+    "risk_appetite": "growth",
+    "current_portfolio_allocation": {
+      "equities_pct": 55,
+      "fixed_income_pct": 8,
+      "real_estate_pct": 12,
+      "alternatives_pct": 20,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "retirement",
+      "philanthropy"
+    ],
+    "shariah_compliance_required": false,
+    "key_concern": "currency risk",
+    "recommended_agent_action": "rebalance \u2014 20% alternatives in USD-denominated private credit creates FX mismatch; recommend partial rotation into AED-denominated ADGM-listed sukuk"
+  },
+  {
+    "scenario_id": "D2-025",
+    "client_name": "Saeed Al Ketbi",
+    "nationality": "Emirati",
+    "age_bracket": "45-55",
+    "net_worth_range": "KD 2M-10M",
+    "liquidity_preference": "medium",
+    "risk_appetite": "balanced",
+    "current_portfolio_allocation": {
+      "equities_pct": 40,
+      "fixed_income_pct": 22,
+      "real_estate_pct": 25,
+      "alternatives_pct": 8,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "business succession",
+      "generational wealth"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "regulatory exposure",
+    "recommended_agent_action": "flag inheritance structure \u2014 ADGM holding company structure requires annual economic substance review; recommend engaging ADGM registered agent for 2024 compliance filing"
+  },
+  {
+    "scenario_id": "D2-026",
+    "client_name": "Hind Al Suwaidi",
+    "nationality": "Emirati",
+    "age_bracket": "45-55",
+    "net_worth_range": "KD 2M-10M",
+    "liquidity_preference": "medium",
+    "risk_appetite": "balanced",
+    "current_portfolio_allocation": {
+      "equities_pct": 32,
+      "fixed_income_pct": 28,
+      "real_estate_pct": 28,
+      "alternatives_pct": 7,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "retirement",
+      "philanthropy"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "market volatility",
+    "recommended_agent_action": "review sukuk allocation \u2014 fixed income entirely in conventional bonds; transition to AAOIFI-compliant sukuk from Emirates Islamic and Dubai Islamic Bank issuances"
+  },
+  {
+    "scenario_id": "D2-027",
+    "client_name": "Obaid Al Falasi",
+    "nationality": "Emirati",
+    "age_bracket": "55-65",
+    "net_worth_range": "KD 10M+",
+    "liquidity_preference": "low",
+    "risk_appetite": "conservative",
+    "current_portfolio_allocation": {
+      "equities_pct": 15,
+      "fixed_income_pct": 45,
+      "real_estate_pct": 32,
+      "alternatives_pct": 5,
+      "cash_pct": 3
+    },
+    "investment_goals": [
+      "generational wealth",
+      "business succession"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "succession planning",
+    "recommended_agent_action": "schedule IC briefing \u2014 client holds 6 Dubai commercial properties with no holding structure; ADGM family foundation establishment recommended ahead of estate distribution to 4 heirs"
+  },
+  {
+    "scenario_id": "D2-028",
+    "client_name": "Moza Al Marri",
+    "nationality": "Emirati",
+    "age_bracket": "35-45",
+    "net_worth_range": "KD 500K-2M",
+    "liquidity_preference": "high",
+    "risk_appetite": "growth",
+    "current_portfolio_allocation": {
+      "equities_pct": 58,
+      "fixed_income_pct": 7,
+      "real_estate_pct": 10,
+      "alternatives_pct": 20,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "retirement",
+      "generational wealth"
+    ],
+    "shariah_compliance_required": false,
+    "key_concern": "market volatility",
+    "recommended_agent_action": "rebalance \u2014 US tech equities at 35% of equity allocation create single-sector concentration risk; rotate 12% into MENA financials and healthcare for defensive diversification"
+  },
+  {
+    "scenario_id": "D2-029",
+    "client_name": "Tariq Al Hashimi",
+    "nationality": "Emirati",
+    "age_bracket": "45-55",
+    "net_worth_range": "KD 2M-10M",
+    "liquidity_preference": "medium",
+    "risk_appetite": "balanced",
+    "current_portfolio_allocation": {
+      "equities_pct": 38,
+      "fixed_income_pct": 22,
+      "real_estate_pct": 28,
+      "alternatives_pct": 8,
+      "cash_pct": 4
+    },
+    "investment_goals": [
+      "business succession",
+      "retirement"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "regulatory exposure",
+    "recommended_agent_action": "flag inheritance structure \u2014 UAE Cabinet Resolution 58/2020 on beneficial ownership requires disclosure of holdings above AED 2M threshold; compliance review required before Q2 2024"
+  },
+  {
+    "scenario_id": "D2-030",
+    "client_name": "Fatima Al Blooshi",
+    "nationality": "Emirati",
+    "age_bracket": "35-45",
+    "net_worth_range": "KD 500K-2M",
+    "liquidity_preference": "high",
+    "risk_appetite": "growth",
+    "current_portfolio_allocation": {
+      "equities_pct": 52,
+      "fixed_income_pct": 8,
+      "real_estate_pct": 15,
+      "alternatives_pct": 18,
+      "cash_pct": 7
+    },
+    "investment_goals": [
+      "retirement",
+      "philanthropy"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "market volatility",
+    "recommended_agent_action": "rebalance \u2014 cash at 7% is above strategic target; deploy AED 85K into Emirates Islamic 3-year sukuk at 5.2% yield and reduce alternatives from 18% to 14%"
+  },
+  {
+    "scenario_id": "D2-031",
+    "client_name": "Nawaf Al Rashidi",
+    "nationality": "Bahraini",
+    "age_bracket": "45-55",
+    "net_worth_range": "KD 2M-10M",
+    "liquidity_preference": "medium",
+    "risk_appetite": "balanced",
+    "current_portfolio_allocation": {
+      "equities_pct": 35,
+      "fixed_income_pct": 25,
+      "real_estate_pct": 28,
+      "alternatives_pct": 8,
+      "cash_pct": 4
+    },
+    "investment_goals": [
+      "generational wealth",
+      "retirement"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "currency risk",
+    "recommended_agent_action": "review sukuk allocation \u2014 Bahraini dinar peg to USD provides natural hedge on USD sukuk; recommend increasing USD sukuk from 12% to 20% of fixed income to capture current yield premium"
+  },
+  {
+    "scenario_id": "D2-032",
+    "client_name": "Hanan Al Khalifa",
+    "nationality": "Bahraini",
+    "age_bracket": "35-45",
+    "net_worth_range": "KD 500K-2M",
+    "liquidity_preference": "high",
+    "risk_appetite": "growth",
+    "current_portfolio_allocation": {
+      "equities_pct": 55,
+      "fixed_income_pct": 8,
+      "real_estate_pct": 12,
+      "alternatives_pct": 20,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "retirement",
+      "generational wealth"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "market volatility",
+    "recommended_agent_action": "rebalance \u2014 Bahrain Bourse equities at 30% of equity allocation is home-country bias; recommend rotating 10% into GCC ex-Bahrain equities via Shariah-compliant ETF listed on Tadawul"
+  },
+  {
+    "scenario_id": "D2-033",
+    "client_name": "Ahmed Al Mannai",
+    "nationality": "Bahraini",
+    "age_bracket": "55-65",
+    "net_worth_range": "KD 10M+",
+    "liquidity_preference": "low",
+    "risk_appetite": "conservative",
+    "current_portfolio_allocation": {
+      "equities_pct": 18,
+      "fixed_income_pct": 42,
+      "real_estate_pct": 30,
+      "alternatives_pct": 5,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "generational wealth",
+      "business succession"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "succession planning",
+    "recommended_agent_action": "schedule IC briefing \u2014 client approaching retirement with BHD 8M in Manama commercial real estate; recommend Bahrain CBB-regulated REIT conversion to facilitate phased liquidity for estate distribution"
+  },
+  {
+    "scenario_id": "D2-034",
+    "client_name": "Zainab Al Zayani",
+    "nationality": "Bahraini",
+    "age_bracket": "35-45",
+    "net_worth_range": "KD 500K-2M",
+    "liquidity_preference": "high",
+    "risk_appetite": "growth",
+    "current_portfolio_allocation": {
+      "equities_pct": 50,
+      "fixed_income_pct": 10,
+      "real_estate_pct": 15,
+      "alternatives_pct": 20,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "retirement",
+      "philanthropy"
+    ],
+    "shariah_compliance_required": false,
+    "key_concern": "currency risk",
+    "recommended_agent_action": "rebalance \u2014 20% alternatives in USD private equity creates FX concentration; recommend partial redemption into BHD-denominated Bahrain sovereign sukuk at current 5.6% yield"
+  },
+  {
+    "scenario_id": "D2-035",
+    "client_name": "Khalid Al Rumaihi",
+    "nationality": "Bahraini",
+    "age_bracket": "45-55",
+    "net_worth_range": "KD 2M-10M",
+    "liquidity_preference": "medium",
+    "risk_appetite": "balanced",
+    "current_portfolio_allocation": {
+      "equities_pct": 38,
+      "fixed_income_pct": 22,
+      "real_estate_pct": 26,
+      "alternatives_pct": 9,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "business succession",
+      "generational wealth"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "succession planning",
+    "recommended_agent_action": "flag inheritance structure \u2014 family trading business in Manama requires corporate restructuring before succession; recommend CBB-regulated family holding company establishment"
+  },
+  {
+    "scenario_id": "D2-036",
+    "client_name": "Amira Al Dosari",
+    "nationality": "Bahraini",
+    "age_bracket": "45-55",
+    "net_worth_range": "KD 500K-2M",
+    "liquidity_preference": "medium",
+    "risk_appetite": "balanced",
+    "current_portfolio_allocation": {
+      "equities_pct": 30,
+      "fixed_income_pct": 30,
+      "real_estate_pct": 25,
+      "alternatives_pct": 5,
+      "cash_pct": 10
+    },
+    "investment_goals": [
+      "retirement",
+      "philanthropy"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "market volatility",
+    "recommended_agent_action": "review sukuk allocation \u2014 cash at 10% is above strategic target of 5%; deploy BHD 28K into Ithmaar Bank 2-year murabaha deposit at 4.8% to improve income yield"
+  },
+  {
+    "scenario_id": "D2-037",
+    "client_name": "Sultan Al Nuaimi",
+    "nationality": "Emirati",
+    "age_bracket": "55-65",
+    "net_worth_range": "KD 10M+",
+    "liquidity_preference": "low",
+    "risk_appetite": "conservative",
+    "current_portfolio_allocation": {
+      "equities_pct": 20,
+      "fixed_income_pct": 35,
+      "real_estate_pct": 35,
+      "alternatives_pct": 5,
+      "cash_pct": 5
+    },
+    "investment_goals": [
+      "generational wealth",
+      "philanthropy"
+    ],
+    "shariah_compliance_required": true,
+    "key_concern": "regulatory exposure",
+    "recommended_agent_action": "schedule IC briefing \u2014 client holds UAE and KSA real estate across two jurisdictions; ADGM foundation structure recommended to consolidate cross-border holdings under unified governance"
+  }
+]

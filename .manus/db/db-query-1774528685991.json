@@ -1,0 +1,94 @@
+{
+  "query": "SELECT COUNT(*) as total FROM knowledge_scenarios WHERE domain = 'social_media';\nSELECT scenarioId FROM knowledge_scenarios WHERE domain = 'social_media' ORDER BY scenarioId;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT COUNT(*) as total FROM knowledge_scenarios WHERE domain = 'social_media';\nSELECT scenarioId FROM knowledge_scenarios WHERE domain = 'social_media' ORDER BY scenarioId;",
+  "rows": [
+    {
+      "total": "26"
+    },
+    {
+      "total": "scenarioId"
+    },
+    {
+      "total": "D7-002"
+    },
+    {
+      "total": "D7-005"
+    },
+    {
+      "total": "D7-006"
+    },
+    {
+      "total": "D7-007"
+    },
+    {
+      "total": "D7-010"
+    },
+    {
+      "total": "D7-011"
+    },
+    {
+      "total": "D7-013"
+    },
+    {
+      "total": "D7-015"
+    },
+    {
+      "total": "D7-017"
+    },
+    {
+      "total": "D7-018"
+    },
+    {
+      "total": "D7-020"
+    },
+    {
+      "total": "D7-021"
+    },
+    {
+      "total": "D7-022"
+    },
+    {
+      "total": "D7-023"
+    },
+    {
+      "total": "D7-024"
+    },
+    {
+      "total": "D7-025"
+    },
+    {
+      "total": "D7-028"
+    },
+    {
+      "total": "D7-029"
+    },
+    {
+      "total": "D7-030"
+    },
+    {
+      "total": "D7-031"
+    },
+    {
+      "total": "D7-037"
+    },
+    {
+      "total": "D7-039"
+    },
+    {
+      "total": "D7-041"
+    },
+    {
+      "total": "D7-046"
+    },
+    {
+      "total": "D7-049"
+    },
+    {
+      "total": "D7-050"
+    }
+  ],
+  "messages": [],
+  "stdout": "total\n26\nscenarioId\nD7-002\nD7-005\nD7-006\nD7-007\nD7-010\nD7-011\nD7-013\nD7-015\nD7-017\nD7-018\nD7-020\nD7-021\nD7-022\nD7-023\nD7-024\nD7-025\nD7-028\nD7-029\nD7-030\nD7-031\nD7-037\nD7-039\nD7-041\nD7-046\nD7-049\nD7-050\n",
+  "stderr": "",
+  "execution_time_ms": 1803
+}

@@ -1187,3 +1187,26 @@
 - [ ] Rewrite IntelligenceHome.tsx to compose all components, preserve tRPC hooks
 - [ ] Add PDF export button wired to existing pdfReport.ts
 - [ ] tsc: 0 errors, all 140 tests pass
+
+## ForecastMesh Module
+
+- [x] Drizzle schema: forecasts, forecastHistory, forecastAgentInputs, forecastTriggers, forecastActions tables
+- [x] tRPC router: forecast.create, forecast.list, forecast.getById, forecast.addHistoryEntry, forecast.runAgentAnalysis, forecast.delete
+- [x] ForecastDashboard page at /forecast (list view with stats, type filters, status badges)
+- [x] ForecastNew page at /forecast/new (3 forecast type selector, form with validation)
+- [x] ForecastDetail page at /forecast/:id (agent breakdown, triggers, probability chart with Recharts)
+- [x] Routes registered in App.tsx (/forecast, /forecast/new, /forecast/:id)
+- [x] ForecastMesh nav link added to SiteNav (both landing and non-landing sections)
+- [x] Recharts installed for probability history charts
+
+## Knowledge Vault (RAG Grounding Layer)
+
+- [x] Drizzle schema: knowledge_scenarios table (BIGINT id, domain, scenarioId, title, summary, geography, sector, parsedContent JSON)
+- [x] knowledge_scenarios table created via direct SQL (BIGINT to avoid TiDB auto-increment overflow)
+- [x] Synthetic data generation prompt (460 scenarios across 8 GCC domains) — PDF exported
+- [x] All 460 scenarios seeded: deal_screening(75), wealth_management(75), insurance_underwriting(60), mvno_intelligence(50), legal_review(50), budget_forecasting(50), social_media(50), ic_reports(50)
+- [x] tRPC router: knowledgeVault.list (paginated, domain filter, text search), knowledgeVault.stats, knowledgeVault.getById, knowledgeVault.search (semantic)
+- [x] KnowledgeVault UI page at /knowledge-vault (domain filter pills, search, scenario cards, detail panel)
+- [x] Knowledge Vault nav link added to SiteNav (amber color, brain emoji)
+- [x] 6 vitest tests for Knowledge Vault router — all passing
+- [x] TypeScript: 0 errors

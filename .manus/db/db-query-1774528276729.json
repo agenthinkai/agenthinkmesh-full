@@ -1,0 +1,41 @@
+{
+  "query": "SELECT domain, COUNT(*) as seeded FROM knowledge_scenarios GROUP BY domain ORDER BY domain;\nSELECT COUNT(*) as grand_total FROM knowledge_scenarios;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT domain, COUNT(*) as seeded FROM knowledge_scenarios GROUP BY domain ORDER BY domain;\nSELECT COUNT(*) as grand_total FROM knowledge_scenarios;",
+  "rows": [
+    {
+      "domain": "deal_screening",
+      "seeded": "75"
+    },
+    {
+      "domain": "wealth_management",
+      "seeded": "75"
+    },
+    {
+      "domain": "insurance_underwriting",
+      "seeded": "60"
+    },
+    {
+      "domain": "mvno_intelligence",
+      "seeded": "50"
+    },
+    {
+      "domain": "legal_review",
+      "seeded": "50"
+    },
+    {
+      "domain": "budget_forecasting",
+      "seeded": "50"
+    },
+    {
+      "domain": "ic_reports",
+      "seeded": "50"
+    }
+  ],
+  "messages": [
+    "grand_total",
+    "410"
+  ],
+  "stdout": "domain\tseeded\ndeal_screening\t75\nwealth_management\t75\ninsurance_underwriting\t60\nmvno_intelligence\t50\nlegal_review\t50\nbudget_forecasting\t50\nic_reports\t50\ngrand_total\n410\n",
+  "stderr": "",
+  "execution_time_ms": 1856
+}

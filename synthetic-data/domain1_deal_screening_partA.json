@@ -1,0 +1,1038 @@
+[
+  {
+    "scenario_id": "D1-001",
+    "company_name": "Al Nakheel Logistics Group",
+    "sector": "Logistics",
+    "deal_type": "PE Buyout",
+    "geography": "Kuwait",
+    "executive_summary": "Al Nakheel Logistics Group is a Kuwait-based third-party logistics provider with operations spanning Kuwait, KSA, and Bahrain. The company operates a fleet of 340 vehicles and manages 3 bonded warehouses in Shuwaikh and Mina Abdullah. Revenue has grown at 14% CAGR over three years driven by e-commerce fulfillment and government contract wins. Seller is the founding Al Nakheel family seeking partial liquidity ahead of a generational transition.",
+    "key_financials": {
+      "revenue_kwd": 8400000,
+      "ebitda_kwd": 1680000,
+      "ebitda_margin_pct": 20,
+      "asking_multiple_x": 7.5,
+      "implied_ev_kwd": 12600000
+    },
+    "investment_thesis": [
+      "Dominant position in Kuwait bonded logistics with 22% market share and long-term MOD and MOH supply contracts providing revenue visibility",
+      "E-commerce tailwind: Kuwait online retail penetration growing from 8% to projected 19% by 2026, directly benefiting last-mile fulfillment capacity",
+      "Platform acquisition opportunity — fragmented GCC logistics market supports a buy-and-build strategy anchored on Al Nakheel's existing licenses and relationships"
+    ],
+    "key_risks": [
+      "Customer concentration: top 3 clients represent 41% of revenue; loss of any single government contract would materially impact EBITDA",
+      "Fleet age: average vehicle age of 7.2 years requires KWD 1.2M capex over 24 months to maintain operational standards",
+      "Family governance transition risk — two sons with divergent views on post-sale management roles may create operational instability post-close"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Faisal Al Mutairi",
+    "date": "2023-03-14"
+  },
+  {
+    "scenario_id": "D1-002",
+    "company_name": "Rawabi Medical Centers",
+    "sector": "Healthcare",
+    "deal_type": "Growth Equity",
+    "geography": "KSA",
+    "executive_summary": "Rawabi Medical Centers is a Riyadh-based outpatient clinic network with 11 branches across Riyadh and Jeddah. The company specializes in chronic disease management, women's health, and preventive care aligned with Vision 2030 health sector privatization priorities. Management is seeking SAR 45M growth capital to expand to 20 branches by 2026 and develop a proprietary digital health platform. Existing shareholders include a prominent Al-Rajhi family office holding 35%.",
+    "key_financials": {
+      "revenue_sar": 62000000,
+      "ebitda_sar": 11160000,
+      "ebitda_margin_pct": 18,
+      "asking_multiple_x": 9.2,
+      "implied_ev_sar": 102720000
+    },
+    "investment_thesis": [
+      "Vision 2030 healthcare privatization creates structural tailwind — NHIF expansion mandates increased private sector capacity, directly benefiting Rawabi's outpatient model",
+      "Defensible unit economics: average clinic reaches EBITDA breakeven at month 14 with SAR 3.2M investment, demonstrated across last 6 openings",
+      "Digital health optionality — management's EMR and telemedicine roadmap positions the platform for a SaaS licensing model to smaller clinic networks"
+    ],
+    "key_risks": [
+      "NHIF reimbursement rate risk: 38% of revenue is NHIF-linked; any tariff revision downward would compress margins materially",
+      "Physician retention: 4 senior consultants represent disproportionate patient loyalty; non-compete structures are currently inadequate",
+      "Execution risk on expansion — management team has not previously scaled beyond 12 units; COO hire is outstanding"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Noura Al Qahtani",
+    "date": "2023-07-22"
+  },
+  {
+    "scenario_id": "D1-003",
+    "company_name": "Gulf Star Food Industries",
+    "sector": "F&B",
+    "deal_type": "Co-investment",
+    "geography": "UAE",
+    "executive_summary": "Gulf Star Food Industries is a Dubai-based manufacturer and distributor of Arabic sweets, bakery products, and packaged dates targeting retail, hospitality, and gifting channels across UAE and Oman. The company supplies 340 hotels and 1,200 retail outlets including Carrefour and LuLu Hypermarket. A lead PE investor has structured a co-investment round at AED 185M EV seeking a minority co-investor for 15% of the equity. Revenue is highly seasonal with 34% concentration in Ramadan and Eid periods.",
+    "key_financials": {
+      "revenue_aed": 94000000,
+      "ebitda_aed": 16920000,
+      "ebitda_margin_pct": 18,
+      "asking_multiple_x": 10.9,
+      "implied_ev_aed": 185000000
+    },
+    "investment_thesis": [
+      "Gifting culture in GCC creates durable demand — corporate and personal gifting of dates and Arabic sweets is a social obligation insulated from discretionary spending cycles",
+      "Export optionality to diaspora markets in UK, Germany, and North America is underdeveloped; management has received inbound from two UK distributors",
+      "Lead investor brings operational expertise; co-investment structure offers PE-level returns with reduced execution responsibility"
+    ],
+    "key_risks": [
+      "Seasonal concentration creates working capital strain — the business draws 60% of its annual credit facility in Q1 ahead of Ramadan",
+      "Input cost exposure: dates and premium nuts are commodity-priced; margin compression in high-inflation years is structurally difficult to pass through",
+      "Lead investor alignment risk — exit timeline mismatch between lead (5-year horizon) and co-investor preferred 3-year window requires contractual protection"
+    ],
+    "ic_recommendation": "Hold — request co-investment agreement terms before proceeding",
+    "analyst_name": "Khalid Al Mansoori",
+    "date": "2022-11-03"
+  },
+  {
+    "scenario_id": "D1-004",
+    "company_name": "Murooj Technology Solutions",
+    "sector": "Tech",
+    "deal_type": "Growth Equity",
+    "geography": "Kuwait",
+    "executive_summary": "Murooj Technology Solutions is a Kuwait City-based govtech and enterprise software company providing ERP customization, digital transformation consulting, and managed IT services to Kuwaiti government ministries and quasi-government entities. The company holds preferred vendor status with the Ministry of Finance and CITRA. Founder is seeking KWD 2.8M growth capital to build a proprietary SaaS platform and reduce dependency on project-based revenue. Current revenue is 78% project-based with 22% recurring managed services.",
+    "key_financials": {
+      "revenue_kwd": 4200000,
+      "ebitda_kwd": 756000,
+      "ebitda_margin_pct": 18,
+      "asking_multiple_x": 8.0,
+      "implied_ev_kwd": 6048000
+    },
+    "investment_thesis": [
+      "Preferred vendor relationships with Ministry of Finance and CITRA create high switching costs and recurring renewal pipeline estimated at KWD 1.1M annually",
+      "Kuwait government digital transformation budget under KDP 2035 is KWD 340M over 5 years — Murooj is positioned to capture disproportionate share given incumbent relationships",
+      "Transition to SaaS model would re-rate the business from a 7–8x services multiple to a 12–15x software multiple within 24 months"
+    ],
+    "key_risks": [
+      "Government payment cycles average 190 days creating persistent working capital deficit — receivables are currently KWD 980K against a KWD 500K credit facility",
+      "Key person risk: founder holds all Ministry relationships personally; no succession or account transition plan exists",
+      "SaaS transition execution risk — product roadmap is unfunded and the proposed CTO hire has not been contracted"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Ahmad Al Shammari",
+    "date": "2024-02-08"
+  },
+  {
+    "scenario_id": "D1-005",
+    "company_name": "Barr Al Aman Real Estate Development",
+    "sector": "Real Estate",
+    "deal_type": "PE Buyout",
+    "geography": "KSA",
+    "executive_summary": "Barr Al Aman Real Estate Development is a Jeddah-based mid-market residential developer with a land bank of 280,000 sqm across Jeddah North and Taif. The company targets the SAR 600K–1.2M affordable housing segment aligned with Vision 2030 homeownership targets. The founding family is seeking a full exit with management rollover for the CEO and CFO. The land bank carries a book value of SAR 94M against an independent valuation of SAR 138M conducted in Q3 2023.",
+    "key_financials": {
+      "revenue_sar": 118000000,
+      "ebitda_sar": 23600000,
+      "ebitda_margin_pct": 20,
+      "asking_multiple_x": 8.5,
+      "implied_ev_sar": 200600000
+    },
+    "investment_thesis": [
+      "Vision 2030 homeownership target of 70% by 2030 (currently 62%) creates structural demand for affordable units in Jeddah and secondary cities",
+      "Land bank acquired at pre-2020 prices provides significant margin buffer — blended land cost per sqm is SAR 320 against current market of SAR 510",
+      "REDF financing partnerships pre-arranged for 340 units in current pipeline, de-risking demand and shortening collection cycles"
+    ],
+    "key_risks": [
+      "Regulatory risk: Jeddah municipality zoning amendments in 2023 have delayed 2 projects totalling SAR 38M in expected revenue",
+      "Interest rate sensitivity: REDF mortgage rates have increased 180bps since 2022, softening demand in the SAR 900K+ segment",
+      "Management rollover terms unresolved — CEO compensation expectations are materially above market for a business of this size"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Turki Al Zahrani",
+    "date": "2023-09-18"
+  },
+  {
+    "scenario_id": "D1-006",
+    "company_name": "Hayat Home Care Services",
+    "sector": "Healthcare",
+    "deal_type": "Growth Equity",
+    "geography": "UAE",
+    "executive_summary": "Hayat Home Care Services is a Dubai-based licensed home healthcare provider offering nursing, physiotherapy, post-surgical care, and elderly care coordination across Dubai and Abu Dhabi. The company operates under DHA and DOH licenses and has 186 active care staff. Management is seeking AED 22M to expand into Sharjah and RAK and build a proprietary care coordination platform. The home care market in UAE is growing at 18% annually driven by ageing demographics and hospital decongestion initiatives.",
+    "key_financials": {
+      "revenue_aed": 38000000,
+      "ebitda_aed": 5700000,
+      "ebitda_margin_pct": 15,
+      "asking_multiple_x": 11.0,
+      "implied_ev_aed": 62700000
+    },
+    "investment_thesis": [
+      "DHA and DOH dual licensing is a structural barrier to entry — new license applications average 14 months with no guarantee of approval",
+      "Hospital discharge pressure from DHA's LOS reduction mandate creates referral pipeline that management has not yet systematically captured",
+      "Elderly Emirati population growing 6.2% annually; family-based care norms are shifting as nuclear household formation increases among younger Emiratis"
+    ],
+    "key_risks": [
+      "Staff attrition rate of 28% annually is above industry benchmark; visa cost and accommodation burden makes competitive compensation structurally difficult",
+      "Insurance reimbursement complexity: 22 active payer relationships with varying pre-authorization requirements create billing lag of 45–90 days",
+      "Founder-led sales model — all hospital and clinic referral relationships are personally managed by the founder with no structured BD function"
+    ],
+    "ic_recommendation": "Hold — valuation at 11x EBITDA requires clearer path to margin expansion before proceeding",
+    "analyst_name": "Mariam Al Hammadi",
+    "date": "2024-01-15"
+  },
+  {
+    "scenario_id": "D1-007",
+    "company_name": "Al Jazeera Energy Services",
+    "sector": "Energy Services",
+    "deal_type": "Secondary",
+    "geography": "Kuwait",
+    "executive_summary": "Al Jazeera Energy Services is a Kuwait-based oilfield services company providing drilling support, maintenance, and inspection services to KOC, KNPC, and KIPIC under long-term framework agreements. A regional PE fund is seeking to exit its 40% stake after a 6-year hold, offering the position to a secondary buyer at a negotiated discount to NAV. The business has delivered consistent EBITDA of KWD 3.2–3.8M annually over the past 4 years with low capital intensity and negative working capital.",
+    "key_financials": {
+      "revenue_kwd": 18500000,
+      "ebitda_kwd": 3515000,
+      "ebitda_margin_pct": 19,
+      "asking_multiple_x": 6.5,
+      "implied_ev_kwd": 22847500
+    },
+    "investment_thesis": [
+      "KOC framework agreements renewed for 5-year terms in 2022 provide high revenue visibility with contractual escalation clauses tied to Kuwait CPI",
+      "Secondary pricing at 6.5x offers a 1.5-turn discount to comparable listed GCC oilfield services peers, representing an attractive entry point",
+      "Low capex model — company asset-leases heavy equipment rather than owning, preserving cash conversion and simplifying exit optionality"
+    ],
+    "key_risks": [
+      "Oil price sensitivity: KOC capex budgets are reviewed annually and can be curtailed at short notice if Brent falls below $65/bbl",
+      "Minority position with limited governance rights — board representation is 1 of 5 seats with no veto on material decisions",
+      "Incumbent management team's relationship with KOC procurement is 18 months from mandatory retirement rotation under KOC contractor rules"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Bader Al Fulaij",
+    "date": "2022-08-30"
+  },
+  {
+    "scenario_id": "D1-008",
+    "company_name": "Sama Retail Group",
+    "sector": "Retail",
+    "deal_type": "PE Buyout",
+    "geography": "KSA",
+    "executive_summary": "Sama Retail Group operates 34 mid-market fashion and lifestyle stores across Riyadh, Dammam, and Khobar under two proprietary brands targeting Saudi women aged 20–40. The business has benefited directly from Vision 2030 social reforms enabling mixed-gender retail environments and expanding female workforce participation. The founding family seeks full exit with a 2-year earnout tied to EBITDA targets. Online channel represents 18% of revenue and is growing at 34% YoY.",
+    "key_financials": {
+      "revenue_sar": 145000000,
+      "ebitda_sar": 21750000,
+      "ebitda_margin_pct": 15,
+      "asking_multiple_x": 9.0,
+      "implied_ev_sar": 195750000
+    },
+    "investment_thesis": [
+      "Saudi female consumer is structurally underpenetrated by domestic fashion brands — international brands hold 71% of the market, creating displacement opportunity for quality local brands",
+      "Online channel at 18% is significantly below GCC peer average of 28%; investment in digital and fulfillment infrastructure would accelerate profitable online growth",
+      "Real estate renegotiation opportunity — 19 of 34 leases expire within 18 months, providing leverage to restructure at current softer mall rental rates"
+    ],
+    "key_risks": [
+      "Brand concentration: the two proprietary brands share 80% of their target demographic — any brand fatigue affects the entire portfolio simultaneously",
+      "Earnout structure creates misaligned incentives — management may defer growth capex to protect short-term EBITDA and maximize earnout payment",
+      "Fast fashion competitive intensity increasing as SHEIN and Temu establish GCC logistics infrastructure targeting the same demographic"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Sara Al Dosari",
+    "date": "2023-11-27"
+  },
+  {
+    "scenario_id": "D1-009",
+    "company_name": "Noor Express Courier",
+    "sector": "Logistics",
+    "deal_type": "Growth Equity",
+    "geography": "UAE",
+    "executive_summary": "Noor Express Courier is a Sharjah-based last-mile delivery company serving e-commerce merchants, pharmaceutical distributors, and SME businesses across UAE. The company operates 620 delivery riders and 4 sorting hubs and has integrations with Noon, Namshi, and 140 SME merchants via a proprietary API. Management seeks AED 18M to fund hub expansion into Abu Dhabi and RAK and develop a returns management product. Monthly parcel volume has grown from 180K to 410K over 24 months.",
+    "key_financials": {
+      "revenue_aed": 52000000,
+      "ebitda_aed": 6240000,
+      "ebitda_margin_pct": 12,
+      "asking_multiple_x": 12.0,
+      "implied_ev_aed": 74880000
+    },
+    "investment_thesis": [
+      "UAE e-commerce parcel volume forecast to reach 280M annually by 2026 from 190M in 2023 — Noor's hub infrastructure and merchant integrations position it ahead of the capacity curve",
+      "Returns management is a structurally underserved product in GCC last-mile — merchants currently absorb 8–12% return rates with no systematic reverse logistics solution",
+      "API integrations with Noon and Namshi create platform stickiness; switching costs for merchants with live integrations are 3–6 months of engineering effort"
+    ],
+    "key_risks": [
+      "Rider classification risk: regulatory review of gig economy worker status in UAE could mandate employment benefits, adding AED 4.2M in annual cost",
+      "Margin compression: fuel and rider incentive costs have increased 22% since 2022 with limited ability to pass through to contracted merchant rates",
+      "12x EBITDA entry multiple leaves limited margin of safety — dependent on continued volume growth to justify valuation"
+    ],
+    "ic_recommendation": "Hold — re-engage at 9–10x EBITDA or on evidence of margin improvement",
+    "analyst_name": "Hamad Al Nuaimi",
+    "date": "2024-03-05"
+  },
+  {
+    "scenario_id": "D1-010",
+    "company_name": "Thuraya Medical Supplies",
+    "sector": "Healthcare",
+    "deal_type": "PE Buyout",
+    "geography": "Kuwait",
+    "executive_summary": "Thuraya Medical Supplies is a Kuwait City-based distributor of medical consumables, diagnostic equipment, and surgical instruments to MOH hospitals, private hospitals, and polyclinics. The company holds exclusive distribution agreements with 6 European and Asian manufacturers covering 340 product lines. The founding partner is retiring and has engaged a local M&A advisor; no auction process has been launched. EBITDA has been stable at KWD 1.1–1.3M for 3 years with high cash conversion and minimal capex requirements.",
+    "key_financials": {
+      "revenue_kwd": 7800000,
+      "ebitda_kwd": 1170000,
+      "ebitda_margin_pct": 15,
+      "asking_multiple_x": 7.0,
+      "implied_ev_kwd": 8190000
+    },
+    "investment_thesis": [
+      "Exclusive distribution agreements with 6 manufacturers are transferable on change of control with 90-day notice — represent the primary asset and barrier to entry",
+      "Kuwait MOH capital budget for medical equipment is KWD 42M in 2024, with Thuraya pre-qualified on 4 of 8 active tender categories",
+      "Proprietary relationship-based distribution model in Kuwait is difficult to displace — MOH procurement officers have 8–12 year tenures and established preferences"
+    ],
+    "key_risks": [
+      "Manufacturer concentration: 2 of 6 exclusive agreements account for 58% of gross profit — non-renewal of either would be material",
+      "MOH tender payment cycles average 210 days creating KWD 1.4M in outstanding receivables at any point",
+      "Succession risk: retiring founder holds 3 of 6 manufacturer relationships personally; warm introduction and relationship transfer plan is unstructured"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Yousef Al Rashidi",
+    "date": "2023-05-09"
+  },
+  {
+    "scenario_id": "D1-011",
+    "company_name": "Rimal Construction Group",
+    "sector": "Real Estate",
+    "deal_type": "PE Buyout",
+    "geography": "KSA",
+    "executive_summary": "Rimal Construction Group is a Riyadh-based mid-tier contractor specializing in residential and light commercial construction for government housing programs and private developers. The company holds a Grade 1 contractor classification with the Saudi Contractor Authority and has delivered 2,400 units under REDF-linked programs since 2019. The founding Al Rimal family is seeking a majority buyout with a 3-year management transition. Order backlog stands at SAR 380M representing 2.6x current annual revenue.",
+    "key_financials": {
+      "revenue_sar": 146000000,
+      "ebitda_sar": 21900000,
+      "ebitda_margin_pct": 15,
+      "asking_multiple_x": 7.5,
+      "implied_ev_sar": 164250000
+    },
+    "investment_thesis": [
+      "SAR 380M backlog provides 2.6x revenue coverage with 68% tied to REDF-linked government housing programs with sovereign payment certainty",
+      "Grade 1 SCA classification is a meaningful barrier — fewer than 340 contractors hold this status nationally, limiting competitive set for large government tenders",
+      "Vision 2030 NEOM and Diriyah Gate auxiliary housing demand creates a multi-year pipeline for mid-tier contractors in the Riyadh corridor"
+    ],
+    "key_risks": [
+      "Subcontractor dependency: 61% of construction labor is subcontracted, exposing margins to labor cost inflation and subcontractor performance risk",
+      "Working capital intensity: construction billing cycles average 75 days with retention holdbacks of 10% released only on project completion",
+      "Two senior project directors responsible for 74% of active sites — departure of either would materially impair delivery capacity"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Abdullah Al Otaibi",
+    "date": "2023-06-14"
+  },
+  {
+    "scenario_id": "D1-012",
+    "company_name": "Mazaya Digital Payments",
+    "sector": "Tech",
+    "deal_type": "Growth Equity",
+    "geography": "Kuwait",
+    "executive_summary": "Mazaya Digital Payments is a Kuwait-based fintech operating a payment aggregation platform connecting 1,400 SME merchants to KNET, Visa, and Mastercard processing infrastructure. The platform processes KWD 38M in monthly transaction volume and charges a blended take rate of 1.4%. CBK provisional approval for an e-payment license was received in Q4 2023. Management is seeking KWD 3.5M to complete CBK full licensing, expand merchant acquisition, and launch a buy-now-pay-later product targeting the Kuwaiti consumer market.",
+    "key_financials": {
+      "revenue_kwd": 3024000,
+      "ebitda_kwd": 453600,
+      "ebitda_margin_pct": 15,
+      "asking_multiple_x": 18.0,
+      "implied_ev_kwd": 8164800
+    },
+    "investment_thesis": [
+      "CBK provisional e-payment license approval is a significant regulatory milestone — fewer than 8 non-bank payment aggregators are licensed in Kuwait, creating a structurally constrained competitive environment",
+      "Kuwait SME digital payment penetration at 34% is the lowest in GCC — structural upside as cash-heavy sectors including F&B and retail transition to digital",
+      "BNPL optionality in Kuwait is entirely underpenetrated — no licensed BNPL operator exists; regulatory pathway under CBK's 2023 open banking framework is navigable"
+    ],
+    "key_risks": [
+      "Full CBK license not yet granted — provisional status could be withdrawn or delayed, halting operations and triggering merchant contract terminations",
+      "18x EBITDA entry multiple requires significant growth assumptions to generate target returns; any merchant churn or take rate compression destroys the return thesis",
+      "Incumbent bank competition: NBK and KFH are both building SME payment products; balance sheet advantage and existing relationships are difficult to offset"
+    ],
+    "ic_recommendation": "Hold — revisit post full CBK license grant",
+    "analyst_name": "Dalal Al Sabah",
+    "date": "2024-04-02"
+  },
+  {
+    "scenario_id": "D1-013",
+    "company_name": "Al Waha Poultry Industries",
+    "sector": "F&B",
+    "deal_type": "PE Buyout",
+    "geography": "KSA",
+    "executive_summary": "Al Waha Poultry Industries is a Qassim-based vertically integrated poultry producer operating 3 broiler farms, a feed mill, and a processing plant with 18,000 tons annual slaughter capacity. The company supplies LuLu, Panda, and Othaim supermarket chains and holds a 6% share of the Riyadh fresh chicken market. The founders are second-generation operators seeking full exit. Saudi food security policy under Vision 2030 includes direct MISA incentives for domestic poultry producers, of which Al Waha is a registered beneficiary.",
+    "key_financials": {
+      "revenue_sar": 210000000,
+      "ebitda_sar": 33600000,
+      "ebitda_margin_pct": 16,
+      "asking_multiple_x": 7.0,
+      "implied_ev_sar": 235200000
+    },
+    "investment_thesis": [
+      "Vertical integration from feed to retail reduces input cost volatility — company produces 70% of its own feed requirement, insulating margins from global soybean and corn price swings",
+      "MISA food security incentive program provides SAR 8.2M in annual subsidies and preferential financing through SAIB, directly supporting margin floor",
+      "Retail supply agreements with LuLu and Panda are 3-year fixed-volume contracts providing revenue certainty through 2026"
+    ],
+    "key_risks": [
+      "Avian influenza biosecurity risk: a single outbreak at any of the 3 farms would trigger mandatory culling and a minimum 90-day production shutdown",
+      "Water scarcity in Qassim region is an escalating regulatory risk — MEWA water allocation reviews could restrict farm expansion",
+      "Feed cost exposure remains for the 30% of feed purchased externally — global grain price volatility directly impacts this portion"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Hamdan Al Qahtani",
+    "date": "2022-10-11"
+  },
+  {
+    "scenario_id": "D1-014",
+    "company_name": "Ruwad Facilities Management",
+    "sector": "Real Estate",
+    "deal_type": "Growth Equity",
+    "geography": "UAE",
+    "executive_summary": "Ruwad Facilities Management is an Abu Dhabi-based integrated FM company providing hard and soft services to government buildings, mixed-use developments, and healthcare facilities under TAMM and Abu Dhabi Housing Authority frameworks. The company manages 4.2M sqft of assets and employs 840 staff. Management seeks AED 28M to fund technology upgrades including IoT-based building management systems and to bid on two large ADNOC campus contracts currently in tender. Revenue has grown 21% annually for 3 consecutive years.",
+    "key_financials": {
+      "revenue_aed": 124000000,
+      "ebitda_aed": 16120000,
+      "ebitda_margin_pct": 13,
+      "asking_multiple_x": 8.5,
+      "implied_ev_aed": 137020000
+    },
+    "investment_thesis": [
+      "Abu Dhabi government building stock is growing 8% annually under urban master plan commitments — Ruwad's TAMM framework prequalification positions it ahead of the tender pipeline",
+      "ADNOC campus FM contract in tender is AED 180M over 5 years; win probability assessed at 35% given Ruwad's existing ADNOC subcontract relationship",
+      "IoT building management technology investment creates margin improvement pathway — automated monitoring reduces labor deployment cost by estimated 12%"
+    ],
+    "key_risks": [
+      "Government payment cycles average 145 days under TAMM framework — working capital funding requirement would increase materially with ADNOC contract win",
+      "Labor nationalization pressure: Emiratization targets for FM sector require 8% Emirati workforce by 2025 against Ruwad's current 2.1% — compliance cost is unquantified",
+      "ADNOC contract loss would remove the primary investment thesis and leave the growth equity injection without a clear deployment vehicle"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Saeed Al Mazrouei",
+    "date": "2023-08-22"
+  },
+  {
+    "scenario_id": "D1-015",
+    "company_name": "Ithmar Education Group",
+    "sector": "Retail",
+    "deal_type": "PE Buyout",
+    "geography": "KSA",
+    "executive_summary": "Ithmar Education Group operates 9 private K-12 schools in Riyadh and Madinah under the American and British curriculum tracks, serving 6,800 students with average annual fees of SAR 28,000. The Ministry of Education licensed the group under the NSPK private school framework. A GCC-based education holding company is divesting the group as a non-core asset following a portfolio restructuring. Occupancy rates average 91% across campuses with a 2-year waitlist at the flagship Riyadh school.",
+    "key_financials": {
+      "revenue_sar": 190400000,
+      "ebitda_sar": 38080000,
+      "ebitda_margin_pct": 20,
+      "asking_multiple_x": 11.0,
+      "implied_ev_sar": 418880000
+    },
+    "investment_thesis": [
+      "91% average occupancy with 2-year waitlist at flagship campus demonstrates demand inelasticity — fee increases of 8–12% have not impacted enrollment",
+      "Saudi private school market growing at 9% annually driven by expatriate population growth and rising Saudi family preference for international curriculum tracks",
+      "NSPK framework limits new private school licenses in premium urban catchments — supply constraint structurally supports incumbent pricing power"
+    ],
+    "key_risks": [
+      "MOE regulatory risk: fee increase approvals require annual ministry review — any rejection would cap revenue growth below inflation",
+      "Teacher retention: British and American curriculum teacher attrition is 18% annually; international recruitment cost is SAR 12,000 per hire on average",
+      "11x EBITDA entry multiple is at the upper end of GCC education comparables — dependent on continued fee growth to generate target IRR"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Reem Al Harbi",
+    "date": "2023-12-05"
+  },
+  {
+    "scenario_id": "D1-016",
+    "company_name": "Gulf Bridge Telecom Infrastructure",
+    "sector": "Tech",
+    "deal_type": "Co-investment",
+    "geography": "Kuwait",
+    "executive_summary": "Gulf Bridge Telecom Infrastructure owns and operates 140 telecom towers across Kuwait leased to Zain Kuwait, Ooredoo Kuwait, and STC Kuwait under 10-year master lease agreements. A regional infrastructure fund holds 60% and is seeking a co-investor for a 20% stake to fund a 60-tower expansion program. Tower tenancy ratio currently stands at 1.4x with a target of 1.9x by 2026. EBITDA margins are 64%, typical for passive tower infrastructure assets in the region.",
+    "key_financials": {
+      "revenue_kwd": 5600000,
+      "ebitda_kwd": 3584000,
+      "ebitda_margin_pct": 64,
+      "asking_multiple_x": 16.0,
+      "implied_ev_kwd": 57344000
+    },
+    "investment_thesis": [
+      "10-year master lease agreements with Zain, Ooredoo, and STC provide contractually locked revenue with CPI escalation clauses — zero customer churn risk during lease term",
+      "5G rollout in Kuwait is mandated by CITRA for completion by 2026, requiring dense urban tower deployment — existing tower sites are pre-permitted and shovel-ready",
+      "Tenancy ratio improvement from 1.4x to 1.9x adds KWD 1.12M in incremental annual EBITDA with near-zero incremental capex"
+    ],
+    "key_risks": [
+      "16x EBITDA entry multiple reflects infrastructure quality but leaves limited upside unless tenancy ratio targets are achieved on schedule",
+      "Co-investment minority position offers no operational control — expansion pacing and capex decisions rest entirely with the lead infrastructure fund",
+      "Kuwait municipal permitting for new tower sites has averaged 18 months — expansion timeline risk is material"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Meshal Al Kandari",
+    "date": "2024-01-28"
+  },
+  {
+    "scenario_id": "D1-017",
+    "company_name": "Siraj Renewable Energy Solutions",
+    "sector": "Energy Services",
+    "deal_type": "Growth Equity",
+    "geography": "UAE",
+    "executive_summary": "Siraj Renewable Energy Solutions is a Dubai-based solar EPC and O&M company that has installed 68MWp of rooftop and ground-mount solar across UAE industrial and commercial clients. The company holds approved contractor status with DEWA, ADDC, and Etihad ESCO. Management seeks AED 35M to scale into KSA and Oman and to develop a solar-as-a-service financing product that eliminates upfront capex for clients. Pipeline of signed LOIs stands at AED 140M across 14 projects.",
+    "key_financials": {
+      "revenue_aed": 88000000,
+      "ebitda_aed": 13200000,
+      "ebitda_margin_pct": 15,
+      "asking_multiple_x": 10.5,
+      "implied_ev_aed": 138600000
+    },
+    "investment_thesis": [
+      "UAE net zero 2050 commitment and Dubai Clean Energy Strategy 2050 mandate 75% clean energy by 2050 — solar EPC contractors with DEWA approval are structurally positioned for a decade of growth",
+      "Solar-as-a-service model converts one-time EPC revenue into 20-year annuity cash flows, fundamentally re-rating the business from a contractor to an infrastructure company",
+      "KSA expansion is immediately addressable — NEOM and Red Sea Project solar requirements alone represent a pipeline exceeding AED 2B for approved EPC contractors"
+    ],
+    "key_risks": [
+      "Solar-as-a-service model requires AED 80–120M in project financing to fully deploy — growth equity round alone is insufficient to fund the balance sheet transition",
+      "EPC margin compression is a global trend — Chinese panel manufacturers entering GCC EPC market directly are undercutting local contractors by 15–20%",
+      "KSA contractor registration is a 12–18 month process; LOI pipeline assumes Saudi approvals that have not yet been received"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Omar Al Suwaidi",
+    "date": "2023-04-19"
+  },
+  {
+    "scenario_id": "D1-018",
+    "company_name": "Baraem Childcare Centers",
+    "sector": "Retail",
+    "deal_type": "PE Buyout",
+    "geography": "KSA",
+    "executive_summary": "Baraem Childcare Centers operates 22 premium nursery and early childhood education centers in Riyadh targeting dual-income Saudi and expatriate families. Average monthly fee is SAR 2,800 per child with 94% average occupancy. MOE licensing is current across all sites. The founder is seeking a full buyout and is open to remaining as non-executive chairman. Female workforce participation growth in Saudi Arabia is directly driving demand for institutional childcare, and the company has a 340-child waitlist across its network.",
+    "key_financials": {
+      "revenue_sar": 74000000,
+      "ebitda_sar": 14800000,
+      "ebitda_margin_pct": 20,
+      "asking_multiple_x": 10.0,
+      "implied_ev_sar": 148000000
+    },
+    "investment_thesis": [
+      "Female labor force participation in Saudi Arabia increased from 17% to 33% between 2017 and 2023 — each percentage point increase adds approximately 90,000 working mothers requiring childcare",
+      "94% occupancy with 340-child waitlist across network demonstrates supply-demand imbalance; 6 new sites could absorb existing waitlist with 18-month payback",
+      "Founder non-executive role preserves brand and community relationships while allowing professional management to drive expansion"
+    ],
+    "key_risks": [
+      "MOE regulatory environment is evolving — fee caps for nurseries are under active policy review and could compress revenue per child",
+      "Staff quality is central to brand reputation; certified early childhood educators command premium salaries with 24% annual attrition",
+      "Geographic concentration in Riyadh — all 22 centers are in one city, exposing the business to local economic or regulatory disruption"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Hessa Al Dossari",
+    "date": "2023-10-14"
+  },
+  {
+    "scenario_id": "D1-019",
+    "company_name": "Khaleeji Cold Chain Logistics",
+    "sector": "Logistics",
+    "deal_type": "Growth Equity",
+    "geography": "UAE",
+    "executive_summary": "Khaleeji Cold Chain Logistics is a Jebel Ali-based temperature-controlled warehousing and distribution company serving pharmaceutical, FMCG, and food service clients across UAE and Oman. The company operates 28,000 sqm of GDP-compliant cold storage and a fleet of 84 refrigerated vehicles. Management seeks AED 42M to build a second cold store in Abu Dhabi and establish a Muscat hub. Current capacity utilization is 94% with 6 clients on waitlist. Revenue has grown 28% annually for 2 consecutive years.",
+    "key_financials": {
+      "revenue_aed": 96000000,
+      "ebitda_aed": 19200000,
+      "ebitda_margin_pct": 20,
+      "asking_multiple_x": 11.5,
+      "implied_ev_aed": 220800000
+    },
+    "investment_thesis": [
+      "GDP-compliant pharmaceutical cold chain is a high-barrier segment — MOHAP certification requires 18–24 months and significant infrastructure investment, limiting new entrant supply",
+      "94% utilization with waitlist demand demonstrates immediate revenue upside from capacity expansion with pre-committed offtake from 6 named clients",
+      "UAE pharmaceutical import volumes growing 14% annually as regional distribution hub function deepens — cold chain infrastructure is a direct beneficiary"
+    ],
+    "key_risks": [
+      "Capital intensity is high — Abu Dhabi cold store requires AED 65M total investment; growth equity round covers 65% with remaining gap requiring project finance",
+      "Energy cost exposure: cold chain operations consume 3.4M kWh annually — DEWA tariff increases pass through directly to margin",
+      "Single hub concentration in Jebel Ali: any disruption to UAE port operations, customs, or JAFZA access would halt 100% of distribution operations"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Rashid Al Balushi",
+    "date": "2024-02-20"
+  },
+  {
+    "scenario_id": "D1-020",
+    "company_name": "Wajd Digital Media Group",
+    "sector": "Tech",
+    "deal_type": "Growth Equity",
+    "geography": "KSA",
+    "executive_summary": "Wajd Digital Media Group is a Riyadh-based Arabic content production and distribution company operating a YouTube network of 34 channels with 48M subscribers and a nascent SVOD platform launched in Q1 2024. Content verticals include comedy, family drama, religious programming, and women's lifestyle. The company generates revenue through advertising, brand integrations, and SVOD subscriptions. Management seeks SAR 60M to fund original drama production, accelerate SVOD subscriber acquisition, and expand into podcast and short-form content.",
+    "key_financials": {
+      "revenue_sar": 82000000,
+      "ebitda_sar": 12300000,
+      "ebitda_margin_pct": 15,
+      "asking_multiple_x": 14.0,
+      "implied_ev_sar": 172200000
+    },
+    "investment_thesis": [
+      "48M subscribers across Arabic content verticals represents a hard-to-replicate audience asset — audience trust and cultural authenticity in Arabic digital content cannot be purchased, only built",
+      "Saudi entertainment sector spending has grown from SAR 2.4B to SAR 9.1B annually since 2016 — Wajd is positioned as a domestic content champion in a market previously dominated by pan-Arab satellite broadcasters",
+      "SVOD launch creates recurring revenue layer with superior unit economics to advertising — target of 400K paid subscribers at SAR 39/month would add SAR 187M in annual ARR"
+    ],
+    "key_risks": [
+      "SVOD subscriber acquisition cost in Saudi is unproven at scale — Netflix and Shahid hold significant brand equity advantages in premium drama content",
+      "Religious and family content verticals require ongoing compliance with GCAM content standards — any regulatory breach could result in channel suspension",
+      "Creator concentration: 8 of 34 channels are built around individual on-camera talent whose contracts expire within 12 months"
+    ],
+    "ic_recommendation": "Hold — SVOD traction metrics at 6 months post-launch required before proceeding",
+    "analyst_name": "Lujain Al Ghamdi",
+    "date": "2024-03-18"
+  },
+  {
+    "scenario_id": "D1-021",
+    "company_name": "Durra Healthcare Analytics",
+    "sector": "Healthcare",
+    "deal_type": "Growth Equity",
+    "geography": "Kuwait",
+    "executive_summary": "Durra Healthcare Analytics is a Kuwait City-based health data and analytics company providing patient flow optimization, clinical outcome benchmarking, and supply chain analytics to private hospitals and MOH facilities. The platform processes data from 14 hospital clients covering 1.2M patient records annually. Management seeks KWD 1.8M to expand to KSA and UAE, integrate AI diagnostics modules, and pursue CIHQ accreditation for the analytics platform. Monthly recurring revenue is KWD 82,000 with 94% gross retention.",
+    "key_financials": {
+      "revenue_kwd": 984000,
+      "ebitda_kwd": 147600,
+      "ebitda_margin_pct": 15,
+      "asking_multiple_x": 22.0,
+      "implied_ev_kwd": 3247200
+    },
+    "investment_thesis": [
+      "94% gross revenue retention across 14 hospital clients demonstrates product stickiness — health data platforms with EMR integrations have structural switching costs of 6–12 months",
+      "Kuwait MOH digital health strategy mandates interoperability standards by 2025 — Durra's HL7-compliant platform is one of 3 vendors pre-approved for MOH integration",
+      "KSA expansion addressable market is 10x Kuwait — Vision 2030 health sector transformation requires outcome benchmarking tools that Durra can deploy with minimal localization"
+    ],
+    "key_risks": [
+      "22x EBITDA entry multiple is justified only if KSA expansion succeeds — Kuwait market alone does not support the valuation",
+      "Health data privacy regulations under Kuwait Data Protection Law are evolving — compliance cost and potential data residency requirements could impair cross-border deployment",
+      "Small team of 18 — 3 data engineers hold all platform IP and client integration knowledge; departure of any one would disrupt operations"
+    ],
+    "ic_recommendation": "Hold — re-engage when KSA revenue reaches KWD 200K ARR",
+    "analyst_name": "Fatima Al Awadhi",
+    "date": "2024-01-10"
+  },
+  {
+    "scenario_id": "D1-022",
+    "company_name": "Al Baraka Steel Fabrication",
+    "sector": "Energy Services",
+    "deal_type": "PE Buyout",
+    "geography": "KSA",
+    "executive_summary": "Al Baraka Steel Fabrication is a Jubail-based structural steel and piping fabrication company serving Saudi Aramco, SABIC, and EPC contractors in the Eastern Province industrial corridor. The company operates a 42,000 sqm fabrication yard with ASME and AWS certifications. Second-generation family ownership is seeking full exit after failing to agree on a succession plan between three siblings. Revenue has grown 18% annually since 2021 driven by Aramco's Jafurah gas field development program.",
+    "key_financials": {
+      "revenue_sar": 285000000,
+      "ebitda_sar": 42750000,
+      "ebitda_margin_pct": 15,
+      "asking_multiple_x": 7.0,
+      "implied_ev_sar": 299250000
+    },
+    "investment_thesis": [
+      "Aramco approved vendor status took 6 years to achieve — new entrants face the same timeline, creating a durable competitive moat for existing certified fabricators",
+      "Jafurah gas field development is a SAR 120B program running through 2030 — fabrication requirements for gas processing infrastructure are structurally locked for the investment period",
+      "ASME and AWS dual certifications are held by fewer than 12 Saudi fabricators — premium pricing power on certified work streams is sustainable"
+    ],
+    "key_risks": [
+      "Aramco revenue concentration at 58% of total — any vendor list review or project deferral would materially impact the business",
+      "Family dispute risk persists post-close — minority sibling retaining 15% stake has indicated he may challenge the sale price through the commercial court",
+      "Steel price volatility: 40% of contracts are fixed-price, exposing margins to input cost swings on longer-duration projects"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Abdulaziz Al Ghamdi",
+    "date": "2022-09-07"
+  },
+  {
+    "scenario_id": "D1-023",
+    "company_name": "Nakheel Urban Mobility",
+    "sector": "Tech",
+    "deal_type": "Growth Equity",
+    "geography": "UAE",
+    "executive_summary": "Nakheel Urban Mobility is a Dubai-based electric scooter and e-bike sharing platform operating 3,200 vehicles across Downtown Dubai, JBR, and Dubai Marina. The company holds an exclusive RTA operating permit for 3 years across its current zones. Management seeks AED 25M to expand to Abu Dhabi and Sharjah and double fleet size to 6,500 vehicles. Monthly active users stand at 68,000 with an average of 2.4 rides per user per month at AED 8 average fare.",
+    "key_financials": {
+      "revenue_aed": 19584000,
+      "ebitda_aed": 2938000,
+      "ebitda_margin_pct": 15,
+      "asking_multiple_x": 16.0,
+      "implied_ev_aed": 47008000
+    },
+    "investment_thesis": [
+      "RTA exclusive zone permit is a regulatory moat — competitor entry into Downtown Dubai and Marina zones is blocked for 3 years, providing runway to build network effects",
+      "UAE smart city agenda and Dubai 2040 Urban Master Plan mandate 25% of trips via sustainable transport — micro-mobility is a direct policy beneficiary",
+      "Abu Dhabi expansion is pre-approved at DoT level — management has received conditional permit approval pending fleet deployment"
+    ],
+    "key_risks": [
+      "Unit economics are marginal — vehicle lifetime of 18 months against AED 6,200 procurement cost requires 4.1 rides per day to break even; current average is 2.9",
+      "Battery degradation in UAE summer heat (48°C+) accelerates vehicle replacement cycles beyond standard global benchmarks",
+      "16x EBITDA entry multiple is aggressive for a business with unproven path to profitability at scale"
+    ],
+    "ic_recommendation": "Pass — unit economics do not support current valuation",
+    "analyst_name": "Hind Al Ketbi",
+    "date": "2023-07-04"
+  },
+  {
+    "scenario_id": "D1-024",
+    "company_name": "Majd Pharmaceutical Manufacturing",
+    "sector": "Healthcare",
+    "deal_type": "PE Buyout",
+    "geography": "KSA",
+    "executive_summary": "Majd Pharmaceutical Manufacturing is a Riyadh-based generic drug manufacturer producing 68 SKUs across oral solid dosage, liquid, and topical forms for MOH hospital supply contracts and retail pharmacy chains. The facility holds SFDA GMP certification and WHO prequalification for 12 products. The founding family seeks majority sale with retention of the founding chairman in a board advisory role. Saudi Vision 2030 localisation targets mandate 40% domestic pharmaceutical production by 2030, up from 22% currently.",
+    "key_financials": {
+      "revenue_sar": 168000000,
+      "ebitda_sar": 29400000,
+      "ebitda_margin_pct": 17.5,
+      "asking_multiple_x": 9.0,
+      "implied_ev_sar": 264600000
+    },
+    "investment_thesis": [
+      "SFDA GMP and WHO prequalification are multi-year certification achievements — fewer than 18 Saudi manufacturers hold both, structurally limiting domestic generic supply",
+      "Vision 2030 localisation mandate creates policy-driven demand — NUPCO procurement preferences for domestically manufactured generics are being codified into tender specifications",
+      "WHO prequalification opens export pathway to African and Southeast Asian markets via UNGM procurement channels, providing revenue diversification beyond Saudi domestic market"
+    ],
+    "key_risks": [
+      "SFDA re-inspection scheduled for Q3 2024 — any GMP finding requiring remediation could suspend production of affected product lines for 3–6 months",
+      "Generic drug pricing is regulated by SFDA — price increase applications average 18 months and are frequently rejected, capping revenue per SKU growth",
+      "API sourcing concentration: 74% of active pharmaceutical ingredients are sourced from 3 Chinese suppliers; supply chain disruption risk is elevated post-COVID"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Sami Al Zahrani",
+    "date": "2023-02-28"
+  },
+  {
+    "scenario_id": "D1-025",
+    "company_name": "Layali Hospitality Group",
+    "sector": "Retail",
+    "deal_type": "PE Buyout",
+    "geography": "Kuwait",
+    "executive_summary": "Layali Hospitality Group operates 18 casual dining and café outlets across Kuwait City, Salmiya, and The Avenues Mall under 4 proprietary concepts. Average unit volumes are KWD 380,000 annually with an 18% EBITDA margin at the unit level. The founding family is the second generation of a well-known Kuwaiti merchant family seeking liquidity to fund a separate real estate venture. The group holds a master franchise for one regional casual dining brand and operates 3 wholly owned concepts.",
+    "key_financials": {
+      "revenue_kwd": 6840000,
+      "ebitda_kwd": 1231200,
+      "ebitda_margin_pct": 18,
+      "asking_multiple_x": 8.0,
+      "implied_ev_kwd": 9849600
+    },
+    "investment_thesis": [
+      "Kuwait F&B market is structurally resilient — diwaniya culture and social dining norms make restaurant spending a social obligation that is largely recession-resistant",
+      "Avenues Mall anchor presence provides 3 of the highest-performing units; lease renewals have been verbally confirmed at current rates for 5 years",
+      "Master franchise agreement for the regional brand includes exclusivity for Kuwait and Bahrain — a second market entry is unactivated optionality"
+    ],
+    "key_risks": [
+      "Kuwaiti expat workforce dependency: 84% of kitchen and service staff are expat workers; any tightening of MOI work permit policy would disrupt operations",
+      "Mall concentration risk: 11 of 18 units are in mall locations — any mall traffic decline or rental renegotiation affects the majority of the portfolio",
+      "Master franchise brand has recently shown declining performance in its home market, raising concerns about long-term brand equity"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Nawaf Al Sabah",
+    "date": "2023-09-03"
+  },
+  {
+    "scenario_id": "D1-026",
+    "company_name": "Tatweer Water Technologies",
+    "sector": "Energy Services",
+    "deal_type": "Growth Equity",
+    "geography": "UAE",
+    "executive_summary": "Tatweer Water Technologies is a Dubai-based water treatment and recycling technology company providing greywater recycling systems, water audit services, and IoT-based consumption monitoring to hotels, industrial facilities, and real estate developers. The company has 84 active client installations and saves clients an average of 34% on water consumption. Management seeks AED 20M to scale manufacturing of its proprietary recycling units and pursue DEWA and Etihad Water approved contractor status. IP includes 3 registered UAE patents.",
+    "key_financials": {
+      "revenue_aed": 28000000,
+      "ebitda_aed": 4200000,
+      "ebitda_margin_pct": 15,
+      "asking_multiple_x": 13.0,
+      "implied_ev_aed": 54600000
+    },
+    "investment_thesis": [
+      "UAE water scarcity is an existential national issue — government policy mandates 30% reduction in per capita water consumption by 2030, creating regulatory demand for conservation technology",
+      "3 UAE patents on core recycling unit design provide IP moat — competing products require licensing or design-around investment to enter the market",
+      "Hotel and real estate developer clients have strong ESG reporting incentives — water consumption data from Tatweer's IoT monitoring is being used in GRESB and CDP submissions, creating data stickiness"
+    ],
+    "key_risks": [
+      "Manufacturing scale-up from 18 to 60 units per month requires AED 14M of the AED 20M raise — leaving minimal buffer for commercial expansion",
+      "DEWA approved contractor status has been pending 14 months with no timeline clarity — without it, large government and DEWA-connected developer projects are inaccessible",
+      "Proprietary hardware model requires significant after-sales maintenance capability — current team of 6 field technicians is inadequate for a scaled installation base"
+    ],
+    "ic_recommendation": "Hold — revisit post DEWA contractor approval",
+    "analyst_name": "Moza Al Marri",
+    "date": "2023-11-14"
+  },
+  {
+    "scenario_id": "D1-027",
+    "company_name": "Qimam Aviation Services",
+    "sector": "Logistics",
+    "deal_type": "Secondary",
+    "geography": "KSA",
+    "executive_summary": "Qimam Aviation Services provides ground handling, cargo handling, and fueling services at King Abdulaziz International Airport in Jeddah under a 15-year GACA concession expiring in 2033. An infrastructure fund is seeking a secondary buyer for its 30% stake at a negotiated price. The business generates highly predictable cash flows with annual revenue escalation tied to CPI under the GACA concession terms. Passenger throughput at KAIA has grown 22% since 2021 recovery, approaching pre-COVID levels of 43M passengers annually.",
+    "key_financials": {
+      "revenue_sar": 340000000,
+      "ebitda_sar": 85000000,
+      "ebitda_margin_pct": 25,
+      "asking_multiple_x": 14.0,
+      "implied_ev_sar": 1190000000
+    },
+    "investment_thesis": [
+      "GACA 15-year concession with CPI escalation is a bond-like cash flow profile — revenue certainty through 2033 with inflation protection is rare in regional infrastructure",
+      "KAIA is Saudi Arabia's busiest international gateway — Vision 2030 target of 150M passengers annually requires significant throughput growth at existing airports, directly benefiting ground handling volumes",
+      "Secondary pricing at 14x EBITDA is a 2-turn discount to listed airport services comparables in EMEA, offering an attractive entry relative to asset quality"
+    ],
+    "key_risks": [
+      "GACA concession renegotiation risk at 2033 — while renewal is likely, terms could be materially less favorable in a competitive rebidding process",
+      "Minority stake with limited governance rights — major capex decisions and concession management rest with the majority operator",
+      "Saudi Aramco jet fuel supply chain disruption, while low probability, would halt fueling operations and trigger force majeure provisions"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Sultan Al Otaibi",
+    "date": "2022-12-19"
+  },
+  {
+    "scenario_id": "D1-028",
+    "company_name": "Bader Insurance Brokers",
+    "sector": "Retail",
+    "deal_type": "PE Buyout",
+    "geography": "Kuwait",
+    "executive_summary": "Bader Insurance Brokers is Kuwait's third-largest independent insurance brokerage by GWP, placing KWD 28M in premiums annually across corporate, medical, marine, and life lines with 340 corporate clients. The CMA-licensed brokerage has operated for 22 years and maintains preferred broker status with 8 of Kuwait's 12 licensed insurance companies. The founder is 67 and has initiated a succession process; no family member is active in the business. EBITDA is highly cash-generative with minimal capex requirements.",
+    "key_financials": {
+      "revenue_kwd": 2240000,
+      "ebitda_kwd": 672000,
+      "ebitda_margin_pct": 30,
+      "asking_multiple_x": 8.5,
+      "implied_ev_kwd": 5712000
+    },
+    "investment_thesis": [
+      "22-year client relationships with 340 corporate accounts represent annuity-like revenue — brokerage commissions average 8% renewal rate with 88% client retention over the past 5 years",
+      "Kuwait insurance penetration at 0.6% of GDP is the lowest in GCC — compulsory medical and motor insurance expansion under MOH and MOI mandates will mechanically grow GWP",
+      "CMA preferred broker license for life insurance is held by fewer than 5 brokers — structural advantage in selling bancassurance and investment-linked products to Kuwaiti HNW clients"
+    ],
+    "key_risks": [
+      "Key person risk is acute — founder holds personal relationships with all 8 preferred insurer underwriters; transition without reputational damage requires a 12–18 month handover period",
+      "Digital disruption: InsurTech direct-to-consumer platforms are gaining SME market share in regional markets — Kuwait market entry is a medium-term risk",
+      "Commission compression: regional insurance companies are reducing broker commissions from 10% to 7–8% on commercial lines as direct channels grow"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Badriya Al Failakawi",
+    "date": "2023-08-07"
+  },
+  {
+    "scenario_id": "D1-029",
+    "company_name": "Masaar AgriTech",
+    "sector": "F&B",
+    "deal_type": "Growth Equity",
+    "geography": "UAE",
+    "executive_summary": "Masaar AgriTech is a Dubai-based vertical farming company producing leafy greens, herbs, and microgreens for UAE premium retailers and hotel chains using proprietary hydroponic systems with 94% less water than conventional farming. The company supplies Waitrose UAE, Spinneys, and 34 5-star hotels. Management seeks AED 30M to build a second facility in Abu Dhabi and develop a direct-to-consumer subscription model. UAE food security policy under the National Food Security Strategy 2051 prioritizes domestic production of high-water-footprint crops.",
+    "key_financials": {
+      "revenue_aed": 22000000,
+      "ebitda_aed": 2640000,
+      "ebitda_margin_pct": 12,
+      "asking_multiple_x": 20.0,
+      "implied_ev_aed": 52800000
+    },
+    "investment_thesis": [
+      "UAE National Food Security Strategy 2051 commits AED 1.4B to domestic agricultural technology — Masaar is pre-qualified for MOCCAE incentive programs covering 40% of expansion capex",
+      "Premium retail supply agreements with Waitrose and Spinneys provide revenue floor and brand positioning that enables premium pricing at 2.8x conventional imported produce",
+      "Water efficiency narrative is a powerful ESG story for UAE hotel and retail clients with mandatory Estidama and LEED sustainability reporting requirements"
+    ],
+    "key_risks": [
+      "20x EBITDA entry multiple requires the business to triple EBITDA within 3 years — dependent on both Abu Dhabi expansion and D2C channel success simultaneously",
+      "Energy cost exposure is severe — vertical farming electricity consumption is 8x conventional growing; DEWA tariff increases directly compress the economics",
+      "Conventional produce price competition: imported leafy greens from Jordan and Egypt at AED 4/kg versus Masaar at AED 18/kg — premium segment is a ceiling, not a floor"
+    ],
+    "ic_recommendation": "Pass — valuation not supportable at current margins",
+    "analyst_name": "Aisha Al Blooshi",
+    "date": "2024-02-14"
+  },
+  {
+    "scenario_id": "D1-030",
+    "company_name": "Ruwwad Workforce Solutions",
+    "sector": "Retail",
+    "deal_type": "PE Buyout",
+    "geography": "KSA",
+    "executive_summary": "Ruwwad Workforce Solutions is a Riyadh-based human resources outsourcing and manpower supply company providing blue-collar and semi-skilled workforce solutions to construction, facilities management, and industrial clients. The company manages 4,200 workers on behalf of 68 client companies and holds HRSD-compliant contracts under the Nitaqat green zone classification. The founder is seeking majority sale; annual placement fees and management charges generate highly predictable revenue tied to headcount under management.",
+    "key_financials": {
+      "revenue_sar": 185000000,
+      "ebitda_sar": 16650000,
+      "ebitda_margin_pct": 9,
+      "asking_multiple_x": 7.0,
+      "implied_ev_sar": 116550000
+    },
+    "investment_thesis": [
+      "Nitaqat green zone HRSD classification is a meaningful competitive advantage — clients face Saudization penalties if they drop below green zone thresholds and prefer outsourcing to maintain compliance",
+      "4,200 workers under management with 68 client contracts provides revenue diversification — no single client exceeds 8% of managed headcount",
+      "Saudization compliance complexity is increasing — regulatory change creates demand for specialized HR outsourcing partners with HRSD expertise"
+    ],
+    "key_risks": [
+      "9% EBITDA margin is thin — any increase in worker visa costs, accommodation expenses, or HRSD compliance fees directly compresses the margin",
+      "HRSD regulatory risk: Saudization ratio requirements are subject to annual revision; any increase would require rapid and expensive Saudi staff hiring across client portfolios",
+      "Worker welfare reputational risk — any media coverage of worker accommodation or wage payment delays would trigger client relationship reviews"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Fahad Al Harbi",
+    "date": "2023-05-22"
+  },
+  {
+    "scenario_id": "D1-031",
+    "company_name": "Naseem Marine Services",
+    "sector": "Energy Services",
+    "deal_type": "Co-investment",
+    "geography": "Kuwait",
+    "executive_summary": "Naseem Marine Services provides offshore support vessels, crew boats, and marine logistics to KOC, KNPC, and international oil majors operating in Kuwaiti territorial waters. A GCC PE fund holds 55% and is bringing in a co-investor for 25% to fund acquisition of 3 additional vessels at a total cost of KWD 4.2M. The company operates 14 vessels under long-term KOC charter agreements with average remaining tenure of 3.8 years. EBITDA margins are 35% reflecting the capital-intensive but highly contracted nature of the business.",
+    "key_financials": {
+      "revenue_kwd": 8400000,
+      "ebitda_kwd": 2940000,
+      "ebitda_margin_pct": 35,
+      "asking_multiple_x": 8.0,
+      "implied_ev_kwd": 23520000
+    },
+    "investment_thesis": [
+      "KOC charter agreements with 3.8-year average remaining tenure provide locked cash flows — vessel day rates are fixed with fuel cost pass-through provisions",
+      "Kuwait offshore oil field expansion under the KDP 2035 production target of 4M barrels per day requires incremental marine support capacity",
+      "Co-investment structure with experienced lead investor reduces operational execution risk while providing PE-level return exposure"
+    ],
+    "key_risks": [
+      "Vessel maintenance capex is lumpy — dry-dock cycles every 30 months create periodic EBITDA drag that is difficult to predict precisely",
+      "KOC charter renewal negotiations are relationship-dependent — changes in KOC procurement management could affect renewal terms",
+      "Co-investor minority position with 25% stake offers limited governance protection in vessel disposition or charter renegotiation decisions"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Jassim Al Qattan",
+    "date": "2023-03-28"
+  },
+  {
+    "scenario_id": "D1-032",
+    "company_name": "Hilal Healthcare Staffing",
+    "sector": "Healthcare",
+    "deal_type": "Growth Equity",
+    "geography": "UAE",
+    "executive_summary": "Hilal Healthcare Staffing is a Dubai-based licensed healthcare recruitment and workforce outsourcing company placing nurses, physicians, and allied health professionals with DHA and DOH-licensed hospitals, clinics, and home care providers. The company manages 680 active placements and generates revenue through placement fees and monthly management charges. Management seeks AED 15M to build a proprietary digital matching platform and expand into KSA and Qatar. DHA and DOH licensing for healthcare staffing is a regulatory requirement held by fewer than 20 companies.",
+    "key_financials": {
+      "revenue_aed": 42000000,
+      "ebitda_aed": 5040000,
+      "ebitda_margin_pct": 12,
+      "asking_multiple_x": 10.0,
+      "implied_ev_aed": 50400000
+    },
+    "investment_thesis": [
+      "DHA and DOH dual licensing for healthcare staffing is a barrier that takes 18–24 months to obtain — competitive supply in the market is structurally limited",
+      "UAE healthcare sector headcount is projected to grow 14% by 2026 under MOHAP capacity expansion targets — staffing demand is a direct derivative",
+      "Digital matching platform would reduce cost-per-placement from AED 8,200 to an estimated AED 3,800, improving margins from 12% to 19% at current revenue scale"
+    ],
+    "key_risks": [
+      "Healthcare professional visa processing delays from DHA average 45 days — any regulatory tightening would extend placement cycles and delay revenue recognition",
+      "Client concentration: top 5 hospital groups represent 52% of active placements — loss of any single relationship would materially impact revenue",
+      "Technology platform build is speculative — no MVP exists; AED 7M of the AED 15M raise is earmarked for a product with unvalidated demand"
+    ],
+    "ic_recommendation": "Hold — revisit post MVP launch with client validation data",
+    "analyst_name": "Nadia Al Marzouqi",
+    "date": "2023-10-30"
+  },
+  {
+    "scenario_id": "D1-033",
+    "company_name": "Rawdah Organic Farms",
+    "sector": "F&B",
+    "deal_type": "Growth Equity",
+    "geography": "KSA",
+    "executive_summary": "Rawdah Organic Farms is a Madinah-based certified organic date and olive producer supplying premium retail chains, Hajj and Umrah gift packaging companies, and export distributors in the UK and Malaysia. The company holds SFDA organic certification and GlobalGAP accreditation across 420 hectares of farmland. Management seeks SAR 22M to expand processing capacity, develop branded retail packaging, and pursue organic certification for 180 additional hectares. Export revenue has grown from SAR 4M to SAR 18M over 3 years.",
+    "key_financials": {
+      "revenue_sar": 68000000,
+      "ebitda_sar": 13600000,
+      "ebitda_margin_pct": 20,
+      "asking_multiple_x": 9.5,
+      "implied_ev_sar": 129200000
+    },
+    "investment_thesis": [
+      "Hajj and Umrah gifting market for premium dates is a structurally growing channel — 2.5M Umrah pilgrims annually represent a captive premium gifting demand with strong pricing power",
+      "GlobalGAP and SFDA organic dual certification is a 3-year achievement — export market access to EU and UK organic channels requires this accreditation, limiting competing Saudi suppliers",
+      "Saudi Vision 2030 agricultural export target creates MISA export financing incentives of up to SAR 8M available to Rawdah on confirmed export contracts"
+    ],
+    "key_risks": [
+      "Agricultural weather risk: date palm yield is sensitive to April temperature spikes — two consecutive poor harvests could materially impair EBITDA",
+      "Export market currency risk: UK and Malaysian revenues are in GBP and MYR — SAR peg to USD provides partial insulation but GBP volatility has compressed UK margins",
+      "Branded retail packaging investment of SAR 12M creates execution risk — consumer brand building in a commodity-adjacent category requires marketing spend not reflected in current cost base"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Maha Al Shamrani",
+    "date": "2023-06-30"
+  },
+  {
+    "scenario_id": "D1-034",
+    "company_name": "Imdad Supply Chain Solutions",
+    "sector": "Logistics",
+    "deal_type": "PE Buyout",
+    "geography": "UAE",
+    "executive_summary": "Imdad Supply Chain Solutions is a Jebel Ali-based 4PL logistics orchestration company managing end-to-end supply chains for 28 FMCG, pharmaceutical, and industrial clients across UAE, Oman, and Bahrain. The company does not own physical assets — it coordinates freight forwarding, customs clearance, warehousing, and last-mile delivery through a network of 140 vetted service providers. Asset-light model generates 22% EBITDA margins. The founder seeks full exit at age 58 with a 12-month transition.",
+    "key_financials": {
+      "revenue_aed": 185000000,
+      "ebitda_aed": 40700000,
+      "ebitda_margin_pct": 22,
+      "asking_multiple_x": 9.5,
+      "implied_ev_aed": 386650000
+    },
+    "investment_thesis": [
+      "Asset-light 4PL model generates superior returns on capital — zero owned fleet or warehouse capex produces 22% EBITDA margins with free cash flow conversion above 90%",
+      "28 blue-chip FMCG and pharma clients with average tenure of 6.2 years demonstrate institutional quality client relationships with high switching costs",
+      "Regional expansion to KSA is immediately actionable — 4 of 28 clients have requested KSA service extension that management has not yet activated"
+    ],
+    "key_risks": [
+      "Technology platform is 7 years old and requires a full rebuild estimated at AED 8M — without modernization, enterprise client RFP competitiveness will erode",
+      "Founder relationship dependency: 9 of 28 clients have personal relationships exclusively with the founder — accelerated transition creates retention risk",
+      "Margin compression from digital freight platforms: Flexport and regional competitors are commoditizing freight coordination, pressuring take rates on the freight management component"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Waleed Al Mansouri",
+    "date": "2022-11-22"
+  },
+  {
+    "scenario_id": "D1-035",
+    "company_name": "Tamayuz Private Schools Group",
+    "sector": "Retail",
+    "deal_type": "Secondary",
+    "geography": "Kuwait",
+    "executive_summary": "Tamayuz Private Schools Group operates 4 private K-12 schools in Kuwait City and Hawalli under the American curriculum track, serving 3,200 students at average annual fees of KWD 2,400. A regional education fund is seeking to exit its 45% stake after an 8-year hold. Occupancy is 96% across all campuses with a 1.5-year waitlist at the flagship school. MOE licensing is current. The secondary is being offered at a slight premium to book value reflecting the strong operational performance.",
+    "key_financials": {
+      "revenue_kwd": 7680000,
+      "ebitda_kwd": 1382400,
+      "ebitda_margin_pct": 18,
+      "asking_multiple_x": 10.0,
+      "implied_ev_kwd": 13824000
+    },
+    "investment_thesis": [
+      "96% occupancy with 1.5-year waitlist across all 4 campuses demonstrates structural demand inelasticity in Kuwait's private education market",
+      "American curriculum track commands a fee premium of 35% over British and Indian curriculum alternatives in Kuwait — brand positioning is defensible",
+      "Secondary pricing aligned with book value provides downside protection — asset value of school buildings and fit-out provides a meaningful floor"
+    ],
+    "key_risks": [
+      "MOE fee cap regulations in Kuwait limit annual fee increases to 5% — real fee growth is structurally constrained below inflation",
+      "Teacher retention: American curriculum teachers command KWD 1,800–2,400 monthly with housing allowances — total compensation package is difficult to maintain competitively",
+      "Minority stake position limits strategic influence over fee policy, new campus decisions, and management appointments"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Ghanim Al Mutairi",
+    "date": "2023-01-17"
+  },
+  {
+    "scenario_id": "D1-036",
+    "company_name": "Majd Cybersecurity Consulting",
+    "sector": "Tech",
+    "deal_type": "Growth Equity",
+    "geography": "KSA",
+    "executive_summary": "Majd Cybersecurity Consulting is a Riyadh-based cybersecurity advisory and managed security services company serving Saudi government ministries, Vision Realization Offices, and financial institutions. The company holds NCA approved service provider status and has 42 active client engagements. Management seeks SAR 18M to build a Security Operations Center and expand into UAE. NCA cybersecurity regulations issued in 2023 mandate external cybersecurity audits for all critical infrastructure operators, creating structural demand.",
+    "key_financials": {
+      "revenue_sar": 48000000,
+      "ebitda_sar": 9600000,
+      "ebitda_margin_pct": 20,
+      "asking_multiple_x": 12.0,
+      "implied_ev_sar": 115200000
+    },
+    "investment_thesis": [
+      "NCA approved service provider status required for all government cybersecurity engagements — achieved by fewer than 25 companies nationally, creating structural competitive advantage",
+      "2023 NCA Critical Systems Protection Controls mandate annual external audits for 180+ designated critical infrastructure operators — creates recurring revenue floor",
+      "Saudi cybersecurity talent is domestically scarce — Majd's team of 68 Saudi and Arab cybersecurity professionals is a hiring moat that competitors cannot quickly replicate"
+    ],
+    "key_risks": [
+      "Government payment cycles average 160 days — SOC buildout requires upfront capex of SAR 11M against a working capital position that cannot absorb the strain without bridge financing",
+      "NCA regulation implementation timeline has slipped twice — any further delay reduces the urgency of client procurement decisions",
+      "Key person dependency: Chief Security Officer holds 14 of 42 client relationships — his retention post-investment is a condition precedent to closing"
+    ],
+    "ic_recommendation": "Proceed to due diligence",
+    "analyst_name": "Khalid Al Dossari",
+    "date": "2024-01-22"
+  },
+  {
+    "scenario_id": "D1-037",
+    "company_name": "Seef Real Estate Investment",
+    "sector": "Real Estate",
+    "deal_type": "Co-investment",
+    "geography": "Kuwait",
+    "executive_summary": "Seef Real Estate Investment is a Kuwait-based real estate developer with a mixed-use development under construction in Bneid Al Gar comprising 120 residential apartments, 14 retail units, and a 2-floor medical clinic podium. A local family office holds 70% and is seeking a co-investor for 20% at a pre-completion valuation. GDV is estimated at KWD 18.4M upon completion in Q2 2025 against a total development cost of KWD 13.8M. Planning approvals are fully secured and construction is 62% complete.",
+    "key_financials": {
+      "revenue_kwd": 18400000,
+      "ebitda_kwd": 4600000,
+      "ebitda_margin_pct": 25,
+      "asking_multiple_x": 3.0,
+      "implied_ev_kwd": 13800000
+    },
+    "investment_thesis": [
+      "62% construction completion significantly de-risks the investment — planning, structural, and permitting risks are substantially resolved",
+      "Bneid Al Gar residential demand is supported by proximity to the Kuwait City CBD and Sharq financial district — premium rental yields of 7.2% are above Kuwait average",
+      "Medical clinic podium is pre-leased to a MOH-approved polyclinic operator at KWD 48,000 annually on a 5-year term, providing income from day one of completion"
+    ],
+    "key_risks": [
+      "Residential apartment pre-sales stand at only 34% — significant unsold inventory risk if Kuwait City residential market softens before completion",
+      "Construction cost overrun risk: remaining 38% of construction in a period of elevated steel and labor costs — contingency budget of KWD 280,000 may be insufficient",
+      "Co-investor minority position with 20% stake has limited exit optionality — dependent on lead investor agreeing to a coordinated sale process"
+    ],
+    "ic_recommendation": "Hold — require 50% pre-sales before committing",
+    "analyst_name": "Manal Al Khaldi",
+    "date": "2023-12-12"
+  }
+]

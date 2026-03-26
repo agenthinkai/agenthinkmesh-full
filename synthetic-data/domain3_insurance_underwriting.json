@@ -1,0 +1,1082 @@
+[
+  {
+    "scenario_id": "D3-001",
+    "insured_entity_name": "Al Jazeera Contracting Company",
+    "sector": "construction",
+    "coverage_type": "CAR",
+    "sum_insured_usd": 48000000,
+    "risk_factors": [
+      "Project site located in Jeddah coastal zone with annual flood risk during winter rainfall season",
+      "Subcontractor workforce of 1,800 with limited safety compliance track record — 3 recordable incidents in past 18 months",
+      "Proximity to existing NEOM utility infrastructure increases risk of third-party property damage during excavation",
+      "Project timeline is 26 months with no float — delay claims exposure is elevated"
+    ],
+    "loss_history": "One prior CAR claim in 2021 for SAR 1.4M arising from crane collapse at Riyadh site — claim settled in full",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.38,
+    "special_conditions": "Exclude flood damage to temporary works below grade 2 meters; require site safety management plan approved by Saudi Civil Defense before inception",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-002",
+    "insured_entity_name": "Khaleeji Marine Trading",
+    "sector": "marine",
+    "coverage_type": "marine cargo",
+    "sum_insured_usd": 22000000,
+    "risk_factors": [
+      "Cargo consists of perishable foodstuffs requiring temperature-controlled containers throughout Jebel Ali to Kuwait Shuwaikh voyage",
+      "Summer Gulf transit exposes cargo to ambient temperatures exceeding 45°C if reefer unit failure occurs",
+      "Routing passes through Strait of Hormuz with elevated piracy advisory level in Q3 2023",
+      "Single carrier dependency — all cargo shipped with one regional feeder line"
+    ],
+    "loss_history": "No prior marine cargo claims in 5-year relationship",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.12,
+    "special_conditions": "Reefer temperature monitoring logs required within 24 hours of discharge; all-risk cover excludes inherent vice of perishable goods",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-003",
+    "insured_entity_name": "Rawabi Medical Centers",
+    "sector": "medical",
+    "coverage_type": "group medical",
+    "sum_insured_usd": 8400000,
+    "risk_factors": [
+      "Employee demographic skewed toward females aged 25–40 with elevated maternity benefit utilization — 34% of workforce",
+      "Riyadh and Jeddah dual-city operation increases network adequacy requirements and provider negotiation complexity",
+      "Prior year claims ratio of 89% against market benchmark of 78% — indicates adverse selection or utilization management gap",
+      "No wellness program in place — high chronic disease prevalence in Saudi workforce (diabetes 18.4% nationally)"
+    ],
+    "loss_history": "Prior year claims ratio 89%; two large oncology claims totalling SAR 680K in 2022",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 9.2,
+    "special_conditions": "Mandatory pre-authorization for all inpatient admissions; oncology coverage sublimit of SAR 200K per member per year; wellness screening program required within 90 days of inception",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-004",
+    "insured_entity_name": "Shuwaikh Industrial Park Co.",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_kwd": 18500000,
+    "risk_factors": [
+      "Industrial complex includes chemical storage with Class 3 flammable liquids requiring NFPA-compliant suppression systems",
+      "Shuwaikh Industrial Area has recorded 4 major fire incidents in adjacent facilities over past 5 years",
+      "Building construction is pre-2000 reinforced concrete with no seismic upgrade — Kuwait is in moderate seismic zone",
+      "Single transformer feeding the entire complex — power failure would halt production and trigger business interruption claim"
+    ],
+    "loss_history": "Fire loss in 2019 — KWD 240,000 claim settled; machinery breakdown in 2022 — KWD 85,000 claim settled",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.28,
+    "special_conditions": "Chemical storage sublimit KWD 2M; require Kuwait Civil Defense annual inspection certificate; business interruption indemnity period limited to 180 days",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-005",
+    "insured_entity_name": "Gulf Star Food Industries",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_aed": 95000000,
+    "risk_factors": [
+      "Food manufacturing facility includes deep fryers, industrial ovens, and cooking oil storage — elevated fire risk profile",
+      "JAFZA location with 24/7 operations increases probability of night-shift incident with reduced oversight",
+      "Adjacent tenant in JAFZA warehousing complex stores Class 2 flammable goods — conflagration risk is material",
+      "Ramadan production surge doubles output and workforce for 30 days annually — peak exposure period"
+    ],
+    "loss_history": "No prior property claims; one liability claim in 2021 for AED 42,000 — product contamination, settled",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.18,
+    "special_conditions": "Require annual UAE Civil Defense fire safety certificate; cooking oil storage sublimit AED 8M; hot work permit system required",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-006",
+    "insured_entity_name": "Tamayuz Private Schools Group",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_kwd": 2000000,
+    "risk_factors": [
+      "Board includes 3 independent directors with limited education sector experience — governance gap increases D&O exposure",
+      "MOE regulatory environment is evolving with new private school governance requirements — regulatory breach exposure",
+      "Minority shareholder dispute documented in board minutes — derivative action risk is elevated",
+      "Financial reporting is not IFRS-compliant — restatement risk if auditor raises qualification"
+    ],
+    "loss_history": "No prior D&O claims",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.85,
+    "special_conditions": "Regulatory proceedings coverage sublimit KWD 400K; prior acts coverage from January 2020 inception; personal profit exclusion applicable",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-007",
+    "insured_entity_name": "Naseem Marine Services",
+    "sector": "marine",
+    "coverage_type": "marine cargo",
+    "sum_insured_kwd": 12000000,
+    "risk_factors": [
+      "Offshore support vessel operations in Kuwaiti waters with year-round voyage exposure including summer storm season",
+      "Crew of 420 across 14 vessels with high proportion of South Asian seafarers — language and safety briefing compliance risk",
+      "KOC operational area includes active drilling platforms — collision and third-party liability exposure is elevated",
+      "Three vessels approaching 15-year class renewal — hull condition is borderline for standard P&I terms"
+    ],
+    "loss_history": "Two hull claims in past 5 years totalling KWD 380,000; no P&I claims",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.45,
+    "special_conditions": "Vessels over 15 years excluded unless Lloyd's class certificate current; crew liability sublimit KWD 500K per incident; KOC operational area exclusion for vessels under class survey",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-008",
+    "insured_entity_name": "Majd Pharmaceutical Manufacturing",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_sar": 15000000,
+    "risk_factors": [
+      "SFDA GMP re-inspection scheduled — any GMP finding could trigger regulatory enforcement action against directors",
+      "Founding family holds 68% and exercises operational control with limited independent board oversight",
+      "Two product recalls in past 4 years for labeling non-compliance — product liability exposure adjacent to D&O risk",
+      "Financial statements qualify for SFDA drug pricing review — potential regulatory pricing investigation"
+    ],
+    "loss_history": "No prior D&O claims; two SFDA warning letters in past 3 years",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 1.1,
+    "special_conditions": "SFDA regulatory proceedings sublimit SAR 3M; prior SFDA warning letters noted as disclosed circumstances; product recall costs excluded",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-009",
+    "insured_entity_name": "Khaleeji Cold Chain Logistics",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_aed": 185000000,
+    "risk_factors": [
+      "Refrigeration plant uses ammonia as refrigerant — toxic gas escape risk requires specialized engineering controls and COSHH assessment",
+      "28,000 sqm cold store at 94% capacity utilization means any equipment failure affects maximum stored inventory value",
+      "Jebel Ali location in JAFZA zone — adjacent tenants include chemical and petrochemical storage",
+      "Single-source ammonia refrigeration contractor for maintenance — business continuity risk if contractor unavailable during breakdown"
+    ],
+    "loss_history": "One refrigeration plant failure in 2022 — AED 1.2M perishable goods loss claimed and settled",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.22,
+    "special_conditions": "Ammonia gas escape sublimit AED 15M; mandatory quarterly refrigeration plant inspection by approved engineer; spoilage sublimit AED 25M per event",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-010",
+    "insured_entity_name": "Rimal Construction Group",
+    "sector": "construction",
+    "coverage_type": "CAR",
+    "sum_insured_sar": 380000000,
+    "risk_factors": [
+      "Riyadh residential construction in expansive clay soil zone — foundation settlement risk is above average for the region",
+      "Subcontractor workforce of 3,200 with 61% sourced through labor supply companies with variable safety standards",
+      "2 active sites within 500 meters of existing residential buildings — vibration and dust damage claims from neighbors are probable",
+      "Fast-track program requires night work — reduced supervision coverage increases incident probability"
+    ],
+    "loss_history": "SAR 2.1M CAR claim in 2021 arising from retaining wall collapse at Dammam site — claim settled",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.28,
+    "special_conditions": "Third-party property damage sublimit SAR 15M per occurrence; night work requires designated safety officer on site; REDF-linked projects covered; delay in start-up excluded",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-011",
+    "insured_entity_name": "Al Baraka Steel Fabrication",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_sar": 220000000,
+    "risk_factors": [
+      "42,000 sqm fabrication yard includes hot work, welding, and cutting operations across 3 shifts — fire ignition risk is continuous",
+      "Jubail Industrial City location adjacent to petrochemical plants — conflagration and toxic gas exposure",
+      "ASME pressure vessel testing on-site creates periodic high-pressure test risk",
+      "Aramco vendor requirements mandate specific insurance limits and conditions that restrict underwriter flexibility"
+    ],
+    "loss_history": "One fire loss SAR 3.8M in 2020 at Jubail yard — cause: welding spark on compressed gas cylinder; settled",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.32,
+    "special_conditions": "Hot work permit system mandatory with photographic evidence; welding operations sublimit SAR 20M; compressed gas storage area excluded from cover unless segregated per NFPA 55",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-012",
+    "insured_entity_name": "Hayat Home Care Services",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_aed": 5000000,
+    "risk_factors": [
+      "DHA and DOH dual licensing creates dual regulatory oversight — any licensing breach by a care staff member triggers director notification obligations",
+      "Founder holds all key regulatory relationships — departure or incapacitation creates governance gap",
+      "Rapid growth from 80 to 186 care staff in 18 months increases risk of undisclosed staff credential issues",
+      "Patient data held on cloud platform with no DHA data governance certification — potential regulatory breach"
+    ],
+    "loss_history": "No prior D&O claims; one DHA patient complaint investigation in 2022 — resolved without penalty",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.95,
+    "special_conditions": "Regulatory defense costs sublimit AED 1M; patient data breach exclusion unless DHA data governance certification obtained within 12 months",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-013",
+    "insured_entity_name": "Andalus Catering Services",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_sar": 10000000,
+    "risk_factors": [
+      "Family dispute among shareholders creates heightened risk of derivative action against directors over exit valuation",
+      "MOH hospital catering contracts include personal liability undertakings signed by directors",
+      "Food safety regulatory compliance across 38 sites is managed by a single HACCP officer — oversight gap",
+      "Two siblings holding minority stakes have engaged lawyers — pre-litigation risk is elevated"
+    ],
+    "loss_history": "No prior D&O claims; one municipality food safety warning in 2021 — resolved",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 1.2,
+    "special_conditions": "Shareholder dispute exclusion for claims arising from documented pre-existing dispute; regulatory proceedings sublimit SAR 2M; personal undertakings in government contracts excluded",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-014",
+    "insured_entity_name": "Noor Express Courier",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_aed": 8000000,
+    "risk_factors": [
+      "Gig economy rider classification under UAE regulatory review — potential employment law liability for directors",
+      "Noon and Namshi merchant contracts include SLA penalty clauses personally guaranteed by CEO",
+      "Series A investor board representation with information rights — regulatory filing obligations on directors are expanded",
+      "Rapid headcount growth from 200 to 620 riders in 18 months creates undisclosed employment practice risk"
+    ],
+    "loss_history": "No prior D&O claims",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.9,
+    "special_conditions": "Employment practices liability sublimit AED 1.5M; personal guarantee exclusion; gig worker misclassification excluded pending UAE regulatory outcome",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-015",
+    "insured_entity_name": "Barr Al Aman Real Estate Development",
+    "sector": "construction",
+    "coverage_type": "CAR",
+    "sum_insured_sar": 200600000,
+    "risk_factors": [
+      "Jeddah North site in known groundwater zone — dewatering risk is high and affects foundation timeline",
+      "Taif site is at 1,800m elevation with winter frost and ice risk on exposed structural elements",
+      "REDF-linked affordable housing fast-track program removes float from program — delay claims exposure is significant",
+      "Two municipality zoning amendments have already delayed projects — regulatory risk is demonstrated"
+    ],
+    "loss_history": "No prior CAR claims on current sites; one prior flood damage claim at 2018 Jeddah project — SAR 880K settled",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.30,
+    "special_conditions": "Flood damage sublimit SAR 12M for Jeddah North site; Taif site requires winter work protection plan; delay in completion excluded",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-016",
+    "insured_entity_name": "Kuwait Towers Hospitality",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_kwd": 45000000,
+    "risk_factors": [
+      "Heritage building with 1970s construction — original MEP systems not designed to modern fire suppression standards",
+      "High public footfall hospitality venue — public liability exposure is material and difficult to control",
+      "Kuwait Bay coastal location with salt air corrosion accelerating structural metal deterioration",
+      "F&B operations include open kitchen with live fire cooking — ignition risk is continuous during operating hours"
+    ],
+    "loss_history": "Minor water damage claim KWD 28,000 in 2020 — plumbing failure; no fire or major structural claims",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.35,
+    "special_conditions": "Heritage building reinstatement basis agreed value KWD 38M; MEP systems excluded from equipment breakdown unless upgraded to Kuwait Civil Defense 2019 standards; open kitchen sublimit KWD 5M",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-017",
+    "insured_entity_name": "Siraj Renewable Energy Solutions",
+    "sector": "construction",
+    "coverage_type": "CAR",
+    "sum_insured_aed": 140000000,
+    "risk_factors": [
+      "Solar panel installation on commercial rooftops creates structural loading risk — engineer certification required for each rooftop",
+      "Electrical DC arc flash risk during commissioning is the primary loss scenario for solar EPC projects",
+      "Summer installation in UAE with ambient temperatures exceeding 48°C — heat stress incidents among installation teams",
+      "Multiple concurrent projects in DEWA and ADDC zones require separate site risk assessments"
+    ],
+    "loss_history": "One DC arc flash claim AED 180,000 in 2022 during Abu Dhabi commissioning — settled",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.22,
+    "special_conditions": "DC arc flash sublimit AED 8M per occurrence; rooftop loading engineer certification required before installation commences; heat stress management plan required for summer months",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-018",
+    "insured_entity_name": "Mashaer Transport Group",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_sar": 20000000,
+    "risk_factors": [
+      "Ministry of Hajj contract renewal in 2027 — any failure to renew creates going concern risk that directors may need to disclose",
+      "1,200-bus fleet operating in Makkah and Madinah restricted zones requires annual MOI and Hajj Ministry permits — permit lapse is a regulatory risk",
+      "Founding family sells majority stake — new directors inherit undisclosed liabilities from prior management",
+      "Hajj season crowd management incidents create potential for mass casualty liability and director prosecution"
+    ],
+    "loss_history": "No prior D&O claims; one MOI permit lapse in 2019 — resolved with fine of SAR 120,000",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 1.0,
+    "special_conditions": "Mass casualty event exclusion for claims arising from Hajj crowd management incidents; prior acts coverage from 2020; new director run-off coverage included",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-019",
+    "insured_entity_name": "Tamkin Digital Government Solutions",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_sar": 12000000,
+    "risk_factors": [
+      "Government ministry contracts include personal performance undertakings from CEO and CTO",
+      "NCA cybersecurity requirements impose director notification obligations for data breach incidents within 72 hours",
+      "Saudi Vision 2030 digitization mandate creates tight delivery timelines — project delay exposes directors to government counterparty claims",
+      "Two key government clients represent 45% of revenue — loss of either triggers going concern disclosure obligation"
+    ],
+    "loss_history": "No prior D&O claims",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.95,
+    "special_conditions": "Cyber breach notification costs sublimit SAR 1.5M; personal performance undertakings excluded; government contract penalty clauses excluded from cover",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-020",
+    "insured_entity_name": "Ruwwad Workforce Solutions",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_sar": 8000000,
+    "risk_factors": [
+      "HRSD Nitaqat compliance is core to the business model — any regulatory reclassification to yellow zone would trigger client contract terminations",
+      "4,200 managed workers create significant employment practice liability exposure for directors",
+      "Worker welfare regulatory scrutiny in Saudi Arabia is increasing — accommodation and wage payment compliance risk",
+      "Founding family exit and new PE ownership — warranty and indemnity exposure on undisclosed prior liabilities"
+    ],
+    "loss_history": "No prior D&O claims; two HRSD compliance warnings in past 3 years",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 1.1,
+    "special_conditions": "HRSD regulatory proceedings sublimit SAR 2M; worker welfare claims excluded; W&I coverage available separately; prior HRSD warnings noted as disclosed circumstances",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-021",
+    "insured_entity_name": "Durrat Al Khaleej Real Estate",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_kwd": 34200000,
+    "risk_factors": [
+      "Portfolio includes 8 office buildings with mixed tenancy — vacant units in 3 buildings increase fire and vandalism risk",
+      "Sharq district buildings average age of 18 years — aging MEP systems increase machinery breakdown probability",
+      "Ground-floor retail units in 2 buildings have F&B tenants with cooking operations",
+      "Kuwait City urban density increases third-party property damage exposure from any building maintenance failure"
+    ],
+    "loss_history": "One water damage claim KWD 45,000 in 2021 — pipe burst in vacant office floor; one glass breakage claim KWD 8,000 in 2023",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.18,
+    "special_conditions": "Vacant unit sublimit 50% of sum insured; MEP systems excluded from first KWD 15,000 per claim; F&B tenant cooking operations sublimit KWD 3M",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-022",
+    "insured_entity_name": "Al Waha Poultry Industries",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_sar": 235200000,
+    "risk_factors": [
+      "Three broiler farms in Qassim region with 18,000 tons annual slaughter capacity — avian influenza biosecurity risk is material",
+      "Feed mill with grain dust storage — combustible dust explosion risk is a primary loss scenario",
+      "MEWA water allocation dependency — any water restriction could halt farm operations and trigger livestock mortality",
+      "Cold chain from slaughter to Riyadh retail requires 8-hour temperature-controlled transit — reefer failure creates total load loss"
+    ],
+    "loss_history": "One feed mill fire SAR 1.8M in 2019 — dust ignition; settled. One reefer failure claim SAR 340K in 2022 — settled",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.26,
+    "special_conditions": "Avian influenza disease exclusion; combustible dust explosion sublimit SAR 20M; livestock mortality coverage requires MEWA veterinary certification; feed mill requires NFPA 654 compliant dust control system",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-023",
+    "insured_entity_name": "Layali Hospitality Group",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_kwd": 3000000,
+    "risk_factors": [
+      "Master franchise agreement for regional brand includes personal performance guarantees from directors",
+      "Kuwait Municipality food safety inspections have cited 3 branches in past 2 years — regulatory pattern risk",
+      "Family ownership transition creates director liability exposure for undisclosed pre-sale liabilities",
+      "Avenues Mall lease renewal negotiations involve personal undertakings by CEO — personal liability exposure"
+    ],
+    "loss_history": "No prior D&O claims; three Kuwait Municipality food safety citations in 2022–2023",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.88,
+    "special_conditions": "Food safety regulatory proceedings sublimit KWD 500K; personal undertakings in lease agreements excluded; prior food safety citations noted as disclosed circumstances",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-024",
+    "insured_entity_name": "Tatweer Water Technologies",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_aed": 4000000,
+    "risk_factors": [
+      "DEWA contractor approval pending — directors may face disclosure obligation if approval is denied and contracts cannot be fulfilled",
+      "3 UAE patents are core business assets — patent challenge or invalidation creates going concern disclosure risk",
+      "Proprietary greywater recycling system installed in 84 hotel and industrial sites — product malfunction liability could trigger director claims from institutional clients",
+      "Growth equity investors have information rights and board representation — investor-director conflict risk"
+    ],
+    "loss_history": "No prior D&O claims",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.92,
+    "special_conditions": "Product malfunction claims against directors excluded — refer to product liability policy; patent challenge defense costs sublimit AED 800K; investor claims exclusion",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-025",
+    "insured_entity_name": "Midan Sports and Wellness",
+    "sector": "medical",
+    "coverage_type": "group medical",
+    "sum_insured_sar": 4800000,
+    "risk_factors": [
+      "Active fitness professional workforce with elevated musculoskeletal injury and sports injury claim frequency",
+      "Saudi Arabia high ambient temperature in summer — heat stress and exertion-related claims likely for outdoor staff",
+      "Prior year claims ratio of 82% driven by 3 major orthopedic surgeries among personal trainer staff",
+      "Ramadan operations with altered sleep and eating patterns increase staff health incidents"
+    ],
+    "loss_history": "Prior year claims ratio 82%; three orthopedic surgery claims totalling SAR 280K in 2023",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 8.8,
+    "special_conditions": "Orthopedic surgery sublimit SAR 80K per member per year; sports injury from on-duty fitness instruction covered; mandatory occupational health screening at inception",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-026",
+    "insured_entity_name": "Qusoor Heritage Hotels",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_sar": 160080000,
+    "risk_factors": [
+      "AlUla heritage site construction is UNESCO-adjacent — any damage to archaeological context triggers Royal Commission liability",
+      "Diriyah Gate property uses traditional mud brick construction with limited fire resistance",
+      "Historic Jeddah property in UNESCO World Heritage buffer zone — repair materials and methods are restricted by SCTH",
+      "Remote AlUla location means fire brigade response time exceeds 25 minutes — loss severity risk is elevated"
+    ],
+    "loss_history": "No prior property claims on current portfolio",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.42,
+    "special_conditions": "Reinstatement basis for heritage properties is agreed value with SCTH-approved heritage contractor; AlUla site requires on-site fire suppression system; UNESCO buffer zone regulatory compliance condition",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-027",
+    "insured_entity_name": "Watani Agri Distribution",
+    "sector": "marine",
+    "coverage_type": "marine cargo",
+    "sum_insured_kwd": 8400000,
+    "risk_factors": [
+      "Perishable produce cargo requires temperature chain from Jordan and Egypt source to Kuwait Shuwaikh customs clearance",
+      "Kuwait Customs clearance delays average 4–6 hours during Ramadan and summer peak — reefer power dependency risk",
+      "Egyptian produce routing through Suez Canal subject to geopolitical disruption risk",
+      "Single cold storage operator at Shuwaikh for receiving — concentration risk if operator has equipment failure"
+    ],
+    "loss_history": "Two prior marine cargo claims totalling KWD 48,000 — reefer failure and customs delay spoilage in 2022; settled",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.18,
+    "special_conditions": "Perishable cargo cover subject to continuous reefer temperature log; customs delay coverage up to 48 hours maximum; inherent vice of produce excluded",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-028",
+    "insured_entity_name": "Nakheel Urban Mobility",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_aed": 6000000,
+    "risk_factors": [
+      "RTA exclusive zone permit is the primary business asset — any permit breach by a rider creates permit revocation risk and director notification obligation",
+      "Series A investors have board representation with covenant compliance obligations on directors",
+      "Rider classification as gig workers rather than employees is under UAE regulatory review — directors may face employment law liability",
+      "Abu Dhabi DoT conditional permit approval — any delay creates going concern disclosure risk for directors"
+    ],
+    "loss_history": "No prior D&O claims; one RTA safety incident report in 2023 — resolved without penalty",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.92,
+    "special_conditions": "Gig worker misclassification claims excluded; RTA permit revocation defense costs sublimit AED 800K; investor covenant breach claims excluded",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-029",
+    "insured_entity_name": "Burj Medical Diagnostics",
+    "sector": "medical",
+    "coverage_type": "group medical",
+    "sum_insured_aed": 6200000,
+    "risk_factors": [
+      "Laboratory staff handling bloodborne pathogens — needlestick injury and occupational exposure claim frequency is elevated",
+      "CAP-certified processing lab handles 1.8M tests annually — repetitive strain and laboratory technician health claims",
+      "At-home sample collection staff face road traffic accident risk during Dubai peak hours",
+      "Prior year claims ratio of 76% — within acceptable range but driven by 2 large oncology claims"
+    ],
+    "loss_history": "Prior year claims ratio 76%; two oncology claims totalling AED 380K; one needlestick injury claim AED 28K",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 7.8,
+    "special_conditions": "Oncology sublimit AED 150K per member per year; needlestick injury and occupational exposure covered in full; at-home collection staff road accident covered as occupational injury",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-030",
+    "insured_entity_name": "Al Rawabi Specialty Chemicals",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_kwd": 11340000,
+    "risk_factors": [
+      "Mina Abdullah manufacturing facility stores Class 3 flammable liquids and corrosive chemical raw materials",
+      "Chemical manufacturing process includes exothermic reactions — runaway reaction risk requires continuous process monitoring",
+      "MEW and Kuwait Municipality environmental inspections are annual — any non-compliance finding could trigger production shutdown",
+      "Adjacent KOC pipeline easement within 80 meters of chemical storage — exclusion zone compliance is mandatory"
+    ],
+    "loss_history": "One chemical spill claim KWD 62,000 in 2021 — containment and cleanup costs; settled",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.38,
+    "special_conditions": "Chemical spill cleanup sublimit KWD 1.5M; KOC pipeline exclusion zone compliance certificate required annually; environmental liability excluded — refer to standalone pollution policy",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-031",
+    "insured_entity_name": "Imdad Supply Chain Solutions",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_aed": 12000000,
+    "risk_factors": [
+      "Founder exit with 12-month transition — incoming directors inherit undisclosed contractual liabilities",
+      "28 blue-chip client contracts include SLA penalty clauses creating director liability exposure",
+      "Technology platform rebuild requires AED 8M capex — board approval and disclosure obligations to investors are material",
+      "UAE Commercial Companies Law compliance review overdue — annual filing defaults create regulatory exposure for directors"
+    ],
+    "loss_history": "No prior D&O claims",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.75,
+    "special_conditions": "Prior acts coverage from 2019; incoming director run-off protection included; SLA penalty clause claims excluded from D&O — refer to professional indemnity policy",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-032",
+    "insured_entity_name": "Majd Marine Cargo Insurance",
+    "sector": "marine",
+    "coverage_type": "marine cargo",
+    "sum_insured_kwd": 12400000,
+    "risk_factors": [
+      "Marine cargo underwriting portfolio concentrated in Kuwait-origin oil-related cargo — single commodity concentration",
+      "Lloyd's market relationships held by 3 senior underwriters whose contracts are up for renewal",
+      "CIMA regulatory inspection scheduled — any underwriting standard finding creates stop-loss risk on the portfolio",
+      "Reinsurance treaty renewal at December year-end — any market hardening increases net retention exposure"
+    ],
+    "loss_history": "14-year combined ratio 58% — below market average of 67%; no single large loss above KWD 400K",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.14,
+    "special_conditions": "Oil cargo sublimit 35% of annual GWP; Lloyd's reinsurance treaty confirmation required before inception; CIMA inspection compliance certificate current",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-033",
+    "insured_entity_name": "Rawdah Organic Farms",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_sar": 129200000,
+    "risk_factors": [
+      "420 hectares of date palm and olive cultivation in Madinah region — wildfire risk during dry summer season",
+      "Irrigation system failure in summer heat can cause total crop loss within 48 hours",
+      "GlobalGAP accreditation requirement includes pesticide storage compliance — fire risk from agrochemical storage",
+      "Export packaging facility with automated machinery — equipment breakdown risk is elevated"
+    ],
+    "loss_history": "One crop loss claim SAR 880K in 2021 — irrigation failure during summer heatwave; settled",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.24,
+    "special_conditions": "Crop loss sublimit SAR 15M per event; wildfire cover requires firebreak maintenance certificate annually; agrochemical storage requires SFDA-compliant segregated facility",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-034",
+    "insured_entity_name": "Khaleeji Marine Trading",
+    "sector": "medical",
+    "coverage_type": "group medical",
+    "sum_insured_kwd": 1800000,
+    "risk_factors": [
+      "180 staff include 60 seafarers with occupational health risks specific to marine environment",
+      "Kuwait-based office staff have high diabetes prevalence consistent with national average of 24%",
+      "Prior year claims ratio of 91% — above acceptable threshold, driven by cardiac events among senior management",
+      "No pre-employment medical screening in place"
+    ],
+    "loss_history": "Prior year claims ratio 91%; two cardiac surgery claims totalling KWD 84K; one renal dialysis ongoing claim KWD 38K annually",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 9.8,
+    "special_conditions": "Cardiac surgery sublimit KWD 25K per member per year; mandatory pre-employment medical screening within 30 days of inception; seafarer occupational cover aligned to MLC 2006 minimum standards",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-035",
+    "insured_entity_name": "Baraka Renewable Power",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_aed": 388800000,
+    "risk_factors": [
+      "Three ground-mount solar plants with 68MWp total capacity — DC arc flash and inverter failure are primary loss scenarios",
+      "UAE summer sand and dust storms cause panel soiling and mechanical damage to tracker systems",
+      "ADDC interconnection points at each plant — grid fault injection risk if inverter protection fails",
+      "Remote monitoring only — no on-site operations staff; fault detection to response time exceeds 4 hours"
+    ],
+    "loss_history": "One inverter failure AED 480K in 2022 — tracker system damage in sandstorm; settled",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.12,
+    "special_conditions": "DC arc flash sublimit AED 20M per occurrence; sandstorm damage sublimit AED 15M per event; ADDC interconnection warranty required; remote monitoring system with 4-hour maximum fault alert response required",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-036",
+    "insured_entity_name": "Masaar AgriTech",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_aed": 52800000,
+    "risk_factors": [
+      "Vertical farming facility uses LED lighting, hydroponic systems, and HVAC — high electrical load increases fire risk",
+      "DEWA electricity consumption of 3.4M kWh annually — power outage exceeding 2 hours causes total crop loss",
+      "Hydroponic nutrient solution is corrosive to facility infrastructure — leak damage risk is continuous",
+      "Single growing facility with no redundancy — any production loss is total for that crop cycle"
+    ],
+    "loss_history": "One HVAC failure AED 380K in 2023 — crop loss from temperature excursion; settled",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.35,
+    "special_conditions": "Crop loss sublimit AED 5M per growing cycle; power outage business interruption maximum indemnity 72 hours; hydroponic system leak damage deductible AED 50K per event",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-037",
+    "insured_entity_name": "Gulf Bridge Telecom Infrastructure",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_kwd": 57344000,
+    "risk_factors": [
+      "140 telecom towers in Kuwait — elevated lightning strike risk given tower height above urban surroundings",
+      "Tower foundation integrity in Kuwait coastal clay soil degrades over time — subsidence risk is material for towers over 10 years old",
+      "Shared tenancy at 1.4x ratio means Zain and Ooredoo equipment co-located — third-party equipment damage liability",
+      "Planned 60-tower expansion in urban locations increases crane operation and construction third-party liability"
+    ],
+    "loss_history": "Two lightning strike claims totalling KWD 48K in past 3 years; one foundation settlement KWD 280K in 2021",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.16,
+    "special_conditions": "Lightning damage deductible KWD 5K per tower; third-party co-located equipment excluded from property cover — operators maintain own equipment cover; expansion construction covered under CAR extension",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-038",
+    "insured_entity_name": "Jabal Al Noor Mining Services",
+    "sector": "construction",
+    "coverage_type": "CAR",
+    "sum_insured_sar": 141120000,
+    "risk_factors": [
+      "Blasting operations at gold mine sites — misfire, flyrock, and ground vibration create both property and third-party liability risk",
+      "Drilling equipment operates in dusty, abrasive environment — mechanical breakdown frequency is above construction average",
+      "Tabuk region is seismically active — ground movement during drilling increases structural instability risk",
+      "Ma'aden site operations adjacent to processing plant with HCN leach circuit — toxic chemical exposure risk"
+    ],
+    "loss_history": "One blasting flyrock claim SAR 280K in 2022 — damage to Ma'aden processing equipment; settled",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.45,
+    "special_conditions": "Blasting operations sublimit SAR 15M per occurrence; misfire exclusion unless blast design certified by licensed blasting engineer; toxic chemical exposure excluded — refer to environmental liability policy",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-039",
+    "insured_entity_name": "Hilal Healthcare Staffing",
+    "sector": "medical",
+    "coverage_type": "group medical",
+    "sum_insured_aed": 5200000,
+    "risk_factors": [
+      "340 healthcare workers actively placed in clinical environments — occupational exposure and needlestick injury claim frequency elevated",
+      "International staff from 18 nationalities — pre-existing condition disclosure compliance is difficult to verify",
+      "Prior year claims ratio of 84% driven by 2 major surgical claims among placed physicians",
+      "No wellness program or annual health screening in place for placed staff"
+    ],
+    "loss_history": "Prior year claims ratio 84%; two surgical claims AED 220K; four needlestick injury claims AED 48K",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 8.4,
+    "special_conditions": "Pre-existing conditions excluded for first 12 months; needlestick and occupational exposure covered in full; surgical sublimit AED 80K per member; mandatory health declaration at placement",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-040",
+    "insured_entity_name": "Ruwad Al Jazeera Construction",
+    "sector": "construction",
+    "coverage_type": "CAR",
+    "sum_insured_kwd": 42000000,
+    "risk_factors": [
+      "Government building construction in Kuwait City urban area — adjacent property and traffic disruption liability is elevated",
+      "Contractor has documented family dispute among ownership — management instability may impair site safety supervision",
+      "Summer construction in Kuwait requires heat stress management plans for outdoor workers",
+      "Three school buildings under construction in residential areas — community interface and noise complaints risk"
+    ],
+    "loss_history": "One third-party property damage claim KWD 42K in 2021 — excavation vibration to adjacent building; settled",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.32,
+    "special_conditions": "Third-party property damage sublimit KWD 3M; school site construction requires MOE safety coordinator on-site during foundation works; summer work hours restricted to 6am–2pm for outdoor workers",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-041",
+    "insured_entity_name": "Mawasim Events Management",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_aed": 5000000,
+    "risk_factors": [
+      "Ramadan and Eid events with 420,000 annual attendees create mass gathering liability — director duty of care obligations are extensive",
+      "Dubai Culture and ADEC government contracts require personal performance certificates from directors",
+      "Proprietary ticketing platform development creates IP dispute risk if former technology vendor files breach of contract claim",
+      "KSA expansion without existing legal entity — directors may be personally liable for pre-incorporation contracts"
+    ],
+    "loss_history": "No prior D&O claims; one Dubai Municipality crowd safety query in 2022 — resolved",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.95,
+    "special_conditions": "Mass gathering liability excluded from D&O — refer to event liability policy; KSA pre-incorporation personal liability excluded; IP dispute defense costs sublimit AED 800K",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-042",
+    "insured_entity_name": "Baraha Veterinary Services",
+    "sector": "medical",
+    "coverage_type": "group medical",
+    "sum_insured_aed": 3800000,
+    "risk_factors": [
+      "Veterinary staff face zoonotic disease exposure risk — Q fever, brucellosis, and cat scratch fever are occupational hazards",
+      "Specialist veterinarians recruited internationally — pre-existing condition disclosure from non-UAE medical systems is unreliable",
+      "Prior year claims ratio of 78% — borderline acceptable; one large cancer claim driving ratio",
+      "Night and emergency on-call rosters create fatigue-related health risk for clinical staff"
+    ],
+    "loss_history": "Prior year claims ratio 78%; one cancer claim AED 180K ongoing; two zoonotic illness claims AED 28K",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 7.6,
+    "special_conditions": "Zoonotic disease covered as occupational illness; cancer sublimit AED 150K per member per year; pre-existing condition exclusion for first 6 months for international recruits",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-043",
+    "insured_entity_name": "Noor Al Bait Smart Home",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_sar": 6000000,
+    "risk_factors": [
+      "Growth equity investors have board representation with information rights — investor-director fiduciary duty risk",
+      "Arabic home control platform development uses proprietary IP — competitor patent challenge creates director disclosure obligation",
+      "B2B developer partnerships involve directors in commercial negotiations with major Saudi real estate developers — personal liability exposure",
+      "4 senior integration engineers hold critical IP — undisclosed departure risk creates going concern disclosure obligation"
+    ],
+    "loss_history": "No prior D&O claims",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.88,
+    "special_conditions": "IP challenge defense costs sublimit SAR 1.5M; investor information rights claims excluded; commercial negotiation personal liability excluded",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-044",
+    "insured_entity_name": "Salam Printing and Packaging",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_kwd": 4693000,
+    "risk_factors": [
+      "Offset printing facility uses petroleum-based inks and cleaning solvents — Class 3 flammable liquid fire risk",
+      "Continuous 18-hour operations create extended unattended period from midnight to 6am with minimal staff",
+      "Two aging offset presses with 12-year operational life — machinery breakdown probability is elevated",
+      "Valuable paper stock inventory for government tender printing — theft risk is material"
+    ],
+    "loss_history": "One machinery breakdown claim KWD 38K in 2022 — offset press gear failure; settled. No fire or theft claims",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.28,
+    "special_conditions": "Flammable solvent storage sublimit KWD 500K; overnight operations require automated suppression system; machinery breakdown deductible KWD 5K per event; paper stock theft sublimit KWD 200K",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-045",
+    "insured_entity_name": "Bayt Al Shifa Pharmacy Chain",
+    "sector": "medical",
+    "coverage_type": "group medical",
+    "sum_insured_sar": 9200000,
+    "risk_factors": [
+      "380 pharmacy staff with high dispensing workload — repetitive strain and stress-related claims are elevated",
+      "Saudi Arabia pharmacist community has high diabetes prevalence — chronic disease management claim frequency",
+      "Makkah location staff face extreme summer heat during Hajj season when workload peaks",
+      "Prior year claims ratio of 80% — acceptable but driven by 3 orthopedic claims among delivery staff"
+    ],
+    "loss_history": "Prior year claims ratio 80%; three orthopedic claims SAR 320K; two diabetes management ongoing claims",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 7.8,
+    "special_conditions": "Orthopedic surgery sublimit SAR 80K per member per year; chronic disease management covered with specialist pre-authorization; Makkah location staff covered for heat stress as occupational illness",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-046",
+    "insured_entity_name": "Ithmar Education Group",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_sar": 418880000,
+    "risk_factors": [
+      "9 private schools with 6,800 students — public liability and student injury risk is the primary liability concern",
+      "American and British curriculum science labs use hazardous chemicals — lab fire and chemical exposure risk",
+      "Riyadh school campuses include swimming pools — drowning and injury liability exposure",
+      "Madinah school is in a high-humidity zone — structural deterioration from moisture ingress is above average"
+    ],
+    "loss_history": "One student injury claim SAR 280K in 2022 — swimming pool slip and fall; settled. No fire or structural claims",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.20,
+    "special_conditions": "Student injury public liability sublimit SAR 20M per occurrence; science lab chemical storage requires SFDA-compliant segregation; swimming pool operations require certified lifeguard at all times",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-047",
+    "insured_entity_name": "Hamad Medical Equipment Trading",
+    "sector": "marine",
+    "coverage_type": "marine cargo",
+    "sum_insured_kwd": 12348000,
+    "risk_factors": [
+      "Medical imaging equipment is high-value, fragile cargo requiring specialized packing and handling",
+      "Kuwait Customs clearance process for medical devices requires NHRA approval — clearance delays expose equipment to port storage environment",
+      "Routing from European and Japanese manufacturers via multiple transhipment points increases handling damage probability",
+      "ICU equipment shipments timed to MOH hospital commissioning schedules — delay claims exposure"
+    ],
+    "loss_history": "One handling damage claim KWD 48K in 2021 — CT scanner damage during port handling; settled",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.22,
+    "special_conditions": "Fragile medical equipment requires specialist packing certificate; port storage extended to 30 days maximum; NHRA clearance delay covered up to 14 days; all-risk cover on manufacturer-to-hospital basis",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-048",
+    "insured_entity_name": "Wajd Digital Media Group",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_sar": 10000000,
+    "risk_factors": [
+      "48M YouTube subscribers creates reputational and content liability exposure for directors if GCAM content standards are breached",
+      "SVOD platform launch creates consumer data regulatory obligations under PDPL — directors face notification and remediation obligations on breach",
+      "8 on-camera talent contracts expiring within 12 months — talent dispute risk creates potential injunction and business interruption",
+      "Series A growth equity investors have board seats with covenant compliance obligations on directors"
+    ],
+    "loss_history": "No prior D&O claims; one GCAM content query in 2022 — channel warning issued and resolved",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 1.0,
+    "special_conditions": "Content regulatory proceedings sublimit SAR 2M; PDPL breach notification costs sublimit SAR 1M; talent contract dispute claims excluded from D&O — refer to professional indemnity",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-049",
+    "insured_entity_name": "Al Kout Industrial Gases",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_kwd": 19159000,
+    "risk_factors": [
+      "Industrial gas production includes liquid oxygen, nitrogen, and argon — cryogenic storage presents explosion and cold burn risk",
+      "Shuaiba Industrial Area proximity to petrochemical plants — vapour cloud explosion risk from adjacent operators",
+      "Medical oxygen supply to MOH hospitals is mission-critical — any production interruption triggers force majeure exposure",
+      "Compressor overhaul cycle creates planned production downtime — business interruption during planned maintenance"
+    ],
+    "loss_history": "One compressor failure KWD 92K in 2020 — settled. No explosion or cryogenic incidents",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.32,
+    "special_conditions": "Cryogenic storage sublimit KWD 3M; vapour cloud explosion from adjacent plant excluded — refer to environmental impairment liability; business interruption planned maintenance excluded; medical oxygen supply disruption covered up to 72 hours",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-050",
+    "insured_entity_name": "Rawabet Healthcare Network",
+    "sector": "medical",
+    "coverage_type": "group medical",
+    "sum_insured_sar": 11200000,
+    "risk_factors": [
+      "Clinical staff including physicians and nurses have elevated occupational health risks from patient exposure",
+      "Saudi specialist physician demographic is predominantly male aged 40–55 with cardiac risk factors",
+      "Prior year claims ratio of 82% — driven by 2 large specialist surgeon claims",
+      "Riyadh and KSA multi-site operation with different regional health plan networks — administration complexity"
+    ],
+    "loss_history": "Prior year claims ratio 82%; two cardiac surgery claims SAR 480K; one ongoing renal dialysis claim SAR 120K annually",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 8.2,
+    "special_conditions": "Cardiac surgery sublimit SAR 100K per member per year; renal dialysis coverage subject to annual review; mandatory pre-employment health declaration for staff over 45; CBAHI-accredited hospitals only in network",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-051",
+    "insured_entity_name": "Raha Water Parks Group",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_aed": 8000000,
+    "risk_factors": [
+      "840,000 annual attendees creates mass public liability exposure — directors carry duty of care obligations for park safety standards",
+      "Abu Dhabi and Sharjah municipality land leases include personal performance undertakings from directors",
+      "RAK third park development creates pre-incorporation personal liability exposure for directors",
+      "Seasonal closure from June–September means 78% of revenue in 7 months — going concern disclosure risk in off-season"
+    ],
+    "loss_history": "No prior D&O claims; one UAE Tourism Authority safety inspection query in 2022 — resolved",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.85,
+    "special_conditions": "Public liability excluded from D&O — refer to public liability policy; pre-incorporation RAK liability excluded; personal undertakings in municipality leases excluded",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-052",
+    "insured_entity_name": "Simsim Tech Marketplace",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_sar": 8000000,
+    "risk_factors": [
+      "Amazon Business Saudi Arabia entry creates going concern risk — directors may face disclosure obligations to investors",
+      "SAMA financing product regulatory approval pending — directors have approval obligation if product launched without license",
+      "Series A growth equity investors have board representation with information rights and covenant compliance",
+      "280-vendor marketplace creates vendor fraud and misrepresentation liability exposure for directors"
+    ],
+    "loss_history": "No prior D&O claims",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.92,
+    "special_conditions": "SAMA unlicensed activity exclusion; vendor fraud claims excluded from D&O — refer to crime policy; investor covenant breach claims excluded; Amazon competitive threat disclosure obligation noted",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-053",
+    "insured_entity_name": "Talal Food Processing Industries",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_kwd": 6480000,
+    "risk_factors": [
+      "HACCP-certified food processing plant with tahini grinding and hummus mixing — dust explosion risk from chickpea processing",
+      "Mina Abdullah Industrial Area location — flood risk during winter rain events is documented for the zone",
+      "Cold chain storage for labneh requires continuous refrigeration — power failure creates product spoilage risk",
+      "Founder retirement transition may reduce experienced maintenance oversight during handover period"
+    ],
+    "loss_history": "One refrigeration failure claim KWD 22K in 2022 — product spoilage; settled. No fire or flood claims",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.25,
+    "special_conditions": "Dust explosion sublimit KWD 1.5M; flood sublimit KWD 800K for ground-floor equipment; product spoilage sublimit KWD 300K per event; food safety recall costs excluded",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-054",
+    "insured_entity_name": "Marsa Ports Logistics",
+    "sector": "marine",
+    "coverage_type": "marine cargo",
+    "sum_insured_aed": 57600000,
+    "risk_factors": [
+      "18,000 import and export declarations annually covering electronics, FMCG, and pharmaceutical cargo — high-value and fragile goods mix",
+      "JAFZA-based operation with Strait of Hormuz geopolitical risk on inbound Asia-origin cargo",
+      "Pharmaceutical temperature-controlled cargo requires continuous cold chain from port to client warehouse",
+      "UAE Customs e-clearance system integration dependency — any DTCM or Dubai Customs system outage creates cargo delay and demurrage"
+    ],
+    "loss_history": "Two prior marine cargo claims AED 180K — electronics damage in handling; settled. No pharmaceutical cold chain claims",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.15,
+    "special_conditions": "Pharmaceutical cold chain cargo sublimit AED 8M with temperature log requirement; electronics handling deductible AED 10K per consignment; Hormuz geopolitical risk covered under standard war exclusion with buyback",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-055",
+    "insured_entity_name": "Wajha Digital Identity Solutions",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_sar": 12000000,
+    "risk_factors": [
+      "Absher and NAFIS database integration makes Wajha a critical national identity infrastructure vendor — NCA notification obligations on directors for any data breach",
+      "1.2M annual identity verifications create PDPL personal data processing obligations on directors",
+      "SAMA and NCA regulatory oversight creates dual regulatory reporting obligations — any gap creates director liability",
+      "Saudi Aramco Digital competitive threat creates going concern disclosure obligation for directors in investor reporting"
+    ],
+    "loss_history": "No prior D&O claims; one NCA cybersecurity questionnaire response submitted in 2023",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 1.1,
+    "special_conditions": "PDPL breach notification costs sublimit SAR 2M; NCA regulatory proceedings sublimit SAR 3M; cybersecurity incident response costs covered up to SAR 500K; identity data breach excluded from D&O — refer to cyber liability policy",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-056",
+    "insured_entity_name": "Tamam Home Furniture",
+    "sector": "property",
+    "coverage_type": "property all-risk",
+    "sum_insured_aed": 88320000,
+    "risk_factors": [
+      "8 showrooms with large inventory of upholstered furniture — fire load is exceptionally high",
+      "Sharjah and Dubai mall locations — mall common area fire spreads rapidly to tenant stock",
+      "AED 14M inventory at any given time — theft and shoplifting risk is material for high-value furniture pieces",
+      "E-commerce warehouse in Jebel Ali with automated picking — equipment failure creates fulfillment disruption"
+    ],
+    "loss_history": "One showroom fire AED 580K in 2021 — electrical fault in display lighting; settled. Two theft claims AED 120K",
+    "underwriter_recommendation": "Accept with exclusions",
+    "premium_indication_pct": 0.22,
+    "special_conditions": "Showroom fire deductible AED 15K per event; theft sublimit AED 500K per showroom; e-commerce warehouse business interruption maximum 30 days; upholstered furniture fire sublimit AED 20M per location",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-057",
+    "insured_entity_name": "Mazaya Digital Payments",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_kwd": 2000000,
+    "risk_factors": [
+      "CBK provisional e-payment license could be withdrawn — directors face disclosure obligations to investors and merchants",
+      "1,400 merchant relationships create contractual performance obligations on directors",
+      "BNPL product launch without full CBK approval creates regulatory breach risk for directors",
+      "Series A investors have board representation — investor-director fiduciary duty is heightened"
+    ],
+    "loss_history": "No prior D&O claims",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.98,
+    "special_conditions": "CBK license revocation defense costs sublimit KWD 400K; BNPL regulatory breach excluded unless CBK approval obtained; investor claims excluded",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-058",
+    "insured_entity_name": "Naseem Al Raha Transport",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_kwd": 2500000,
+    "risk_factors": [
+      "280 school buses with 420,000 student journey-days annually — director duty of care for student transport safety",
+      "MOE safety certification annual renewal — any certification lapse triggers contract termination risk",
+      "Founder exit and ownership transfer — new directors inherit undisclosed maintenance and safety compliance liabilities",
+      "28% driver attrition creates periods of unlicensed driver substitution risk — regulatory breach exposure"
+    ],
+    "loss_history": "No prior D&O claims; one MOE safety inspection finding in 2022 — resolved with bus retirement",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.88,
+    "special_conditions": "Student transport regulatory proceedings sublimit KWD 500K; prior acts coverage from 2021; driver licensing compliance warranty required",
+    "takaful_structure": false
+  },
+  {
+    "scenario_id": "D3-059",
+    "insured_entity_name": "Rawabi Medical Centers",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_sar": 8000000,
+    "risk_factors": [
+      "NHIF reimbursement rate risk — any tariff revision creates going concern disclosure obligation for directors",
+      "Al-Rajhi family office minority shareholder with board representation — investor-director fiduciary risk",
+      "COO hire outstanding — management gap creates operational governance risk with director liability implications",
+      "4 senior consultant physician non-compete structures are inadequate — departure risk creates going concern disclosure risk"
+    ],
+    "loss_history": "No prior D&O claims",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.95,
+    "special_conditions": "Minority shareholder derivative action sublimit SAR 2M; NHIF regulatory proceedings sublimit SAR 1.5M; management gap governance risk noted as material underwriting consideration",
+    "takaful_structure": true
+  },
+  {
+    "scenario_id": "D3-060",
+    "insured_entity_name": "Durra Healthcare Analytics",
+    "sector": "liability",
+    "coverage_type": "D&O",
+    "sum_insured_kwd": 1500000,
+    "risk_factors": [
+      "Kuwait Data Protection Law compliance obligations on directors for 1.2M patient records processed annually",
+      "MOH digital integration pre-approval creates regulatory dependency — any MOH policy change affects business viability",
+      "KSA expansion without existing legal entity — directors may be personally liable for pre-incorporation contracts",
+      "3 data engineers hold all platform IP — undisclosed departure creates going concern disclosure obligation for directors"
+    ],
+    "loss_history": "No prior D&O claims",
+    "underwriter_recommendation": "Accept",
+    "premium_indication_pct": 0.92,
+    "special_conditions": "Patient data breach notification costs sublimit KWD 300K; KSA pre-incorporation liability excluded; MOH regulatory proceedings sublimit KWD 400K",
+    "takaful_structure": false
+  }
+]

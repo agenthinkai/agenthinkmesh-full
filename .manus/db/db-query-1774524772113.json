@@ -1,0 +1,9 @@
+{
+  "query": "CREATE TABLE IF NOT EXISTS `knowledge_scenarios` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `scenarioId` varchar(32) NOT NULL,\n  `domain` enum('deal_screening','wealth_management','insurance_underwriting','mvno_intelligence','legal_review','budget_forecasting','social_media','ic_reports') NOT NULL,\n  `title` varchar(512) NOT NULL,\n  `summary` text NOT NULL,\n  `content` text NOT NULL,\n  `geography` varchar(128),\n  `sector` varchar(128),\n  `tags` text,\n  `createdAt` timestamp NOT NULL DEFAULT (now()),\n  CONSTRAINT `knowledge_scenarios_id` PRIMARY KEY(`id`),\n  CONSTRAINT `knowledge_scenarios_scenarioId_unique` UNIQUE(`scenarioId`)\n);",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute CREATE TABLE IF NOT EXISTS `knowledge_scenarios` (\n  `id` int AUTO_INCREMENT NOT NULL,\n  `scenarioId` varchar(32) NOT NULL,\n  `domain` enum('deal_screening','wealth_management','insurance_underwriting','mvno_intelligence','legal_review','budget_forecasting','social_media','ic_reports') NOT NULL,\n  `title` varchar(512) NOT NULL,\n  `summary` text NOT NULL,\n  `content` text NOT NULL,\n  `geography` varchar(128),\n  `sector` varchar(128),\n  `tags` text,\n  `createdAt` timestamp NOT NULL DEFAULT (now()),\n  CONSTRAINT `knowledge_scenarios_id` PRIMARY KEY(`id`),\n  CONSTRAINT `knowledge_scenarios_scenarioId_unique` UNIQUE(`scenarioId`)\n);",
+  "rows": [],
+  "messages": [],
+  "stdout": "",
+  "stderr": "",
+  "execution_time_ms": 1576
+}
