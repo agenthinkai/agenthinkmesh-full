@@ -8,6 +8,8 @@ import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Link } from "wouter";
+import { isDemoMode, DEMO_MVNO_DATA } from "@/lib/demo";
+import { getLoginUrl } from "@/const";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const BG = "#0a0e1a";
@@ -390,8 +392,71 @@ function HistoryTable({ onSelect }: { onSelect: (runId: string) => void }) {
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 
+// ── Demo MVNO Cards ──────────────────────────────────────────────────────────
+function DemoMvnoCards() {
+  return (
+    <div style={{ minHeight: "100vh", background: BG, color: TEXT, fontFamily: SANS, padding: "40px 24px" }}>
+      <div style={{ maxWidth: 860, margin: "0 auto" }}>
+        <div style={{ fontFamily: MONO, fontSize: 11, color: ACCENT, letterSpacing: "0.12em", marginBottom: 8 }}>DEMO MODE · MVNO INTELLIGENCE</div>
+        <h1 style={{ fontSize: 22, fontWeight: 700, color: TEXT, marginBottom: 4 }}>GCC MVNO Operator Profiles</h1>
+        <p style={{ fontSize: 13, color: TEXT2, marginBottom: 32, fontFamily: MONO }}>3 synthetic MVNO profiles · Kuwait · KSA · UAE · All data is illustrative</p>
+        <div style={{ display: "grid", gap: 20 }}>
+          {DEMO_MVNO_DATA.map(op => (
+            <div key={op.id} style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, padding: 24 }}>
+              <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 16 }}>
+                <div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: TEXT, marginBottom: 6 }}>{op.mvnoName}</div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <span style={{ fontFamily: MONO, fontSize: 10, padding: "2px 8px", borderRadius: 3, background: "rgba(0,196,160,0.12)", border: `1px solid ${BORDER}`, color: ACCENT }}>Host: {op.hostMno}</span>
+                    <span style={{ fontFamily: MONO, fontSize: 10, padding: "2px 8px", borderRadius: 3, background: "rgba(255,255,255,0.04)", border: `1px solid ${BORDER}`, color: TEXT2 }}>{op.market}</span>
+                    <span style={{ fontFamily: MONO, fontSize: 10, padding: "2px 8px", borderRadius: 3, background: "rgba(255,255,255,0.04)", border: `1px solid ${BORDER}`, color: TEXT2 }}>{op.segment}</span>
+                    <span style={{ fontFamily: MONO, fontSize: 10, padding: "2px 8px", borderRadius: 3, background: "rgba(0,196,160,0.08)", border: `1px solid ${BORDER}`, color: ACCENT }}>{op.regulatoryStatus}</span>
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontFamily: MONO, fontSize: 22, fontWeight: 800, color: ACCENT }}>{op.sentimentScore}</div>
+                  <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2 }}>Sentiment Score</div>
+                </div>
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12, marginBottom: 16 }}>
+                <div style={{ background: BG3, borderRadius: 4, padding: "10px 14px" }}>
+                  <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, marginBottom: 3 }}>SUBSCRIBERS</div>
+                  <div style={{ fontFamily: MONO, fontSize: 14, color: TEXT }}>{op.subscribers.toLocaleString()}</div>
+                </div>
+                <div style={{ background: BG3, borderRadius: 4, padding: "10px 14px" }}>
+                  <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, marginBottom: 3 }}>ARPU</div>
+                  <div style={{ fontFamily: MONO, fontSize: 14, color: TEXT }}>USD {op.arpu}</div>
+                </div>
+                <div style={{ background: BG3, borderRadius: 4, padding: "10px 14px" }}>
+                  <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, marginBottom: 3 }}>MONTHLY CHURN</div>
+                  <div style={{ fontFamily: MONO, fontSize: 14, color: op.churnMonthlyPct > 4 ? RED : AMBER }}>{op.churnMonthlyPct}%</div>
+                </div>
+              </div>
+              <div style={{ background: "rgba(0,196,160,0.06)", border: "1px solid rgba(0,196,160,0.2)", borderRadius: 4, padding: "10px 14px", marginBottom: 10 }}>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, marginBottom: 3 }}>OPPORTUNITY SIGNAL</div>
+                <div style={{ fontSize: 12, color: TEXT2 }}>{op.opportunitySignal}</div>
+              </div>
+              <div style={{ background: "rgba(255,90,90,0.06)", border: "1px solid rgba(255,90,90,0.2)", borderRadius: 4, padding: "10px 14px" }}>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: RED, marginBottom: 3 }}>RISK FLAG</div>
+                <div style={{ fontSize: 12, color: TEXT2 }}>{op.riskFlag}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div style={{ marginTop: 32, textAlign: "center", padding: 24, background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8 }}>
+          <div style={{ fontFamily: MONO, fontSize: 12, color: TEXT2, marginBottom: 12 }}>Connect live subscriber data to run full MVNO intelligence analysis</div>
+          <a href={getLoginUrl()} style={{ display: "inline-block", padding: "10px 24px", background: ACCENT, color: "#000", borderRadius: 4, fontFamily: MONO, fontSize: 12, fontWeight: 700, textDecoration: "none" }}>SIGN IN TO ANALYSE →</a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Telco() {
+  const isDemo = isDemoMode();
   const { user } = useAuth();
+
+  if (isDemo) return <DemoMvnoCards />;
   const [view, setView] = useState<"home" | "loading" | "report">("home");
   const [loadingIndex, setLoadingIndex] = useState(0);
   const [result, setResult] = useState<RunResult | null>(null);

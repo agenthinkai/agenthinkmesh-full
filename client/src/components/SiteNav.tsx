@@ -8,6 +8,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Logo from "@/components/Logo";
 import { PlanUsageBadge } from "@/components/PlanUsageBadge";
+import { isDemoMode } from "@/lib/demo";
 
 const NAVY = "#080D1A";
 const CYAN = "#38BDF8";
@@ -22,6 +23,8 @@ interface SiteNavProps {
 
 export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
   const { isAuthenticated, user, logout } = useAuth();
+  const demoMode = isDemoMode();
+  const demoSuffix = demoMode ? "?demo=true" : "";
   const [dropOpen, setDropOpen] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
 
@@ -229,7 +232,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               🔍 Intel Agent
             </a>
             <a
-              href="/telco"
+              href={`/telco${demoSuffix}`}
               style={{
                 color: "#d4a843", fontSize: 14, textDecoration: "none",
                 padding: "6px 14px", borderRadius: 8, fontWeight: 600,
@@ -249,7 +252,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               📡 MVNO Intel
             </a>
             <a
-              href="/forecast"
+              href={`/forecast${demoSuffix}`}
               style={{
                 color: "#34D399", fontSize: 14, textDecoration: "none",
                 padding: "6px 14px", borderRadius: 8, fontWeight: 600,
@@ -269,7 +272,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               📊 ForecastMesh
             </a>
             <a
-              href="/knowledge-vault"
+              href={`/knowledge-vault${demoSuffix}`}
               style={{
                 color: "#F59E0B", fontSize: 14, textDecoration: "none",
                 padding: "6px 14px", borderRadius: 8, fontWeight: 600,
@@ -448,7 +451,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               🔍 Intel Agent
             </a>
             <a
-              href="/telco"
+              href={`/telco${demoSuffix}`}
               style={{
                 color: "#d4a843", fontSize: 14, textDecoration: "none",
                 padding: "6px 14px", borderRadius: 8, fontWeight: 600,
@@ -468,7 +471,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               📡 MVNO Intel
             </a>
             <a
-              href="/forecast"
+              href={`/forecast${demoSuffix}`}
               style={{
                 color: "#34D399", fontSize: 14, textDecoration: "none",
                 padding: "6px 14px", borderRadius: 8, fontWeight: 600,
@@ -488,7 +491,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               📊 ForecastMesh
             </a>
             <a
-              href="/knowledge-vault"
+              href={`/knowledge-vault${demoSuffix}`}
               style={{
                 color: "#F59E0B", fontSize: 14, textDecoration: "none",
                 padding: "6px 14px", borderRadius: 8, fontWeight: 600,

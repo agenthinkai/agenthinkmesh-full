@@ -6,7 +6,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, desc, and, sql } from "drizzle-orm";
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import {
   forecasts,
@@ -239,19 +239,31 @@ export const forecastRouter = router({
   /**
    * List all forecasts for the authenticated user.
    */
-  list: protectedProcedure
+  list: publicProcedure
     .input(z.object({
       limit: z.number().min(1).max(100).default(50),
       type: ForecastTypeEnum.optional(),
+      demo: z.boolean().optional(),
     }).optional())
     .query(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
+      // Allow unauthenticated reads in demo mode
+      const isDemo =
+        input?.demo === true ||
+        (ctx.req as any)?.headers?.['x-demo-mode'] === 'true' ||
+        ((ctx.req as any)?.headers?.referer ?? '').includes('demo=true');
+
+      if (!isDemo && !ctx.user) {
+        throw new TRPCError({ code: "UNAUTHORIZED", message: "Login required" });
+      }
+
+      // In demo mode, return all seeded scenarios; otherwise scope to user
       const rows = await db
         .select()
         .from(forecasts)
-        .where(eq(forecasts.userId, ctx.user.id))
+        .where(isDemo ? undefined : eq(forecasts.userId, ctx.user!.id))
         .orderBy(desc(forecasts.updatedAt))
         .limit(input?.limit ?? 50);
 

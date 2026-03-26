@@ -1230,3 +1230,11 @@
 - [ ] Add knowledgeVault.search call inside mesh.runAgentTask procedure
 - [ ] Inject top 3 relevant scenarios as context prefix in system prompt
 - [ ] Log which scenarios were used as RAG context in agent output
+
+## Demo Mode — Remaining 5 Gaps (Mar 26 2026)
+
+- [x] Create client/src/lib/demo.ts (DEMO_USER, DEMO_DEAL_SCREENER_DATA, DEMO_MVNO_DATA, isDemoMode, activateDemo, deactivateDemo)
+- [x] Add unauthenticated read bypass to forecast.list for demo mode (demo=true query param)
+- [x] Build Deal Screener demo cards page at /deals (demo mode: 5 GCC deal cards, auth mode: existing logic)
+- [x] Build MVNO Intel demo cards page at /telco (demo mode: 3 operator cards, auth mode: existing logic)
+- [x] Make nav items accessible in demo mode (append ?demo=true to ForecastMesh, MVNO Intel, Knowledge Vault links in SiteNav)
