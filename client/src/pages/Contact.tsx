@@ -4,9 +4,12 @@
  * Calls trpc.contact.submit on submit.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import SiteNav from "@/components/SiteNav";
+
+// Replace with your real Calendly link once set up
+const CALENDLY_URL = "https://calendly.com/farouq-agenthink/15min";
 
 const NAVY = "#080D1A";
 const CARD = "#0D1E35";
@@ -64,6 +67,18 @@ export default function Contact() {
   const [focused, setFocused] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [showCalendly, setShowCalendly] = useState(false);
+
+  // Dynamically load the Calendly widget script when the embed is revealed
+  useEffect(() => {
+    if (!showCalendly) return;
+    if (document.getElementById("calendly-script")) return;
+    const script = document.createElement("script");
+    script.id = "calendly-script";
+    script.src = "https://assets.calendly.com/assets/external/widget.js";
+    script.async = true;
+    document.head.appendChild(script);
+  }, [showCalendly]);
 
   const submitMutation = trpc.contact.submit.useMutation({
     onSuccess: () => setSubmitted(true),
@@ -329,6 +344,76 @@ export default function Contact() {
               </form>
             )}
           </div>
+        </div>
+
+        {/* Calendly inline embed */}
+        <div style={{ marginTop: 56 }}>
+          {/* Toggle button */}
+          {!showCalendly && (
+            <div style={{ textAlign: "center" }}>
+              <p style={{ fontSize: 14, color: MUTED, marginBottom: 16 }}>
+                Prefer to pick a time directly?
+              </p>
+              <button
+                onClick={() => setShowCalendly(true)}
+                style={{
+                  padding: "11px 28px",
+                  borderRadius: 8,
+                  border: `1px solid rgba(56,189,248,0.35)`,
+                  background: "rgba(56,189,248,0.08)",
+                  color: TEAL,
+                  fontSize: 14,
+                  fontWeight: 700,
+                  cursor: "pointer",
+                  fontFamily: "Inter, system-ui, sans-serif",
+                  transition: "background 0.2s",
+                }}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(56,189,248,0.15)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "rgba(56,189,248,0.08)")}
+              >
+                📅 Schedule a 15-minute call
+              </button>
+              <p style={{ fontSize: 11, color: "rgba(240,244,250,0.3)", marginTop: 8 }}>
+                No sales pitch. We qualify together.
+              </p>
+            </div>
+          )}
+
+          {/* Calendly widget */}
+          {showCalendly && (
+            <div style={{
+              background: CARD,
+              border: `1px solid ${BORDER}`,
+              borderRadius: 14,
+              overflow: "hidden",
+            }}>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "14px 20px",
+                borderBottom: `1px solid ${BORDER}`,
+              }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: WHITE }}>📅 Schedule a 15-minute call</span>
+                <button
+                  onClick={() => setShowCalendly(false)}
+                  style={{
+                    background: "none", border: "none", color: MUTED,
+                    fontSize: 18, cursor: "pointer", lineHeight: 1, padding: 4,
+                  }}
+                  aria-label="Close calendar"
+                >
+                  ×
+                </button>
+              </div>
+              {/* Calendly inline widget — replace CALENDLY_URL with your real link */}
+              <div
+                className="calendly-inline-widget"
+                data-url={`${CALENDLY_URL}?hide_event_type_details=1&hide_gdpr_banner=1&background_color=0D1E35&text_color=F0F4FA&primary_color=38BDF8`}
+                style={{ minWidth: 320, height: 630 }}
+              />
+            </div>
+          )}
         </div>
 
         {/* Mobile responsive styles */}
