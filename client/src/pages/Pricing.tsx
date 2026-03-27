@@ -260,6 +260,28 @@ export default function Pricing() {
           >
             Book a Demo →
           </a>
+          <div style={{ marginTop: 16 }}>
+            <a
+              href="/contact"
+              style={{
+                fontSize: 13,
+                color: "rgba(240,244,250,0.4)",
+                textDecoration: "none",
+                borderBottom: "1px solid transparent",
+                transition: "color 0.2s, border-color 0.2s",
+              }}
+              onMouseEnter={e => {
+                e.currentTarget.style.color = "rgba(240,244,250,0.75)";
+                e.currentTarget.style.borderBottomColor = "rgba(240,244,250,0.4)";
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.color = "rgba(240,244,250,0.4)";
+                e.currentTarget.style.borderBottomColor = "transparent";
+              }}
+            >
+              Not sure which plan is right for you? Book a 15-minute call — no sales pitch.
+            </a>
+          </div>
         </div>
       </div>
     </div>

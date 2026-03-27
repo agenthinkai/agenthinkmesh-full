@@ -449,7 +449,30 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
           </div>
         </div>
         <p style={{ fontFamily: MONO, fontSize: 12, color: "#4ADE80", marginBottom: 6, fontWeight: 700, letterSpacing: "0.04em" }}>Free for 60 days. 50 runs. No credit card required.</p>
-        <p style={{ fontFamily: MONO, fontSize: 11, color: "#3D4F63", marginBottom: 48 }}>No sign-in required to preview · {stats.verifiedAgents} specialist agents ready</p>
+        <p style={{ fontFamily: MONO, fontSize: 11, color: "#3D4F63", marginBottom: 16 }}>No sign-in required to preview · {stats.verifiedAgents} specialist agents ready</p>
+
+        {/* Book a Demo text link */}
+        <div style={{ marginBottom: 12 }}>
+          <a
+            href="/contact"
+            style={{
+              fontSize: 13,
+              color: "rgba(226,232,240,0.55)",
+              textDecoration: "none",
+              cursor: "pointer",
+              transition: "color 0.2s",
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#00ffb4")}
+            onMouseLeave={e => (e.currentTarget.style.color = "rgba(226,232,240,0.55)")}
+          >
+            Book a Demo →
+          </a>
+        </div>
+
+        {/* Trust copy */}
+        <p style={{ fontSize: 12, color: "rgba(226,232,240,0.3)", marginBottom: 48, textAlign: "center" }}>
+          Trusted by institutional investors across Kuwait, Saudi Arabia, and UAE
+        </p>
 
         {/* Stats row */}
         <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
