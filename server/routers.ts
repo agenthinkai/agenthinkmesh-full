@@ -2580,6 +2580,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
           name: z.string().min(1, "Name is required").max(128),
           email: z.string().email("Invalid email address").max(320),
           company: z.string().max(128).optional(),
+          role: z.string().max(128).optional(),
           message: z.string().min(10, "Message must be at least 10 characters").max(5000),
         })
       )
@@ -2603,6 +2604,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
           `Name: ${input.name}`,
           `Email: ${input.email}`,
           `Company: ${input.company ?? "Not provided"}`,
+          `Role: ${input.role ?? "Not provided"}`,
           ``,
           `Message:`,
           input.message,

@@ -59,6 +59,7 @@ import ForecastNew from "./pages/ForecastNew";
 import ForecastDetail from "./pages/ForecastDetail";
 import KnowledgeVault from "./pages/KnowledgeVault";
 import Pricing from "./pages/Pricing";
+import Contact from "./pages/Contact";
 import { DemoBanner } from "./pages/Home";
 import { useAuth } from "./_core/hooks/useAuth";
 
@@ -190,6 +191,9 @@ function Router() {
 
       {/* Pricing */}
       <Route path="/pricing" component={Pricing} />
+
+      {/* Contact / Book Demo */}
+      <Route path="/contact" component={Contact} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

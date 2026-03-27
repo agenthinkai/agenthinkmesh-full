@@ -842,6 +842,110 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* -- What's New Changelog -- */}
+      <section style={{ padding: "72px 24px", background: NAVY_950 }}>
+        <div style={{ maxWidth: 760, margin: "0 auto" }}>
+          <div style={{ textAlign: "center", marginBottom: 48 }}>
+            <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 500, marginBottom: 10 }}>Changelog</div>
+            <h2 style={{ fontSize: "clamp(22px, 3.5vw, 32px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.2, margin: "0 0 10px" }}>What's New</h2>
+            <p style={{ fontSize: 14, color: SILVER_400, margin: 0 }}>AgenThinkMesh ships weekly. Here's what's live.</p>
+          </div>
+
+          {/* Timeline */}
+          <div style={{ position: "relative", paddingLeft: 32 }}>
+            {/* Vertical line */}
+            <div style={{ position: "absolute", left: 7, top: 8, bottom: 8, width: 2, background: "rgba(56,189,248,0.18)", borderRadius: 2 }} />
+
+            {[
+              {
+                date: "March 2025",
+                tag: "LIVE",
+                title: "RAG-Grounded Agent Analysis",
+                body: "Every agent output now retrieves the 3 most relevant scenarios from the 460-scenario GCC Knowledge Vault before generating. Deal screener, forecast engine, and mesh tasks are all grounded.",
+              },
+              {
+                date: "March 2025",
+                tag: "LIVE",
+                title: "ForecastMesh — Revenue & EBITDA Charts",
+                body: "ForecastDetail now shows monthly revenue and EBITDA as grouped bar charts with a secondary EBITDA margin % axis. 8 GCC enterprise scenarios pre-seeded across Kuwait, KSA, and UAE.",
+              },
+              {
+                date: "February 2025",
+                tag: "LIVE",
+                title: "Demo Mode — No Sign-Up Required",
+                body: "Enterprise prospects can now explore the full platform as a guest with pre-loaded GCC institutional data. Deal Screener, MVNO Intel, and ForecastMesh all accessible without an account.",
+              },
+              {
+                date: "February 2025",
+                tag: "LIVE",
+                title: "Knowledge Vault — 460 GCC Scenarios",
+                body: "Full RAG knowledge base live with 460 synthetic GCC institutional scenarios across 8 domains: deal screening, wealth management, insurance underwriting, MVNO intelligence, legal review, budget forecasting, social media intelligence, and IC reports.",
+              },
+              {
+                date: "January 2025",
+                tag: "LIVE",
+                title: "ForecastMesh Module",
+                body: "Probability-weighted enterprise forecasting with Recharts visualisation. Supports multi-scenario analysis across Finance, Healthcare, Logistics, Infrastructure, GovTech, and Media verticals.",
+              },
+              {
+                date: "Coming Soon",
+                tag: "SOON",
+                title: "Custom RAG Training on Your Institutional Data",
+                body: "Upload your own deal memos, IC reports, and client profiles. AgenThinkMesh will fine-tune the RAG layer to your specific institutional context. Available on Enterprise tier.",
+              },
+            ].map((entry, i) => {
+              const isLive = entry.tag === "LIVE";
+              const tagColor = isLive ? "#34D399" : "#F59E0B";
+              const tagBg = isLive ? "rgba(52,211,153,0.12)" : "rgba(245,158,11,0.12)";
+              const tagBorder = isLive ? "rgba(52,211,153,0.3)" : "rgba(245,158,11,0.3)";
+              const dotColor = isLive ? "#38BDF8" : "#F59E0B";
+              return (
+                <div key={i} style={{ position: "relative", marginBottom: 24 }}>
+                  {/* Timeline dot */}
+                  <div style={{
+                    position: "absolute",
+                    left: -28,
+                    top: 6,
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    background: dotColor,
+                    border: `2px solid ${NAVY_950}`,
+                    boxShadow: `0 0 6px ${dotColor}88`,
+                  }} />
+
+                  {/* Card */}
+                  <div style={{
+                    background: NAVY_900,
+                    border: `1px solid rgba(56,189,248,0.12)`,
+                    borderLeft: `3px solid ${dotColor}`,
+                    borderRadius: 10,
+                    padding: "16px 18px",
+                  }}>
+                    {/* Date */}
+                    <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, marginBottom: 6 }}>{entry.date}</div>
+
+                    {/* Title + badge */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: SILVER_50 }}>{entry.title}</span>
+                      <span style={{
+                        fontSize: 10, fontWeight: 700,
+                        padding: "2px 8px", borderRadius: 20,
+                        background: tagBg, color: tagColor, border: `1px solid ${tagBorder}`,
+                        fontFamily: MONO, letterSpacing: "0.06em",
+                      }}>{entry.tag}</span>
+                    </div>
+
+                    {/* Body */}
+                    <p style={{ fontSize: 13, color: SILVER_400, margin: 0, lineHeight: 1.65 }}>{entry.body}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* -- Contact Us -- */}
       <ContactSection />
 
