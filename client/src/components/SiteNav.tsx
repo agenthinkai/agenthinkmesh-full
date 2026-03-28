@@ -74,6 +74,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
     { label: "MVNO Intel",     emoji: "📡", href: `/telco${ds}`,                  color: "#D4A843", bg: "rgba(212,168,67,0.08)",   border: "rgba(212,168,67,0.25)",   bgHover: "rgba(212,168,67,0.16)" },
     { label: "ForecastMesh",   emoji: "📊", href: `/forecast${ds}`,               color: "#34D399", bg: "rgba(52,211,153,0.08)",   border: "rgba(52,211,153,0.25)",   bgHover: "rgba(52,211,153,0.16)" },
     { label: "Knowledge Vault",emoji: "🧠", href: `/knowledge-vault${ds}`,        color: "#F59E0B", bg: "rgba(245,158,11,0.08)",   border: "rgba(245,158,11,0.25)",   bgHover: "rgba(245,158,11,0.16)" },
+    { label: "Self-Learning",   emoji: "🔄", href: "/self-learning",                 color: "#A3E635", bg: "rgba(163,230,53,0.08)",   border: "rgba(163,230,53,0.25)",   bgHover: "rgba(163,230,53,0.16)" },
   ];
 
   const navLink = (label: string, onClick: () => void) => (

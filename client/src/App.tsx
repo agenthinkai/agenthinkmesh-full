@@ -58,6 +58,7 @@ import ForecastDashboard from "./pages/ForecastDashboard";
 import ForecastNew from "./pages/ForecastNew";
 import ForecastDetail from "./pages/ForecastDetail";
 import KnowledgeVault from "./pages/KnowledgeVault";
+import SelfLearning from "./pages/SelfLearning";
 import Pricing from "./pages/Pricing";
 import Contact from "./pages/Contact";
 import { DemoBanner } from "./pages/Home";
@@ -188,6 +189,9 @@ function Router() {
 
       {/* Knowledge Vault — RAG Grounding Layer */}
       <Route path="/knowledge-vault" component={KnowledgeVault} />
+
+      {/* Self-Learning Loop — Council Meritocracy Dashboard */}
+      <Route path="/self-learning" component={SelfLearning} />
 
       {/* Pricing */}
       <Route path="/pricing" component={Pricing} />

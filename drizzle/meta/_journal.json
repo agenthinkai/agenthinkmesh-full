@@ -211,6 +211,13 @@
       "when": 1774534926197,
       "tag": "0029_dashing_madrox",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "5",
+      "when": 1774704843129,
+      "tag": "0030_nifty_riptide",
+      "breakpoints": true
     }
   ]
 }

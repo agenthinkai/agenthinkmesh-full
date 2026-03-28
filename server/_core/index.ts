@@ -12,6 +12,8 @@ import { forceMajeureRouter } from "../forceMajeureRoute";
 import { gameTheoryRouter } from "../gameTheoryRoute";
 import etfRouter from "../etfRoute";
 import { startHealthCheckJob } from "../jobs/healthCheck";
+import { startOutcomeCollectorJob } from "../jobs/outcomeCollector";
+import { startCriticAgentJob } from "../jobs/criticAgent";
 import workflowStreamRouter from "../workflowStreamRoute";
 import portfolioStreamRouter from "../portfolioStreamRoute";
 import insuranceStreamRouter from "../insuranceStreamRoute";
@@ -100,6 +102,9 @@ async function startServer() {
     // Start the agent registry health-check cron job
     startHealthCheckJob();
     startDripScheduler();
+    // Self-Learning Loop: Phase 4 (outcome collection) + Phase 5 (critic agent)
+    startOutcomeCollectorJob();
+    startCriticAgentJob();
   });
 }
 

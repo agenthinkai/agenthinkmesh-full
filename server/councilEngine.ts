@@ -2,11 +2,22 @@
  * councilEngine.ts
  * All verdict computation happens exclusively here on the backend.
  * Frontend receives the final CouncilResult and renders only.
+ *
+ * Self-Learning Loop integration:
+ *   Phase 2 — Every Council run persists the decision + all votes to DB.
+ *   Phase 3 — Top-3 similar past decisions are injected as context before voting.
+ *   Weighted voting — Each persona's vote is weighted by their current authority score.
  */
 
 import Anthropic from "@anthropic-ai/sdk";
 import { z } from "zod";
 import { ENV } from "./_core/env";
+import {
+  persistDecision,
+  findSimilarDecisions,
+  buildMemoryContext,
+  getAgentWeightsMap,
+} from "./lib/memoryService";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -28,6 +39,7 @@ export interface PersonaVote {
   keyFlags: string[];
   conditions: string[];
   blockers: string[];
+  weight: number;        // current authority weight (1.0 = default)
   timedOut?: boolean;
 }
 
@@ -39,6 +51,8 @@ export interface CouncilResult {
   softYesCount: number;
   softNoCount: number;
   hardNoCount: number;
+  weightedYesScore: number;   // sum of weights for YES votes
+  weightedNoScore: number;    // sum of weights for NO votes
   confidenceScore: number;
   gccVetoTriggered: boolean;
   tiebreakerTriggered: boolean;
@@ -46,6 +60,8 @@ export interface CouncilResult {
   conditionsToProceed: string[];
   blockingIssues: string[];
   votes: PersonaVote[];
+  decisionMemoryId: number | null;  // DB row ID for outcome tracking
+  memoryContextUsed: boolean;       // whether past decisions were injected
 }
 
 // ── Zod schema for each persona response ─────────────────────────────────────
@@ -207,9 +223,15 @@ function parsePersonaResponse(raw: string): PersonaResponse {
 
 async function callPersona(
   persona: PersonaDef,
-  dealText: string
-): Promise<PersonaVote> {
-  const userMessage = `Here is the deal memo to evaluate:\n\n${dealText}\n\nProvide your vote and analysis as strict JSON only.`;
+  dealText: string,
+  memoryContext: string
+): Promise<Omit<PersonaVote, "weight">> {
+  // Prepend memory context to the deal text if available
+  const contextualDeal = memoryContext
+    ? `${memoryContext}\n\n---\n\nDEAL MEMO TO EVALUATE:\n${dealText}`
+    : `Here is the deal memo to evaluate:\n\n${dealText}`;
+
+  const userMessage = `${contextualDeal}\n\nProvide your vote and analysis as strict JSON only.`;
 
   const timeoutPromise = new Promise<never>((_, reject) =>
     setTimeout(() => reject(new Error("TIMEOUT")), TIMEOUT_MS)
@@ -264,16 +286,54 @@ const TIEBREAKER_PRIORITY = ["GCC_REG", "CFO", "SECURITY", "CONTRARIAN", "OPERAT
 
 // ── Main council engine ───────────────────────────────────────────────────────
 
-export async function runCouncil(dealText: string): Promise<CouncilResult> {
-  // Run all 10 personas in parallel
+export interface RunCouncilOptions {
+  taskId?: string;
+  taskDomain?: string;
+  skipMemory?: boolean;  // set true in tests to avoid DB calls
+}
+
+export async function runCouncil(
+  dealText: string,
+  options: RunCouncilOptions = {}
+): Promise<CouncilResult> {
+  const { taskId, taskDomain, skipMemory = false } = options;
+
+  // ── Phase 3: Retrieve similar past decisions ───────────────────────────────
+  let memoryContext = "";
+  let memoryContextUsed = false;
+  if (!skipMemory) {
+    try {
+      const similar = await findSimilarDecisions(dealText, 3, taskDomain);
+      if (similar.length > 0) {
+        memoryContext = buildMemoryContext(similar);
+        memoryContextUsed = true;
+      }
+    } catch (err) {
+      console.warn("[CouncilEngine] Memory retrieval failed silently:", err);
+    }
+  }
+
+  // ── Load agent weights ─────────────────────────────────────────────────────
+  let weightsMap = new Map<string, number>();
+  if (!skipMemory) {
+    try {
+      weightsMap = await getAgentWeightsMap();
+    } catch (err) {
+      console.warn("[CouncilEngine] Weight loading failed silently:", err);
+    }
+  }
+
+  // ── Run all personas in parallel ───────────────────────────────────────────
   const results = await Promise.allSettled(
-    PERSONAS.map((p) => callPersona(p, dealText))
+    PERSONAS.map((p) => callPersona(p, dealText, memoryContext))
   );
 
   const votes: PersonaVote[] = results.map((r, i) => {
-    if (r.status === "fulfilled") return r.value;
-    // If the promise itself rejected (shouldn't happen given try/catch, but safety net)
     const p = PERSONAS[i];
+    const weight = weightsMap.get(p.id) ?? 1.0;
+    if (r.status === "fulfilled") {
+      return { ...r.value, weight };
+    }
     return {
       personaId: p.id,
       personaName: p.name,
@@ -285,10 +345,11 @@ export async function runCouncil(dealText: string): Promise<CouncilResult> {
       conditions: [],
       blockers: [],
       timedOut: true,
+      weight,
     };
   });
 
-  // ── Vote counting ──────────────────────────────────────────────────────────
+  // ── Vote counting (raw counts for display) ─────────────────────────────────
   let hardYesCount = 0;
   let softYesCount = 0;
   let softNoCount = 0;
@@ -303,6 +364,19 @@ export async function runCouncil(dealText: string): Promise<CouncilResult> {
 
   const yesCount = hardYesCount + softYesCount;
   const noCount = softNoCount + hardNoCount;
+
+  // ── Weighted scores ────────────────────────────────────────────────────────
+  let weightedYesScore = 0;
+  let weightedNoScore = 0;
+  for (const v of votes) {
+    if (v.vote === "HARD_YES" || v.vote === "SOFT_YES") {
+      weightedYesScore += v.weight * v.confidence;
+    } else {
+      weightedNoScore += v.weight * v.confidence;
+    }
+  }
+  weightedYesScore = Math.round(weightedYesScore * 100) / 100;
+  weightedNoScore = Math.round(weightedNoScore * 100) / 100;
 
   // ── Confidence score ───────────────────────────────────────────────────────
   const confidenceScore =
@@ -361,7 +435,6 @@ export async function runCouncil(dealText: string): Promise<CouncilResult> {
   } else if (finalYesCount >= 8 && hardYesCount < 6) {
     verdict = "APPROVED_WITH_CONDITIONS";
   } else if (tiebreakerTriggered) {
-    // Tiebreaker resolved → APPROVED_WITH_CONDITIONS
     verdict = "APPROVED_WITH_CONDITIONS";
   } else {
     verdict = "REJECTED";
@@ -384,7 +457,7 @@ export async function runCouncil(dealText: string): Promise<CouncilResult> {
 
   const blockingIssues = deduplicate(noVotes.flatMap((v) => v.blockers));
 
-  return {
+  const councilResult: CouncilResult = {
     verdict,
     yesCount: finalYesCount,
     noCount: finalNoCount,
@@ -392,6 +465,8 @@ export async function runCouncil(dealText: string): Promise<CouncilResult> {
     softYesCount,
     softNoCount,
     hardNoCount,
+    weightedYesScore,
+    weightedNoScore,
     confidenceScore: Math.round(confidenceScore * 1000) / 1000,
     gccVetoTriggered,
     tiebreakerTriggered,
@@ -399,7 +474,27 @@ export async function runCouncil(dealText: string): Promise<CouncilResult> {
     conditionsToProceed,
     blockingIssues,
     votes: workingVotes,
+    decisionMemoryId: null,
+    memoryContextUsed,
   };
+
+  // ── Phase 2: Persist decision to DB (fire-and-forget, never blocks) ────────
+  if (!skipMemory) {
+    persistDecision({
+      taskId,
+      taskDescription: dealText,
+      taskDomain,
+      result: councilResult,
+    })
+      .then((id) => {
+        if (id) councilResult.decisionMemoryId = id;
+      })
+      .catch((err) => {
+        console.warn("[CouncilEngine] persistDecision failed:", err);
+      });
+  }
+
+  return councilResult;
 }
 
 function deduplicate(arr: string[]): string[] {

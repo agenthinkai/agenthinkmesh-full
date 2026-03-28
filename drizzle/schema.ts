@@ -1,4 +1,4 @@
-import { boolean, decimal, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, decimal, index, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -898,3 +898,65 @@ export const knowledgeScenarios = mysqlTable("knowledge_scenarios", {
 });
 export type KnowledgeScenario = typeof knowledgeScenarios.$inferSelect;
 export type InsertKnowledgeScenario = typeof knowledgeScenarios.$inferInsert;
+
+// ── Self-Learning Loop ────────────────────────────────────────────────────────
+// Phase 1: Agent Weights — meritocracy table for council personas
+export const agentWeights = mysqlTable("agent_weights", {
+  id: int("id").autoincrement().primaryKey(),
+  personaId: varchar("personaId", { length: 100 }).unique().notNull(),
+  weight: decimal("weight", { precision: 4, scale: 2 }).default("1.00").notNull(),
+  totalEvaluations: int("totalEvaluations").default(0).notNull(),
+  correctPredictions: int("correctPredictions").default(0).notNull(),
+  lastEvaluatedAt: timestamp("lastEvaluatedAt"),
+  updatedAt: timestamp("updatedAt").onUpdateNow(),
+});
+export type AgentWeight = typeof agentWeights.$inferSelect;
+export type InsertAgentWeight = typeof agentWeights.$inferInsert;
+
+// Phase 2: Decision Memory — the "brain" storage with embeddings
+export const decisionMemory = mysqlTable("decision_memory", {
+  id: int("id").autoincrement().primaryKey(),
+  taskId: varchar("taskId", { length: 100 }),
+  taskDescription: text("taskDescription").notNull(),
+  taskDomain: varchar("taskDomain", { length: 50 }),
+  embedding: text("embedding").notNull(), // JSON-serialised float[] (1536-dim)
+  finalVerdict: varchar("finalVerdict", { length: 30 }),
+  confidenceScore: decimal("confidenceScore", { precision: 5, scale: 3 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  domainIdx: index("dm_domain_idx").on(table.taskDomain),
+}));
+export type DecisionMemory = typeof decisionMemory.$inferSelect;
+export type InsertDecisionMemory = typeof decisionMemory.$inferInsert;
+
+// Phase 3: Agent Votes Log — full audit trail per decision
+export const agentVotesLog = mysqlTable("agent_votes_log", {
+  id: int("id").autoincrement().primaryKey(),
+  decisionMemoryId: int("decisionMemoryId").notNull().references(() => decisionMemory.id, { onDelete: "cascade" }),
+  personaId: varchar("personaId", { length: 100 }).notNull(),
+  personaName: varchar("personaName", { length: 100 }),
+  vote: varchar("vote", { length: 20 }),
+  confidence: decimal("confidence", { precision: 4, scale: 3 }),
+  rationale: text("rationale"),
+  wasCorrect: boolean("wasCorrect"),
+  scoredAt: timestamp("scoredAt"),
+}, (table) => ({
+  memIdx: index("avl_mem_idx").on(table.decisionMemoryId),
+  personaIdx: index("avl_persona_idx").on(table.personaId),
+}));
+export type AgentVoteLog = typeof agentVotesLog.$inferSelect;
+export type InsertAgentVoteLog = typeof agentVotesLog.$inferInsert;
+
+// Phase 4: Decision Outcomes — ground truth from automated data feeds
+export const decisionOutcomes = mysqlTable("decision_outcomes", {
+  id: int("id").autoincrement().primaryKey(),
+  decisionMemoryId: int("decisionMemoryId").notNull().references(() => decisionMemory.id, { onDelete: "cascade" }),
+  outcomeSource: varchar("outcomeSource", { length: 50 }),
+  outcomeData: text("outcomeData"),
+  outcomeVerdict: varchar("outcomeVerdict", { length: 20 }).default("PENDING"),
+  outcomeRecordedAt: timestamp("outcomeRecordedAt").defaultNow().notNull(),
+}, (table) => ({
+  memIdx: index("do_mem_idx").on(table.decisionMemoryId),
+}));
+export type DecisionOutcome = typeof decisionOutcomes.$inferSelect;
+export type InsertDecisionOutcome = typeof decisionOutcomes.$inferInsert;

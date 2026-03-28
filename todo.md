@@ -1303,3 +1303,19 @@
 - [x] Enhancement: Add FATF/CBK/CBUAE/SAMA regulatory trigger mapping to Fraud Detector
 - [x] Enhancement: Add Shariah compliance column to Equity Screener results
 - [x] Enhancement: Enhance default analysis prompt with quantitative metrics requirement
+
+## Session Mar 28 2026 — Self-Learning Loop (All 5 Phases)
+
+- [x] Phase 1: Add agent_weights, decision_memory, agent_votes_log, decision_outcomes tables to schema.ts
+- [x] Phase 1: Run migration script to create the 4 new tables + seed 10 persona weights
+- [x] Phase 2: Seed 10 council personas into agent_weights with default weight 1.0
+- [x] Phase 3: TF-IDF memory retrieval (Top 3 similar past decisions) via memoryService.ts
+- [x] Phase 3: Inject memory context + authority weights into runCouncil before voting
+- [x] Phase 3: Persist every council run to decision_memory + agent_votes_log after runCouncil
+- [x] Phase 4: Outcome Collector cron (nightly 02:00 UTC) — Yahoo Finance + News API
+- [x] Phase 5: Critic Agent cron (03:00 UTC) — score votes vs outcomes, adjust weights ±0.1, 30-day decay
+- [x] Phase 5: Register outcomeCollector + criticAgent cron jobs in server/_core/index.ts
+- [x] Add tRPC procedures: selfLearning.agentWeights, decisionHistory, decisionDetail, stats, triggerOutcomes, triggerCritic
+- [x] Self-Learning Loop dashboard UI page (/self-learning) with 3 tabs
+- [x] Added Self-Learning to SiteNav products dropdown
+- [x] 19 new vitest tests for memory service + critic agent logic (all passing)
