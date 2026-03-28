@@ -59,6 +59,7 @@ import ForecastNew from "./pages/ForecastNew";
 import ForecastDetail from "./pages/ForecastDetail";
 import KnowledgeVault from "./pages/KnowledgeVault";
 import SelfLearning from "./pages/SelfLearning";
+import Pitch from "./pages/Pitch";
 import Pricing from "./pages/Pricing";
 import Contact from "./pages/Contact";
 import { DemoBanner } from "./pages/Home";
@@ -192,6 +193,9 @@ function Router() {
 
       {/* Self-Learning Loop — Council Meritocracy Dashboard */}
       <Route path="/self-learning" component={SelfLearning} />
+
+      {/* Revenue Bridge — Public Pitch Evaluation */}
+      <Route path="/pitch" component={Pitch} />
 
       {/* Pricing */}
       <Route path="/pricing" component={Pricing} />

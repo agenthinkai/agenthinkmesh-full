@@ -75,6 +75,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
     { label: "ForecastMesh",   emoji: "📊", href: `/forecast${ds}`,               color: "#34D399", bg: "rgba(52,211,153,0.08)",   border: "rgba(52,211,153,0.25)",   bgHover: "rgba(52,211,153,0.16)" },
     { label: "Knowledge Vault",emoji: "🧠", href: `/knowledge-vault${ds}`,        color: "#F59E0B", bg: "rgba(245,158,11,0.08)",   border: "rgba(245,158,11,0.25)",   bgHover: "rgba(245,158,11,0.16)" },
     { label: "Self-Learning",   emoji: "🔄", href: "/self-learning",                 color: "#A3E635", bg: "rgba(163,230,53,0.08)",   border: "rgba(163,230,53,0.25)",   bgHover: "rgba(163,230,53,0.16)" },
+    { label: "Pitch Evaluator",  emoji: "⚡", href: "/pitch",                          color: "#C9A84C", bg: "rgba(201,168,76,0.08)",   border: "rgba(201,168,76,0.25)",   bgHover: "rgba(201,168,76,0.16)" },
   ];
 
   const navLink = (label: string, onClick: () => void) => (

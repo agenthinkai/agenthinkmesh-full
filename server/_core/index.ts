@@ -75,6 +75,44 @@ async function startServer() {
   app.use("/api/intelligence/parse-document", intelligenceParseRouter);
   // Embedded specialist agent endpoints
   app.use("/api/agents", agentRouter);
+
+  // ── Revenue Bridge: K-Net / NBK payment confirmation webhook ──────────────
+  // POST /api/payment-confirm  { pitchToken, webhookSecret? }
+  // In production: replace secret check with NBK HMAC signature verification.
+  app.post("/api/payment-confirm", async (req, res) => {
+    try {
+      const { pitchToken, webhookSecret } = req.body as { pitchToken?: string; webhookSecret?: string };
+      if (!pitchToken) {
+        res.status(400).json({ success: false, error: "pitchToken is required" });
+        return;
+      }
+      const expectedSecret = process.env.PAYMENT_WEBHOOK_SECRET ?? "knet-dev-secret-2026";
+      if (webhookSecret && webhookSecret !== expectedSecret) {
+        res.status(403).json({ success: false, error: "Invalid webhook secret" });
+        return;
+      }
+      const { getDb } = await import("../db");
+      const { sql } = await import("drizzle-orm");
+      const db = await getDb();
+      if (!db) { res.status(503).json({ success: false, error: "Database unavailable" }); return; }
+      const [rows] = await (db as any).$client.execute(
+        "SELECT id FROM pitch_sessions WHERE pitchToken = ? LIMIT 1",
+        [pitchToken]
+      );
+      if (!rows || rows.length === 0) {
+        res.status(404).json({ success: false, error: "Pitch session not found" });
+        return;
+      }
+      await db.execute(sql`UPDATE pitch_sessions SET paymentStatus = 'PAID', reportUnlocked = 1, updatedAt = NOW() WHERE pitchToken = ${pitchToken}`);
+      await db.execute(sql`UPDATE decision_memory SET paymentStatus = 'PAID' WHERE pitchToken = ${pitchToken}`);
+      console.log(`[PaymentWebhook] Confirmed payment for pitchToken=${pitchToken}`);
+      res.json({ success: true, message: "Payment confirmed. Report unlocked.", pitchToken });
+    } catch (err: any) {
+      console.error("[PaymentWebhook] Error:", err);
+      res.status(500).json({ success: false, error: err.message ?? "Internal error" });
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

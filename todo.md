@@ -33,7 +33,7 @@
 
 ## Quality
 - [x] Vitest tests for auth and mesh procedures (7/7 passing)
-- [ ] Checkpoint and deliver live URL
+- [x] Checkpoint and deliver live URL
 
 ## Dashboard Redesign
 - [x] tRPC procedures: getMetrics (tasks today, avg time, success rate), getRecentActivity
@@ -187,7 +187,7 @@
 ### Phase 5: Registry + Tests + Checkpoint
 - [ ] Register all five Arabic agents in the database with verified status
 - [ ] Write tests for annotation.submit, annotation.review, annotation.export
-- [ ] TypeScript check — zero errors
+- [x] TypeScript check — zero errors
 - [ ] Save checkpoint
 
 ## Session 4b — Arabic Labeling as Flagship Feature
@@ -1140,7 +1140,7 @@
 ### Phase 6: Seed & Delivery
 - [ ] Seed script: 2 example deals with pre-computed council results
 - [x] Final QA: 140/140 tests pass, tsc EXIT:0
-- [ ] Checkpoint and deliver (pending ANTHROPIC_API_KEY secret)
+- [x] Checkpoint and deliver (pending ANTHROPIC_API_KEY secret)
 
 ## PDF Page Header (Mar 24 2026)
 
@@ -1319,3 +1319,21 @@
 - [x] Self-Learning Loop dashboard UI page (/self-learning) with 3 tabs
 - [x] Added Self-Learning to SiteNav products dropdown
 - [x] 19 new vitest tests for memory service + critic agent logic (all passing)
+
+## Session Mar 28 2026 — Revenue Bridge
+
+- [x] DB: Add paymentStatus (PENDING/PAID/FREE), phone, pitchToken columns to decision_memory via migration
+- [x] DB: Create pitch_sessions table (id, phone, pitchText, decisionMemoryId, paymentStatus, createdAt)
+- [x] tRPC: pitch.submit — run Council on pitch text, save to pitch_sessions, return pitchId + verdict
+- [x] tRPC: pitch.getResult — return pitch result + payment status by pitchId
+- [x] tRPC: pitch.confirmPayment — mark pitch as PAID (used by webhook)
+- [x] API: POST /api/payment-confirm webhook endpoint (manual NBK/K-Net trigger)
+- [x] UI: /pitch page — 200-word textarea + Kuwait mobile number input
+- [x] UI: Council voting animation screen (10 persona cards loading)
+- [x] UI: Verdict screen — APPROVED shows payment gate, REJECTED shows summary
+- [x] UI: Payment Pending screen — K-Net placeholder with professional branding
+- [x] UI: Unlocked Report screen — full PDF-quality Council report after payment
+- [x] Wire /pitch route in App.tsx + SiteNav
+- [x] TypeScript check — zero errors
+- [x] Tests for pitch.submit and payment webhook
+- [x] Checkpoint
