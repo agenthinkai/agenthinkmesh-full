@@ -15,16 +15,32 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 16 
 // ─── Text extraction helpers ──────────────────────────────────────────────────
 async function extractTextFromBuffer(buffer: Buffer, mimetype: string): Promise<string> {
   if (mimetype === "application/pdf" || mimetype === "application/x-pdf") {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const pdfParse = require("pdf-parse");
-    const data = await pdfParse(buffer);
-    return data.text || "";
+    // Use dynamic import — pdf-parse v2 is ESM-native; require() crashes with
+    // "Cannot read properties of undefined (reading 'verbosity')" in Node CJS context
+    const mod = await import("pdf-parse");
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const anyMod = mod as any;
+    const parseFn: ((buf: Buffer) => Promise<{ text: string }>) | undefined =
+      typeof anyMod.default === "function" ? anyMod.default :
+      typeof anyMod === "function" ? anyMod :
+      undefined;
+    if (parseFn) {
+      const data = await parseFn(buffer);
+      return data.text || "";
+    }
+    // pdf-parse v2 class-based fallback
+    if (anyMod.PDFParse) {
+      const parser = new anyMod.PDFParse();
+      const data = await parser.parse(buffer);
+      return (data as { text: string }).text || "";
+    }
+    throw new Error("pdf-parse: unable to locate parse function. Ensure pdf-parse is installed correctly.");
   } else if (
     mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||
     mimetype === "application/msword"
   ) {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const mammoth = require("mammoth");
+    const mod = await import("mammoth");
+    const mammoth = (mod.default ?? mod) as { extractRawText: (opts: { buffer: Buffer }) => Promise<{ value: string }> };
     const result = await mammoth.extractRawText({ buffer });
     return result.value || "";
   }

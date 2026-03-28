@@ -1280,3 +1280,26 @@
 - [x] Activity tab: vertical timeline of forecast_history entries with probability indicator
 - [x] Fix workflow.start test timeout (skip LLM pipeline integration test)
 - [x] All 145 tests passing, TypeScript clean
+
+## Session Mar 28 2026 — QA Bug Fixes & Enhancements
+
+- [x] P0: Fix PDF parse crash in forceMajeureRoute.ts (replace require() with dynamic import())
+- [x] P0: Fix DOCX parse in forceMajeureRoute.ts (same dynamic import pattern)
+- [x] P1: Add agent-label-specific system prompts for DCF Modeler (structured tables, sensitivity grid, GCC benchmarks)
+- [x] P1: Add agent-label-specific system prompts for Risk Attributor (portfolio metrics, correlation matrix, factor decomposition)
+- [x] P1: Add agent-label-specific system prompts for Sector Analyst (sector snapshot table, competitive landscape, top picks)
+- [x] P1: Add agent-label-specific system prompts for Equity Screener (screening criteria table, ranked results, conviction picks)
+- [x] P1: Add agent-label-specific system prompts for Arabic Earnings Extractor (KPI table with Arabic terms, verbatim quotes)
+- [x] P1: Add agent-label-specific system prompts for Fraud Detector (risk score table, pattern detection, regulatory triggers)
+- [x] P1: Add agent-label-specific system prompts for Compliance Checker (status table, gaps, filing deadlines)
+- [x] P1: Add agent-label-specific system prompts for Loan Underwriter (decision table, credit analysis, financial summary)
+- [x] P1: Add agent-label-specific system prompts for Asset Allocator (allocation table, portfolio metrics, rebalancing triggers)
+- [x] P1: Add agent-label-specific system prompts for Jurisdiction Intel (comparison table, cross-border considerations)
+- [x] P1: Add agent-label-specific system prompts for Risk Flagger (risk summary table, flags table, missing clauses)
+- [x] P1: Add universal "Not Found: [field]" missing-data protocol to all 11 agent prompts
+- [x] Enhancement: Add sensitivity analysis (3x3 WACC/TGR grid) to DCF Modeler
+- [x] Enhancement: Add GCC peer benchmarks comparison to DCF Modeler and Sector Analyst
+- [x] Enhancement: Add correlation matrix requirement to Risk Attributor
+- [x] Enhancement: Add FATF/CBK/CBUAE/SAMA regulatory trigger mapping to Fraud Detector
+- [x] Enhancement: Add Shariah compliance column to Equity Screener results
+- [x] Enhancement: Enhance default analysis prompt with quantitative metrics requirement
