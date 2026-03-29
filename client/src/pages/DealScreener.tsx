@@ -541,8 +541,8 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
       // Save form data to sessionStorage before redirect
       sessionStorage.setItem("ds_pending_deal_name", dealName.trim());
       sessionStorage.setItem("ds_pending_deal_text", dealText.trim());
-      window.open(data.url, "_blank");
-      setCheckoutLoading(false);
+      // Use same-tab redirect — window.open is blocked by popup blockers
+      window.location.href = data.url;
     },
     onError: (err) => {
       setError(err.message);
