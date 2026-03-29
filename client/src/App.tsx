@@ -48,6 +48,7 @@ import AdminBetaRequests from "./pages/AdminBetaRequests";
 import Upgrade from "./pages/Upgrade";
 import NotFound from "./pages/NotFound";
 import DealScreener from "./pages/DealScreener";
+import DealComparison from "./pages/DealComparison";
 import IntelligenceHome from "./pages/IntelligenceHome";
 import IntelligenceTracking from "./pages/IntelligenceTracking";
 import IntelligenceBriefs from "./pages/IntelligenceBriefs";
@@ -171,6 +172,7 @@ function Router() {
 
       {/* Deal Screener — Council of 10 */}
       <Route path="/deals" component={DealScreener} />
+      <Route path="/deals/compare" component={DealComparison} />
 
       {/* Intelligence Agent — AI Programme Monitoring */}
       <Route path="/intelligence" component={IntelligenceHome} />

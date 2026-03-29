@@ -1055,3 +1055,24 @@ export const dealScreenerPayments = mysqlTable("deal_screener_payments", {
 }));
 export type DealScreenerPayment = typeof dealScreenerPayments.$inferSelect;
 export type InsertDealScreenerPayment = typeof dealScreenerPayments.$inferInsert;
+
+// ── Deal Comparison — V2.1 ────────────────────────────────────────────────────
+export const dealComparisons = mysqlTable("deal_comparisons", {
+  id: int("id").autoincrement().primaryKey(),
+  comparisonId: varchar("comparisonId", { length: 64 }).notNull().unique(), // UUID
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  dealIds: text("dealIds").notNull(),             // JSON: string[] — UUIDs of individual deal screenings
+  dealNames: text("dealNames").notNull(),         // JSON: string[] — deal names for display
+  dealCount: int("dealCount").notNull(),          // 2–5
+  rankedDeals: text("rankedDeals").notNull(),     // JSON: RankedDeal[]
+  comparisonSummary: text("comparisonSummary").notNull(), // JSON: ComparisonSummary
+  dealAnalyses: text("dealAnalyses").notNull(),   // JSON: DealAnalysisResult[]
+  pdfUrl: varchar("pdfUrl", { length: 512 }),     // S3 URL (null until generated)
+  totalAmountUsd: decimal("totalAmountUsd", { precision: 8, scale: 2 }).notNull(), // 32.50 × dealCount
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  userIdx: index("dc_user_idx").on(table.userId),
+  compIdIdx: index("dc_comp_id_idx").on(table.comparisonId),
+}));
+export type DealComparison = typeof dealComparisons.$inferSelect;
+export type InsertDealComparison = typeof dealComparisons.$inferInsert;

@@ -9,8 +9,9 @@ import { TRPCError } from "@trpc/server";
 import { eq, desc, and, gte } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { dealScreenings, dealScreeningRateLimit } from "../../drizzle/schema";
+import { dealScreenings, dealScreeningRateLimit, dealComparisons, dealScreenerPayments } from "../../drizzle/schema";
 import { runCouncil } from "../councilEngine";
+import { runComparison } from "../comparisonEngine";
 import { randomUUID } from "crypto";
 
 // ── Plan-based daily rate limits ─────────────────────────────────────────────
@@ -142,6 +143,149 @@ export const dealScreenerRouter = router({
         dealId,
         dealName: input.dealName,
         ...result,
+      };
+    }),
+
+  /**
+   * Compare 2–5 deals through the Council of 10 and produce a ranked analysis.
+   * Per spec: $32.50 × dealCount logged as pending transactions.
+   * Does NOT modify any existing single-deal functionality.
+   */
+  compare: protectedProcedure
+    .input(
+      z.object({
+        deals: z
+          .array(
+            z.object({
+              name: z.string().min(1).max(255).trim(),
+              summary: z.string().min(10).max(3000).trim(),
+              metrics: z.record(z.string(), z.unknown()).optional(),
+            })
+          )
+          .refine(arr => arr.length >= 2, { message: "Minimum 2 deals required for comparison" })
+          .refine(arr => arr.length <= 5, { message: "Maximum 5 deals allowed per comparison" }),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      const dealCount = input.deals.length;
+      const totalAmountUsd = (32.50 * dealCount).toFixed(2);
+
+      // ── Log per-deal transactions as pending (no Stripe yet per spec) ──────
+      const transactionIds: string[] = [];
+      for (const deal of input.deals) {
+        const pseudoSessionId = `cmp_${randomUUID()}_${deal.name.slice(0, 20).replace(/\s+/g, "_")}`;
+        await db.insert(dealScreenerPayments).values({
+          userId: ctx.user.id,
+          stripeSessionId: pseudoSessionId,
+          status: "pending",
+          amountUsd: "32.50",
+        });
+        transactionIds.push(pseudoSessionId);
+      }
+
+      // ── Run comparison engine ─────────────────────────────────────────────
+      let result;
+      try {
+        result = await runComparison(input.deals, { userId: ctx.user.id });
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : "Comparison failed";
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: msg });
+      }
+
+      // ── Persist to dealComparisons table ─────────────────────────────────
+      await db.insert(dealComparisons).values({
+        comparisonId: result.comparisonId,
+        userId: ctx.user.id,
+        dealIds: JSON.stringify(transactionIds),
+        dealNames: JSON.stringify(input.deals.map(d => d.name)),
+        dealCount,
+        rankedDeals: JSON.stringify(result.comparisonSummary.rankedDeals),
+        comparisonSummary: JSON.stringify(result.comparisonSummary),
+        dealAnalyses: JSON.stringify(result.dealAnalyses),
+        pdfUrl: null,
+        totalAmountUsd,
+      });
+
+      return {
+        comparisonId: result.comparisonId,
+        dealAnalyses: result.dealAnalyses,
+        comparisonSummary: result.comparisonSummary,
+        totalAmountUsd: parseFloat(totalAmountUsd),
+        timestamp: result.timestamp,
+      };
+    }),
+
+  /**
+   * Get the authenticated user's comparison history.
+   */
+  comparisonHistory: protectedProcedure
+    .input(
+      z.object({
+        limit: z.number().min(1).max(50).default(20),
+      }).optional()
+    )
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      const limit = input?.limit ?? 20;
+
+      const rows = await db
+        .select({
+          id: dealComparisons.id,
+          comparisonId: dealComparisons.comparisonId,
+          dealNames: dealComparisons.dealNames,
+          dealCount: dealComparisons.dealCount,
+          totalAmountUsd: dealComparisons.totalAmountUsd,
+          createdAt: dealComparisons.createdAt,
+        })
+        .from(dealComparisons)
+        .where(eq(dealComparisons.userId, ctx.user.id))
+        .orderBy(desc(dealComparisons.createdAt))
+        .limit(limit);
+
+      return rows.map(r => ({
+        ...r,
+        dealNames: JSON.parse(r.dealNames) as string[],
+      }));
+    }),
+
+  /**
+   * Get a single comparison by comparisonId (full ranked report).
+   */
+  getComparisonById: protectedProcedure
+    .input(z.object({ comparisonId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      const rows = await db
+        .select()
+        .from(dealComparisons)
+        .where(
+          and(
+            eq(dealComparisons.comparisonId, input.comparisonId),
+            eq(dealComparisons.userId, ctx.user.id)
+          )
+        )
+        .limit(1);
+
+      if (rows.length === 0) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Comparison not found" });
+      }
+
+      const row = rows[0];
+      return {
+        ...row,
+        dealNames: JSON.parse(row.dealNames) as string[],
+        dealIds: JSON.parse(row.dealIds) as string[],
+        rankedDeals: JSON.parse(row.rankedDeals),
+        comparisonSummary: JSON.parse(row.comparisonSummary),
+        dealAnalyses: JSON.parse(row.dealAnalyses),
+        totalAmountUsd: parseFloat(row.totalAmountUsd),
       };
     }),
 

@@ -1386,3 +1386,51 @@
 - [x] TypeScript check — zero errors
 - [x] 18 tests passing for pay-per-run payment flow
 - [x] Checkpoint
+
+## Session Mar 29 2026 — Deal Comparison Mode V2.1
+
+- [ ] DB: Add dealComparisons table (id, comparisonId, userId, dealIds JSON, rankedDeals JSON, comparisonSummary JSON, pdfUrl, timestamp)
+- [ ] DB: Run migration for dealComparisons table
+- [ ] Server: comparisonEngine.ts — parallel runCouncil() per deal + Comparison Agent LLM call
+- [ ] Server: Risk normalization (0-1 flags→8-10, 2-3→5-7, 4+→1-4)
+- [ ] Server: Tie-breaking determinism (consensus% → confidence → risk → alphabetical)
+- [ ] Server: Comparison rules (no REJECTED deal at #1, no unresolved regulatory risk at #1)
+- [ ] tRPC: dealScreener.compare procedure (2-5 deals, parallel analysis, comparison engine)
+- [ ] tRPC: Log each deal individually in dealScreenerPayments with status=pending
+- [ ] UI: /deals/compare route in App.tsx
+- [ ] UI: DealComparison.tsx — multi-deal input form (2-5 deals, add/remove)
+- [ ] UI: Ranking Table (deal name, final decision, consensus%, overall score, risk level, priority)
+- [ ] UI: Dimension Grid (6 dimensions × N deals)
+- [ ] UI: Key Tradeoffs section
+- [ ] UI: Recommendation Banner
+- [ ] UI: PDF download via window.print (consistent with single-deal report)
+- [ ] UI: Match existing DealScreener design system exactly
+- [ ] TypeScript check — zero errors
+- [ ] Tests for comparison engine, ranking, tie-breaking, failure handling
+- [ ] Checkpoint
+
+## Session Mar 29 2026 — Deal Comparison Mode V2.1
+
+- [x] Spec review: confirmed decisions (Option B PDF, per-deal pricing, tRPC)
+- [x] DB: dealComparisons table (comparisonId, userId, dealIds, dealNames, dealCount, rankedDeals, comparisonSummary, dealAnalyses, pdfUrl, totalAmountUsd)
+- [x] DB: migration executed via SQL
+- [x] Engine: comparisonEngine.ts — parallel runCouncil() per deal (10s per-deal timeout, 30s global)
+- [x] Engine: councilResultToAnalysis() — converts CouncilResult to structured DealAnalysisResult
+- [x] Engine: risk normalisation (0–1 flags → 8–10, 2–3 → 5–7, 4+ → 1–4)
+- [x] Engine: Comparison Agent LLM call with JSON schema response_format
+- [x] Engine: deterministic tie-breaking sort (score → consensus% → confidence → risk → alphabetical)
+- [x] Engine: REJECTED deals cannot be HIGH priority (enforced post-LLM)
+- [x] Engine: unresolved major regulatory risk cannot rank #1 (regulatoryReadiness < 4 → swap rank 1/2)
+- [x] Engine: >50% failure threshold → throw "insufficient valid analyses"
+- [x] tRPC: dealScreener.compare — per-deal pending transaction logging ($32.50 × dealCount)
+- [x] tRPC: dealScreener.comparisonHistory — list user's past comparisons
+- [x] tRPC: dealScreener.getComparisonById — full ranked report retrieval
+- [x] UI: DealComparison.tsx — Bloomberg-style dark UI matching DealScreener design tokens
+- [x] UI: Input view — 2–5 deal cards with add/remove, pricing badge, dynamic cost display
+- [x] UI: Loading view — parallel council animation with deal names
+- [x] UI: Report view — IC Summary Badges, Key Tradeoffs, Ranked Deal Cards with dimension scores
+- [x] UI: window.print() PDF export (consistent with single-deal report)
+- [x] Route: /deals/compare wired in App.tsx
+- [x] TypeScript check — 0 errors
+- [x] 14 tests passing (comparisonEngine, risk normalisation, tiebreaking)
+- [x] Checkpoint
