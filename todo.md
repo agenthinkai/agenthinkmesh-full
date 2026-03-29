@@ -1434,3 +1434,11 @@
 - [x] TypeScript check — 0 errors
 - [x] 14 tests passing (comparisonEngine, risk normalisation, tiebreaking)
 - [x] Checkpoint
+
+## Session Mar 29 2026 — Deal Comparison Copy Results
+
+- [ ] UI: Add "Copy Results" button to Deal Comparison report page
+- [ ] UI: Format full ranked report as plain text for clipboard (verdict, scores, agreements, risk flags, tradeoffs)
+- [ ] UI: Show "Copied!" toast feedback after clipboard write
+- [ ] TypeScript check — 0 errors
+- [ ] Checkpoint
