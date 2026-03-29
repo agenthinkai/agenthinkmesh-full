@@ -1350,3 +1350,24 @@
 - [ ] TypeScript check — zero errors
 - [ ] All tests passing
 - [ ] Checkpoint
+
+## Session Mar 29 2026 — Stripe Subscription Plans
+
+- [x] Stripe: Create Professional ($49/mo) and Enterprise ($199/mo) recurring Price IDs via API
+- [x] DB: Add subscriptions table (userId, stripeCustomerId, stripeSubscriptionId, plan, status, tokensRemaining, tokensTotal, renewsAt)
+- [x] DB: Add token_usage table (userId, sessionId, tokensUsed, action, createdAt)
+- [x] DB: Run migration for new tables
+- [x] tRPC: billing.createCheckout — create Stripe Checkout session, redirect to Stripe
+- [x] tRPC: billing.getSubscription — return current plan, status, tokens remaining, renewal date
+- [x] tRPC: billing.getBillingPortal — return Stripe Customer Portal URL for self-service
+- [x] tRPC: billing.getTokenBalance — return token balance for current user
+- [x] Webhook: POST /api/stripe/webhook — handle checkout.session.completed (activate subscription)
+- [x] Webhook: handle invoice.payment_succeeded (renew tokens monthly)
+- [x] Webhook: handle customer.subscription.deleted (downgrade to Starter)
+- [x] councilEngine: deduct 10 tokens per Council run, block with upgrade prompt when exhausted
+- [x] UI: Update Pricing page — Subscribe buttons for Professional and Enterprise (login-gated)
+- [x] UI: /account/billing page — plan name, tokens remaining, renewal date, Manage Billing button
+- [x] UI: Add billing link to user menu / nav
+- [x] TypeScript check — zero errors
+- [x] Tests for billing procedures and token deduction
+- [x] Checkpoint

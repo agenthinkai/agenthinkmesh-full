@@ -12,6 +12,7 @@ import { getDb } from "./db";
 import { users, subscriptions, payments } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { applyUpgrade } from "./billing";
+import { STRIPE_PLANS, getPlanByPriceId } from "./lib/stripePlans";
 
 export function registerStripeWebhookRoute(app: Express) {
   // Must use raw body for Stripe signature verification
@@ -43,7 +44,7 @@ export function registerStripeWebhookRoute(app: Express) {
       try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
         const Stripe = require("stripe");
-        stripe = new Stripe(secret, { apiVersion: "2023-10-16" });
+        stripe = new Stripe(secret, { apiVersion: "2025-02-24.acacia" });
       } catch {
         res.status(500).json({ error: "Stripe not available" });
         return;
@@ -78,15 +79,98 @@ async function handleStripeEvent(event: any) {
   switch (event.type) {
     case "checkout.session.completed": {
       const session = event.data.object;
+      // Test event passthrough
+      if (event.id.startsWith("evt_test_")) {
+        console.log("[Stripe] Test event detected");
+        break;
+      }
       const userId = parseInt(session.metadata?.userId ?? "0", 10);
-      const plan = session.metadata?.plan as "standard" | "pro" | undefined;
+      const plan = session.metadata?.plan as string | undefined;
       if (!userId || !plan) break;
 
       const customerId = session.customer as string;
       const subscriptionId = session.subscription as string;
 
-      await applyUpgrade(userId, plan, customerId, subscriptionId, new Date());
-      console.log(`[Stripe] User ${userId} upgraded to ${plan}`);
+      // Apply legacy upgrade for standard/pro
+      if (plan === "standard" || plan === "pro") {
+        await applyUpgrade(userId, plan, customerId, subscriptionId, new Date());
+      }
+
+      // Apply new token-based upgrade for professional/enterprise
+      type ValidPlan = "professional" | "enterprise";
+      type ValidPlanTier = "trial" | "standard" | "pro" | "professional" | "enterprise";
+      const planConfig = STRIPE_PLANS[plan as ValidPlan];
+      if (planConfig) {
+        const renewsAt = new Date();
+        renewsAt.setMonth(renewsAt.getMonth() + 1);
+        const typedPlan = plan as ValidPlan;
+        const typedPlanTier = plan as ValidPlanTier;
+
+        // Upsert subscription with token allocation
+        const existing = await db.select().from(subscriptions)
+          .where(eq(subscriptions.userId, userId)).limit(1);
+
+        if (existing.length > 0) {
+          await db.update(subscriptions).set({
+            plan: typedPlan,
+            planTier: typedPlanTier,
+            status: "active",
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscriptionId,
+            stripePriceId: planConfig.priceId ?? null,
+            tokensRemaining: planConfig.tokensPerMonth,
+            tokensTotal: planConfig.tokensPerMonth,
+            renewsAt,
+          }).where(eq(subscriptions.userId, userId));
+        } else {
+          await db.insert(subscriptions).values({
+            userId,
+            plan: typedPlan,
+            planTier: typedPlanTier,
+            status: "active",
+            stripeCustomerId: customerId,
+            stripeSubscriptionId: subscriptionId,
+            stripePriceId: planConfig.priceId ?? null,
+            tokensRemaining: planConfig.tokensPerMonth,
+            tokensTotal: planConfig.tokensPerMonth,
+            renewsAt,
+          });
+        }
+
+        // Update user planTier
+        await db.update(users).set({ planTier: typedPlanTier }).where(eq(users.id, userId));
+      }
+
+      console.log(`[Stripe] User ${userId} subscribed to ${plan}`);
+      break;
+    }
+
+    case "invoice.payment_succeeded": {
+      // Monthly renewal — top up tokens
+      const invoice = event.data.object;
+      if (invoice.billing_reason !== "subscription_cycle") break;
+
+      const stripeSubId = invoice.subscription as string;
+      if (!stripeSubId) break;
+
+      const [dbSub] = await db.select().from(subscriptions)
+        .where(eq(subscriptions.stripeSubscriptionId, stripeSubId)).limit(1);
+      if (!dbSub) break;
+
+      const planConfig = STRIPE_PLANS[dbSub.plan as "professional" | "enterprise"];
+      if (!planConfig) break;
+
+      const renewsAt = new Date();
+      renewsAt.setMonth(renewsAt.getMonth() + 1);
+
+      await db.update(subscriptions).set({
+        tokensRemaining: planConfig.tokensPerMonth,
+        tokensTotal: planConfig.tokensPerMonth,
+        renewsAt,
+        status: "active",
+      }).where(eq(subscriptions.stripeSubscriptionId, stripeSubId));
+
+      console.log(`[Stripe] Tokens renewed for subscription ${stripeSubId} — ${planConfig.tokensPerMonth} tokens`);
       break;
     }
 

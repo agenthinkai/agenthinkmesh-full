@@ -15,6 +15,9 @@ import {
   assignEnterprisePlan,
   PLAN_MONTHLY_LIMITS,
 } from "../billing";
+import { tokenUsage } from "../../drizzle/schema";
+import { desc, sum } from "drizzle-orm";
+import { STRIPE_PLANS } from "../lib/stripePlans";
 
 // ── Stripe stub (keys injected when STRIPE_SECRET_KEY is set) ─────────────────
 function getStripe() {
@@ -23,15 +26,19 @@ function getStripe() {
   try {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const Stripe = require("stripe");
-    return new Stripe(key, { apiVersion: "2023-10-16" });
+    return new Stripe(key, { apiVersion: "2025-02-24.acacia" });
   } catch {
     return null;
   }
 }
 
+// Legacy plan prices (kept for backwards compat)
 const PLAN_PRICES: Record<string, string | undefined> = {
   standard: process.env.STRIPE_STANDARD_PRICE_ID,
   pro: process.env.STRIPE_PRO_PRICE_ID,
+  // New plans
+  professional: STRIPE_PLANS.professional.priceId ?? undefined,
+  enterprise: STRIPE_PLANS.enterprise.priceId ?? undefined,
 };
 
 export const billingRouter = router({
@@ -82,7 +89,7 @@ export const billingRouter = router({
   // ── Create Stripe checkout session ─────────────────────────────────────────
   createCheckoutSession: protectedProcedure
     .input(z.object({
-      plan: z.enum(["standard", "pro"]),
+      plan: z.enum(["standard", "pro", "professional", "enterprise"]),
       origin: z.string().url(),
     }))
     .mutation(async ({ ctx, input }) => {
@@ -92,7 +99,7 @@ export const billingRouter = router({
       if (!stripe || !priceId) {
         // Stub mode — return a placeholder URL
         return {
-          url: `${input.origin}/upgrade?stub=true&plan=${input.plan}`,
+          url: `${input.origin}/pricing?stub=true&plan=${input.plan}`,
           stub: true,
         };
       }
@@ -103,21 +110,147 @@ export const billingRouter = router({
       const [user] = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
       if (!user) throw new TRPCError({ code: "NOT_FOUND" });
 
+      // Reuse existing Stripe customer if available
+      const [existingSub] = await db.select().from(subscriptions).where(eq(subscriptions.userId, ctx.user.id)).limit(1);
+      let customerId = existingSub?.stripeCustomerId ?? undefined;
+
+      if (!customerId && stripe) {
+        const customer = await stripe.customers.create({
+          email: user.email ?? undefined,
+          name: user.name ?? undefined,
+          metadata: { userId: String(ctx.user.id) },
+        });
+        customerId = customer.id;
+        // Save customer ID
+        if (existingSub) {
+          await db.update(subscriptions).set({ stripeCustomerId: customerId }).where(eq(subscriptions.userId, ctx.user.id));
+        } else {
+          await db.insert(subscriptions).values({
+            userId: ctx.user.id,
+            planTier: "trial",
+            plan: "starter",
+            status: "active",
+            tokensRemaining: 50,
+            tokensTotal: 50,
+            stripeCustomerId: customerId,
+          });
+        }
+      }
+
       const session = await stripe.checkout.sessions.create({
+        customer: customerId,
         mode: "subscription",
         payment_method_types: ["card"],
-        customer_email: user.email ?? undefined,
         line_items: [{ price: priceId, quantity: 1 }],
-        success_url: `${input.origin}/upgrade/success?session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${input.origin}/upgrade`,
+        allow_promotion_codes: true,
+        client_reference_id: String(ctx.user.id),
+        success_url: `${input.origin}/account/billing?success=1&plan=${input.plan}`,
+        cancel_url: `${input.origin}/pricing?canceled=1`,
         metadata: {
           userId: String(ctx.user.id),
           plan: input.plan,
+          customer_email: user.email ?? "",
+          customer_name: user.name ?? "",
         },
       });
 
-      return { url: session.url ?? `${input.origin}/upgrade`, stub: false };
+      return { url: session.url ?? `${input.origin}/pricing`, stub: false };
     }),
+
+  // ── Get current subscription + token balance ───────────────────────────────
+  getSubscription: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [sub] = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.userId, ctx.user.id))
+      .limit(1);
+
+    if (!sub) {
+      if (db) await db.insert(subscriptions).values({
+        userId: ctx.user.id,
+        planTier: "trial",
+        plan: "starter",
+        status: "active",
+        tokensRemaining: 50,
+        tokensTotal: 50,
+      });
+      return { plan: "starter" as const, status: "active", tokensRemaining: 50, tokensTotal: 50, renewsAt: null, stripeSubscriptionId: null };
+    }
+
+    return {
+      plan: (sub.plan ?? "starter") as string,
+      status: sub.status,
+      tokensRemaining: sub.tokensRemaining ?? 50,
+      tokensTotal: sub.tokensTotal ?? 50,
+      renewsAt: sub.renewsAt ?? null,
+      stripeSubscriptionId: sub.stripeSubscriptionId ?? null,
+    };
+  }),
+
+  // ── Get token usage history ────────────────────────────────────────────────
+  getTokenHistory: protectedProcedure
+    .input(z.object({ limit: z.number().min(1).max(100).default(20) }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return [];
+      return db
+        .select()
+        .from(tokenUsage)
+        .where(eq(tokenUsage.userId, ctx.user.id))
+        .orderBy(desc(tokenUsage.createdAt))
+        .limit(input.limit);
+    }),
+
+  // ── Get billing portal URL ─────────────────────────────────────────────────
+  getBillingPortal: protectedProcedure
+    .input(z.object({ origin: z.string().url() }))
+    .mutation(async ({ ctx, input }) => {
+      const stripe = getStripe();
+      if (!stripe) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Stripe not configured" });
+
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+      const [sub] = await db.select().from(subscriptions).where(eq(subscriptions.userId, ctx.user.id)).limit(1);
+
+      if (!sub?.stripeCustomerId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "No Stripe customer found. Please subscribe first." });
+      }
+
+      const session = await stripe.billingPortal.sessions.create({
+        customer: sub.stripeCustomerId,
+        return_url: `${input.origin}/account/billing`,
+      });
+
+      return { portalUrl: session.url };
+    }),
+
+  // ── Billing stats for the /account/billing page ────────────────────────────
+  getBillingStats: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const [sub] = await db.select().from(subscriptions).where(eq(subscriptions.userId, ctx.user.id)).limit(1);
+    const [usageResult] = await db
+      .select({ total: sum(tokenUsage.tokensUsed) })
+      .from(tokenUsage)
+      .where(eq(tokenUsage.userId, ctx.user.id));
+
+    const totalTokensUsed = Number(usageResult?.total ?? 0);
+    const tokensRemaining = sub?.tokensRemaining ?? 50;
+    const tokensTotal = sub?.tokensTotal ?? 50;
+    const plan = sub?.plan ?? "starter";
+
+    return {
+      plan,
+      tokensRemaining,
+      tokensTotal,
+      totalTokensUsed,
+      usagePercent: tokensTotal > 0 ? Math.round(((tokensTotal - tokensRemaining) / tokensTotal) * 100) : 0,
+      renewsAt: sub?.renewsAt ?? null,
+      status: sub?.status ?? "active",
+    };
+  }),
 
   // ── Refresh monthly allowance ───────────────────────────────────────────────
   refreshRunAllowanceIfNeeded: protectedProcedure.mutation(async ({ ctx }) => {

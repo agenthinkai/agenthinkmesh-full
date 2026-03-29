@@ -1,11 +1,15 @@
 /**
  * Pricing — /pricing
- * 3-tier pricing page: Starter / Professional / Enterprise
- * Matches the AgenThinkMesh dark design system (navy + green accent).
+ * 3-tier pricing page with real Stripe Subscribe buttons.
+ * Professional ($49/mo) and Enterprise ($199/mo) go through Stripe Checkout.
+ * Starter is free — directs to login.
  */
 
+import { useState } from "react";
 import SiteNav from "@/components/SiteNav";
 import { getLoginUrl } from "@/const";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/_core/hooks/useAuth";
 
 const NAVY = "#080D1A";
 const CARD = "#0D1E35";
@@ -16,97 +20,145 @@ const TEAL = "#38BDF8";
 const WHITE = "#F0F4FA";
 const MUTED = "rgba(240,244,250,0.55)";
 
-const TIERS = [
+type PlanKey = "starter" | "professional" | "enterprise";
+
+interface Tier {
+  name: string;
+  planKey: PlanKey;
+  price: string;
+  period: string;
+  tagline: string;
+  highlight: boolean;
+  accentColor: string;
+  badge?: string;
+  features: string[];
+  cta: string;
+  ctaStyle: "outline" | "filled" | "gold";
+}
+
+const TIERS: Tier[] = [
   {
     name: "Starter",
-    price: "$499",
-    period: "/month",
-    tagline: "For teams exploring AI-driven analysis",
+    planKey: "starter",
+    price: "Free",
+    period: "",
+    tagline: "50 Council runs to explore the platform",
     highlight: false,
     accentColor: TEAL,
     features: [
-      "5 specialist agents",
-      "50 agent runs / month",
+      "50 Council runs (lifetime trial)",
+      "All 10 Council personas",
+      "Basic verdict report",
       "Deal Screener module",
-      "ForecastMesh (3 active forecasts)",
-      "Knowledge Vault (read-only)",
-      "Standard email support",
-      "Single workspace",
+      "Community support",
     ],
-    cta: "Start Free Trial",
-    ctaHref: getLoginUrl("/forecast"),
+    cta: "Start Free",
     ctaStyle: "outline",
   },
   {
     name: "Professional",
-    price: "$1,999",
+    planKey: "professional",
+    price: "$49",
     period: "/month",
-    tagline: "For institutional teams running live workflows",
+    tagline: "5,000 tokens/month for active teams",
     highlight: true,
     accentColor: GREEN,
     badge: "Most Popular",
     features: [
-      "25 specialist agents",
-      "500 agent runs / month",
-      "All modules: Deal Screener, MVNO Intel, ForecastMesh, Insurance, Legal, Wealth, Social AI",
-      "Knowledge Vault with RAG context injection",
-      "Consensus engine + trigger system",
-      "Priority Slack support",
-      "Up to 5 team members",
-      "API access (beta)",
+      "5,000 tokens per month",
+      "All 10 Council personas",
+      "Full PDF Council report",
+      "Memory-augmented voting",
+      "ForecastMesh + Knowledge Vault",
+      "Priority email support",
+      "Stripe invoice per session",
     ],
-    cta: "Start Free Trial",
-    ctaHref: getLoginUrl("/forecast"),
+    cta: "Subscribe — $49/mo",
     ctaStyle: "filled",
   },
   {
     name: "Enterprise",
-    price: "Custom",
-    period: "",
-    tagline: "For large institutions with bespoke requirements",
+    planKey: "enterprise",
+    price: "$199",
+    period: "/month",
+    tagline: "25,000 tokens/month with dedicated support",
     highlight: false,
     accentColor: GOLD,
     features: [
-      "Unlimited agents",
-      "Unlimited agent runs",
-      "All Professional features",
-      "Custom RAG training on your institutional data",
-      "Dedicated onboarding & success manager",
-      "SLA-backed uptime (99.9%)",
-      "SSO / SAML integration",
-      "On-premise deployment option",
-      "Custom agent development",
+      "25,000 tokens per month",
+      "All 10 Council personas",
+      "Full PDF Council report",
+      "Memory-augmented voting",
+      "Self-Learning Loop access",
+      "Dedicated account manager",
+      "Custom integration support",
+      "SLA guarantee",
     ],
-    cta: "Book a Demo",
-    ctaHref: "/contact",
+    cta: "Subscribe — $199/mo",
     ctaStyle: "gold",
   },
 ];
 
 const FAQ = [
   {
-    q: "What counts as an agent run?",
-    a: "Each time an agent analyses a task, screens a deal, or runs a forecast cycle counts as one run. Viewing existing results does not consume a run.",
+    q: "What is a token?",
+    a: "1 token = 1 agent call. A full 10-persona Council run costs 10 tokens. Viewing past results never consumes tokens.",
+  },
+  {
+    q: "Do unused tokens roll over?",
+    a: "No. Tokens reset at the start of each billing cycle. Unused tokens do not carry forward.",
   },
   {
     q: "Can I upgrade or downgrade at any time?",
-    a: "Yes. Plan changes take effect at the start of your next billing cycle. Unused runs do not roll over.",
+    a: "Yes. Plan changes take effect immediately via the Stripe Customer Portal. Prorated credits apply.",
   },
   {
     q: "What is the Knowledge Vault RAG?",
-    a: "The Knowledge Vault contains 460 GCC institutional scenarios across 8 domains. When RAG is enabled, agents automatically retrieve the most relevant scenarios before generating outputs — making every analysis more grounded in real GCC market context.",
+    a: "The Knowledge Vault contains 460 GCC institutional scenarios across 8 domains. Agents automatically retrieve the most relevant scenarios before generating outputs.",
   },
   {
     q: "Is my data used to train the models?",
-    a: "No. Your data is never used to train shared models. Enterprise customers can optionally provide institutional data to train a private, dedicated model for their workspace.",
-  },
-  {
-    q: "Do you offer a free trial?",
-    a: "Yes. Starter and Professional plans include a 14-day free trial with no credit card required.",
+    a: "No. Your data is never used to train shared models. Enterprise customers can optionally provide institutional data to train a private, dedicated model.",
   },
 ];
 
 export default function Pricing() {
+  const { user } = useAuth();
+  const [loadingPlan, setLoadingPlan] = useState<PlanKey | null>(null);
+
+  const createCheckout = trpc.billing.createCheckoutSession.useMutation({
+    onSuccess: (data) => {
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    },
+    onError: (err) => {
+      console.error("[Pricing] Checkout error:", err);
+      alert("Failed to start checkout. Please try again.");
+    },
+    onSettled: () => setLoadingPlan(null),
+  });
+
+  function handleSubscribe(tier: Tier) {
+    if (tier.planKey === "starter") {
+      // Free plan — just send to login / dashboard
+      window.location.href = user ? "/council" : getLoginUrl("/council");
+      return;
+    }
+
+    if (!user) {
+      // Must be logged in — redirect to login with return path
+      window.location.href = getLoginUrl(`/pricing?plan=${tier.planKey}`);
+      return;
+    }
+
+    setLoadingPlan(tier.planKey);
+    createCheckout.mutate({
+      plan: tier.planKey as "professional" | "enterprise",
+      origin: window.location.origin,
+    });
+  }
+
   return (
     <div style={{ minHeight: "100vh", background: NAVY, color: WHITE }}>
       <SiteNav />
@@ -128,8 +180,11 @@ export default function Pricing() {
             Institutional AI for the GCC
           </h1>
           <p style={{ fontSize: 16, color: MUTED, maxWidth: 520, margin: "0 auto", lineHeight: 1.6 }}>
-            From first pilot to full enterprise deployment. Every plan includes the AgenThinkMesh platform, ForecastMesh, and the GCC Knowledge Vault.
+            Token-based billing — pay for what you use. Every plan includes the full AgenThinkMesh Council, ForecastMesh, and the GCC Knowledge Vault.
           </p>
+          <div style={{ marginTop: 16, fontSize: 12, color: "rgba(52,211,153,0.7)", fontWeight: 600 }}>
+            1 token = 1 agent call · 10 tokens = full 10-persona Council run
+          </div>
         </div>
 
         {/* Pricing cards */}
@@ -140,78 +195,91 @@ export default function Pricing() {
           alignItems: "start",
           marginBottom: 80,
         }}>
-          {TIERS.map((tier) => (
-            <div
-              key={tier.name}
-              style={{
-                background: tier.highlight ? "rgba(13,30,53,0.95)" : CARD,
-                border: tier.highlight
-                  ? `2px solid ${GREEN}`
-                  : `1px solid ${BORDER}`,
-                borderRadius: 16,
-                padding: "28px 24px",
-                position: "relative",
-                boxShadow: tier.highlight
-                  ? "0 0 40px rgba(52,211,153,0.12)"
-                  : "none",
-              }}
-            >
-              {/* Badge */}
-              {tier.badge && (
-                <div style={{
-                  position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
-                  background: GREEN, color: "#080D1A", fontSize: 10, fontWeight: 800,
-                  letterSpacing: "0.08em", textTransform: "uppercase",
-                  padding: "3px 12px", borderRadius: 20,
-                }}>
-                  {tier.badge}
-                </div>
-              )}
-
-              {/* Tier name */}
-              <div style={{ fontSize: 11, fontWeight: 700, color: tier.accentColor, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
-                {tier.name}
-              </div>
-
-              {/* Price */}
-              <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 6 }}>
-                <span style={{ fontSize: 38, fontWeight: 900, color: WHITE }}>{tier.price}</span>
-                {tier.period && <span style={{ fontSize: 14, color: MUTED }}>{tier.period}</span>}
-              </div>
-
-              <p style={{ fontSize: 13, color: MUTED, marginBottom: 24, lineHeight: 1.5 }}>{tier.tagline}</p>
-
-              {/* CTA */}
-              <a
-                href={tier.ctaHref}
+          {TIERS.map((tier) => {
+            const isLoading = loadingPlan === tier.planKey;
+            return (
+              <div
+                key={tier.name}
                 style={{
-                  display: "block", textAlign: "center", textDecoration: "none",
-                  padding: "11px 20px", borderRadius: 8, fontSize: 14, fontWeight: 700,
-                  marginBottom: 24,
-                  ...(tier.ctaStyle === "filled"
-                    ? { background: GREEN, color: "#080D1A", border: "none" }
-                    : tier.ctaStyle === "gold"
-                    ? { background: "rgba(245,158,11,0.15)", color: GOLD, border: `1px solid rgba(245,158,11,0.35)` }
-                    : { background: "rgba(56,189,248,0.1)", color: TEAL, border: `1px solid rgba(56,189,248,0.3)` }),
+                  background: tier.highlight ? "rgba(13,30,53,0.95)" : CARD,
+                  border: tier.highlight
+                    ? `2px solid ${GREEN}`
+                    : `1px solid ${BORDER}`,
+                  borderRadius: 16,
+                  padding: "28px 24px",
+                  position: "relative",
+                  boxShadow: tier.highlight
+                    ? "0 0 40px rgba(52,211,153,0.12)"
+                    : "none",
                 }}
               >
-                {tier.cta}
-              </a>
-
-              {/* Divider */}
-              <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", marginBottom: 20 }} />
-
-              {/* Features */}
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                {tier.features.map((f, i) => (
-                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                    <span style={{ color: tier.accentColor, fontSize: 14, flexShrink: 0, marginTop: 1 }}>✓</span>
-                    <span style={{ fontSize: 13, color: MUTED, lineHeight: 1.4 }}>{f}</span>
+                {/* Badge */}
+                {tier.badge && (
+                  <div style={{
+                    position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
+                    background: GREEN, color: "#080D1A", fontSize: 10, fontWeight: 800,
+                    letterSpacing: "0.08em", textTransform: "uppercase",
+                    padding: "3px 12px", borderRadius: 20,
+                  }}>
+                    {tier.badge}
                   </div>
-                ))}
+                )}
+
+                {/* Tier name */}
+                <div style={{ fontSize: 11, fontWeight: 700, color: tier.accentColor, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
+                  {tier.name}
+                </div>
+
+                {/* Price */}
+                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 6 }}>
+                  <span style={{ fontSize: 38, fontWeight: 900, color: WHITE }}>{tier.price}</span>
+                  {tier.period && <span style={{ fontSize: 14, color: MUTED }}>{tier.period}</span>}
+                </div>
+
+                <p style={{ fontSize: 13, color: MUTED, marginBottom: 24, lineHeight: 1.5 }}>{tier.tagline}</p>
+
+                {/* CTA Button */}
+                <button
+                  onClick={() => handleSubscribe(tier)}
+                  disabled={isLoading}
+                  style={{
+                    display: "block", width: "100%", textAlign: "center",
+                    padding: "11px 20px", borderRadius: 8, fontSize: 14, fontWeight: 700,
+                    marginBottom: 24, cursor: isLoading ? "wait" : "pointer",
+                    opacity: isLoading ? 0.7 : 1,
+                    transition: "opacity 0.2s",
+                    ...(tier.ctaStyle === "filled"
+                      ? { background: GREEN, color: "#080D1A", border: "none" }
+                      : tier.ctaStyle === "gold"
+                      ? { background: "rgba(245,158,11,0.15)", color: GOLD, border: `1px solid rgba(245,158,11,0.35)` }
+                      : { background: "rgba(56,189,248,0.1)", color: TEAL, border: `1px solid rgba(56,189,248,0.3)` }),
+                  }}
+                >
+                  {isLoading ? "Redirecting to Stripe…" : tier.cta}
+                </button>
+
+                {/* Divider */}
+                <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", marginBottom: 20 }} />
+
+                {/* Features */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {tier.features.map((f, i) => (
+                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                      <span style={{ color: tier.accentColor, fontSize: 14, flexShrink: 0, marginTop: 1 }}>✓</span>
+                      <span style={{ fontSize: 13, color: MUTED, lineHeight: 1.4 }}>{f}</span>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Login hint for paid plans when not logged in */}
+                {!user && tier.planKey !== "starter" && (
+                  <div style={{ marginTop: 16, fontSize: 11, color: "rgba(240,244,250,0.35)", textAlign: "center" }}>
+                    You'll be asked to log in before checkout
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* FAQ */}

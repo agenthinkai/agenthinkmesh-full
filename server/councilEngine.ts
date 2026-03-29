@@ -34,7 +34,10 @@ import {
   costCounters,
   consensusSessions,
   pitchSessions,
+  subscriptions,
+  tokenUsage,
 } from "../drizzle/schema";
+import { TOKENS_PER_COUNCIL_RUN } from "./lib/stripePlans";
 
 // Module-level Anthropic client (required for vi.mock() to intercept in tests)
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? "" });
@@ -107,6 +110,7 @@ export interface RunCouncilOptions {
   skipMemory?:  boolean;  // set true in tests to avoid DB calls
   pitchId?:     string;   // pitch_sessions.pitchToken for Stripe customer
   clientId?:    string;   // rate-limit key
+  userId?:      number;   // for token deduction (subscription billing)
 }
 
 // ── Zod schema for each persona response ─────────────────────────────────────
@@ -499,7 +503,27 @@ export async function runCouncil(
     skipMemory = false,
     pitchId,
     clientId = "default",
+    userId,
   } = options;
+
+  // ── Token guard — check balance before running ────────────────────────────
+  if (!skipMemory && userId) {
+    try {
+      const db = await getDb();
+      if (db) {
+        const [sub] = await db.select().from(subscriptions)
+          .where(eq(subscriptions.userId, userId)).limit(1);
+        if (sub && sub.tokensRemaining !== null && sub.tokensRemaining < TOKENS_PER_COUNCIL_RUN) {
+          throw new Error(
+            `INSUFFICIENT_TOKENS:You have ${sub.tokensRemaining} tokens remaining, but a full Council run costs ${TOKENS_PER_COUNCIL_RUN} tokens. Please upgrade your plan.`
+          );
+        }
+      }
+    } catch (err: any) {
+      if (err?.message?.startsWith("INSUFFICIENT_TOKENS:")) throw err;
+      console.warn("[CouncilEngine] Token guard check failed (non-fatal):", err);
+    }
+  }
 
   const sessionId = crypto.randomUUID();
   const startMs   = Date.now();
@@ -713,6 +737,28 @@ export async function runCouncil(
     await recordRunCost().catch((err) =>
       console.warn("[CouncilEngine] recordRunCost failed:", err)
     );
+  }
+
+  // ── Token deduction — deduct after successful run ────────────────────────
+  if (!skipMemory && userId) {
+    try {
+      const db = await getDb();
+      if (db) {
+        // Atomic decrement
+        await db.update(subscriptions)
+          .set({ tokensRemaining: sql`GREATEST(0, tokensRemaining - ${TOKENS_PER_COUNCIL_RUN})` })
+          .where(eq(subscriptions.userId, userId));
+        // Log usage
+        await db.insert(tokenUsage).values({
+          userId,
+          sessionId,
+          tokensUsed: TOKENS_PER_COUNCIL_RUN,
+          action: "council_run",
+        });
+      }
+    } catch (err) {
+      console.warn("[CouncilEngine] Token deduction failed (non-fatal):", err);
+    }
   }
 
   // Phase 2: Persist decision to memory (fire-and-forget)

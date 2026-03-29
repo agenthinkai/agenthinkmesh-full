@@ -225,6 +225,13 @@
       "when": 1774767551677,
       "tag": "0031_talented_morgan_stark",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "5",
+      "when": 1774772573748,
+      "tag": "0032_closed_paper_doll",
+      "breakpoints": true
     }
   ]
 }

@@ -111,8 +111,8 @@ export const dealScreenerRouter = router({
 
       const dealId = randomUUID();
 
-      // Run the council engine
-      const result = await runCouncil(input.dealText);
+      // Run the council engine (with token deduction for paid plans)
+      const result = await runCouncil(input.dealText, { userId: ctx.user.id });
 
       // Persist to database
       await db.insert(dealScreenings).values({

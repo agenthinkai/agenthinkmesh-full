@@ -23,7 +23,7 @@ export const users = mysqlTable("users", {
   lastSignedIn: timestamp("lastSignedIn").defaultNow().notNull(),
 
   // ── Billing & Trial ──────────────────────────────────────────────────────────
-  planTier: mysqlEnum("planTier", ["trial", "standard", "pro", "enterprise"]).notNull().default("trial"),
+  planTier: mysqlEnum("planTier", ["trial", "standard", "pro", "professional", "enterprise"]).notNull().default("trial"),
   trialRunsRemaining: int("trialRunsRemaining").notNull().default(50),
   trialStartedAt: timestamp("trialStartedAt"),
   trialExpiresAt: timestamp("trialExpiresAt"),
@@ -480,21 +480,44 @@ export type InsertWorkflowStep = typeof workflowSteps.$inferInsert;
 // ── Subscriptions ─────────────────────────────────────────────────────────────
 export const subscriptions = mysqlTable("subscriptions", {
   id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull(),
-  planTier: mysqlEnum("planTier", ["trial", "standard", "pro", "enterprise"]).notNull(),
-  status: mysqlEnum("status", ["active", "cancelled", "past_due", "trialing", "incomplete"]).notNull().default("active"),
+  userId: int("userId").notNull().unique(),
+  planTier: mysqlEnum("planTier", ["trial", "standard", "pro", "professional", "enterprise"]).notNull().default("trial"),
+  plan: mysqlEnum("plan", ["starter", "professional", "enterprise"]).notNull().default("starter"),
+  status: mysqlEnum("status", ["active", "canceled", "cancelled", "past_due", "trialing", "incomplete"]).notNull().default("active"),
   monthlyRunsLimit: int("monthlyRunsLimit"),
   stripeCustomerId: varchar("stripeCustomerId", { length: 255 }),
   stripeSubscriptionId: varchar("stripeSubscriptionId", { length: 255 }),
+  stripePriceId: varchar("stripePriceId", { length: 64 }),
+  tokensRemaining: int("tokensRemaining").notNull().default(50),
+  tokensTotal: int("tokensTotal").notNull().default(50),
   currentPeriodStart: timestamp("currentPeriodStart"),
   currentPeriodEnd: timestamp("currentPeriodEnd"),
+  renewsAt: timestamp("renewsAt"),
   startedAt: timestamp("startedAt").defaultNow().notNull(),
   cancelledAt: timestamp("cancelledAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
-});
+}, (table) => ({
+  subUserIdx: index("sub_user_idx").on(table.userId),
+  subStripeIdx: index("sub_stripe_idx").on(table.stripeSubscriptionId),
+}));
 export type Subscription = typeof subscriptions.$inferSelect;
 export type InsertSubscription = typeof subscriptions.$inferInsert;
+
+// ── Token Usage Log ───────────────────────────────────────────────────────────
+export const tokenUsage = mysqlTable("token_usage", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  sessionId: varchar("sessionId", { length: 64 }),
+  tokensUsed: int("tokensUsed").notNull().default(1),
+  action: varchar("action", { length: 64 }).notNull().default("council_run"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  tuUserIdx: index("tu_user_idx").on(table.userId),
+  tuSessionIdx: index("tu_session_idx").on(table.sessionId),
+}));
+export type TokenUsage = typeof tokenUsage.$inferSelect;
+export type InsertTokenUsage = typeof tokenUsage.$inferInsert;
 
 // ── Payments ──────────────────────────────────────────────────────────────────
 export const payments = mysqlTable("payments", {
@@ -505,7 +528,7 @@ export const payments = mysqlTable("payments", {
   status: varchar("status", { length: 32 }).notNull(), // succeeded, pending, failed
   provider: varchar("provider", { length: 32 }).notNull().default("stripe"),
   providerPaymentId: varchar("providerPaymentId", { length: 255 }),
-  planTier: mysqlEnum("planTier", ["standard", "pro", "enterprise"]),
+  planTier: mysqlEnum("planTier", ["standard", "pro", "professional", "enterprise"]),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 export type Payment = typeof payments.$inferSelect;
