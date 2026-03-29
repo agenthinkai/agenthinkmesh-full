@@ -1,12 +1,6 @@
 /**
  * SiteNav — matches reference screenshot exactly.
- * Logo | Domains | Contact | [scrollable wide tab blocks] | PlanBadge | Avatar
- *
- * Each tab block:
- *  - dark rectangular background with subtle border
- *  - small colored icon top-left
- *  - name in neon color, bold
- *  - thick colored bottom border on hover/active
+ * Logo | Domains | Contact | [scrollable wide tab blocks for all 12 items] | PlanBadge | Avatar
  */
 
 import { useState, useRef, useEffect } from "react";
@@ -17,7 +11,6 @@ import { PlanUsageBadge } from "@/components/PlanUsageBadge";
 
 const NAVY   = "#080D1A";
 const NAVY2  = "#0C1525";
-const NAVY3  = "#0F1B2D";
 const CYAN   = "#38BDF8";
 const BLUE   = "#60A5FA";
 const WHITE  = "#F0F4FA";
@@ -25,19 +18,28 @@ const MUTED  = "rgba(240,244,250,0.50)";
 const BORDER = "rgba(56,189,248,0.10)";
 
 interface NavItem {
-  label: string;
+  label: string;      // can be multi-word; will wrap to 2 lines like reference
   icon: string;
   href: string;
-  color: string;       // neon text + border color
-  bg: string;          // subtle bg tint
+  color: string;      // neon text color
+  bg: string;         // subtle bg tint on hover/active
   scrollId?: string;
 }
 
+// All 12 items from the reference screenshot, each with a distinct neon color
 const NAV_ITEMS: NavItem[] = [
-  { label: "Deal Screener",  icon: "⚖️",  href: "/deals",         color: "#38BDF8", bg: "rgba(56,189,248,0.07)"  },
-  { label: "Compare Deals",  icon: "🔷",  href: "/deals/compare", color: "#A78BFA", bg: "rgba(167,139,250,0.07)" },
-  { label: "Pricing",        icon: "💎",  href: "/pricing",       color: "#4ADE80", bg: "rgba(74,222,128,0.07)"  },
-  { label: "Contact",        icon: "✉️",  href: "/contact",       color: "#F97316", bg: "rgba(249,115,22,0.07)", scrollId: "contact" },
+  { label: "OpenClaw",        icon: "○",  href: "/deals",          color: "#38BDF8", bg: "rgba(56,189,248,0.08)"   },
+  { label: "AdMesh",          icon: "🎯", href: "/deals/compare",  color: "#F472B6", bg: "rgba(244,114,182,0.08)"  },
+  { label: "Social AI",       icon: "🌐", href: "/ask",            color: "#C084FC", bg: "rgba(192,132,252,0.08)"  },
+  { label: "Insurance",       icon: "🏛️", href: "/pricing",        color: "#60A5FA", bg: "rgba(96,165,250,0.08)"   },
+  { label: "Rosie Protocol",  icon: "🚀", href: "/pitch",          color: "#A78BFA", bg: "rgba(167,139,250,0.08)"  },
+  { label: "Agent Registry",  icon: "📋", href: "/deals",          color: "#94A3B8", bg: "rgba(148,163,184,0.08)"  },
+  { label: "Intel Agent",     icon: "🔍", href: "/deals",          color: "#22D3EE", bg: "rgba(34,211,238,0.08)"   },
+  { label: "MVNO Intel",      icon: "📡", href: "/deals",          color: "#FB923C", bg: "rgba(251,146,60,0.08)"   },
+  { label: "ForecastMesh",    icon: "📊", href: "/deals",          color: "#FBBF24", bg: "rgba(251,191,36,0.08)"   },
+  { label: "Knowledge Vault", icon: "🗄️", href: "/deals",          color: "#F59E0B", bg: "rgba(245,158,11,0.08)"   },
+  { label: "Deal Screener",   icon: "⚖️", href: "/deals",          color: "#4ADE80", bg: "rgba(74,222,128,0.08)"   },
+  { label: "Compare Deals",   icon: "🔷", href: "/deals/compare",  color: "#818CF8", bg: "rgba(129,140,248,0.08)"  },
 ];
 
 interface SiteNavProps {
@@ -83,23 +85,22 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
         display: "flex",
         alignItems: "stretch",
         height: 52,
-        gap: 0,
       }}>
 
         {/* ── LOGO + STATIC LINKS ──────────────────────────────────────── */}
         <div style={{
           display: "flex",
           alignItems: "center",
-          gap: 0,
-          padding: "0 8px 0 16px",
+          padding: "0 8px 0 14px",
           flexShrink: 0,
           borderRight: `1px solid ${BORDER}`,
+          gap: 0,
         }}>
-          <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", marginRight: 16 }}>
+          <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", marginRight: 14 }}>
             <Logo size={26} />
           </a>
 
-          {/* Static links matching the screenshot's "Domains | Contact" style */}
+          {/* Domains + Contact — plain muted text links, matching reference */}
           {[
             { label: "Domains", href: "/pricing" },
             { label: "Contact", href: isLandingPage ? "#contact" : "/contact", scrollId: isLandingPage ? "contact" : undefined },
@@ -113,7 +114,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
                 fontSize: 13,
                 fontWeight: 500,
                 textDecoration: "none",
-                padding: "0 12px",
+                padding: "0 10px",
                 height: "100%",
                 display: "flex",
                 alignItems: "center",
@@ -136,12 +137,16 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
           overflowX: "auto",
           scrollbarWidth: "none",
           msOverflowStyle: "none",
-          gap: 0,
         }}>
           {NAV_ITEMS.map(item => {
             const isActive = currentPath === item.href || (item.href !== "/" && currentPath.startsWith(item.href));
             const isHovered = activeHover === item.label;
             const highlight = isActive || isHovered;
+
+            // Split label into up to 2 lines (for "Rosie Protocol", "MVNO Intel", etc.)
+            const words = item.label.split(" ");
+            const line1 = words.slice(0, Math.ceil(words.length / 2)).join(" ");
+            const line2 = words.length > 1 ? words.slice(Math.ceil(words.length / 2)).join(" ") : null;
 
             return (
               <a
@@ -158,9 +163,11 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
                   display: "flex",
                   flexDirection: "column",
                   justifyContent: "center",
+                  alignItems: "flex-start",
                   gap: 1,
-                  padding: "0 18px",
-                  minWidth: 110,
+                  padding: "0 14px",
+                  minWidth: 80,
+                  maxWidth: 110,
                   textDecoration: "none",
                   cursor: "pointer",
                   background: highlight ? item.bg : "transparent",
@@ -172,31 +179,30 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
                   flexShrink: 0,
                 }}
               >
-                {/* Icon row */}
-                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                  <span style={{
-                    fontSize: 14,
-                    lineHeight: 1,
-                    filter: `drop-shadow(0 0 5px ${item.color}${isHovered ? "cc" : "66"})`,
-                    transition: "filter 0.18s",
-                  }}>
-                    {item.icon}
-                  </span>
-                </div>
-
-                {/* Label — always neon colored, brighter on hover/active */}
+                {/* Icon */}
                 <span style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  letterSpacing: "0.02em",
-                  color: item.color,
-                  opacity: highlight ? 1 : 0.82,
-                  transition: "opacity 0.18s",
-                  whiteSpace: "nowrap",
-                  lineHeight: 1.2,
-                  textShadow: `0 0 10px ${item.color}${highlight ? "88" : "44"}`,
+                  fontSize: 13,
+                  lineHeight: 1,
+                  filter: `drop-shadow(0 0 4px ${item.color}${highlight ? "cc" : "77"})`,
+                  transition: "filter 0.18s",
+                  marginBottom: 2,
                 }}>
-                  {item.label}
+                  {item.icon}
+                </span>
+
+                {/* Label — always neon, 2-line wrap like reference */}
+                <span style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.01em",
+                  color: item.color,
+                  opacity: highlight ? 1 : 0.85,
+                  transition: "opacity 0.18s",
+                  lineHeight: 1.25,
+                  textShadow: `0 0 8px ${item.color}${highlight ? "88" : "44"}`,
+                }}>
+                  {line1}
+                  {line2 && <><br />{line2}</>}
                 </span>
               </a>
             );
