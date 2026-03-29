@@ -7,7 +7,7 @@ import { TRPCError } from "@trpc/server";
 import { eq, and, count, avg, sql } from "drizzle-orm";
 import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { users, subscriptions, payments } from "../../drizzle/schema";
+import { users, subscriptions, payments, dealScreenerPayments } from "../../drizzle/schema";
 import {
   getUsageStatus,
   assertWorkflowAccess,
@@ -251,6 +251,129 @@ export const billingRouter = router({
       status: sub?.status ?? "active",
     };
   }),
+
+  // ── Create pay-per-run checkout for Deal Screener ($32.50) ──────────────────
+  createDealScreenerCheckout: protectedProcedure
+    .input(z.object({ origin: z.string().url() }))
+    .mutation(async ({ ctx, input }) => {
+      const stripe = getStripe();
+
+      if (!stripe) {
+        // Stub mode — return a placeholder URL so the UI still works in dev
+        return {
+          url: `${input.origin}/deals?stub=true`,
+          stub: true,
+        };
+      }
+
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const [user] = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
+      if (!user) throw new TRPCError({ code: "NOT_FOUND" });
+
+      // Create a one-time Stripe Checkout session for $32.50
+      const session = await stripe.checkout.sessions.create({
+        mode: "payment",
+        payment_method_types: ["card"],
+        customer_email: user.email ?? undefined,
+        line_items: [
+          {
+            price_data: {
+              currency: "usd",
+              unit_amount: 3250, // $32.50 in cents
+              product_data: {
+                name: "Council of 10 — Deal Screening",
+                description: "One-time fee for a full IC-ready deal screening by 10 specialist AI advisors",
+              },
+            },
+            quantity: 1,
+          },
+        ],
+        allow_promotion_codes: true,
+        client_reference_id: String(ctx.user.id),
+        success_url: `${input.origin}/deals?paid=1&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${input.origin}/deals?canceled=1`,
+        metadata: {
+          type: "deal_screener_run",
+          userId: String(ctx.user.id),
+          customer_email: user.email ?? "",
+          customer_name: user.name ?? "",
+        },
+      });
+
+      // Record the pending payment in DB
+      await db.insert(dealScreenerPayments).values({
+        userId: ctx.user.id,
+        stripeSessionId: session.id,
+        status: "pending",
+        amountUsd: "32.50",
+      });
+
+      return { url: session.url ?? `${input.origin}/deals`, stub: false };
+    }),
+
+  // ── Verify a deal screener payment (called after Stripe redirect) ─────────
+  verifyDealPayment: protectedProcedure
+    .input(z.object({ sessionId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const [payment] = await db
+        .select()
+        .from(dealScreenerPayments)
+        .where(
+          and(
+            eq(dealScreenerPayments.stripeSessionId, input.sessionId),
+            eq(dealScreenerPayments.userId, ctx.user.id)
+          )
+        )
+        .limit(1);
+
+      if (!payment) {
+        // Not found — may be a stub or the webhook hasn't fired yet
+        // Try to verify directly with Stripe
+        const stripe = getStripe();
+        if (stripe) {
+          try {
+            const session = await stripe.checkout.sessions.retrieve(input.sessionId);
+            if (session.payment_status === "paid") {
+              // Webhook may have been delayed — mark as paid now
+              await db.update(dealScreenerPayments)
+                .set({ status: "paid", stripePaymentIntentId: session.payment_intent as string })
+                .where(eq(dealScreenerPayments.stripeSessionId, input.sessionId));
+              return { paid: true, sessionId: input.sessionId };
+            }
+          } catch { /* ignore */ }
+        }
+        return { paid: false, sessionId: input.sessionId };
+      }
+
+      return {
+        paid: payment.status === "paid" || payment.status === "used",
+        sessionId: input.sessionId,
+      };
+    }),
+
+  // ── Mark a deal screener payment as used (called after council run) ───────
+  markDealPaymentUsed: protectedProcedure
+    .input(z.object({ sessionId: z.string(), dealId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      await db.update(dealScreenerPayments)
+        .set({ status: "used", dealId: input.dealId })
+        .where(
+          and(
+            eq(dealScreenerPayments.stripeSessionId, input.sessionId),
+            eq(dealScreenerPayments.userId, ctx.user.id)
+          )
+        );
+
+      return { ok: true };
+    }),
 
   // ── Refresh monthly allowance ───────────────────────────────────────────────
   refreshRunAllowanceIfNeeded: protectedProcedure.mutation(async ({ ctx }) => {

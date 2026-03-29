@@ -9,7 +9,7 @@
 
 import type { Express, Request, Response } from "express";
 import { getDb } from "./db";
-import { users, subscriptions, payments } from "../drizzle/schema";
+import { users, subscriptions, payments, dealScreenerPayments } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 import { applyUpgrade } from "./billing";
 import { STRIPE_PLANS, getPlanByPriceId } from "./lib/stripePlans";
@@ -85,6 +85,22 @@ async function handleStripeEvent(event: any) {
         break;
       }
       const userId = parseInt(session.metadata?.userId ?? "0", 10);
+      const metaType = session.metadata?.type as string | undefined;
+
+      // Handle pay-per-run Deal Screener payment
+      if (metaType === "deal_screener_run") {
+        if (userId) {
+          await db.update(dealScreenerPayments)
+            .set({
+              status: "paid",
+              stripePaymentIntentId: session.payment_intent as string ?? null,
+            })
+            .where(eq(dealScreenerPayments.stripeSessionId, session.id));
+          console.log(`[Stripe] Deal Screener payment confirmed for user ${userId}, session ${session.id}`);
+        }
+        break;
+      }
+
       const plan = session.metadata?.plan as string | undefined;
       if (!userId || !plan) break;
 

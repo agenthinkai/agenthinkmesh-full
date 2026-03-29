@@ -508,48 +508,82 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
 }
 
 // ── Deal Form ─────────────────────────────────────────────────────────────────
-function DealForm({ onResult, onSubmitStart, onError: onSubmitError }: {
+function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaymentSessionId, onPaymentVerified }: {
   onResult: (r: CouncilResult) => void;
   onSubmitStart: () => void;
   onError: (msg: string) => void;
+  pendingPaymentSessionId: string | null;
+  onPaymentVerified: () => void;
 }) {
   const [dealName, setDealName] = useState("");
   const [dealText, setDealText] = useState("");
   const [pdfUploading, setPdfUploading] = useState(false);
   const [pdfFilename, setPdfFilename] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const { data: rateData } = trpc.dealScreener.rateLimit.useQuery();
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  // Verify payment status when returning from Stripe
+  const { data: paymentVerification } = trpc.billing.verifyDealPayment.useQuery(
+    { sessionId: pendingPaymentSessionId! },
+    { enabled: !!pendingPaymentSessionId, refetchInterval: 2000, refetchIntervalInBackground: false }
+  );
 
-  // Colour-code the badge: green >50%, amber <50%, red <3 remaining
-  const getBadgeColor = () => {
-    if (!rateData || rateData.limit === -1) return "#00c4a0"; // enterprise = teal
-    const pct = rateData.remaining / rateData.limit;
-    if (rateData.remaining < 3) return "#ff5a5a";
-    if (pct < 0.5) return "#f59e0b";
-    return "#00c4a0";
-  };
+  const isPaid = paymentVerification?.paid === true;
+
+  const checkoutMutation = trpc.billing.createDealScreenerCheckout.useMutation({
+    onSuccess: (data) => {
+      if (data.stub) {
+        // Stub mode: skip payment and run directly
+        onPaymentVerified();
+        return;
+      }
+      // Save form data to sessionStorage before redirect
+      sessionStorage.setItem("ds_pending_deal_name", dealName.trim());
+      sessionStorage.setItem("ds_pending_deal_text", dealText.trim());
+      window.open(data.url, "_blank");
+      setCheckoutLoading(false);
+    },
+    onError: (err) => {
+      setError(err.message);
+      setCheckoutLoading(false);
+    },
+  });
 
   const screenMutation = trpc.dealScreener.screen.useMutation({
     onSuccess: (data) => {
       onResult(data as CouncilResult);
     },
     onError: (err) => {
-      // Check if this is a rate limit error
-      try {
-        const parsed = JSON.parse(err.message);
-        if (parsed.code === "RATE_LIMIT_EXCEEDED") {
-          setShowUpgradeModal(true);
-          onSubmitError("Daily limit reached");
-          return;
-        }
-      } catch { /* not JSON, treat as regular error */ }
       setError(err.message);
       onSubmitError(err.message);
     },
   });
+
+  // Auto-run council once payment is verified
+  useEffect(() => {
+    if (isPaid && pendingPaymentSessionId) {
+      const savedName = sessionStorage.getItem("ds_pending_deal_name") || dealName;
+      const savedText = sessionStorage.getItem("ds_pending_deal_text") || dealText;
+      if (savedName && savedText) {
+        sessionStorage.removeItem("ds_pending_deal_name");
+        sessionStorage.removeItem("ds_pending_deal_text");
+        onSubmitStart();
+        screenMutation.mutate({ dealName: savedName, dealText: savedText });
+        onPaymentVerified();
+      }
+    }
+  }, [isPaid]);
+
+  // Restore saved form values after Stripe redirect
+  useEffect(() => {
+    if (pendingPaymentSessionId) {
+      const savedName = sessionStorage.getItem("ds_pending_deal_name");
+      const savedText = sessionStorage.getItem("ds_pending_deal_text");
+      if (savedName) setDealName(savedName);
+      if (savedText) setDealText(savedText);
+    }
+  }, [pendingPaymentSessionId]);
 
   const handlePdfUpload = async (file: File) => {
     if (file.size > 5 * 1024 * 1024) {
@@ -578,16 +612,16 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError }: {
     }
   };
 
-  const handleSubmit = () => {
+  const handlePayAndScreen = () => {
     if (!dealName.trim()) { setError("Deal name is required"); return; }
     if (!dealText.trim()) { setError("Deal description is required"); return; }
     setError(null);
-    onSubmitStart();
-    screenMutation.mutate({ dealName: dealName.trim(), dealText: dealText.trim() });
+    setCheckoutLoading(true);
+    checkoutMutation.mutate({ origin: window.location.origin });
   };
 
   const charCount = dealText.length;
-  const isLoading = screenMutation.isPending;
+  const isLoading = screenMutation.isPending || checkoutLoading;
 
   return (
     <div style={{ maxWidth: 680, margin: "0 auto" }}>
@@ -603,79 +637,30 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError }: {
           Submit a deal memo. 10 specialist AI advisors vote in parallel.<br />
           Receive an IC-ready decision report with verdict, risks, and conditions.
         </p>
-        {rateData && (
-          <div style={{ marginTop: 12, display: "flex", justifyContent: "center", gap: 8, alignItems: "center" }}>
-            <div style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "4px 10px",
-              borderRadius: 4,
-              border: `1px solid ${getBadgeColor()}33`,
-              background: `${getBadgeColor()}11`,
-              fontFamily: MONO,
-              fontSize: 10,
-              color: getBadgeColor(),
-              letterSpacing: "0.08em",
-            }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: getBadgeColor(), display: "inline-block" }} />
-              {rateData.limit === -1
-                ? "UNLIMITED · ENTERPRISE"
-                : `${rateData.remaining} / ${rateData.limit} SCREENS REMAINING TODAY · ${rateData.plan.toUpperCase()}`
-              }
-            </div>
-          </div>
-        )}
-
-        {/* Upgrade modal */}
-        {showUpgradeModal && (
+        {/* Pay-per-run pricing badge */}
+        <div style={{ marginTop: 16, display: "flex", justifyContent: "center", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
           <div style={{
-            position: "fixed", inset: 0, background: "rgba(0,0,0,0.75)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            zIndex: 1000,
-          }} onClick={() => setShowUpgradeModal(false)}>
-            <div style={{
-              background: BG2, border: `1px solid #ff5a5a55`,
-              borderRadius: 8, padding: "32px 36px", maxWidth: 420, width: "90%",
-              textAlign: "center",
-            }} onClick={e => e.stopPropagation()}>
-              <div style={{ fontSize: 28, marginBottom: 12 }}>🚫</div>
-              <div style={{ fontFamily: MONO, fontSize: 10, color: "#ff5a5a", letterSpacing: "0.12em", marginBottom: 8 }}>DAILY LIMIT REACHED</div>
-              <h3 style={{ color: TEXT, fontSize: 18, fontWeight: 700, margin: "0 0 12px" }}>Daily limit reached</h3>
-              <p style={{ color: TEXT2, fontSize: 13, lineHeight: 1.6, margin: "0 0 8px" }}>
-                You've used all your screens for today. Upgrade to{" "}
-                <strong style={{ color: ACCENT }}>Pro</strong> for 50 screens/day or{" "}
-                <strong style={{ color: ACCENT }}>Enterprise</strong> for unlimited access.
-              </p>
-              <p style={{ fontFamily: MONO, fontSize: 10, color: MUTED, margin: "0 0 24px", letterSpacing: "0.04em" }}>
-                Your limit resets at midnight UTC
-              </p>
-              <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-                <a
-                  href="mailto:farouq@agenthinkmesh.com?subject=Upgrade%20Deal%20Screener%20Plan"
-                  style={{
-                    padding: "10px 20px", background: ACCENT, color: BG,
-                    borderRadius: 4, fontFamily: MONO, fontSize: 11,
-                    fontWeight: 600, textDecoration: "none", letterSpacing: "0.06em",
-                  }}
-                >
-                  Contact us to upgrade
-                </a>
-                <button
-                  onClick={() => setShowUpgradeModal(false)}
-                  style={{
-                    padding: "10px 20px", background: "transparent",
-                    border: `1px solid ${BORDER}`, color: TEXT2,
-                    borderRadius: 4, fontFamily: MONO, fontSize: 11,
-                    cursor: "pointer", letterSpacing: "0.06em",
-                  }}
-                >
-                  OK, got it
-                </button>
-              </div>
-            </div>
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "8px 16px",
+            borderRadius: 6,
+            border: `1px solid rgba(74,158,255,0.4)`,
+            background: "rgba(74,158,255,0.08)",
+            fontFamily: MONO,
+            fontSize: 12,
+            color: ACCENT,
+            letterSpacing: "0.06em",
+          }}>
+            <span style={{ fontSize: 16 }}>💳</span>
+            <span><strong style={{ fontSize: 18, color: GREEN }}>$32.50 USD</strong> per Council run</span>
           </div>
-        )}
+          <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED }}>
+            One-time &middot; Secure Stripe Checkout &middot; No subscription required
+          </div>
+        </div>
+
+
       </div>
 
       {/* Form card */}
@@ -793,9 +778,9 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError }: {
           </div>
         )}
 
-        {/* Submit */}
+        {/* Pay & Screen button */}
         <button
-          onClick={handleSubmit}
+          onClick={handlePayAndScreen}
           disabled={isLoading || !dealName.trim() || !dealText.trim()}
           style={{
             width: "100%",
@@ -812,8 +797,15 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError }: {
             transition: "background 0.15s",
           }}
         >
-          {isLoading ? "CONVENING COUNCIL..." : "SCREEN THIS DEAL →"}
+          {checkoutLoading
+            ? "REDIRECTING TO CHECKOUT..."
+            : screenMutation.isPending
+            ? "CONVENING COUNCIL..."
+            : "PAY $32.50 & SCREEN THIS DEAL →"}
         </button>
+        <div style={{ textAlign: "center", marginTop: 10, fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.04em" }}>
+          You will be redirected to Stripe Checkout. After payment, the Council of 10 runs automatically.
+        </div>
       </div>
     </div>
   );
@@ -966,6 +958,14 @@ export default function DealScreener() {
   const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
   const [screenError, setScreenError] = useState<string | null>(null);
 
+  // Parse Stripe return params from URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const paidParam = urlParams.get("paid");
+  const sessionIdParam = urlParams.get("session_id");
+  const [pendingPaymentSessionId, setPendingPaymentSessionId] = useState<string | null>(
+    paidParam === "1" && sessionIdParam ? sessionIdParam : null
+  );
+
   if (isDemo) return <DemoDealCards />;
 
   const { data: dealDetail } = trpc.dealScreener.getById.useQuery(
@@ -1087,6 +1087,8 @@ export default function DealScreener() {
             onResult={handleResult}
             onSubmitStart={() => { setScreenError(null); setView("loading"); }}
             onError={(msg) => { setScreenError(msg); setView("input"); }}
+            pendingPaymentSessionId={pendingPaymentSessionId}
+            onPaymentVerified={() => setPendingPaymentSessionId(null)}
           />
         )}
         {view === "input" && screenError && (

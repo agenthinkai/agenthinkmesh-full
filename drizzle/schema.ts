@@ -1034,3 +1034,24 @@ export const costCounters = mysqlTable("cost_counters", {
 });
 export type CostCounter = typeof costCounters.$inferSelect;
 export type InsertCostCounter = typeof costCounters.$inferInsert;
+
+// ── Deal Screener: Pay-Per-Run Payments ───────────────────────────────────────
+// Each Council run requires a $32.50 Stripe Checkout payment.
+// Status lifecycle: "pending" → "paid" (via webhook) → "used" (after council run)
+export const dealScreenerPayments = mysqlTable("deal_screener_payments", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  stripeSessionId: varchar("stripeSessionId", { length: 255 }).notNull().unique(),
+  stripePaymentIntentId: varchar("stripePaymentIntentId", { length: 255 }),
+  status: varchar("status", { length: 20 }).notNull().default("pending"), // pending | paid | used | expired
+  dealId: varchar("dealId", { length: 64 }), // set after council run completes
+  amountUsd: decimal("amountUsd", { precision: 8, scale: 2 }).notNull().default("32.50"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  userIdx: index("dsp_user_idx").on(table.userId),
+  sessionIdx: index("dsp_session_idx").on(table.stripeSessionId),
+  statusIdx: index("dsp_status_idx").on(table.status),
+}));
+export type DealScreenerPayment = typeof dealScreenerPayments.$inferSelect;
+export type InsertDealScreenerPayment = typeof dealScreenerPayments.$inferInsert;

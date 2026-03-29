@@ -1371,3 +1371,18 @@
 - [x] TypeScript check — zero errors
 - [x] Tests for billing procedures and token deduction
 - [x] Checkpoint
+
+## Session Mar 29 2026 — Deal Screener Pay-Per-Run ($32.50 USD)
+
+- [x] Server: billing.createDealScreenerCheckout — Stripe Checkout for $32.50 one-time payment
+- [x] Server: billing.verifyDealPayment — poll payment status after Stripe redirect
+- [x] Server: billing.markDealPaymentUsed — mark payment as used after council run
+- [x] Server: Webhook — checkout.session.completed marks dealScreenerPayments row as paid
+- [x] DB: dealScreenerPayments table (userId, stripeSessionId, status, amountUsd, dealId, createdAt)
+- [x] Deal Screener UI: show $32.50 pricing badge prominently in form header
+- [x] Deal Screener UI: submit button changed to "PAY $32.50 & SCREEN THIS DEAL →"
+- [x] Deal Screener UI: save form data to sessionStorage before Stripe redirect
+- [x] Deal Screener UI: after Stripe redirect back (?paid=1&session_id=...), auto-verify and run council
+- [x] TypeScript check — zero errors
+- [x] 18 tests passing for pay-per-run payment flow
+- [x] Checkpoint

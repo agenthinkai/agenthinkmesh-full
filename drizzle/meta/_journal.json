@@ -232,6 +232,13 @@
       "when": 1774772573748,
       "tag": "0032_closed_paper_doll",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "5",
+      "when": 1774775576890,
+      "tag": "0033_common_jasper_sitwell",
+      "breakpoints": true
     }
   ]
 }
