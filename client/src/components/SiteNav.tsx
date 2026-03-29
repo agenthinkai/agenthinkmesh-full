@@ -1,6 +1,12 @@
 /**
- * SiteNav — pill-style tabs with stacked icon + label, colored underline on hover/active.
- * Matches the reference screenshot style from the user.
+ * SiteNav — matches reference screenshot exactly.
+ * Logo | Domains | Contact | [scrollable wide tab blocks] | PlanBadge | Avatar
+ *
+ * Each tab block:
+ *  - dark rectangular background with subtle border
+ *  - small colored icon top-left
+ *  - name in neon color, bold
+ *  - thick colored bottom border on hover/active
  */
 
 import { useState, useRef, useEffect } from "react";
@@ -11,27 +17,27 @@ import { PlanUsageBadge } from "@/components/PlanUsageBadge";
 
 const NAVY   = "#080D1A";
 const NAVY2  = "#0C1525";
+const NAVY3  = "#0F1B2D";
 const CYAN   = "#38BDF8";
 const BLUE   = "#60A5FA";
 const WHITE  = "#F0F4FA";
 const MUTED  = "rgba(240,244,250,0.50)";
 const BORDER = "rgba(56,189,248,0.10)";
 
-// Nav items — each has a unique neon color + colored underline, matching the screenshot style
 interface NavItem {
   label: string;
   icon: string;
   href: string;
-  color: string;
-  underline: string;
+  color: string;       // neon text + border color
+  bg: string;          // subtle bg tint
   scrollId?: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Deal Screener",  icon: "⚖️",  href: "/deals",         color: "#38BDF8", underline: "#38BDF8" },
-  { label: "Compare Deals",  icon: "🔷",  href: "/deals/compare", color: "#A78BFA", underline: "#A78BFA" },
-  { label: "Pricing",        icon: "💎",  href: "/pricing",       color: "#4ADE80", underline: "#4ADE80" },
-  { label: "Contact",        icon: "✉️",  href: "/contact",       color: "#F97316", underline: "#F97316", scrollId: "contact" },
+  { label: "Deal Screener",  icon: "⚖️",  href: "/deals",         color: "#38BDF8", bg: "rgba(56,189,248,0.07)"  },
+  { label: "Compare Deals",  icon: "🔷",  href: "/deals/compare", color: "#A78BFA", bg: "rgba(167,139,250,0.07)" },
+  { label: "Pricing",        icon: "💎",  href: "/pricing",       color: "#4ADE80", bg: "rgba(74,222,128,0.07)"  },
+  { label: "Contact",        icon: "✉️",  href: "/contact",       color: "#F97316", bg: "rgba(249,115,22,0.07)", scrollId: "contact" },
 ];
 
 interface SiteNavProps {
@@ -67,7 +73,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
         position: "sticky",
         top: 0,
         zIndex: 100,
-        background: `${NAVY}F2`,
+        background: `${NAVY}F5`,
         backdropFilter: "blur(18px)",
         WebkitBackdropFilter: "blur(18px)",
         borderBottom: `1px solid ${BORDER}`,
@@ -76,106 +82,121 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
       <div style={{
         display: "flex",
         alignItems: "stretch",
-        justifyContent: "space-between",
-        padding: "0 24px",
-        height: 56,
-        gap: 8,
+        height: 52,
+        gap: 0,
       }}>
 
-        {/* ── LOGO ─────────────────────────────────────────────────────── */}
-        <a
-          href="/"
-          style={{
-            textDecoration: "none",
-            display: "flex",
-            alignItems: "center",
-            flexShrink: 0,
-            marginRight: 8,
-          }}
-        >
-          <Logo size={28} />
-        </a>
+        {/* ── LOGO + STATIC LINKS ──────────────────────────────────────── */}
+        <div style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 0,
+          padding: "0 8px 0 16px",
+          flexShrink: 0,
+          borderRight: `1px solid ${BORDER}`,
+        }}>
+          <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", marginRight: 16 }}>
+            <Logo size={26} />
+          </a>
 
-        {/* ── NAV PILLS ────────────────────────────────────────────────── */}
+          {/* Static links matching the screenshot's "Domains | Contact" style */}
+          {[
+            { label: "Domains", href: "/pricing" },
+            { label: "Contact", href: isLandingPage ? "#contact" : "/contact", scrollId: isLandingPage ? "contact" : undefined },
+          ].map(item => (
+            <a
+              key={item.label}
+              href={item.href}
+              onClick={item.scrollId ? (e) => { e.preventDefault(); scrollTo(item.scrollId!); } : undefined}
+              style={{
+                color: MUTED,
+                fontSize: 13,
+                fontWeight: 500,
+                textDecoration: "none",
+                padding: "0 12px",
+                height: "100%",
+                display: "flex",
+                alignItems: "center",
+                transition: "color 0.15s",
+                whiteSpace: "nowrap",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = WHITE; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = MUTED; }}
+            >
+              {item.label}
+            </a>
+          ))}
+        </div>
+
+        {/* ── SCROLLABLE TAB BLOCKS ─────────────────────────────────────── */}
         <div style={{
           display: "flex",
           alignItems: "stretch",
-          gap: 2,
           flex: 1,
           overflowX: "auto",
           scrollbarWidth: "none",
+          msOverflowStyle: "none",
+          gap: 0,
         }}>
           {NAV_ITEMS.map(item => {
-            const isActive = currentPath === item.href || currentPath.startsWith(item.href + "/");
+            const isActive = currentPath === item.href || (item.href !== "/" && currentPath.startsWith(item.href));
             const isHovered = activeHover === item.label;
             const highlight = isActive || isHovered;
-
-            const handleNavClick = (e: React.MouseEvent) => {
-              if (isLandingPage && item.scrollId) {
-                e.preventDefault();
-                scrollTo(item.scrollId);
-              }
-            };
 
             return (
               <a
                 key={item.label}
                 href={item.href}
-                onClick={handleNavClick}
+                onClick={isLandingPage && item.scrollId
+                  ? (e) => { e.preventDefault(); scrollTo(item.scrollId!); }
+                  : undefined
+                }
                 onMouseEnter={() => setActiveHover(item.label)}
                 onMouseLeave={() => setActiveHover(null)}
                 style={{
                   position: "relative",
                   display: "flex",
                   flexDirection: "column",
-                  alignItems: "center",
                   justifyContent: "center",
-                  gap: 2,
-                  padding: "0 14px",
+                  gap: 1,
+                  padding: "0 18px",
+                  minWidth: 110,
                   textDecoration: "none",
                   cursor: "pointer",
-                  transition: "background 0.18s",
-                  background: highlight ? `${item.color}12` : "transparent",
-                  borderRadius: 0,
-                  minWidth: 80,
+                  background: highlight ? item.bg : "transparent",
+                  borderRight: `1px solid ${BORDER}`,
+                  borderBottom: highlight
+                    ? `3px solid ${item.color}`
+                    : "3px solid transparent",
+                  transition: "background 0.18s, border-bottom-color 0.18s",
                   flexShrink: 0,
                 }}
               >
-                {/* Icon */}
-                <span style={{
-                  fontSize: 15,
-                  lineHeight: 1,
-                  filter: highlight ? `drop-shadow(0 0 6px ${item.color}88)` : "none",
-                  transition: "filter 0.18s",
-                }}>
-                  {item.icon}
-                </span>
+                {/* Icon row */}
+                <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <span style={{
+                    fontSize: 14,
+                    lineHeight: 1,
+                    filter: highlight ? `drop-shadow(0 0 5px ${item.color}99)` : "none",
+                    transition: "filter 0.18s",
+                  }}>
+                    {item.icon}
+                  </span>
+                </div>
 
                 {/* Label */}
                 <span style={{
-                  fontSize: 11,
+                  fontSize: 12,
                   fontWeight: 700,
-                  letterSpacing: "0.04em",
-                  textTransform: "uppercase",
+                  letterSpacing: "0.02em",
                   color: highlight ? item.color : MUTED,
                   transition: "color 0.18s",
                   whiteSpace: "nowrap",
+                  lineHeight: 1.2,
+                  textShadow: highlight ? `0 0 12px ${item.color}66` : "none",
                 }}>
                   {item.label}
                 </span>
-
-                {/* Colored underline bar — active/hover indicator */}
-                <span style={{
-                  position: "absolute",
-                  bottom: 0,
-                  left: "10%",
-                  right: "10%",
-                  height: 2,
-                  borderRadius: "2px 2px 0 0",
-                  background: highlight ? item.underline : "transparent",
-                  boxShadow: highlight ? `0 0 8px ${item.underline}88` : "none",
-                  transition: "all 0.18s",
-                }} />
               </a>
             );
           })}
@@ -186,7 +207,9 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
           display: "flex",
           gap: 8,
           alignItems: "center",
+          padding: "0 12px",
           flexShrink: 0,
+          borderLeft: `1px solid ${BORDER}`,
         }}>
           <PlanUsageBadge />
 
@@ -221,17 +244,17 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
                     {user?.email && <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{user.email}</div>}
                   </div>
                   {[
-                    { label: "My Workspace →",   href: "/persona-setup",    color: MUTED },
-                    { label: "Billing →",         href: "/account/billing",  color: MUTED },
-                    { label: "Shared Reports →",  href: "/reports/history",  color: MUTED },
+                    { label: "My Workspace →",  href: "/persona-setup" },
+                    { label: "Billing →",        href: "/account/billing" },
+                    { label: "Shared Reports →", href: "/reports/history" },
                   ].map(item => (
                     <a
                       key={item.href}
                       href={item.href}
                       onClick={() => setDropOpen(false)}
-                      style={{ display: "block", padding: "10px 16px", fontSize: 13, color: item.color, textDecoration: "none", transition: "background 0.15s" }}
+                      style={{ display: "block", padding: "10px 16px", fontSize: 13, color: MUTED, textDecoration: "none", transition: "background 0.15s" }}
                       onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLAnchorElement).style.color = WHITE; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; (e.currentTarget as HTMLAnchorElement).style.color = item.color; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; (e.currentTarget as HTMLAnchorElement).style.color = MUTED; }}
                     >
                       {item.label}
                     </a>
