@@ -32,14 +32,14 @@ import { runCouncil } from "./councilEngine";
 // ── Persona IDs in the order they appear in councilEngine.ts ─────────────────
 const PERSONA_IDS = [
   "GCC_REG",
-  "GCC_CONSUMER",
   "GCC_SHARIAH",
-  "CONTRARIAN",
+  "ANALYST",
+  "SKEPTIC",
   "CFO",
+  "MACRO",
+  "GEOPOLITICAL",
+  "GCC_CONSUMER",
   "EXIT",
-  "GROWTH",
-  "SECURITY",
-  "OPERATOR",
   "DEVILS_ADVOCATE",
 ];
 
@@ -91,18 +91,18 @@ describe("councilEngine — consensus logic", () => {
   it("TEST 1: 8 HARD_YES + 2 SOFT_YES → APPROVED", async () => {
     wireMockVotes([
       "HARD_YES", // GCC_REG
-      "HARD_YES", // GCC_CONSUMER
       "HARD_YES", // GCC_SHARIAH
-      "HARD_YES", // CONTRARIAN
+      "HARD_YES", // ANALYST
+      "HARD_YES", // SKEPTIC
       "HARD_YES", // CFO
-      "HARD_YES", // EXIT
-      "HARD_YES", // GROWTH
-      "HARD_YES", // SECURITY
-      "SOFT_YES", // OPERATOR
+      "HARD_YES", // MACRO
+      "HARD_YES", // GEOPOLITICAL
+      "HARD_YES", // GCC_CONSUMER
+      "SOFT_YES", // EXIT
       "SOFT_YES", // DEVILS_ADVOCATE
     ]);
 
-    const result = await runCouncil("Test deal memo for approval");
+    const result = await runCouncil("Test deal memo for approval", { skipMemory: true });
 
     expect(result.verdict).toBe("APPROVED");
     expect(result.yesCount).toBe(10);
@@ -116,18 +116,18 @@ describe("councilEngine — consensus logic", () => {
   it("TEST 2: 8 YES total, only 4 HARD_YES → APPROVED_WITH_CONDITIONS", async () => {
     wireMockVotes([
       "HARD_YES", // GCC_REG
-      "HARD_YES", // GCC_CONSUMER
       "HARD_YES", // GCC_SHARIAH
-      "HARD_YES", // CONTRARIAN
+      "HARD_YES", // ANALYST
+      "HARD_YES", // SKEPTIC
       "SOFT_YES", // CFO
-      "SOFT_YES", // EXIT
-      "SOFT_YES", // GROWTH
-      "SOFT_YES", // SECURITY
-      "SOFT_NO",  // OPERATOR
+      "SOFT_YES", // MACRO
+      "SOFT_YES", // GEOPOLITICAL
+      "SOFT_YES", // GCC_CONSUMER
+      "SOFT_NO",  // EXIT
       "SOFT_NO",  // DEVILS_ADVOCATE
     ]);
 
-    const result = await runCouncil("Test deal memo for conditional approval");
+    const result = await runCouncil("Test deal memo for conditional approval", { skipMemory: true });
 
     expect(result.verdict).toBe("APPROVED_WITH_CONDITIONS");
     expect(result.yesCount).toBe(8);
@@ -139,7 +139,7 @@ describe("councilEngine — consensus logic", () => {
   it("TEST 3: GCC_REG = HARD_NO, rest = HARD_YES → VETOED", async () => {
     wireMockVotes(setVotesWithOverrides("HARD_YES", { GCC_REG: "HARD_NO" }));
 
-    const result = await runCouncil("Test deal memo — GCC_REG veto");
+    const result = await runCouncil("Test deal memo — GCC_REG veto", { skipMemory: true });
 
     expect(result.verdict).toBe("VETOED");
     expect(result.gccVetoTriggered).toBe(true);
@@ -148,7 +148,7 @@ describe("councilEngine — consensus logic", () => {
   it("TEST 4: GCC_SHARIAH = HARD_NO, rest = HARD_YES → VETOED", async () => {
     wireMockVotes(setVotesWithOverrides("HARD_YES", { GCC_SHARIAH: "HARD_NO" }));
 
-    const result = await runCouncil("Test deal memo — GCC_SHARIAH veto");
+    const result = await runCouncil("Test deal memo — GCC_SHARIAH veto", { skipMemory: true });
 
     expect(result.verdict).toBe("VETOED");
     expect(result.gccVetoTriggered).toBe(true);
@@ -160,7 +160,7 @@ describe("councilEngine — consensus logic", () => {
       EXIT: "HARD_NO",
     }));
 
-    const result = await runCouncil("Test deal memo — 2 HARD_NO veto");
+    const result = await runCouncil("Test deal memo — 2 HARD_NO veto", { skipMemory: true });
 
     expect(result.verdict).toBe("VETOED");
     expect(result.hardNoCount).toBe(2);
@@ -172,22 +172,22 @@ describe("councilEngine — consensus logic", () => {
     // After flip: 8 YES (5 HARD_YES + 3 SOFT_YES), 2 NO
     // hardYesCount = 5 < 6 → verdict = APPROVED_WITH_CONDITIONS (not APPROVED)
     wireMockVotes([
-      "SOFT_NO",  // GCC_REG       — first SOFT_NO in priority queue → flipped
-      "HARD_YES", // GCC_CONSUMER  — YES
-      "SOFT_YES", // GCC_SHARIAH   — YES (SOFT to keep hardYesCount < 6)
-      "HARD_YES", // CONTRARIAN    — YES
-      "SOFT_YES", // CFO           — YES
-      "HARD_YES", // EXIT          — YES
-      "HARD_YES", // GROWTH        — YES
-      "SOFT_NO",  // SECURITY      — SOFT_NO (not flipped)
-      "SOFT_NO",  // OPERATOR      — SOFT_NO (not flipped)
+      "SOFT_NO",  // GCC_REG         — first SOFT_NO in priority queue → flipped
+      "SOFT_YES", // GCC_SHARIAH     — YES (SOFT to keep hardYesCount < 6)
+      "HARD_YES", // ANALYST         — YES
+      "HARD_YES", // SKEPTIC         — YES
+      "SOFT_YES", // CFO             — YES
+      "HARD_YES", // MACRO           — YES
+      "HARD_YES", // GEOPOLITICAL    — YES
+      "SOFT_NO",  // GCC_CONSUMER    — SOFT_NO (not flipped)
+      "SOFT_NO",  // EXIT            — SOFT_NO (not flipped)
       "HARD_YES", // DEVILS_ADVOCATE — YES
     ]);
     // Pre-flip: 5 HARD_YES + 2 SOFT_YES = 7 YES, 3 SOFT_NO → tiebreaker
     // Post-flip (GCC_REG SOFT_NO → SOFT_YES): 5 HARD_YES + 3 SOFT_YES = 8 YES, 2 NO
     // hardYesCount = 5 < 6 → APPROVED_WITH_CONDITIONS
 
-    const result = await runCouncil("Test deal memo — tiebreaker scenario");
+    const result = await runCouncil("Test deal memo — tiebreaker scenario", { skipMemory: true });
 
     expect(result.tiebreakerTriggered).toBe(true);
     expect(result.tiebreakerSwingAgent).toBe("GCC_REG");

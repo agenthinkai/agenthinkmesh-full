@@ -1337,3 +1337,16 @@
 - [x] TypeScript check — zero errors
 - [x] Tests for pitch.submit and payment webhook
 - [x] Checkpoint
+
+## Session Mar 29 2026 — councilEngine.final v3.0 Merge
+
+- [ ] Merge new Council of 10 system prompts (GCC-specific, AAOIFI-aware)
+- [ ] Fix Caveat 1: atomic rate limit — single INSERT ON DUPLICATE KEY UPDATE query
+- [ ] Fix Caveat 2: fixed USD billing ($32.50) with "approx KWD 10" label on invoice
+- [ ] Fix Caveat 3: one-time Stripe customer per pitch (no institutions table needed)
+- [ ] Add consensusSessions and costCounters tables to Drizzle schema
+- [ ] Run DB migration for new tables
+- [ ] Wire FORGE_MODEL_IDS map to Manus Forge API model identifiers
+- [ ] TypeScript check — zero errors
+- [ ] All tests passing
+- [ ] Checkpoint

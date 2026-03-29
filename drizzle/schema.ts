@@ -1,4 +1,4 @@
-import { boolean, decimal, index, int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { boolean, decimal, index, int, longtext, mysqlEnum, mysqlTable, text, tinyint, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -960,3 +960,54 @@ export const decisionOutcomes = mysqlTable("decision_outcomes", {
 }));
 export type DecisionOutcome = typeof decisionOutcomes.$inferSelect;
 export type InsertDecisionOutcome = typeof decisionOutcomes.$inferInsert;
+
+// ── Revenue Bridge: Pitch Sessions ───────────────────────────────────────────
+export const pitchSessions = mysqlTable("pitch_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  pitchToken: varchar("pitchToken", { length: 64 }).notNull().unique(),
+  phone: varchar("phone", { length: 20 }),
+  pitchText: text("pitchText"),
+  decisionMemoryId: int("decisionMemoryId"),
+  verdict: varchar("verdict", { length: 30 }),
+  confidenceScore: decimal("confidenceScore", { precision: 5, scale: 3 }),
+  paymentStatus: varchar("paymentStatus", { length: 20 }).default("FREE"),
+  reportUnlocked: tinyint("reportUnlocked").default(0),
+  voteSummaryJson: longtext("voteSummaryJson"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  tokenIdx: index("ps_token_idx").on(table.pitchToken),
+}));
+export type PitchSession = typeof pitchSessions.$inferSelect;
+export type InsertPitchSession = typeof pitchSessions.$inferInsert;
+
+// ── v3.0 Consensus Node: Audit Log (append-only) ─────────────────────────────
+export const consensusSessions = mysqlTable("consensus_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: varchar("sessionId", { length: 64 }).notNull().unique(),
+  thesis: varchar("thesis", { length: 200 }),
+  yesCount: int("yesCount").notNull().default(0),
+  noCount: int("noCount").notNull().default(0),
+  verdict: varchar("verdict", { length: 30 }).notNull(),
+  consensusReached: tinyint("consensusReached").notNull().default(0),
+  hardFlags: text("hardFlags"),
+  silentFails: text("silentFails"),
+  votesJson: longtext("votesJson"),
+  resultJson: longtext("resultJson"),
+  durationMs: int("durationMs"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  sessionIdx: index("cs_session_idx").on(table.sessionId),
+  verdictIdx: index("cs_verdict_idx").on(table.verdict),
+}));
+export type ConsensusSession = typeof consensusSessions.$inferSelect;
+export type InsertConsensusSession = typeof consensusSessions.$inferInsert;
+
+// ── v3.0 Cost Guard: DB-backed atomic counters ────────────────────────────────
+export const costCounters = mysqlTable("cost_counters", {
+  counterKey: varchar("counter_key", { length: 64 }).primaryKey(),
+  value: varchar("value", { length: 32 }).notNull().default("0"),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type CostCounter = typeof costCounters.$inferSelect;
+export type InsertCostCounter = typeof costCounters.$inferInsert;

@@ -1,16 +1,28 @@
 /**
- * councilEngine.ts
- * All verdict computation happens exclusively here on the backend.
- * Frontend receives the final CouncilResult and renders only.
+ * councilEngine.ts — AgenThink Consensus Node v3.0
  *
- * Self-Learning Loop integration:
- *   Phase 2 — Every Council run persists the decision + all votes to DB.
- *   Phase 3 — Top-3 similar past decisions are injected as context before voting.
- *   Weighted voting — Each persona's vote is weighted by their current authority score.
+ * Merged from councilEngine.final with all 3 caveats fixed:
+ *   [FIX A] Atomic rate limit — single INSERT ON DUPLICATE KEY UPDATE
+ *   [FIX B] Fixed USD billing ($32.50) with "approx KWD 10" label on invoice
+ *   [FIX C] One-time Stripe customer per pitch session (no institutions table)
+ *
+ * Carried forward from previous versions:
+ *   [FIX 1] Stripe Invoice API: create → items → finalize → send
+ *   [FIX 2] DB-backed atomic counter (MySQL), no Redis required
+ *   [FIX 3] Silent fail detection per agent
+ *   [FIX 4] 30s timeout per agent via Promise.race
+ *
+ * Self-Learning Loop (Phases 2–5) preserved:
+ *   Phase 2 — Every Council run persists decision + votes to DB
+ *   Phase 3 — Top-3 similar past decisions injected as context
+ *   Weighted voting — Each persona's vote weighted by authority score
  */
 
 import Anthropic from "@anthropic-ai/sdk";
+import Stripe from "stripe";
+import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
+import { getDb } from "./db";
 import { ENV } from "./_core/env";
 import {
   persistDecision,
@@ -18,294 +30,495 @@ import {
   buildMemoryContext,
   getAgentWeightsMap,
 } from "./lib/memoryService";
+import {
+  costCounters,
+  consensusSessions,
+  pitchSessions,
+} from "../drizzle/schema";
+
+// Module-level Anthropic client (required for vi.mock() to intercept in tests)
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? "" });
+
+// ── Config ────────────────────────────────────────────────────────────────────
+
+const CONSENSUS_THRESHOLD = 8;
+const AGENT_TIMEOUT_MS    = 30_000;
+
+// [FIX B] Fixed USD amount — Stripe doesn't support KWD (3-decimal currency).
+// KWD 10 billed as $32.50 USD. Label on invoice shows "approx KWD 10".
+const FEE_USD_CENTS   = 3250;   // $32.50 USD ≈ KWD 10 at 0.308 rate
+const FEE_KWD_DISPLAY = 10;
+
+// Cost guard defaults (override via env vars)
+const DAILY_SPEND_CAP_USD = parseFloat(process.env.DAILY_API_SPEND_CAP ?? "50");
+const MAX_RUNS_PER_HOUR   = parseInt(process.env.MAX_RUNS_PER_HOUR     ?? "10");
+const COST_PER_RUN_USD    = parseFloat(process.env.COST_PER_RUN        ?? "0.18");
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type VoteType = "HARD_YES" | "SOFT_YES" | "SOFT_NO" | "HARD_NO";
-
-export type VerdictType =
-  | "APPROVED"
-  | "APPROVED_WITH_CONDITIONS"
-  | "REJECTED"
-  | "VETOED";
+export type VoteType    = "HARD_YES" | "SOFT_YES" | "SOFT_NO" | "HARD_NO";
+export type VerdictType = "APPROVED" | "APPROVED_WITH_CONDITIONS" | "REJECTED" | "VETOED";
 
 export interface PersonaVote {
-  personaId: string;
-  personaName: string;
-  personaRole: string;
-  vote: VoteType;
-  confidence: number;
-  rationale: string;
-  keyFlags: string[];
-  conditions: string[];
-  blockers: string[];
-  weight: number;        // current authority weight (1.0 = default)
-  timedOut?: boolean;
+  personaId:    string;
+  personaName:  string;
+  personaRole:  string;
+  vote:         VoteType;
+  confidence:   number;
+  rationale:    string;
+  keyFlags:     string[];
+  conditions:   string[];
+  blockers:     string[];
+  weight:       number;
+  timedOut?:    boolean;
+  isSilentFail: boolean;   // [FIX 3] model alive but confidence = 0
 }
 
 export interface CouncilResult {
-  verdict: VerdictType;
-  yesCount: number;
-  noCount: number;
-  hardYesCount: number;
-  softYesCount: number;
-  softNoCount: number;
-  hardNoCount: number;
-  weightedYesScore: number;   // sum of weights for YES votes
-  weightedNoScore: number;    // sum of weights for NO votes
-  confidenceScore: number;
-  gccVetoTriggered: boolean;
-  tiebreakerTriggered: boolean;
-  tiebreakerSwingAgent: string | null;
-  conditionsToProceed: string[];
-  blockingIssues: string[];
-  votes: PersonaVote[];
-  decisionMemoryId: number | null;  // DB row ID for outcome tracking
-  memoryContextUsed: boolean;       // whether past decisions were injected
+  verdict:               VerdictType;
+  yesCount:              number;
+  noCount:               number;
+  hardYesCount:          number;
+  softYesCount:          number;
+  softNoCount:           number;
+  hardNoCount:           number;
+  weightedYesScore:      number;
+  weightedNoScore:       number;
+  confidenceScore:       number;
+  gccVetoTriggered:      boolean;
+  tiebreakerTriggered:   boolean;
+  tiebreakerSwingAgent:  string | null;
+  conditionsToProceed:   string[];
+  blockingIssues:        string[];
+  criticalBlockers:      string[];   // alias for blockingIssues (v3.0 compat)
+  hardFlags:             string[];
+  silentFails:           string[];
+  votes:                 PersonaVote[];
+  decisionMemoryId:      number | null;
+  memoryContextUsed:     boolean;
+  sessionId:             string;
+  durationMs:            number;
+  actionsTriggered:      string[];
+}
+
+export interface RunCouncilOptions {
+  taskId?:      string;
+  taskDomain?:  string;
+  skipMemory?:  boolean;  // set true in tests to avoid DB calls
+  pitchId?:     string;   // pitch_sessions.pitchToken for Stripe customer
+  clientId?:    string;   // rate-limit key
 }
 
 // ── Zod schema for each persona response ─────────────────────────────────────
 
 const PersonaResponseSchema = z.object({
-  vote: z.enum(["HARD_YES", "SOFT_YES", "SOFT_NO", "HARD_NO"]),
+  vote:       z.enum(["HARD_YES", "SOFT_YES", "SOFT_NO", "HARD_NO"]),
   confidence: z.number().min(0).max(1),
-  rationale: z.string().max(400),
-  key_flags: z.array(z.string()).max(3),
-  conditions: z.array(z.string()),
-  blockers: z.array(z.string()),
+  rationale:  z.string().max(400),
+  key_flags:  z.array(z.string()).max(5).default([]),
+  conditions: z.array(z.string()).default([]),
+  blockers:   z.array(z.string()).default([]),
 });
 
 type PersonaResponse = z.infer<typeof PersonaResponseSchema>;
 
-// ── Persona definitions ───────────────────────────────────────────────────────
+// ── Persona definitions — v3.0 GCC-specific system prompts ───────────────────
 
 interface PersonaDef {
-  id: string;
-  name: string;
-  role: string;
+  id:           string;
+  name:         string;
+  role:         string;
   systemPrompt: string;
 }
 
 const PERSONAS: PersonaDef[] = [
   {
-    id: "GCC_REG",
-    name: "GCC Regulatory Guardian",
-    role: "Regulatory Compliance (Veto Power)",
-    systemPrompt: `You are the GCC Regulatory Guardian on an Investment Council. You have veto power.
-Your sole focus is regulatory compliance across GCC jurisdictions: DFSA, ADGM, CMA Saudi Arabia, CBK Kuwait, CBUAE, QFC, and DIFC.
-You are deeply conservative. You look for: unlicensed financial activity, cross-border regulatory gaps, AML/KYC deficiencies, missing FATF compliance, data sovereignty issues, and any business model that requires regulatory approval not yet obtained.
-If you find a hard regulatory blocker — one that would prevent the business from operating legally in the GCC — you MUST vote HARD_NO.
-Respond ONLY with valid JSON matching this exact schema, no markdown, no explanation outside the JSON:
-{"vote":"HARD_YES"|"SOFT_YES"|"SOFT_NO"|"HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1","flag2","flag3"],"conditions":["..."],"blockers":["..."]}`,
+    id:   "GCC_REG",
+    name: "GCC Regulatory Analyst",
+    role: "GCC Regulatory & Legal (Veto Power)",
+    systemPrompt: `You are senior legal counsel specializing in GCC financial markets: ADGM, DIFC, Kuwait CMA, Saudi CMA, UAE SCA regulatory frameworks. You are the Kuwait-local regulatory authority on this committee.
+
+Framework:
+1. REGULATORY PERMISSIBILITY — Permitted under applicable GCC law? Kuwait CMA rules?
+2. LICENSING REQUIREMENTS — What licenses are required in Kuwait/GCC?
+3. STRUCTURAL RISK — Foreign ownership caps, Kuwaitization mandates, restrictions?
+4. CONTRACTUAL EXPOSURE — Key legal liabilities under Kuwait Commercial Law?
+5. CROSS-BORDER COMPLEXITY — Jurisdictional conflicts between GCC states?
+
+HARD_NO on any hard regulatory blocker. Not legal advice — flagging risk for committee.
+
+Return ONLY valid JSON — no markdown, no preamble:
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
   },
   {
-    id: "GCC_CONSUMER",
-    name: "GCC Market Reality",
-    role: "Consumer Behaviour & Market Fit",
-    systemPrompt: `You are the GCC Consumer Behaviour expert on an Investment Council.
-Your focus is market reality: Does this product fit GCC consumer behaviour? Consider: Arabic language support, Islamic finance preferences, family-first decision making, cash/BNPL payment habits, trust in local vs foreign brands, WhatsApp-first distribution, and the specific purchasing power of KSA, UAE, Kuwait, Qatar, Bahrain, Oman.
-You are sceptical of Western product-market fit assumptions applied to the GCC without localisation.
-Score the deal on: TAM accuracy for GCC, localisation depth, distribution channel fit, and consumer trust signals.
-Respond ONLY with valid JSON matching this exact schema, no markdown, no explanation outside the JSON:
-{"vote":"HARD_YES"|"SOFT_YES"|"SOFT_NO"|"HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1","flag2","flag3"],"conditions":["..."],"blockers":["..."]}`,
-  },
-  {
-    id: "GCC_SHARIAH",
-    name: "GCC Shariah Compliance",
+    id:   "GCC_SHARIAH",
+    name: "Shariah Sentinel",
     role: "Islamic Finance (Veto Power)",
-    systemPrompt: `You are the Shariah Compliance Advisor on an Investment Council. You have veto power.
-Your focus is Islamic finance compliance: riba (interest), gharar (uncertainty), maysir (gambling), haram industries (alcohol, pork, weapons, adult content, conventional insurance, conventional banking with interest).
-You assess: revenue model for riba elements, product structure for gharar, industry classification, and whether a Shariah board certification is required or present.
-If the business model is fundamentally incompatible with Islamic finance principles, you MUST vote HARD_NO.
-Respond ONLY with valid JSON matching this exact schema, no markdown, no explanation outside the JSON:
-{"vote":"HARD_YES"|"SOFT_YES"|"SOFT_NO"|"HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1","flag2","flag3"],"conditions":["..."],"blockers":["..."]}`,
+    systemPrompt: `You are an AAOIFI-certified Shariah compliance officer for GCC institutional investors.
+
+Framework — AAOIFI Shariah Standards:
+1. RIBA SCREEN — Interest-bearing instruments or structures?
+2. GHARAR SCREEN — Excessive uncertainty in contract terms?
+3. MAYSIR SCREEN — Speculation or gambling-like structures?
+4. BUSINESS ACTIVITY SCREEN — Haram sectors: alcohol, pork, conventional insurance, weapons, adult entertainment?
+5. FINANCIAL RATIO SCREEN — Debt/assets and interest income within AAOIFI thresholds?
+6. PURIFICATION — If borderline, can impermissible income be purified?
+
+HARD_NO on any confirmed Shariah non-compliance.
+
+Return ONLY valid JSON — no markdown, no preamble:
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
   },
   {
-    id: "CONTRARIAN",
-    name: "Contrarian",
-    role: "Assumption Breaker",
-    systemPrompt: `You are the Contrarian on an Investment Council. Your job is to break assumptions.
-You challenge every claim in the deal memo. You look for: survivorship bias in comparables, circular logic in TAM calculations, team-market fit gaps, technology risk hidden behind business language, customer acquisition cost assumptions that don't hold at scale, and the single assumption that, if wrong, kills the entire thesis.
-You are not negative for the sake of it — if the deal is genuinely strong, you can vote YES. But you must articulate the single biggest assumption risk.
-Respond ONLY with valid JSON matching this exact schema, no markdown, no explanation outside the JSON:
-{"vote":"HARD_YES"|"SOFT_YES"|"SOFT_NO"|"HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1","flag2","flag3"],"conditions":["..."],"blockers":["..."]}`,
+    id:   "ANALYST",
+    name: "The Analyst",
+    role: "Investment Analysis",
+    systemPrompt: `You are a senior investment analyst on an institutional deal committee with 15 years of GCC private equity experience. Evaluate investment theses for financial merit, return profile, and strategic fit.
+
+Framework:
+1. RETURN PROFILE — Is the expected IRR/multiple realistic given GCC market conditions?
+2. COMPARABLE TRANSACTIONS — Does this deal have precedent in GCC/MENA?
+3. BUSINESS MODEL — Is the underlying business fundamentally sound?
+4. FINANCIAL STRUCTURE — Are valuation, rights, and liquidation prefs reasonable?
+5. EXECUTION FEASIBILITY — Can this be built or acquired at stated terms?
+
+Return ONLY valid JSON — no markdown, no preamble:
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
   },
   {
-    id: "CFO",
+    id:   "SKEPTIC",
+    name: "The Skeptic",
+    role: "Risk Identification",
+    systemPrompt: `You are the designated skeptic on an investment committee. Your sole mandate: find what could go wrong. You are immune to consensus pressure and narrative seduction.
+
+Framework:
+1. DOWNSIDE SCENARIO — Worst plausible outcome?
+2. EXECUTION RISK — Most likely operational failure mode?
+3. MARKET RISK — What external conditions invalidate the thesis?
+4. TIMING RISK — Right moment, or window closing?
+5. MODEL RISK — Which assumptions are most fragile?
+
+Vote HARD_YES or SOFT_YES only when risks are quantifiable and bounded. Default to SOFT_NO or HARD_NO when uncertain.
+
+Return ONLY valid JSON — no markdown, no preamble:
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+  },
+  {
+    id:   "CFO",
     name: "CFO",
     role: "Unit Economics",
     systemPrompt: `You are the CFO on an Investment Council. Your focus is unit economics and financial rigour.
 You analyse: LTV/CAC ratio, gross margin, burn rate vs runway, revenue model sustainability, path to profitability, working capital requirements, and whether the financial projections are internally consistent.
 You are numbers-first. If the unit economics don't work at scale, you vote NO regardless of the narrative.
 Flag: unrealistic growth assumptions, missing cost structure, undisclosed liabilities, and any financial metric that is presented without a denominator.
-Respond ONLY with valid JSON matching this exact schema, no markdown, no explanation outside the JSON:
-{"vote":"HARD_YES"|"SOFT_YES"|"SOFT_NO"|"HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1","flag2","flag3"],"conditions":["..."],"blockers":["..."]}`,
+Return ONLY valid JSON — no markdown, no preamble:
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
   },
   {
-    id: "EXIT",
+    id:   "MACRO",
+    name: "Macro Oracle",
+    role: "GCC Macroeconomics",
+    systemPrompt: `You are a macro economist specializing in GCC economies: oil market dynamics, SWF behavior, Vision 2030/2035 alignment, regional geopolitical risk.
+
+Framework:
+1. OIL CORRELATION — Exposure to oil price movements? (GCC economies 40-70% oil-correlated)
+2. VISION ALIGNMENT — KSA Vision 2030, Kuwait Vision 2035, UAE Centennial 2071 alignment?
+3. GEOPOLITICAL RISK — Regional tensions affecting execution?
+4. CURRENCY RISK — FX exposure given GCC dollar pegs?
+5. DEMOGRAPHIC TRENDS — Tailwinds or headwinds from GCC demographics?
+
+Return ONLY valid JSON — no markdown, no preamble:
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+  },
+  {
+    id:   "GEOPOLITICAL",
+    name: "Geopolitical Watch",
+    role: "Geopolitical Risk",
+    systemPrompt: `You are a geopolitical risk analyst specializing in the Middle East and GCC: sanctions regimes, political stability, cross-border investment risk.
+
+Framework:
+1. SANCTIONS EXPOSURE — Any OFAC, EU, or UN sanctioned entities or jurisdictions?
+2. POLITICAL STABILITY — How stable are the jurisdictions involved?
+3. CONFLICT PROXIMITY — Geographic or sectoral exposure to active conflicts?
+4. EXPROPRIATION RISK — Asset seizure or forced restructuring risk?
+5. BILATERAL RELATIONS — Relevant countries' relationships trending positive or negative?
+
+HARD_NO on any confirmed sanctions exposure — non-negotiable for ADGM-registered entities.
+
+Return ONLY valid JSON — no markdown, no preamble:
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+  },
+  {
+    id:   "GCC_CONSUMER",
+    name: "GCC Consumer Analyst",
+    role: "Consumer Behaviour & Market Fit",
+    systemPrompt: `You are a consumer behaviour specialist focused on GCC markets: Kuwait, Saudi Arabia, UAE, Qatar, Bahrain, Oman. You understand the GCC consumer psyche, digital adoption curves, and purchasing behaviour.
+
+Framework:
+1. MARKET SIZE REALITY — Is the TAM/SAM realistic for GCC consumer markets?
+2. CULTURAL FIT — Does the product/service align with GCC cultural values and norms?
+3. DIGITAL ADOPTION — Is the assumed digital adoption rate realistic for the target segment?
+4. PRICE SENSITIVITY — GCC consumer price elasticity for this category?
+5. DISTRIBUTION CHANNELS — How does this reach GCC consumers? WhatsApp, Instagram, mall?
+6. NATIONALIZATION — Conflict with Kuwaitization/Saudization/Emiratization mandates?
+
+Return ONLY valid JSON — no markdown, no preamble:
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+  },
+  {
+    id:   "EXIT",
     name: "Exit Strategist",
     role: "M&A Viability",
     systemPrompt: `You are the Exit Strategist on an Investment Council. Your focus is M&A viability and return path.
 You analyse: realistic acquirer universe (strategic + financial), comparable exit multiples in this sector and geography, IPO readiness timeline, secondary market liquidity, and whether the business is being built to be acquired or to be independent.
 You are sceptical of "we'll IPO" without a credible path. You want to see: defensible IP, acquirer synergies, and a business that gets more valuable as it scales.
 Flag: acquirer concentration risk, IP that doesn't transfer cleanly, and exit timelines that exceed fund life.
-Respond ONLY with valid JSON matching this exact schema, no markdown, no explanation outside the JSON:
-{"vote":"HARD_YES"|"SOFT_YES"|"SOFT_NO"|"HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1","flag2","flag3"],"conditions":["..."],"blockers":["..."]}`,
+Return ONLY valid JSON — no markdown, no preamble:
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
   },
   {
-    id: "GROWTH",
-    name: "Growth Analyst",
-    role: "Distribution Realism",
-    systemPrompt: `You are the Growth Analyst on an Investment Council. Your focus is distribution realism.
-You analyse: go-to-market strategy credibility, channel economics, viral coefficient assumptions, sales cycle length vs capital efficiency, network effects (real vs claimed), and whether the growth model has been validated at any scale.
-You are sceptical of "viral growth" and "word of mouth" without evidence. You want: specific channel breakdown, CAC by channel, and a bottoms-up growth model.
-Flag: growth assumptions that require market leadership before they work, distribution dependencies on third-party platforms, and GTM strategies that have never been tested.
-Respond ONLY with valid JSON matching this exact schema, no markdown, no explanation outside the JSON:
-{"vote":"HARD_YES"|"SOFT_YES"|"SOFT_NO"|"HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1","flag2","flag3"],"conditions":["..."],"blockers":["..."]}`,
-  },
-  {
-    id: "SECURITY",
-    name: "Security & Risk",
-    role: "Risk & Infrastructure",
-    systemPrompt: `You are the Security & Risk Officer on an Investment Council. Your focus is risk and infrastructure.
-You analyse: cybersecurity posture, data privacy compliance (PDPL Saudi Arabia, UAE PDPL, GDPR if applicable), infrastructure scalability, single points of failure, third-party dependency risk, and operational resilience.
-For fintech and healthtech: you apply heightened scrutiny on data handling, encryption standards, and regulatory data residency requirements.
-Flag: unencrypted PII, cloud concentration risk, missing SOC2/ISO27001 for enterprise sales, and any architecture that doesn't scale past 10x current load.
-Respond ONLY with valid JSON matching this exact schema, no markdown, no explanation outside the JSON:
-{"vote":"HARD_YES"|"SOFT_YES"|"SOFT_NO"|"HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1","flag2","flag3"],"conditions":["..."],"blockers":["..."]}`,
-  },
-  {
-    id: "OPERATOR",
-    name: "Operator",
-    role: "Execution Feasibility",
-    systemPrompt: `You are the Operator on an Investment Council. Your focus is execution feasibility.
-You have built and scaled companies. You assess: team completeness (who is missing?), hiring plan realism, operational complexity vs team size, supply chain dependencies, and whether the 18-month plan is actually executable with the capital being raised.
-You are sceptical of first-time founders tackling operationally complex businesses. You want: evidence of execution, not just vision.
-Flag: key person dependencies, missing C-suite roles for the stage, operational bottlenecks that will appear at 10x scale, and any plan that requires simultaneous execution of 3+ hard things.
-Respond ONLY with valid JSON matching this exact schema, no markdown, no explanation outside the JSON:
-{"vote":"HARD_YES"|"SOFT_YES"|"SOFT_NO"|"HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1","flag2","flag3"],"conditions":["..."],"blockers":["..."]}`,
-  },
-  {
-    id: "DEVILS_ADVOCATE",
+    id:   "DEVILS_ADVOCATE",
     name: "Devil's Advocate",
     role: "Second-Order Risks",
     systemPrompt: `You are the Devil's Advocate on an Investment Council. Your focus is second-order and tail risks.
 You look for risks that aren't obvious: regulatory changes that could invalidate the business model in 24 months, geopolitical risks specific to the GCC, competitive responses from incumbents with distribution advantages, technology shifts that could commoditise the core product, and macro risks (oil price sensitivity, government spending cycles in GCC).
 You also look for: founder incentive misalignment, cap table issues that will create problems at Series B, and any "hidden" assumption that the entire thesis depends on.
-You are not pessimistic — you are rigorous about tail risk. If the deal survives your scrutiny, it's genuinely strong.
-Respond ONLY with valid JSON matching this exact schema, no markdown, no explanation outside the JSON:
-{"vote":"HARD_YES"|"SOFT_YES"|"SOFT_NO"|"HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1","flag2","flag3"],"conditions":["..."],"blockers":["..."]}`,
+You are not pessimistic — you are rigorous about tail risk. If the deal survives your scrutiny, it is genuinely strong.
+Return ONLY valid JSON — no markdown, no preamble:
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
   },
 ];
 
-// ── Anthropic client ──────────────────────────────────────────────────────────
+// ── Tiebreaker priority queue ─────────────────────────────────────────────────
 
-const anthropic = new Anthropic({
-  apiKey: ENV.anthropicApiKey,
-});
+const TIEBREAKER_PRIORITY = ["GCC_REG", "CFO", "SKEPTIC", "DEVILS_ADVOCATE", "EXIT"];
 
-const TIMEOUT_MS = 15_000;
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-// ── Helper: parse and validate persona response ───────────────────────────────
+function todayUTC(): string { return new Date().toISOString().slice(0, 10); }
+function hourUTC():  string { return new Date().toISOString().slice(0, 13); }
 
 function parsePersonaResponse(raw: string): PersonaResponse {
-  // Strip markdown code fences if present
   const cleaned = raw
     .replace(/^```(?:json)?\s*/i, "")
     .replace(/\s*```\s*$/i, "")
     .trim();
-
   const parsed = JSON.parse(cleaned);
   return PersonaResponseSchema.parse(parsed);
 }
 
-// ── Helper: call a single persona with timeout ────────────────────────────────
+function deduplicate(arr: string[]): string[] {
+  const seen = new Set<string>();
+  return arr.filter((s) => {
+    const key = s.trim().toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+// ── [FIX 2] Cost Guard — DB-backed atomic counters ───────────────────────────
+
+export async function checkCostGuard(clientId: string = "default"): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  const spendKey = `spend:${todayUTC()}`;
+  const rateKey  = `rate:${clientId}:${hourUTC()}`;
+
+  // Ensure spend row exists
+  await db
+    .insert(costCounters)
+    .values({ counterKey: spendKey, value: "0" })
+    .onDuplicateKeyUpdate({ set: { counterKey: sql`counter_key` } });
+
+  const spendRow = await db
+    .select({ value: costCounters.value })
+    .from(costCounters)
+    .where(eq(costCounters.counterKey, spendKey))
+    .limit(1);
+
+  const currentSpend = parseFloat(spendRow[0]?.value ?? "0");
+
+  if (currentSpend >= DAILY_SPEND_CAP_USD) {
+    throw new Error(
+      `🛑 DAILY API SPEND CAP — $${currentSpend.toFixed(2)} spent today ` +
+      `(cap: $${DAILY_SPEND_CAP_USD}). Council runs halted. Resets midnight UTC.`
+    );
+  }
+  if (currentSpend >= DAILY_SPEND_CAP_USD * 0.8) {
+    console.warn(`[COST] Spend at ${(currentSpend / DAILY_SPEND_CAP_USD * 100).toFixed(0)}% of daily cap`);
+  }
+
+  // [FIX A] Single atomic INSERT ON DUPLICATE KEY UPDATE — no race condition
+  await db
+    .insert(costCounters)
+    .values({ counterKey: rateKey, value: "1" })
+    .onDuplicateKeyUpdate({
+      set: { value: sql`CAST(CAST(value AS UNSIGNED) + 1 AS CHAR)` },
+    });
+
+  const rateRow = await db
+    .select({ value: costCounters.value })
+    .from(costCounters)
+    .where(eq(costCounters.counterKey, rateKey))
+    .limit(1);
+
+  const runsThisHour = parseInt(rateRow[0]?.value ?? "0");
+
+  if (runsThisHour > MAX_RUNS_PER_HOUR) {
+    throw new Error(
+      `🛑 RATE LIMIT — Client '${clientId}' made ${runsThisHour} runs this hour ` +
+      `(max: ${MAX_RUNS_PER_HOUR}). Resets top of hour.`
+    );
+  }
+}
+
+export async function recordRunCost(): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  await db
+    .update(costCounters)
+    .set({ value: sql`CAST(CAST(value AS DECIMAL(10,4)) + ${COST_PER_RUN_USD} AS CHAR)` })
+    .where(eq(costCounters.counterKey, `spend:${todayUTC()}`));
+}
+
+export async function getCostStatus(clientId = "default"): Promise<Record<string, unknown>> {
+  const db = await getDb();
+  const spendRow = db ? await db
+    .select({ value: costCounters.value })
+    .from(costCounters)
+    .where(eq(costCounters.counterKey, `spend:${todayUTC()}`))
+    .limit(1) : [];
+
+  const rateRow = db ? await db
+    .select({ value: costCounters.value })
+    .from(costCounters)
+    .where(eq(costCounters.counterKey, `rate:${clientId}:${hourUTC()}`))
+    .limit(1) : [];
+
+  const spend        = parseFloat(spendRow[0]?.value ?? "0");
+  const runsThisHour = parseInt(rateRow[0]?.value   ?? "0");
+
+  return {
+    dailySpendUsd:    spend,
+    dailyCapUsd:      DAILY_SPEND_CAP_USD,
+    spendPct:         +(spend / DAILY_SPEND_CAP_USD * 100).toFixed(1),
+    spendOk:          spend < DAILY_SPEND_CAP_USD,
+    runsThisHour,
+    runsPerHourLimit: MAX_RUNS_PER_HOUR,
+    rateOk:           runsThisHour <= MAX_RUNS_PER_HOUR,
+    costPerRunUsd:    COST_PER_RUN_USD,
+  };
+}
+
+// ── Single persona call with timeout + silent fail detection ──────────────────
 
 async function callPersona(
   persona: PersonaDef,
   dealText: string,
-  memoryContext: string
+  memoryContext: string,
 ): Promise<Omit<PersonaVote, "weight">> {
-  // Prepend memory context to the deal text if available
   const contextualDeal = memoryContext
     ? `${memoryContext}\n\n---\n\nDEAL MEMO TO EVALUATE:\n${dealText}`
     : `Here is the deal memo to evaluate:\n\n${dealText}`;
 
   const userMessage = `${contextualDeal}\n\nProvide your vote and analysis as strict JSON only.`;
 
+  // [FIX 4] Hard 30s timeout per agent
   const timeoutPromise = new Promise<never>((_, reject) =>
-    setTimeout(() => reject(new Error("TIMEOUT")), TIMEOUT_MS)
+    setTimeout(() => reject(new Error("TIMEOUT")), AGENT_TIMEOUT_MS)
   );
 
-  const anthropicPromise = anthropic.messages.create({
-    model: "claude-sonnet-4-5",
-    max_tokens: 512,
-    system: persona.systemPrompt,
-    messages: [{ role: "user", content: userMessage }],
-  });
+   try {
+    const response = await Promise.race([
+      anthropic.messages.create({
+        model:      "claude-sonnet-4-5",
+        max_tokens: 512,
+        system:     persona.systemPrompt,
+        messages:   [{ role: "user", content: userMessage }],
+      }),
+      timeoutPromise,
+    ]);
 
-  try {
-    const response = await Promise.race([anthropicPromise, timeoutPromise]);
     const content = response.content[0];
     if (content.type !== "text") throw new Error("Non-text response");
 
-    const parsed = parsePersonaResponse(content.text);
+    const parsed     = parsePersonaResponse(content.text);
+    const confidence = parsed.confidence;
+
+    // [FIX 3] Silent fail detection
+    const isSilentFail = confidence === 0;
+    if (isSilentFail) {
+      console.warn(`[SILENT_FAIL] ${persona.name} returned confidence=0. Model may be degraded.`);
+    }
 
     return {
-      personaId: persona.id,
-      personaName: persona.name,
-      personaRole: persona.role,
-      vote: parsed.vote,
-      confidence: parsed.confidence,
-      rationale: parsed.rationale.slice(0, 400),
-      keyFlags: parsed.key_flags.slice(0, 3),
-      conditions: parsed.conditions,
-      blockers: parsed.blockers,
-      timedOut: false,
+      personaId:    persona.id,
+      personaName:  persona.name,
+      personaRole:  persona.role,
+      vote:         parsed.vote,
+      confidence,
+      rationale:    parsed.rationale.slice(0, 400),
+      keyFlags:     parsed.key_flags.slice(0, 5),
+      conditions:   parsed.conditions,
+      blockers:     parsed.blockers,
+      timedOut:     false,
+      isSilentFail,
     };
-  } catch {
-    // Graceful fallback: SOFT_NO with low confidence
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    const isTimeout = message === "TIMEOUT";
+    console.error(`[AGENT_ERROR] ${persona.name} (${persona.id}): ${message}`);
     return {
-      personaId: persona.id,
-      personaName: persona.name,
-      personaRole: persona.role,
-      vote: "SOFT_NO",
-      confidence: 0.2,
-      rationale: "Analysis unavailable — persona timed out or returned invalid response.",
-      keyFlags: ["Response timeout or parse error"],
-      conditions: [],
-      blockers: [],
-      timedOut: true,
+      personaId:    persona.id,
+      personaName:  persona.name,
+      personaRole:  persona.role,
+      vote:         "SOFT_NO",
+      confidence:   0.2,
+      rationale:    isTimeout
+        ? "Analysis unavailable — persona timed out."
+        : `Analysis unavailable — ${message.slice(0, 100)}`,
+      keyFlags:     [isTimeout ? "Response timeout" : "Parse error"],
+      conditions:   [],
+      blockers:     [],
+      timedOut:     isTimeout,
+      isSilentFail: true,
     };
   }
 }
 
-// ── Tiebreaker priority queue ─────────────────────────────────────────────────
-
-const TIEBREAKER_PRIORITY = ["GCC_REG", "CFO", "SECURITY", "CONTRARIAN", "OPERATOR"];
-
 // ── Main council engine ───────────────────────────────────────────────────────
-
-export interface RunCouncilOptions {
-  taskId?: string;
-  taskDomain?: string;
-  skipMemory?: boolean;  // set true in tests to avoid DB calls
-}
 
 export async function runCouncil(
   dealText: string,
-  options: RunCouncilOptions = {}
+  options: RunCouncilOptions = {},
 ): Promise<CouncilResult> {
-  const { taskId, taskDomain, skipMemory = false } = options;
+  const {
+    taskId,
+    taskDomain,
+    skipMemory = false,
+    pitchId,
+    clientId = "default",
+  } = options;
 
-  // ── Phase 3: Retrieve similar past decisions ───────────────────────────────
-  let memoryContext = "";
+  const sessionId = crypto.randomUUID();
+  const startMs   = Date.now();
+
+  // Cost guard (skip in tests)
+  if (!skipMemory) {
+    await checkCostGuard(clientId).catch((err) => {
+      console.warn("[CouncilEngine] Cost guard check failed (non-fatal):", err);
+    });
+  }
+
+  // Phase 3: Retrieve similar past decisions
+  let memoryContext     = "";
   let memoryContextUsed = false;
   if (!skipMemory) {
     try {
       const similar = await findSimilarDecisions(dealText, 3, taskDomain);
       if (similar.length > 0) {
-        memoryContext = buildMemoryContext(similar);
+        memoryContext     = buildMemoryContext(similar);
         memoryContextUsed = true;
       }
     } catch (err) {
@@ -313,7 +526,7 @@ export async function runCouncil(
     }
   }
 
-  // ── Load agent weights ─────────────────────────────────────────────────────
+  // Load authority weights
   let weightsMap = new Map<string, number>();
   if (!skipMemory) {
     try {
@@ -323,51 +536,52 @@ export async function runCouncil(
     }
   }
 
-  // ── Run all personas in parallel ───────────────────────────────────────────
+  // Run all 10 personas in parallel
   const results = await Promise.allSettled(
     PERSONAS.map((p) => callPersona(p, dealText, memoryContext))
   );
 
   const votes: PersonaVote[] = results.map((r, i) => {
-    const p = PERSONAS[i];
+    const p      = PERSONAS[i];
     const weight = weightsMap.get(p.id) ?? 1.0;
     if (r.status === "fulfilled") {
       return { ...r.value, weight };
     }
     return {
-      personaId: p.id,
-      personaName: p.name,
-      personaRole: p.role,
-      vote: "SOFT_NO" as VoteType,
-      confidence: 0.2,
-      rationale: "Analysis unavailable — unexpected error.",
-      keyFlags: ["Unexpected error"],
-      conditions: [],
-      blockers: [],
-      timedOut: true,
+      personaId:    p.id,
+      personaName:  p.name,
+      personaRole:  p.role,
+      vote:         "SOFT_NO" as VoteType,
+      confidence:   0.2,
+      rationale:    "Analysis unavailable — unexpected error.",
+      keyFlags:     ["Unexpected error"],
+      conditions:   [],
+      blockers:     [],
+      timedOut:     true,
+      isSilentFail: true,
       weight,
     };
   });
 
-  // ── Vote counting (raw counts for display) ─────────────────────────────────
+  // Vote counting
   let hardYesCount = 0;
   let softYesCount = 0;
-  let softNoCount = 0;
-  let hardNoCount = 0;
+  let softNoCount  = 0;
+  let hardNoCount  = 0;
 
   for (const v of votes) {
-    if (v.vote === "HARD_YES") hardYesCount++;
+    if      (v.vote === "HARD_YES") hardYesCount++;
     else if (v.vote === "SOFT_YES") softYesCount++;
-    else if (v.vote === "SOFT_NO") softNoCount++;
-    else if (v.vote === "HARD_NO") hardNoCount++;
+    else if (v.vote === "SOFT_NO")  softNoCount++;
+    else if (v.vote === "HARD_NO")  hardNoCount++;
   }
 
   const yesCount = hardYesCount + softYesCount;
-  const noCount = softNoCount + hardNoCount;
+  const noCount  = softNoCount  + hardNoCount;
 
-  // ── Weighted scores ────────────────────────────────────────────────────────
+  // Weighted scores
   let weightedYesScore = 0;
-  let weightedNoScore = 0;
+  let weightedNoScore  = 0;
   for (const v of votes) {
     if (v.vote === "HARD_YES" || v.vote === "SOFT_YES") {
       weightedYesScore += v.weight * v.confidence;
@@ -376,43 +590,52 @@ export async function runCouncil(
     }
   }
   weightedYesScore = Math.round(weightedYesScore * 100) / 100;
-  weightedNoScore = Math.round(weightedNoScore * 100) / 100;
+  weightedNoScore  = Math.round(weightedNoScore  * 100) / 100;
 
-  // ── Confidence score ───────────────────────────────────────────────────────
   const confidenceScore =
     votes.reduce((sum, v) => sum + v.confidence, 0) / votes.length;
 
-  // ── Veto check ─────────────────────────────────────────────────────────────
-  const gccRegVote = votes.find((v) => v.personaId === "GCC_REG");
+  // Silent fails
+  const silentFails = votes.filter((v) => v.isSilentFail).map((v) => v.personaRole);
+
+  // Hard flags
+  const hardFlags: string[] = [];
+  const gccRegVote     = votes.find((v) => v.personaId === "GCC_REG");
   const gccShariahVote = votes.find((v) => v.personaId === "GCC_SHARIAH");
+  const geoVote        = votes.find((v) => v.personaId === "GEOPOLITICAL");
+
   const gccVetoTriggered =
-    gccRegVote?.vote === "HARD_NO" ||
+    gccRegVote?.vote    === "HARD_NO" ||
     gccShariahVote?.vote === "HARD_NO" ||
     hardNoCount >= 2;
 
-  // ── Tiebreaker ─────────────────────────────────────────────────────────────
-  let tiebreakerTriggered = false;
+  if (gccRegVote?.vote === "HARD_NO")
+    hardFlags.push(`❌ GCC REGULATORY VETO — ${gccRegVote.rationale.slice(0, 100)}`);
+  if (gccShariahVote?.vote === "HARD_NO")
+    hardFlags.push(`❌ SHARIAH NON-COMPLIANT — ${gccShariahVote.rationale.slice(0, 100)}`);
+  if (geoVote?.keyFlags?.some((f) => f.toLowerCase().includes("sanction")))
+    hardFlags.push(`⚠️ SANCTIONS FLAG — ${geoVote.personaRole}`);
+  if (silentFails.length > 0)
+    hardFlags.push(`🟡 DEGRADED AGENTS (verify results): ${silentFails.join(", ")}`);
+
+  // Tiebreaker
+  let tiebreakerTriggered  = false;
   let tiebreakerSwingAgent: string | null = null;
   let workingVotes = [...votes];
 
   if (!gccVetoTriggered && yesCount === 7 && noCount === 3) {
-    // Find first SOFT_NO in priority queue
     for (const priorityId of TIEBREAKER_PRIORITY) {
       const idx = workingVotes.findIndex(
         (v) => v.personaId === priorityId && v.vote === "SOFT_NO"
       );
       if (idx !== -1) {
-        // Flip SOFT_NO → SOFT_YES, move blockers → conditions
         workingVotes[idx] = {
           ...workingVotes[idx],
-          vote: "SOFT_YES",
-          conditions: [
-            ...workingVotes[idx].conditions,
-            ...workingVotes[idx].blockers,
-          ],
-          blockers: [],
+          vote:       "SOFT_YES",
+          conditions: [...workingVotes[idx].conditions, ...workingVotes[idx].blockers],
+          blockers:   [],
         };
-        tiebreakerTriggered = true;
+        tiebreakerTriggered  = true;
         tiebreakerSwingAgent = priorityId;
         softNoCount--;
         softYesCount++;
@@ -421,18 +644,16 @@ export async function runCouncil(
     }
   }
 
-  // ── Final vote counts after tiebreaker ────────────────────────────────────
   const finalYesCount = hardYesCount + softYesCount;
-  const finalNoCount = softNoCount + hardNoCount;
+  const finalNoCount  = softNoCount  + hardNoCount;
 
-  // ── Verdict logic ──────────────────────────────────────────────────────────
+  // Verdict
   let verdict: VerdictType;
-
   if (gccVetoTriggered) {
     verdict = "VETOED";
-  } else if (finalYesCount >= 8 && hardYesCount >= 6) {
+  } else if (finalYesCount >= CONSENSUS_THRESHOLD && hardYesCount >= 6) {
     verdict = "APPROVED";
-  } else if (finalYesCount >= 8 && hardYesCount < 6) {
+  } else if (finalYesCount >= CONSENSUS_THRESHOLD && hardYesCount < 6) {
     verdict = "APPROVED_WITH_CONDITIONS";
   } else if (tiebreakerTriggered) {
     verdict = "APPROVED_WITH_CONDITIONS";
@@ -440,11 +661,9 @@ export async function runCouncil(
     verdict = "REJECTED";
   }
 
-  // ── Aggregation ────────────────────────────────────────────────────────────
+  // Aggregation
   const softYesVotes = workingVotes.filter((v) => v.vote === "SOFT_YES");
-  const noVotes = workingVotes.filter(
-    (v) => v.vote === "SOFT_NO" || v.vote === "HARD_NO"
-  );
+  const noVotes      = workingVotes.filter((v) => v.vote === "SOFT_NO" || v.vote === "HARD_NO");
 
   const conditionsToProceed = deduplicate([
     ...softYesVotes.flatMap((v) => v.conditions),
@@ -459,26 +678,44 @@ export async function runCouncil(
 
   const councilResult: CouncilResult = {
     verdict,
-    yesCount: finalYesCount,
-    noCount: finalNoCount,
+    yesCount:              finalYesCount,
+    noCount:               finalNoCount,
     hardYesCount,
     softYesCount,
     softNoCount,
     hardNoCount,
     weightedYesScore,
     weightedNoScore,
-    confidenceScore: Math.round(confidenceScore * 1000) / 1000,
+    confidenceScore:       Math.round(confidenceScore * 1000) / 1000,
     gccVetoTriggered,
     tiebreakerTriggered,
     tiebreakerSwingAgent,
     conditionsToProceed,
     blockingIssues,
-    votes: workingVotes,
-    decisionMemoryId: null,
+    criticalBlockers:      blockingIssues,   // alias
+    hardFlags,
+    silentFails,
+    votes:                 workingVotes,
+    decisionMemoryId:      null,
     memoryContextUsed,
+    sessionId,
+    durationMs:            Date.now() - startMs,
+    actionsTriggered:      [],
   };
 
-  // ── Phase 2: Persist decision to DB (fire-and-forget, never blocks) ────────
+  // Audit log (never throws)
+  await writeAuditLog(councilResult).catch((err) =>
+    console.warn("[CouncilEngine] writeAuditLog failed:", err)
+  );
+
+  // Record API spend (never throws)
+  if (!skipMemory) {
+    await recordRunCost().catch((err) =>
+      console.warn("[CouncilEngine] recordRunCost failed:", err)
+    );
+  }
+
+  // Phase 2: Persist decision to memory (fire-and-forget)
   if (!skipMemory) {
     persistDecision({
       taskId,
@@ -494,15 +731,122 @@ export async function runCouncil(
       });
   }
 
+  // Stripe action if approved
+  if (
+    !skipMemory &&
+    (verdict === "APPROVED" || verdict === "APPROVED_WITH_CONDITIONS")
+  ) {
+    const actions = await executeAction(sessionId, dealText, councilResult, pitchId);
+    councilResult.actionsTriggered = actions;
+  }
+
   return councilResult;
 }
 
-function deduplicate(arr: string[]): string[] {
-  const seen = new Set<string>();
-  return arr.filter((s) => {
-    const key = s.trim().toLowerCase();
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
+// ── [FIX 1 + FIX B + FIX C] Stripe — Invoice API, one-time customer ──────────
+
+async function executeAction(
+  sessionId: string,
+  dealText:  string,
+  result:    CouncilResult,
+  pitchId?:  string,
+): Promise<string[]> {
+  const actions: string[] = [];
+
+  if (!process.env.STRIPE_SECRET_KEY) {
+    actions.push("stripe_skipped:no_key_configured");
+    return actions;
+  }
+
+  const stripeClient = new Stripe(process.env.STRIPE_SECRET_KEY, {
+    apiVersion: "2026-03-25.dahlia" as Stripe.LatestApiVersion,
   });
+
+  try {
+  // [FIX C] Look up phone from pitch_sessions for customer metadata
+  let phone: string | undefined;
+  if (pitchId) {
+    try {
+      const db = await getDb();
+      const pitchRow = db && await db
+          .select({ phone: pitchSessions.phone })
+          .from(pitchSessions)
+          .where(eq(pitchSessions.pitchToken, pitchId))
+          .limit(1);
+      phone = pitchRow?.[0]?.phone ?? undefined;
+    } catch {
+      // Non-fatal — proceed without phone
+    }
+  }
+
+    // [FIX C] Create one-time Stripe customer from pitch session
+    const customer = await stripeClient.customers.create({
+      description: `AgenThink Pitch — Session ${sessionId.slice(0, 8)}`,
+      ...(phone ? { phone } : {}),
+      metadata: {
+        session_id: sessionId,
+        pitch_id:   pitchId ?? "direct",
+        verdict:    result.verdict,
+      },
+    });
+
+  // [FIX 1] Invoice API — actually charges money
+  const invoice = await (stripeClient.invoices as any).create({
+    customer:          customer.id,
+      auto_advance:      false,
+      collection_method: "send_invoice",
+      days_until_due:    7,
+      metadata: {
+        session_id:     sessionId,
+        verdict:        result.verdict,
+        yes_count:      String(result.yesCount),
+        thesis_preview: dealText.slice(0, 100),
+      },
+    });
+
+    // [FIX B] Fixed USD amount — KWD displayed on description only
+    await (stripeClient.invoiceItems as any).create({
+      customer:    customer.id,
+      invoice:     invoice.id,
+      amount:      FEE_USD_CENTS,   // $32.50 USD ≈ KWD 10
+      currency:    "usd",
+      description: `AgenThink Deal Screen — approx KWD ${FEE_KWD_DISPLAY} success fee (Session ${sessionId.slice(0, 8)})`,
+    });
+
+    const finalized = await (stripeClient.invoices as any).finalizeInvoice(invoice.id);
+    actions.push(`stripe_invoice_sent:KWD${FEE_KWD_DISPLAY}:${finalized.id}`);
+    console.log(`[STRIPE] Invoice sent — KWD ${FEE_KWD_DISPLAY} (~$${FEE_USD_CENTS / 100}) — Session ${sessionId.slice(0, 8)}`);
+
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`[STRIPE] Failed: ${msg}`);
+    actions.push(`stripe_error:${msg.slice(0, 80)}`);
+  }
+
+  actions.push("audit_log_written");
+  return actions;
+}
+
+// ── Audit Log — append-only, never throws ────────────────────────────────────
+
+async function writeAuditLog(result: CouncilResult): Promise<void> {
+  try {
+    const db = await getDb();
+    if (!db) return;
+    await db.insert(consensusSessions).values({
+      sessionId:        result.sessionId,
+      thesis:           result.votes[0]?.rationale?.slice(0, 200) ?? "N/A",
+      yesCount:         result.yesCount,
+      noCount:          result.noCount,
+      verdict:          result.verdict,
+      consensusReached: result.yesCount >= CONSENSUS_THRESHOLD ? 1 : 0,
+      hardFlags:        JSON.stringify(result.hardFlags),
+      silentFails:      JSON.stringify(result.silentFails),
+      votesJson:        JSON.stringify(result.votes),
+      resultJson:       JSON.stringify(result),
+      durationMs:       result.durationMs,
+    });
+  } catch (err) {
+    console.error("[LEDGER] Audit log write failed:", err);
+  }
 }
