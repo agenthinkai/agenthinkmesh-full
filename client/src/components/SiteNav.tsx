@@ -1,6 +1,6 @@
 /**
- * SiteNav — single-row sticky nav.
- * Logo | Deal Screener | Compare Deals | Pricing | Contact | [PlanBadge] | [Auth]
+ * SiteNav — pill-style tabs with stacked icon + label, colored underline on hover/active.
+ * Matches the reference screenshot style from the user.
  */
 
 import { useState, useRef, useEffect } from "react";
@@ -10,11 +10,29 @@ import Logo from "@/components/Logo";
 import { PlanUsageBadge } from "@/components/PlanUsageBadge";
 
 const NAVY   = "#080D1A";
+const NAVY2  = "#0C1525";
 const CYAN   = "#38BDF8";
 const BLUE   = "#60A5FA";
 const WHITE  = "#F0F4FA";
-const MUTED  = "rgba(240,244,250,0.55)";
-const BORDER = "rgba(56,189,248,0.12)";
+const MUTED  = "rgba(240,244,250,0.50)";
+const BORDER = "rgba(56,189,248,0.10)";
+
+// Nav items — each has a unique neon color + colored underline, matching the screenshot style
+interface NavItem {
+  label: string;
+  icon: string;
+  href: string;
+  color: string;
+  underline: string;
+  scrollId?: string;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { label: "Deal Screener",  icon: "⚖️",  href: "/deals",         color: "#38BDF8", underline: "#38BDF8" },
+  { label: "Compare Deals",  icon: "🔷",  href: "/deals/compare", color: "#A78BFA", underline: "#A78BFA" },
+  { label: "Pricing",        icon: "💎",  href: "/pricing",       color: "#4ADE80", underline: "#4ADE80" },
+  { label: "Contact",        icon: "✉️",  href: "/contact",       color: "#F97316", underline: "#F97316", scrollId: "contact" },
+];
 
 interface SiteNavProps {
   isLandingPage?: boolean;
@@ -22,11 +40,12 @@ interface SiteNavProps {
 
 export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
   const { isAuthenticated, user, logout } = useAuth();
-
   const [dropOpen, setDropOpen] = useState(false);
+  const [activeHover, setActiveHover] = useState<string | null>(null);
   const dropRef = useRef<HTMLDivElement>(null);
 
-  // Close user dropdown when clicking outside
+  const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
+
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (dropRef.current && !dropRef.current.contains(e.target as Node)) {
@@ -42,145 +61,133 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
     if (el) el.scrollIntoView({ behavior: "smooth" });
   };
 
-  const linkStyle: React.CSSProperties = {
-    color: MUTED,
-    fontSize: 14,
-    textDecoration: "none",
-    padding: "6px 14px",
-    borderRadius: 8,
-    transition: "color 0.18s",
-    whiteSpace: "nowrap",
-    background: "none",
-    border: "none",
-    cursor: "pointer",
-    fontFamily: "inherit",
-  };
-
-  const hoverOn  = (e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.color = WHITE; };
-  const hoverOff = (e: React.MouseEvent<HTMLElement>) => { (e.currentTarget as HTMLElement).style.color = MUTED; };
-
   return (
     <div
       style={{
         position: "sticky",
         top: 0,
         zIndex: 100,
-        background: `${NAVY}F0`,
-        backdropFilter: "blur(16px)",
-        WebkitBackdropFilter: "blur(16px)",
+        background: `${NAVY}F2`,
+        backdropFilter: "blur(18px)",
+        WebkitBackdropFilter: "blur(18px)",
         borderBottom: `1px solid ${BORDER}`,
       }}
     >
       <div style={{
         display: "flex",
-        alignItems: "center",
+        alignItems: "stretch",
         justifyContent: "space-between",
-        padding: "0 32px",
-        height: 58,
+        padding: "0 24px",
+        height: 56,
+        gap: 8,
       }}>
-        {/* Logo */}
-        <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", flexShrink: 0 }}>
-          <Logo size={30} />
+
+        {/* ── LOGO ─────────────────────────────────────────────────────── */}
+        <a
+          href="/"
+          style={{
+            textDecoration: "none",
+            display: "flex",
+            alignItems: "center",
+            flexShrink: 0,
+            marginRight: 8,
+          }}
+        >
+          <Logo size={28} />
         </a>
 
-        {/* Centre nav links — icon-prefixed neon colors */}
-        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
-          {([
-            { label: "Deal Screener",  icon: "⚖️",  href: "/deals",         color: "#38BDF8", glow: "rgba(56,189,248,0.18)" },
-            { label: "Compare Deals", icon: "⬡",   href: "/deals/compare", color: "#A78BFA", glow: "rgba(167,139,250,0.18)" },
-            { label: "Pricing",       icon: "💎",  href: "/pricing",       color: "#4ADE80", glow: "rgba(74,222,128,0.18)" },
-          ] as const).map(item => (
-            <a
-              key={item.label}
-              href={item.href}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                color: MUTED, fontSize: 13, fontWeight: 600,
-                textDecoration: "none",
-                padding: "5px 13px", borderRadius: 8,
-                border: "1px solid transparent",
-                transition: "all 0.18s",
-                whiteSpace: "nowrap",
-                letterSpacing: "0.01em",
-              }}
-              onMouseEnter={e => {
-                const el = e.currentTarget as HTMLAnchorElement;
-                el.style.color = item.color;
-                el.style.background = item.glow;
-                el.style.border = `1px solid ${item.color}33`;
-              }}
-              onMouseLeave={e => {
-                const el = e.currentTarget as HTMLAnchorElement;
-                el.style.color = MUTED;
-                el.style.background = "transparent";
-                el.style.border = "1px solid transparent";
-              }}
-            >
-              <span style={{ fontSize: 13, lineHeight: 1 }}>{item.icon}</span>
-              {item.label}
-            </a>
-          ))}
-          {isLandingPage ? (
-            <button
-              onClick={() => scrollTo("contact")}
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                color: MUTED, fontSize: 13, fontWeight: 600,
-                background: "none", border: "1px solid transparent",
-                padding: "5px 13px", borderRadius: 8, cursor: "pointer",
-                transition: "all 0.18s", whiteSpace: "nowrap",
-                fontFamily: "inherit", letterSpacing: "0.01em",
-              }}
-              onMouseEnter={e => {
-                const el = e.currentTarget as HTMLButtonElement;
-                el.style.color = "#F97316";
-                el.style.background = "rgba(249,115,22,0.15)";
-                el.style.border = "1px solid rgba(249,115,22,0.3)";
-              }}
-              onMouseLeave={e => {
-                const el = e.currentTarget as HTMLButtonElement;
-                el.style.color = MUTED;
-                el.style.background = "none";
-                el.style.border = "1px solid transparent";
-              }}
-            >
-              <span style={{ fontSize: 13, lineHeight: 1 }}>✉️</span>
-              Contact
-            </button>
-          ) : (
-            <a
-              href="/contact"
-              style={{
-                display: "flex", alignItems: "center", gap: 6,
-                color: MUTED, fontSize: 13, fontWeight: 600,
-                textDecoration: "none",
-                padding: "5px 13px", borderRadius: 8,
-                border: "1px solid transparent",
-                transition: "all 0.18s",
-                whiteSpace: "nowrap",
-                letterSpacing: "0.01em",
-              }}
-              onMouseEnter={e => {
-                const el = e.currentTarget as HTMLAnchorElement;
-                el.style.color = "#F97316";
-                el.style.background = "rgba(249,115,22,0.15)";
-                el.style.border = "1px solid rgba(249,115,22,0.3)";
-              }}
-              onMouseLeave={e => {
-                const el = e.currentTarget as HTMLAnchorElement;
-                el.style.color = MUTED;
-                el.style.background = "transparent";
-                el.style.border = "1px solid transparent";
-              }}
-            >
-              <span style={{ fontSize: 13, lineHeight: 1 }}>✉️</span>
-              Contact
-            </a>
-          )}
+        {/* ── NAV PILLS ────────────────────────────────────────────────── */}
+        <div style={{
+          display: "flex",
+          alignItems: "stretch",
+          gap: 2,
+          flex: 1,
+          overflowX: "auto",
+          scrollbarWidth: "none",
+        }}>
+          {NAV_ITEMS.map(item => {
+            const isActive = currentPath === item.href || currentPath.startsWith(item.href + "/");
+            const isHovered = activeHover === item.label;
+            const highlight = isActive || isHovered;
+
+            const handleNavClick = (e: React.MouseEvent) => {
+              if (isLandingPage && item.scrollId) {
+                e.preventDefault();
+                scrollTo(item.scrollId);
+              }
+            };
+
+            return (
+              <a
+                key={item.label}
+                href={item.href}
+                onClick={handleNavClick}
+                onMouseEnter={() => setActiveHover(item.label)}
+                onMouseLeave={() => setActiveHover(null)}
+                style={{
+                  position: "relative",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 2,
+                  padding: "0 14px",
+                  textDecoration: "none",
+                  cursor: "pointer",
+                  transition: "background 0.18s",
+                  background: highlight ? `${item.color}12` : "transparent",
+                  borderRadius: 0,
+                  minWidth: 80,
+                  flexShrink: 0,
+                }}
+              >
+                {/* Icon */}
+                <span style={{
+                  fontSize: 15,
+                  lineHeight: 1,
+                  filter: highlight ? `drop-shadow(0 0 6px ${item.color}88)` : "none",
+                  transition: "filter 0.18s",
+                }}>
+                  {item.icon}
+                </span>
+
+                {/* Label */}
+                <span style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  letterSpacing: "0.04em",
+                  textTransform: "uppercase",
+                  color: highlight ? item.color : MUTED,
+                  transition: "color 0.18s",
+                  whiteSpace: "nowrap",
+                }}>
+                  {item.label}
+                </span>
+
+                {/* Colored underline bar — active/hover indicator */}
+                <span style={{
+                  position: "absolute",
+                  bottom: 0,
+                  left: "10%",
+                  right: "10%",
+                  height: 2,
+                  borderRadius: "2px 2px 0 0",
+                  background: highlight ? item.underline : "transparent",
+                  boxShadow: highlight ? `0 0 8px ${item.underline}88` : "none",
+                  transition: "all 0.18s",
+                }} />
+              </a>
+            );
+          })}
         </div>
 
-        {/* Right side: plan badge + auth */}
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+        {/* ── RIGHT: PLAN BADGE + AUTH ──────────────────────────────────── */}
+        <div style={{
+          display: "flex",
+          gap: 8,
+          alignItems: "center",
+          flexShrink: 0,
+        }}>
           <PlanUsageBadge />
 
           {isAuthenticated ? (
@@ -192,8 +199,8 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
                   display: "flex", alignItems: "center", justifyContent: "center",
                   background: `linear-gradient(135deg, ${CYAN}, ${BLUE})`,
                   border: "none", borderRadius: "50%",
-                  width: 34, height: 34, cursor: "pointer",
-                  fontSize: 13, fontWeight: 800, color: NAVY, flexShrink: 0,
+                  width: 32, height: 32, cursor: "pointer",
+                  fontSize: 12, fontWeight: 800, color: NAVY, flexShrink: 0,
                   transition: "opacity 0.2s",
                 }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.82"; }}
@@ -205,41 +212,30 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
               {dropOpen && (
                 <div style={{
                   position: "absolute", top: "calc(100% + 8px)", right: 0,
-                  background: "#0D1E35", border: `1px solid ${CYAN}25`,
-                  borderRadius: 10, minWidth: 180, zIndex: 200,
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.5)", overflow: "hidden",
+                  background: NAVY2, border: `1px solid ${CYAN}22`,
+                  borderRadius: 10, minWidth: 190, zIndex: 200,
+                  boxShadow: "0 8px 32px rgba(0,0,0,0.55)", overflow: "hidden",
                 }}>
                   <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
                     <div style={{ fontSize: 13, fontWeight: 600, color: WHITE }}>{user?.name ?? "User"}</div>
                     {user?.email && <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{user.email}</div>}
                   </div>
-                  <a
-                    href="/persona-setup"
-                    onClick={() => setDropOpen(false)}
-                    style={{ display: "block", padding: "10px 16px", fontSize: 13, color: MUTED, textDecoration: "none", transition: "background 0.15s" }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLAnchorElement).style.color = WHITE; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; (e.currentTarget as HTMLAnchorElement).style.color = MUTED; }}
-                  >
-                    My Workspace →
-                  </a>
-                  <a
-                    href="/account/billing"
-                    onClick={() => setDropOpen(false)}
-                    style={{ display: "block", padding: "10px 16px", fontSize: 13, color: MUTED, textDecoration: "none", transition: "background 0.15s" }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLAnchorElement).style.color = WHITE; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; (e.currentTarget as HTMLAnchorElement).style.color = MUTED; }}
-                  >
-                    Billing →
-                  </a>
-                  <a
-                    href="/reports/history"
-                    onClick={() => setDropOpen(false)}
-                    style={{ display: "block", padding: "10px 16px", fontSize: 13, color: MUTED, textDecoration: "none", transition: "background 0.15s" }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLAnchorElement).style.color = WHITE; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; (e.currentTarget as HTMLAnchorElement).style.color = MUTED; }}
-                  >
-                    Shared Reports →
-                  </a>
+                  {[
+                    { label: "My Workspace →",   href: "/persona-setup",    color: MUTED },
+                    { label: "Billing →",         href: "/account/billing",  color: MUTED },
+                    { label: "Shared Reports →",  href: "/reports/history",  color: MUTED },
+                  ].map(item => (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setDropOpen(false)}
+                      style={{ display: "block", padding: "10px 16px", fontSize: 13, color: item.color, textDecoration: "none", transition: "background 0.15s" }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLAnchorElement).style.color = WHITE; }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; (e.currentTarget as HTMLAnchorElement).style.color = item.color; }}
+                    >
+                      {item.label}
+                    </a>
+                  ))}
                   {user?.role === "admin" && (
                     <a
                       href="/admin/usage"
@@ -272,8 +268,8 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
             <a
               href={getLoginUrl()}
               style={{
-                color: WHITE, fontSize: 14, textDecoration: "none",
-                padding: "7px 18px", borderRadius: 8, fontWeight: 600,
+                color: WHITE, fontSize: 13, textDecoration: "none",
+                padding: "6px 16px", borderRadius: 8, fontWeight: 600,
                 background: "linear-gradient(135deg, #7BA3D4, #4ADE80)",
                 transition: "all 0.2s", whiteSpace: "nowrap",
               }}
