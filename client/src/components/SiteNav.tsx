@@ -83,22 +83,99 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
           <Logo size={30} />
         </a>
 
-        {/* Centre nav links — flat, no dropdown */}
-        <div style={{ display: "flex", gap: 2, alignItems: "center" }}>
-          <a href="/deals"         style={linkStyle} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>Deal Screener</a>
-          <a href="/deals/compare" style={linkStyle} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>Compare Deals</a>
-          <a href="/pricing"       style={linkStyle} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>Pricing</a>
+        {/* Centre nav links — icon-prefixed neon colors */}
+        <div style={{ display: "flex", gap: 4, alignItems: "center" }}>
+          {([
+            { label: "Deal Screener",  icon: "⚖️",  href: "/deals",         color: "#38BDF8", glow: "rgba(56,189,248,0.18)" },
+            { label: "Compare Deals", icon: "⬡",   href: "/deals/compare", color: "#A78BFA", glow: "rgba(167,139,250,0.18)" },
+            { label: "Pricing",       icon: "💎",  href: "/pricing",       color: "#4ADE80", glow: "rgba(74,222,128,0.18)" },
+          ] as const).map(item => (
+            <a
+              key={item.label}
+              href={item.href}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                color: MUTED, fontSize: 13, fontWeight: 600,
+                textDecoration: "none",
+                padding: "5px 13px", borderRadius: 8,
+                border: "1px solid transparent",
+                transition: "all 0.18s",
+                whiteSpace: "nowrap",
+                letterSpacing: "0.01em",
+              }}
+              onMouseEnter={e => {
+                const el = e.currentTarget as HTMLAnchorElement;
+                el.style.color = item.color;
+                el.style.background = item.glow;
+                el.style.border = `1px solid ${item.color}33`;
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget as HTMLAnchorElement;
+                el.style.color = MUTED;
+                el.style.background = "transparent";
+                el.style.border = "1px solid transparent";
+              }}
+            >
+              <span style={{ fontSize: 13, lineHeight: 1 }}>{item.icon}</span>
+              {item.label}
+            </a>
+          ))}
           {isLandingPage ? (
             <button
-              style={linkStyle}
               onClick={() => scrollTo("contact")}
-              onMouseEnter={hoverOn}
-              onMouseLeave={hoverOff}
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                color: MUTED, fontSize: 13, fontWeight: 600,
+                background: "none", border: "1px solid transparent",
+                padding: "5px 13px", borderRadius: 8, cursor: "pointer",
+                transition: "all 0.18s", whiteSpace: "nowrap",
+                fontFamily: "inherit", letterSpacing: "0.01em",
+              }}
+              onMouseEnter={e => {
+                const el = e.currentTarget as HTMLButtonElement;
+                el.style.color = "#F97316";
+                el.style.background = "rgba(249,115,22,0.15)";
+                el.style.border = "1px solid rgba(249,115,22,0.3)";
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget as HTMLButtonElement;
+                el.style.color = MUTED;
+                el.style.background = "none";
+                el.style.border = "1px solid transparent";
+              }}
             >
+              <span style={{ fontSize: 13, lineHeight: 1 }}>✉️</span>
               Contact
             </button>
           ) : (
-            <a href="/contact" style={linkStyle} onMouseEnter={hoverOn} onMouseLeave={hoverOff}>Contact</a>
+            <a
+              href="/contact"
+              style={{
+                display: "flex", alignItems: "center", gap: 6,
+                color: MUTED, fontSize: 13, fontWeight: 600,
+                textDecoration: "none",
+                padding: "5px 13px", borderRadius: 8,
+                border: "1px solid transparent",
+                transition: "all 0.18s",
+                whiteSpace: "nowrap",
+                letterSpacing: "0.01em",
+              }}
+              onMouseEnter={e => {
+                const el = e.currentTarget as HTMLAnchorElement;
+                el.style.color = "#F97316";
+                el.style.background = "rgba(249,115,22,0.15)";
+                el.style.border = "1px solid rgba(249,115,22,0.3)";
+              }}
+              onMouseLeave={e => {
+                const el = e.currentTarget as HTMLAnchorElement;
+                el.style.color = MUTED;
+                el.style.background = "transparent";
+                el.style.border = "1px solid transparent";
+              }}
+            >
+              <span style={{ fontSize: 13, lineHeight: 1 }}>✉️</span>
+              Contact
+            </a>
           )}
         </div>
 
