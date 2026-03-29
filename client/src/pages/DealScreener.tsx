@@ -981,6 +981,24 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
         <div style={{ textAlign: "center", marginTop: 10, fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.04em" }}>
           You will be redirected to Stripe Checkout. After payment, the Council of 10 runs automatically.
         </div>
+
+        {/* Secondary CTA — Compare mode */}
+        <div style={{ textAlign: "center", marginTop: 20, paddingTop: 20, borderTop: `1px solid ${BORDER}` }}>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.04em" }}>Have multiple deals? </span>
+          <a
+            href="/deals/compare"
+            style={{
+              fontFamily: MONO, fontSize: 10, color: ACCENT,
+              textDecoration: "none", letterSpacing: "0.04em",
+              borderBottom: `1px solid ${ACCENT}55`,
+              paddingBottom: 1,
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#7db8ff")}
+            onMouseLeave={e => (e.currentTarget.style.color = ACCENT)}
+          >
+            Compare Deals →
+          </a>
+        </div>
       </div>
     </div>
   );
@@ -1196,8 +1214,27 @@ export default function DealScreener() {
 
   return (
     <div style={{ minHeight: "100vh", background: BG, color: TEXT, fontFamily: "'Inter', sans-serif" }}>
+      {/* Print stylesheet — IC Report only */}
+      <style>{`
+        @media print {
+          /* Hide all navigation and chrome */
+          body > *:not(#root) { display: none !important; }
+          .no-print { display: none !important; }
+          /* Hide tab switcher, nav bar, history, form */
+          [data-print-hide] { display: none !important; }
+          /* Expand content */
+          #root, #root > *, #root > * > * { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
+          /* Force dark background for PDF */
+          * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+          body, html { background: #070b12 !important; color: #e2e8f0 !important; }
+          /* Remove box shadows and transitions */
+          * { box-shadow: none !important; transition: none !important; animation: none !important; }
+          /* Page margins */
+          @page { margin: 16mm 12mm; size: A4 portrait; }
+        }
+      `}</style>
       {/* Top nav */}
-      <div style={{
+      <div data-print-hide style={{
         borderBottom: `1px solid ${BORDER}`,
         padding: "0 24px",
         display: "flex",

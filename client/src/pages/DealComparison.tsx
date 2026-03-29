@@ -766,8 +766,18 @@ export default function DealComparison() {
 
         <style>{`
           @media print {
+            /* Hide all chrome */
             .no-print { display: none !important; }
-            body { background: #070b12 !important; }
+            [data-print-hide] { display: none !important; }
+            /* Expand content to full width */
+            #root, #root > *, #root > * > * { max-width: 100% !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
+            /* Force dark background for PDF */
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+            body, html { background: #070b12 !important; color: #e2e8f0 !important; }
+            /* Remove shadows and animations */
+            * { box-shadow: none !important; transition: none !important; animation: none !important; }
+            /* Page setup */
+            @page { margin: 16mm 12mm; size: A4 portrait; }
           }
         `}</style>
       </div>
