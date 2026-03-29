@@ -1,4 +1,4 @@
-import { boolean, decimal, index, int, longtext, mysqlEnum, mysqlTable, text, tinyint, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { bigint, boolean, decimal, index, int, longtext, mysqlEnum, mysqlTable, text, tinyint, timestamp, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -1076,3 +1076,38 @@ export const dealComparisons = mysqlTable("deal_comparisons", {
 }));
 export type DealComparison = typeof dealComparisons.$inferSelect;
 export type InsertDealComparison = typeof dealComparisons.$inferInsert;
+
+// ── Shared Reports — secure read-only share links ─────────────────────────────
+export const sharedReports = mysqlTable("shared_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  tokenHash: varchar("tokenHash", { length: 64 }).notNull().unique(), // SHA-256 hex of raw 256-bit token
+  reportType: mysqlEnum("reportType", ["single_deal", "comparison"]).notNull(),
+  dealId: varchar("dealId", { length: 64 }),          // screeningId for single_deal
+  comparisonId: varchar("comparisonId", { length: 64 }), // comparisonId for comparison
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  expiresAt: bigint("expiresAt", { mode: "number" }).notNull(), // Unix ms
+  revokedAt: bigint("revokedAt", { mode: "number" }),           // Unix ms, null = active
+  viewCount: int("viewCount").notNull().default(0),
+  lastViewedAt: bigint("lastViewedAt", { mode: "number" }),     // Unix ms
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  tokenHashIdx: index("sr_token_hash_idx").on(table.tokenHash),
+  userIdx: index("sr_user_idx").on(table.userId),
+  dealIdx: index("sr_deal_idx").on(table.dealId),
+  compIdx: index("sr_comp_idx").on(table.comparisonId),
+}));
+export type SharedReport = typeof sharedReports.$inferSelect;
+export type InsertSharedReport = typeof sharedReports.$inferInsert;
+
+export const reportViews = mysqlTable("report_views", {
+  id: int("id").autoincrement().primaryKey(),
+  tokenHash: varchar("tokenHash", { length: 64 }).notNull(),
+  viewerIp: varchar("viewerIp", { length: 45 }).notNull(),
+  userAgent: text("userAgent"),
+  viewedAt: bigint("viewedAt", { mode: "number" }).notNull(),
+}, (table) => ({
+  tokenHashIdx: index("rv_token_hash_idx").on(table.tokenHash),
+  viewedAtIdx: index("rv_viewed_at_idx").on(table.viewedAt),
+}));
+export type ReportView = typeof reportViews.$inferSelect;
+export type InsertReportView = typeof reportViews.$inferInsert;

@@ -24,6 +24,7 @@ import { forecastRouter } from "./routers/forecast";
 import { knowledgeVaultRouter } from "./routers/knowledgeVault";
 import { selfLearningRouter } from "./routers/selfLearning";
 import { pitchRouter } from "./routers/pitch";
+import { shareReportRouter } from "./routers/shareReport";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
 import { eq, desc, gte, sql, and, like, or, isNull, lt } from "drizzle-orm";
@@ -3338,6 +3339,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
   openclaw: openclawRouter,
   socialMedia: socialMediaRouter,
   dealScreener: dealScreenerRouter,
+  shareReport: shareReportRouter,
   intelligence: intelligenceRouter,
   mvno: mvnoRouter,
   forecast: forecastRouter,

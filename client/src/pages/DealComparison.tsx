@@ -384,6 +384,38 @@ export default function DealComparison() {
   const reportRef = useRef<HTMLDivElement>(null);
   const [reportTab, setReportTab] = useState<"boardroom" | "raw">("boardroom");
   const [copiedIC, setCopiedIC] = useState(false);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [shareLoading, setShareLoading] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const createShare = trpc.shareReport.create.useMutation();
+
+  const handleShare = async () => {
+    if (!result) return;
+    if (shareUrl) {
+      await navigator.clipboard.writeText(shareUrl);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2500);
+      return;
+    }
+    setShareLoading(true);
+    try {
+      const res = await createShare.mutateAsync({
+        reportType: "comparison",
+        comparisonId: result.comparisonId,
+        expiryDays: 7,
+      });
+      const url = `${window.location.origin}/reports/${res.token}`;
+      setShareUrl(url);
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2500);
+    } catch (e) {
+      console.error("Share failed", e);
+    } finally {
+      setShareLoading(false);
+    }
+  };
 
   const compareMutation = trpc.dealScreener.compare.useMutation({
     onSuccess: (data) => {
@@ -633,6 +665,11 @@ export default function DealComparison() {
                   style={{ padding: "5px 14px", background: "none", border: `1px solid ${BORDER}`, color: copied ? ACCENT : TEXT2, fontFamily: MONO, fontSize: 10, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em" }}
                 >{copied ? "✓ COPIED" : "⎘ COPY RAW DATA"}</button>
               )}
+              <button
+                onClick={handleShare}
+                disabled={shareLoading}
+                style={{ padding: "5px 14px", background: "none", border: `1px solid ${PURPLE}`, color: shareCopied ? PURPLE : TEXT2, fontFamily: MONO, fontSize: 10, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em", opacity: shareLoading ? 0.6 : 1 }}
+              >{shareLoading ? "GENERATING..." : shareCopied ? "✓ LINK COPIED" : shareUrl ? "⎘ COPY LINK" : "↗ SHARE"}</button>
               <button
                 onClick={handlePrint}
                 style={{ padding: "5px 14px", background: "none", border: `1px solid ${BORDER}`, color: TEXT2, fontFamily: MONO, fontSize: 10, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em" }}
