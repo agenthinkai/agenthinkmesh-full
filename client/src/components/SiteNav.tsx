@@ -26,20 +26,20 @@ interface NavItem {
   scrollId?: string;
 }
 
-// All 12 items from the reference screenshot, each with a distinct neon color
+// All 12 items — each mapped to its correct route from App.tsx
 const NAV_ITEMS: NavItem[] = [
-  { label: "OpenClaw",        icon: "○",  href: "/deals",          color: "#38BDF8", bg: "rgba(56,189,248,0.08)"   },
-  { label: "AdMesh",          icon: "🎯", href: "/deals/compare",  color: "#F472B6", bg: "rgba(244,114,182,0.08)"  },
-  { label: "Social AI",       icon: "🌐", href: "/ask",            color: "#C084FC", bg: "rgba(192,132,252,0.08)"  },
-  { label: "Insurance",       icon: "🏛️", href: "/pricing",        color: "#60A5FA", bg: "rgba(96,165,250,0.08)"   },
-  { label: "Rosie Protocol",  icon: "🚀", href: "/pitch",          color: "#A78BFA", bg: "rgba(167,139,250,0.08)"  },
-  { label: "Agent Registry",  icon: "📋", href: "/deals",          color: "#94A3B8", bg: "rgba(148,163,184,0.08)"  },
-  { label: "Intel Agent",     icon: "🔍", href: "/deals",          color: "#22D3EE", bg: "rgba(34,211,238,0.08)"   },
-  { label: "MVNO Intel",      icon: "📡", href: "/deals",          color: "#FB923C", bg: "rgba(251,146,60,0.08)"   },
-  { label: "ForecastMesh",    icon: "📊", href: "/deals",          color: "#FBBF24", bg: "rgba(251,191,36,0.08)"   },
-  { label: "Knowledge Vault", icon: "🗄️", href: "/deals",          color: "#F59E0B", bg: "rgba(245,158,11,0.08)"   },
-  { label: "Deal Screener",   icon: "⚖️", href: "/deals",          color: "#4ADE80", bg: "rgba(74,222,128,0.08)"   },
-  { label: "Compare Deals",   icon: "🔷", href: "/deals/compare",  color: "#818CF8", bg: "rgba(129,140,248,0.08)"  },
+  { label: "OpenClaw",        icon: "○",  href: "/openclaw",        color: "#38BDF8", bg: "rgba(56,189,248,0.08)"   },
+  { label: "AdMesh",          icon: "🎯", href: "/admesh",          color: "#F472B6", bg: "rgba(244,114,182,0.08)"  },
+  { label: "Social AI",       icon: "🌐", href: "/social",          color: "#C084FC", bg: "rgba(192,132,252,0.08)"  },
+  { label: "Insurance",       icon: "🏛️", href: "/insurance",       color: "#60A5FA", bg: "rgba(96,165,250,0.08)"   },
+  { label: "Rosie Protocol",  icon: "🚀", href: "/rosie",           color: "#A78BFA", bg: "rgba(167,139,250,0.08)"  },
+  { label: "Agent Registry",  icon: "📋", href: "/registry",        color: "#94A3B8", bg: "rgba(148,163,184,0.08)"  },
+  { label: "Intel Agent",     icon: "🔍", href: "/intelligence",    color: "#22D3EE", bg: "rgba(34,211,238,0.08)"   },
+  { label: "MVNO Intel",      icon: "📡", href: "/telco",           color: "#FB923C", bg: "rgba(251,146,60,0.08)"   },
+  { label: "ForecastMesh",    icon: "📊", href: "/forecast",        color: "#FBBF24", bg: "rgba(251,191,36,0.08)"   },
+  { label: "Knowledge Vault", icon: "🗄️", href: "/knowledge-vault", color: "#F59E0B", bg: "rgba(245,158,11,0.08)"   },
+  { label: "Deal Screener",   icon: "⚖️", href: "/deals",           color: "#4ADE80", bg: "rgba(74,222,128,0.08)"   },
+  { label: "Compare Deals",   icon: "🔷", href: "/deals/compare",   color: "#818CF8", bg: "rgba(129,140,248,0.08)"  },
 ];
 
 interface SiteNavProps {
@@ -139,7 +139,9 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
           msOverflowStyle: "none",
         }}>
           {NAV_ITEMS.map(item => {
-            const isActive = currentPath === item.href || (item.href !== "/" && currentPath.startsWith(item.href));
+            // Exact match, or prefix match — but /deals must not match /deals/compare
+            const isActive = currentPath === item.href
+              || (item.href !== "/deals" && item.href !== "/" && currentPath.startsWith(item.href));
             const isHovered = activeHover === item.label;
             const highlight = isActive || isHovered;
 
