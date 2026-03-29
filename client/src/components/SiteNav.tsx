@@ -1,6 +1,23 @@
 /**
- * SiteNav — matches reference screenshot exactly.
- * Logo | Domains | Contact | [scrollable wide tab blocks for all 12 items] | PlanBadge | Avatar
+ * SiteNav — responsive top navigation.
+ *
+ * Desktop (≥768 px): Logo | Domains | Contact | scrollable neon tab row | PlanBadge | Avatar
+ * Mobile  (<768 px): Logo | PlanBadge | Avatar | ☰ hamburger → full-height slide-in drawer
+ *
+ * Route mapping:
+ *  OpenClaw        → /openclaw
+ *  AdMesh          → /admesh
+ *  Social AI       → /social
+ *  Insurance       → /insurance
+ *  Rosie Protocol  → /rosie
+ *  Agent Registry  → /registry
+ *  Intel Agent     → /intelligence
+ *  MVNO Intel      → /telco
+ *  ForecastMesh    → /forecast
+ *  Knowledge Vault → /knowledge-vault
+ *  Deal Screener   → /deals
+ *  Compare Deals   → /deals/compare
+ *  Pitch           → /pitch
  */
 
 import { useState, useRef, useEffect } from "react";
@@ -9,24 +26,25 @@ import { getLoginUrl } from "@/const";
 import Logo from "@/components/Logo";
 import { PlanUsageBadge } from "@/components/PlanUsageBadge";
 
+/* ─── Design tokens ─────────────────────────────────────────────────── */
 const NAVY   = "#080D1A";
 const NAVY2  = "#0C1525";
+const NAVY3  = "#0F1A2E";
 const CYAN   = "#38BDF8";
 const BLUE   = "#60A5FA";
 const WHITE  = "#F0F4FA";
 const MUTED  = "rgba(240,244,250,0.50)";
 const BORDER = "rgba(56,189,248,0.10)";
 
+/* ─── Nav item definitions ──────────────────────────────────────────── */
 interface NavItem {
-  label: string;      // can be multi-word; will wrap to 2 lines like reference
+  label: string;
   icon: string;
   href: string;
-  color: string;      // neon text color
-  bg: string;         // subtle bg tint on hover/active
-  scrollId?: string;
+  color: string;
+  bg: string;
 }
 
-// All 12 items — each mapped to its correct route from App.tsx
 const NAV_ITEMS: NavItem[] = [
   { label: "OpenClaw",        icon: "○",  href: "/openclaw",        color: "#38BDF8", bg: "rgba(56,189,248,0.08)"   },
   { label: "AdMesh",          icon: "🎯", href: "/admesh",          color: "#F472B6", bg: "rgba(244,114,182,0.08)"  },
@@ -40,9 +58,304 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Knowledge Vault", icon: "🗄️", href: "/knowledge-vault", color: "#F59E0B", bg: "rgba(245,158,11,0.08)"   },
   { label: "Deal Screener",   icon: "⚖️", href: "/deals",           color: "#4ADE80", bg: "rgba(74,222,128,0.08)"   },
   { label: "Compare Deals",   icon: "🔷", href: "/deals/compare",   color: "#818CF8", bg: "rgba(129,140,248,0.08)"  },
-  { label: "Pitch",            icon: "💡", href: "/pitch",            color: "#FF6B35", bg: "rgba(255,107,53,0.08)"    },
+  { label: "Pitch",           icon: "💡", href: "/pitch",           color: "#FF6B35", bg: "rgba(255,107,53,0.08)"   },
 ];
 
+/* ─── Helpers ───────────────────────────────────────────────────────── */
+function useIsMobile() {
+  const [mobile, setMobile] = useState(
+    typeof window !== "undefined" ? window.innerWidth < 768 : false
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 767px)");
+    const handler = (e: MediaQueryListEvent) => setMobile(e.matches);
+    mq.addEventListener("change", handler);
+    setMobile(mq.matches);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+  return mobile;
+}
+
+function isActivePath(href: string, currentPath: string) {
+  if (href === "/deals") return currentPath === "/deals";
+  return currentPath === href || (href !== "/" && currentPath.startsWith(href));
+}
+
+/* ─── Hamburger icon ────────────────────────────────────────────────── */
+function HamburgerIcon({ open }: { open: boolean }) {
+  const bar: React.CSSProperties = {
+    display: "block",
+    width: 20,
+    height: 2,
+    background: WHITE,
+    borderRadius: 2,
+    transition: "transform 0.25s, opacity 0.25s",
+    transformOrigin: "center",
+  };
+  return (
+    <span style={{ display: "flex", flexDirection: "column", gap: 5, width: 20 }}>
+      <span style={{ ...bar, transform: open ? "translateY(7px) rotate(45deg)" : "none" }} />
+      <span style={{ ...bar, opacity: open ? 0 : 1 }} />
+      <span style={{ ...bar, transform: open ? "translateY(-7px) rotate(-45deg)" : "none" }} />
+    </span>
+  );
+}
+
+/* ─── Mobile Drawer ─────────────────────────────────────────────────── */
+interface DrawerProps {
+  open: boolean;
+  onClose: () => void;
+  currentPath: string;
+  isAuthenticated: boolean;
+  user: { name?: string | null; email?: string | null; role?: string } | null;
+  logout: () => void;
+}
+
+function MobileDrawer({ open, onClose, currentPath, isAuthenticated, user, logout }: DrawerProps) {
+  // Prevent body scroll when drawer is open
+  useEffect(() => {
+    document.body.style.overflow = open ? "hidden" : "";
+    return () => { document.body.style.overflow = ""; };
+  }, [open]);
+
+  return (
+    <>
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        style={{
+          position: "fixed", inset: 0, zIndex: 150,
+          background: "rgba(0,0,0,0.65)",
+          backdropFilter: "blur(4px)",
+          opacity: open ? 1 : 0,
+          pointerEvents: open ? "auto" : "none",
+          transition: "opacity 0.28s",
+        }}
+      />
+
+      {/* Drawer panel */}
+      <div
+        style={{
+          position: "fixed", top: 0, right: 0, bottom: 0, zIndex: 160,
+          width: "min(300px, 85vw)",
+          background: NAVY3,
+          borderLeft: `1px solid ${BORDER}`,
+          boxShadow: "-8px 0 40px rgba(0,0,0,0.6)",
+          transform: open ? "translateX(0)" : "translateX(100%)",
+          transition: "transform 0.28s cubic-bezier(0.4,0,0.2,1)",
+          display: "flex",
+          flexDirection: "column",
+          overflowY: "auto",
+        }}
+      >
+        {/* Drawer header */}
+        <div style={{
+          display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "14px 16px",
+          borderBottom: `1px solid ${BORDER}`,
+          flexShrink: 0,
+        }}>
+          <a href="/" onClick={onClose} style={{ textDecoration: "none", display: "flex", alignItems: "center", gap: 8 }}>
+            <Logo size={24} />
+            <span style={{ fontSize: 13, fontWeight: 700, color: WHITE, letterSpacing: "0.04em" }}>
+              AgenThinkMesh
+            </span>
+          </a>
+          <button
+            onClick={onClose}
+            aria-label="Close menu"
+            style={{
+              background: "none", border: "none", cursor: "pointer",
+              color: MUTED, fontSize: 20, lineHeight: 1, padding: 4,
+              transition: "color 0.15s",
+            }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.color = WHITE; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.color = MUTED; }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Static links */}
+        <div style={{ padding: "8px 0", borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
+          {[
+            { label: "Domains", href: "/pricing" },
+            { label: "Contact", href: "/contact" },
+          ].map(item => (
+            <a
+              key={item.label}
+              href={item.href}
+              onClick={onClose}
+              style={{
+                display: "flex", alignItems: "center",
+                padding: "11px 20px",
+                fontSize: 13, fontWeight: 500, color: MUTED,
+                textDecoration: "none",
+                transition: "background 0.15s, color 0.15s",
+              }}
+              onMouseEnter={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.04)";
+                (e.currentTarget as HTMLAnchorElement).style.color = WHITE;
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
+                (e.currentTarget as HTMLAnchorElement).style.color = MUTED;
+              }}
+            >
+              {item.label}
+            </a>
+          ))}
+        </div>
+
+        {/* All nav items */}
+        <div style={{ flex: 1, padding: "8px 0", overflowY: "auto" }}>
+          {NAV_ITEMS.map(item => {
+            const active = isActivePath(item.href, currentPath);
+            return (
+              <a
+                key={item.label}
+                href={item.href}
+                onClick={onClose}
+                style={{
+                  display: "flex", alignItems: "center", gap: 14,
+                  padding: "12px 20px",
+                  textDecoration: "none",
+                  background: active ? item.bg : "transparent",
+                  borderLeft: active ? `3px solid ${item.color}` : "3px solid transparent",
+                  transition: "background 0.15s, border-left-color 0.15s",
+                }}
+                onMouseEnter={e => {
+                  if (!active) {
+                    (e.currentTarget as HTMLAnchorElement).style.background = item.bg;
+                    (e.currentTarget as HTMLAnchorElement).style.borderLeftColor = item.color;
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!active) {
+                    (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
+                    (e.currentTarget as HTMLAnchorElement).style.borderLeftColor = "transparent";
+                  }
+                }}
+              >
+                {/* Icon circle */}
+                <span style={{
+                  width: 34, height: 34, borderRadius: 8,
+                  background: `${item.color}18`,
+                  border: `1px solid ${item.color}33`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 15, flexShrink: 0,
+                  filter: `drop-shadow(0 0 5px ${item.color}55)`,
+                }}>
+                  {item.icon}
+                </span>
+                {/* Label */}
+                <span style={{
+                  fontSize: 13, fontWeight: 700,
+                  color: item.color,
+                  textShadow: `0 0 10px ${item.color}44`,
+                  letterSpacing: "0.01em",
+                }}>
+                  {item.label}
+                </span>
+              </a>
+            );
+          })}
+        </div>
+
+        {/* User section */}
+        <div style={{
+          borderTop: `1px solid ${BORDER}`,
+          padding: "12px 16px",
+          flexShrink: 0,
+        }}>
+          {isAuthenticated ? (
+            <>
+              <div style={{
+                display: "flex", alignItems: "center", gap: 10,
+                padding: "8px 4px 12px",
+                borderBottom: "1px solid rgba(255,255,255,0.06)",
+                marginBottom: 8,
+              }}>
+                <div style={{
+                  width: 34, height: 34, borderRadius: "50%",
+                  background: `linear-gradient(135deg, ${CYAN}, ${BLUE})`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 13, fontWeight: 800, color: NAVY, flexShrink: 0,
+                }}>
+                  {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                </div>
+                <div>
+                  <div style={{ fontSize: 13, fontWeight: 600, color: WHITE }}>{user?.name ?? "User"}</div>
+                  {user?.email && <div style={{ fontSize: 11, color: MUTED }}>{user.email}</div>}
+                </div>
+              </div>
+              {[
+                { label: "My Workspace", href: "/persona-setup" },
+                { label: "Billing",       href: "/account/billing" },
+                { label: "Shared Reports", href: "/reports/history" },
+              ].map(item => (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  onClick={onClose}
+                  style={{
+                    display: "block", padding: "9px 4px",
+                    fontSize: 13, color: MUTED, textDecoration: "none",
+                    transition: "color 0.15s",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = WHITE; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = MUTED; }}
+                >
+                  {item.label} →
+                </a>
+              ))}
+              {user?.role === "admin" && (
+                <a
+                  href="/admin/usage"
+                  onClick={onClose}
+                  style={{
+                    display: "block", padding: "9px 4px",
+                    fontSize: 13, color: "#F59E0B", textDecoration: "none",
+                  }}
+                >
+                  ⚡ Usage Dashboard →
+                </a>
+              )}
+              <button
+                onClick={() => { onClose(); logout(); }}
+                style={{
+                  display: "block", width: "100%", textAlign: "left",
+                  padding: "9px 4px", background: "none", border: "none",
+                  marginTop: 4,
+                  fontSize: 13, color: "#EF4444", cursor: "pointer",
+                  fontFamily: "inherit",
+                  borderTop: "1px solid rgba(255,255,255,0.06)",
+                }}
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <a
+              href={getLoginUrl()}
+              style={{
+                display: "block", textAlign: "center",
+                padding: "10px 16px", borderRadius: 8,
+                background: "linear-gradient(135deg, #7BA3D4, #4ADE80)",
+                color: WHITE, fontSize: 13, fontWeight: 700,
+                textDecoration: "none",
+              }}
+            >
+              Sign in →
+            </a>
+          )}
+        </div>
+      </div>
+    </>
+  );
+}
+
+/* ─── Main SiteNav component ────────────────────────────────────────── */
 interface SiteNavProps {
   isLandingPage?: boolean;
 }
@@ -50,11 +363,14 @@ interface SiteNavProps {
 export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
   const { isAuthenticated, user, logout } = useAuth();
   const [dropOpen, setDropOpen] = useState(false);
+  const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeHover, setActiveHover] = useState<string | null>(null);
   const dropRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
 
+  // Close desktop dropdown on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (dropRef.current && !dropRef.current.contains(e.target as Node)) {
@@ -65,261 +381,271 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // Close drawer on route change (navigation)
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [currentPath]);
+
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth" });
   };
 
   return (
-    <div
-      style={{
-        position: "sticky",
-        top: 0,
-        zIndex: 100,
-        background: `${NAVY}F5`,
-        backdropFilter: "blur(18px)",
-        WebkitBackdropFilter: "blur(18px)",
-        borderBottom: `1px solid ${BORDER}`,
-      }}
-    >
-      <div style={{
-        display: "flex",
-        alignItems: "stretch",
-        height: 52,
-      }}>
+    <>
+      {/* ── TOP BAR ──────────────────────────────────────────────────── */}
+      <div
+        style={{
+          position: "sticky",
+          top: 0,
+          zIndex: 100,
+          background: `${NAVY}F5`,
+          backdropFilter: "blur(18px)",
+          WebkitBackdropFilter: "blur(18px)",
+          borderBottom: `1px solid ${BORDER}`,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "stretch", height: 52 }}>
 
-        {/* ── LOGO + STATIC LINKS ──────────────────────────────────────── */}
-        <div style={{
-          display: "flex",
-          alignItems: "center",
-          padding: "0 8px 0 14px",
-          flexShrink: 0,
-          borderRight: `1px solid ${BORDER}`,
-          gap: 0,
-        }}>
-          <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", marginRight: 14 }}>
-            <Logo size={26} />
-          </a>
-
-          {/* Domains + Contact — plain muted text links, matching reference */}
-          {[
-            { label: "Domains", href: "/pricing" },
-            { label: "Contact", href: isLandingPage ? "#contact" : "/contact", scrollId: isLandingPage ? "contact" : undefined },
-          ].map(item => (
-            <a
-              key={item.label}
-              href={item.href}
-              onClick={item.scrollId ? (e) => { e.preventDefault(); scrollTo(item.scrollId!); } : undefined}
-              style={{
-                color: MUTED,
-                fontSize: 13,
-                fontWeight: 500,
-                textDecoration: "none",
-                padding: "0 10px",
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                transition: "color 0.15s",
-                whiteSpace: "nowrap",
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = WHITE; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = MUTED; }}
-            >
-              {item.label}
+          {/* Logo + static links (always visible) */}
+          <div style={{
+            display: "flex", alignItems: "center",
+            padding: "0 8px 0 14px",
+            flexShrink: 0,
+            borderRight: `1px solid ${BORDER}`,
+            gap: 0,
+          }}>
+            <a href="/" style={{ textDecoration: "none", display: "flex", alignItems: "center", marginRight: isMobile ? 0 : 14 }}>
+              <Logo size={26} />
             </a>
-          ))}
-        </div>
 
-        {/* ── SCROLLABLE TAB BLOCKS ─────────────────────────────────────── */}
-        <div style={{
-          display: "flex",
-          alignItems: "stretch",
-          flex: 1,
-          overflowX: "auto",
-          scrollbarWidth: "none",
-          msOverflowStyle: "none",
-        }}>
-          {NAV_ITEMS.map(item => {
-            // Exact match, or prefix match — but /deals must not match /deals/compare
-            const isActive = currentPath === item.href
-              || (item.href !== "/deals" && item.href !== "/" && currentPath.startsWith(item.href));
-            const isHovered = activeHover === item.label;
-            const highlight = isActive || isHovered;
-
-            // Split label into up to 2 lines (for "Rosie Protocol", "MVNO Intel", etc.)
-            const words = item.label.split(" ");
-            const line1 = words.slice(0, Math.ceil(words.length / 2)).join(" ");
-            const line2 = words.length > 1 ? words.slice(Math.ceil(words.length / 2)).join(" ") : null;
-
-            return (
+            {/* Desktop-only static links */}
+            {!isMobile && [
+              { label: "Domains", href: "/pricing" },
+              {
+                label: "Contact",
+                href: isLandingPage ? "#contact" : "/contact",
+                scrollId: isLandingPage ? "contact" : undefined,
+              },
+            ].map(item => (
               <a
                 key={item.label}
                 href={item.href}
-                onClick={isLandingPage && item.scrollId
+                onClick={item.scrollId
                   ? (e) => { e.preventDefault(); scrollTo(item.scrollId!); }
                   : undefined
                 }
-                onMouseEnter={() => setActiveHover(item.label)}
-                onMouseLeave={() => setActiveHover(null)}
                 style={{
-                  position: "relative",
-                  display: "flex",
-                  flexDirection: "column",
-                  justifyContent: "center",
-                  alignItems: "flex-start",
-                  gap: 1,
-                  padding: "0 14px",
-                  minWidth: 80,
-                  maxWidth: 110,
-                  textDecoration: "none",
-                  cursor: "pointer",
-                  background: highlight ? item.bg : "transparent",
-                  borderRight: `1px solid ${BORDER}`,
-                  borderBottom: highlight
-                    ? `3px solid ${item.color}`
-                    : "3px solid transparent",
-                  transition: "background 0.18s, border-bottom-color 0.18s",
-                  flexShrink: 0,
+                  color: MUTED, fontSize: 13, fontWeight: 500,
+                  textDecoration: "none", padding: "0 10px",
+                  height: "100%", display: "flex", alignItems: "center",
+                  transition: "color 0.15s", whiteSpace: "nowrap",
                 }}
+                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = WHITE; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = MUTED; }}
               >
-                {/* Icon */}
-                <span style={{
-                  fontSize: 13,
-                  lineHeight: 1,
-                  filter: `drop-shadow(0 0 4px ${item.color}${highlight ? "cc" : "77"})`,
-                  transition: "filter 0.18s",
-                  marginBottom: 2,
-                }}>
-                  {item.icon}
-                </span>
-
-                {/* Label — always neon, 2-line wrap like reference */}
-                <span style={{
-                  fontSize: 11,
-                  fontWeight: 700,
-                  letterSpacing: "0.01em",
-                  color: item.color,
-                  opacity: highlight ? 1 : 0.85,
-                  transition: "opacity 0.18s",
-                  lineHeight: 1.25,
-                  textShadow: `0 0 8px ${item.color}${highlight ? "88" : "44"}`,
-                }}>
-                  {line1}
-                  {line2 && <><br />{line2}</>}
-                </span>
+                {item.label}
               </a>
-            );
-          })}
-        </div>
+            ))}
+          </div>
 
-        {/* ── RIGHT: PLAN BADGE + AUTH ──────────────────────────────────── */}
-        <div style={{
-          display: "flex",
-          gap: 8,
-          alignItems: "center",
-          padding: "0 12px",
-          flexShrink: 0,
-          borderLeft: `1px solid ${BORDER}`,
-        }}>
-          <PlanUsageBadge />
+          {/* Desktop scrollable tab row */}
+          {!isMobile && (
+            <div style={{
+              display: "flex", alignItems: "stretch",
+              flex: 1, overflowX: "auto",
+              scrollbarWidth: "none", msOverflowStyle: "none",
+            }}>
+              {NAV_ITEMS.map(item => {
+                const active = isActivePath(item.href, currentPath);
+                const hovered = activeHover === item.label;
+                const highlight = active || hovered;
 
-          {isAuthenticated ? (
-            <div ref={dropRef} style={{ position: "relative" }}>
+                const words = item.label.split(" ");
+                const mid = Math.ceil(words.length / 2);
+                const line1 = words.slice(0, mid).join(" ");
+                const line2 = words.length > 1 ? words.slice(mid).join(" ") : null;
+
+                return (
+                  <a
+                    key={item.label}
+                    href={item.href}
+                    onMouseEnter={() => setActiveHover(item.label)}
+                    onMouseLeave={() => setActiveHover(null)}
+                    style={{
+                      position: "relative",
+                      display: "flex", flexDirection: "column",
+                      justifyContent: "center", alignItems: "flex-start",
+                      gap: 1, padding: "0 14px",
+                      minWidth: 80, maxWidth: 110,
+                      textDecoration: "none", cursor: "pointer",
+                      background: highlight ? item.bg : "transparent",
+                      borderRight: `1px solid ${BORDER}`,
+                      borderBottom: highlight ? `3px solid ${item.color}` : "3px solid transparent",
+                      transition: "background 0.18s, border-bottom-color 0.18s",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <span style={{
+                      fontSize: 13, lineHeight: 1,
+                      filter: `drop-shadow(0 0 4px ${item.color}${highlight ? "cc" : "77"})`,
+                      transition: "filter 0.18s", marginBottom: 2,
+                    }}>
+                      {item.icon}
+                    </span>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, letterSpacing: "0.01em",
+                      color: item.color,
+                      opacity: highlight ? 1 : 0.85,
+                      transition: "opacity 0.18s", lineHeight: 1.25,
+                      textShadow: `0 0 8px ${item.color}${highlight ? "88" : "44"}`,
+                    }}>
+                      {line1}
+                      {line2 && <><br />{line2}</>}
+                    </span>
+                  </a>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Mobile: spacer */}
+          {isMobile && <div style={{ flex: 1 }} />}
+
+          {/* Right section: PlanBadge + Avatar/SignIn + (mobile) Hamburger */}
+          <div style={{
+            display: "flex", gap: 8, alignItems: "center",
+            padding: "0 12px", flexShrink: 0,
+            borderLeft: `1px solid ${BORDER}`,
+          }}>
+            <PlanUsageBadge />
+
+            {/* Desktop avatar dropdown */}
+            {!isMobile && (
+              isAuthenticated ? (
+                <div ref={dropRef} style={{ position: "relative" }}>
+                  <button
+                    onClick={() => setDropOpen(o => !o)}
+                    title={user?.name ?? "Account"}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      background: `linear-gradient(135deg, ${CYAN}, ${BLUE})`,
+                      border: "none", borderRadius: "50%",
+                      width: 32, height: 32, cursor: "pointer",
+                      fontSize: 12, fontWeight: 800, color: NAVY, flexShrink: 0,
+                      transition: "opacity 0.2s",
+                    }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.82"; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+                  >
+                    {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                  </button>
+
+                  {dropOpen && (
+                    <div style={{
+                      position: "absolute", top: "calc(100% + 8px)", right: 0,
+                      background: NAVY2, border: `1px solid ${CYAN}22`,
+                      borderRadius: 10, minWidth: 190, zIndex: 200,
+                      boxShadow: "0 8px 32px rgba(0,0,0,0.55)", overflow: "hidden",
+                    }}>
+                      <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                        <div style={{ fontSize: 13, fontWeight: 600, color: WHITE }}>{user?.name ?? "User"}</div>
+                        {user?.email && <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{user.email}</div>}
+                      </div>
+                      {[
+                        { label: "My Workspace →",   href: "/persona-setup" },
+                        { label: "Billing →",         href: "/account/billing" },
+                        { label: "Shared Reports →",  href: "/reports/history" },
+                      ].map(item => (
+                        <a
+                          key={item.href}
+                          href={item.href}
+                          onClick={() => setDropOpen(false)}
+                          style={{ display: "block", padding: "10px 16px", fontSize: 13, color: MUTED, textDecoration: "none", transition: "background 0.15s" }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLAnchorElement).style.color = WHITE; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; (e.currentTarget as HTMLAnchorElement).style.color = MUTED; }}
+                        >
+                          {item.label}
+                        </a>
+                      ))}
+                      {user?.role === "admin" && (
+                        <a
+                          href="/admin/usage"
+                          onClick={() => setDropOpen(false)}
+                          style={{ display: "block", padding: "10px 16px", fontSize: 13, color: "#F59E0B", textDecoration: "none", transition: "background 0.15s", borderTop: "1px solid rgba(245,158,11,0.12)" }}
+                          onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(245,158,11,0.08)"; }}
+                          onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
+                        >
+                          ⚡ Usage Dashboard
+                        </a>
+                      )}
+                      <button
+                        onClick={() => { setDropOpen(false); logout(); }}
+                        style={{
+                          display: "block", width: "100%", textAlign: "left",
+                          padding: "10px 16px", background: "none", border: "none",
+                          borderTop: "1px solid rgba(255,255,255,0.06)",
+                          fontSize: 13, color: "#EF4444", cursor: "pointer",
+                          fontFamily: "inherit",
+                        }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(239,68,68,0.08)"; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
+                      >
+                        Sign out
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <a
+                  href={getLoginUrl()}
+                  style={{
+                    color: WHITE, fontSize: 13, textDecoration: "none",
+                    padding: "6px 16px", borderRadius: 8, fontWeight: 600,
+                    background: "linear-gradient(135deg, #7BA3D4, #4ADE80)",
+                    transition: "all 0.2s", whiteSpace: "nowrap",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = "0.88"; (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1.02)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.opacity = "1"; (e.currentTarget as HTMLAnchorElement).style.transform = "none"; }}
+                >
+                  Sign in →
+                </a>
+              )
+            )}
+
+            {/* Mobile hamburger button */}
+            {isMobile && (
               <button
-                onClick={() => setDropOpen(o => !o)}
-                title={user?.name ?? "Account"}
+                onClick={() => setDrawerOpen(o => !o)}
+                aria-label={drawerOpen ? "Close menu" : "Open menu"}
+                aria-expanded={drawerOpen}
                 style={{
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  background: `linear-gradient(135deg, ${CYAN}, ${BLUE})`,
-                  border: "none", borderRadius: "50%",
-                  width: 32, height: 32, cursor: "pointer",
-                  fontSize: 12, fontWeight: 800, color: NAVY, flexShrink: 0,
-                  transition: "opacity 0.2s",
+                  background: drawerOpen ? "rgba(56,189,248,0.12)" : "transparent",
+                  border: `1px solid ${drawerOpen ? CYAN + "44" : "transparent"}`,
+                  borderRadius: 8, width: 36, height: 36,
+                  cursor: "pointer", flexShrink: 0,
+                  transition: "background 0.2s, border-color 0.2s",
                 }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0.82"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
               >
-                {user?.name ? user.name.charAt(0).toUpperCase() : "U"}
+                <HamburgerIcon open={drawerOpen} />
               </button>
-
-              {dropOpen && (
-                <div style={{
-                  position: "absolute", top: "calc(100% + 8px)", right: 0,
-                  background: NAVY2, border: `1px solid ${CYAN}22`,
-                  borderRadius: 10, minWidth: 190, zIndex: 200,
-                  boxShadow: "0 8px 32px rgba(0,0,0,0.55)", overflow: "hidden",
-                }}>
-                  <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
-                    <div style={{ fontSize: 13, fontWeight: 600, color: WHITE }}>{user?.name ?? "User"}</div>
-                    {user?.email && <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{user.email}</div>}
-                  </div>
-                  {[
-                    { label: "My Workspace →",  href: "/persona-setup" },
-                    { label: "Billing →",        href: "/account/billing" },
-                    { label: "Shared Reports →", href: "/reports/history" },
-                  ].map(item => (
-                    <a
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setDropOpen(false)}
-                      style={{ display: "block", padding: "10px 16px", fontSize: 13, color: MUTED, textDecoration: "none", transition: "background 0.15s" }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.05)"; (e.currentTarget as HTMLAnchorElement).style.color = WHITE; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; (e.currentTarget as HTMLAnchorElement).style.color = MUTED; }}
-                    >
-                      {item.label}
-                    </a>
-                  ))}
-                  {user?.role === "admin" && (
-                    <a
-                      href="/admin/usage"
-                      onClick={() => setDropOpen(false)}
-                      style={{ display: "block", padding: "10px 16px", fontSize: 13, color: "#F59E0B", textDecoration: "none", transition: "background 0.15s", borderTop: "1px solid rgba(245,158,11,0.12)" }}
-                      onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(245,158,11,0.08)"; }}
-                      onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
-                    >
-                      ⚡ Usage Dashboard
-                    </a>
-                  )}
-                  <button
-                    onClick={() => { setDropOpen(false); logout(); }}
-                    style={{
-                      display: "block", width: "100%", textAlign: "left",
-                      padding: "10px 16px", background: "none", border: "none",
-                      borderTop: "1px solid rgba(255,255,255,0.06)",
-                      fontSize: 13, color: "#EF4444", cursor: "pointer",
-                      fontFamily: "inherit",
-                    }}
-                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(239,68,68,0.08)"; }}
-                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}
-                  >
-                    Sign out
-                  </button>
-                </div>
-              )}
-            </div>
-          ) : (
-            <a
-              href={getLoginUrl()}
-              style={{
-                color: WHITE, fontSize: 13, textDecoration: "none",
-                padding: "6px 16px", borderRadius: 8, fontWeight: 600,
-                background: "linear-gradient(135deg, #7BA3D4, #4ADE80)",
-                transition: "all 0.2s", whiteSpace: "nowrap",
-              }}
-              onMouseEnter={e => {
-                (e.currentTarget as HTMLAnchorElement).style.opacity = "0.88";
-                (e.currentTarget as HTMLAnchorElement).style.transform = "scale(1.02)";
-              }}
-              onMouseLeave={e => {
-                (e.currentTarget as HTMLAnchorElement).style.opacity = "1";
-                (e.currentTarget as HTMLAnchorElement).style.transform = "none";
-              }}
-            >
-              Sign in →
-            </a>
-          )}
+            )}
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* ── MOBILE DRAWER ────────────────────────────────────────────── */}
+      {isMobile && (
+        <MobileDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          currentPath={currentPath}
+          isAuthenticated={isAuthenticated}
+          user={user}
+          logout={logout}
+        />
+      )}
+    </>
   );
 }
