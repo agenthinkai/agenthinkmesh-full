@@ -12,6 +12,7 @@ import { getDb } from "../db";
 import { dealScreenings, dealScreeningRateLimit, dealComparisons, dealScreenerPayments } from "../../drizzle/schema";
 import { runCouncil } from "../councilEngine";
 import { runComparison } from "../comparisonEngine";
+import { generateSingleDealICReport, generateComparisonICReport } from "../icReportEngine";
 import { randomUUID } from "crypto";
 
 // ── Plan-based daily rate limits ─────────────────────────────────────────────
@@ -139,10 +140,20 @@ export const dealScreenerRouter = router({
         votes: JSON.stringify(result.votes),
       });
 
+      // Generate boardroom-ready IC Report (additive — does not modify result)
+      let icReport = null;
+      try {
+        icReport = await generateSingleDealICReport(input.dealName, input.dealText, result);
+      } catch (err) {
+        // IC report generation failure is non-fatal — raw Council result still returned
+        console.error("[ICReport] Failed to generate IC report:", err);
+      }
+
       return {
         dealId,
         dealName: input.dealName,
         ...result,
+        icReport,
       };
     }),
 
@@ -209,12 +220,21 @@ export const dealScreenerRouter = router({
         totalAmountUsd,
       });
 
+      // Generate boardroom-ready IC Comparison Report (additive — does not modify result)
+      let icReport = null;
+      try {
+        icReport = await generateComparisonICReport(result.dealAnalyses, result.comparisonSummary);
+      } catch (err) {
+        console.error("[ICReport] Failed to generate comparison IC report:", err);
+      }
+
       return {
         comparisonId: result.comparisonId,
         dealAnalyses: result.dealAnalyses,
         comparisonSummary: result.comparisonSummary,
         totalAmountUsd: parseFloat(totalAmountUsd),
         timestamp: result.timestamp,
+        icReport,
       };
     }),
 

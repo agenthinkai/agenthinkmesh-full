@@ -80,6 +80,30 @@ interface ComparisonResult {
   comparisonSummary: ComparisonSummary;
   totalAmountUsd: number;
   timestamp: string;
+  icReport?: ComparisonICReportData | null;
+}
+
+// ── Comparison IC Report types (mirrors server icReportEngine.ts) ───────────────
+interface MiniICReport {
+  dealName: string;
+  decision: "APPROVE" | "REJECT" | "CONDITIONAL APPROVE";
+  score: number;
+  topStrength: string;
+  topRisk: string;
+  recommendedAction: string;
+  rationale: string;
+}
+
+interface ComparisonICReportData {
+  generatedAt: string;
+  comparisonSummary: {
+    winner: string;
+    winnerRationale: string;
+    keyTradeoffs: string[];
+    portfolioRecommendation: string;
+  };
+  dealReports: MiniICReport[];
+  rawText: string;
 }
 
 interface DealEntry {
@@ -358,6 +382,8 @@ export default function DealComparison() {
   const [view, setView] = useState<"input" | "loading" | "report">("input");
   const [error, setError] = useState<string | null>(null);
   const reportRef = useRef<HTMLDivElement>(null);
+  const [reportTab, setReportTab] = useState<"boardroom" | "raw">("boardroom");
+  const [copiedIC, setCopiedIC] = useState(false);
 
   const compareMutation = trpc.dealScreener.compare.useMutation({
     onSuccess: (data) => {
@@ -486,6 +512,14 @@ export default function DealComparison() {
     });
   };
 
+  const handleCopyIC = () => {
+    if (!result?.icReport) return;
+    navigator.clipboard.writeText(result.icReport.rawText).then(() => {
+      setCopiedIC(true);
+      setTimeout(() => setCopiedIC(false), 2500);
+    }).catch(() => {});
+  };
+
   const handleReset = () => {
     setResult(null);
     setView("input");
@@ -543,16 +577,17 @@ export default function DealComparison() {
     );
   }
 
-  // ── Report view ──────────────────────────────────────────────────────────────
+  // ── Report view ─────────────────────────────────────────────────────────────────
   if (view === "report" && result) {
     const { comparisonSummary, dealAnalyses } = result;
     const { rankedDeals, bestOverall, lowestRisk, highestUpside, mostIcReady, keyTradeoffs } = comparisonSummary;
+    const ic = result.icReport;
 
     return (
       <div style={{ minHeight: "100vh", background: BG, padding: "40px 24px" }}>
         <div style={{ maxWidth: 960, margin: "0 auto" }} ref={reportRef}>
           {/* Header */}
-          <div style={{ textAlign: "center", marginBottom: 40 }}>
+          <div style={{ textAlign: "center", marginBottom: 24 }}>
             <div style={{ fontFamily: MONO, fontSize: 11, color: ACCENT, letterSpacing: "0.15em", marginBottom: 8 }}>
               DEAL COMPARISON REPORT V2.1 · COUNCIL OF 10
             </div>
@@ -564,6 +599,101 @@ export default function DealComparison() {
             </div>
           </div>
 
+          {/* Tab switcher */}
+          <div style={{ display: "flex", gap: 2, marginBottom: 24, borderBottom: `1px solid ${BORDER}` }} className="no-print">
+            {(ic ? [
+              { id: "boardroom" as const, label: "🏛️ IC REPORT" },
+              { id: "raw" as const, label: "⚡ RAW COMPARISON" },
+            ] : [
+              { id: "raw" as const, label: "⚡ RAW COMPARISON" },
+            ]).map(tab => (
+              <button
+                key={tab.id}
+                onClick={() => setReportTab(tab.id)}
+                style={{
+                  padding: "8px 18px",
+                  background: reportTab === tab.id ? "rgba(74,158,255,0.1)" : "transparent",
+                  border: "none",
+                  borderBottom: `2px solid ${reportTab === tab.id ? ACCENT : "transparent"}`,
+                  color: reportTab === tab.id ? ACCENT : MUTED,
+                  fontFamily: MONO, fontSize: 10, cursor: "pointer", letterSpacing: "0.08em",
+                }}
+              >{tab.label}</button>
+            ))}
+            <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center", paddingBottom: 4 }}>
+              {reportTab === "boardroom" && ic && (
+                <button
+                  onClick={handleCopyIC}
+                  style={{ padding: "5px 14px", background: "none", border: `1px solid ${GREEN}`, color: copiedIC ? GREEN : TEXT2, fontFamily: MONO, fontSize: 10, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em" }}
+                >{copiedIC ? "✓ COPIED" : "⎘ COPY IC REPORT"}</button>
+              )}
+              {reportTab === "raw" && (
+                <button
+                  onClick={handleCopy}
+                  style={{ padding: "5px 14px", background: "none", border: `1px solid ${BORDER}`, color: copied ? ACCENT : TEXT2, fontFamily: MONO, fontSize: 10, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em" }}
+                >{copied ? "✓ COPIED" : "⎘ COPY RAW DATA"}</button>
+              )}
+              <button
+                onClick={handlePrint}
+                style={{ padding: "5px 14px", background: "none", border: `1px solid ${BORDER}`, color: TEXT2, fontFamily: MONO, fontSize: 10, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em" }}
+              >↓ PDF</button>
+              <button
+                onClick={handleReset}
+                style={{ padding: "5px 14px", background: BG2, border: `1px solid ${BORDER}`, color: TEXT2, fontFamily: MONO, fontSize: 10, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em" }}
+              >← NEW</button>
+            </div>
+          </div>
+
+          {/* Boardroom IC Report tab */}
+          {reportTab === "boardroom" && ic && (
+            <div>
+              {/* IC Comparison Summary */}
+              <div style={{ background: BG2, border: `1px solid ${ACCENT}33`, borderRadius: 8, padding: "20px 24px", marginBottom: 20 }}>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.12em", marginBottom: 12 }}>COMPARISON VERDICT</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 10, flexWrap: "wrap" }}>
+                  <span style={{ fontFamily: MONO, fontSize: 16, fontWeight: 800, color: GREEN }}>🏆 {ic.comparisonSummary.winner}</span>
+                  <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, background: `${GREEN}18`, padding: "4px 10px", borderRadius: 4 }}>RECOMMENDED</span>
+                </div>
+                <p style={{ margin: "0 0 12px", fontSize: 13, color: TEXT, lineHeight: 1.6 }}>{ic.comparisonSummary.winnerRationale}</p>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 8 }}>KEY TRADEOFFS</div>
+                {ic.comparisonSummary.keyTradeoffs.map((t, i) => (
+                  <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 12, borderLeft: `2px solid ${AMBER}`, lineHeight: 1.5 }}>• {t}</div>
+                ))}
+                <div style={{ marginTop: 12, padding: "10px 14px", background: `${ACCENT}10`, borderRadius: 6, fontFamily: MONO, fontSize: 11, color: ACCENT }}>
+                  💼 {ic.comparisonSummary.portfolioRecommendation}
+                </div>
+              </div>
+
+              {/* Per-deal mini IC reports */}
+              <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.12em", marginBottom: 12 }}>PER-DEAL IC SUMMARIES</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 20 }}>
+                {ic.dealReports.map((d) => {
+                  const ranked = rankedDeals.find(r => r.dealName === d.dealName);
+                  const decColor = d.decision === "APPROVE" ? GREEN : d.decision === "REJECT" ? RED : AMBER;
+                  return (
+                    <div key={d.dealName} style={{ background: BG2, border: `1px solid ${decColor}33`, borderRadius: 8, padding: "16px 18px" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 8 }}>
+                        <div>
+                          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 4 }}>{ranked ? `#${ranked.overallRank}` : ""}</div>
+                          <div style={{ fontFamily: MONO, fontSize: 13, color: TEXT, fontWeight: 700 }}>{d.dealName}</div>
+                        </div>
+                        <span style={{ fontFamily: MONO, fontSize: 10, color: decColor, background: `${decColor}18`, padding: "3px 8px", borderRadius: 4 }}>{d.decision}</span>
+                      </div>
+                      <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, marginBottom: 8 }}>Score: <span style={{ color: TEXT }}>{d.score}/10</span></div>
+                      <div style={{ fontSize: 11, color: GREEN, marginBottom: 4, paddingLeft: 10, borderLeft: `2px solid ${GREEN}` }}>↑ {d.topStrength}</div>
+                      <div style={{ fontSize: 11, color: RED, marginBottom: 8, paddingLeft: 10, borderLeft: `2px solid ${RED}` }}>↓ {d.topRisk}</div>
+                      <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, marginBottom: 4 }}>{d.recommendedAction}</div>
+                      <div style={{ fontSize: 11, color: TEXT2, lineHeight: 1.5 }}>{d.rationale}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Raw Comparison tab */}
+          {reportTab === "raw" && (
+          <div>
           {/* IC Summary Badges */}
           <div style={{
             display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 32,
@@ -630,42 +760,8 @@ export default function DealComparison() {
             </div>
           ))}
 
-          {/* Actions */}
-          <div style={{ display: "flex", gap: 12, marginTop: 32, justifyContent: "center", flexWrap: "wrap" }} className="no-print">
-            <button
-              onClick={handleCopy}
-              style={{
-                background: copied ? `${GREEN}22` : "none",
-                border: `1px solid ${copied ? GREEN : ACCENT}`,
-                color: copied ? GREEN : ACCENT,
-                fontFamily: MONO, fontSize: 12, padding: "10px 24px",
-                borderRadius: 6, cursor: "pointer", letterSpacing: "0.08em",
-                transition: "all 0.2s",
-              }}
-            >
-              {copied ? "✓ COPIED!" : "⎘ COPY RESULTS"}
-            </button>
-            <button
-              onClick={handlePrint}
-              style={{
-                background: "none", border: `1px solid ${BORDER}`, color: TEXT2,
-                fontFamily: MONO, fontSize: 12, padding: "10px 24px",
-                borderRadius: 6, cursor: "pointer", letterSpacing: "0.08em",
-              }}
-            >
-              ⬇ DOWNLOAD PDF
-            </button>
-            <button
-              onClick={handleReset}
-              style={{
-                background: BG2, border: `1px solid ${BORDER}`, color: TEXT2,
-                fontFamily: MONO, fontSize: 12, padding: "10px 24px",
-                borderRadius: 6, cursor: "pointer", letterSpacing: "0.08em",
-              }}
-            >
-              ← NEW COMPARISON
-            </button>
           </div>
+          )}
         </div>
 
         <style>{`

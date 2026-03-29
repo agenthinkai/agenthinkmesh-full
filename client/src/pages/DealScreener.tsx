@@ -59,6 +59,38 @@ interface CouncilResult {
   conditionsToProceed: string[];
   blockingIssues: string[];
   votes: PersonaVote[];
+  icReport?: ICReportData | null;
+}
+
+// ── IC Report types (mirrors server icReportEngine.ts) ────────────────────────
+interface ICReportData {
+  dealName: string;
+  generatedAt: string;
+  verificationBanner: {
+    consensusScore: number;
+    confidenceLevel: "LOW" | "MEDIUM" | "HIGH";
+    conflictStatus: string;
+  };
+  executiveVerdict: {
+    decision: "APPROVE" | "REJECT" | "CONDITIONAL APPROVE";
+    recommendedAction: string;
+    rationale: string;
+  };
+  investmentThesis: string[];
+  keyRisks: string[];
+  decisionTriggers: {
+    upgradeTriggers: string[];
+    downgradeTriggers: string[];
+  };
+  consensusBreakdown: {
+    approve: number;
+    reject: number;
+    conditional: number;
+    keyDisagreements: string[];
+  };
+  thirtyDayActionPlan: string[];
+  marketAndRegulatoryContext: string[];
+  rawText: string;
 }
 
 // ── Persona metadata ──────────────────────────────────────────────────────────
@@ -297,14 +329,142 @@ function PersonaLoadingGrid() {
   );
 }
 
-// ── IC Report ─────────────────────────────────────────────────────────────────
+// ── Boardroom IC Report renderer ─────────────────────────────────────────────
+function BoardroomICReport({ ic, onCopy }: { ic: ICReportData; onCopy: (text: string) => void }) {
+  const decisionColor = ic.executiveVerdict.decision === "APPROVE" ? GREEN
+    : ic.executiveVerdict.decision === "REJECT" ? RED : AMBER;
+
+  return (
+    <div style={{ maxWidth: 900, margin: "0 auto" }}>
+      {/* Verification Banner */}
+      <div style={{
+        background: `rgba(0,255,135,0.06)`, border: `1px solid ${GREEN}44`,
+        borderRadius: 8, padding: "14px 20px", marginBottom: 20,
+        display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: GREEN, fontWeight: 700 }}>✓ MULTI-AGENT CONSENSUS VERIFIED</span>
+        </div>
+        <div style={{ display: "flex", gap: 20 }}>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT2 }}>Consensus: <span style={{ color: GREEN }}>{ic.verificationBanner.consensusScore}%</span></span>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT2 }}>Confidence: <span style={{ color: ic.verificationBanner.confidenceLevel === "HIGH" ? GREEN : ic.verificationBanner.confidenceLevel === "MEDIUM" ? AMBER : RED }}>{ic.verificationBanner.confidenceLevel}</span></span>
+        </div>
+        <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, width: "100%" }}>{ic.verificationBanner.conflictStatus}</span>
+      </div>
+
+      {/* Executive Verdict */}
+      <div style={{ background: BG2, border: `1px solid ${decisionColor}44`, borderRadius: 8, padding: "20px 24px", marginBottom: 20 }}>
+        <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.12em", marginBottom: 8 }}>2. EXECUTIVE VERDICT</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 12, flexWrap: "wrap" }}>
+          <span style={{ fontFamily: MONO, fontSize: 18, fontWeight: 800, color: decisionColor }}>{ic.executiveVerdict.decision}</span>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, background: `${decisionColor}18`, padding: "4px 10px", borderRadius: 4 }}>{ic.executiveVerdict.recommendedAction}</span>
+        </div>
+        <p style={{ margin: 0, fontSize: 13, color: TEXT, lineHeight: 1.6 }}>{ic.executiveVerdict.rationale}</p>
+      </div>
+
+      {/* 2-column grid: Thesis + Risks */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+        <div style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "16px 20px" }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: GREEN, letterSpacing: "0.12em", marginBottom: 12 }}>3. INVESTMENT THESIS</div>
+          {ic.investmentThesis.map((t, i) => (
+            <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 8, paddingLeft: 12, borderLeft: `2px solid ${GREEN}`, lineHeight: 1.5 }}>{t}</div>
+          ))}
+        </div>
+        <div style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "16px 20px" }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: RED, letterSpacing: "0.12em", marginBottom: 12 }}>4. KEY RISKS / RED FLAGS</div>
+          {ic.keyRisks.map((r, i) => (
+            <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 8, paddingLeft: 12, borderLeft: `2px solid ${RED}`, lineHeight: 1.5 }}>{r}</div>
+          ))}
+        </div>
+      </div>
+
+      {/* Decision Triggers */}
+      <div style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "16px 20px", marginBottom: 20 }}>
+        <div style={{ fontFamily: MONO, fontSize: 10, color: AMBER, letterSpacing: "0.12em", marginBottom: 12 }}>5. WHAT WOULD CHANGE THIS DECISION</div>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: GREEN, marginBottom: 8 }}>UPGRADE TRIGGERS</div>
+            {ic.decisionTriggers.upgradeTriggers.map((t, i) => (
+              <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${GREEN}`, lineHeight: 1.5 }}>+ {t}</div>
+            ))}
+          </div>
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: RED, marginBottom: 8 }}>DOWNGRADE TRIGGERS</div>
+            {ic.decisionTriggers.downgradeTriggers.map((t, i) => (
+              <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${RED}`, lineHeight: 1.5 }}>- {t}</div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Consensus Breakdown */}
+      <div style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "16px 20px", marginBottom: 20 }}>
+        <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.12em", marginBottom: 12 }}>6. CONSENSUS BREAKDOWN</div>
+        <div style={{ display: "flex", gap: 24, marginBottom: 12 }}>
+          <span style={{ fontFamily: MONO, fontSize: 13, color: GREEN }}>Approve: <strong>{ic.consensusBreakdown.approve}</strong></span>
+          <span style={{ fontFamily: MONO, fontSize: 13, color: RED }}>Reject: <strong>{ic.consensusBreakdown.reject}</strong></span>
+          <span style={{ fontFamily: MONO, fontSize: 13, color: AMBER }}>Conditional: <strong>{ic.consensusBreakdown.conditional}</strong></span>
+        </div>
+        {ic.consensusBreakdown.keyDisagreements.length > 0 && (
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 8 }}>KEY DISAGREEMENTS</div>
+            {ic.consensusBreakdown.keyDisagreements.map((d, i) => (
+              <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${AMBER}`, lineHeight: 1.5 }}>! {d}</div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 30-Day Action Plan + Market Context */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+        <div style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "16px 20px" }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.12em", marginBottom: 12 }}>7. 30-DAY ACTION PLAN</div>
+          {ic.thirtyDayActionPlan.map((a, i) => (
+            <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 8, paddingLeft: 12, borderLeft: `2px solid ${ACCENT}`, lineHeight: 1.5 }}>{i + 1}. {a}</div>
+          ))}
+        </div>
+        <div style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "16px 20px" }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: PURPLE, letterSpacing: "0.12em", marginBottom: 12 }}>8. MARKET & REGULATORY CONTEXT</div>
+          {ic.marketAndRegulatoryContext.map((m, i) => (
+            <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 8, paddingLeft: 12, borderLeft: `2px solid ${PURPLE}`, lineHeight: 1.5 }}>• {m}</div>
+          ))}
+        </div>
+      </div>
+
+      {/* Copy IC Report button */}
+      <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }} className="no-print">
+        <button
+          onClick={() => onCopy(ic.rawText)}
+          style={{
+            padding: "8px 18px", background: "none",
+            border: `1px solid ${GREEN}`, color: GREEN,
+            fontFamily: MONO, fontSize: 11, cursor: "pointer",
+            borderRadius: 4, letterSpacing: "0.06em",
+          }}
+        >
+          ⎘ COPY IC REPORT
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── IC Report (raw Council output + boardroom IC Report tabs) ─────────────────
 function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () => void }) {
+  const [activeTab, setActiveTab] = useState<"raw" | "boardroom">(result.icReport ? "boardroom" : "raw");
   const [copied, setCopied] = useState(false);
+  const [copiedRaw, setCopiedRaw] = useState(false);
+
+  const handleCopyICReport = (text: string) => {
+    navigator.clipboard.writeText(text).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
+  };
 
   const handleCopyJson = () => {
     navigator.clipboard.writeText(JSON.stringify(result, null, 2));
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    setCopiedRaw(true);
+    setTimeout(() => setCopiedRaw(false), 2000);
   };
 
   const confidencePct = Math.round(result.confidenceScore * 100);
@@ -348,6 +508,55 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
         </div>
       )}
 
+      {/* Tab switcher */}
+      <div style={{ display: "flex", gap: 2, marginBottom: 20, borderBottom: `1px solid ${BORDER}`, paddingBottom: 0 }}>
+        {(result.icReport ? [
+          { id: "boardroom" as const, label: "🏛️ IC REPORT" },
+          { id: "raw" as const, label: "⚡ RAW COUNCIL" },
+        ] : [
+          { id: "raw" as const, label: "⚡ RAW COUNCIL" },
+        ]).map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            style={{
+              padding: "8px 18px",
+              background: activeTab === tab.id ? "rgba(74,158,255,0.1)" : "transparent",
+              border: "none",
+              borderBottom: `2px solid ${activeTab === tab.id ? ACCENT : "transparent"}`,
+              color: activeTab === tab.id ? ACCENT : MUTED,
+              fontFamily: MONO, fontSize: 10, cursor: "pointer", letterSpacing: "0.08em",
+            }}
+          >{tab.label}</button>
+        ))}
+        <div style={{ marginLeft: "auto", display: "flex", gap: 8, alignItems: "center", paddingBottom: 4 }}>
+          {activeTab === "boardroom" && result.icReport && (
+            <button
+              onClick={() => handleCopyICReport(result.icReport!.rawText)}
+              style={{ padding: "5px 14px", background: "none", border: `1px solid ${GREEN}`, color: copied ? GREEN : TEXT2, fontFamily: MONO, fontSize: 10, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em" }}
+            >{copied ? "✓ COPIED" : "⎘ COPY IC REPORT"}</button>
+          )}
+          {activeTab === "raw" && (
+            <button
+              onClick={handleCopyJson}
+              style={{ padding: "5px 14px", background: "none", border: `1px solid ${BORDER}`, color: copiedRaw ? ACCENT : TEXT2, fontFamily: MONO, fontSize: 10, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em" }}
+            >{copiedRaw ? "✓ COPIED" : "⎘ COPY RAW CONSENSUS"}</button>
+          )}
+          <button
+            onClick={onNewDeal}
+            style={{ padding: "5px 14px", background: ACCENT, border: "none", color: "#000", fontFamily: MONO, fontSize: 10, fontWeight: 700, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em" }}
+          >NEW DEAL</button>
+        </div>
+      </div>
+
+      {/* Boardroom IC Report tab */}
+      {activeTab === "boardroom" && result.icReport && (
+        <BoardroomICReport ic={result.icReport} onCopy={handleCopyICReport} />
+      )}
+
+      {/* Raw Council tab */}
+      {activeTab === "raw" && (
+        <div>
       {/* Top section */}
       <div style={{
         background: BG2,
@@ -358,7 +567,7 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
       }}>
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 20 }}>
           <div>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>IC REPORT</div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>RAW COUNCIL OUTPUT</div>
             <h2 style={{ margin: 0, fontSize: 22, color: TEXT, fontWeight: 700 }}>{result.dealName}</h2>
           </div>
           <VerdictBadge verdict={result.verdict} />
@@ -467,42 +676,8 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
         </div>
       </div>
 
-      {/* Actions */}
-      <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-        <button
-          onClick={handleCopyJson}
-          style={{
-            padding: "8px 16px",
-            background: "transparent",
-            border: `1px solid ${BORDER}`,
-            borderRadius: 4,
-            color: TEXT2,
-            fontFamily: MONO,
-            fontSize: 11,
-            cursor: "pointer",
-            letterSpacing: "0.06em",
-          }}
-        >
-          {copied ? "✓ COPIED" : "COPY IC REPORT JSON"}
-        </button>
-        <button
-          onClick={onNewDeal}
-          style={{
-            padding: "8px 20px",
-            background: ACCENT,
-            border: "none",
-            borderRadius: 4,
-            color: "#000",
-            fontFamily: MONO,
-            fontSize: 11,
-            fontWeight: 700,
-            cursor: "pointer",
-            letterSpacing: "0.06em",
-          }}
-        >
-          NEW DEAL
-        </button>
       </div>
+      )}
     </div>
   );
 }
