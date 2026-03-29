@@ -177,23 +177,24 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
                   <span style={{
                     fontSize: 14,
                     lineHeight: 1,
-                    filter: highlight ? `drop-shadow(0 0 5px ${item.color}99)` : "none",
+                    filter: `drop-shadow(0 0 5px ${item.color}${isHovered ? "cc" : "66"})`,
                     transition: "filter 0.18s",
                   }}>
                     {item.icon}
                   </span>
                 </div>
 
-                {/* Label */}
+                {/* Label — always neon colored, brighter on hover/active */}
                 <span style={{
                   fontSize: 12,
                   fontWeight: 700,
                   letterSpacing: "0.02em",
-                  color: highlight ? item.color : MUTED,
-                  transition: "color 0.18s",
+                  color: item.color,
+                  opacity: highlight ? 1 : 0.82,
+                  transition: "opacity 0.18s",
                   whiteSpace: "nowrap",
                   lineHeight: 1.2,
-                  textShadow: highlight ? `0 0 12px ${item.color}66` : "none",
+                  textShadow: `0 0 10px ${item.color}${highlight ? "88" : "44"}`,
                 }}>
                   {item.label}
                 </span>
