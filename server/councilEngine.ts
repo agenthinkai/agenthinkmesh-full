@@ -45,7 +45,7 @@ const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? "" })
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const CONSENSUS_THRESHOLD = 8;
-const AGENT_TIMEOUT_MS    = 30_000;
+const AGENT_TIMEOUT_MS    = 50_000;
 
 // [FIX B] Fixed USD amount — Stripe doesn't support KWD (3-decimal currency).
 // KWD 10 billed as $32.50 USD. Label on invoice shows "approx KWD 10".
