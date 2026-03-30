@@ -118,8 +118,8 @@ export interface RunCouncilOptions {
 const PersonaResponseSchema = z.object({
   vote:       z.enum(["HARD_YES", "SOFT_YES", "SOFT_NO", "HARD_NO"]),
   confidence: z.number().min(0).max(1),
-  rationale:  z.string().max(800),
-  key_flags:  z.array(z.string()).max(10).default([]),
+  rationale:  z.string(),
+  key_flags:  z.array(z.string()).default([]),
   conditions: z.array(z.string()).default([]),
   blockers:   z.array(z.string()).default([]),
 });
@@ -437,7 +437,7 @@ async function callPersona(
     const response = await Promise.race([
       anthropic.messages.create({
         model:      "claude-sonnet-4-5",
-        max_tokens: 1024,
+        max_tokens: 2048,
         system:     persona.systemPrompt,
         messages:   [{ role: "user", content: userMessage }],
       }),
@@ -462,8 +462,8 @@ async function callPersona(
       personaRole:  persona.role,
       vote:         parsed.vote,
       confidence,
-      rationale:    parsed.rationale.slice(0, 800),
-      keyFlags:     parsed.key_flags.slice(0, 10),
+      rationale:    parsed.rationale,
+      keyFlags:     parsed.key_flags,
       conditions:   parsed.conditions,
       blockers:     parsed.blockers,
       timedOut:     false,
