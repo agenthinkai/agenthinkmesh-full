@@ -253,6 +253,13 @@
       "when": 1774786743075,
       "tag": "0035_burly_radioactive_man",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "5",
+      "when": 1774849125954,
+      "tag": "0036_handy_johnny_storm",
+      "breakpoints": true
     }
   ]
 }

@@ -1,5 +1,46 @@
 import { bigint, boolean, decimal, index, int, longtext, mysqlEnum, mysqlTable, text, tinyint, timestamp, varchar } from "drizzle-orm/mysql-core";
 
+// ── V2.2 Transactions (FX-aware billing) ─────────────────────────────────────
+export const transactions = mysqlTable("transactions", {
+  id: int("id").autoincrement().primaryKey(),
+  dealId: varchar("dealId", { length: 36 }).notNull(),
+  userId: varchar("userId", { length: 36 }).notNull(),
+  region: mysqlEnum("region", ["Global", "China"]).notNull().default("Global"),
+  baseAmountUsd: decimal("baseAmountUsd", { precision: 10, scale: 4 }).notNull().default("32.5000"),
+  currency: mysqlEnum("currency", ["USD", "KWD", "CNY", "EUR"]).notNull().default("USD"),
+  convertedAmount: decimal("convertedAmount", { precision: 10, scale: 4 }),
+  fxRate: decimal("fxRate", { precision: 12, scale: 6 }),
+  fxRateAt: timestamp("fxRateAt"),
+  status: mysqlEnum("status", ["pending", "completed", "failed", "killed"]).notNull().default("pending"),
+  killSwitchTriggered: boolean("killSwitchTriggered").notNull().default(false),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  txDealUserIdx: index("tx_deal_user_idx").on(table.dealId, table.userId),
+  txStatusIdx: index("tx_status_idx").on(table.status),
+}));
+export type Transaction = typeof transactions.$inferSelect;
+export type InsertTransaction = typeof transactions.$inferInsert;
+
+// ── V2.2 Sovereign Vault ──────────────────────────────────────────────────────
+// Logical separation rule: China-tagged deals write ONLY to china_sovereign_vault.
+// Cross-vault reads are blocked at the ORM query layer (see lib/region/vaultClient.ts).
+export const sovereignVault = mysqlTable("sovereign_vault", {
+  id: int("id").autoincrement().primaryKey(),
+  vaultName: mysqlEnum("vaultName", ["global_vault", "china_sovereign_vault"]).notNull(),
+  dealId: varchar("dealId", { length: 36 }).notNull(),
+  agentId: varchar("agentId", { length: 64 }).notNull(),
+  payload: text("payload").notNull(), // JSON string
+  classification: mysqlEnum("classification", ["RESTRICTED", "CONFIDENTIAL", "TOP_SECRET"]).notNull().default("RESTRICTED"),
+  region: mysqlEnum("region", ["Global", "China"]).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  svVaultRegionIdx: index("sv_vault_region_idx").on(table.vaultName, table.region),
+  svDealIdx: index("sv_deal_idx").on(table.dealId),
+}));
+export type SovereignVaultEntry = typeof sovereignVault.$inferSelect;
+export type InsertSovereignVaultEntry = typeof sovereignVault.$inferInsert;
+
 /**
  * Core user table backing auth flow.
  * Extend this file with additional tables as your product grows.
