@@ -22,7 +22,7 @@ type PlanTier = "trial" | "standard" | "pro" | "enterprise" | null | undefined;
 function getDailyLimit(plan: PlanTier): number {
   if (plan === "enterprise") return Infinity;
   if (plan === "pro") return 50;
-  return 3; // trial, standard, null, undefined → free tier
+  return 50; // trial, standard, null, undefined → free tier
 }
 
 function getPlanLabel(plan: PlanTier): string {
