@@ -118,8 +118,8 @@ export interface RunCouncilOptions {
 const PersonaResponseSchema = z.object({
   vote:       z.enum(["HARD_YES", "SOFT_YES", "SOFT_NO", "HARD_NO"]),
   confidence: z.number().min(0).max(1),
-  rationale:  z.string().max(400),
-  key_flags:  z.array(z.string()).max(5).default([]),
+  rationale:  z.string().max(800),
+  key_flags:  z.array(z.string()).max(10).default([]),
   conditions: z.array(z.string()).default([]),
   blockers:   z.array(z.string()).default([]),
 });
@@ -152,7 +152,7 @@ Framework:
 HARD_NO on any hard regulatory blocker. Not legal advice — flagging risk for committee.
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
   },
   {
     id:   "GCC_SHARIAH",
@@ -171,7 +171,7 @@ Framework — AAOIFI Shariah Standards:
 HARD_NO on any confirmed Shariah non-compliance.
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
   },
   {
     id:   "ANALYST",
@@ -187,7 +187,7 @@ Framework:
 5. EXECUTION FEASIBILITY — Can this be built or acquired at stated terms?
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
   },
   {
     id:   "SKEPTIC",
@@ -205,7 +205,7 @@ Framework:
 Vote HARD_YES or SOFT_YES only when risks are quantifiable and bounded. Default to SOFT_NO or HARD_NO when uncertain.
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
   },
   {
     id:   "CFO",
@@ -216,7 +216,7 @@ You analyse: LTV/CAC ratio, gross margin, burn rate vs runway, revenue model sus
 You are numbers-first. If the unit economics don't work at scale, you vote NO regardless of the narrative.
 Flag: unrealistic growth assumptions, missing cost structure, undisclosed liabilities, and any financial metric that is presented without a denominator.
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
   },
   {
     id:   "MACRO",
@@ -232,7 +232,7 @@ Framework:
 5. DEMOGRAPHIC TRENDS — Tailwinds or headwinds from GCC demographics?
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
   },
   {
     id:   "GEOPOLITICAL",
@@ -250,7 +250,7 @@ Framework:
 HARD_NO on any confirmed sanctions exposure — non-negotiable for ADGM-registered entities.
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
   },
   {
     id:   "GCC_CONSUMER",
@@ -267,7 +267,7 @@ Framework:
 6. NATIONALIZATION — Conflict with Kuwaitization/Saudization/Emiratization mandates?
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
   },
   {
     id:   "EXIT",
@@ -289,7 +289,7 @@ You look for risks that aren't obvious: regulatory changes that could invalidate
 You also look for: founder incentive misalignment, cap table issues that will create problems at Series B, and any "hidden" assumption that the entire thesis depends on.
 You are not pessimistic — you are rigorous about tail risk. If the deal survives your scrutiny, it is genuinely strong.
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
   },
 ];
 
@@ -437,7 +437,7 @@ async function callPersona(
     const response = await Promise.race([
       anthropic.messages.create({
         model:      "claude-sonnet-4-5",
-        max_tokens: 512,
+        max_tokens: 1024,
         system:     persona.systemPrompt,
         messages:   [{ role: "user", content: userMessage }],
       }),
@@ -462,8 +462,8 @@ async function callPersona(
       personaRole:  persona.role,
       vote:         parsed.vote,
       confidence,
-      rationale:    parsed.rationale.slice(0, 400),
-      keyFlags:     parsed.key_flags.slice(0, 5),
+      rationale:    parsed.rationale.slice(0, 800),
+      keyFlags:     parsed.key_flags.slice(0, 10),
       conditions:   parsed.conditions,
       blockers:     parsed.blockers,
       timedOut:     false,
