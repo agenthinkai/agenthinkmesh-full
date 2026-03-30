@@ -728,6 +728,14 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
 }) {
   const [dealName, setDealName] = useState("");
   const [dealText, setDealText] = useState("");
+  // Guided form mode
+  const [guidedMode, setGuidedMode] = useState(true);
+  const [g_what, setGWhat] = useState("");
+  const [g_country, setGCountry] = useState("");
+  const [g_sector, setGSector] = useState("");
+  const [g_amount, setGAmount] = useState("");
+  const [g_exit, setGExit] = useState("");
+  const [g_extra, setGExtra] = useState("");
   const [pdfUploading, setPdfUploading] = useState(false);
   const [pdfFilename, setPdfFilename] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -833,22 +841,41 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
   // ── FREE MODE — set to false to re-enable Stripe payment ──────────────────
   const FREE_MODE = true;
 
+  // Build IC memo from guided form fields
+  const buildMemoFromGuided = () => [
+    g_what.trim()   && `BUSINESS DESCRIPTION:\n${g_what.trim()}`,
+    (g_country.trim() || g_sector.trim()) && `MARKET:\nCountry: ${g_country.trim() || "Not specified"}.\nSector: ${g_sector.trim() || "Not specified"}.`,
+    g_amount.trim() && `INVESTMENT:\n${g_amount.trim()}`,
+    g_exit.trim()   && `EXIT STRATEGY:\n${g_exit.trim()}`,
+    g_extra.trim()  && `ADDITIONAL CONTEXT:\n${g_extra.trim()}`,
+  ].filter(Boolean).join("\n\n");
+
+  const isGuidedReady = dealName.trim().length > 0 && g_what.trim().length > 0 && g_country.trim().length > 0 && g_sector.trim().length > 0;
+
   const handlePayAndScreen = () => {
     if (!dealName.trim()) { setError("Deal name is required"); return; }
-    if (!dealText.trim()) { setError("Deal description is required"); return; }
+    if (guidedMode) {
+      if (!g_what.trim()) { setError("Please describe the business"); return; }
+      if (!g_country.trim()) { setError("Please enter the country"); return; }
+      if (!g_sector.trim()) { setError("Please enter the sector / industry"); return; }
+    } else {
+      if (!dealText.trim()) { setError("Deal description is required"); return; }
+    }
     setError(null);
+    const finalText = guidedMode ? buildMemoFromGuided() : dealText.trim();
     if (FREE_MODE) {
-      // Skip Stripe — run Council directly
       onSubmitStart();
-      screenMutation.mutate({ dealName: dealName.trim(), dealText: dealText.trim() });
+      screenMutation.mutate({ dealName: dealName.trim(), dealText: finalText });
       return;
     }
+    sessionStorage.setItem("ds_pending_deal_text", finalText);
     setCheckoutLoading(true);
     checkoutMutation.mutate({ origin: window.location.origin });
   };
 
   const charCount = dealText.length;
   const isLoading = screenMutation.isPending || checkoutLoading;
+  const canSubmit = guidedMode ? isGuidedReady : (dealName.trim().length > 0 && dealText.trim().length > 0);
 
   return (
     <div style={{ maxWidth: 680, margin: "0 auto" }}>
@@ -973,38 +1000,129 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
           />
         </div>
 
-        {/* Deal text */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <label style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, letterSpacing: "0.08em" }}>
-              DEAL MEMO / DESCRIPTION *
-            </label>
-            <span style={{ fontFamily: MONO, fontSize: 10, color: charCount > 2800 ? AMBER : MUTED }}>
-              {charCount}/3000
-            </span>
-          </div>
-          <textarea
-            value={dealText}
-            onChange={(e) => setDealText(e.target.value)}
-            placeholder="Paste the deal memo, pitch deck summary, or description here. Include: business model, market size, team, traction, financials, and ask."
-            maxLength={3000}
-            rows={10}
-            style={{
-              width: "100%",
-              padding: "12px 14px",
-              background: BG3,
-              border: `1px solid ${BORDER}`,
-              borderRadius: 4,
-              color: TEXT,
-              fontFamily: "'Inter', sans-serif",
-              fontSize: 13,
-              lineHeight: 1.6,
-              resize: "vertical",
-              outline: "none",
-              boxSizing: "border-box",
-            }}
-          />
+        {/* Mode toggle */}
+        <div style={{ display: "flex", gap: 8, marginBottom: 20 }}>
+          {([{ key: true, label: "🧭 Guided (Easy)" }, { key: false, label: "✏️ Expert (Full Memo)" }] as const).map(({ key, label }) => (
+            <button
+              key={String(key)}
+              onClick={() => setGuidedMode(key)}
+              style={{
+                flex: 1,
+                padding: "8px 0",
+                background: guidedMode === key ? "rgba(74,158,255,0.15)" : "transparent",
+                border: `1px solid ${guidedMode === key ? ACCENT : BORDER}`,
+                borderRadius: 4,
+                color: guidedMode === key ? ACCENT : TEXT2,
+                fontFamily: MONO,
+                fontSize: 11,
+                cursor: "pointer",
+                fontWeight: guidedMode === key ? 700 : 400,
+                letterSpacing: "0.04em",
+                transition: "all 0.15s",
+              }}
+            >{label}</button>
+          ))}
         </div>
+
+        {/* Guided form */}
+        {guidedMode ? (
+          <div style={{ marginBottom: 16 }}>
+            {/* Q1 */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", fontFamily: MONO, fontSize: 10, color: TEXT2, letterSpacing: "0.08em", marginBottom: 6 }}>
+                WHAT IS THE BUSINESS? *
+              </label>
+              <input
+                value={g_what}
+                onChange={(e) => setGWhat(e.target.value)}
+                placeholder="e.g. A chain of 18 fast-food restaurants in Kuwait owned by Kuwaiti nationals"
+                style={{ width: "100%", padding: "10px 14px", background: BG3, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontFamily: "'Inter', sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+            {/* Q2 + Q3 side by side */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 16 }}>
+              <div>
+                <label style={{ display: "block", fontFamily: MONO, fontSize: 10, color: TEXT2, letterSpacing: "0.08em", marginBottom: 6 }}>
+                  WHICH COUNTRY? *
+                </label>
+                <input
+                  value={g_country}
+                  onChange={(e) => setGCountry(e.target.value)}
+                  placeholder="e.g. Kuwait"
+                  style={{ width: "100%", padding: "10px 14px", background: BG3, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontFamily: "'Inter', sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
+              <div>
+                <label style={{ display: "block", fontFamily: MONO, fontSize: 10, color: TEXT2, letterSpacing: "0.08em", marginBottom: 6 }}>
+                  WHICH SECTOR? *
+                </label>
+                <input
+                  value={g_sector}
+                  onChange={(e) => setGSector(e.target.value)}
+                  placeholder="e.g. Food & Beverage"
+                  style={{ width: "100%", padding: "10px 14px", background: BG3, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontFamily: "'Inter', sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                />
+              </div>
+            </div>
+            {/* Q4 */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", fontFamily: MONO, fontSize: 10, color: TEXT2, letterSpacing: "0.08em", marginBottom: 6 }}>
+                HOW MUCH ARE YOU INVESTING &amp; WHAT IS THE STRUCTURE?
+              </label>
+              <input
+                value={g_amount}
+                onChange={(e) => setGAmount(e.target.value)}
+                placeholder="e.g. KWD 6M for 60% stake, 100% equity, no debt, 7-year hold, 15% IRR target"
+                style={{ width: "100%", padding: "10px 14px", background: BG3, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontFamily: "'Inter', sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+            {/* Q5 */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: "block", fontFamily: MONO, fontSize: 10, color: TEXT2, letterSpacing: "0.08em", marginBottom: 6 }}>
+                HOW DO YOU PLAN TO EXIT?
+              </label>
+              <input
+                value={g_exit}
+                onChange={(e) => setGExit(e.target.value)}
+                placeholder="e.g. Strategic sale to Americana Group or Boursa Kuwait IPO in 4-5 years"
+                style={{ width: "100%", padding: "10px 14px", background: BG3, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontFamily: "'Inter', sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+            {/* Q6 optional */}
+            <div style={{ marginBottom: 0 }}>
+              <label style={{ display: "block", fontFamily: MONO, fontSize: 10, color: TEXT2, letterSpacing: "0.08em", marginBottom: 6 }}>
+                ANYTHING ELSE THE COUNCIL SHOULD KNOW? (optional)
+              </label>
+              <textarea
+                value={g_extra}
+                onChange={(e) => setGExtra(e.target.value)}
+                placeholder="e.g. The company has zero debt, audited by Ernst & Young, and all licences are fully transferable"
+                rows={3}
+                style={{ width: "100%", padding: "10px 14px", background: BG3, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontFamily: "'Inter', sans-serif", fontSize: 13, lineHeight: 1.5, resize: "vertical", outline: "none", boxSizing: "border-box" }}
+              />
+            </div>
+          </div>
+        ) : (
+          /* Expert mode: raw textarea */
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+              <label style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, letterSpacing: "0.08em" }}>
+                DEAL MEMO / DESCRIPTION *
+              </label>
+              <span style={{ fontFamily: MONO, fontSize: 10, color: charCount > 2800 ? AMBER : MUTED }}>
+                {charCount}/3000
+              </span>
+            </div>
+            <textarea
+              value={dealText}
+              onChange={(e) => setDealText(e.target.value)}
+              placeholder="Paste the full deal memo, pitch deck summary, or description here. Include: business model, market size, team, traction, financials, and ask."
+              maxLength={3000}
+              rows={10}
+              style={{ width: "100%", padding: "12px 14px", background: BG3, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontFamily: "'Inter', sans-serif", fontSize: 13, lineHeight: 1.6, resize: "vertical", outline: "none", boxSizing: "border-box" }}
+            />
+          </div>
+        )}
 
         {/* PDF upload */}
         <div style={{ marginBottom: 24 }}>
@@ -1059,7 +1177,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
         {/* Pay & Screen button */}
         <button
           onClick={handlePayAndScreen}
-          disabled={isLoading || !dealName.trim() || !dealText.trim()}
+          disabled={isLoading || !canSubmit}
           style={{
             width: "100%",
             padding: "14px",

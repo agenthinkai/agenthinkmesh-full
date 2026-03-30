@@ -1442,3 +1442,7 @@
 - [ ] UI: Show "Copied!" toast feedback after clipboard write
 - [ ] TypeScript check — 0 errors
 - [ ] Checkpoint
+
+## Session — Guided Deal Intake Form (Layman UX)
+- [ ] Replace raw memo textarea with guided 5-step plain-English form on Deal Screener
+- [ ] Server-side memo builder: convert simple form answers into full IC memo automatically
