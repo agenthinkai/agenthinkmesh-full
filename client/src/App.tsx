@@ -41,6 +41,7 @@ import GameTheoryAgent from "./pages/GameTheoryAgent";
 import ETFStudio from "./pages/ETFStudio";
 import PartnerCRM from "./pages/PartnerCRM";
 import AdminUsageDashboard from "./pages/AdminUsageDashboard";
+import AdminTreasury from "./pages/AdminTreasury";
 import DomainAgents from "./pages/DomainAgents";
 import BetaAccess from "./pages/BetaAccess";
 import RosieProtocol from "./pages/RosieProtocol";
@@ -157,6 +158,7 @@ function Router() {
       {/* Admin */}
       <Route path="/admin/usage" component={AdminUsageDashboard} />
       <Route path="/admin/beta-requests" component={AdminBetaRequests} />
+      <Route path="/admin/treasury" component={AdminTreasury} />
       <Route path="/upgrade" component={Upgrade} />
       <Route path="/upgrade/success" component={Upgrade} />
 

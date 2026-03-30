@@ -24,6 +24,7 @@ import { forecastRouter } from "./routers/forecast";
 import { knowledgeVaultRouter } from "./routers/knowledgeVault";
 import { selfLearningRouter } from "./routers/selfLearning";
 import { pitchRouter } from "./routers/pitch";
+import { treasuryRouter } from "./routers/treasury";
 import { shareReportRouter } from "./routers/shareReport";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
@@ -3333,6 +3334,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
   workflow: workflowRouter,
   dossier: dossierPdfRouter,
   billing: billingRouter,
+  treasury: treasuryRouter,
   portfolioIntel: portfolioRouter,
   insurance: insuranceRouter,
   admesh: admeshRouter,

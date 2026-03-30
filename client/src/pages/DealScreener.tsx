@@ -732,7 +732,14 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
   const [pdfFilename, setPdfFilename] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [selectedCurrency, setSelectedCurrency] = useState<"USD" | "KWD" | "CNY" | "EUR">("USD");
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // FX price for the selected currency (15-min cache matches FX service TTL)
+  const { data: priceData, isLoading: priceLoading } = trpc.billing.getPrice.useQuery(
+    { currency: selectedCurrency },
+    { staleTime: 15 * 60 * 1000 }
+  );
 
   // Verify payment status when returning from Stripe
   const { data: paymentVerification } = trpc.billing.verifyDealPayment.useQuery(
@@ -864,7 +871,52 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
             letterSpacing: "0.06em",
           }}>
             <span style={{ fontSize: 16 }}>💳</span>
-            <span><strong style={{ fontSize: 18, color: GREEN }}>$32.50 USD</strong> per Council run</span>
+            <div>
+              <div>
+                <strong style={{ fontSize: 18, color: GREEN }}>
+                  {priceLoading
+                    ? "$32.50 USD"
+                    : selectedCurrency === "USD"
+                      ? "$32.50 USD"
+                      : `${priceData?.amount?.toFixed(2)} ${selectedCurrency}`
+                  }
+                </strong>
+                {selectedCurrency !== "USD" && !priceLoading && (
+                  <span style={{ fontSize: 11, color: TEXT2, marginLeft: 6 }}>(= $32.50 USD)</span>
+                )}
+                <span style={{ fontSize: 12, color: TEXT2, marginLeft: 6 }}>per Council run</span>
+              </div>
+              {/* Currency selector */}
+              <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
+                {(["USD", "KWD", "CNY", "EUR"] as const).map((cur) => (
+                  <button
+                    key={cur}
+                    type="button"
+                    onClick={() => setSelectedCurrency(cur)}
+                    style={{
+                      padding: "2px 8px",
+                      borderRadius: 4,
+                      border: `1px solid ${selectedCurrency === cur ? GREEN : BORDER}`,
+                      background: selectedCurrency === cur ? "rgba(0,255,135,0.1)" : "transparent",
+                      color: selectedCurrency === cur ? GREEN : TEXT2,
+                      fontFamily: MONO,
+                      fontSize: 10,
+                      cursor: "pointer",
+                      letterSpacing: "0.05em",
+                    }}
+                  >
+                    {cur}
+                  </button>
+                ))}
+              </div>
+              {priceData && selectedCurrency !== "USD" && (
+                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginTop: 3 }}>
+                  1 USD = {priceData.rate?.toFixed(4)} {selectedCurrency}
+                  {" · "}
+                  rate at {new Date(priceData.rateAt).toLocaleTimeString()}
+                </div>
+              )}
+            </div>
           </div>
           <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED }}>
             One-time &middot; Secure Stripe Checkout &middot; No subscription required

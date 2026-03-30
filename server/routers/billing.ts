@@ -6,6 +6,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { eq, and, count, avg, sql } from "drizzle-orm";
 import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
+import { protectedTreasuryProcedure } from "../trpc/protectedTreasuryProcedure";
 import { getDb } from "../db";
 import { users, subscriptions, payments, dealScreenerPayments } from "../../drizzle/schema";
 import {
@@ -18,6 +19,7 @@ import {
 import { tokenUsage } from "../../drizzle/schema";
 import { desc, sum } from "drizzle-orm";
 import { STRIPE_PLANS } from "../lib/stripePlans";
+import { convertPrice } from "../lib/billing/fxService";
 
 // ── Stripe stub (keys injected when STRIPE_SECRET_KEY is set) ─────────────────
 function getStripe() {
@@ -42,10 +44,27 @@ const PLAN_PRICES: Record<string, string | undefined> = {
 };
 
 export const billingRouter = router({
-  // ── Usage status (for PlanUsageBadge) ──────────────────────────────────────
+  // ── Usage status (for PlanUsageBadge) ──────────────────────────────────────────
   getUsageStatus: protectedProcedure.query(async ({ ctx }) => {
     return getUsageStatus(ctx.user.id);
   }),
+
+  // ── FX price for Deal Screener ($32.50 base) ──────────────────────────────
+  // Public so the price widget renders even before login.
+  getPrice: protectedProcedure
+    .input(z.object({
+      currency: z.enum(["USD", "KWD", "CNY", "EUR"]).default("USD"),
+    }))
+    .query(async ({ input }) => {
+      const result = await convertPrice(input.currency);
+      return {
+        baseUSD: 32.50,
+        currency: input.currency,
+        amount: result.amount,
+        rate: result.rate,
+        rateAt: result.rateAt,
+      };
+    }),
 
   // ── Upgrade summary (for /upgrade screen) ──────────────────────────────────
   getUpgradeSummary: protectedProcedure.query(async ({ ctx }) => {
@@ -87,12 +106,19 @@ export const billingRouter = router({
   }),
 
   // ── Create Stripe checkout session ─────────────────────────────────────────
-  createCheckoutSession: protectedProcedure
+  // Uses protectedTreasuryProcedure so the $500 kill-switch is enforced
+  // automatically before any Stripe API call is made.
+  createCheckoutSession: protectedTreasuryProcedure
     .input(z.object({
       plan: z.enum(["standard", "pro", "professional", "enterprise"]),
       origin: z.string().url(),
+      // proposedSpendUSD: pass the monthly plan price so the kill-switch can
+      // block any single checkout that exceeds the $500 autonomous limit.
+      proposedSpendUSD: z.number().min(0).optional().default(0),
+      txId: z.number().int().optional().default(0),
     }))
     .mutation(async ({ ctx, input }) => {
+      const user = ctx.user!;
       const stripe = getStripe();
       const priceId = PLAN_PRICES[input.plan];
 
@@ -107,26 +133,26 @@ export const billingRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const [user] = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
-      if (!user) throw new TRPCError({ code: "NOT_FOUND" });
+      const [dbUser] = await db.select().from(users).where(eq(users.id, user.id)).limit(1);
+      if (!dbUser) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Reuse existing Stripe customer if available
-      const [existingSub] = await db.select().from(subscriptions).where(eq(subscriptions.userId, ctx.user.id)).limit(1);
+      const [existingSub] = await db.select().from(subscriptions).where(eq(subscriptions.userId, user.id)).limit(1);
       let customerId = existingSub?.stripeCustomerId ?? undefined;
 
       if (!customerId && stripe) {
         const customer = await stripe.customers.create({
-          email: user.email ?? undefined,
-          name: user.name ?? undefined,
-          metadata: { userId: String(ctx.user.id) },
+          email: dbUser.email ?? undefined,
+          name: dbUser.name ?? undefined,
+          metadata: { userId: String(user.id) },
         });
         customerId = customer.id;
         // Save customer ID
         if (existingSub) {
-          await db.update(subscriptions).set({ stripeCustomerId: customerId }).where(eq(subscriptions.userId, ctx.user.id));
+          await db.update(subscriptions).set({ stripeCustomerId: customerId }).where(eq(subscriptions.userId, user.id));
         } else {
           await db.insert(subscriptions).values({
-            userId: ctx.user.id,
+            userId: user.id,
             planTier: "trial",
             plan: "starter",
             status: "active",
@@ -143,14 +169,14 @@ export const billingRouter = router({
         payment_method_types: ["card"],
         line_items: [{ price: priceId, quantity: 1 }],
         allow_promotion_codes: true,
-        client_reference_id: String(ctx.user.id),
+        client_reference_id: String(user.id),
         success_url: `${input.origin}/account/billing?success=1&plan=${input.plan}`,
         cancel_url: `${input.origin}/pricing?canceled=1`,
         metadata: {
-          userId: String(ctx.user.id),
+          userId: String(user.id),
           plan: input.plan,
-          customer_email: user.email ?? "",
-          customer_name: user.name ?? "",
+          customer_email: dbUser.email ?? "",
+          customer_name: dbUser.name ?? "",
         },
       });
 
@@ -253,9 +279,17 @@ export const billingRouter = router({
   }),
 
   // ── Create pay-per-run checkout for Deal Screener ($32.50) ──────────────────
-  createDealScreenerCheckout: protectedProcedure
-    .input(z.object({ origin: z.string().url() }))
+  // Uses protectedTreasuryProcedure — kill-switch checks $32.50 before
+  // any Stripe session is created. Cannot be bypassed.
+  createDealScreenerCheckout: protectedTreasuryProcedure
+    .input(z.object({
+      origin: z.string().url(),
+      // Kill-switch fields — 32.50 is the fixed deal screener price.
+      proposedSpendUSD: z.number().min(0).optional().default(32.50),
+      txId: z.number().int().optional().default(0),
+    }))
     .mutation(async ({ ctx, input }) => {
+      const user = ctx.user!;
       const stripe = getStripe();
 
       if (!stripe) {
@@ -269,14 +303,14 @@ export const billingRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      const [user] = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
-      if (!user) throw new TRPCError({ code: "NOT_FOUND" });
+      const [dbUser] = await db.select().from(users).where(eq(users.id, user.id)).limit(1);
+      if (!dbUser) throw new TRPCError({ code: "NOT_FOUND" });
 
       // Create a one-time Stripe Checkout session for $32.50
       const session = await stripe.checkout.sessions.create({
         mode: "payment",
         payment_method_types: ["card"],
-        customer_email: user.email ?? undefined,
+        customer_email: dbUser.email ?? undefined,
         line_items: [
           {
             price_data: {
@@ -291,20 +325,19 @@ export const billingRouter = router({
           },
         ],
         allow_promotion_codes: true,
-        client_reference_id: String(ctx.user.id),
+         client_reference_id: String(user.id),
         success_url: `${input.origin}/deals?paid=1&session_id={CHECKOUT_SESSION_ID}`,
         cancel_url: `${input.origin}/deals?canceled=1`,
         metadata: {
           type: "deal_screener_run",
-          userId: String(ctx.user.id),
-          customer_email: user.email ?? "",
-          customer_name: user.name ?? "",
+          userId: String(user.id),
+          customer_email: dbUser.email ?? "",
+          customer_name: dbUser.name ?? "",
         },
       });
-
       // Record the pending payment in DB
       await db.insert(dealScreenerPayments).values({
-        userId: ctx.user.id,
+        userId: user.id,
         stripeSessionId: session.id,
         status: "pending",
         amountUsd: "32.50",
