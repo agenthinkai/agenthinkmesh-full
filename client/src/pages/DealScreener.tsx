@@ -830,10 +830,19 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
     }
   };
 
+  // ── FREE MODE — set to false to re-enable Stripe payment ──────────────────
+  const FREE_MODE = true;
+
   const handlePayAndScreen = () => {
     if (!dealName.trim()) { setError("Deal name is required"); return; }
     if (!dealText.trim()) { setError("Deal description is required"); return; }
     setError(null);
+    if (FREE_MODE) {
+      // Skip Stripe — run Council directly
+      onSubmitStart();
+      screenMutation.mutate({ dealName: dealName.trim(), dealText: dealText.trim() });
+      return;
+    }
     setCheckoutLoading(true);
     checkoutMutation.mutate({ origin: window.location.origin });
   };
@@ -870,21 +879,27 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
             color: ACCENT,
             letterSpacing: "0.06em",
           }}>
-            <span style={{ fontSize: 16 }}>💳</span>
+            <span style={{ fontSize: 16 }}>{FREE_MODE ? "🟢" : "💳"}</span>
             <div>
               <div>
-                <strong style={{ fontSize: 18, color: GREEN }}>
-                  {priceLoading
-                    ? "$32.50 USD"
-                    : selectedCurrency === "USD"
+                {FREE_MODE ? (
+                  <strong style={{ fontSize: 18, color: GREEN }}>FREE PREVIEW MODE</strong>
+                ) : (
+                  <strong style={{ fontSize: 18, color: GREEN }}>
+                    {priceLoading
                       ? "$32.50 USD"
-                      : `${priceData?.amount?.toFixed(2)} ${selectedCurrency}`
-                  }
-                </strong>
-                {selectedCurrency !== "USD" && !priceLoading && (
+                      : selectedCurrency === "USD"
+                        ? "$32.50 USD"
+                        : `${priceData?.amount?.toFixed(2)} ${selectedCurrency}`
+                    }
+                  </strong>
+                )}
+                {!FREE_MODE && selectedCurrency !== "USD" && !priceLoading && (
                   <span style={{ fontSize: 11, color: TEXT2, marginLeft: 6 }}>(= $32.50 USD)</span>
                 )}
-                <span style={{ fontSize: 12, color: TEXT2, marginLeft: 6 }}>per Council run</span>
+                <span style={{ fontSize: 12, color: TEXT2, marginLeft: 6 }}>
+                  {FREE_MODE ? "— no payment required" : "per Council run"}
+                </span>
               </div>
               {/* Currency selector */}
               <div style={{ display: "flex", gap: 4, marginTop: 6 }}>
@@ -919,7 +934,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
             </div>
           </div>
           <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED }}>
-            One-time &middot; Secure Stripe Checkout &middot; No subscription required
+            {FREE_MODE ? "Preview mode · Payment disabled · Council of 10 runs free" : "One-time · Secure Stripe Checkout · No subscription required"}
           </div>
         </div>
 
@@ -1060,14 +1075,19 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
             transition: "background 0.15s",
           }}
         >
-          {checkoutLoading
-            ? "REDIRECTING TO CHECKOUT..."
-            : screenMutation.isPending
+          {screenMutation.isPending
             ? "CONVENING COUNCIL..."
+            : checkoutLoading
+            ? "REDIRECTING TO CHECKOUT..."
+            : FREE_MODE
+            ? "SCREEN THIS DEAL →"
             : "PAY $32.50 & SCREEN THIS DEAL →"}
         </button>
         <div style={{ textAlign: "center", marginTop: 10, fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.04em" }}>
-          You will be redirected to Stripe Checkout. After payment, the Council of 10 runs automatically.
+          {FREE_MODE
+            ? "Free preview mode — payment temporarily disabled."
+            : "You will be redirected to Stripe Checkout. After payment, the Council of 10 runs automatically."
+          }
         </div>
 
         {/* Secondary CTA — Compare mode */}
