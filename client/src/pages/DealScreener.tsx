@@ -1593,8 +1593,18 @@ export default function DealScreener() {
             </button>
           )}
         </div>
-        <div style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 10, color: MUTED }}>
-          DEAL SCREENER · COUNCIL OF 10
+        <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
+          <a
+            href="/account/payments"
+            style={{ fontFamily: MONO, fontSize: 10, color: MUTED, textDecoration: "none", letterSpacing: "0.08em" }}
+            onMouseEnter={e => (e.currentTarget.style.color = ACCENT)}
+            onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
+          >
+            BILLING ↗
+          </a>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: MUTED }}>
+            DEAL SCREENER · COUNCIL OF 10
+          </span>
         </div>
       </div>
 

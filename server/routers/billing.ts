@@ -8,7 +8,7 @@ import { eq, and, count, avg, sql } from "drizzle-orm";
 import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { protectedTreasuryProcedure } from "../trpc/protectedTreasuryProcedure";
 import { getDb } from "../db";
-import { users, subscriptions, payments, dealScreenerPayments } from "../../drizzle/schema";
+import { users, subscriptions, payments, dealScreenerPayments, dealScreenings } from "../../drizzle/schema";
 import {
   getUsageStatus,
   assertWorkflowAccess,
@@ -511,6 +511,113 @@ export const billingRouter = router({
       recentPayments: allPayments
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
         .slice(0, 10),
+    };
+  }),
+
+  // ── USER: payment history ─────────────────────────────────────────────────
+  getPaymentHistory: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+    const userId = ctx.user.id;
+
+    // 1. Deal Screener one-time payments (join with deal_screenings for deal name)
+    const dsPayments = await db
+      .select({
+        id: dealScreenerPayments.id,
+        stripeSessionId: dealScreenerPayments.stripeSessionId,
+        stripePaymentIntentId: dealScreenerPayments.stripePaymentIntentId,
+        status: dealScreenerPayments.status,
+        amountUsd: dealScreenerPayments.amountUsd,
+        dealId: dealScreenerPayments.dealId,
+        createdAt: dealScreenerPayments.createdAt,
+        dealName: dealScreenings.dealName,
+        verdict: dealScreenings.verdict,
+      })
+      .from(dealScreenerPayments)
+      .leftJoin(dealScreenings, eq(dealScreenerPayments.dealId, dealScreenings.dealId))
+      .where(eq(dealScreenerPayments.userId, userId))
+      .orderBy(sql`${dealScreenerPayments.createdAt} DESC`)
+      .limit(50);
+
+    // 2. Subscription info
+    const [sub] = await db
+      .select()
+      .from(subscriptions)
+      .where(eq(subscriptions.userId, userId))
+      .limit(1);
+
+    // 3. Subscription payments from the payments table
+    const subPayments = await db
+      .select()
+      .from(payments)
+      .where(eq(payments.userId, userId))
+      .orderBy(sql`${payments.createdAt} DESC`)
+      .limit(50);
+
+    // 4. Optionally fetch Stripe invoice list for subscription (if customer ID available)
+    let stripeInvoices: Array<{
+      id: string;
+      amount: number;
+      currency: string;
+      status: string;
+      created: number;
+      hostedInvoiceUrl: string | null;
+      periodStart: number | null;
+      periodEnd: number | null;
+    }> = [];
+
+    if (sub?.stripeCustomerId) {
+      const stripe = getStripe();
+      if (stripe) {
+        try {
+          const invoices = await stripe.invoices.list({
+            customer: sub.stripeCustomerId,
+            limit: 20,
+          });
+          stripeInvoices = invoices.data.map(inv => ({
+            id: inv.id,
+            amount: inv.amount_paid / 100,
+            currency: inv.currency.toUpperCase(),
+            status: inv.status ?? "unknown",
+            created: inv.created,
+            hostedInvoiceUrl: inv.hosted_invoice_url ?? null,
+            periodStart: inv.period_start ?? null,
+            periodEnd: inv.period_end ?? null,
+          }));
+        } catch {
+          // Stripe unavailable — skip invoices
+        }
+      }
+    }
+
+    const totalSpent = dsPayments
+      .filter(p => p.status === "paid" || p.status === "used")
+      .reduce((sum, p) => sum + parseFloat(String(p.amountUsd)), 0)
+      + subPayments
+        .filter(p => p.status === "succeeded")
+        .reduce((sum, p) => sum + parseFloat(String(p.amountUsd)), 0);
+
+    return {
+      subscription: sub ?? null,
+      dealScreenerPayments: dsPayments.map(p => ({
+        id: p.id,
+        stripeSessionId: p.stripeSessionId,
+        status: p.status,
+        amountUsd: parseFloat(String(p.amountUsd)),
+        dealId: p.dealId ?? null,
+        dealName: p.dealName ?? null,
+        verdict: p.verdict ?? null,
+        createdAt: p.createdAt,
+      })),
+      subscriptionPayments: subPayments.map(p => ({
+        id: p.id,
+        amountUsd: parseFloat(String(p.amountUsd)),
+        status: p.status,
+        planTier: p.planTier ?? null,
+        createdAt: p.createdAt,
+      })),
+      stripeInvoices,
+      totalSpent: Math.round(totalSpent * 100) / 100,
     };
   }),
 

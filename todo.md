@@ -1471,3 +1471,16 @@
 - [x] Disable FREE_MODE in DealScreener ($32.50 per-run payment required)
 - [x] Pricing page opens checkout in new tab
 - [ ] Test with Stripe test card 4242 4242 4242 4242
+
+## Session Mar 31 2026 — Payment History Page
+
+- [x] tRPC: billing.getPaymentHistory — returns deal screener payments + subscription invoices from DB
+- [x] UI: PaymentHistory.tsx at /account/payments — Bloomberg-style dark UI
+- [x] UI: Summary cards (current plan, tokens remaining, deal runs paid, total spent, next renewal)
+- [x] UI: Deal Screener runs table (date, deal name, verdict, amount, status, receipt link)
+- [x] UI: Subscription invoices table (date, billing period, amount, currency, status, PDF link)
+- [x] UI: Upgrade CTA for starter/trial users
+- [x] Route: /account/payments wired in App.tsx
+- [x] Nav: Added "BILLING ↗" link to DealScreener top nav bar
+- [x] TypeScript check — zero errors
+- [x] Checkpoint

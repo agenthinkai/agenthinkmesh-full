@@ -67,6 +67,7 @@ import Pitch from "./pages/Pitch";
 import Pricing from "./pages/Pricing";
 import Contact from "./pages/Contact";
 import AccountBilling from "./pages/AccountBilling";
+import PaymentHistory from "./pages/PaymentHistory";
 import { DemoBanner } from "./pages/Home";
 import { useAuth } from "./_core/hooks/useAuth";
 
@@ -209,6 +210,7 @@ function Router() {
       {/* Pricing */}
       <Route path="/pricing" component={Pricing} />
       <Route path="/account/billing" component={AccountBilling} />
+      <Route path="/account/payments" component={PaymentHistory} />
 
       {/* Contact / Book Demo */}
       <Route path="/contact" component={Contact} />
