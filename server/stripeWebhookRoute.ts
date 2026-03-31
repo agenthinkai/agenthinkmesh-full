@@ -60,6 +60,12 @@ export function registerStripeWebhookRoute(app: Express) {
         return;
       }
 
+      // Detect Manus platform test events — must return { verified: true }
+      if (event.id && event.id.startsWith('evt_test_')) {
+        console.log("[Webhook] Manus test event detected, returning verification response");
+        res.json({ verified: true });
+        return;
+      }
       try {
         await handleStripeEvent(event);
         res.json({ received: true });
