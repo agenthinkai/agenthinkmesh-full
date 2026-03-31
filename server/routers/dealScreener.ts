@@ -11,6 +11,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { dealScreenings, dealScreeningRateLimit, dealComparisons, dealScreenerPayments } from "../../drizzle/schema";
 import { runCouncil } from "../councilEngine";
+import { generateCfoDeepDiveText, generateCfoDeepDivePdf } from "../cfoDeepDivePdf";
 import { runComparison } from "../comparisonEngine";
 import { generateSingleDealICReport, generateComparisonICReport } from "../icReportEngine";
 import { randomUUID } from "crypto";
@@ -376,6 +377,27 @@ export const dealScreenerRouter = router({
         blockingIssues: JSON.parse(row.blockingIssues) as string[],
         votes: JSON.parse(row.votes),
         confidenceScore: parseFloat(row.confidenceScore),
+      };
+    }),
+
+  /**
+   * Generate a full 7-section CFO Deep Dive analysis and return as base64 PDF.
+   * Called on-demand from the CFO card in the results UI.
+   */
+  cfoDeepDive: protectedProcedure
+    .input(
+      z.object({
+        dealName: z.string().min(1).max(255),
+        dealText: z.string().min(10).max(3000),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const analysisText = await generateCfoDeepDiveText(input.dealText, input.dealName);
+      const pdfBuffer = await generateCfoDeepDivePdf(input.dealName, analysisText);
+      return {
+        base64: pdfBuffer.toString("base64"),
+        filename: `CFO-DeepDive-${input.dealName.replace(/[^a-zA-Z0-9]/g, "-").slice(0, 40)}.pdf`,
+        analysisText,
       };
     }),
 

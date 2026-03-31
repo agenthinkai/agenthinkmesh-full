@@ -4,7 +4,7 @@
  * Three views: INPUT → LOADING → REPORT (with HISTORY tab)
  */
 
-import { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -45,6 +45,7 @@ interface PersonaVote {
 interface CouncilResult {
   dealId: string;
   dealName: string;
+  dealText?: string;
   verdict: VerdictType;
   yesCount: number;
   noCount: number;
@@ -160,10 +161,38 @@ function VerdictBadge({ verdict }: { verdict: VerdictType }) {
 }
 
 // ── VoteCard ──────────────────────────────────────────────────────────────────
-function VoteCard({ vote }: { vote: PersonaVote }) {
+function VoteCard({ vote, dealName, dealText }: { vote: PersonaVote; dealName?: string; dealText?: string }) {
   const [expanded, setExpanded] = useState(false);
   const meta = PERSONA_META[vote.personaId] ?? { icon: "🤖", color: ACCENT };
   const isYes = vote.vote === "HARD_YES" || vote.vote === "SOFT_YES";
+  const [cfoLoading, setCfoLoading] = useState(false);
+  const [cfoError, setCfoError] = useState<string | null>(null);
+  const cfoDeepDiveMutation = trpc.dealScreener.cfoDeepDive.useMutation();
+
+  const handleCfoDeepDive = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!dealName || !dealText) { setCfoError("Deal data unavailable"); return; }
+    setCfoLoading(true);
+    setCfoError(null);
+    try {
+      const deepDiveResult = await cfoDeepDiveMutation.mutateAsync({ dealName, dealText });
+      const bytes = Uint8Array.from(atob(deepDiveResult.base64), c => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = deepDiveResult.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setCfoError(err instanceof Error ? err.message : "Failed to generate CFO analysis");
+    } finally {
+      setCfoLoading(false);
+    }
+  };
+
 
   return (
     <div
@@ -219,6 +248,34 @@ function VoteCard({ vote }: { vote: PersonaVote }) {
         </div>
       )}
 
+      {/* CFO Deep Dive button */}
+      {vote.personaId === "CFO" && (
+        <div style={{ marginTop: 8 }} onClick={e => e.stopPropagation()}>
+          <button
+            onClick={handleCfoDeepDive}
+            disabled={cfoLoading}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+              padding: "5px 10px",
+              background: cfoLoading ? "rgba(74,158,255,0.1)" : "rgba(74,158,255,0.15)",
+              border: "1px solid rgba(74,158,255,0.4)",
+              borderRadius: 4,
+              color: "#4a9eff",
+              fontFamily: MONO,
+              fontSize: 10,
+              cursor: cfoLoading ? "not-allowed" : "pointer",
+              letterSpacing: "0.04em",
+            }}
+          >
+            {cfoLoading ? "⏳ GENERATING..." : "📄 CFO DEEP DIVE PDF"}
+          </button>
+          {cfoError && (
+            <div style={{ fontSize: 10, color: RED, marginTop: 4, fontFamily: MONO }}>{cfoError}</div>
+          )}
+        </div>
+      )}
       {/* Expanded: conditions + blockers */}
       {expanded && (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${BORDER}` }}>
@@ -648,7 +705,7 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
         <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.1em", marginBottom: 12 }}>COUNCIL VOTES — click to expand</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {result.votes.map((v) => (
-            <VoteCard key={v.personaId} vote={v} />
+            <VoteCard key={v.personaId} vote={v} dealName={result.dealName} dealText={result.dealText} />
           ))}
         </div>
       </div>
@@ -776,9 +833,11 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
     },
   });
 
+  const lastSubmittedTextRef = React.useRef<string>("");
   const screenMutation = trpc.dealScreener.screen.useMutation({
     onSuccess: (data) => {
-      onResult(data as CouncilResult);
+      const resultWithText: CouncilResult = { ...(data as CouncilResult), dealText: lastSubmittedTextRef.current };
+      onResult(resultWithText);
     },
     onError: (err) => {
       setError(err.message);
@@ -795,6 +854,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
         sessionStorage.removeItem("ds_pending_deal_name");
         sessionStorage.removeItem("ds_pending_deal_text");
         onSubmitStart();
+        lastSubmittedTextRef.current = savedText;
         screenMutation.mutate({ dealName: savedName, dealText: savedText });
         onPaymentVerified();
       }
@@ -863,6 +923,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
     }
     setError(null);
     const finalText = guidedMode ? buildMemoFromGuided() : dealText.trim();
+    lastSubmittedTextRef.current = finalText;
     if (FREE_MODE) {
       onSubmitStart();
       screenMutation.mutate({ dealName: dealName.trim(), dealText: finalText });

@@ -1446,3 +1446,12 @@
 ## Session — Guided Deal Intake Form (Layman UX)
 - [ ] Replace raw memo textarea with guided 5-step plain-English form on Deal Screener
 - [ ] Server-side memo builder: convert simple form answers into full IC memo automatically
+
+## Sprint 2 — CFO Parse Error Fix & PDF Export
+
+- [x] Fix CFO persona parse error: shortened prompt to return 1-2 sentence rationale (under 180 chars)
+- [x] Add cfoDeepDivePdf.ts: full 7-section CFO analysis generator using PDFKit
+- [x] Add cfoDeepDive tRPC mutation to dealScreener router (returns base64 PDF)
+- [x] Add "📄 CFO DEEP DIVE PDF" button to CFO VoteCard in DealScreener.tsx
+- [x] Store dealText in CouncilResult for PDF generation
+- [x] 0 TypeScript errors, 308 tests passing
