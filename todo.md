@@ -1490,3 +1490,10 @@
 - [ ] Fix: store dealName in deal_screener_payments metadata or link dealId on checkout.session.completed
 - [ ] Fix: getPaymentHistory query to join dealScreenings for deal name
 - [ ] Test and checkpoint
+
+## Bug: No validation message when Pay button clicked with empty fields
+- [x] Show inline error for empty Deal Name (both modes)
+- [x] Show inline error for empty Deal Memo / Description (Expert mode)
+- [x] Show inline errors for empty required Guided fields (Business, Country, Sector)
+- [x] Highlight the empty field with a red border so user knows exactly what to fill
+- [x] Button is always clickable (removed !canSubmit from disabled condition)

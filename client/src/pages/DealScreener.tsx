@@ -815,6 +815,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
   const [pdfUploading, setPdfUploading] = useState(false);
   const [pdfFilename, setPdfFilename] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [touchedSubmit, setTouchedSubmit] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [selectedCurrency, setSelectedCurrency] = useState<"USD" | "KWD" | "CNY" | "EUR">("USD");
   const fileRef = useRef<HTMLInputElement>(null);
@@ -932,6 +933,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
   const isGuidedReady = dealName.trim().length > 0 && g_what.trim().length > 0 && g_country.trim().length > 0 && g_sector.trim().length > 0;
 
   const handlePayAndScreen = () => {
+    setTouchedSubmit(true);
     if (!dealName.trim()) { setError("Deal name is required"); return; }
     if (guidedMode) {
       if (!g_what.trim()) { setError("Please describe the business"); return; }
@@ -1063,14 +1065,14 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
           </label>
           <input
             value={dealName}
-            onChange={(e) => setDealName(e.target.value)}
+            onChange={(e) => { setDealName(e.target.value); if (touchedSubmit && e.target.value.trim()) setError(null); }}
             placeholder="e.g. Tamara Series B — BNPL GCC"
             maxLength={255}
             style={{
               width: "100%",
               padding: "10px 14px",
               background: BG3,
-              border: `1px solid ${BORDER}`,
+              border: `1px solid ${touchedSubmit && !dealName.trim() ? "#ff4757" : BORDER}`,
               borderRadius: 4,
               color: TEXT,
               fontFamily: MONO,
@@ -1115,9 +1117,9 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
               </label>
               <input
                 value={g_what}
-                onChange={(e) => setGWhat(e.target.value)}
+                onChange={(e) => { setGWhat(e.target.value); if (touchedSubmit && e.target.value.trim()) setError(null); }}
                 placeholder="e.g. A chain of 18 fast-food restaurants in Kuwait owned by Kuwaiti nationals"
-                style={{ width: "100%", padding: "10px 14px", background: BG3, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontFamily: "'Inter', sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                style={{ width: "100%", padding: "10px 14px", background: BG3, border: `1px solid ${touchedSubmit && !g_what.trim() ? "#ff4757" : BORDER}`, borderRadius: 4, color: TEXT, fontFamily: "'Inter', sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }}
               />
             </div>
             {/* Q2 + Q3 side by side */}
@@ -1128,9 +1130,9 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
                 </label>
                 <input
                   value={g_country}
-                  onChange={(e) => setGCountry(e.target.value)}
+                  onChange={(e) => { setGCountry(e.target.value); if (touchedSubmit && e.target.value.trim()) setError(null); }}
                   placeholder="e.g. Kuwait"
-                  style={{ width: "100%", padding: "10px 14px", background: BG3, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontFamily: "'Inter', sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "10px 14px", background: BG3, border: `1px solid ${touchedSubmit && !g_country.trim() ? "#ff4757" : BORDER}`, borderRadius: 4, color: TEXT, fontFamily: "'Inter', sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }}
                 />
               </div>
               <div>
@@ -1139,9 +1141,9 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
                 </label>
                 <input
                   value={g_sector}
-                  onChange={(e) => setGSector(e.target.value)}
+                  onChange={(e) => { setGSector(e.target.value); if (touchedSubmit && e.target.value.trim()) setError(null); }}
                   placeholder="e.g. Food & Beverage"
-                  style={{ width: "100%", padding: "10px 14px", background: BG3, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontFamily: "'Inter', sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }}
+                  style={{ width: "100%", padding: "10px 14px", background: BG3, border: `1px solid ${touchedSubmit && !g_sector.trim() ? "#ff4757" : BORDER}`, borderRadius: 4, color: TEXT, fontFamily: "'Inter', sans-serif", fontSize: 13, outline: "none", boxSizing: "border-box" }}
                 />
               </div>
             </div>
@@ -1196,11 +1198,11 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
             </div>
             <textarea
               value={dealText}
-              onChange={(e) => setDealText(e.target.value)}
+              onChange={(e) => { setDealText(e.target.value); if (touchedSubmit && e.target.value.trim()) setError(null); }}
               placeholder="Paste the full deal memo, pitch deck summary, or description here. Include: business model, market size, team, traction, financials, and ask."
               maxLength={3000}
               rows={10}
-              style={{ width: "100%", padding: "12px 14px", background: BG3, border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT, fontFamily: "'Inter', sans-serif", fontSize: 13, lineHeight: 1.6, resize: "vertical", outline: "none", boxSizing: "border-box" }}
+              style={{ width: "100%", padding: "12px 14px", background: BG3, border: `1px solid ${touchedSubmit && !guidedMode && !dealText.trim() ? "#ff4757" : BORDER}`, borderRadius: 4, color: TEXT, fontFamily: "'Inter', sans-serif", fontSize: 13, lineHeight: 1.6, resize: "vertical", outline: "none", boxSizing: "border-box" }}
             />
           </div>
         )}
@@ -1258,7 +1260,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
         {/* Pay & Screen button */}
         <button
           onClick={handlePayAndScreen}
-          disabled={isLoading || !canSubmit}
+          disabled={isLoading}
           style={{
             width: "100%",
             padding: "14px",
