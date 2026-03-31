@@ -11,7 +11,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { dealScreenings, dealScreeningRateLimit, dealComparisons, dealScreenerPayments } from "../../drizzle/schema";
 import { runCouncil } from "../councilEngine";
-import { generateCfoDeepDiveText, generateCfoDeepDivePdf } from "../cfoDeepDivePdf";
+import { generateCfoDeepDivePdf, type CouncilSummaryInput } from "../cfoDeepDivePdf";
 import { runComparison } from "../comparisonEngine";
 import { generateSingleDealICReport, generateComparisonICReport } from "../icReportEngine";
 import { randomUUID } from "crypto";
@@ -387,17 +387,41 @@ export const dealScreenerRouter = router({
   cfoDeepDive: protectedProcedure
     .input(
       z.object({
-        dealName: z.string().min(1).max(255),
-        dealText: z.string().min(10).max(3000),
+        dealName:            z.string().min(1).max(255),
+        verdict:             z.string(),
+        yesCount:            z.number(),
+        noCount:             z.number(),
+        confidenceScore:     z.number(),
+        conditionsToProceed: z.array(z.string()),
+        blockingIssues:      z.array(z.string()),
+        votes: z.array(z.object({
+          personaId:   z.string(),
+          personaName: z.string(),
+          personaRole: z.string(),
+          vote:        z.string(),
+          confidence:  z.number(),
+          rationale:   z.string(),
+          keyFlags:    z.array(z.string()),
+          conditions:  z.array(z.string()),
+          blockers:    z.array(z.string()),
+        })),
       })
     )
     .mutation(async ({ input }) => {
-      const analysisText = await generateCfoDeepDiveText(input.dealText, input.dealName);
-      const pdfBuffer = await generateCfoDeepDivePdf(input.dealName, analysisText);
+      const summary: CouncilSummaryInput = {
+        dealName:            input.dealName,
+        verdict:             input.verdict,
+        yesCount:            input.yesCount,
+        noCount:             input.noCount,
+        confidenceScore:     input.confidenceScore,
+        conditionsToProceed: input.conditionsToProceed,
+        blockingIssues:      input.blockingIssues,
+        votes:               input.votes,
+      };
+      const pdfBuffer = await generateCfoDeepDivePdf(summary);
       return {
         base64: pdfBuffer.toString("base64"),
         filename: `CFO-DeepDive-${input.dealName.replace(/[^a-zA-Z0-9]/g, "-").slice(0, 40)}.pdf`,
-        analysisText,
       };
     }),
 

@@ -1455,3 +1455,9 @@
 - [x] Add "📄 CFO DEEP DIVE PDF" button to CFO VoteCard in DealScreener.tsx
 - [x] Store dealText in CouncilResult for PDF generation
 - [x] 0 TypeScript errors, 308 tests passing
+
+## Bug: CFO Deep Dive PDF stuck on "GENERATING..."
+- [x] Diagnose why cfoDeepDive mutation hangs / PDF never downloads
+- [x] Fix 2-min wait: reuse existing vote data instead of second Claude call
+- [x] Fix blank pages in generated PDF (pageAdded event fills navy background)
+- [x] Ensure PDF downloads in under 5 seconds

@@ -161,7 +161,7 @@ function VerdictBadge({ verdict }: { verdict: VerdictType }) {
 }
 
 // ── VoteCard ──────────────────────────────────────────────────────────────────
-function VoteCard({ vote, dealName, dealText }: { vote: PersonaVote; dealName?: string; dealText?: string }) {
+function VoteCard({ vote, result }: { vote: PersonaVote; result?: CouncilResult }) {
   const [expanded, setExpanded] = useState(false);
   const meta = PERSONA_META[vote.personaId] ?? { icon: "🤖", color: ACCENT };
   const isYes = vote.vote === "HARD_YES" || vote.vote === "SOFT_YES";
@@ -171,11 +171,30 @@ function VoteCard({ vote, dealName, dealText }: { vote: PersonaVote; dealName?: 
 
   const handleCfoDeepDive = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!dealName || !dealText) { setCfoError("Deal data unavailable"); return; }
+    if (!result) { setCfoError("Deal data unavailable"); return; }
     setCfoLoading(true);
     setCfoError(null);
     try {
-      const deepDiveResult = await cfoDeepDiveMutation.mutateAsync({ dealName, dealText });
+      const deepDiveResult = await cfoDeepDiveMutation.mutateAsync({
+        dealName:            result.dealName,
+        verdict:             result.verdict,
+        yesCount:            result.yesCount,
+        noCount:             result.noCount,
+        confidenceScore:     result.confidenceScore,
+        conditionsToProceed: result.conditionsToProceed,
+        blockingIssues:      result.blockingIssues,
+        votes:               result.votes.map(v => ({
+          personaId:   v.personaId,
+          personaName: v.personaId,
+          personaRole: v.personaRole,
+          vote:        v.vote,
+          confidence:  v.confidence,
+          rationale:   v.rationale,
+          keyFlags:    v.keyFlags,
+          conditions:  v.conditions,
+          blockers:    v.blockers,
+        })),
+      });
       const bytes = Uint8Array.from(atob(deepDiveResult.base64), c => c.charCodeAt(0));
       const blob = new Blob([bytes], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
@@ -705,7 +724,7 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
         <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.1em", marginBottom: 12 }}>COUNCIL VOTES — click to expand</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {result.votes.map((v) => (
-            <VoteCard key={v.personaId} vote={v} dealName={result.dealName} dealText={result.dealText} />
+            <VoteCard key={v.personaId} vote={v} result={result} />
           ))}
         </div>
       </div>
