@@ -1,0 +1,17 @@
+{
+  "query": "SELECT * FROM deal_screening_rate_limit WHERE userId = '120331';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT * FROM deal_screening_rate_limit WHERE userId = '120331';",
+  "rows": [
+    {
+      "id": "2",
+      "userId": "120331",
+      "windowStart": "2026-03-30 00:00:00",
+      "count": "6",
+      "updatedAt": "2026-03-30 16:03:32"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tuserId\twindowStart\tcount\tupdatedAt\n2\t120331\t2026-03-30 00:00:00\t6\t2026-03-30 16:03:32\n",
+  "stderr": "",
+  "execution_time_ms": 1568
+}
