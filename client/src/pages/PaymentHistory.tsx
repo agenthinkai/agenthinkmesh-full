@@ -384,7 +384,7 @@ export default function PaymentHistory() {
                                 </Link>
                               ) : p.dealName
                             ) : (
-                              <span style={{ color: MUTED }}>Pending</span>
+                              <span style={{ color: MUTED, fontStyle: "italic" }}>Deal name not linked yet</span>
                             )}
                           </td>
                           <td style={{ padding: "10px 12px" }}>

@@ -1484,3 +1484,9 @@
 - [x] Nav: Added "BILLING ↗" link to DealScreener top nav bar
 - [x] TypeScript check — zero errors
 - [x] Checkpoint
+
+## Bug: Payment History shows "Pending" for deal names
+- [ ] Diagnose: dealId not linked to dealScreenings after payment
+- [ ] Fix: store dealName in deal_screener_payments metadata or link dealId on checkout.session.completed
+- [ ] Fix: getPaymentHistory query to join dealScreenings for deal name
+- [ ] Test and checkpoint

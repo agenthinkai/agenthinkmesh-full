@@ -874,7 +874,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
         sessionStorage.removeItem("ds_pending_deal_text");
         onSubmitStart();
         lastSubmittedTextRef.current = savedText;
-        screenMutation.mutate({ dealName: savedName, dealText: savedText });
+        screenMutation.mutate({ dealName: savedName, dealText: savedText, stripeSessionId: pendingPaymentSessionId });
         onPaymentVerified();
       }
     }
@@ -949,6 +949,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
       return;
     }
     sessionStorage.setItem("ds_pending_deal_text", finalText);
+    sessionStorage.setItem("ds_pending_deal_name", dealName.trim());
     setCheckoutLoading(true);
     checkoutMutation.mutate({ origin: window.location.origin });
   };

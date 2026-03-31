@@ -103,6 +103,7 @@ export const dealScreenerRouter = router({
         dealText: z.string().min(10).max(3000).trim(),
         pdfFileKey: z.string().optional(),
         pdfFileUrl: z.string().optional(),
+        stripeSessionId: z.string().optional(), // link payment row to this deal run
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -140,6 +141,23 @@ export const dealScreenerRouter = router({
         blockingIssues: JSON.stringify(result.blockingIssues),
         votes: JSON.stringify(result.votes),
       });
+
+      // Link the Stripe payment row to this deal run (so billing history shows the deal name)
+      if (input.stripeSessionId) {
+        try {
+          await db.update(dealScreenerPayments)
+            .set({ dealId, status: "used" })
+            .where(
+              and(
+                eq(dealScreenerPayments.stripeSessionId, input.stripeSessionId),
+                eq(dealScreenerPayments.userId, ctx.user.id)
+              )
+            );
+        } catch (err) {
+          // Non-fatal — billing history may show "Pending" but the run still completes
+          console.error("[DealScreener] Failed to link payment to deal run:", err);
+        }
+      }
 
       // Generate boardroom-ready IC Report (additive — does not modify result)
       let icReport = null;
