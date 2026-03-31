@@ -129,7 +129,7 @@ export default function Pricing() {
   const createCheckout = trpc.billing.createCheckoutSession.useMutation({
     onSuccess: (data) => {
       if (data.url) {
-        window.location.href = data.url;
+        window.open(data.url, '_blank');
       }
     },
     onError: (err) => {
@@ -255,7 +255,7 @@ export default function Pricing() {
                       : { background: "rgba(56,189,248,0.1)", color: TEAL, border: `1px solid rgba(56,189,248,0.3)` }),
                   }}
                 >
-                  {isLoading ? "Redirecting to Stripe…" : tier.cta}
+                  {isLoading ? "Opening Stripe Checkout…" : tier.cta}
                 </button>
 
                 {/* Divider */}

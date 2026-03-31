@@ -1461,3 +1461,13 @@
 - [x] Fix 2-min wait: reuse existing vote data instead of second Claude call
 - [x] Fix blank pages in generated PDF (pageAdded event fills navy background)
 - [x] Ensure PDF downloads in under 5 seconds
+
+## Stripe Payment Integration
+- [x] Configure STRIPE_SECRET_KEY and VITE_STRIPE_PUBLISHABLE_KEY secrets
+- [x] Fix webhook handler (require → import, remove deprecated apiVersion)
+- [x] Define products/prices in stripePlans.ts (Professional $49/mo, Enterprise $199/mo)
+- [x] Checkout session tRPC procedure (createCheckoutSession + createDealScreenerCheckout)
+- [x] Stripe webhook handler at /api/stripe/webhook (checkout.session.completed, invoice.paid)
+- [x] Disable FREE_MODE in DealScreener ($32.50 per-run payment required)
+- [x] Pricing page opens checkout in new tab
+- [ ] Test with Stripe test card 4242 4242 4242 4242

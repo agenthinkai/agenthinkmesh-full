@@ -18,17 +18,16 @@ import {
 } from "../billing";
 import { tokenUsage } from "../../drizzle/schema";
 import { desc, sum } from "drizzle-orm";
+import Stripe from "stripe";
 import { STRIPE_PLANS } from "../lib/stripePlans";
 import { convertPrice } from "../lib/billing/fxService";
 
 // ── Stripe stub (keys injected when STRIPE_SECRET_KEY is set) ─────────────────
-function getStripe() {
+function getStripe(): Stripe | null {
   const key = process.env.STRIPE_SECRET_KEY;
   if (!key) return null;
   try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const Stripe = require("stripe");
-    return new Stripe(key, { apiVersion: "2025-02-24.acacia" });
+    return new Stripe(key);
   } catch {
     return null;
   }

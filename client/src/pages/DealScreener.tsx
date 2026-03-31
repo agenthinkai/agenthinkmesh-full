@@ -918,7 +918,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
   };
 
   // ── FREE MODE — set to false to re-enable Stripe payment ──────────────────
-  const FREE_MODE = true;
+  const FREE_MODE = false;
 
   // Build IC memo from guided form fields
   const buildMemoFromGuided = () => [

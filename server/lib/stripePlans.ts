@@ -1,6 +1,8 @@
 /**
  * AgenThinkMesh Stripe Plan Configuration
- * Products and prices created via scripts/create-stripe-products.mjs
+ * Products and prices created in Stripe test account (sk_test_51TGyWX).
+ * Professional: price_1TH4uQCIRokJUXHXyHJGe2WB ($49/mo)
+ * Enterprise:   price_1TH4uRCIRokJUXHXCWDU22T9 ($199/mo)
  */
 
 export type PlanName = 'starter' | 'professional' | 'enterprise';
@@ -33,7 +35,7 @@ export const STRIPE_PLANS: Record<PlanName, PlanConfig> = {
   professional: {
     name: 'professional',
     displayName: 'Professional',
-    priceId: 'price_1TGEPJAa3RimrPnI9l1nWfSV',
+    priceId: 'price_1TH4uQCIRokJUXHXyHJGe2WB',
     monthlyUsd: 49,
     tokensPerMonth: 5000,
     description: '$49/month — 5,000 tokens, full Council access.',
@@ -49,7 +51,7 @@ export const STRIPE_PLANS: Record<PlanName, PlanConfig> = {
   enterprise: {
     name: 'enterprise',
     displayName: 'Enterprise',
-    priceId: 'price_1TGEPKAa3RimrPnI5f4B1xlO',
+    priceId: 'price_1TH4uRCIRokJUXHXCWDU22T9',
     monthlyUsd: 199,
     tokensPerMonth: 25000,
     description: '$199/month — 25,000 tokens, dedicated support.',

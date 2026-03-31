@@ -8,6 +8,7 @@
  */
 
 import type { Express, Request, Response } from "express";
+import Stripe from "stripe";
 import { getDb } from "./db";
 import { users, subscriptions, payments, dealScreenerPayments } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
@@ -40,11 +41,9 @@ export function registerStripeWebhookRoute(app: Express) {
         return;
       }
 
-      let stripe: any;
+      let stripe: Stripe;
       try {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
-        const Stripe = require("stripe");
-        stripe = new Stripe(secret, { apiVersion: "2025-02-24.acacia" });
+        stripe = new Stripe(secret);
       } catch {
         res.status(500).json({ error: "Stripe not available" });
         return;
