@@ -115,8 +115,56 @@ export const dealScreenerRouter = router({
 
       const dealId = randomUUID();
 
-      // Run the council engine (with token deduction for paid plans)
-      const result = await runCouncil(input.dealText, { userId: ctx.user.id });
+      // ── Pay-per-run: verify Stripe payment and bypass token guard ──────────
+      // When a stripeSessionId is provided, the user paid $32.50 for this run.
+      // We verify the payment is confirmed and skip the subscription token guard.
+      let skipTokenGuard = false;
+      if (input.stripeSessionId) {
+        const [paymentRow] = await db
+          .select()
+          .from(dealScreenerPayments)
+          .where(
+            and(
+              eq(dealScreenerPayments.stripeSessionId, input.stripeSessionId),
+              eq(dealScreenerPayments.userId, ctx.user.id)
+            )
+          )
+          .limit(1);
+
+        if (paymentRow && (paymentRow.status === "paid" || paymentRow.status === "used")) {
+          skipTokenGuard = true;
+        } else {
+          // Webhook may be delayed — verify directly with Stripe API
+          try {
+            const stripeKey = process.env.STRIPE_SECRET_KEY;
+            if (stripeKey) {
+              const Stripe = (await import("stripe")).default;
+              const stripe = new Stripe(stripeKey);
+              const session = await stripe.checkout.sessions.retrieve(input.stripeSessionId);
+              if (session.payment_status === "paid") {
+                await db.update(dealScreenerPayments)
+                  .set({ status: "paid", stripePaymentIntentId: session.payment_intent as string ?? null })
+                  .where(eq(dealScreenerPayments.stripeSessionId, input.stripeSessionId));
+                skipTokenGuard = true;
+              }
+            }
+          } catch (err) {
+            console.error("[DealScreener] Stripe fallback verification failed:", err);
+          }
+        }
+
+        if (!skipTokenGuard) {
+          throw new TRPCError({
+            code: "PAYMENT_REQUIRED",
+            message: "Payment not confirmed. Please complete payment before running the Council.",
+          });
+        }
+      }
+
+      // Run the council engine — skip subscription token guard for pay-per-run sessions
+      const result = await runCouncil(input.dealText, {
+        userId: skipTokenGuard ? undefined : ctx.user.id,
+      });
 
       // Persist to database
       await db.insert(dealScreenings).values({
