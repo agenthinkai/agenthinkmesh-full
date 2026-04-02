@@ -49,6 +49,7 @@ import AdminBetaRequests from "./pages/AdminBetaRequests";
 import Upgrade from "./pages/Upgrade";
 import NotFound from "./pages/NotFound";
 import DealScreener from "./pages/DealScreener";
+import Contacts from "./pages/Contacts";
 import DealComparison from "./pages/DealComparison";
 import SharedReport from "./pages/SharedReport";
 import ReportsHistory from "./pages/ReportsHistory";
@@ -177,6 +178,7 @@ function Router() {
 
       {/* Deal Screener — Council of 10 */}
       <Route path="/deals" component={DealScreener} />
+      <Route path="/contacts" component={Contacts} />
       <Route path="/deals/compare" component={DealComparison} />
       <Route path="/reports/:token" component={SharedReport} />
       <Route path="/reports/history" component={ReportsHistory} />

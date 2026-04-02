@@ -1497,3 +1497,30 @@
 - [x] Show inline errors for empty required Guided fields (Business, Country, Sector)
 - [x] Highlight the empty field with a red border so user knows exactly what to fill
 - [x] Button is always clickable (removed !canSubmit from disabled condition)
+
+## ARE — Autonomous Revenue Engine (Phase 1 & 2)
+
+### Phase 1 — Contacts CRM
+- [x] DB schema: contacts table (name, company, role, region, status, lastContacted, notes, userId)
+- [x] DB schema: contact_interactions table (contactId, userId, action, messageText, outcome, createdAt)
+- [x] DB schema: outreach_style_examples table (userId, exampleText, label, createdAt)
+- [x] DB migration applied (migration 0037)
+- [x] tRPC: contacts.create — create a contact for the authenticated user
+- [x] tRPC: contacts.list — list contacts with optional status filter
+- [x] tRPC: contacts.get — get single contact with interactions
+- [x] tRPC: contacts.update — update contact fields; auto-update lastContacted when status → contacted/active
+- [x] tRPC: contacts.delete — delete contact and all interactions
+- [x] /contacts page: table view, status filter bar, add/edit form dialog, empty state
+
+### Phase 2 — Outreach Agent
+- [x] server/agents/outreachAgent.ts — LLM engine with few-shot injection from style examples
+- [x] tRPC: contacts.generateMessage — generate outreach message; auto-update lastContacted
+- [x] tRPC: contacts.logInteraction — log interaction with messageText; auto-update lastContacted
+- [x] tRPC: contacts.updateOutcome — set outcome on interaction; auto-promote contact to active on converted
+- [x] tRPC: contacts.saveStyleExamples — persist few-shot style examples (replaces all existing)
+- [x] tRPC: contacts.getStyleExamples — retrieve user's style examples
+- [x] /contacts page: Generate Message panel (goal selector, context input, message output, copy, log as sent)
+- [x] /contacts page: Interaction History tab with outcome selector per interaction
+- [x] /contacts page: Message Style Examples dialog (up to 5 examples, label + text)
+- [x] Route /contacts registered in App.tsx
+- [x] 9/9 vitest tests passing (CRUD, auto-lastContacted, outreach generation, interaction log, outcome update)

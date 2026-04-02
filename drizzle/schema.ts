@@ -1152,3 +1152,54 @@ export const reportViews = mysqlTable("report_views", {
 }));
 export type ReportView = typeof reportViews.$inferSelect;
 export type InsertReportView = typeof reportViews.$inferInsert;
+
+// ── ARE Phase 1: Contacts CRM ─────────────────────────────────────────────────
+export const contacts = mysqlTable("contacts", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 255 }).notNull(),
+  company: varchar("company", { length: 255 }),
+  role: varchar("role", { length: 255 }),
+  region: varchar("region", { length: 100 }),
+  lastContacted: timestamp("lastContacted"),
+  status: mysqlEnum("status", ["new", "contacted", "active", "closed"]).notNull().default("new"),
+  notes: text("notes"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  contactUserIdx: index("contact_user_idx").on(table.userId),
+  contactStatusIdx: index("contact_status_idx").on(table.status),
+  contactLastContactedIdx: index("contact_last_contacted_idx").on(table.lastContacted),
+}));
+export type Contact = typeof contacts.$inferSelect;
+export type InsertContact = typeof contacts.$inferInsert;
+
+// ── ARE Phase 1: Contact Interactions ────────────────────────────────────────
+export const contactInteractions = mysqlTable("contact_interactions", {
+  id: int("id").autoincrement().primaryKey(),
+  contactId: int("contactId").notNull().references(() => contacts.id, { onDelete: "cascade" }),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  action: text("action").notNull(),                        // description of what was done
+  messageText: text("messageText"),                        // the actual message sent/generated
+  outcome: mysqlEnum("outcome", ["no_response", "response", "converted"]),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  ciContactIdx: index("ci_contact_idx").on(table.contactId),
+  ciUserIdx: index("ci_user_idx").on(table.userId),
+}));
+export type ContactInteraction = typeof contactInteractions.$inferSelect;
+export type InsertContactInteraction = typeof contactInteractions.$inferInsert;
+
+// ── ARE Phase 2: Outreach Style Examples (few-shot calibration) ───────────────
+export const outreachStyleExamples = mysqlTable("outreach_style_examples", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  exampleText: text("exampleText").notNull(),              // a real message the user wrote
+  label: varchar("label", { length: 128 }),                // optional: e.g. "follow-up", "intro"
+  sortOrder: int("sortOrder").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  oseUserIdx: index("ose_user_idx").on(table.userId),
+}));
+export type OutreachStyleExample = typeof outreachStyleExamples.$inferSelect;
+export type InsertOutreachStyleExample = typeof outreachStyleExamples.$inferInsert;

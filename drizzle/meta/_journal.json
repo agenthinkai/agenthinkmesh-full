@@ -260,6 +260,13 @@
       "when": 1774849125954,
       "tag": "0036_handy_johnny_storm",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "5",
+      "when": 1775115120434,
+      "tag": "0037_classy_wong",
+      "breakpoints": true
     }
   ]
 }
