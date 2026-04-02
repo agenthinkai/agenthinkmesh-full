@@ -267,6 +267,13 @@
       "when": 1775115120434,
       "tag": "0037_classy_wong",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "5",
+      "when": 1775117242759,
+      "tag": "0038_colossal_arachne",
+      "breakpoints": true
     }
   ]
 }

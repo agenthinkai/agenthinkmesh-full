@@ -1524,3 +1524,18 @@
 - [x] /contacts page: Message Style Examples dialog (up to 5 examples, label + text)
 - [x] Route /contacts registered in App.tsx
 - [x] 9/9 vitest tests passing (CRUD, auto-lastContacted, outreach generation, interaction log, outcome update)
+
+## ARE Phase 1 & 2 Enhancement — WhatsApp + UX
+
+- [x] Schema: add phone_number, email, linkedin_url to contacts table
+- [x] DB migration pushed
+- [x] contacts router: update create/update/get procedures with new fields
+- [x] Outreach Agent: update prompt for WhatsApp format (no subject, short paragraphs, max 150 words, GCC tone)
+- [x] Contact form: add Phone Number, Email, LinkedIn URL optional fields
+- [x] Contact detail panel: show phone, email, LinkedIn; add Open WhatsApp + Copy WhatsApp Message buttons
+- [x] WhatsApp link: wa.me/{phone_without_plus} opens in new tab
+- [x] Pipeline view: 4-column Kanban (New/Contacted/Active/Closed) with status change on card
+- [x] View toggle: Table View / Pipeline View in /contacts header
+- [x] Add Contacts link to main navbar (same level as Deal Screener)
+- [x] Tests: phone_number handling, WhatsApp link generation, message copy (23/23 passing)
+- [x] All existing tests still passing

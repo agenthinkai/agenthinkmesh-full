@@ -1164,6 +1164,9 @@ export const contacts = mysqlTable("contacts", {
   lastContacted: timestamp("lastContacted"),
   status: mysqlEnum("status", ["new", "contacted", "active", "closed"]).notNull().default("new"),
   notes: text("notes"),
+  phoneNumber: varchar("phoneNumber", { length: 20 }),   // international format e.g. +96512345678
+  email: varchar("email", { length: 255 }),
+  linkedinUrl: varchar("linkedinUrl", { length: 255 }),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({

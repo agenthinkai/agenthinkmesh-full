@@ -1,11 +1,13 @@
 /**
- * Contacts.tsx — ARE Phase 1 & 2: Contacts CRM + Outreach Agent
+ * Contacts.tsx — ARE Phase 1 & 2 (Enhanced)
  *
  * Features:
- *  - Contact list table (sortable by last contacted)
- *  - Add / Edit contact form (slide-over panel)
+ *  - Contact list table + Pipeline Kanban view (toggle)
+ *  - Add / Edit contact form: name, company, role, region, phone, email, LinkedIn
  *  - Status badge with update
- *  - Generate Message panel (Outreach Agent)
+ *  - Generate Message panel (Outreach Agent — WhatsApp optimised)
+ *  - Open WhatsApp button (wa.me link)
+ *  - Copy WhatsApp Message button
  *  - Message Style Examples (few-shot calibration)
  *  - Interaction log with outcome tracking
  */
@@ -31,13 +33,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { format, formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow } from "date-fns";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type ContactStatus = "new" | "contacted" | "active" | "closed";
 type OutcomeType = "no_response" | "response" | "converted";
 type GoalType = "follow_up" | "conversion" | "engagement";
+type ViewMode = "table" | "pipeline";
 
 interface Contact {
   id: number;
@@ -45,6 +48,9 @@ interface Contact {
   company?: string | null;
   role?: string | null;
   region?: string | null;
+  phoneNumber?: string | null;
+  email?: string | null;
+  linkedinUrl?: string | null;
   lastContacted?: Date | string | null;
   status: ContactStatus;
   notes?: string | null;
@@ -59,7 +65,7 @@ interface Interaction {
   createdAt: Date | string;
 }
 
-// ── Status helpers ────────────────────────────────────────────────────────────
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
 const STATUS_COLORS: Record<ContactStatus, string> = {
   new: "bg-slate-700 text-slate-200",
@@ -93,14 +99,18 @@ const OUTCOME_COLORS: Record<OutcomeType, string> = {
   converted: "bg-emerald-900 text-emerald-200",
 };
 
+/** Strip leading + from phone number for wa.me URL */
+function buildWhatsAppUrl(phone: string): string {
+  const cleaned = phone.replace(/\D/g, "");
+  return `https://wa.me/${cleaned}`;
+}
+
 // ── Empty state ───────────────────────────────────────────────────────────────
 
 function EmptyContacts({ onAdd }: { onAdd: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
-      <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mb-4 text-2xl">
-        ◎
-      </div>
+      <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center mb-4 text-2xl">◎</div>
       <h3 className="text-lg font-semibold text-zinc-200 mb-2">No contacts yet</h3>
       <p className="text-sm text-zinc-500 max-w-xs mb-6">
         Add your first contact to start generating outreach messages and tracking interactions.
@@ -130,41 +140,13 @@ function ContactForm({ open, onClose, contact, onSaved }: ContactFormProps) {
     region: contact?.region ?? "",
     status: (contact?.status ?? "new") as ContactStatus,
     notes: contact?.notes ?? "",
+    phoneNumber: contact?.phoneNumber ?? "",
+    email: contact?.email ?? "",
+    linkedinUrl: contact?.linkedinUrl ?? "",
   });
 
   const utils = trpc.useUtils();
-  const createMutation = trpc.contacts.create.useMutation({
-    onSuccess: () => {
-      toast.success("Contact added");
-      utils.contacts.list.invalidate();
-      onSaved();
-      onClose();
-    },
-    onError: (e) => toast.error(e.message),
-  });
-  const updateMutation = trpc.contacts.update.useMutation({
-    onSuccess: () => {
-      toast.success("Contact updated");
-      utils.contacts.list.invalidate();
-      if (contact) utils.contacts.get.invalidate({ id: contact.id });
-      onSaved();
-      onClose();
-    },
-    onError: (e) => toast.error(e.message),
-  });
 
-  const isPending = createMutation.isPending || updateMutation.isPending;
-
-  const handleSubmit = () => {
-    if (!form.name.trim()) return toast.error("Name is required");
-    if (isEdit && contact) {
-      updateMutation.mutate({ id: contact.id, ...form });
-    } else {
-      createMutation.mutate(form);
-    }
-  };
-
-  // Reset form when contact changes
   useMemo(() => {
     setForm({
       name: contact?.name ?? "",
@@ -173,74 +155,95 @@ function ContactForm({ open, onClose, contact, onSaved }: ContactFormProps) {
       region: contact?.region ?? "",
       status: (contact?.status ?? "new") as ContactStatus,
       notes: contact?.notes ?? "",
+      phoneNumber: contact?.phoneNumber ?? "",
+      email: contact?.email ?? "",
+      linkedinUrl: contact?.linkedinUrl ?? "",
     });
   }, [contact]);
 
+  const createMutation = trpc.contacts.create.useMutation({
+    onSuccess: () => { toast.success("Contact added"); utils.contacts.list.invalidate(); onSaved(); onClose(); },
+    onError: (e) => toast.error(e.message),
+  });
+  const updateMutation = trpc.contacts.update.useMutation({
+    onSuccess: () => { toast.success("Contact updated"); utils.contacts.list.invalidate(); if (contact) utils.contacts.get.invalidate({ id: contact.id }); onSaved(); onClose(); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
+
+  const handleSubmit = () => {
+    if (!form.name.trim()) return toast.error("Name is required");
+    const payload = {
+      name: form.name.trim(),
+      company: form.company.trim() || undefined,
+      role: form.role.trim() || undefined,
+      region: form.region.trim() || undefined,
+      status: form.status,
+      notes: form.notes.trim() || undefined,
+      phoneNumber: form.phoneNumber.trim() || undefined,
+      email: form.email.trim() || undefined,
+      linkedinUrl: form.linkedinUrl.trim() || undefined,
+    };
+    if (isEdit && contact) {
+      updateMutation.mutate({ id: contact.id, ...payload });
+    } else {
+      createMutation.mutate(payload);
+    }
+  };
+
+  const field = (key: keyof typeof form, label: string, placeholder: string, type = "text") => (
+    <div>
+      <label className="text-xs text-zinc-400 mb-1 block">{label}</label>
+      <Input
+        type={type}
+        value={form[key]}
+        onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+        placeholder={placeholder}
+        className="bg-zinc-800 border-zinc-700 text-zinc-100"
+      />
+    </div>
+  );
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
-      <DialogContent className="bg-zinc-900 border-zinc-700 text-zinc-100 max-w-lg">
+      <DialogContent className="bg-zinc-900 border-zinc-700 text-zinc-100 max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-zinc-100">{isEdit ? "Edit Contact" : "Add Contact"}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
-          <div>
-            <label className="text-xs text-zinc-400 mb-1 block">Name *</label>
-            <Input
-              value={form.name}
-              onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-              placeholder="Full name"
-              className="bg-zinc-800 border-zinc-700 text-zinc-100"
-            />
+          {field("name", "Name *", "Full name")}
+          <div className="grid grid-cols-2 gap-3">
+            {field("company", "Company", "Firm / organisation")}
+            {field("role", "Role", "Title / position")}
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-zinc-400 mb-1 block">Company</label>
-              <Input
-                value={form.company}
-                onChange={(e) => setForm((f) => ({ ...f, company: e.target.value }))}
-                placeholder="Firm / organisation"
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
-              />
-            </div>
-            <div>
-              <label className="text-xs text-zinc-400 mb-1 block">Role</label>
-              <Input
-                value={form.role}
-                onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-                placeholder="Title / position"
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
-              />
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-zinc-400 mb-1 block">Region</label>
-              <Input
-                value={form.region}
-                onChange={(e) => setForm((f) => ({ ...f, region: e.target.value }))}
-                placeholder="Kuwait / GCC / London"
-                className="bg-zinc-800 border-zinc-700 text-zinc-100"
-              />
-            </div>
+            {field("region", "Region", "Kuwait / GCC / London")}
             <div>
               <label className="text-xs text-zinc-400 mb-1 block">Status</label>
-              <Select
-                value={form.status}
-                onValueChange={(v) => setForm((f) => ({ ...f, status: v as ContactStatus }))}
-              >
+              <Select value={form.status} onValueChange={(v) => setForm((f) => ({ ...f, status: v as ContactStatus }))}>
                 <SelectTrigger className="bg-zinc-800 border-zinc-700 text-zinc-100">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent className="bg-zinc-800 border-zinc-700">
                   {(["new", "contacted", "active", "closed"] as ContactStatus[]).map((s) => (
-                    <SelectItem key={s} value={s} className="text-zinc-100">
-                      {STATUS_LABELS[s]}
-                    </SelectItem>
+                    <SelectItem key={s} value={s} className="text-zinc-100">{STATUS_LABELS[s]}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
+
+          {/* Contact details */}
+          <div className="border-t border-zinc-800 pt-3">
+            <p className="text-xs text-zinc-500 mb-3 font-medium uppercase tracking-wider">Contact Details</p>
+            {field("phoneNumber", "Phone Number", "+96512345678 (international format)")}
+            <div className="grid grid-cols-2 gap-3 mt-3">
+              {field("email", "Email", "name@company.com", "email")}
+              {field("linkedinUrl", "LinkedIn URL", "https://linkedin.com/in/...")}
+            </div>
+          </div>
+
           <div>
             <label className="text-xs text-zinc-400 mb-1 block">Notes</label>
             <Textarea
@@ -253,14 +256,8 @@ function ContactForm({ open, onClose, contact, onSaved }: ContactFormProps) {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} className="text-zinc-400 hover:text-zinc-100">
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={isPending}
-            className="bg-amber-500 hover:bg-amber-400 text-black font-semibold"
-          >
+          <Button variant="ghost" onClick={onClose} className="text-zinc-400 hover:text-zinc-100">Cancel</Button>
+          <Button onClick={handleSubmit} disabled={isPending} className="bg-amber-500 hover:bg-amber-400 text-black font-semibold">
             {isPending ? "Saving..." : isEdit ? "Save Changes" : "Add Contact"}
           </Button>
         </DialogFooter>
@@ -273,16 +270,14 @@ function ContactForm({ open, onClose, contact, onSaved }: ContactFormProps) {
 
 interface GenerateMessagePanelProps {
   contact: Contact;
-  onClose: () => void;
 }
 
-function GenerateMessagePanel({ contact, onClose }: GenerateMessagePanelProps) {
+function GenerateMessagePanel({ contact }: GenerateMessagePanelProps) {
   const [goal, setGoal] = useState<GoalType>("follow_up");
   const [context, setContext] = useState("");
   const [generatedMessage, setGeneratedMessage] = useState("");
   const [wordCount, setWordCount] = useState(0);
   const [logAction, setLogAction] = useState("");
-  const [logMessage, setLogMessage] = useState("");
   const [showLogForm, setShowLogForm] = useState(false);
 
   const utils = trpc.useUtils();
@@ -291,7 +286,6 @@ function GenerateMessagePanel({ contact, onClose }: GenerateMessagePanelProps) {
     onSuccess: (data) => {
       setGeneratedMessage(data.message);
       setWordCount(data.wordCount);
-      setLogMessage(data.message);
       setLogAction(`Generated ${GOAL_LABELS[goal]} message`);
       utils.contacts.list.invalidate();
     },
@@ -308,17 +302,14 @@ function GenerateMessagePanel({ contact, onClose }: GenerateMessagePanelProps) {
     onError: (e) => toast.error(e.message),
   });
 
-  const handleGenerate = () => {
-    generateMutation.mutate({
-      contactId: contact.id,
-      goal,
-      context: context.trim() || undefined,
-    });
-  };
-
   const handleCopy = () => {
     navigator.clipboard.writeText(generatedMessage);
-    toast.success("Copied to clipboard");
+    toast.success("Message copied");
+  };
+
+  const handleOpenWhatsApp = () => {
+    if (!contact.phoneNumber) return toast.error("No phone number on this contact");
+    window.open(buildWhatsAppUrl(contact.phoneNumber), "_blank");
   };
 
   const handleLogSend = () => {
@@ -326,7 +317,7 @@ function GenerateMessagePanel({ contact, onClose }: GenerateMessagePanelProps) {
     logMutation.mutate({
       contactId: contact.id,
       action: logAction,
-      messageText: logMessage.trim() || undefined,
+      messageText: generatedMessage.trim() || undefined,
     });
   };
 
@@ -340,11 +331,7 @@ function GenerateMessagePanel({ contact, onClose }: GenerateMessagePanelProps) {
             <button
               key={g}
               onClick={() => setGoal(g)}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                goal === g
-                  ? "bg-amber-500 text-black"
-                  : "bg-zinc-800 text-zinc-400 hover:text-zinc-200"
-              }`}
+              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${goal === g ? "bg-amber-500 text-black" : "bg-zinc-800 text-zinc-400 hover:text-zinc-200"}`}
             >
               {GOAL_LABELS[g]}
             </button>
@@ -352,11 +339,8 @@ function GenerateMessagePanel({ contact, onClose }: GenerateMessagePanelProps) {
         </div>
       </div>
 
-      {/* Additional context */}
       <div>
-        <label className="text-xs text-zinc-400 mb-1 block">
-          Additional Context <span className="text-zinc-600">(optional)</span>
-        </label>
+        <label className="text-xs text-zinc-400 mb-1 block">Additional Context <span className="text-zinc-600">(optional)</span></label>
         <Textarea
           value={context}
           onChange={(e) => setContext(e.target.value)}
@@ -367,11 +351,11 @@ function GenerateMessagePanel({ contact, onClose }: GenerateMessagePanelProps) {
       </div>
 
       <Button
-        onClick={handleGenerate}
+        onClick={() => generateMutation.mutate({ contactId: contact.id, goal, context: context.trim() || undefined })}
         disabled={generateMutation.isPending}
         className="w-full bg-amber-500 hover:bg-amber-400 text-black font-semibold"
       >
-        {generateMutation.isPending ? "Generating..." : "Generate Message"}
+        {generateMutation.isPending ? "Generating..." : "Generate WhatsApp Message"}
       </Button>
 
       {/* Generated message output */}
@@ -379,13 +363,20 @@ function GenerateMessagePanel({ contact, onClose }: GenerateMessagePanelProps) {
         <div className="space-y-3">
           <div className="bg-zinc-800 rounded-lg p-4 border border-zinc-700">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-zinc-500">Generated message — {wordCount} words</span>
-              <button
-                onClick={handleCopy}
-                className="text-xs text-amber-400 hover:text-amber-300 font-medium"
-              >
-                Copy
-              </button>
+              <span className="text-xs text-zinc-500">{wordCount} words</span>
+              <div className="flex items-center gap-3">
+                <button onClick={handleCopy} className="text-xs text-amber-400 hover:text-amber-300 font-medium">
+                  Copy Message
+                </button>
+                {contact.phoneNumber && (
+                  <button
+                    onClick={handleOpenWhatsApp}
+                    className="text-xs text-green-400 hover:text-green-300 font-medium"
+                  >
+                    Open WhatsApp
+                  </button>
+                )}
+              </div>
             </div>
             <Textarea
               value={generatedMessage}
@@ -395,43 +386,55 @@ function GenerateMessagePanel({ contact, onClose }: GenerateMessagePanelProps) {
             />
           </div>
 
+          {/* WhatsApp action bar */}
+          {contact.phoneNumber && (
+            <div className="flex gap-2">
+              <Button
+                onClick={handleCopy}
+                variant="outline"
+                size="sm"
+                className="flex-1 border-zinc-700 text-zinc-300 hover:text-zinc-100 bg-transparent text-xs"
+              >
+                Copy Message
+              </Button>
+              <Button
+                onClick={handleOpenWhatsApp}
+                size="sm"
+                className="flex-1 bg-green-700 hover:bg-green-600 text-white text-xs font-semibold"
+              >
+                Open WhatsApp →
+              </Button>
+            </div>
+          )}
+
+          {!contact.phoneNumber && (
+            <p className="text-xs text-zinc-600 text-center">
+              Add a phone number to enable the WhatsApp button
+            </p>
+          )}
+
           {!showLogForm ? (
             <Button
               variant="outline"
               onClick={() => setShowLogForm(true)}
-              className="w-full border-zinc-700 text-zinc-300 hover:text-zinc-100 bg-transparent"
+              className="w-full border-zinc-700 text-zinc-300 hover:text-zinc-100 bg-transparent text-sm"
             >
               Log as Sent
             </Button>
           ) : (
             <div className="bg-zinc-800/50 rounded-lg p-3 border border-zinc-700 space-y-3">
               <p className="text-xs text-zinc-400 font-medium">Log this interaction</p>
-              <div>
-                <label className="text-xs text-zinc-500 mb-1 block">Action description</label>
-                <Input
-                  value={logAction}
-                  onChange={(e) => setLogAction(e.target.value)}
-                  placeholder="Sent follow-up via WhatsApp"
-                  className="bg-zinc-900 border-zinc-700 text-zinc-100 text-sm"
-                />
-              </div>
+              <Input
+                value={logAction}
+                onChange={(e) => setLogAction(e.target.value)}
+                placeholder="Sent via WhatsApp / Sent via email"
+                className="bg-zinc-900 border-zinc-700 text-zinc-100 text-sm"
+              />
               <div className="flex gap-2">
-                <Button
-                  onClick={handleLogSend}
-                  disabled={logMutation.isPending}
-                  size="sm"
-                  className="bg-amber-500 hover:bg-amber-400 text-black font-semibold"
-                >
+                <Button onClick={handleLogSend} disabled={logMutation.isPending} size="sm" className="bg-amber-500 hover:bg-amber-400 text-black font-semibold">
                   {logMutation.isPending ? "Logging..." : "Log It"}
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowLogForm(false)}
-                  className="text-zinc-500 hover:text-zinc-300"
-                >
-                  Cancel
-                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setShowLogForm(false)} className="text-zinc-500 hover:text-zinc-300">Cancel</Button>
               </div>
             </div>
           )}
@@ -443,29 +446,19 @@ function GenerateMessagePanel({ contact, onClose }: GenerateMessagePanelProps) {
 
 // ── Interaction Log ───────────────────────────────────────────────────────────
 
-interface InteractionLogProps {
-  contactId: number;
-}
-
-function InteractionLog({ contactId }: InteractionLogProps) {
+function InteractionLog({ contactId }: { contactId: number }) {
   const { data: contactData } = trpc.contacts.get.useQuery({ id: contactId });
   const utils = trpc.useUtils();
 
   const updateOutcomeMutation = trpc.contacts.updateOutcome.useMutation({
-    onSuccess: () => {
-      toast.success("Outcome updated");
-      utils.contacts.get.invalidate({ id: contactId });
-      utils.contacts.list.invalidate();
-    },
+    onSuccess: () => { toast.success("Outcome updated"); utils.contacts.get.invalidate({ id: contactId }); utils.contacts.list.invalidate(); },
     onError: (e) => toast.error(e.message),
   });
 
   const interactions: Interaction[] = contactData?.interactions ?? [];
 
   if (interactions.length === 0) {
-    return (
-      <p className="text-sm text-zinc-600 italic">No interactions logged yet.</p>
-    );
+    return <p className="text-sm text-zinc-600 italic">No interactions logged yet.</p>;
   }
 
   return (
@@ -488,22 +481,13 @@ function InteractionLog({ contactId }: InteractionLogProps) {
                   {OUTCOME_LABELS[interaction.outcome]}
                 </span>
               ) : (
-                <Select
-                  onValueChange={(v) =>
-                    updateOutcomeMutation.mutate({
-                      interactionId: interaction.id,
-                      outcome: v as OutcomeType,
-                    })
-                  }
-                >
+                <Select onValueChange={(v) => updateOutcomeMutation.mutate({ interactionId: interaction.id, outcome: v as OutcomeType })}>
                   <SelectTrigger className="h-7 text-xs bg-zinc-900 border-zinc-700 text-zinc-400 w-32">
                     <SelectValue placeholder="Set outcome" />
                   </SelectTrigger>
                   <SelectContent className="bg-zinc-800 border-zinc-700">
                     {(["no_response", "response", "converted"] as OutcomeType[]).map((o) => (
-                      <SelectItem key={o} value={o} className="text-zinc-200 text-xs">
-                        {OUTCOME_LABELS[o]}
-                      </SelectItem>
+                      <SelectItem key={o} value={o} className="text-zinc-200 text-xs">{OUTCOME_LABELS[o]}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -518,42 +502,26 @@ function InteractionLog({ contactId }: InteractionLogProps) {
 
 // ── Style Examples Dialog ─────────────────────────────────────────────────────
 
-interface StyleExamplesDialogProps {
-  open: boolean;
-  onClose: () => void;
-}
-
-function StyleExamplesDialog({ open, onClose }: StyleExamplesDialogProps) {
+function StyleExamplesDialog({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { data: existingExamples } = trpc.contacts.getStyleExamples.useQuery();
-  const [examples, setExamples] = useState<{ text: string; label: string }[]>([
-    { text: "", label: "" },
-  ]);
+  const [examples, setExamples] = useState<{ text: string; label: string }[]>([{ text: "", label: "" }]);
   const utils = trpc.useUtils();
 
-  // Populate from DB when dialog opens
   useMemo(() => {
     if (existingExamples && existingExamples.length > 0) {
-      setExamples(
-        existingExamples.map((e) => ({ text: e.exampleText, label: e.label ?? "" }))
-      );
+      setExamples(existingExamples.map((e) => ({ text: e.exampleText, label: e.label ?? "" })));
     }
   }, [existingExamples]);
 
   const saveMutation = trpc.contacts.saveStyleExamples.useMutation({
-    onSuccess: (data) => {
-      toast.success(`${data.count} style example${data.count !== 1 ? "s" : ""} saved`);
-      utils.contacts.getStyleExamples.invalidate();
-      onClose();
-    },
+    onSuccess: (data) => { toast.success(`${data.count} style example${data.count !== 1 ? "s" : ""} saved`); utils.contacts.getStyleExamples.invalidate(); onClose(); },
     onError: (e) => toast.error(e.message),
   });
 
   const handleSave = () => {
     const valid = examples.filter((e) => e.text.trim().length >= 10);
     if (valid.length === 0) return toast.error("Add at least one example (min 10 characters)");
-    saveMutation.mutate({
-      examples: valid.map((e) => ({ exampleText: e.text.trim(), label: e.label.trim() || undefined })),
-    });
+    saveMutation.mutate({ examples: valid.map((e) => ({ exampleText: e.text.trim(), label: e.label.trim() || undefined })) });
   };
 
   return (
@@ -562,7 +530,7 @@ function StyleExamplesDialog({ open, onClose }: StyleExamplesDialogProps) {
         <DialogHeader>
           <DialogTitle className="text-zinc-100">Message Style Examples</DialogTitle>
           <p className="text-sm text-zinc-400 mt-1">
-            Paste 2–3 real messages you have written. The Outreach Agent will match your exact tone and style.
+            Paste 2–3 real WhatsApp messages you have written. The Outreach Agent will match your exact tone.
           </p>
         </DialogHeader>
         <div className="space-y-4 py-2">
@@ -571,56 +539,33 @@ function StyleExamplesDialog({ open, onClose }: StyleExamplesDialogProps) {
               <div className="flex items-center justify-between">
                 <label className="text-xs text-zinc-400 font-medium">Example {i + 1}</label>
                 {examples.length > 1 && (
-                  <button
-                    onClick={() => setExamples((prev) => prev.filter((_, idx) => idx !== i))}
-                    className="text-xs text-zinc-600 hover:text-red-400"
-                  >
-                    Remove
-                  </button>
+                  <button onClick={() => setExamples((prev) => prev.filter((_, idx) => idx !== i))} className="text-xs text-zinc-600 hover:text-red-400">Remove</button>
                 )}
               </div>
               <Input
                 value={ex.label}
-                onChange={(e) =>
-                  setExamples((prev) =>
-                    prev.map((item, idx) => (idx === i ? { ...item, label: e.target.value } : item))
-                  )
-                }
-                placeholder="Label (optional): e.g. follow-up, intro"
+                onChange={(e) => setExamples((prev) => prev.map((item, idx) => idx === i ? { ...item, label: e.target.value } : item))}
+                placeholder="Label (optional): follow-up, intro, re-engagement"
                 className="bg-zinc-900 border-zinc-700 text-zinc-300 text-xs h-8"
               />
               <Textarea
                 value={ex.text}
-                onChange={(e) =>
-                  setExamples((prev) =>
-                    prev.map((item, idx) => (idx === i ? { ...item, text: e.target.value } : item))
-                  )
-                }
-                placeholder="Paste a real message you wrote here..."
+                onChange={(e) => setExamples((prev) => prev.map((item, idx) => idx === i ? { ...item, text: e.target.value } : item))}
+                placeholder="Paste a real WhatsApp message you wrote here..."
                 rows={4}
                 className="bg-zinc-900 border-zinc-700 text-zinc-200 text-sm resize-none"
               />
             </div>
           ))}
           {examples.length < 5 && (
-            <Button
-              variant="ghost"
-              onClick={() => setExamples((prev) => [...prev, { text: "", label: "" }])}
-              className="text-zinc-500 hover:text-zinc-300 text-sm"
-            >
+            <Button variant="ghost" onClick={() => setExamples((prev) => [...prev, { text: "", label: "" }])} className="text-zinc-500 hover:text-zinc-300 text-sm">
               + Add another example
             </Button>
           )}
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose} className="text-zinc-400 hover:text-zinc-100">
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={saveMutation.isPending}
-            className="bg-amber-500 hover:bg-amber-400 text-black font-semibold"
-          >
+          <Button variant="ghost" onClick={onClose} className="text-zinc-400 hover:text-zinc-100">Cancel</Button>
+          <Button onClick={handleSave} disabled={saveMutation.isPending} className="bg-amber-500 hover:bg-amber-400 text-black font-semibold">
             {saveMutation.isPending ? "Saving..." : "Save Examples"}
           </Button>
         </DialogFooter>
@@ -647,31 +592,17 @@ function ContactDetailPanel({ contact, onEdit, onClose, onDelete }: ContactDetai
       <div className="flex items-start justify-between p-5 border-b border-zinc-800">
         <div>
           <h2 className="text-lg font-semibold text-zinc-100">{contact.name}</h2>
-          <p className="text-sm text-zinc-400">
-            {[contact.role, contact.company].filter(Boolean).join(" · ")}
-          </p>
-          {contact.region && (
-            <p className="text-xs text-zinc-600 mt-0.5">{contact.region}</p>
-          )}
+          <p className="text-sm text-zinc-400">{[contact.role, contact.company].filter(Boolean).join(" · ")}</p>
+          {contact.region && <p className="text-xs text-zinc-600 mt-0.5">{contact.region}</p>}
         </div>
         <div className="flex items-center gap-2">
-          <button
-            onClick={onEdit}
-            className="text-xs text-zinc-500 hover:text-zinc-300 px-2 py-1 rounded hover:bg-zinc-800"
-          >
-            Edit
-          </button>
-          <button
-            onClick={onClose}
-            className="text-zinc-500 hover:text-zinc-300 text-lg leading-none px-1"
-          >
-            ×
-          </button>
+          <button onClick={onEdit} className="text-xs text-zinc-500 hover:text-zinc-300 px-2 py-1 rounded hover:bg-zinc-800">Edit</button>
+          <button onClick={onClose} className="text-zinc-500 hover:text-zinc-300 text-lg leading-none px-1">×</button>
         </div>
       </div>
 
       {/* Meta row */}
-      <div className="flex items-center gap-3 px-5 py-3 border-b border-zinc-800">
+      <div className="flex items-center gap-3 px-5 py-3 border-b border-zinc-800 flex-wrap">
         <span className={`text-xs px-2 py-0.5 rounded font-medium ${STATUS_COLORS[contact.status]}`}>
           {STATUS_LABELS[contact.status]}
         </span>
@@ -681,6 +612,39 @@ function ContactDetailPanel({ contact, onEdit, onClose, onDelete }: ContactDetai
           </span>
         )}
       </div>
+
+      {/* Contact details row */}
+      {(contact.phoneNumber || contact.email || contact.linkedinUrl) && (
+        <div className="px-5 py-3 border-b border-zinc-800 space-y-1.5">
+          {contact.phoneNumber && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-zinc-600 w-16">Phone</span>
+              <a
+                href={buildWhatsAppUrl(contact.phoneNumber)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-green-400 hover:text-green-300 font-medium"
+              >
+                {contact.phoneNumber}
+              </a>
+            </div>
+          )}
+          {contact.email && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-zinc-600 w-16">Email</span>
+              <a href={`mailto:${contact.email}`} className="text-xs text-blue-400 hover:text-blue-300">{contact.email}</a>
+            </div>
+          )}
+          {contact.linkedinUrl && (
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-zinc-600 w-16">LinkedIn</span>
+              <a href={contact.linkedinUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-blue-400 hover:text-blue-300 truncate max-w-[220px]">
+                {contact.linkedinUrl.replace("https://", "").replace("www.", "")}
+              </a>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Notes */}
       {contact.notes && (
@@ -696,11 +660,7 @@ function ContactDetailPanel({ contact, onEdit, onClose, onDelete }: ContactDetai
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
-              activeTab === tab
-                ? "text-amber-400 border-b-2 border-amber-400"
-                : "text-zinc-500 hover:text-zinc-300"
-            }`}
+            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${activeTab === tab ? "text-amber-400 border-b-2 border-amber-400" : "text-zinc-500 hover:text-zinc-300"}`}
           >
             {tab === "message" ? "Generate Message" : "Interaction History"}
           </button>
@@ -709,22 +669,87 @@ function ContactDetailPanel({ contact, onEdit, onClose, onDelete }: ContactDetai
 
       {/* Tab content */}
       <div className="flex-1 overflow-y-auto p-5">
-        {activeTab === "message" ? (
-          <GenerateMessagePanel contact={contact} onClose={onClose} />
-        ) : (
-          <InteractionLog contactId={contact.id} />
-        )}
+        {activeTab === "message" ? <GenerateMessagePanel contact={contact} /> : <InteractionLog contactId={contact.id} />}
       </div>
 
       {/* Footer */}
       <div className="p-4 border-t border-zinc-800">
-        <button
-          onClick={onDelete}
-          className="text-xs text-red-500 hover:text-red-400"
-        >
-          Delete contact
-        </button>
+        <button onClick={onDelete} className="text-xs text-red-500 hover:text-red-400">Delete contact</button>
       </div>
+    </div>
+  );
+}
+
+// ── Pipeline View ─────────────────────────────────────────────────────────────
+
+const PIPELINE_COLUMNS: ContactStatus[] = ["new", "contacted", "active", "closed"];
+
+interface PipelineViewProps {
+  contacts: Contact[];
+  onSelectContact: (c: Contact) => void;
+  onStatusChange: (id: number, status: ContactStatus) => void;
+}
+
+function PipelineView({ contacts, onSelectContact, onStatusChange }: PipelineViewProps) {
+  const grouped = useMemo(() => {
+    const map: Record<ContactStatus, Contact[]> = { new: [], contacted: [], active: [], closed: [] };
+    for (const c of contacts) map[c.status as ContactStatus].push(c);
+    return map;
+  }, [contacts]);
+
+  return (
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {PIPELINE_COLUMNS.map((col) => (
+        <div key={col} className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
+          {/* Column header */}
+          <div className="px-4 py-3 border-b border-zinc-800 flex items-center justify-between">
+            <span className={`text-xs font-semibold px-2 py-0.5 rounded ${STATUS_COLORS[col]}`}>
+              {STATUS_LABELS[col]}
+            </span>
+            <span className="text-xs text-zinc-600">{grouped[col].length}</span>
+          </div>
+
+          {/* Cards */}
+          <div className="p-3 space-y-2 min-h-[120px]">
+            {grouped[col].length === 0 && (
+              <p className="text-xs text-zinc-700 text-center pt-4">Empty</p>
+            )}
+            {grouped[col].map((contact) => (
+              <div
+                key={contact.id}
+                className="bg-zinc-800 rounded-lg p-3 border border-zinc-700/50 cursor-pointer hover:border-zinc-600 transition-colors group"
+                onClick={() => onSelectContact(contact)}
+              >
+                <p className="text-sm font-medium text-zinc-200 truncate">{contact.name}</p>
+                {contact.company && (
+                  <p className="text-xs text-zinc-500 truncate mt-0.5">{contact.company}</p>
+                )}
+                {contact.lastContacted && (
+                  <p className="text-xs text-zinc-700 mt-1">
+                    {formatDistanceToNow(new Date(contact.lastContacted), { addSuffix: true })}
+                  </p>
+                )}
+                {/* Quick status change */}
+                <div className="mt-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
+                  <Select
+                    value={contact.status}
+                    onValueChange={(v) => onStatusChange(contact.id, v as ContactStatus)}
+                  >
+                    <SelectTrigger className="h-6 text-xs bg-zinc-900 border-zinc-700 text-zinc-400 w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-zinc-800 border-zinc-700">
+                      {PIPELINE_COLUMNS.map((s) => (
+                        <SelectItem key={s} value={s} className="text-zinc-200 text-xs">{STATUS_LABELS[s]}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }
@@ -738,6 +763,7 @@ export default function Contacts() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showStyleExamples, setShowStyleExamples] = useState(false);
   const [statusFilter, setStatusFilter] = useState<ContactStatus | "all">("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("table");
 
   const utils = trpc.useUtils();
   const { data: contacts = [], isLoading } = trpc.contacts.list.useQuery(
@@ -745,11 +771,12 @@ export default function Contacts() {
   );
 
   const deleteMutation = trpc.contacts.delete.useMutation({
-    onSuccess: () => {
-      toast.success("Contact deleted");
-      utils.contacts.list.invalidate();
-      setSelectedContact(null);
-    },
+    onSuccess: () => { toast.success("Contact deleted"); utils.contacts.list.invalidate(); setSelectedContact(null); },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const updateStatusMutation = trpc.contacts.update.useMutation({
+    onSuccess: () => { utils.contacts.list.invalidate(); },
     onError: (e) => toast.error(e.message),
   });
 
@@ -759,67 +786,67 @@ export default function Contacts() {
   };
 
   if (authLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-zinc-950">
-        <div className="text-zinc-500 text-sm">Loading...</div>
-      </div>
-    );
+    return <div className="flex items-center justify-center min-h-screen bg-zinc-950"><div className="text-zinc-500 text-sm">Loading...</div></div>;
   }
 
   if (!user) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-zinc-950">
-        <div className="text-zinc-400 text-sm">Please sign in to access Contacts.</div>
-      </div>
-    );
+    return <div className="flex items-center justify-center min-h-screen bg-zinc-950"><div className="text-zinc-400 text-sm">Please sign in to access Contacts.</div></div>;
   }
 
   return (
     <div className="min-h-screen bg-zinc-950 text-zinc-100">
       {/* Header */}
       <div className="border-b border-zinc-800 bg-zinc-900/50">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-zinc-100">Contacts</h1>
-            <p className="text-xs text-zinc-500 mt-0.5">
-              ARE Phase 1 — {contacts.length} contact{contacts.length !== 1 ? "s" : ""}
-            </p>
+            <p className="text-xs text-zinc-500 mt-0.5">ARE Phase 1 — {contacts.length} contact{contacts.length !== 1 ? "s" : ""}</p>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowStyleExamples(true)}
-              className="text-zinc-400 hover:text-zinc-100 text-xs border border-zinc-700"
-            >
+            <Button variant="ghost" size="sm" onClick={() => setShowStyleExamples(true)} className="text-zinc-400 hover:text-zinc-100 text-xs border border-zinc-700">
               Message Style
             </Button>
-            <Button
-              onClick={() => setShowAddForm(true)}
-              className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm"
-            >
+            <Button onClick={() => setShowAddForm(true)} className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm">
               + Add Contact
             </Button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-6">
-        {/* Status filter */}
-        <div className="flex items-center gap-2 mb-6">
-          {(["all", "new", "contacted", "active", "closed"] as const).map((s) => (
+      <div className="max-w-7xl mx-auto px-6 py-6">
+        {/* Controls row */}
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          {/* Status filter (table mode only) */}
+          {viewMode === "table" && (
+            <div className="flex items-center gap-2">
+              {(["all", "new", "contacted", "active", "closed"] as const).map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${statusFilter === s ? "bg-amber-500 text-black" : "bg-zinc-800 text-zinc-400 hover:text-zinc-200"}`}
+                >
+                  {s === "all" ? "All" : STATUS_LABELS[s as ContactStatus]}
+                </button>
+              ))}
+            </div>
+          )}
+          {viewMode === "pipeline" && <div />}
+
+          {/* View toggle */}
+          <div className="flex items-center gap-1 bg-zinc-800 rounded-lg p-1">
             <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${
-                statusFilter === s
-                  ? "bg-amber-500 text-black"
-                  : "bg-zinc-800 text-zinc-400 hover:text-zinc-200"
-              }`}
+              onClick={() => setViewMode("table")}
+              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${viewMode === "table" ? "bg-zinc-700 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"}`}
             >
-              {s === "all" ? "All" : STATUS_LABELS[s as ContactStatus]}
+              Table
             </button>
-          ))}
+            <button
+              onClick={() => setViewMode("pipeline")}
+              className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${viewMode === "pipeline" ? "bg-zinc-700 text-zinc-100" : "text-zinc-500 hover:text-zinc-300"}`}
+            >
+              Pipeline
+            </button>
+          </div>
         </div>
 
         {/* Content */}
@@ -827,6 +854,12 @@ export default function Contacts() {
           <div className="text-center py-20 text-zinc-600 text-sm">Loading contacts...</div>
         ) : contacts.length === 0 ? (
           <EmptyContacts onAdd={() => setShowAddForm(true)} />
+        ) : viewMode === "pipeline" ? (
+          <PipelineView
+            contacts={contacts as Contact[]}
+            onSelectContact={setSelectedContact}
+            onStatusChange={(id, status) => updateStatusMutation.mutate({ id, status })}
+          />
         ) : (
           <div className="bg-zinc-900 rounded-xl border border-zinc-800 overflow-hidden">
             <table className="w-full">
@@ -834,7 +867,7 @@ export default function Contacts() {
                 <tr className="border-b border-zinc-800">
                   <th className="text-left px-5 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Name</th>
                   <th className="text-left px-5 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider hidden md:table-cell">Company / Role</th>
-                  <th className="text-left px-5 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider hidden lg:table-cell">Region</th>
+                  <th className="text-left px-5 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider hidden lg:table-cell">Phone</th>
                   <th className="text-left px-5 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider">Status</th>
                   <th className="text-left px-5 py-3 text-xs font-medium text-zinc-500 uppercase tracking-wider hidden sm:table-cell">Last Contact</th>
                   <th className="px-5 py-3"></th>
@@ -849,14 +882,25 @@ export default function Contacts() {
                   >
                     <td className="px-5 py-4">
                       <p className="text-sm font-medium text-zinc-200">{contact.name}</p>
+                      {contact.email && <p className="text-xs text-zinc-600 mt-0.5">{contact.email}</p>}
                     </td>
                     <td className="px-5 py-4 hidden md:table-cell">
-                      <p className="text-sm text-zinc-400">
-                        {[contact.role, contact.company].filter(Boolean).join(" · ") || "—"}
-                      </p>
+                      <p className="text-sm text-zinc-400">{[contact.role, contact.company].filter(Boolean).join(" · ") || "—"}</p>
                     </td>
                     <td className="px-5 py-4 hidden lg:table-cell">
-                      <p className="text-sm text-zinc-500">{contact.region || "—"}</p>
+                      {contact.phoneNumber ? (
+                        <a
+                          href={buildWhatsAppUrl(contact.phoneNumber)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-xs text-green-400 hover:text-green-300"
+                        >
+                          {contact.phoneNumber}
+                        </a>
+                      ) : (
+                        <span className="text-xs text-zinc-700">—</span>
+                      )}
                     </td>
                     <td className="px-5 py-4">
                       <span className={`text-xs px-2 py-0.5 rounded font-medium ${STATUS_COLORS[contact.status as ContactStatus]}`}>
@@ -865,17 +909,12 @@ export default function Contacts() {
                     </td>
                     <td className="px-5 py-4 hidden sm:table-cell">
                       <p className="text-xs text-zinc-600">
-                        {contact.lastContacted
-                          ? formatDistanceToNow(new Date(contact.lastContacted), { addSuffix: true })
-                          : "Never"}
+                        {contact.lastContacted ? formatDistanceToNow(new Date(contact.lastContacted), { addSuffix: true }) : "Never"}
                       </p>
                     </td>
                     <td className="px-5 py-4 text-right">
                       <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setEditContact(contact as Contact);
-                        }}
+                        onClick={(e) => { e.stopPropagation(); setEditContact(contact as Contact); }}
                         className="text-xs text-zinc-600 hover:text-zinc-300 mr-3"
                       >
                         Edit
@@ -890,36 +929,17 @@ export default function Contacts() {
       </div>
 
       {/* Dialogs & panels */}
-      <ContactForm
-        open={showAddForm}
-        onClose={() => setShowAddForm(false)}
-        onSaved={() => {}}
-      />
+      <ContactForm open={showAddForm} onClose={() => setShowAddForm(false)} onSaved={() => {}} />
       {editContact && (
-        <ContactForm
-          open={!!editContact}
-          onClose={() => setEditContact(null)}
-          contact={editContact}
-          onSaved={() => setEditContact(null)}
-        />
+        <ContactForm open={!!editContact} onClose={() => setEditContact(null)} contact={editContact} onSaved={() => setEditContact(null)} />
       )}
-      <StyleExamplesDialog
-        open={showStyleExamples}
-        onClose={() => setShowStyleExamples(false)}
-      />
+      <StyleExamplesDialog open={showStyleExamples} onClose={() => setShowStyleExamples(false)} />
       {selectedContact && (
         <>
-          {/* Backdrop */}
-          <div
-            className="fixed inset-0 bg-black/50 z-30"
-            onClick={() => setSelectedContact(null)}
-          />
+          <div className="fixed inset-0 bg-black/50 z-30" onClick={() => setSelectedContact(null)} />
           <ContactDetailPanel
             contact={selectedContact}
-            onEdit={() => {
-              setEditContact(selectedContact);
-              setSelectedContact(null);
-            }}
+            onEdit={() => { setEditContact(selectedContact); setSelectedContact(null); }}
             onClose={() => setSelectedContact(null)}
             onDelete={() => handleDelete(selectedContact)}
           />

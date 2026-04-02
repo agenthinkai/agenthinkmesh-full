@@ -91,6 +91,9 @@ export const contactsRouter = router({
       region: z.string().max(100).trim().optional(),
       status: contactStatusEnum.optional().default("new"),
       notes: z.string().max(5000).trim().optional(),
+      phoneNumber: z.string().max(20).trim().optional(),
+      email: z.string().email().max(255).optional(),
+      linkedinUrl: z.string().url().max(255).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -104,6 +107,9 @@ export const contactsRouter = router({
         region: input.region ?? null,
         status: input.status ?? "new",
         notes: input.notes ?? null,
+        phoneNumber: input.phoneNumber ?? null,
+        email: input.email ?? null,
+        linkedinUrl: input.linkedinUrl ?? null,
       });
 
       const [created] = await db
@@ -126,6 +132,9 @@ export const contactsRouter = router({
       region: z.string().max(100).trim().nullable().optional(),
       status: contactStatusEnum.optional(),
       notes: z.string().max(5000).trim().nullable().optional(),
+      phoneNumber: z.string().max(20).trim().nullable().optional(),
+      email: z.string().email().max(255).nullable().optional(),
+      linkedinUrl: z.string().url().max(255).nullable().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -224,6 +233,7 @@ export const contactsRouter = router({
           notes: contact.notes,
           status: contact.status,
           lastContacted: contact.lastContacted,
+          phoneNumber: contact.phoneNumber,
         },
         context: input.context,
         goal: input.goal as OutreachGoal,

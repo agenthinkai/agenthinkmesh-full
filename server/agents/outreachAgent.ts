@@ -1,11 +1,12 @@
 /**
- * outreachAgent.ts — ARE Phase 2: Outreach Agent
+ * outreachAgent.ts — ARE Phase 2: Outreach Agent (WhatsApp-optimised)
  *
  * Generates high-quality, institutionally-toned outreach messages for a given contact.
  * Supports few-shot style calibration via user-provided example messages.
  *
  * Rules enforced in prompt:
- *  - Institutional, private equity / investment tone
+ *  - WhatsApp-friendly format: no subject line, short paragraphs
+ *  - Institutional, private equity / investment tone — GCC appropriate
  *  - Direct, no fluff — max 120–150 words
  *  - No AI phrases: no "happy to", "leverage", "synergies", "reach out", "touch base"
  *  - Every message must reference real context from the contact record
@@ -24,6 +25,7 @@ export interface OutreachInput {
     notes?: string | null;
     status: string;
     lastContacted?: Date | null;
+    phoneNumber?: string | null;
   };
   context?: string;          // additional manual context from the user
   goal: OutreachGoal;
@@ -67,7 +69,7 @@ ${styleExamples.map((ex, i) => `[Example ${i + 1}]\n${ex.trim()}`).join("\n\n")}
     contact.company ? `Company: ${contact.company}` : null,
     contact.role ? `Role: ${contact.role}` : null,
     contact.region ? `Region: ${contact.region}` : null,
-    contact.status ? `Status: ${contact.status}` : null,
+    contact.status ? `Pipeline status: ${contact.status}` : null,
     daysSinceContact !== null ? `Last contacted: ${daysSinceContact} days ago` : "Last contacted: never",
     contact.notes ? `Notes: ${contact.notes}` : null,
     context ? `Additional context: ${context}` : null,
@@ -75,26 +77,28 @@ ${styleExamples.map((ex, i) => `[Example ${i + 1}]\n${ex.trim()}`).join("\n\n")}
     .filter(Boolean)
     .join("\n");
 
-  const systemPrompt = `You are a senior private equity professional writing a short, direct outreach message.
+  const systemPrompt = `You are a senior private equity professional writing a short WhatsApp message to a business contact in the GCC.
 
 STRICT RULES:
-- Maximum 150 words. Aim for 120.
-- Institutional tone. No warmth padding.
+- Maximum 150 words. Aim for 100–120.
+- WhatsApp format ONLY: no subject line, no email greeting, no "Dear [Name]".
+- Start directly with the person's first name or the key point — no preamble.
+- Short paragraphs (2–3 sentences max per paragraph). One blank line between paragraphs.
+- Institutional tone. Professional but not stiff. GCC-appropriate directness.
 - Reference specific details from the contact record — never write a generic message.
-- No AI phrases: forbidden words include "happy to", "leverage", "synergies", "reach out", "touch base", "hope this finds you well", "I wanted to", "please don't hesitate", "looking forward to", "exciting opportunity".
-- No subject line. Body only.
-- First sentence must be direct and specific — no preamble.
+- Forbidden words and phrases: "happy to", "leverage", "synergies", "reach out", "touch base", "hope this finds you well", "I wanted to", "please don't hesitate", "looking forward to", "exciting opportunity", "circle back", "ping you", "as per", "kindly".
+- No sign-off formalities. End with a clear, single call to action or question.
 - Sign off with name placeholder: [Your Name]
 
 OUTPUT FORMAT:
-Return only the message text. No labels, no JSON, no explanation.`;
+Return only the message text. No labels, no JSON, no explanation. No subject line.`;
 
   const userPrompt = `${fewShotBlock}CONTACT:
 ${contactBlock}
 
 GOAL: ${GOAL_LABELS[goal]}
 
-Write the message now.`;
+Write the WhatsApp message now.`;
 
   const response = await invokeLLM({
     messages: [
