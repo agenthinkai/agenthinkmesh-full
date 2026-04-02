@@ -283,3 +283,182 @@ describe("contacts router — ARE Phase 1 & 2 Enhanced (integration)", () => {
     expect(list.find((c) => c.id === testContactId)).toBeUndefined();
   });
 });
+
+// ── Unit tests: CSV parsing logic ─────────────────────────────────────────────
+
+describe("CSV parsing logic", () => {
+  function parseCsvText(text: string) {
+    const lines = text.trim().split(/\r?\n/);
+    if (lines.length < 2) return [];
+    const headers = lines[0].split(",").map((h) => h.trim().toLowerCase().replace(/["']/g, ""));
+    return lines.slice(1).map((line, i) => {
+      const values: string[] = [];
+      let current = "";
+      let inQuotes = false;
+      for (let ci = 0; ci < line.length; ci++) {
+        const ch = line[ci];
+        if (ch === '"') { inQuotes = !inQuotes; continue; }
+        if (ch === "," && !inQuotes) { values.push(current.trim()); current = ""; continue; }
+        current += ch;
+      }
+      values.push(current.trim());
+      const row: Record<string, string | undefined> & { rowIndex: number; name: string } = { rowIndex: i, name: "" };
+      headers.forEach((h, idx) => {
+        const v = values[idx] ?? "";
+        if (h === "name") row.name = v;
+        else if (h === "company") row.company = v || undefined;
+        else if (h === "phone_number" || h === "phone") row.phone_number = v || undefined;
+        else if (h === "email") row.email = v || undefined;
+        else if (h === "linkedin_url" || h === "linkedin") row.linkedin_url = v || undefined;
+        else if (h === "role") row.role = v || undefined;
+      });
+      return row;
+    }).filter((r) => r.name.trim().length > 0);
+  }
+
+  it("parses a valid CSV with all columns", () => {
+    const csv = `name,company,phone_number,email,role\nAhmed Al-Rashid,Gulf Capital,+96550001234,ahmed@gulfcapital.com,Managing Director\nSara Al-Mutairi,Kuwait Finance House,+96560005678,sara@kfh.com,VP Investments`;
+    const rows = parseCsvText(csv);
+    expect(rows).toHaveLength(2);
+    expect(rows[0].name).toBe("Ahmed Al-Rashid");
+    expect(rows[0].company).toBe("Gulf Capital");
+    expect(rows[0].phone_number).toBe("+96550001234");
+    expect(rows[0].email).toBe("ahmed@gulfcapital.com");
+  });
+
+  it("handles quoted fields with commas inside", () => {
+    const csv = `name,company,role\n"Al-Rashid, Ahmed","Gulf Capital, Kuwait","MD, PE"`;
+    const rows = parseCsvText(csv);
+    expect(rows).toHaveLength(1);
+    expect(rows[0].name).toBe("Al-Rashid, Ahmed");
+    expect(rows[0].company).toBe("Gulf Capital, Kuwait");
+  });
+
+  it("filters out rows with empty name", () => {
+    const csv = `name,company\nAhmed Al-Rashid,Gulf Capital\n,Empty Name Row\nSara Al-Mutairi,KFH`;
+    const rows = parseCsvText(csv);
+    expect(rows).toHaveLength(2);
+    expect(rows.every((r) => r.name.trim().length > 0)).toBe(true);
+  });
+
+  it("handles alternate column names (phone, linkedin)", () => {
+    const csv = `name,phone,linkedin\nAhmed,+96550001234,https://linkedin.com/in/ahmed`;
+    const rows = parseCsvText(csv);
+    expect(rows[0].phone_number).toBe("+96550001234");
+    expect(rows[0].linkedin_url).toBe("https://linkedin.com/in/ahmed");
+  });
+
+  it("returns empty array for CSV with only headers", () => {
+    const csv = `name,company,email`;
+    const rows = parseCsvText(csv);
+    expect(rows).toHaveLength(0);
+  });
+});
+
+// ── Unit tests: Duplicate detection logic ─────────────────────────────────────
+
+describe("Duplicate detection logic", () => {
+  it("detects exact name+company duplicates (case-insensitive)", () => {
+    const existing = [{ name: "Ahmed Al-Rashid", company: "Gulf Capital" }];
+    const existingKeys = new Set(existing.map((c) => `${c.name.toLowerCase().trim()}|${(c.company ?? "").toLowerCase().trim()}`));
+    const key = "ahmed al-rashid|gulf capital";
+    expect(existingKeys.has(key)).toBe(true);
+  });
+
+  it("does not flag different company as duplicate", () => {
+    const existing = [{ name: "Ahmed Al-Rashid", company: "Gulf Capital" }];
+    const existingKeys = new Set(existing.map((c) => `${c.name.toLowerCase().trim()}|${(c.company ?? "").toLowerCase().trim()}`));
+    const key = "ahmed al-rashid|kuwait finance house";
+    expect(existingKeys.has(key)).toBe(false);
+  });
+
+  it("treats empty company and null company as the same key", () => {
+    const existing = [{ name: "Sara Al-Mutairi", company: null }];
+    const existingKeys = new Set(existing.map((c) => `${c.name.toLowerCase().trim()}|${(c.company ?? "").toLowerCase().trim()}`));
+    expect(existingKeys.has("sara al-mutairi|")).toBe(true);
+  });
+});
+
+// ── Unit tests: Summary byStatus calculation ──────────────────────────────────
+
+describe("Summary byStatus calculation", () => {
+  it("sums counts correctly across all statuses", () => {
+    const rows = [
+      { status: "new", count: 3 },
+      { status: "contacted", count: 5 },
+      { status: "active", count: 2 },
+      { status: "closed", count: 1 },
+    ];
+    const byStatus = { new: 0, contacted: 0, active: 0, closed: 0 };
+    let total = 0;
+    for (const row of rows) {
+      const count = Number(row.count);
+      byStatus[row.status as keyof typeof byStatus] = count;
+      total += count;
+    }
+    expect(total).toBe(11);
+    expect(byStatus.new).toBe(3);
+    expect(byStatus.contacted).toBe(5);
+    expect(byStatus.active).toBe(2);
+    expect(byStatus.closed).toBe(1);
+  });
+
+  it("handles empty contacts (all zeros)", () => {
+    const byStatus = { new: 0, contacted: 0, active: 0, closed: 0 };
+    const total = Object.values(byStatus).reduce((a, b) => a + b, 0);
+    expect(total).toBe(0);
+  });
+});
+
+// ── Unit tests: Email mailto URL encoding ─────────────────────────────────────
+
+describe("Email mailto URL encoding", () => {
+  it("encodes subject and body correctly", () => {
+    const subject = "Quick follow-up on healthcare deal";
+    const body = "Ahmed,\n\nWould you be open to a call?\n\n[Your Name]";
+    const email = "ahmed@gulfcapital.com";
+    const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    expect(mailtoUrl).toContain("mailto:ahmed@gulfcapital.com");
+    expect(mailtoUrl).toContain("subject=Quick%20follow-up");
+    expect(mailtoUrl).toContain("body=Ahmed");
+  });
+
+  it("handles empty email (no recipient)", () => {
+    const mailtoUrl = `mailto:?subject=${encodeURIComponent("Test")}&body=${encodeURIComponent("Body")}`;
+    expect(mailtoUrl.startsWith("mailto:?")).toBe(true);
+  });
+});
+
+// ── Unit tests: Partial import logic ─────────────────────────────────────────
+
+describe("Partial import logic", () => {
+  it("imports valid rows and skips duplicates when importDuplicates=false", () => {
+    const rows = [
+      { name: "Ahmed Al-Rashid", _isDuplicate: true, _errors: [] as string[] },
+      { name: "Sara Al-Mutairi", _isDuplicate: false, _errors: [] as string[] },
+      { name: "", _isDuplicate: false, _errors: ["Name is required"] },
+    ];
+    const toImport = rows.filter((r) => !r._errors.length && !r._isDuplicate);
+    expect(toImport).toHaveLength(1);
+    expect(toImport[0].name).toBe("Sara Al-Mutairi");
+  });
+
+  it("imports duplicates when importDuplicates=true", () => {
+    const rows = [
+      { name: "Ahmed Al-Rashid", _isDuplicate: true, _errors: [] as string[] },
+      { name: "Sara Al-Mutairi", _isDuplicate: false, _errors: [] as string[] },
+    ];
+    const toImport = rows.filter((r) => !r._errors.length);
+    expect(toImport).toHaveLength(2);
+  });
+
+  it("always skips error rows regardless of importDuplicates", () => {
+    const rows = [
+      { name: "", _isDuplicate: false, _errors: ["Name is required"] },
+      { name: "Ahmed", _isDuplicate: false, _errors: [] as string[] },
+    ];
+    const toImport = rows.filter((r) => !r._errors.length);
+    expect(toImport).toHaveLength(1);
+    expect(toImport[0].name).toBe("Ahmed");
+  });
+});

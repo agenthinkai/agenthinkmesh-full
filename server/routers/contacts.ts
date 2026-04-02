@@ -1,22 +1,25 @@
 /**
- * contacts.ts — ARE Phase 1 & 2 tRPC router
+ * contacts.ts — ARE Phase 1 & 2 tRPC router (Enhanced Round 2)
  *
  * Procedures:
- *  contacts.list           — list all contacts for the user
- *  contacts.get            — get a single contact with interactions
- *  contacts.create         — add a new contact
- *  contacts.update         — edit contact fields (auto-updates lastContacted when status changes to contacted)
- *  contacts.delete         — remove a contact
- *  contacts.generateMessage — Outreach Agent: generate a message for a contact
- *  contacts.logInteraction  — log a sent message + outcome; auto-updates lastContacted
- *  contacts.updateOutcome   — update outcome on an existing interaction
- *  contacts.getStyleExamples — get the user's few-shot style examples
- *  contacts.saveStyleExamples — save/replace the user's few-shot style examples
+ *  contacts.list                — list all contacts for the user
+ *  contacts.get                 — get a single contact with interactions
+ *  contacts.create              — add a new contact
+ *  contacts.update              — edit contact fields (auto-updates lastContacted when status changes)
+ *  contacts.delete              — remove a contact
+ *  contacts.generateMessage     — Outreach Agent: generate a WhatsApp-optimised message
+ *  contacts.logInteraction      — log a sent message + outcome; auto-updates lastContacted
+ *  contacts.updateOutcome       — update outcome on an existing interaction
+ *  contacts.getStyleExamples    — get the user's few-shot style examples
+ *  contacts.saveStyleExamples   — save/replace the user's few-shot style examples
+ *  contacts.importCsv           — bulk import contacts from parsed CSV rows (with duplicate detection)
+ *  contacts.getSummary          — get total + count by status
+ *  contacts.generateEmailTemplate — generate subject + body for mailto prefill
  */
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, sql } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import {
@@ -25,12 +28,23 @@ import {
   outreachStyleExamples,
 } from "../../drizzle/schema";
 import { generateOutreachMessage, type OutreachGoal } from "../agents/outreachAgent";
+import { invokeLLM } from "../_core/llm";
 
 // ── Validation schemas ────────────────────────────────────────────────────────
 
 const contactStatusEnum = z.enum(["new", "contacted", "active", "closed"]);
 const outcomeEnum = z.enum(["no_response", "response", "converted"]);
 const goalEnum = z.enum(["follow_up", "conversion", "engagement"]);
+
+// CSV row schema — all fields optional except name
+const csvRowSchema = z.object({
+  name: z.string().min(1).max(255).trim(),
+  company: z.string().max(255).trim().optional(),
+  phone_number: z.string().max(20).trim().optional(),
+  email: z.string().email().max(255).optional().or(z.literal("")).transform(v => v || undefined),
+  linkedin_url: z.string().url().max(255).optional().or(z.literal("")).transform(v => v || undefined),
+  role: z.string().max(255).trim().optional(),
+});
 
 // ── Router ────────────────────────────────────────────────────────────────────
 
@@ -142,7 +156,6 @@ export const contactsRouter = router({
 
       const { id, ...fields } = input;
 
-      // Verify ownership
       const [existing] = await db
         .select()
         .from(contacts)
@@ -150,7 +163,6 @@ export const contactsRouter = router({
         .limit(1);
       if (!existing) throw new TRPCError({ code: "NOT_FOUND" });
 
-      // Auto-update lastContacted when status changes to "contacted" or "active"
       const updatePayload: Record<string, unknown> = { ...fields };
       if (
         fields.status &&
@@ -206,7 +218,6 @@ export const contactsRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      // Load contact
       const [contact] = await db
         .select()
         .from(contacts)
@@ -214,7 +225,6 @@ export const contactsRouter = router({
         .limit(1);
       if (!contact) throw new TRPCError({ code: "NOT_FOUND", message: "Contact not found" });
 
-      // Load style examples
       const examples = await db
         .select()
         .from(outreachStyleExamples)
@@ -223,7 +233,6 @@ export const contactsRouter = router({
 
       const styleExamples = examples.map((e) => e.exampleText);
 
-      // Run Outreach Agent
       const result = await generateOutreachMessage({
         contact: {
           name: contact.name,
@@ -240,7 +249,6 @@ export const contactsRouter = router({
         styleExamples,
       });
 
-      // Auto-update lastContacted when message is generated
       await db
         .update(contacts)
         .set({ lastContacted: new Date() })
@@ -249,7 +257,7 @@ export const contactsRouter = router({
       return result;
     }),
 
-  // ── Log an interaction (message sent + optional outcome) ───────────────────
+  // ── Log an interaction ─────────────────────────────────────────────────────
   logInteraction: protectedProcedure
     .input(z.object({
       contactId: z.number(),
@@ -261,7 +269,6 @@ export const contactsRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      // Verify contact ownership
       const [contact] = await db
         .select()
         .from(contacts)
@@ -269,7 +276,6 @@ export const contactsRouter = router({
         .limit(1);
       if (!contact) throw new TRPCError({ code: "NOT_FOUND" });
 
-      // Insert interaction
       await db.insert(contactInteractions).values({
         contactId: input.contactId,
         userId: ctx.user.id,
@@ -278,12 +284,10 @@ export const contactsRouter = router({
         outcome: input.outcome ?? null,
       });
 
-      // Auto-update lastContacted on the contact
       await db
         .update(contacts)
         .set({
           lastContacted: new Date(),
-          // If status is still "new", bump to "contacted"
           ...(contact.status === "new" ? { status: "contacted" as const } : {}),
         })
         .where(eq(contacts.id, input.contactId));
@@ -301,7 +305,6 @@ export const contactsRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      // Verify ownership via userId
       const [interaction] = await db
         .select()
         .from(contactInteractions)
@@ -319,7 +322,6 @@ export const contactsRouter = router({
         .set({ outcome: input.outcome })
         .where(eq(contactInteractions.id, input.interactionId));
 
-      // If converted, update contact status
       if (input.outcome === "converted") {
         await db
           .update(contacts)
@@ -356,12 +358,10 @@ export const contactsRouter = router({
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
 
-      // Delete existing examples for this user
       await db
         .delete(outreachStyleExamples)
         .where(eq(outreachStyleExamples.userId, ctx.user.id));
 
-      // Insert new examples
       if (input.examples.length > 0) {
         await db.insert(outreachStyleExamples).values(
           input.examples.map((ex, i) => ({
@@ -374,5 +374,234 @@ export const contactsRouter = router({
       }
 
       return { ok: true, count: input.examples.length };
+    }),
+
+  // ── Get contacts summary ───────────────────────────────────────────────────
+  getSummary: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+    const rows = await db
+      .select({
+        status: contacts.status,
+        count: sql<number>`COUNT(*)`,
+      })
+      .from(contacts)
+      .where(eq(contacts.userId, ctx.user.id))
+      .groupBy(contacts.status);
+
+    const byStatus = { new: 0, contacted: 0, active: 0, closed: 0 };
+    let total = 0;
+    for (const row of rows) {
+      const count = Number(row.count);
+      byStatus[row.status as keyof typeof byStatus] = count;
+      total += count;
+    }
+
+    return { total, byStatus };
+  }),
+
+  // ── Bulk CSV import ────────────────────────────────────────────────────────
+  importCsv: protectedProcedure
+    .input(z.object({
+      rows: z.array(z.object({
+        name: z.string(),
+        company: z.string().optional(),
+        phone_number: z.string().optional(),
+        email: z.string().optional(),
+        linkedin_url: z.string().optional(),
+        role: z.string().optional(),
+      })),
+      // If true, import rows flagged as duplicates anyway
+      importDuplicates: z.boolean().optional().default(false),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      // Load existing contacts for duplicate detection (name + company, case-insensitive)
+      const existing = await db
+        .select({ name: contacts.name, company: contacts.company })
+        .from(contacts)
+        .where(eq(contacts.userId, ctx.user.id));
+
+      const existingKeys = new Set(
+        existing.map((c) =>
+          `${c.name.toLowerCase().trim()}|${(c.company ?? "").toLowerCase().trim()}`
+        )
+      );
+
+      const results: Array<{
+        rowIndex: number;
+        status: "imported" | "duplicate" | "error";
+        name?: string;
+        company?: string;
+        error?: string;
+      }> = [];
+
+      let importedCount = 0;
+      let duplicateCount = 0;
+      let errorCount = 0;
+
+      for (let i = 0; i < input.rows.length; i++) {
+        const raw = input.rows[i];
+
+        // Validate row
+        const parsed = csvRowSchema.safeParse(raw);
+        if (!parsed.success) {
+          const errorMessages = parsed.error.issues.map((e) => `${String(e.path.join("."))}: ${e.message}`).join("; ");
+          results.push({ rowIndex: i, status: "error", name: raw.name, company: raw.company, error: errorMessages });
+          errorCount++;
+          continue;
+        }
+
+        const row = parsed.data;
+
+        // Duplicate detection
+        const key = `${row.name.toLowerCase().trim()}|${(row.company ?? "").toLowerCase().trim()}`;
+        if (existingKeys.has(key) && !input.importDuplicates) {
+          results.push({ rowIndex: i, status: "duplicate", name: row.name, company: row.company });
+          duplicateCount++;
+          continue;
+        }
+
+        // Import the row
+        try {
+          await db.insert(contacts).values({
+            userId: ctx.user.id,
+            name: row.name,
+            company: row.company ?? null,
+            role: row.role ?? null,
+            region: null,
+            status: "new",
+            notes: null,
+            phoneNumber: row.phone_number ?? null,
+            email: row.email ?? null,
+            linkedinUrl: row.linkedin_url ?? null,
+          });
+
+          // Add to existing keys to prevent intra-batch duplicates
+          existingKeys.add(key);
+
+          results.push({ rowIndex: i, status: "imported", name: row.name, company: row.company });
+          importedCount++;
+        } catch (err) {
+          results.push({ rowIndex: i, status: "error", name: row.name, company: row.company, error: "Database error during insert" });
+          errorCount++;
+        }
+      }
+
+      return {
+        imported: importedCount,
+        duplicates: duplicateCount,
+        errors: errorCount,
+        total: input.rows.length,
+        results,
+      };
+    }),
+
+  // ── Generate email template (subject + body for mailto) ───────────────────
+  generateEmailTemplate: protectedProcedure
+    .input(z.object({
+      contactId: z.number(),
+      goal: goalEnum,
+      context: z.string().max(1000).trim().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
+
+      const [contact] = await db
+        .select()
+        .from(contacts)
+        .where(and(eq(contacts.id, input.contactId), eq(contacts.userId, ctx.user.id)))
+        .limit(1);
+      if (!contact) throw new TRPCError({ code: "NOT_FOUND", message: "Contact not found" });
+
+      const examples = await db
+        .select()
+        .from(outreachStyleExamples)
+        .where(eq(outreachStyleExamples.userId, ctx.user.id))
+        .orderBy(outreachStyleExamples.sortOrder);
+
+      const styleExamples = examples.map((e) => e.exampleText);
+
+      const goalLabels: Record<string, string> = {
+        follow_up: "follow up after a previous interaction",
+        conversion: "convert this contact into an active deal or meeting",
+        engagement: "re-engage a contact who has gone quiet",
+      };
+
+      const fewShotBlock = styleExamples.length > 0
+        ? `TONE CALIBRATION — match the writing style of these real messages exactly:\n${styleExamples.map((ex, i) => `[Example ${i + 1}]\n${ex}`).join("\n\n")}\n\n---\n\n`
+        : "";
+
+      const systemPrompt = `You are a senior GCC private equity professional writing a short, direct email to a business contact. You write in a confident, peer-to-peer tone — no corporate jargon, no filler phrases. Your emails are brief, specific, and always have a clear single ask.
+
+${fewShotBlock}Rules:
+- Subject line: 6 words or fewer, no spam triggers, no exclamation marks, no "Re:" or "Fwd:"
+- Body: 3–5 sentences maximum, same calibrated tone as the examples above
+- No "I hope this email finds you well", "Please don't hesitate", "Best regards", "Warm regards", or similar filler
+- End with a single clear question or call to action
+- Sign off with just "[Your Name]"
+- Output ONLY valid JSON: { "subject": "...", "body": "..." }`;
+
+      const userPrompt = `Write a professional email to ${goalLabels[input.goal] || "follow up"}.
+
+Contact: ${contact.name}${contact.company ? ` at ${contact.company}` : ""}${contact.role ? `, ${contact.role}` : ""}${contact.region ? ` (${contact.region})` : ""}
+Goal: ${goalLabels[input.goal]}
+${input.context ? `Context: ${input.context}` : ""}
+${contact.notes ? `Notes: ${contact.notes}` : ""}
+
+Return JSON only: { "subject": "...", "body": "..." }`;
+
+      const response = await invokeLLM({
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user", content: userPrompt },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "email_template",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                subject: { type: "string", description: "Email subject line (6 words or fewer)" },
+                body: { type: "string", description: "Email body (3-5 sentences, professional GCC tone)" },
+              },
+              required: ["subject", "body"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+
+      const content = response.choices?.[0]?.message?.content;
+      if (!content) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "LLM returned empty response" });
+
+      let parsed: { subject: string; body: string };
+      try {
+        parsed = typeof content === "string" ? JSON.parse(content) : content;
+      } catch {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to parse LLM response as JSON" });
+      }
+
+      // Auto-update lastContacted when email template is generated
+      await db
+        .update(contacts)
+        .set({ lastContacted: new Date() })
+        .where(eq(contacts.id, input.contactId));
+
+      return {
+        subject: parsed.subject,
+        body: parsed.body,
+        recipient: contact.name,
+        email: contact.email,
+        goal: input.goal,
+        // Convenience: pre-encoded mailto URL
+        mailtoUrl: `mailto:${contact.email ?? ""}?subject=${encodeURIComponent(parsed.subject)}&body=${encodeURIComponent(parsed.body)}`,
+      };
     }),
 });

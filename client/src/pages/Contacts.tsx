@@ -12,7 +12,7 @@
  *  - Interaction log with outcome tracking
  */
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
@@ -41,6 +41,27 @@ type ContactStatus = "new" | "contacted" | "active" | "closed";
 type OutcomeType = "no_response" | "response" | "converted";
 type GoalType = "follow_up" | "conversion" | "engagement";
 type ViewMode = "table" | "pipeline";
+
+interface CsvRow {
+  rowIndex: number;
+  name: string;
+  company?: string;
+  phone_number?: string;
+  email?: string;
+  linkedin_url?: string;
+  role?: string;
+  // preview-only fields
+  _isDuplicate?: boolean;
+  _errors?: string[];
+}
+
+interface ImportResult {
+  rowIndex: number;
+  status: "imported" | "duplicate" | "error";
+  name?: string;
+  company?: string;
+  error?: string;
+}
 
 interface Contact {
   id: number;
@@ -98,6 +119,216 @@ const OUTCOME_COLORS: Record<OutcomeType, string> = {
   response: "bg-blue-900 text-blue-200",
   converted: "bg-emerald-900 text-emerald-200",
 };
+
+// ── CSV Import Dialog ────────────────────────────────────────────────────────
+
+function parseCsvText(text: string): CsvRow[] {
+  const lines = text.trim().split(/\r?\n/);
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(",").map((h) => h.trim().toLowerCase().replace(/["']/g, ""));
+  return lines.slice(1).map((line, i) => {
+    // Handle quoted fields
+    const values: string[] = [];
+    let current = "";
+    let inQuotes = false;
+    for (let ci = 0; ci < line.length; ci++) {
+      const ch = line[ci];
+      if (ch === '"') { inQuotes = !inQuotes; continue; }
+      if (ch === "," && !inQuotes) { values.push(current.trim()); current = ""; continue; }
+      current += ch;
+    }
+    values.push(current.trim());
+    const row: CsvRow = { rowIndex: i, name: "" };
+    headers.forEach((h, idx) => {
+      const v = values[idx] ?? "";
+      if (h === "name") row.name = v;
+      else if (h === "company") row.company = v || undefined;
+      else if (h === "phone_number" || h === "phone") row.phone_number = v || undefined;
+      else if (h === "email") row.email = v || undefined;
+      else if (h === "linkedin_url" || h === "linkedin") row.linkedin_url = v || undefined;
+      else if (h === "role") row.role = v || undefined;
+    });
+    return row;
+  }).filter((r) => r.name.trim().length > 0);
+}
+
+interface CsvImportDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onImported: () => void;
+  existingContacts: Contact[];
+}
+
+function CsvImportDialog({ open, onClose, onImported, existingContacts }: CsvImportDialogProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [rows, setRows] = useState<CsvRow[]>([]);
+  const [importResults, setImportResults] = useState<ImportResult[] | null>(null);
+  const [importDuplicates, setImportDuplicates] = useState(false);
+  const [step, setStep] = useState<"upload" | "preview" | "done">("upload");
+  const utils = trpc.useUtils();
+
+  const existingKeys = useMemo(() => new Set(
+    existingContacts.map((c) => `${c.name.toLowerCase().trim()}|${(c.company ?? "").toLowerCase().trim()}`)
+  ), [existingContacts]);
+
+  const importMutation = trpc.contacts.importCsv.useMutation({
+    onSuccess: (data) => {
+      setImportResults(data.results);
+      setStep("done");
+      utils.contacts.list.invalidate();
+      utils.contacts.getSummary.invalidate();
+      onImported();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      const parsed = parseCsvText(text);
+      if (parsed.length === 0) { toast.error("No valid rows found. Ensure the CSV has a 'name' column."); return; }
+      // Flag duplicates
+      const flagged = parsed.map((r) => ({
+        ...r,
+        _isDuplicate: existingKeys.has(`${r.name.toLowerCase().trim()}|${(r.company ?? "").toLowerCase().trim()}`),
+        _errors: !r.name.trim() ? ["Name is required"] : [],
+      }));
+      setRows(flagged);
+      setStep("preview");
+    };
+    reader.readAsText(file);
+  };
+
+  const handleImport = () => {
+    const toImport = rows.filter((r) => !r._errors?.length && (importDuplicates || !r._isDuplicate));
+    if (toImport.length === 0) { toast.error("No valid rows to import"); return; }
+    importMutation.mutate({
+      rows: toImport.map((r) => ({ name: r.name, company: r.company, phone_number: r.phone_number, email: r.email, linkedin_url: r.linkedin_url, role: r.role })),
+      importDuplicates,
+    });
+  };
+
+  const handleClose = () => {
+    setRows([]); setImportResults(null); setStep("upload"); setImportDuplicates(false);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+    onClose();
+  };
+
+  const validRows = rows.filter((r) => !r._errors?.length);
+  const dupRows = rows.filter((r) => r._isDuplicate && !r._errors?.length);
+  const errorRows = rows.filter((r) => r._errors?.length);
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && handleClose()}>
+      <DialogContent className="bg-zinc-900 border-zinc-700 text-zinc-100 max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="text-zinc-100">Import Contacts from CSV</DialogTitle>
+          <p className="text-sm text-zinc-400 mt-1">
+            Upload a CSV with columns: <code className="text-amber-400 text-xs">name, company, phone_number, email, linkedin_url, role</code>. Only <code className="text-amber-400 text-xs">name</code> is required.
+          </p>
+        </DialogHeader>
+
+        {step === "upload" && (
+          <div className="py-8 flex flex-col items-center gap-4">
+            <div className="w-16 h-16 rounded-full bg-zinc-800 flex items-center justify-center text-2xl">↑</div>
+            <p className="text-sm text-zinc-400">Select a CSV file to begin</p>
+            <input ref={fileInputRef} type="file" accept=".csv,text/csv" onChange={handleFileChange} className="hidden" />
+            <Button onClick={() => fileInputRef.current?.click()} className="bg-amber-500 hover:bg-amber-400 text-black font-semibold">
+              Choose CSV File
+            </Button>
+          </div>
+        )}
+
+        {step === "preview" && (
+          <div className="space-y-4">
+            {/* Summary */}
+            <div className="flex gap-3 flex-wrap">
+              <span className="text-xs px-2 py-1 rounded bg-zinc-800 text-zinc-300">{rows.length} rows parsed</span>
+              <span className="text-xs px-2 py-1 rounded bg-emerald-900 text-emerald-200">{validRows.length - dupRows.length} new</span>
+              {dupRows.length > 0 && <span className="text-xs px-2 py-1 rounded bg-yellow-900 text-yellow-200">{dupRows.length} duplicates</span>}
+              {errorRows.length > 0 && <span className="text-xs px-2 py-1 rounded bg-red-900 text-red-200">{errorRows.length} errors</span>}
+            </div>
+
+            {/* Duplicate option */}
+            {dupRows.length > 0 && (
+              <label className="flex items-center gap-2 text-sm text-zinc-400 cursor-pointer">
+                <input type="checkbox" checked={importDuplicates} onChange={(e) => setImportDuplicates(e.target.checked)} className="accent-amber-500" />
+                Import duplicates anyway ({dupRows.length} contacts)
+              </label>
+            )}
+
+            {/* Row preview table */}
+            <div className="overflow-x-auto rounded-lg border border-zinc-700">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="border-b border-zinc-700 bg-zinc-800">
+                    <th className="text-left px-3 py-2 text-zinc-400">#</th>
+                    <th className="text-left px-3 py-2 text-zinc-400">Name</th>
+                    <th className="text-left px-3 py-2 text-zinc-400">Company</th>
+                    <th className="text-left px-3 py-2 text-zinc-400">Phone</th>
+                    <th className="text-left px-3 py-2 text-zinc-400">Email</th>
+                    <th className="text-left px-3 py-2 text-zinc-400">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.rowIndex} className={`border-b border-zinc-800 ${
+                      row._errors?.length ? "bg-red-950/30" : row._isDuplicate ? "bg-yellow-950/20" : ""
+                    }`}>
+                      <td className="px-3 py-2 text-zinc-600">{row.rowIndex + 1}</td>
+                      <td className="px-3 py-2 text-zinc-200 font-medium">{row.name || <span className="text-red-400">—</span>}</td>
+                      <td className="px-3 py-2 text-zinc-400">{row.company || "—"}</td>
+                      <td className="px-3 py-2 text-zinc-400">{row.phone_number || "—"}</td>
+                      <td className="px-3 py-2 text-zinc-400">{row.email || "—"}</td>
+                      <td className="px-3 py-2">
+                        {row._errors?.length ? (
+                          <span className="text-red-400 text-xs">{row._errors.join("; ")}</span>
+                        ) : row._isDuplicate ? (
+                          <span className="bg-yellow-900 text-yellow-200 px-1.5 py-0.5 rounded text-xs">Duplicate</span>
+                        ) : (
+                          <span className="bg-emerald-900 text-emerald-200 px-1.5 py-0.5 rounded text-xs">New</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {step === "done" && importResults && (
+          <div className="space-y-4 py-4">
+            <div className="flex gap-3 flex-wrap">
+              <span className="text-xs px-2 py-1 rounded bg-emerald-900 text-emerald-200">{importResults.filter((r) => r.status === "imported").length} imported</span>
+              <span className="text-xs px-2 py-1 rounded bg-yellow-900 text-yellow-200">{importResults.filter((r) => r.status === "duplicate").length} skipped (duplicates)</span>
+              {importResults.filter((r) => r.status === "error").length > 0 && (
+                <span className="text-xs px-2 py-1 rounded bg-red-900 text-red-200">{importResults.filter((r) => r.status === "error").length} errors</span>
+              )}
+            </div>
+            <p className="text-sm text-zinc-400">Import complete. Your contacts list has been updated.</p>
+          </div>
+        )}
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={handleClose} className="text-zinc-400 hover:text-zinc-100">Close</Button>
+          {step === "preview" && (
+            <Button
+              onClick={handleImport}
+              disabled={importMutation.isPending || (validRows.length - (importDuplicates ? 0 : dupRows.length)) === 0}
+              className="bg-amber-500 hover:bg-amber-400 text-black font-semibold"
+            >
+              {importMutation.isPending ? "Importing..." : `Import ${validRows.length - (importDuplicates ? 0 : dupRows.length)} Contacts`}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 /** Strip leading + from phone number for wa.me URL */
 function buildWhatsAppUrl(phone: string): string {
@@ -279,6 +510,8 @@ function GenerateMessagePanel({ contact }: GenerateMessagePanelProps) {
   const [wordCount, setWordCount] = useState(0);
   const [logAction, setLogAction] = useState("");
   const [showLogForm, setShowLogForm] = useState(false);
+  const [emailTemplate, setEmailTemplate] = useState<{ subject: string; body: string; mailtoUrl: string } | null>(null);
+  const [showEmailTemplate, setShowEmailTemplate] = useState(false);
 
   const utils = trpc.useUtils();
 
@@ -287,6 +520,15 @@ function GenerateMessagePanel({ contact }: GenerateMessagePanelProps) {
       setGeneratedMessage(data.message);
       setWordCount(data.wordCount);
       setLogAction(`Generated ${GOAL_LABELS[goal]} message`);
+      utils.contacts.list.invalidate();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const emailMutation = trpc.contacts.generateEmailTemplate.useMutation({
+    onSuccess: (data) => {
+      setEmailTemplate({ subject: data.subject, body: data.body, mailtoUrl: data.mailtoUrl });
+      setShowEmailTemplate(true);
       utils.contacts.list.invalidate();
     },
     onError: (e) => toast.error(e.message),
@@ -386,31 +628,76 @@ function GenerateMessagePanel({ contact }: GenerateMessagePanelProps) {
             />
           </div>
 
-          {/* WhatsApp action bar */}
-          {contact.phoneNumber && (
-            <div className="flex gap-2">
-              <Button
-                onClick={handleCopy}
-                variant="outline"
-                size="sm"
-                className="flex-1 border-zinc-700 text-zinc-300 hover:text-zinc-100 bg-transparent text-xs"
-              >
-                Copy Message
-              </Button>
+          {/* Action bar: WhatsApp + Email */}
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              onClick={handleCopy}
+              variant="outline"
+              size="sm"
+              className="flex-1 border-zinc-700 text-zinc-300 hover:text-zinc-100 bg-transparent text-xs"
+            >
+              Copy
+            </Button>
+            {contact.phoneNumber && (
               <Button
                 onClick={handleOpenWhatsApp}
                 size="sm"
                 className="flex-1 bg-green-700 hover:bg-green-600 text-white text-xs font-semibold"
               >
-                Open WhatsApp →
+                WhatsApp →
               </Button>
-            </div>
+            )}
+            {contact.email && (
+              <Button
+                onClick={() => emailMutation.mutate({ contactId: contact.id, goal, context: context.trim() || undefined })}
+                disabled={emailMutation.isPending}
+                size="sm"
+                className="flex-1 bg-blue-700 hover:bg-blue-600 text-white text-xs font-semibold"
+              >
+                {emailMutation.isPending ? "Generating..." : "Email →"}
+              </Button>
+            )}
+          </div>
+
+          {!contact.phoneNumber && !contact.email && (
+            <p className="text-xs text-zinc-600 text-center">
+              Add a phone number or email to enable send actions
+            </p>
           )}
 
-          {!contact.phoneNumber && (
-            <p className="text-xs text-zinc-600 text-center">
-              Add a phone number to enable the WhatsApp button
-            </p>
+          {/* Email template output */}
+          {showEmailTemplate && emailTemplate && (
+            <div className="bg-zinc-800/60 rounded-lg p-4 border border-blue-800/50 space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-blue-400 font-medium">Email Template</span>
+                <button onClick={() => setShowEmailTemplate(false)} className="text-zinc-600 hover:text-zinc-400 text-xs">Dismiss</button>
+              </div>
+              <div>
+                <p className="text-xs text-zinc-500 mb-0.5">Subject</p>
+                <p className="text-sm text-zinc-200 font-medium">{emailTemplate.subject}</p>
+              </div>
+              <div>
+                <p className="text-xs text-zinc-500 mb-0.5">Body</p>
+                <p className="text-sm text-zinc-300 whitespace-pre-wrap">{emailTemplate.body}</p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => { navigator.clipboard.writeText(`Subject: ${emailTemplate.subject}\n\n${emailTemplate.body}`); toast.success("Email copied"); }}
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 border-zinc-700 text-zinc-300 hover:text-zinc-100 bg-transparent text-xs"
+                >
+                  Copy Email
+                </Button>
+                <Button
+                  onClick={() => window.open(emailTemplate.mailtoUrl, "_blank")}
+                  size="sm"
+                  className="flex-1 bg-blue-700 hover:bg-blue-600 text-white text-xs font-semibold"
+                >
+                  Open in Email Client →
+                </Button>
+              </div>
+            </div>
           )}
 
           {!showLogForm ? (
@@ -762,10 +1049,12 @@ export default function Contacts() {
   const [editContact, setEditContact] = useState<Contact | null>(null);
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null);
   const [showStyleExamples, setShowStyleExamples] = useState(false);
+  const [showCsvImport, setShowCsvImport] = useState(false);
   const [statusFilter, setStatusFilter] = useState<ContactStatus | "all">("all");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
 
   const utils = trpc.useUtils();
+  const { data: summary } = trpc.contacts.getSummary.useQuery();
   const { data: contacts = [], isLoading } = trpc.contacts.list.useQuery(
     statusFilter !== "all" ? { status: statusFilter } : undefined
   );
@@ -800,11 +1089,22 @@ export default function Contacts() {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-xl font-bold text-zinc-100">Contacts</h1>
-            <p className="text-xs text-zinc-500 mt-0.5">ARE Phase 1 — {contacts.length} contact{contacts.length !== 1 ? "s" : ""}</p>
+            {summary && (
+              <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+                <span className="text-xs text-zinc-400">{summary.total} total</span>
+                {summary.byStatus.new > 0 && <span className="text-xs px-1.5 py-0.5 rounded bg-slate-700 text-slate-300">{summary.byStatus.new} new</span>}
+                {summary.byStatus.contacted > 0 && <span className="text-xs px-1.5 py-0.5 rounded bg-blue-900 text-blue-300">{summary.byStatus.contacted} contacted</span>}
+                {summary.byStatus.active > 0 && <span className="text-xs px-1.5 py-0.5 rounded bg-emerald-900 text-emerald-300">{summary.byStatus.active} active</span>}
+                {summary.byStatus.closed > 0 && <span className="text-xs px-1.5 py-0.5 rounded bg-zinc-700 text-zinc-400">{summary.byStatus.closed} closed</span>}
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button variant="ghost" size="sm" onClick={() => setShowStyleExamples(true)} className="text-zinc-400 hover:text-zinc-100 text-xs border border-zinc-700">
               Message Style
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setShowCsvImport(true)} className="text-zinc-400 hover:text-zinc-100 text-xs border border-zinc-700">
+              Import CSV
             </Button>
             <Button onClick={() => setShowAddForm(true)} className="bg-amber-500 hover:bg-amber-400 text-black font-semibold text-sm">
               + Add Contact
@@ -934,6 +1234,12 @@ export default function Contacts() {
         <ContactForm open={!!editContact} onClose={() => setEditContact(null)} contact={editContact} onSaved={() => setEditContact(null)} />
       )}
       <StyleExamplesDialog open={showStyleExamples} onClose={() => setShowStyleExamples(false)} />
+      <CsvImportDialog
+        open={showCsvImport}
+        onClose={() => setShowCsvImport(false)}
+        onImported={() => { utils.contacts.list.invalidate(); utils.contacts.getSummary.invalidate(); }}
+        existingContacts={contacts as Contact[]}
+      />
       {selectedContact && (
         <>
           <div className="fixed inset-0 bg-black/50 z-30" onClick={() => setSelectedContact(null)} />
