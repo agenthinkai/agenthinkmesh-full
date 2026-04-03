@@ -1206,3 +1206,103 @@ export const outreachStyleExamples = mysqlTable("outreach_style_examples", {
 }));
 export type OutreachStyleExample = typeof outreachStyleExamples.$inferSelect;
 export type InsertOutreachStyleExample = typeof outreachStyleExamples.$inferInsert;
+
+// ── Email Reply Tracker ───────────────────────────────────────────────────────
+
+// Stores every outbound email sent during the PE/VC outreach campaign
+export const outboundEmails = mysqlTable("outbound_emails", {
+  id: int("id").autoincrement().primaryKey(),
+  // Recipient details
+  recipientName: varchar("recipientName", { length: 255 }).notNull(),
+  recipientEmail: varchar("recipientEmail", { length: 320 }).notNull(),
+  recipientFirm: varchar("recipientFirm", { length: 255 }),
+  recipientRole: varchar("recipientRole", { length: 255 }),
+  // Market / region
+  market: varchar("market", { length: 64 }).notNull(), // e.g. "KSA/GCC", "Singapore/Asia", "USA"
+  // Email metadata
+  subject: varchar("subject", { length: 512 }).notNull(),
+  language: varchar("language", { length: 32 }).notNull().default("English"), // English, Arabic, Mandarin, etc.
+  // Microsoft Graph message ID (for threading)
+  msMessageId: varchar("msMessageId", { length: 512 }),
+  // Gmail thread ID (populated after Gmail sync)
+  gmailThreadId: varchar("gmailThreadId", { length: 256 }),
+  // Reply tracking
+  replyStatus: mysqlEnum("replyStatus", [
+    "no_response",
+    "new_reply",
+    "interested",
+    "meeting_booked",
+    "pilot_started",
+    "not_interested",
+  ]).notNull().default("no_response"),
+  // Follow-up flagging (auto-set after 6 weeks of no response)
+  followUpDue: boolean("followUpDue").notNull().default(false),
+  followUpDueAt: timestamp("followUpDueAt"),
+  // Timestamps
+  sentAt: timestamp("sentAt").notNull(),
+  firstRepliedAt: timestamp("firstRepliedAt"),
+  lastActivityAt: timestamp("lastActivityAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  oeMarketIdx: index("oe_market_idx").on(table.market),
+  oeStatusIdx: index("oe_status_idx").on(table.replyStatus),
+  oeEmailIdx: index("oe_email_idx").on(table.recipientEmail),
+  oeFollowUpIdx: index("oe_follow_up_idx").on(table.followUpDue),
+}));
+export type OutboundEmail = typeof outboundEmails.$inferSelect;
+export type InsertOutboundEmail = typeof outboundEmails.$inferInsert;
+
+// Stores each individual reply received from a recipient
+export const emailReplies = mysqlTable("email_replies", {
+  id: int("id").autoincrement().primaryKey(),
+  outboundEmailId: int("outboundEmailId").notNull().references(() => outboundEmails.id, { onDelete: "cascade" }),
+  // Gmail identifiers
+  gmailMessageId: varchar("gmailMessageId", { length: 256 }).notNull().unique(),
+  gmailThreadId: varchar("gmailThreadId", { length: 256 }).notNull(),
+  // Reply content
+  senderEmail: varchar("senderEmail", { length: 320 }).notNull(),
+  senderName: varchar("senderName", { length: 255 }),
+  subject: varchar("subject", { length: 512 }),
+  snippet: text("snippet"), // first 200 chars of reply body
+  bodyText: text("bodyText"), // full plain-text body
+  // Sentiment / classification (optional LLM enrichment)
+  sentiment: mysqlEnum("sentiment", ["positive", "neutral", "negative"]),
+  // Timestamps
+  receivedAt: timestamp("receivedAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  erOutboundIdx: index("er_outbound_idx").on(table.outboundEmailId),
+  erThreadIdx: index("er_thread_idx").on(table.gmailThreadId),
+}));
+export type EmailReply = typeof emailReplies.$inferSelect;
+export type InsertEmailReply = typeof emailReplies.$inferInsert;
+
+// Stores Gmail OAuth tokens for the tracker account (farouqsultan@gmail.com)
+export const gmailOAuthTokens = mysqlTable("gmail_oauth_tokens", {
+  id: int("id").autoincrement().primaryKey(),
+  email: varchar("email", { length: 320 }).notNull().unique(),
+  accessToken: text("accessToken").notNull(),
+  refreshToken: text("refreshToken").notNull(),
+  tokenType: varchar("tokenType", { length: 32 }).notNull().default("Bearer"),
+  scope: text("scope"),
+  expiresAt: timestamp("expiresAt").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type GmailOAuthToken = typeof gmailOAuthTokens.$inferSelect;
+export type InsertGmailOAuthToken = typeof gmailOAuthTokens.$inferInsert;
+
+// Tracks each Gmail sync run (for debugging and monitoring)
+export const gmailSyncLog = mysqlTable("gmail_sync_log", {
+  id: int("id").autoincrement().primaryKey(),
+  startedAt: timestamp("startedAt").notNull(),
+  completedAt: timestamp("completedAt"),
+  status: mysqlEnum("status", ["running", "success", "error"]).notNull().default("running"),
+  messagesScanned: int("messagesScanned").notNull().default(0),
+  newRepliesFound: int("newRepliesFound").notNull().default(0),
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type GmailSyncLog = typeof gmailSyncLog.$inferSelect;
+export type InsertGmailSyncLog = typeof gmailSyncLog.$inferInsert;

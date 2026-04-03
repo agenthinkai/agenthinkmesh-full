@@ -23,6 +23,8 @@ import { registerStripeWebhookRoute } from "../stripeWebhookRoute";
 import { startDripScheduler } from "../emailDrip";
 import dealScreenerUploadRouter from "../dealScreenerUploadRoute";
 import intelligenceParseRouter from "../intelligenceParseRoute";
+import gmailOAuthRouter from "../gmailOAuthRoute";
+import { startGmailPolling } from "../gmailTracker";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -73,6 +75,8 @@ async function startServer() {
   app.use("/api/deals", dealScreenerUploadRouter);
   // Intelligence Agent document parse endpoint
   app.use("/api/intelligence/parse-document", intelligenceParseRouter);
+  // Gmail OAuth for Reply Tracker
+  app.use("/api/gmail", gmailOAuthRouter);
   // Embedded specialist agent endpoints
   app.use("/api/agents", agentRouter);
 
@@ -143,6 +147,8 @@ async function startServer() {
     // Self-Learning Loop: Phase 4 (outcome collection) + Phase 5 (critic agent)
     startOutcomeCollectorJob();
     startCriticAgentJob();
+    // Email Reply Tracker: poll Gmail every 30 minutes
+    startGmailPolling();
   });
 }
 

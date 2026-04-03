@@ -60,6 +60,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Contacts",        icon: "👥", href: "/contacts",        color: "#F59E0B", bg: "rgba(245,158,11,0.08)"   },
   { label: "Compare Deals",   icon: "🔷", href: "/deals/compare",   color: "#818CF8", bg: "rgba(129,140,248,0.08)"  },
   { label: "Pitch",           icon: "💡", href: "/pitch",           color: "#FF6B35", bg: "rgba(255,107,53,0.08)"   },
+  { label: "Reply Tracker",   icon: "📬", href: "/tracker",         color: "#34D399", bg: "rgba(52,211,153,0.08)"   },
 ];
 
 /* ─── Helpers ───────────────────────────────────────────────────────── */

@@ -71,6 +71,7 @@ import AccountBilling from "./pages/AccountBilling";
 import PaymentHistory from "./pages/PaymentHistory";
 import { DemoBanner } from "./pages/Home";
 import { useAuth } from "./_core/hooks/useAuth";
+import Tracker from "./pages/Tracker";
 
 function Router() {
   const { isAuthenticated, loading } = useAuth();
@@ -216,6 +217,9 @@ function Router() {
 
       {/* Contact / Book Demo */}
       <Route path="/contact" component={Contact} />
+
+      {/* Email Reply Tracker */}
+      <Route path="/tracker" component={Tracker} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

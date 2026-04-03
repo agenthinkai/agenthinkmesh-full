@@ -27,6 +27,7 @@ import { pitchRouter } from "./routers/pitch";
 import { treasuryRouter } from "./routers/treasury";
 import { shareReportRouter } from "./routers/shareReport";
 import { contactsRouter } from "./routers/contacts";
+import { trackerRouter } from "./routers/tracker";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
 import { eq, desc, gte, sql, and, like, or, isNull, lt } from "drizzle-orm";
@@ -3350,6 +3351,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
   selfLearning: selfLearningRouter,
   pitch: pitchRouter,
   contacts: contactsRouter,
+  tracker: trackerRouter,
   // ── ETF Partner CRMM ────────────────────────────────────────────────────────
   partner: router({
     // List all partner institutions (admin or public read)

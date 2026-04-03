@@ -274,6 +274,13 @@
       "when": 1775117242759,
       "tag": "0038_colossal_arachne",
       "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "5",
+      "when": 1775196428378,
+      "tag": "0039_sudden_the_leader",
+      "breakpoints": true
     }
   ]
 }
