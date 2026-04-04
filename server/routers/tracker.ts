@@ -287,6 +287,42 @@ export const trackerRouter = router({
       };
     }),
 
+  // ── Add a single contact manually ──────────────────────────────────────────
+  addContact: protectedProcedure
+    .input(
+      z.object({
+        name: z.string().min(1),
+        email: z.string().email(),
+        firm: z.string().optional(),
+        role: z.string().optional(),
+        market: z.string().default("Other"),
+        sentAt: z.string().optional(), // ISO date, defaults to now
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      const sentDate = input.sentAt ? new Date(input.sentAt) : new Date();
+      const followUpDue = sentDate < new Date(Date.now() - 42 * 24 * 60 * 60 * 1000);
+
+      const [inserted] = await db.insert(outboundEmails).values({
+        recipientName: input.name,
+        recipientEmail: input.email,
+        recipientFirm: input.firm,
+        recipientRole: input.role,
+        market: input.market,
+        subject: "Outreach",
+        language: "English",
+        sentAt: sentDate,
+        replyStatus: "no_response",
+        followUpDue,
+        followUpDueAt: followUpDue ? new Date() : undefined,
+      });
+
+      return { success: true, id: (inserted as { insertId?: number })?.insertId };
+    }),
+
   // ── Seed outbound emails (admin only) ─────────────────────────────────────
   seedOutboundEmails: protectedProcedure
     .input(

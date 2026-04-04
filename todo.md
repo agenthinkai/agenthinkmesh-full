@@ -1581,3 +1581,13 @@
 - [x] Add Reply Tracker nav item to SiteNav.tsx
 - [x] Write vitest tests for tracker router (5/5 passing)
 - [x] Save checkpoint and deliver to user
+
+## Tracker UX Redesign (Simple & Human-Friendly)
+- [x] Replace complex dashboard with a simple "Today's Replies" view
+- [x] Big prominent "Log a Reply" button at the top — opens a simple form (name, firm, their response in plain English)
+- [x] Replace status codes with plain English buttons: "They said no", "They're interested", "We have a meeting", "No reply yet"
+- [x] Add contacts manually via simple form (name, firm, email, market) — no CSV required
+- [x] Show a simple summary: X people replied, X interested, X meetings booked
+- [x] Remove all technical jargon (no "seed database", no "Gmail OAuth", no filters/pagination)
+- [x] Make the Gmail connect section optional and clearly explained in plain English
+- [x] Add pre-seeded example data so the page doesn't look empty on first load

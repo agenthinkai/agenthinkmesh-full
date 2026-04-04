@@ -1,545 +1,344 @@
 /**
- * Tracker.tsx — Email Reply Tracker Dashboard
+ * Tracker.tsx — Simple Email Reply Tracker
  *
- * Tracks replies to 839+ outbound PE/VC outreach emails across 11 global markets.
- * Integrates with Gmail via OAuth to auto-detect replies every 30 minutes.
+ * Designed for non-technical users. Log replies in 2 clicks.
+ * Add contacts manually. See your outreach at a glance.
  */
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  Cell,
-} from "recharts";
 
-// ── Status config ─────────────────────────────────────────────────────────────
-const STATUS_CONFIG = {
-  no_response: { label: "No Response", color: "#64748b", bg: "bg-slate-700", text: "text-slate-300" },
-  new_reply: { label: "New Reply", color: "#3b82f6", bg: "bg-blue-600", text: "text-blue-100" },
-  interested: { label: "Interested", color: "#10b981", bg: "bg-emerald-600", text: "text-emerald-100" },
-  meeting_booked: { label: "Meeting Booked", color: "#f59e0b", bg: "bg-amber-600", text: "text-amber-100" },
-  pilot_started: { label: "Pilot Started", color: "#8b5cf6", bg: "bg-violet-600", text: "text-violet-100" },
-  not_interested: { label: "Not Interested", color: "#ef4444", bg: "bg-red-700", text: "text-red-100" },
-} as const;
+// ── Status options in plain English ──────────────────────────────────────────
+const OUTCOMES = [
+  { value: "no_response",    emoji: "⏳", label: "No reply yet",       color: "bg-slate-700 text-slate-200",   ring: "ring-slate-500" },
+  { value: "new_reply",      emoji: "📬", label: "They replied",        color: "bg-blue-600 text-white",        ring: "ring-blue-400" },
+  { value: "interested",     emoji: "✅", label: "They're interested",  color: "bg-emerald-600 text-white",     ring: "ring-emerald-400" },
+  { value: "meeting_booked", emoji: "📅", label: "Meeting booked",      color: "bg-amber-500 text-white",       ring: "ring-amber-400" },
+  { value: "pilot_started",  emoji: "🚀", label: "Pilot / trial started", color: "bg-violet-600 text-white",   ring: "ring-violet-400" },
+  { value: "not_interested", emoji: "❌", label: "They said no",        color: "bg-red-700 text-white",         ring: "ring-red-400" },
+] as const;
 
-type ReplyStatus = keyof typeof STATUS_CONFIG;
+type OutcomeValue = typeof OUTCOMES[number]["value"];
 
-const MARKET_COLORS = [
-  "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6",
-  "#06b6d4", "#f97316", "#ec4899", "#84cc16", "#14b8a6", "#a855f7",
-];
+const MARKETS = ["UAE", "Saudi Arabia", "Kuwait", "Bahrain", "Qatar", "Oman", "UK", "US", "Singapore", "India", "Pakistan", "Other"];
 
-// ── Status Badge ──────────────────────────────────────────────────────────────
-function StatusBadge({ status }: { status: ReplyStatus }) {
-  const cfg = STATUS_CONFIG[status] || STATUS_CONFIG.no_response;
+function OutcomePill({ value }: { value: string }) {
+  const o = OUTCOMES.find((x) => x.value === value) ?? OUTCOMES[0];
   return (
-    <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${cfg.bg} ${cfg.text}`}>
-      {cfg.label}
+    <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold ${o.color}`}>
+      {o.emoji} {o.label}
     </span>
   );
 }
 
-// ── Stat Card ─────────────────────────────────────────────────────────────────
-function StatCard({
-  label,
-  value,
-  sub,
-  accent,
+// ── Log Reply Modal ───────────────────────────────────────────────────────────
+function LogReplyModal({
+  contact,
+  onClose,
+  onSaved,
 }: {
-  label: string;
-  value: string | number;
-  sub?: string;
-  accent?: string;
+  contact: { id: number; recipientName: string; recipientFirm?: string | null };
+  onClose: () => void;
+  onSaved: () => void;
 }) {
-  return (
-    <div className="bg-[#0f1629] border border-white/10 rounded-xl p-5">
-      <p className="text-xs text-slate-400 uppercase tracking-wider mb-1">{label}</p>
-      <p className={`text-3xl font-bold ${accent || "text-white"}`}>{value}</p>
-      {sub && <p className="text-xs text-slate-500 mt-1">{sub}</p>}
-    </div>
-  );
-}
-
-// ── Main Component ────────────────────────────────────────────────────────────
-export default function Tracker() {
-  const [statusFilter, setStatusFilter] = useState<ReplyStatus | "">("");
-  const [marketFilter, setMarketFilter] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [followUpOnly, setFollowUpOnly] = useState(false);
-  const [page, setPage] = useState(1);
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editStatus, setEditStatus] = useState<ReplyStatus>("no_response");
-
-  // Query params
-  const emailsQuery = trpc.tracker.getEmails.useQuery(
-    {
-      page,
-      limit: 50,
-      status: statusFilter || undefined,
-      market: marketFilter || undefined,
-      search: searchQuery || undefined,
-      followUpOnly: followUpOnly || undefined,
-    },
-    { refetchInterval: 60_000 }
-  );
-
-  const statsQuery = trpc.tracker.getStats.useQuery(undefined, {
-    refetchInterval: 60_000,
-  });
-
-  const gmailStatusQuery = trpc.tracker.getGmailStatus.useQuery(undefined, {
-    refetchInterval: 30_000,
-  });
-
-  const syncLogQuery = trpc.tracker.getSyncLog.useQuery();
-
+  const [outcome, setOutcome] = useState<OutcomeValue>("new_reply");
   const utils = trpc.useUtils();
 
-  // Mutations
-  const updateStatusMutation = trpc.tracker.updateStatus.useMutation({
+  const updateMutation = trpc.tracker.updateStatus.useMutation({
     onSuccess: () => {
+      toast.success(`Updated ${contact.recipientName}`);
       utils.tracker.getEmails.invalidate();
       utils.tracker.getStats.invalidate();
-      setEditingId(null);
-      toast.success("Status updated");
+      onSaved();
     },
-    onError: (err) => toast.error(err.message),
+    onError: (e) => toast.error(e.message),
   });
-
-  const triggerSyncMutation = trpc.tracker.triggerSync.useMutation({
-    onSuccess: () => {
-      toast.success("Sync started — Gmail sync running in background. Refresh in a minute.");
-      setTimeout(() => {
-        utils.tracker.getEmails.invalidate();
-        utils.tracker.getStats.invalidate();
-        syncLogQuery.refetch();
-      }, 5000);
-    },
-    onError: (err) => toast.error(`Sync failed: ${err.message}`),
-  });
-
-  // Gmail auth URL
-  const gmailAuthUrlQuery = trpc.tracker.getGmailAuthUrl.useQuery(
-    { origin: typeof window !== "undefined" ? window.location.origin : "" },
-    { enabled: gmailStatusQuery.data?.connected === false }
-  );
-
-  // Handle URL params (after OAuth callback)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("gmail_connected")) {
-      toast.success("Gmail connected! farouqsultan@gmail.com is now connected. Initial sync running.");
-      window.history.replaceState({}, "", "/tracker");
-      gmailStatusQuery.refetch();
-    }
-    if (params.get("gmail_error")) {
-      toast.error(`Gmail connection failed: ${decodeURIComponent(params.get("gmail_error") || "")}`);
-      window.history.replaceState({}, "", "/tracker");
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const stats = statsQuery.data;
-  const emails = emailsQuery.data?.emails || [];
-  const totalEmails = emailsQuery.data?.total || 0;
-  const totalPages = Math.ceil(totalEmails / 50);
-  const gmailConnected = gmailStatusQuery.data?.connected;
-
-  // Market chart data
-  const marketData = (stats?.byMarket || []).map((m, i) => ({
-    name: m.market.replace("/", "/\n"),
-    total: Number(m.total),
-    replied: Number(m.replied),
-    color: MARKET_COLORS[i % MARKET_COLORS.length],
-  }));
 
   return (
-    <div className="min-h-screen bg-[#080d1a] text-white">
-      {/* Header */}
-      <div className="border-b border-white/10 bg-[#0a1020]">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-xl font-bold text-white">Email Reply Tracker</h1>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Tracking {stats?.total ?? 839} outbound PE/VC outreach emails across 11 global markets
-            </p>
-          </div>
-          <div className="flex items-center gap-3">
-            {/* Gmail connection status */}
-            <div className="flex items-center gap-2">
-              <span
-                className={`w-2 h-2 rounded-full ${gmailConnected ? "bg-emerald-400" : "bg-red-400"}`}
-              />
-              <span className="text-xs text-slate-400">
-                {gmailConnected ? "Gmail connected" : "Gmail not connected"}
-              </span>
-            </div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="bg-[#0f1629] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+        <h2 className="text-lg font-bold text-white mb-1">Log a reply</h2>
+        <p className="text-sm text-slate-400 mb-5">
+          From <span className="text-white font-medium">{contact.recipientName}</span>
+          {contact.recipientFirm ? ` · ${contact.recipientFirm}` : ""}
+        </p>
 
-            {gmailConnected ? (
-              <button
-                onClick={() => triggerSyncMutation.mutate()}
-                disabled={triggerSyncMutation.isPending}
-                className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors disabled:opacity-50"
-              >
-                {triggerSyncMutation.isPending ? "Syncing..." : "Sync Now"}
-              </button>
-            ) : (
-              <a
-                href={gmailAuthUrlQuery.data?.url || `/api/gmail/auth?origin=${encodeURIComponent(window.location.origin)}`}
-                className="px-3 py-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 rounded-lg transition-colors"
-              >
-                Connect Gmail
-              </a>
-            )}
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-        {/* Stat Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-          <StatCard
-            label="Total Sent"
-            value={stats?.total ?? 839}
-            sub="Across 11 markets"
-          />
-          <StatCard
-            label="Replied"
-            value={stats?.replied ?? 0}
-            sub={`${stats?.replyRate ?? 0}% reply rate`}
-            accent="text-emerald-400"
-          />
-          <StatCard
-            label="Interested"
-            value={(stats?.byStatus.interested ?? 0) + (stats?.byStatus.meeting_booked ?? 0) + (stats?.byStatus.pilot_started ?? 0)}
-            sub="Interested + Meeting + Pilot"
-            accent="text-amber-400"
-          />
-          <StatCard
-            label="New Replies"
-            value={stats?.byStatus.new_reply ?? 0}
-            sub="Awaiting review"
-            accent="text-blue-400"
-          />
-          <StatCard
-            label="Follow-up Due"
-            value={stats?.followUpDue ?? 0}
-            sub="6+ weeks no response"
-            accent={stats?.followUpDue ? "text-red-400" : "text-slate-400"}
-          />
-        </div>
-
-        {/* Status breakdown pills */}
-        <div className="flex flex-wrap gap-2">
-          {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
+        <p className="text-xs text-slate-400 uppercase tracking-wider mb-3">What happened?</p>
+        <div className="flex flex-col gap-2 mb-6">
+          {OUTCOMES.map((o) => (
             <button
-              key={key}
-              onClick={() => {
-                setStatusFilter(statusFilter === key ? "" : (key as ReplyStatus));
-                setPage(1);
-              }}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
-                statusFilter === key
-                  ? `${cfg.bg} ${cfg.text} border-transparent`
-                  : "border-white/10 text-slate-400 hover:border-white/20"
-              }`}
+              key={o.value}
+              onClick={() => setOutcome(o.value)}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all
+                ${outcome === o.value
+                  ? `${o.color} border-transparent ring-2 ${o.ring}`
+                  : "bg-white/5 border-white/10 text-slate-300 hover:bg-white/10"
+                }`}
             >
-              <span
-                className="w-2 h-2 rounded-full"
-                style={{ backgroundColor: cfg.color }}
-              />
-              {cfg.label}
-              <span className="opacity-70">
-                {stats?.byStatus[key as ReplyStatus] ?? 0}
-              </span>
+              <span className="text-xl">{o.emoji}</span>
+              <span className="font-medium text-sm">{o.label}</span>
             </button>
           ))}
         </div>
 
-        {/* Market Bar Chart */}
-        {marketData.length > 0 && (
-          <div className="bg-[#0f1629] border border-white/10 rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-slate-300 mb-4">Reply Rate by Market</h2>
-            <ResponsiveContainer width="100%" height={220}>
-              <BarChart data={marketData} barGap={2} barSize={18}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
-                <XAxis
-                  dataKey="name"
-                  tick={{ fill: "#94a3b8", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <YAxis
-                  tick={{ fill: "#94a3b8", fontSize: 10 }}
-                  axisLine={false}
-                  tickLine={false}
-                />
-                <Tooltip
-                  contentStyle={{ background: "#0f1629", border: "1px solid #1e293b", borderRadius: 8 }}
-                  labelStyle={{ color: "#e2e8f0" }}
-                  itemStyle={{ color: "#94a3b8" }}
-                />
-                <Bar dataKey="total" name="Total Sent" fill="#1e293b" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="replied" name="Replied" radius={[4, 4, 0, 0]}>
-                  {marketData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-        )}
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-xl border border-white/10 text-slate-400 text-sm hover:bg-white/5 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => updateMutation.mutate({ id: contact.id, status: outcome })}
+            disabled={updateMutation.isPending}
+            className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+          >
+            {updateMutation.isPending ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
-        {/* Filters & Search */}
-        <div className="flex flex-wrap items-center gap-3">
+// ── Add Contact Modal ─────────────────────────────────────────────────────────
+function AddContactModal({
+  onClose,
+  onSaved,
+}: {
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [firm, setFirm] = useState("");
+  const [role, setRole] = useState("");
+  const [market, setMarket] = useState("UAE");
+  const utils = trpc.useUtils();
+
+  const addMutation = trpc.tracker.addContact.useMutation({
+    onSuccess: () => {
+      toast.success(`${name} added`);
+      utils.tracker.getEmails.invalidate();
+      utils.tracker.getStats.invalidate();
+      onSaved();
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
+  const inputClass = "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/50";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
+      <div className="bg-[#0f1629] border border-white/10 rounded-2xl p-6 w-full max-w-sm shadow-2xl">
+        <h2 className="text-lg font-bold text-white mb-1">Add a contact</h2>
+        <p className="text-sm text-slate-400 mb-5">Someone you emailed as part of your outreach</p>
+
+        <div className="flex flex-col gap-3 mb-6">
+          <input className={inputClass} placeholder="Full name *" value={name} onChange={(e) => setName(e.target.value)} />
+          <input className={inputClass} placeholder="Email address *" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+          <input className={inputClass} placeholder="Firm / company" value={firm} onChange={(e) => setFirm(e.target.value)} />
+          <input className={inputClass} placeholder="Their role (e.g. Partner, MD)" value={role} onChange={(e) => setRole(e.target.value)} />
+          <select
+            className={inputClass + " cursor-pointer"}
+            value={market}
+            onChange={(e) => setMarket(e.target.value)}
+          >
+            {MARKETS.map((m) => <option key={m} value={m}>{m}</option>)}
+          </select>
+        </div>
+
+        <div className="flex gap-3">
+          <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/10 text-slate-400 text-sm hover:bg-white/5 transition-colors">
+            Cancel
+          </button>
+          <button
+            onClick={() => addMutation.mutate({ name, email, firm, role, market })}
+            disabled={!name || !email || addMutation.isPending}
+            className="flex-1 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold transition-colors disabled:opacity-50"
+          >
+            {addMutation.isPending ? "Adding…" : "Add contact"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Main Page ─────────────────────────────────────────────────────────────────
+export default function Tracker() {
+  const [logTarget, setLogTarget] = useState<{ id: number; recipientName: string; recipientFirm?: string | null } | null>(null);
+  const [showAddContact, setShowAddContact] = useState(false);
+  const [search, setSearch] = useState("");
+  const [outcomeFilter, setOutcomeFilter] = useState<OutcomeValue | "">("");
+
+  const statsQuery = trpc.tracker.getStats.useQuery();
+  const emailsQuery = trpc.tracker.getEmails.useQuery({
+    page: 1,
+    limit: 100,
+    status: outcomeFilter || undefined,
+    search: search || undefined,
+  });
+
+  const stats = statsQuery.data;
+  const emails = emailsQuery.data?.emails ?? [];
+
+  // Summary numbers
+  const total = stats?.total ?? 0;
+  const replied = stats?.replied ?? 0;
+  const interested = (stats?.byStatus?.interested ?? 0) + (stats?.byStatus?.meeting_booked ?? 0) + (stats?.byStatus?.pilot_started ?? 0);
+  const meetings = (stats?.byStatus?.meeting_booked ?? 0) + (stats?.byStatus?.pilot_started ?? 0);
+
+  return (
+    <div className="min-h-screen bg-[#080d1a] text-white">
+      {/* Header */}
+      <div className="border-b border-white/10 bg-[#0b1220]">
+        <div className="max-w-4xl mx-auto px-4 py-5 flex items-center justify-between gap-4">
+          <div>
+            <h1 className="text-xl font-bold text-white">📬 Reply Tracker</h1>
+            <p className="text-sm text-slate-400 mt-0.5">
+              {total > 0
+                ? `Tracking ${total} outreach emails — ${replied} replied`
+                : "Track who replied to your outreach emails"}
+            </p>
+          </div>
+          <button
+            onClick={() => setShowAddContact(true)}
+            className="flex items-center gap-2 px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition-colors shadow-lg shadow-emerald-900/30"
+          >
+            <span className="text-base">＋</span> Add contact
+          </button>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+
+        {/* Summary cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          {[
+            { emoji: "📤", label: "Emails sent", value: total, note: "total outreach" },
+            { emoji: "💬", label: "Replied", value: replied, note: total > 0 ? `${Math.round((replied / total) * 100)}% reply rate` : "0% reply rate" },
+            { emoji: "✅", label: "Interested", value: interested, note: "want to know more" },
+            { emoji: "📅", label: "Meetings", value: meetings, note: "booked or in pilot" },
+          ].map((card) => (
+            <div key={card.label} className="bg-[#0f1629] border border-white/10 rounded-xl p-4">
+              <div className="text-2xl mb-1">{card.emoji}</div>
+              <div className="text-2xl font-bold text-white">{card.value}</div>
+              <div className="text-xs text-slate-400 mt-0.5">{card.label}</div>
+              <div className="text-xs text-slate-600 mt-0.5">{card.note}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Filter bar */}
+        <div className="flex flex-wrap gap-2 items-center">
           <input
             type="text"
-            placeholder="Search name, email, firm..."
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-            className="flex-1 min-w-[200px] bg-[#0f1629] border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
+            placeholder="🔍  Search by name or firm…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="bg-white/5 border border-white/10 rounded-xl px-4 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/40 w-full sm:w-64"
           />
-          <select
-            value={marketFilter}
-            onChange={(e) => { setMarketFilter(e.target.value); setPage(1); }}
-            className="bg-[#0f1629] border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
-          >
-            <option value="">All Markets</option>
-            {(stats?.byMarket || []).map((m) => (
-              <option key={m.market} value={m.market}>{m.market}</option>
-            ))}
-          </select>
-          <label className="flex items-center gap-2 text-sm text-slate-400 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={followUpOnly}
-              onChange={(e) => { setFollowUpOnly(e.target.checked); setPage(1); }}
-              className="rounded"
-            />
-            Follow-up due only
-          </label>
-          <span className="text-xs text-slate-500 ml-auto">
-            {totalEmails} results
-          </span>
-        </div>
-
-        {/* Emails Table */}
-        <div className="bg-[#0f1629] border border-white/10 rounded-xl overflow-hidden">
-          {emailsQuery.isLoading ? (
-            <div className="p-8 text-center text-slate-500">Loading emails...</div>
-          ) : emails.length === 0 ? (
-            <div className="p-8 text-center">
-              <p className="text-slate-400 text-sm">No emails found</p>
-              {!stats?.total && (
-                <p className="text-slate-500 text-xs mt-2">
-                  Seed the database with your outbound emails to get started.
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-white/10 bg-[#0a1020]">
-                    <th className="text-left px-4 py-3 text-xs text-slate-400 font-medium">Recipient</th>
-                    <th className="text-left px-4 py-3 text-xs text-slate-400 font-medium">Firm</th>
-                    <th className="text-left px-4 py-3 text-xs text-slate-400 font-medium">Market</th>
-                    <th className="text-left px-4 py-3 text-xs text-slate-400 font-medium">Sent</th>
-                    <th className="text-left px-4 py-3 text-xs text-slate-400 font-medium">Status</th>
-                    <th className="text-left px-4 py-3 text-xs text-slate-400 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {emails.map((email) => (
-                    <tr
-                      key={email.id}
-                      className={`border-b border-white/5 hover:bg-white/5 transition-colors ${
-                        email.followUpDue ? "bg-red-950/20" : ""
-                      }`}
-                    >
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-white">{email.recipientName}</div>
-                        <div className="text-xs text-slate-500">{email.recipientEmail}</div>
-                        {email.followUpDue && (
-                          <span className="inline-flex items-center gap-1 text-xs text-red-400 mt-0.5">
-                            <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
-                            Follow-up due
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3 text-slate-300 text-xs">
-                        <div>{email.recipientFirm || "—"}</div>
-                        {email.recipientRole && (
-                          <div className="text-slate-500">{email.recipientRole}</div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-xs text-slate-300">{email.market}</span>
-                      </td>
-                      <td className="px-4 py-3 text-xs text-slate-400">
-                        {new Date(email.sentAt).toLocaleDateString("en-GB", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                        {email.firstRepliedAt && (
-                          <div className="text-emerald-500 mt-0.5">
-                            Replied {new Date(email.firstRepliedAt).toLocaleDateString("en-GB", {
-                              day: "2-digit",
-                              month: "short",
-                            })}
-                          </div>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {editingId === email.id ? (
-                          <select
-                            value={editStatus}
-                            onChange={(e) => setEditStatus(e.target.value as ReplyStatus)}
-                            className="bg-[#0a1020] border border-white/20 rounded px-2 py-1 text-xs text-white focus:outline-none"
-                            autoFocus
-                          >
-                            {Object.entries(STATUS_CONFIG).map(([key, cfg]) => (
-                              <option key={key} value={key}>{cfg.label}</option>
-                            ))}
-                          </select>
-                        ) : (
-                          <StatusBadge status={email.replyStatus as ReplyStatus} />
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        {editingId === email.id ? (
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() =>
-                                updateStatusMutation.mutate({ id: email.id, status: editStatus })
-                              }
-                              disabled={updateStatusMutation.isPending}
-                              className="text-xs px-2 py-1 bg-emerald-600 hover:bg-emerald-700 rounded transition-colors"
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={() => setEditingId(null)}
-                              className="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded transition-colors"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => {
-                              setEditingId(email.id);
-                              setEditStatus(email.replyStatus as ReplyStatus);
-                            }}
-                            className="text-xs text-slate-400 hover:text-white transition-colors"
-                          >
-                            Edit
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between px-4 py-3 border-t border-white/10">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
-                className="text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg disabled:opacity-40 transition-colors"
-              >
-                Previous
-              </button>
-              <span className="text-xs text-slate-400">
-                Page {page} of {totalPages}
-              </span>
-              <button
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages}
-                className="text-xs px-3 py-1.5 bg-white/5 hover:bg-white/10 rounded-lg disabled:opacity-40 transition-colors"
-              >
-                Next
-              </button>
-            </div>
-          )}
-        </div>
-
-        {/* Gmail Sync Log */}
-        <div className="bg-[#0f1629] border border-white/10 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-slate-300 mb-3">Gmail Sync History</h2>
-          {syncLogQuery.isLoading ? (
-            <p className="text-xs text-slate-500">Loading...</p>
-          ) : !syncLogQuery.data?.length ? (
-            <p className="text-xs text-slate-500">
-              {gmailConnected
-                ? "No sync runs yet. Click \"Sync Now\" to start."
-                : "Connect Gmail to enable automatic reply detection."}
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {syncLogQuery.data.map((log) => (
-                <div
-                  key={log.id}
-                  className="flex items-center gap-4 text-xs text-slate-400"
-                >
-                  <span
-                    className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                      log.status === "success"
-                        ? "bg-emerald-400"
-                        : log.status === "error"
-                        ? "bg-red-400"
-                        : "bg-amber-400 animate-pulse"
-                    }`}
-                  />
-                  <span className="text-slate-300">
-                    {new Date(log.startedAt).toLocaleString()}
-                  </span>
-                  <span>Scanned: {log.messagesScanned}</span>
-                  <span className="text-emerald-400">New: {log.newRepliesFound}</span>
-                  {log.errorMessage && (
-                    <span className="text-red-400 truncate max-w-[300px]">{log.errorMessage}</span>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Gmail Setup Instructions (if not connected) */}
-        {!gmailConnected && (
-          <div className="bg-[#0f1629] border border-amber-500/30 rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-amber-400 mb-2">
-              Connect Gmail to Enable Automatic Reply Tracking
-            </h2>
-            <p className="text-xs text-slate-400 mb-3">
-              Connect <strong className="text-white">farouqsultan@gmail.com</strong> to automatically detect
-              replies to your 839 outbound emails. The system polls Gmail every 30 minutes.
-            </p>
-            <div className="text-xs text-slate-500 space-y-1 mb-4">
-              <p>1. You need to set up Gmail OAuth credentials first (GMAIL_CLIENT_ID, GMAIL_CLIENT_SECRET, GMAIL_REDIRECT_URI)</p>
-              <p>2. Click "Connect Gmail" to authorize access to farouqsultan@gmail.com</p>
-              <p>3. The system will automatically sync every 30 minutes — no Manus credits used</p>
-            </div>
-            <a
-              href={`/api/gmail/auth?origin=${encodeURIComponent(window.location.origin)}`}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-sm font-medium transition-colors"
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              onClick={() => setOutcomeFilter("")}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${outcomeFilter === "" ? "bg-white text-black" : "bg-white/10 text-slate-300 hover:bg-white/15"}`}
             >
-              Connect Gmail →
-            </a>
+              All
+            </button>
+            {OUTCOMES.filter((o) => o.value !== "no_response").map((o) => (
+              <button
+                key={o.value}
+                onClick={() => setOutcomeFilter(outcomeFilter === o.value ? "" : o.value)}
+                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${outcomeFilter === o.value ? o.color : "bg-white/10 text-slate-300 hover:bg-white/15"}`}
+              >
+                {o.emoji} {o.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Contact list */}
+        {emailsQuery.isLoading ? (
+          <div className="text-center py-16 text-slate-500">Loading…</div>
+        ) : emails.length === 0 ? (
+          <div className="text-center py-16">
+            <div className="text-5xl mb-4">📭</div>
+            <p className="text-slate-400 font-medium">No contacts yet</p>
+            <p className="text-slate-600 text-sm mt-1 mb-5">Add the people you've emailed and track their replies here</p>
+            <button
+              onClick={() => setShowAddContact(true)}
+              className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold rounded-xl transition-colors"
+            >
+              ＋ Add your first contact
+            </button>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {emails.map((email) => (
+              <div
+                key={email.id}
+                className="bg-[#0f1629] border border-white/10 rounded-xl px-4 py-3.5 flex items-center gap-4 hover:border-white/20 transition-colors"
+              >
+                {/* Avatar */}
+                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500/30 to-blue-500/30 flex items-center justify-center text-sm font-bold text-white flex-shrink-0">
+                  {email.recipientName.charAt(0).toUpperCase()}
+                </div>
+
+                {/* Info */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-semibold text-white text-sm">{email.recipientName}</span>
+                    {email.recipientFirm && (
+                      <span className="text-slate-500 text-xs">· {email.recipientFirm}</span>
+                    )}
+                    {email.market && (
+                      <span className="text-slate-600 text-xs bg-white/5 px-2 py-0.5 rounded-full">{email.market}</span>
+                    )}
+                    {email.followUpDue && (
+                      <span className="text-amber-400 text-xs bg-amber-900/30 px-2 py-0.5 rounded-full">⚠️ Follow up</span>
+                    )}
+                  </div>
+                  <div className="mt-1">
+                    <OutcomePill value={email.replyStatus} />
+                  </div>
+                </div>
+
+                {/* Log reply button */}
+                <button
+                  onClick={() => setLogTarget({ id: email.id, recipientName: email.recipientName, recipientFirm: email.recipientFirm })}
+                  className="flex-shrink-0 px-3 py-1.5 bg-white/8 hover:bg-white/15 border border-white/10 rounded-lg text-xs text-slate-300 font-medium transition-colors"
+                >
+                  Update
+                </button>
+              </div>
+            ))}
           </div>
         )}
+
+        {/* Empty state tip */}
+        {total > 0 && (
+          <p className="text-center text-xs text-slate-600 pb-4">
+            Showing {emails.length} of {emailsQuery.data?.total ?? 0} contacts
+          </p>
+        )}
       </div>
+
+      {/* Modals */}
+      {logTarget && (
+        <LogReplyModal
+          contact={logTarget}
+          onClose={() => setLogTarget(null)}
+          onSaved={() => setLogTarget(null)}
+        />
+      )}
+      {showAddContact && (
+        <AddContactModal
+          onClose={() => setShowAddContact(false)}
+          onSaved={() => setShowAddContact(false)}
+        />
+      )}
     </div>
   );
 }
