@@ -1609,3 +1609,12 @@
 - [x] Add whitelist bypass: farouq@agenthink.ai and farouqsultan@gmail.com skip payment entirely
 - [x] Test both accounts can run deal screener without hitting payment flow
 - [x] Checkpoint and deploy
+
+## Council Mode Selector (GCC / Global VC / India PE)
+- [x] Define 3 agent sets: GCC Institutional (current), Global VC (10 VC-focused agents), India PE (10 India-specific agents)
+- [x] Add councilMode parameter to runCouncil() in councilEngine.ts
+- [x] Add mode selector UI to DealScreener form (card-style selector, 3 cards)
+- [x] Wire councilMode from frontend to backend tRPC procedure
+- [x] Fix verdict calculation to be mode-agnostic (no hardcoded GCC veto)
+- [x] Test all 3 modes produce correct agent panels and relevant verdicts
+- [x] Checkpoint and deliver

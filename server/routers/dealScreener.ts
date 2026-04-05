@@ -111,6 +111,7 @@ export const dealScreenerRouter = router({
         pdfFileKey: z.string().optional(),
         pdfFileUrl: z.string().optional(),
         stripeSessionId: z.string().optional(), // link payment row to this deal run
+        councilMode: z.enum(["gcc", "global_vc", "india_pe"]).optional().default("gcc"),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -120,7 +121,7 @@ export const dealScreenerRouter = router({
       // Owner bypass — skip rate limit and payment entirely
       if (isOwner(ctx.user.email)) {
         const ownerDealId = randomUUID();
-        const ownerResult = await runCouncil(input.dealText, { userId: undefined });
+        const ownerResult = await runCouncil(input.dealText, { userId: undefined, councilMode: input.councilMode });
         await db.insert(dealScreenings).values({
           dealId: ownerDealId,
           userId: ctx.user.id,
@@ -202,6 +203,7 @@ export const dealScreenerRouter = router({
       // Run the council engine — skip subscription token guard for pay-per-run sessions
       const result = await runCouncil(input.dealText, {
         userId: skipTokenGuard ? undefined : ctx.user.id,
+        councilMode: input.councilMode,
       });
 
       // Persist to database

@@ -806,6 +806,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
   const { user: authUser } = useAuth();
   const [dealName, setDealName] = useState("");
   const [dealText, setDealText] = useState("");
+  const [councilMode, setCouncilMode] = useState<"gcc" | "global_vc" | "india_pe">("gcc");
   // Guided form mode
   const [guidedMode, setGuidedMode] = useState(true);
   const [g_what, setGWhat] = useState("");
@@ -949,7 +950,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
     lastSubmittedTextRef.current = finalText;
     if (FREE_MODE) {
       onSubmitStart();
-      screenMutation.mutate({ dealName: dealName.trim(), dealText: finalText });
+      screenMutation.mutate({ dealName: dealName.trim(), dealText: finalText, councilMode });
       return;
     }
     sessionStorage.setItem("ds_pending_deal_text", finalText);
@@ -1053,13 +1054,50 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
 
       </div>
 
-      {/* Form card */}
+        {/* Form card */}
       <div style={{
         background: BG2,
         border: `1px solid ${BORDER}`,
         borderRadius: 8,
         padding: "28px 32px",
       }}>
+        {/* Council Mode Selector */}
+        <div style={{ marginBottom: 24 }}>
+          <label style={{ display: "block", fontFamily: MONO, fontSize: 10, color: TEXT2, letterSpacing: "0.08em", marginBottom: 10 }}>
+            COUNCIL MODE — SELECT YOUR INVESTOR LENS
+          </label>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+            {([
+              { key: "gcc" as const, icon: "🏛️", label: "GCC Institutional", desc: "Kuwait CMA · Shariah · Vision 2035" },
+              { key: "global_vc" as const, icon: "🌐", label: "Global VC", desc: "Sequoia · a16z · Lightspeed lens" },
+              { key: "india_pe" as const, icon: "🇮🇳", label: "India PE / VC", desc: "SEBI · FEMA · NSE/BSE exits" },
+            ] as const).map(({ key, icon, label, desc }) => (
+              <button
+                key={key}
+                type="button"
+                onClick={() => setCouncilMode(key)}
+                style={{
+                  padding: "12px 10px",
+                  background: councilMode === key ? "rgba(74,158,255,0.12)" : "transparent",
+                  border: `1px solid ${councilMode === key ? ACCENT : BORDER}`,
+                  borderRadius: 6,
+                  color: councilMode === key ? ACCENT : TEXT2,
+                  fontFamily: MONO,
+                  fontSize: 11,
+                  cursor: "pointer",
+                  textAlign: "center" as const,
+                  transition: "all 0.15s",
+                  lineHeight: 1.4,
+                }}
+              >
+                <div style={{ fontSize: 20, marginBottom: 4 }}>{icon}</div>
+                <div style={{ fontWeight: 700, letterSpacing: "0.04em", marginBottom: 3 }}>{label}</div>
+                <div style={{ fontSize: 9, color: councilMode === key ? "rgba(74,158,255,0.7)" : MUTED, letterSpacing: "0.03em" }}>{desc}</div>
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Deal name */}
         <div style={{ marginBottom: 20 }}>
           <label style={{ display: "block", fontFamily: MONO, fontSize: 10, color: TEXT2, letterSpacing: "0.08em", marginBottom: 6 }}>
