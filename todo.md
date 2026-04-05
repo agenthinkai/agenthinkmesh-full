@@ -1631,3 +1631,7 @@
 - [x] Increase deal memo character limit from 3000 to 10000 (frontend + backend)
 - [x] Fix GCC veto bug: veto logic was mode-agnostic, now gated per council mode (GCC: 3+ HARD_NO, Global VC / India PE: 4+ HARD_NO or legal HARD_NO)
 - [x] Fix veto banner label: changed from "GCC REGULATORY VETO TRIGGERED" to "COUNCIL VETO TRIGGERED" in both DealScreener.tsx and SharedReport.tsx
+
+## IC Memo PDF Export (Apr 5 2026)
+- [x] Server: add icMemoPdf tRPC procedure that generates a VC-facing IC Memo PDF from council result
+- [x] Frontend: add "IC MEMO PDF" export button in deal screener report view

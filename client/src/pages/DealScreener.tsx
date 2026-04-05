@@ -588,8 +588,52 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
   const [shareUrl, setShareUrl] = useState<string | null>(null);
   const [shareLoading, setShareLoading] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [icMemoLoading, setIcMemoLoading] = useState(false);
+  const [icMemoError, setIcMemoError] = useState<string | null>(null);
 
+  const icMemoPdfMutation = trpc.dealScreener.icMemoPdf.useMutation();
   const createShare = trpc.shareReport.create.useMutation();
+
+  const handleICMemoPdf = async () => {
+    setIcMemoLoading(true);
+    setIcMemoError(null);
+    try {
+      const res = await icMemoPdfMutation.mutateAsync({
+        dealName:            result.dealName,
+        verdict:             result.verdict,
+        yesCount:            result.yesCount,
+        noCount:             result.noCount,
+        confidenceScore:     result.confidenceScore,
+        conditionsToProceed: result.conditionsToProceed,
+        blockingIssues:      result.blockingIssues,
+        votes: result.votes.map(v => ({
+          personaId:   v.personaId,
+          personaName: v.personaId,
+          personaRole: v.personaRole,
+          vote:        v.vote,
+          confidence:  v.confidence,
+          rationale:   v.rationale,
+          keyFlags:    v.keyFlags,
+          conditions:  v.conditions,
+          blockers:    v.blockers,
+        })),
+      });
+      const bytes = Uint8Array.from(atob(res.base64), c => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = res.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setIcMemoError(err instanceof Error ? err.message : "Failed to generate IC memo");
+    } finally {
+      setIcMemoLoading(false);
+    }
+  };
 
   const handleShare = async () => {
     if (shareUrl) {
@@ -709,6 +753,31 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
             disabled={shareLoading}
             style={{ padding: "5px 14px", background: "none", border: `1px solid ${PURPLE}`, color: shareCopied ? PURPLE : TEXT2, fontFamily: MONO, fontSize: 10, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em", opacity: shareLoading ? 0.6 : 1 }}
           >{shareLoading ? "GENERATING..." : shareCopied ? "✓ LINK COPIED" : shareUrl ? "⎘ COPY LINK" : "↗ SHARE"}</button>
+          <button
+            onClick={handleICMemoPdf}
+            disabled={icMemoLoading}
+            title="Generate a VC-facing IC Memo PDF synthesised from all agent votes"
+            style={{
+              padding: "5px 14px",
+              background: icMemoLoading ? "rgba(212,175,55,0.08)" : "rgba(212,175,55,0.12)",
+              border: `1px solid rgba(212,175,55,${icMemoLoading ? 0.3 : 0.5})`,
+              color: "#D4AF37",
+              fontFamily: MONO,
+              fontSize: 10,
+              cursor: icMemoLoading ? "not-allowed" : "pointer",
+              borderRadius: 4,
+              letterSpacing: "0.06em",
+              opacity: icMemoLoading ? 0.7 : 1,
+              display: "flex",
+              alignItems: "center",
+              gap: 5,
+            }}
+          >
+            {icMemoLoading ? "⏳ GENERATING..." : "📋 IC MEMO PDF"}
+          </button>
+          {icMemoError && (
+            <div style={{ fontSize: 9, color: RED, fontFamily: MONO, maxWidth: 180, textAlign: "right" }}>{icMemoError}</div>
+          )}
           <button
             onClick={onNewDeal}
             style={{ padding: "5px 14px", background: ACCENT, border: "none", color: "#000", fontFamily: MONO, fontSize: 10, fontWeight: 700, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em" }}
