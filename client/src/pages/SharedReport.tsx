@@ -233,7 +233,7 @@ export default function SharedReport() {
               </div>
               {rd.gccVetoTriggered && (
                 <div className="mt-4 px-3 py-2 bg-red-900/30 border border-red-500/30 rounded text-xs text-red-300 font-mono">
-                  ⚠ GCC REGULATORY VETO TRIGGERED
+                  ⚠ COUNCIL VETO TRIGGERED — Hard block detected by regulatory or legal agent
                 </div>
               )}
             </CardContent>

@@ -648,7 +648,7 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
         }}>
           <span style={{ fontSize: 16 }}>🚫</span>
           <span style={{ fontFamily: MONO, fontSize: 12, color: RED, fontWeight: 700 }}>
-            GCC VETO TRIGGERED — Regulatory or Shariah hard block detected
+            COUNCIL VETO TRIGGERED — Hard block detected by regulatory or legal agent
           </span>
         </div>
       )}
@@ -1288,15 +1288,15 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
               <label style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, letterSpacing: "0.08em" }}>
                 DEAL MEMO / DESCRIPTION *
               </label>
-              <span style={{ fontFamily: MONO, fontSize: 10, color: charCount > 2800 ? AMBER : MUTED }}>
-                {charCount}/3000
+              <span style={{ fontFamily: MONO, fontSize: 10, color: charCount > 9000 ? AMBER : MUTED }}>
+                {charCount}/10000
               </span>
             </div>
             <textarea
               value={dealText}
               onChange={(e) => { setDealText(e.target.value); if (touchedSubmit && e.target.value.trim()) setError(null); }}
               placeholder="Paste the full deal memo, pitch deck summary, or description here. Include: business model, market size, team, traction, financials, and ask."
-              maxLength={3000}
+              maxLength={10000}
               rows={10}
               style={{ width: "100%", padding: "12px 14px", background: BG3, border: `1px solid ${touchedSubmit && !guidedMode && !dealText.trim() ? "#ff4757" : BORDER}`, borderRadius: 4, color: TEXT, fontFamily: "'Inter', sans-serif", fontSize: 13, lineHeight: 1.6, resize: "vertical", outline: "none", boxSizing: "border-box" }}
             />

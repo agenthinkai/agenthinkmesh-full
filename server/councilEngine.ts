@@ -959,23 +959,36 @@ export async function runCouncil(
   const vcLegalVote    = votes.find((v) => v.personaId === "VC_LEGAL");
   const inLegalVote    = votes.find((v) => v.personaId === "IN_LEGAL");
 
-  const vetoTriggered =
-    gccRegVote?.vote     === "HARD_NO" ||
-    gccShariahVote?.vote === "HARD_NO" ||
-    vcLegalVote?.vote    === "HARD_NO" ||
-    inLegalVote?.vote    === "HARD_NO" ||
-    hardNoCount >= 2;
+  // Mode-aware veto logic:
+  // GCC mode: GCC_REG or GCC_SHARIAH HARD_NO triggers veto; also veto if 3+ HARD_NO
+  // Global VC: VC_LEGAL HARD_NO triggers veto; also veto if 4+ HARD_NO
+  // India PE: IN_LEGAL HARD_NO triggers veto; also veto if 4+ HARD_NO
+  let vetoTriggered = false;
+  if (councilMode === "gcc") {
+    vetoTriggered =
+      gccRegVote?.vote     === "HARD_NO" ||
+      gccShariahVote?.vote === "HARD_NO" ||
+      hardNoCount >= 3;
+  } else if (councilMode === "global_vc") {
+    vetoTriggered =
+      vcLegalVote?.vote === "HARD_NO" ||
+      hardNoCount >= 4;
+  } else if (councilMode === "india_pe") {
+    vetoTriggered =
+      inLegalVote?.vote === "HARD_NO" ||
+      hardNoCount >= 4;
+  }
 
   // Keep gccVetoTriggered as alias for backward compat
   const gccVetoTriggered = vetoTriggered;
 
-  if (gccRegVote?.vote === "HARD_NO")
+  if (councilMode === "gcc" && gccRegVote?.vote === "HARD_NO")
     hardFlags.push(`❌ GCC REGULATORY VETO — ${gccRegVote.rationale.slice(0, 100)}`);
-  if (gccShariahVote?.vote === "HARD_NO")
+  if (councilMode === "gcc" && gccShariahVote?.vote === "HARD_NO")
     hardFlags.push(`❌ SHARIAH NON-COMPLIANT — ${gccShariahVote.rationale.slice(0, 100)}`);
-  if (vcLegalVote?.vote === "HARD_NO")
+  if (councilMode === "global_vc" && vcLegalVote?.vote === "HARD_NO")
     hardFlags.push(`❌ LEGAL VETO — ${vcLegalVote.rationale.slice(0, 100)}`);
-  if (inLegalVote?.vote === "HARD_NO")
+  if (councilMode === "india_pe" && inLegalVote?.vote === "HARD_NO")
     hardFlags.push(`❌ INDIA LEGAL VETO — ${inLegalVote.rationale.slice(0, 100)}`);
   if (geoVote?.keyFlags?.some((f) => f.toLowerCase().includes("sanction")))
     hardFlags.push(`⚠️ SANCTIONS FLAG — ${geoVote.personaRole}`);

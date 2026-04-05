@@ -107,7 +107,7 @@ export const dealScreenerRouter = router({
     .input(
       z.object({
         dealName: z.string().min(1).max(255).trim(),
-        dealText: z.string().min(10).max(3000).trim(),
+        dealText: z.string().min(10).max(10000).trim(),
         pdfFileKey: z.string().optional(),
         pdfFileUrl: z.string().optional(),
         stripeSessionId: z.string().optional(), // link payment row to this deal run
