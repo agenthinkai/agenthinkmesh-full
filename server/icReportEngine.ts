@@ -25,9 +25,18 @@ export interface ICReportSection {
   content: string[];   // Array of lines/bullets for flexible rendering
 }
 
+export interface VCSummary {
+  verdictLine: string;          // e.g. "CONDITIONAL APPROVE — 6/10"
+  convictionLine: string;       // one sharp sentence, partner-voice
+  keyPositives: string[];       // max 3 bullets
+  whyWePass: string[];          // max 3 bullets (risks / pass reasons)
+  whatWouldChange: string[];    // max 3 bullets
+}
+
 export interface SingleDealICReport {
   dealName: string;
   generatedAt: string;
+  vcSummary?: VCSummary;        // VC-facing summary block (internal only)
   verificationBanner: {
     consensusScore: number;           // e.g. 80 (percent)
     confidenceLevel: "LOW" | "MEDIUM" | "HIGH";
@@ -103,8 +112,18 @@ STRICT RULES:
 - Must read like a human expert wrote it
 - Be direct — no soft language`;
 
-// ── Single deal IC report ─────────────────────────────────────────────────────
+const VC_SUMMARY_PROMPT = `You are a senior VC partner writing a 60-second internal memo for a Monday morning IC call.
 
+RULES:
+- No AI language. No phrases like "multi-agent", "consensus", "confidence level", "based on analysis".
+- No long paragraphs. Bullets only.
+- Every bullet must be specific — no generic risk language.
+- Conviction line: write it as you would say it out loud in an IC meeting. Direct, opinionated, no hedging.
+- If verdict is REJECT or VETOED: lead with the structural flaw. Do NOT open with positives.
+- If verdict is APPROVE or CONDITIONAL APPROVE: lead with the non-obvious opportunity.
+- Max 3 bullets per section. Fewer is better if the point is made.`;
+
+// ── Single deal IC report ─────────────────────────────────────────────────────
 export async function generateSingleDealICReport(
   dealName: string,
   dealText: string,
@@ -173,31 +192,39 @@ ${allConditions.slice(0, 8).map((c, i) => `${i + 1}. ${c}`).join("\n")}
 
 Respond with a JSON object matching this exact schema (no markdown, raw JSON only):
 {
+  "vcSummary": {
+    "verdictLine": "<e.g. CONDITIONAL APPROVE — 6/10>",
+    "convictionLine": "<one sharp sentence — partner voice, no hedging>",
+    "keyPositives": ["<max 3 bullets — specific, non-obvious strengths>"],
+    "whyWePass": ["<max 3 bullets — structural risks or pass reasons; if REJECT lead with the killer flaw>"],
+    "whatWouldChange": ["<max 3 bullets — specific data points or events that would flip the decision>"]
+  },
   "verificationBanner": {
-    "consensusScore": <number 0-100>,
-    "confidenceLevel": "LOW" | "MEDIUM" | "HIGH",
+    "consensusScore": 0,
+    "confidenceLevel": "MEDIUM",
     "conflictStatus": "<one sentence>"
   },
   "executiveVerdict": {
-    "decision": "APPROVE" | "REJECT" | "CONDITIONAL APPROVE",
+    "decision": "APPROVE",
     "recommendedAction": "<one of: Proceed to IC review | Validate via pilot | Defer pending conditions | Reject and archive>",
     "rationale": "<one sharp sentence>"
   },
   "investmentThesis": ["<point 1>", "<point 2>", "<point 3>"],
-  "keyRisks": ["<risk 1>", "<risk 2>", "<risk 3>", "<risk 4 optional>", "<risk 5 optional>"],
+  "keyRisks": ["<risk 1>", "<risk 2>", "<risk 3>"],
   "decisionTriggers": {
     "upgradeTriggers": ["<trigger 1>", "<trigger 2>"],
     "downgradeTriggers": ["<trigger 1>", "<trigger 2>"]
   },
   "consensusBreakdown": {
-    "approve": <number>,
-    "reject": <number>,
-    "conditional": <number>,
+    "approve": 0,
+    "reject": 0,
+    "conditional": 0,
     "keyDisagreements": ["<disagreement 1>", "<disagreement 2>"]
   },
   "thirtyDayActionPlan": ["<action 1>", "<action 2>", "<action 3>", "<action 4>", "<action 5>"],
   "marketAndRegulatoryContext": ["<point 1>", "<point 2>", "<point 3>"]
 }`;
+
 
   const response = await invokeLLM({
     messages: [
@@ -256,9 +283,21 @@ Respond with a JSON object matching this exact schema (no markdown, raw JSON onl
             },
             thirtyDayActionPlan: { type: "array", items: { type: "string" } },
             marketAndRegulatoryContext: { type: "array", items: { type: "string" } },
+            vcSummary: {
+              type: "object",
+              properties: {
+                verdictLine:     { type: "string" },
+                convictionLine:  { type: "string" },
+                keyPositives:    { type: "array", items: { type: "string" } },
+                whyWePass:       { type: "array", items: { type: "string" } },
+                whatWouldChange: { type: "array", items: { type: "string" } },
+              },
+              required: ["verdictLine", "convictionLine", "keyPositives", "whyWePass", "whatWouldChange"],
+              additionalProperties: false,
+            },
           },
           required: [
-            "verificationBanner", "executiveVerdict", "investmentThesis",
+            "vcSummary", "verificationBanner", "executiveVerdict", "investmentThesis",
             "keyRisks", "decisionTriggers", "consensusBreakdown",
             "thirtyDayActionPlan", "marketAndRegulatoryContext",
           ],
@@ -286,6 +325,7 @@ Respond with a JSON object matching this exact schema (no markdown, raw JSON onl
     consensusBreakdown: parsed.consensusBreakdown,
     thirtyDayActionPlan: parsed.thirtyDayActionPlan,
     marketAndRegulatoryContext: parsed.marketAndRegulatoryContext,
+    vcSummary: parsed.vcSummary ?? undefined,
     rawText: formatSingleDealReportText(dealName, parsed),
   };
 

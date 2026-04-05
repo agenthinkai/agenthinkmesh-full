@@ -92,6 +92,13 @@ interface ICReportData {
   thirtyDayActionPlan: string[];
   marketAndRegulatoryContext: string[];
   rawText: string;
+  vcSummary?: {
+    verdictLine: string;
+    convictionLine: string;
+    keyPositives: string[];
+    whyWePass: string[];
+    whatWouldChange: string[];
+  } | null;
 }
 
 // ── Persona metadata ──────────────────────────────────────────────────────────
@@ -461,12 +468,67 @@ function PersonaLoadingGrid({ councilMode = "gcc" }: { councilMode?: CouncilMode
 }
 
 // ── Boardroom IC Report renderer ─────────────────────────────────────────────
+function VCSummaryBlock({ vc, decisionColor }: { vc: NonNullable<ICReportData["vcSummary"]>; decisionColor: string }) {
+  const isReject = vc.verdictLine.toUpperCase().includes("REJECT") || vc.verdictLine.toUpperCase().includes("VETO");
+  return (
+    <div style={{
+      background: `${decisionColor}0d`,
+      border: `1.5px solid ${decisionColor}55`,
+      borderRadius: 10,
+      padding: "20px 24px",
+      marginBottom: 24,
+      position: "relative",
+    }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.14em", background: `${decisionColor}18`, padding: "3px 8px", borderRadius: 3 }}>VC SUMMARY</span>
+          <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 800, color: decisionColor, letterSpacing: "0.04em" }}>{vc.verdictLine}</span>
+        </div>
+      </div>
+      {/* Conviction Line */}
+      <p style={{ margin: "0 0 16px 0", fontSize: 14, color: TEXT, fontWeight: 600, lineHeight: 1.5, fontStyle: "italic" }}>
+        &ldquo;{vc.convictionLine}&rdquo;
+      </p>
+      {/* 3-column grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
+        {/* Key Positives */}
+        {!isReject && vc.keyPositives.length > 0 && (
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: GREEN, letterSpacing: "0.1em", marginBottom: 8 }}>KEY POSITIVES</div>
+            {vc.keyPositives.map((p, i) => (
+              <div key={i} style={{ fontSize: 11, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${GREEN}55`, lineHeight: 1.5 }}>{p}</div>
+            ))}
+          </div>
+        )}
+        {/* Why We Pass / Risks */}
+        <div style={{ gridColumn: isReject ? "1 / 3" : undefined }}>
+          <div style={{ fontFamily: MONO, fontSize: 9, color: isReject ? RED : AMBER, letterSpacing: "0.1em", marginBottom: 8 }}>{isReject ? "STRUCTURAL FLAWS" : "WHY WE PASS / RISKS"}</div>
+          {vc.whyWePass.map((r, i) => (
+            <div key={i} style={{ fontSize: 11, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${isReject ? RED : AMBER}55`, lineHeight: 1.5 }}>{r}</div>
+          ))}
+        </div>
+        {/* What Would Change */}
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: 9, color: ACCENT, letterSpacing: "0.1em", marginBottom: 8 }}>WHAT WOULD CHANGE THIS</div>
+          {vc.whatWouldChange.map((w, i) => (
+            <div key={i} style={{ fontSize: 11, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${ACCENT}55`, lineHeight: 1.5 }}>{w}</div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function BoardroomICReport({ ic, onCopy }: { ic: ICReportData; onCopy: (text: string) => void }) {
   const decisionColor = ic.executiveVerdict.decision === "APPROVE" ? GREEN
     : ic.executiveVerdict.decision === "REJECT" ? RED : AMBER;
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
+      {/* VC Summary Block — shown only when vcSummary is present */}
+      {ic.vcSummary && <VCSummaryBlock vc={ic.vcSummary} decisionColor={decisionColor} />}
+
       {/* Verification Banner */}
       <div style={{
         background: `rgba(0,255,135,0.06)`, border: `1px solid ${GREEN}44`,

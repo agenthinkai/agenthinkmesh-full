@@ -1635,3 +1635,7 @@
 ## IC Memo PDF Export (Apr 5 2026)
 - [x] Server: add icMemoPdf tRPC procedure that generates a VC-facing IC Memo PDF from council result
 - [x] Frontend: add "IC MEMO PDF" export button in deal screener report view
+
+## VC Summary Block (Apr 5 2026)
+- [x] Extend icReportEngine to generate vcSummary block (verdict, conviction line, positives, risks, decision triggers)
+- [x] Add VCSummaryBlock component at top of Boardroom IC Report tab (internal only, not on shared reports)
