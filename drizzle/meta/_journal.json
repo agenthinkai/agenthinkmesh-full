@@ -281,6 +281,13 @@
       "when": 1775196428378,
       "tag": "0039_sudden_the_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "5",
+      "when": 1775296630562,
+      "tag": "0040_futuristic_joystick",
+      "breakpoints": true
     }
   ]
 }

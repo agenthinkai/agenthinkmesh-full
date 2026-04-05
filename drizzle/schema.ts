@@ -1238,6 +1238,10 @@ export const outboundEmails = mysqlTable("outbound_emails", {
   // Follow-up flagging (auto-set after 6 weeks of no response)
   followUpDue: boolean("followUpDue").notNull().default(false),
   followUpDueAt: timestamp("followUpDueAt"),
+  // User notes (free text, e.g. what was discussed in the reply)
+  notes: text("notes"),
+  // Manual follow-up reminder date set by user
+  followUpDate: timestamp("followUpDate"),
   // Timestamps
   sentAt: timestamp("sentAt").notNull(),
   firstRepliedAt: timestamp("firstRepliedAt"),

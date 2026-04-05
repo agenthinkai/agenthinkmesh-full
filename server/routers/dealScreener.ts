@@ -16,6 +16,13 @@ import { runComparison } from "../comparisonEngine";
 import { generateSingleDealICReport, generateComparisonICReport } from "../icReportEngine";
 import { randomUUID } from "crypto";
 
+// ── Owner whitelist — these users always bypass payment and rate limits ────────
+const OWNER_EMAILS = ["farouq@agenthink.ai", "farouqsultan@gmail.com"];
+function isOwner(email: string | null | undefined): boolean {
+  if (!email) return false;
+  return OWNER_EMAILS.includes(email.toLowerCase().trim());
+}
+
 // ── Plan-based daily rate limits ─────────────────────────────────────────────
 
 type PlanTier = "trial" | "standard" | "pro" | "enterprise" | null | undefined;
@@ -109,6 +116,37 @@ export const dealScreenerRouter = router({
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      // Owner bypass — skip rate limit and payment entirely
+      if (isOwner(ctx.user.email)) {
+        const ownerDealId = randomUUID();
+        const ownerResult = await runCouncil(input.dealText, { userId: undefined });
+        await db.insert(dealScreenings).values({
+          dealId: ownerDealId,
+          userId: ctx.user.id,
+          dealName: input.dealName,
+          dealText: input.dealText,
+          pdfFileKey: input.pdfFileKey ?? null,
+          pdfFileUrl: input.pdfFileUrl ?? null,
+          verdict: ownerResult.verdict,
+          yesCount: ownerResult.yesCount,
+          noCount: ownerResult.noCount,
+          hardYesCount: ownerResult.hardYesCount,
+          softYesCount: ownerResult.softYesCount,
+          softNoCount: ownerResult.softNoCount,
+          hardNoCount: ownerResult.hardNoCount,
+          confidenceScore: ownerResult.confidenceScore.toString(),
+          gccVetoTriggered: ownerResult.gccVetoTriggered,
+          tiebreakerTriggered: ownerResult.tiebreakerTriggered,
+          tiebreakerSwingAgent: ownerResult.tiebreakerSwingAgent ?? null,
+          conditionsToProceed: JSON.stringify(ownerResult.conditionsToProceed),
+          blockingIssues: JSON.stringify(ownerResult.blockingIssues),
+          votes: JSON.stringify(ownerResult.votes),
+        });
+        let ownerIcReport = null;
+        try { ownerIcReport = await generateSingleDealICReport(input.dealName, input.dealText, ownerResult); } catch {}
+        return { dealId: ownerDealId, dealName: input.dealName, ...ownerResult, icReport: ownerIcReport };
+      }
 
       // Rate limit check (plan-based daily limit)
       await checkAndIncrementRateLimit(ctx.user.id, ctx.user.planTier as PlanTier);

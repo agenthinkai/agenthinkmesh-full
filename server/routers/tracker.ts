@@ -168,33 +168,118 @@ export const trackerRouter = router({
       };
     }),
 
-  // ── Update status ──────────────────────────────────────────────────────────
+  // ── Update status ──────────────────────────────────────────────────────────────────────────────
   updateStatus: protectedProcedure
     .input(
       z.object({
         id: z.number(),
         status: replyStatusEnum,
         notes: z.string().optional(),
+        followUpDate: z.string().optional(), // ISO date string or null
+        clearFollowUp: z.boolean().optional(),
       })
     )
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
+      const updatePayload: Record<string, unknown> = {
+        replyStatus: input.status,
+        lastActivityAt: new Date(),
+        followUpDue: false,
+      };
+      if (input.notes !== undefined) updatePayload.notes = input.notes;
+      if (input.followUpDate) updatePayload.followUpDate = new Date(input.followUpDate);
+      if (input.clearFollowUp) updatePayload.followUpDate = null;
+
       await db
         .update(outboundEmails)
-        .set({
-          replyStatus: input.status,
-          lastActivityAt: new Date(),
-          // Clear follow-up flag when status is updated
-          followUpDue: false,
-        })
+        .set(updatePayload)
         .where(eq(outboundEmails.id, input.id));
 
       return { success: true };
     }),
 
-  // ── Recent replies ─────────────────────────────────────────────────────────
+  // ── Update notes only (without changing status) ───────────────────────────────────────
+  updateNotes: protectedProcedure
+    .input(z.object({ id: z.number(), notes: z.string(), followUpDate: z.string().nullable().optional() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      const updatePayload: Record<string, unknown> = { notes: input.notes };
+      if (input.followUpDate !== undefined) {
+        updatePayload.followUpDate = input.followUpDate ? new Date(input.followUpDate) : null;
+      }
+
+      await db.update(outboundEmails).set(updatePayload).where(eq(outboundEmails.id, input.id));
+      return { success: true };
+    }),
+
+  // ── Bulk import contacts from pasted text ────────────────────────────────────────────────
+  bulkImport: protectedProcedure
+    .input(
+      z.object({
+        contacts: z.array(
+          z.object({
+            name: z.string().min(1),
+            email: z.string().email(),
+            firm: z.string().optional(),
+            role: z.string().optional(),
+            market: z.string().default("Other"),
+          })
+        ),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      if (input.contacts.length === 0) return { success: true, inserted: 0 };
+
+      const batchSize = 100;
+      let inserted = 0;
+      for (let i = 0; i < input.contacts.length; i += batchSize) {
+        const batch = input.contacts.slice(i, i + batchSize);
+        await db.insert(outboundEmails).values(
+          batch.map((c) => ({
+            recipientName: c.name,
+            recipientEmail: c.email,
+            recipientFirm: c.firm,
+            recipientRole: c.role,
+            market: c.market,
+            subject: "Outreach",
+            language: "English",
+            sentAt: new Date(),
+            replyStatus: "no_response" as const,
+            followUpDue: false,
+          }))
+        );
+        inserted += batch.length;
+      }
+
+      return { success: true, inserted };
+    }),
+
+  // ── Get follow-up due today count (for nav badge) ──────────────────────────────────────
+  getFollowUpDueToday: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { count: 0 };
+
+    const now = new Date();
+    const endOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+
+    const [row] = await db
+      .select({ count: count() })
+      .from(outboundEmails)
+      .where(
+        sql`${outboundEmails.followUpDate} IS NOT NULL AND ${outboundEmails.followUpDate} <= ${endOfDay}`
+      );
+
+    return { count: row?.count ?? 0 };
+  }),
+
+  // ── Recent replies ──────────────────────────────────────────────────────────────────────────────
   getRecentReplies: protectedProcedure
     .input(z.object({ limit: z.number().min(1).max(50).default(20) }))
     .query(async ({ input }) => {

@@ -794,7 +794,8 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
   );
 }
 
-// ── Deal Form ─────────────────────────────────────────────────────────────────
+// ──// ── Deal Form ─────────────────────────────────────────────────────
+const OWNER_EMAILS_LIST = ["farouq@agenthink.ai", "farouqsultan@gmail.com"];
 function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaymentSessionId, onPaymentVerified }: {
   onResult: (r: CouncilResult) => void;
   onSubmitStart: () => void;
@@ -802,6 +803,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
   pendingPaymentSessionId: string | null;
   onPaymentVerified: () => void;
 }) {
+  const { user: authUser } = useAuth();
   const [dealName, setDealName] = useState("");
   const [dealText, setDealText] = useState("");
   // Guided form mode
@@ -918,8 +920,8 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
     }
   };
 
-  // ── FREE MODE — set to false to re-enable Stripe payment ──────────────────
-  const FREE_MODE = false;
+  // ── FREE MODE — owner accounts always bypass payment ────────────────
+  const FREE_MODE = authUser?.email ? OWNER_EMAILS_LIST.includes(authUser.email.toLowerCase().trim()) : false;
 
   // Build IC memo from guided form fields
   const buildMemoFromGuided = () => [
@@ -1454,7 +1456,7 @@ function DemoDealCards() {
 
 export default function DealScreener() {
   const isDemo = isDemoMode();
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
   const [view, setView] = useState<View>("input");
   const [result, setResult] = useState<CouncilResult | null>(null);
   const [selectedDealId, setSelectedDealId] = useState<string | null>(null);

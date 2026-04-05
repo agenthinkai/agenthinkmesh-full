@@ -1591,3 +1591,21 @@
 - [x] Remove all technical jargon (no "seed database", no "Gmail OAuth", no filters/pagination)
 - [x] Make the Gmail connect section optional and clearly explained in plain English
 - [x] Add pre-seeded example data so the page doesn't look empty on first load
+
+## Tracker Enhancements (Bulk Import + Notes + Follow-up Reminders)
+- [ ] Add notes column to outbound_emails table in drizzle schema
+- [ ] Add followUpDate column (nullable datetime) to outbound_emails table
+- [ ] Push DB migration
+- [ ] Update updateStatus procedure to accept notes and followUpDate
+- [ ] Add bulk import procedure (accepts array of name/email/firm/market lines)
+- [ ] Build bulk paste import modal in Tracker UI
+- [ ] Add inline notes editing per contact row
+- [ ] Add follow-up date picker per contact
+- [ ] Show follow-up badge on nav showing count of contacts due today
+- [ ] Test, checkpoint, deliver
+
+## Payment Gateway Bypass for Owner Accounts
+- [x] Find payment gate check in deal screener (backend procedure + frontend)
+- [x] Add whitelist bypass: farouq@agenthink.ai and farouqsultan@gmail.com skip payment entirely
+- [x] Test both accounts can run deal screener without hitting payment flow
+- [x] Checkpoint and deploy
