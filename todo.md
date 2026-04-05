@@ -1618,3 +1618,11 @@
 - [x] Fix verdict calculation to be mode-agnostic (no hardcoded GCC veto)
 - [x] Test all 3 modes produce correct agent panels and relevant verdicts
 - [x] Checkpoint and deliver
+
+## Council Mode Fix (Animation Panel + Backend Verification)
+- [x] Trace why councilMode is not changing the agents in the screening animation (councilMode was local to DealForm, not lifted to parent)
+- [x] Fix screening animation to show correct agent names per mode (replaced hardcoded PERSONA_ORDER with mode-aware PERSONA_ORDERS map)
+- [x] Verify backend runCouncil actually receives and uses councilMode (confirmed via grep — line 124 and 206 in dealScreener.ts)
+- [x] Test India PE mode shows IN_CFO, IN_LEGAL, SEBI_COMPLIANCE etc. in panel
+- [x] Test Global VC mode shows VC_CFO, VC_LEGAL, MARKET_ANALYST etc. in panel
+- [x] Checkpoint and deliver

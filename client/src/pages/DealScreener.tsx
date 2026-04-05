@@ -96,6 +96,7 @@ interface ICReportData {
 
 // ── Persona metadata ──────────────────────────────────────────────────────────
 const PERSONA_META: Record<string, { icon: string; color: string }> = {
+  // GCC Institutional
   GCC_REG: { icon: "⚖️", color: "#ff4757" },
   GCC_CONSUMER: { icon: "🛍️", color: "#4a9eff" },
   GCC_SHARIAH: { icon: "☪️", color: "#00ff87" },
@@ -106,6 +107,69 @@ const PERSONA_META: Record<string, { icon: string; color: string }> = {
   SECURITY: { icon: "🛡️", color: "#ff9f43" },
   OPERATOR: { icon: "⚙️", color: "#4a9eff" },
   DEVILS_ADVOCATE: { icon: "😈", color: "#ff4757" },
+  // Global VC
+  VC_CFO: { icon: "📊", color: "#4a9eff" },
+  VC_LEGAL: { icon: "⚖️", color: "#ff4757" },
+  MARKET_ANALYST: { icon: "🌐", color: "#00ff87" },
+  VC_GROWTH: { icon: "📈", color: "#00ff87" },
+  VC_EXIT: { icon: "🚀", color: "#a855f7" },
+  TECH_DUE_DILIGENCE: { icon: "💻", color: "#4a9eff" },
+  VC_RISK: { icon: "🛡️", color: "#ff9f43" },
+  FOUNDER_EVALUATOR: { icon: "👤", color: "#ff9f43" },
+  PORTFOLIO_FIT: { icon: "🔗", color: "#4a9eff" },
+  VC_CONTRARIAN: { icon: "🔥", color: "#ff4757" },
+  // India PE / VC
+  IN_CFO: { icon: "📊", color: "#4a9eff" },
+  IN_LEGAL: { icon: "⚖️", color: "#ff4757" },
+  SEBI_COMPLIANCE: { icon: "🏛️", color: "#00ff87" },
+  IN_GROWTH: { icon: "📈", color: "#00ff87" },
+  IN_EXIT: { icon: "🚀", color: "#a855f7" },
+  IN_MARKET: { icon: "🇮🇳", color: "#ff9f43" },
+  IN_RISK: { icon: "🛡️", color: "#ff9f43" },
+  FEMA_ADVISOR: { icon: "💱", color: "#4a9eff" },
+  IN_FOUNDER: { icon: "👤", color: "#ff4757" },
+  IN_CONTRARIAN: { icon: "🔥", color: "#ff4757" },
+};
+
+type CouncilModeType = "gcc" | "global_vc" | "india_pe";
+
+const PERSONA_ORDERS: Record<CouncilModeType, { id: string; label: string }[]> = {
+  gcc: [
+    { id: "GCC_REG", label: "GCC Regulatory Guardian" },
+    { id: "GCC_CONSUMER", label: "GCC Market Reality" },
+    { id: "GCC_SHARIAH", label: "Shariah Compliance" },
+    { id: "CONTRARIAN", label: "Contrarian" },
+    { id: "CFO", label: "CFO" },
+    { id: "EXIT", label: "Exit Strategist" },
+    { id: "GROWTH", label: "Growth Analyst" },
+    { id: "SECURITY", label: "Security & Risk" },
+    { id: "OPERATOR", label: "Operator" },
+    { id: "DEVILS_ADVOCATE", label: "Devil's Advocate" },
+  ],
+  global_vc: [
+    { id: "VC_CFO", label: "VC CFO / Financial Analyst" },
+    { id: "VC_LEGAL", label: "VC Legal Counsel" },
+    { id: "MARKET_ANALYST", label: "Global Market Analyst" },
+    { id: "VC_GROWTH", label: "Growth & GTM Strategist" },
+    { id: "VC_EXIT", label: "Exit & Returns Strategist" },
+    { id: "TECH_DUE_DILIGENCE", label: "Tech Due Diligence" },
+    { id: "VC_RISK", label: "Risk & Downside Analyst" },
+    { id: "FOUNDER_EVALUATOR", label: "Founder & Team Evaluator" },
+    { id: "PORTFOLIO_FIT", label: "Portfolio Fit Analyst" },
+    { id: "VC_CONTRARIAN", label: "Contrarian" },
+  ],
+  india_pe: [
+    { id: "IN_CFO", label: "India CFO / Financial Analyst" },
+    { id: "IN_LEGAL", label: "India Legal Counsel" },
+    { id: "SEBI_COMPLIANCE", label: "SEBI Compliance Advisor" },
+    { id: "IN_GROWTH", label: "India Growth Analyst" },
+    { id: "IN_EXIT", label: "NSE/BSE Exit Strategist" },
+    { id: "IN_MARKET", label: "India Market Specialist" },
+    { id: "IN_RISK", label: "India Risk Analyst" },
+    { id: "FEMA_ADVISOR", label: "FEMA / FDI Advisor" },
+    { id: "IN_FOUNDER", label: "Founder Evaluator" },
+    { id: "IN_CONTRARIAN", label: "Contrarian" },
+  ],
 };
 
 // ── Vote badge ────────────────────────────────────────────────────────────────
@@ -328,40 +392,31 @@ function VoteCard({ vote, result }: { vote: PersonaVote; result?: CouncilResult 
 }
 
 // ── PersonaLoadingGrid ────────────────────────────────────────────────────────
-const PERSONA_ORDER = [
-  { id: "GCC_REG", label: "GCC Regulatory Guardian" },
-  { id: "GCC_CONSUMER", label: "GCC Market Reality" },
-  { id: "GCC_SHARIAH", label: "Shariah Compliance" },
-  { id: "CONTRARIAN", label: "Contrarian" },
-  { id: "CFO", label: "CFO" },
-  { id: "EXIT", label: "Exit Strategist" },
-  { id: "GROWTH", label: "Growth Analyst" },
-  { id: "SECURITY", label: "Security & Risk" },
-  { id: "OPERATOR", label: "Operator" },
-  { id: "DEVILS_ADVOCATE", label: "Devil's Advocate" },
-];
-
-function PersonaLoadingGrid() {
+function PersonaLoadingGrid({ councilMode = "gcc" }: { councilMode?: CouncilModeType }) {
+  const personaOrder = PERSONA_ORDERS[councilMode] ?? PERSONA_ORDERS.gcc;
   const [active, setActive] = useState(0);
 
   useEffect(() => {
+    setActive(0);
     const interval = setInterval(() => {
-      setActive((prev) => (prev < PERSONA_ORDER.length - 1 ? prev + 1 : prev));
+      setActive((prev) => (prev < personaOrder.length - 1 ? prev + 1 : prev));
     }, 1800);
     return () => clearInterval(interval);
-  }, []);
+  }, [councilMode]);
+
+  const modeLabel = councilMode === "global_vc" ? "GLOBAL VC COUNCIL" : councilMode === "india_pe" ? "INDIA PE / VC COUNCIL" : "GCC INVESTMENT COUNCIL";
 
   return (
     <div style={{ maxWidth: 640, margin: "0 auto" }}>
       <div style={{ textAlign: "center", marginBottom: 32 }}>
         <div style={{ fontFamily: MONO, fontSize: 13, color: ACCENT, letterSpacing: "0.1em", marginBottom: 8 }}>
-          CONVENING THE INVESTMENT COUNCIL
+          CONVENING THE {modeLabel}
         </div>
         <div style={{ fontSize: 12, color: TEXT2 }}>10 specialist AI advisors are reviewing your deal memo</div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        {PERSONA_ORDER.map((p, i) => {
-          const meta = PERSONA_META[p.id] ?? { icon: "🤖", color: ACCENT };
+        {personaOrder.map((p, i) => {
+          const meta = PERSONA_META[p.id as keyof typeof PERSONA_META] ?? { icon: "🤖", color: ACCENT };
           const isActive = i === active;
           const isDone = i < active;
           return (
@@ -796,17 +851,18 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
 
 // ──// ── Deal Form ─────────────────────────────────────────────────────
 const OWNER_EMAILS_LIST = ["farouq@agenthink.ai", "farouqsultan@gmail.com"];
-function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaymentSessionId, onPaymentVerified }: {
+function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaymentSessionId, onPaymentVerified, councilMode, setCouncilMode }: {
   onResult: (r: CouncilResult) => void;
   onSubmitStart: () => void;
   onError: (msg: string) => void;
   pendingPaymentSessionId: string | null;
   onPaymentVerified: () => void;
+  councilMode: CouncilModeType;
+  setCouncilMode: (m: CouncilModeType) => void;
 }) {
   const { user: authUser } = useAuth();
   const [dealName, setDealName] = useState("");
   const [dealText, setDealText] = useState("");
-  const [councilMode, setCouncilMode] = useState<"gcc" | "global_vc" | "india_pe">("gcc");
   // Guided form mode
   const [guidedMode, setGuidedMode] = useState(true);
   const [g_what, setGWhat] = useState("");
@@ -1499,6 +1555,7 @@ export default function DealScreener() {
   const [result, setResult] = useState<CouncilResult | null>(null);
   const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
   const [screenError, setScreenError] = useState<string | null>(null);
+  const [councilMode, setCouncilMode] = useState<CouncilModeType>("gcc");
 
   // Parse Stripe return params from URL
   const urlParams = new URLSearchParams(window.location.search);
@@ -1660,6 +1717,8 @@ export default function DealScreener() {
             onError={(msg) => { setScreenError(msg); setView("input"); }}
             pendingPaymentSessionId={pendingPaymentSessionId}
             onPaymentVerified={() => setPendingPaymentSessionId(null)}
+            councilMode={councilMode}
+            setCouncilMode={setCouncilMode}
           />
         )}
         {view === "input" && screenError && (
@@ -1667,7 +1726,7 @@ export default function DealScreener() {
             {screenError}
           </div>
         )}
-        {view === "loading" && <PersonaLoadingGrid />}
+        {view === "loading" && <PersonaLoadingGrid councilMode={councilMode} />}
         {view === "report" && result && (
           <ICReport result={result} onNewDeal={handleNewDeal} />
         )}
