@@ -27,10 +27,10 @@ export interface ICReportSection {
 
 export interface VCSummary {
   verdictLine: string;          // e.g. "CONDITIONAL APPROVE — 6/10"
-  convictionLine: string;       // one sharp sentence, partner-voice
-  keyPositives: string[];       // max 3 bullets
-  whyWePass: string[];          // max 3 bullets (risks / pass reasons)
-  whatWouldChange: string[];    // max 3 bullets
+  theBet: string;               // one sentence: what must be true for this to work
+  reasonsToInvest: string[];    // exactly 3 bullets — specific, non-obvious
+  reasonsNotToInvest: string[]; // exactly 3 bullets — structural, not generic
+  whatWouldChange: string[];    // max 3 bullets — specific data points that flip the call
 }
 
 export interface SingleDealICReport {
@@ -112,16 +112,21 @@ STRICT RULES:
 - Must read like a human expert wrote it
 - Be direct — no soft language`;
 
-const VC_SUMMARY_PROMPT = `You are a senior VC partner writing a 60-second internal memo for a Monday morning IC call.
+const VC_SUMMARY_PROMPT = `You are a senior VC partner making a call in a Monday morning IC meeting.
+
+You are NOT writing a report. You are making a decision out loud.
 
 RULES:
-- No AI language. No phrases like "multi-agent", "consensus", "confidence level", "based on analysis".
-- No long paragraphs. Bullets only.
-- Every bullet must be specific — no generic risk language.
-- Conviction line: write it as you would say it out loud in an IC meeting. Direct, opinionated, no hedging.
-- If verdict is REJECT or VETOED: lead with the structural flaw. Do NOT open with positives.
-- If verdict is APPROVE or CONDITIONAL APPROVE: lead with the non-obvious opportunity.
-- Max 3 bullets per section. Fewer is better if the point is made.`;
+- No AI language. No phrases like "multi-agent", "consensus", "confidence level", "based on analysis", "it is worth noting".
+- No paragraphs. Bullets only. Max 2 lines per bullet.
+- No generic language. "Competitive market" is not a reason. Name the specific competitor and the specific threat.
+- No balance. This is opinionated. Pick a side.
+- THE BET: one sentence — the single thing that must be true for this investment to work. If it's a reject, state the single thing that kills it.
+- REASONS TO INVEST: exactly 3. Lead with the non-obvious one. Specific metrics, not adjectives.
+- REASONS NOT TO INVEST: exactly 3. Structural flaws only. Not execution risk — structural.
+- WHAT WOULD CHANGE THIS: exactly 3. Specific data points or events, not vague conditions.
+- If verdict is REJECT or VETOED: THE BET must be the killer flaw. Do NOT open with positives.
+- Max 3 bullets per section. No more. No fewer.`;
 
 // ── Single deal IC report ─────────────────────────────────────────────────────
 export async function generateSingleDealICReport(
@@ -194,10 +199,10 @@ Respond with a JSON object matching this exact schema (no markdown, raw JSON onl
 {
   "vcSummary": {
     "verdictLine": "<e.g. CONDITIONAL APPROVE — 6/10>",
-    "convictionLine": "<one sharp sentence — partner voice, no hedging>",
-    "keyPositives": ["<max 3 bullets — specific, non-obvious strengths>"],
-    "whyWePass": ["<max 3 bullets — structural risks or pass reasons; if REJECT lead with the killer flaw>"],
-    "whatWouldChange": ["<max 3 bullets — specific data points or events that would flip the decision>"]
+    "theBet": "<one sentence: the single thing that must be true for this to work — or the single thing that kills it if REJECT>",
+    "reasonsToInvest": ["<exactly 3 bullets — specific, non-obvious strengths with metrics>"],
+    "reasonsNotToInvest": ["<exactly 3 bullets — structural flaws, name specific competitors/risks>"],
+    "whatWouldChange": ["<exactly 3 bullets — specific data points or events that flip the decision>"]
   },
   "verificationBanner": {
     "consensusScore": 0,
@@ -228,7 +233,7 @@ Respond with a JSON object matching this exact schema (no markdown, raw JSON onl
 
   const response = await invokeLLM({
     messages: [
-      { role: "system", content: IC_SYSTEM_PROMPT },
+      { role: "system", content: `${IC_SYSTEM_PROMPT}\n\n${VC_SUMMARY_PROMPT}` },
       { role: "user", content: userPrompt },
     ],
     response_format: {
@@ -286,13 +291,13 @@ Respond with a JSON object matching this exact schema (no markdown, raw JSON onl
             vcSummary: {
               type: "object",
               properties: {
-                verdictLine:     { type: "string" },
-                convictionLine:  { type: "string" },
-                keyPositives:    { type: "array", items: { type: "string" } },
-                whyWePass:       { type: "array", items: { type: "string" } },
-                whatWouldChange: { type: "array", items: { type: "string" } },
+                verdictLine:          { type: "string" },
+                theBet:               { type: "string" },
+                reasonsToInvest:      { type: "array", items: { type: "string" } },
+                reasonsNotToInvest:   { type: "array", items: { type: "string" } },
+                whatWouldChange:      { type: "array", items: { type: "string" } },
               },
-              required: ["verdictLine", "convictionLine", "keyPositives", "whyWePass", "whatWouldChange"],
+              required: ["verdictLine", "theBet", "reasonsToInvest", "reasonsNotToInvest", "whatWouldChange"],
               additionalProperties: false,
             },
           },
@@ -325,7 +330,13 @@ Respond with a JSON object matching this exact schema (no markdown, raw JSON onl
     consensusBreakdown: parsed.consensusBreakdown,
     thirtyDayActionPlan: parsed.thirtyDayActionPlan,
     marketAndRegulatoryContext: parsed.marketAndRegulatoryContext,
-    vcSummary: parsed.vcSummary ?? undefined,
+    vcSummary: parsed.vcSummary ? {
+      verdictLine:        parsed.vcSummary.verdictLine,
+      theBet:             parsed.vcSummary.theBet,
+      reasonsToInvest:    parsed.vcSummary.reasonsToInvest ?? [],
+      reasonsNotToInvest: parsed.vcSummary.reasonsNotToInvest ?? [],
+      whatWouldChange:    parsed.vcSummary.whatWouldChange ?? [],
+    } : undefined,
     rawText: formatSingleDealReportText(dealName, parsed),
   };
 
@@ -392,7 +403,7 @@ Respond with a JSON object matching this exact schema (no markdown, raw JSON onl
 
   const response = await invokeLLM({
     messages: [
-      { role: "system", content: IC_SYSTEM_PROMPT },
+      { role: "system", content: `${IC_SYSTEM_PROMPT}\n\n${VC_SUMMARY_PROMPT}` },
       { role: "user", content: userPrompt },
     ],
     response_format: {

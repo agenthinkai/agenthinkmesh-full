@@ -154,16 +154,17 @@ describe("councilEngine — consensus logic", () => {
     expect(result.gccVetoTriggered).toBe(true);
   });
 
-  it("TEST 5: 2 non-GCC agents = HARD_NO, rest = HARD_YES → VETOED (2+ HARD_NO rule)", async () => {
+  it("TEST 5: 3 non-GCC agents = HARD_NO, rest = HARD_YES → VETOED (3+ HARD_NO rule for GCC mode)", async () => {
     wireMockVotes(setVotesWithOverrides("HARD_YES", {
       CFO: "HARD_NO",
       EXIT: "HARD_NO",
+      ANALYST: "HARD_NO",
     }));
 
-    const result = await runCouncil("Test deal memo — 2 HARD_NO veto", { skipMemory: true });
+    const result = await runCouncil("Test deal memo — 3 HARD_NO veto", { skipMemory: true });
 
     expect(result.verdict).toBe("VETOED");
-    expect(result.hardNoCount).toBe(2);
+    expect(result.hardNoCount).toBe(3);
   });
 
   it("TEST 6: 7 YES + 3 SOFT_NO, no veto → tiebreaker flips first SOFT_NO in priority queue → APPROVED_WITH_CONDITIONS", async () => {

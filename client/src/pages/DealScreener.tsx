@@ -94,9 +94,9 @@ interface ICReportData {
   rawText: string;
   vcSummary?: {
     verdictLine: string;
-    convictionLine: string;
-    keyPositives: string[];
-    whyWePass: string[];
+    theBet: string;
+    reasonsToInvest: string[];
+    reasonsNotToInvest: string[];
     whatWouldChange: string[];
   } | null;
 }
@@ -470,49 +470,78 @@ function PersonaLoadingGrid({ councilMode = "gcc" }: { councilMode?: CouncilMode
 // ── Boardroom IC Report renderer ─────────────────────────────────────────────
 function VCSummaryBlock({ vc, decisionColor }: { vc: NonNullable<ICReportData["vcSummary"]>; decisionColor: string }) {
   const isReject = vc.verdictLine.toUpperCase().includes("REJECT") || vc.verdictLine.toUpperCase().includes("VETO");
+  const SECTION_LABEL: React.CSSProperties = {
+    fontFamily: MONO,
+    fontSize: 9,
+    letterSpacing: "0.14em",
+    fontWeight: 700,
+    marginBottom: 10,
+    textTransform: "uppercase" as const,
+  };
+  const BULLET: React.CSSProperties = {
+    fontSize: 12,
+    color: TEXT,
+    marginBottom: 7,
+    paddingLeft: 12,
+    lineHeight: 1.55,
+    display: "flex",
+    gap: 8,
+    alignItems: "flex-start",
+  };
   return (
     <div style={{
-      background: `${decisionColor}0d`,
-      border: `1.5px solid ${decisionColor}55`,
+      background: `${decisionColor}08`,
+      border: `1.5px solid ${decisionColor}44`,
       borderRadius: 10,
-      padding: "20px 24px",
+      padding: "22px 26px",
       marginBottom: 24,
-      position: "relative",
     }}>
-      {/* Header */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.14em", background: `${decisionColor}18`, padding: "3px 8px", borderRadius: 3 }}>VC SUMMARY</span>
-          <span style={{ fontFamily: MONO, fontSize: 13, fontWeight: 800, color: decisionColor, letterSpacing: "0.04em" }}>{vc.verdictLine}</span>
-        </div>
+      {/* Header row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16, flexWrap: "wrap" }}>
+        <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.16em", background: `${decisionColor}18`, padding: "3px 9px", borderRadius: 3, fontWeight: 700 }}>PARTNER MEMO</span>
+        <span style={{ fontFamily: MONO, fontSize: 14, fontWeight: 800, color: decisionColor, letterSpacing: "0.04em" }}>{vc.verdictLine}</span>
       </div>
-      {/* Conviction Line */}
-      <p style={{ margin: "0 0 16px 0", fontSize: 14, color: TEXT, fontWeight: 600, lineHeight: 1.5, fontStyle: "italic" }}>
-        &ldquo;{vc.convictionLine}&rdquo;
-      </p>
+
+      {/* THE BET */}
+      <div style={{ marginBottom: 20, borderLeft: `3px solid ${decisionColor}`, paddingLeft: 14 }}>
+        <div style={{ ...SECTION_LABEL, color: decisionColor }}>THE BET</div>
+        <p style={{ margin: 0, fontSize: 13, color: TEXT, fontWeight: 600, lineHeight: 1.5, fontStyle: "italic" }}>
+          {vc.theBet}
+        </p>
+      </div>
+
       {/* 3-column grid */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-        {/* Key Positives */}
-        {!isReject && vc.keyPositives.length > 0 && (
-          <div>
-            <div style={{ fontFamily: MONO, fontSize: 9, color: GREEN, letterSpacing: "0.1em", marginBottom: 8 }}>KEY POSITIVES</div>
-            {vc.keyPositives.map((p, i) => (
-              <div key={i} style={{ fontSize: 11, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${GREEN}55`, lineHeight: 1.5 }}>{p}</div>
-            ))}
-          </div>
-        )}
-        {/* Why We Pass / Risks */}
-        <div style={{ gridColumn: isReject ? "1 / 3" : undefined }}>
-          <div style={{ fontFamily: MONO, fontSize: 9, color: isReject ? RED : AMBER, letterSpacing: "0.1em", marginBottom: 8 }}>{isReject ? "STRUCTURAL FLAWS" : "WHY WE PASS / RISKS"}</div>
-          {vc.whyWePass.map((r, i) => (
-            <div key={i} style={{ fontSize: 11, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${isReject ? RED : AMBER}55`, lineHeight: 1.5 }}>{r}</div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 20 }}>
+        {/* Reasons to Invest */}
+        <div>
+          <div style={{ ...SECTION_LABEL, color: GREEN }}>3 Reasons to Invest</div>
+          {(vc.reasonsToInvest ?? []).map((r, i) => (
+            <div key={i} style={BULLET}>
+              <span style={{ color: GREEN, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}.</span>
+              <span>{r}</span>
+            </div>
           ))}
         </div>
-        {/* What Would Change */}
+
+        {/* Reasons NOT to Invest */}
         <div>
-          <div style={{ fontFamily: MONO, fontSize: 9, color: ACCENT, letterSpacing: "0.1em", marginBottom: 8 }}>WHAT WOULD CHANGE THIS</div>
-          {vc.whatWouldChange.map((w, i) => (
-            <div key={i} style={{ fontSize: 11, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${ACCENT}55`, lineHeight: 1.5 }}>{w}</div>
+          <div style={{ ...SECTION_LABEL, color: isReject ? RED : AMBER }}>3 Reasons NOT to Invest</div>
+          {(vc.reasonsNotToInvest ?? []).map((r, i) => (
+            <div key={i} style={BULLET}>
+              <span style={{ color: isReject ? RED : AMBER, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>{i + 1}.</span>
+              <span>{r}</span>
+            </div>
+          ))}
+        </div>
+
+        {/* What Would Change Decision */}
+        <div>
+          <div style={{ ...SECTION_LABEL, color: ACCENT }}>What Would Change Decision</div>
+          {(vc.whatWouldChange ?? []).map((w, i) => (
+            <div key={i} style={BULLET}>
+              <span style={{ color: ACCENT, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>→</span>
+              <span>{w}</span>
+            </div>
           ))}
         </div>
       </div>

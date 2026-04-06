@@ -1639,3 +1639,22 @@
 ## VC Summary Block (Apr 5 2026)
 - [x] Extend icReportEngine to generate vcSummary block (verdict, conviction line, positives, risks, decision triggers)
 - [x] Add VCSummaryBlock component at top of Boardroom IC Report tab (internal only, not on shared reports)
+
+## Email Resend with Delivery Tracking (Apr 6 2026)
+- [ ] Add deliveryStatus, resendMsMessageId, resentAt fields to outbound_emails schema
+- [ ] Run pnpm db:push to migrate
+- [ ] Build resend script: query emails from last Thursday, exclude bejul@lsvp.com, resend via MS Graph
+- [ ] Store Graph message ID + timestamp + delivery status per email
+- [ ] Produce final summary: total sent, delivered, rejected
+
+## IC Output Upgrade — Partner-Level Quality
+- [x] Rename VCSummary fields: convictionLine → theBet, keyPositives → reasonsToInvest, whyWePass → reasonsNotToInvest
+- [x] Rewrite VC_SUMMARY_PROMPT to partner-voice: opinionated, no balance, specific competitors named
+- [x] Add THE BET section (mandatory, above 3-column grid) with left-border accent
+- [x] Rename block header from "VC SUMMARY" to "PARTNER MEMO"
+- [x] Restructure 3-column grid: 3 Reasons to Invest / 3 Reasons NOT to Invest / What Would Change Decision
+- [x] Numbered bullets (1/2/3) for invest/not-invest, arrow (→) for change triggers
+- [x] Update JSON schema in icReportEngine.ts to match new field names
+- [x] Update ICReportData type in DealScreener.tsx to match new field names
+- [x] Fix TEST 5 in dealScreener.test.ts: 3 HARD_NO threshold for GCC mode (was incorrectly testing 2)
+- [x] All 351 tests passing

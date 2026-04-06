@@ -1248,6 +1248,10 @@ export const outboundEmails = mysqlTable("outbound_emails", {
   lastActivityAt: timestamp("lastActivityAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+  // Resend tracking (Apr 2026)
+  resentAt: timestamp("resentAt"),
+  resendMsMessageId: varchar("resendMsMessageId", { length: 512 }),
+  deliveryStatus: mysqlEnum("deliveryStatus", ["pending", "sent", "delivered", "rejected", "failed"]),
 }, (table) => ({
   oeMarketIdx: index("oe_market_idx").on(table.market),
   oeStatusIdx: index("oe_status_idx").on(table.replyStatus),
