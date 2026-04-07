@@ -1672,3 +1672,10 @@
 - [x] Verdict header: "Run Another Deal" button top-right, secondary style
 - [x] Verdict header: Confidence indicator (High/Medium/Low from vote distribution)
 - [x] History tab: verdict badge on each row (color-coded)
+
+## Minor Refinements — Deal Screener (07 Apr 2026)
+
+- [x] Confidence tooltip: hover shows "X YES / Y NO — Z% agreement"
+- [x] History filter chips: All | Approved | Conditional | Rejected/Vetoed (client-side)
+- [x] Remove redundant "+ RUN ANOTHER DEAL" button from verdict header (duplicate of NEW DEAL nav button)
+- [x] Fix corrupted lines in DealScreener.tsx (boundary artifacts from previous edits)

@@ -571,26 +571,9 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
         marginBottom: 20,
         boxShadow: `0 0 28px ${verdictColor}22`,
       }}>
-        {/* Top row: label + Run Another Deal */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
+        {/* Top row: label */}
+        <div style={{ marginBottom: 14 }}>
           <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.14em" }}>DEAL SCREENER — IC DECISION</div>
-          <button
-            onClick={onNewDeal}
-            style={{
-              padding: "5px 14px",
-              background: "transparent",
-              border: `1px solid ${BORDER}`,
-              color: TEXT2,
-              fontFamily: MONO,
-              fontSize: 10,
-              cursor: "pointer",
-              borderRadius: 4,
-              letterSpacing: "0.06em",
-              transition: "border-color 0.15s, color 0.15s",
-            }}
-            onMouseEnter={e => { e.currentTarget.style.borderColor = ACCENT; e.currentTarget.style.color = ACCENT; }}
-            onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = TEXT2; }}
-          >+ RUN ANOTHER DEAL</button>
         </div>
         {/* Bottom row: deal info + confidence + verdict badge */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
@@ -601,15 +584,18 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
               <span style={{ color: MUTED }}>·</span>
               <span style={{ color: RED }}>{result.noCount} NO</span>
               <span style={{ color: MUTED }}>·</span>
-              <span style={{
-                background: `${confidenceColor}18`,
-                border: `1px solid ${confidenceColor}55`,
-                color: confidenceColor,
-                padding: "2px 8px",
-                borderRadius: 3,
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-              }}>CONFIDENCE: {confidenceLabel}</span>
+              <span
+                title={`${result.yesCount} YES / ${result.noCount} NO — ${Math.round(yesPct * 100)}% council agreement`}
+                style={{
+                  background: `${confidenceColor}18`,
+                  border: `1px solid ${confidenceColor}55`,
+                  color: confidenceColor,
+                  padding: "2px 8px",
+                  borderRadius: 3,
+                  fontWeight: 700,
+                  letterSpacing: "0.08em",
+                  cursor: "help",
+                }}>CONFIDENCE: {confidenceLabel}</span>
             </div>
           </div>
           <VerdictBadge verdict={result.verdict} />
@@ -1691,8 +1677,18 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
 }
 
 // ── History Table ─────────────────────────────────────────────────────────────
+type HistoryFilter = "ALL" | "APPROVED" | "CONDITIONAL" | "REJECTED";
+
 function HistoryTable({ onSelect }: { onSelect: (dealId: string) => void }) {
   const { data: history, isLoading } = trpc.dealScreener.history.useQuery();
+  const [filter, setFilter] = useState<HistoryFilter>("ALL");
+
+  const FILTER_CHIPS: { label: string; value: HistoryFilter; color: string }[] = [
+    { label: "All", value: "ALL", color: TEXT2 },
+    { label: "Approved", value: "APPROVED", color: GREEN },
+    { label: "Conditional", value: "CONDITIONAL", color: ACCENT },
+    { label: "Rejected / Vetoed", value: "REJECTED", color: RED },
+  ];
 
   const verdictColor: Record<string, string> = {
     APPROVED: GREEN,
@@ -1714,10 +1710,44 @@ function HistoryTable({ onSelect }: { onSelect: (dealId: string) => void }) {
     );
   }
 
+  const filteredHistory = history.filter((row) => {
+    if (filter === "ALL") return true;
+    if (filter === "APPROVED") return row.verdict === "APPROVED";
+    if (filter === "CONDITIONAL") return row.verdict === "APPROVED_WITH_CONDITIONS";
+    if (filter === "REJECTED") return row.verdict === "REJECTED" || row.verdict === "VETOED";
+    return true;
+  });
+
   return (
     <div>
-      <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.1em", marginBottom: 16 }}>
-        DEAL HISTORY — {history.length} screenings
+      {/* Filter chips */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
+        <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginRight: 4 }}>FILTER:</span>
+        {FILTER_CHIPS.map((chip) => {
+          const active = filter === chip.value;
+          return (
+            <button
+              key={chip.value}
+              onClick={() => setFilter(chip.value)}
+              style={{
+                padding: "3px 12px",
+                borderRadius: 3,
+                border: `1px solid ${active ? chip.color : BORDER}`,
+                background: active ? `${chip.color}18` : "transparent",
+                color: active ? chip.color : TEXT2,
+                fontFamily: MONO,
+                fontSize: 10,
+                cursor: "pointer",
+                fontWeight: active ? 700 : 400,
+                letterSpacing: "0.06em",
+                transition: "all 0.12s",
+              }}
+            >{chip.label}</button>
+          );
+        })}
+        <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginLeft: "auto" }}>
+          {filteredHistory.length} of {history.length} screenings
+        </span>
       </div>
       <div style={{ border: `1px solid ${BORDER}`, borderRadius: 8, overflow: "hidden" }}>
         {/* Header */}
