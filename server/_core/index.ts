@@ -22,6 +22,7 @@ import { socialMediaStreamRouter } from "../socialMediaStreamRoute";
 import { registerStripeWebhookRoute } from "../stripeWebhookRoute";
 import { startDripScheduler } from "../emailDrip";
 import dealScreenerUploadRouter from "../dealScreenerUploadRoute";
+import dealIngestionRouter from "../dealIngestionRoute";
 import intelligenceParseRouter from "../intelligenceParseRoute";
 import gmailOAuthRouter from "../gmailOAuthRoute";
 import { startGmailPolling } from "../gmailTracker";
@@ -71,8 +72,10 @@ async function startServer() {
   app.use("/api/admesh", admeshStreamRouter);
   // Social Media Intelligence SSE streaming endpoint
   app.use("/api/social", socialMediaStreamRouter);
-  // Deal Screener PDF upload endpoint
+  // Deal Screener PDF upload endpoint (legacy single-PDF)
   app.use("/api/deals", dealScreenerUploadRouter);
+  // Deal Data Room Ingestion V1 — multi-file upload + LLM extraction
+  app.use("/api/deals", dealIngestionRouter);
   // Intelligence Agent document parse endpoint
   app.use("/api/intelligence/parse-document", intelligenceParseRouter);
   // Gmail OAuth for Reply Tracker

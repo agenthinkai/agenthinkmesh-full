@@ -9,6 +9,7 @@ import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { isDemoMode, DEMO_DEAL_SCREENER_DATA } from "@/lib/demo";
+import DataRoomUpload, { type DataRoomResult } from "@/components/DataRoomUpload";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const BG = "#070b12";
@@ -1033,6 +1034,8 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
   const [g_extra, setGExtra] = useState("");
   const [pdfUploading, setPdfUploading] = useState(false);
   const [pdfFilename, setPdfFilename] = useState<string | null>(null);
+  // Data Room Ingestion V1 — toggle state
+  const [dataRoomMode, setDataRoomMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [touchedSubmit, setTouchedSubmit] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -1178,6 +1181,42 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
   const charCount = dealText.length;
   const isLoading = screenMutation.isPending || checkoutLoading;
   const canSubmit = guidedMode ? isGuidedReady : (dealName.trim().length > 0 && dealText.trim().length > 0);
+
+  // ── Data Room Ingestion handoff ──────────────────────────────────────────
+  const handleDataRoomReady = (result: DataRoomResult) => {
+    // Pre-fill the manual form with the reviewed extraction output
+    setDealName(result.dealName);
+    setDealText(result.dealText);
+    setGuidedMode(false); // switch to expert mode so dealText is used
+    setDataRoomMode(false);
+    // Auto-submit: set lastSubmittedTextRef and fire the mutation directly
+    lastSubmittedTextRef.current = result.dealText;
+    onSubmitStart();
+    screenMutation.mutate({ dealName: result.dealName, dealText: result.dealText, councilMode });
+  };
+
+  // If data room mode is active, render the upload/review component
+  if (dataRoomMode) {
+    return (
+      <div style={{ maxWidth: 680, margin: "0 auto" }}>
+        {/* Header */}
+        <div style={{ marginBottom: 24, textAlign: "center" }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.15em", marginBottom: 8 }}>
+            DEAL SCREENER v1.0 · COUNCIL OF 10
+          </div>
+          <h1 style={{ margin: 0, fontSize: 28, color: TEXT, fontWeight: 800, letterSpacing: "-0.02em" }}>
+            Investment Council
+          </h1>
+        </div>
+        <div style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "28px 32px" }}>
+          <DataRoomUpload
+            onReady={handleDataRoomReady}
+            onCancel={() => setDataRoomMode(false)}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ maxWidth: 680, margin: "0 auto" }}>
@@ -1361,6 +1400,29 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
               }}
             >{label}</button>
           ))}
+          {/* Data Room Ingestion V1 */}
+          <button
+            type="button"
+            onClick={() => setDataRoomMode(true)}
+            style={{
+              flex: 1,
+              padding: "8px 0",
+              background: "transparent",
+              border: `1px solid ${BORDER}`,
+              borderRadius: 4,
+              color: TEXT2,
+              fontFamily: MONO,
+              fontSize: 11,
+              cursor: "pointer",
+              fontWeight: 400,
+              letterSpacing: "0.04em",
+              transition: "all 0.15s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = ACCENT; e.currentTarget.style.color = ACCENT; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = TEXT2; }}
+          >
+            📁 Upload Data Room
+          </button>
         </div>
 
         {/* Guided form */}
