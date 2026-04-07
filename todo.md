@@ -1665,3 +1665,10 @@
 - [x] Fix Issue 2: Confirmed no new routes — single unified /deals flow, no redirects
 - [x] Ensure verdict visible and consistent across all council modes
 - [x] Fix Issue 3: Audited — Share button only copies clipboard, no navigation. Stripe redirect is intentional and restores session. No fix needed.
+
+## UX Refinements — Deal Screener (07 Apr 2026)
+
+- [x] Verdict header: color-coded border (green/red/blue by outcome)
+- [x] Verdict header: "Run Another Deal" button top-right, secondary style
+- [x] Verdict header: Confidence indicator (High/Medium/Low from vote distribution)
+- [x] History tab: verdict badge on each row (color-coded)

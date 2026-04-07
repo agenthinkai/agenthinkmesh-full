@@ -206,26 +206,25 @@ function VoteBadge({ vote }: { vote: VoteType }) {
   );
 }
 
-// ── Verdict badge ─────────────────────────────────────────────────────────────
-function VerdictBadge({ verdict }: { verdict: VerdictType }) {
+// ── Verdict badge ─────────────────────────────────────────────────────────────────────────────────
+function VerdictBadge({ verdict, compact = false }: { verdict: VerdictType; compact?: boolean }) {
   const config = {
-    APPROVED: { label: "APPROVED", bg: "rgba(0,255,135,0.12)", border: "#00ff87", color: "#00ff87", glow: "0 0 20px rgba(0,255,135,0.3)" },
-    APPROVED_WITH_CONDITIONS: { label: "APPROVED WITH CONDITIONS", bg: "rgba(74,158,255,0.12)", border: "#4a9eff", color: "#4a9eff", glow: "0 0 20px rgba(74,158,255,0.3)" },
-    REJECTED: { label: "REJECTED", bg: "rgba(255,71,87,0.12)", border: "#ff4757", color: "#ff4757", glow: "0 0 20px rgba(255,71,87,0.3)" },
-    VETOED: { label: "VETOED", bg: "rgba(255,71,87,0.18)", border: "#ff4757", color: "#ff4757", glow: "0 0 30px rgba(255,71,87,0.5)" },
+    APPROVED: { label: compact ? "APPROVED" : "APPROVED", bg: "rgba(0,255,135,0.12)", border: "#00ff87", color: "#00ff87", glow: compact ? "none" : "0 0 20px rgba(0,255,135,0.3)" },
+    APPROVED_WITH_CONDITIONS: { label: compact ? "CONDITIONAL" : "APPROVED WITH CONDITIONS", bg: "rgba(74,158,255,0.12)", border: "#4a9eff", color: "#4a9eff", glow: compact ? "none" : "0 0 20px rgba(74,158,255,0.3)" },
+    REJECTED: { label: "REJECTED", bg: "rgba(255,71,87,0.12)", border: "#ff4757", color: "#ff4757", glow: compact ? "none" : "0 0 20px rgba(255,71,87,0.3)" },
+    VETOED: { label: "VETOED", bg: "rgba(255,71,87,0.18)", border: "#ff4757", color: "#ff4757", glow: compact ? "none" : "0 0 30px rgba(255,71,87,0.5)" },
   }[verdict];
   return (
     <div style={{
       display: "inline-flex",
       alignItems: "center",
-      gap: 8,
-      padding: "10px 20px",
-      borderRadius: 4,
+      padding: compact ? "2px 8px" : "10px 20px",
+      borderRadius: compact ? 3 : 4,
       background: config.bg,
       border: `1px solid ${config.border}`,
       boxShadow: config.glow,
     }}>
-      <span style={{ fontFamily: MONO, fontSize: 18, fontWeight: 800, color: config.color, letterSpacing: "0.1em" }}>
+      <span style={{ fontFamily: MONO, fontSize: compact ? 9 : 18, fontWeight: 800, color: config.color, letterSpacing: "0.1em" }}>
         {config.label}
       </span>
     </div>
@@ -550,41 +549,74 @@ function VCSummaryBlock({ vc, decisionColor }: { vc: NonNullable<ICReportData["v
   );
 }
 
-function BoardroomICReport({ ic, result, onCopy }: { ic: ICReportData; result: CouncilResult; onCopy: (text: string) => void }) {
-  const decisionColor = ic.executiveVerdict.decision === "APPROVE" ? GREEN
-    : ic.executiveVerdict.decision === "REJECT" ? RED : AMBER;
+function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData; result: CouncilResult; onCopy: (text: string) => void; onNewDeal: () => void }) {
+  // Color derived from council verdict (not IC executive verdict) for consistency
+  const verdictColor = result.verdict === "APPROVED" ? GREEN
+    : result.verdict === "APPROVED_WITH_CONDITIONS" ? ACCENT
+    : RED; // REJECTED or VETOED
+
+  // Confidence label from vote distribution
+  const yesPct = result.yesCount / 10;
+  const confidenceLabel = yesPct >= 0.8 ? "HIGH" : yesPct >= 0.6 ? "MEDIUM" : "LOW";
+  const confidenceColor = yesPct >= 0.8 ? GREEN : yesPct >= 0.6 ? AMBER : RED;
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
       {/* ── PRIMARY VERDICT HEADER — always first, always visible ── */}
       <div style={{
-        background: `${decisionColor}0d`,
-        border: `2px solid ${decisionColor}`,
+        background: `${verdictColor}0d`,
+        border: `2px solid ${verdictColor}`,
         borderRadius: 10,
         padding: "20px 26px",
         marginBottom: 20,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        flexWrap: "wrap",
-        gap: 16,
-        boxShadow: `0 0 28px ${decisionColor}22`,
+        boxShadow: `0 0 28px ${verdictColor}22`,
       }}>
-        <div>
-          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.14em", marginBottom: 6 }}>DEAL SCREENER — IC DECISION</div>
-          <div style={{ fontSize: 20, fontWeight: 800, color: TEXT, marginBottom: 6 }}>{result.dealName}</div>
-          <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, display: "flex", gap: 12, flexWrap: "wrap" }}>
-            <span style={{ color: GREEN }}>{result.yesCount} YES</span>
-            <span style={{ color: MUTED }}>·</span>
-            <span style={{ color: RED }}>{result.noCount} NO</span>
-            <span style={{ color: MUTED }}>·</span>
-            <span>Confidence {Math.round((result.yesCount / 10) * 100)}%</span>
-          </div>
+        {/* Top row: label + Run Another Deal */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 8 }}>
+          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.14em" }}>DEAL SCREENER — IC DECISION</div>
+          <button
+            onClick={onNewDeal}
+            style={{
+              padding: "5px 14px",
+              background: "transparent",
+              border: `1px solid ${BORDER}`,
+              color: TEXT2,
+              fontFamily: MONO,
+              fontSize: 10,
+              cursor: "pointer",
+              borderRadius: 4,
+              letterSpacing: "0.06em",
+              transition: "border-color 0.15s, color 0.15s",
+            }}
+            onMouseEnter={e => { e.currentTarget.style.borderColor = ACCENT; e.currentTarget.style.color = ACCENT; }}
+            onMouseLeave={e => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = TEXT2; }}
+          >+ RUN ANOTHER DEAL</button>
         </div>
-        <VerdictBadge verdict={result.verdict} />
+        {/* Bottom row: deal info + confidence + verdict badge */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: TEXT, marginBottom: 6 }}>{result.dealName}</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
+              <span style={{ color: GREEN }}>{result.yesCount} YES</span>
+              <span style={{ color: MUTED }}>·</span>
+              <span style={{ color: RED }}>{result.noCount} NO</span>
+              <span style={{ color: MUTED }}>·</span>
+              <span style={{
+                background: `${confidenceColor}18`,
+                border: `1px solid ${confidenceColor}55`,
+                color: confidenceColor,
+                padding: "2px 8px",
+                borderRadius: 3,
+                fontWeight: 700,
+                letterSpacing: "0.08em",
+              }}>CONFIDENCE: {confidenceLabel}</span>
+            </div>
+          </div>
+          <VerdictBadge verdict={result.verdict} />
+        </div>
       </div>
       {/* VC Summary Block — shown only when vcSummary is present */}
-      {ic.vcSummary && <VCSummaryBlock vc={ic.vcSummary} decisionColor={decisionColor} />}
+      {ic.vcSummary && <VCSummaryBlock vc={ic.vcSummary} decisionColor={verdictColor} />}
 
       {/* Verification Banner */}
       <div style={{
@@ -603,11 +635,11 @@ function BoardroomICReport({ ic, result, onCopy }: { ic: ICReportData; result: C
       </div>
 
       {/* Executive Verdict */}
-      <div style={{ background: BG2, border: `1px solid ${decisionColor}44`, borderRadius: 8, padding: "20px 24px", marginBottom: 20 }}>
+      <div style={{ background: BG2, border: `1px solid ${verdictColor}44`, borderRadius: 8, padding: "20px 24px", marginBottom: 20 }}>
         <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.12em", marginBottom: 8 }}>2. EXECUTIVE VERDICT</div>
         <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 12, flexWrap: "wrap" }}>
-          <span style={{ fontFamily: MONO, fontSize: 18, fontWeight: 800, color: decisionColor }}>{ic.executiveVerdict.decision}</span>
-          <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, background: `${decisionColor}18`, padding: "4px 10px", borderRadius: 4 }}>{ic.executiveVerdict.recommendedAction}</span>
+          <span style={{ fontFamily: MONO, fontSize: 18, fontWeight: 800, color: verdictColor }}>{ic.executiveVerdict.decision}</span>
+          <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, background: `${verdictColor}18`, padding: "4px 10px", borderRadius: 4 }}>{ic.executiveVerdict.recommendedAction}</span>
         </div>
         <p style={{ margin: 0, fontSize: 13, color: TEXT, lineHeight: 1.6 }}>{ic.executiveVerdict.rationale}</p>
       </div>
@@ -906,7 +938,7 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
 
       {/* Boardroom IC Report tab */}
       {activeTab === "boardroom" && result.icReport && (
-        <BoardroomICReport ic={result.icReport} result={result} onCopy={handleCopyICReport} />
+        <BoardroomICReport ic={result.icReport} result={result} onCopy={handleCopyICReport} onNewDeal={onNewDeal} />
       )}
 
       {/* Raw Council tab */}
@@ -1717,8 +1749,8 @@ function HistoryTable({ onSelect }: { onSelect: (dealId: string) => void }) {
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
             <div style={{ fontSize: 13, color: TEXT, fontWeight: 500 }}>{row.dealName}</div>
-            <div style={{ fontFamily: MONO, fontSize: 11, color: verdictColor[row.verdict] ?? TEXT2 }}>
-              {row.verdict.replace(/_/g, " ")}
+            <div>
+              <VerdictBadge verdict={row.verdict as VerdictType} compact />
             </div>
             <div style={{ fontFamily: MONO, fontSize: 12, color: GREEN }}>{row.yesCount}</div>
             <div style={{ fontFamily: MONO, fontSize: 12, color: RED }}>{row.noCount}</div>
