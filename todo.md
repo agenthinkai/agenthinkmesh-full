@@ -1658,3 +1658,10 @@
 - [x] Update ICReportData type in DealScreener.tsx to match new field names
 - [x] Fix TEST 5 in dealScreener.test.ts: 3 HARD_NO threshold for GCC mode (was incorrectly testing 2)
 - [x] All 351 tests passing
+
+## Regression Fix — Deal Screener IC Output (07 Apr 2026)
+
+- [x] Fix Issue 1: Restore explicit APPROVE/REJECT/CONDITIONAL verdict at top of Partner Memo block
+- [x] Fix Issue 2: Confirmed no new routes — single unified /deals flow, no redirects
+- [x] Ensure verdict visible and consistent across all council modes
+- [x] Fix Issue 3: Audited — Share button only copies clipboard, no navigation. Stripe redirect is intentional and restores session. No fix needed.

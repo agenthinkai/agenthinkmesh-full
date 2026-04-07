@@ -550,12 +550,39 @@ function VCSummaryBlock({ vc, decisionColor }: { vc: NonNullable<ICReportData["v
   );
 }
 
-function BoardroomICReport({ ic, onCopy }: { ic: ICReportData; onCopy: (text: string) => void }) {
+function BoardroomICReport({ ic, result, onCopy }: { ic: ICReportData; result: CouncilResult; onCopy: (text: string) => void }) {
   const decisionColor = ic.executiveVerdict.decision === "APPROVE" ? GREEN
     : ic.executiveVerdict.decision === "REJECT" ? RED : AMBER;
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
+      {/* ── PRIMARY VERDICT HEADER — always first, always visible ── */}
+      <div style={{
+        background: `${decisionColor}0d`,
+        border: `2px solid ${decisionColor}`,
+        borderRadius: 10,
+        padding: "20px 26px",
+        marginBottom: 20,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        flexWrap: "wrap",
+        gap: 16,
+        boxShadow: `0 0 28px ${decisionColor}22`,
+      }}>
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.14em", marginBottom: 6 }}>DEAL SCREENER — IC DECISION</div>
+          <div style={{ fontSize: 20, fontWeight: 800, color: TEXT, marginBottom: 6 }}>{result.dealName}</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, display: "flex", gap: 12, flexWrap: "wrap" }}>
+            <span style={{ color: GREEN }}>{result.yesCount} YES</span>
+            <span style={{ color: MUTED }}>·</span>
+            <span style={{ color: RED }}>{result.noCount} NO</span>
+            <span style={{ color: MUTED }}>·</span>
+            <span>Confidence {Math.round((result.yesCount / 10) * 100)}%</span>
+          </div>
+        </div>
+        <VerdictBadge verdict={result.verdict} />
+      </div>
       {/* VC Summary Block — shown only when vcSummary is present */}
       {ic.vcSummary && <VCSummaryBlock vc={ic.vcSummary} decisionColor={decisionColor} />}
 
@@ -879,7 +906,7 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
 
       {/* Boardroom IC Report tab */}
       {activeTab === "boardroom" && result.icReport && (
-        <BoardroomICReport ic={result.icReport} onCopy={handleCopyICReport} />
+        <BoardroomICReport ic={result.icReport} result={result} onCopy={handleCopyICReport} />
       )}
 
       {/* Raw Council tab */}
