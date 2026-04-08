@@ -538,6 +538,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     const doc = new PDFDocument({
       size: "A4",
       autoFirstPage: true,
+      bufferPages: true,   // ← required for switchToPage to work across all pages
       margins: { top: 0, bottom: 0, left: 0, right: 0 },
       info: {
         Title: `IC Memo — ${input.dealName}`,
@@ -1583,15 +1584,15 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     // ─────────────────────────────────────────────────────────────────────────
     // FOOTER ON ALL PAGES
     // ─────────────────────────────────────────────────────────────────────────
-    // Render footer on all pages using PDFKit's internal page list
-    const totalPages = (doc as any).bufferedPageRange
-      ? (doc as any).bufferedPageRange().count
-      : ((doc as any)._pageBuffer?.length ?? _pageNum);
-    for (let i = 0; i < totalPages; i++) {
-      doc.switchToPage(i);
-      pageFooter(i + 1);
+    // With bufferPages:true, bufferedPageRange() returns { start, count }
+    // switchToPage() uses absolute indices starting from range.start
+    const range = (doc as any).bufferedPageRange() as { start: number; count: number };
+    for (let i = 0; i < range.count; i++) {
+      doc.switchToPage(range.start + i);
+      pageFooter(range.start + i + 1);
     }
 
+    doc.flushPages();  // flush all buffered pages before ending
     doc.end();
   });
 }
