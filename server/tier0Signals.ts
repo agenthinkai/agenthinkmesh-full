@@ -170,6 +170,7 @@ export interface Tier0FeedSignal {
   description: string;
   confidence: "High" | "Medium";
   scoreBoost: number;
+  dealMemo: string; // 120-180 word pre-generated context memo for RUN IC
 }
 
 export const TIER0_FEED: Tier0FeedSignal[] = [
@@ -183,6 +184,19 @@ export const TIER0_FEED: Tier0FeedSignal[] = [
     description: "Stanford StartX cohort. AI-driven clinical decision support for GCC hospitals. 3 co-founders, seed-stage.",
     confidence: "High",
     scoreBoost: 50,
+    dealMemo: `Deal: Luminary Health AI — Pre-Seed / Seed
+
+Sector: Digital Health / Clinical AI
+Geography: GCC (Saudi Arabia, UAE primary)
+Stage: Seed
+
+Business: AI-driven clinical decision support platform for hospital systems in the GCC. The system surfaces diagnostic recommendations and flags high-risk patient pathways in real time, integrating with existing EMR infrastructure.
+
+Team: 3 co-founders from Stanford School of Medicine and CS departments. Validated through Stanford StartX accelerator cohort — one of the most selective university programmes globally (~5% acceptance rate).
+
+Why Interesting: GCC healthcare is undergoing a $50B+ digitisation push. Clinical AI adoption is early-stage in the region, and regulatory frameworks are still forming — a window for first-mover positioning.
+
+What Is Unknown: No public ARR or customer count disclosed. Regulatory approval pathway in Saudi Arabia and UAE unclear. Dependency on hospital IT procurement cycles, which are long and unpredictable.`,
   },
   {
     id: "t0-002",
@@ -194,6 +208,19 @@ export const TIER0_FEED: Tier0FeedSignal[] = [
     description: "NSF SBIR Phase I awardee. Smart grid energy optimisation for emerging markets. MIT spinout.",
     confidence: "High",
     scoreBoost: 50,
+    dealMemo: `Deal: GridFlow Systems — Seed
+
+Sector: Energy Tech / Smart Grid
+Geography: US (R&D) + Emerging Markets (deployment target)
+Stage: Seed
+
+Business: Software-defined smart grid optimisation platform for electricity distribution networks in emerging markets. Uses ML to reduce transmission losses and balance load in real time without requiring full grid hardware upgrades.
+
+Team: MIT spinout. NSF SBIR Phase I awardee — a non-dilutive grant requiring rigorous technical and commercial validation by the National Science Foundation. Indicates credible IP and a defensible technology foundation.
+
+Why Interesting: Energy infrastructure in GCC and MENA is ageing. Governments are investing heavily in grid modernisation. A software-first approach reduces capex barriers for utilities.
+
+What Is Unknown: No disclosed revenue or pilot customers. Path from US R&D to GCC deployment requires local partnerships and regulatory navigation. Hardware-agnostic claims need validation at scale.`,
   },
   {
     id: "t0-003",
@@ -205,6 +232,19 @@ export const TIER0_FEED: Tier0FeedSignal[] = [
     description: "MIT delta v cohort. Arabic-first LLM for legal and financial document processing. GCC-focused.",
     confidence: "High",
     scoreBoost: 50,
+    dealMemo: `Deal: Arabi NLP — Pre-Seed
+
+Sector: B2B AI / Arabic NLP
+Geography: GCC (Kuwait, Saudi Arabia, UAE)
+Stage: Pre-Seed / Emerging
+
+Business: Arabic-first large language model fine-tuned for legal and financial document processing. Targets law firms, banks, and government entities in the GCC that process large volumes of Arabic-language contracts, regulatory filings, and compliance documents.
+
+Team: MIT delta v cohort — MIT's flagship accelerator for student and alumni ventures. Indicates strong technical foundation and access to MIT's research and network resources.
+
+Why Interesting: Arabic NLP is significantly underserved relative to English. GCC enterprises have a structural need for Arabic-language AI that understands legal and financial terminology, dialects, and regulatory context.
+
+What Is Unknown: Team composition and prior exits not disclosed. No ARR or pilot customers confirmed. Competition from larger Arabic LLM efforts (e.g., SDAIA, G42) is a real risk. Differentiation on fine-tuning vs. general models needs validation.`,
   },
   {
     id: "t0-004",
@@ -216,6 +256,19 @@ export const TIER0_FEED: Tier0FeedSignal[] = [
     description: "Devpost Global Hackathon winner. Blockchain-based supply chain provenance for F&B sector.",
     confidence: "Medium",
     scoreBoost: 30,
+    dealMemo: `Deal: SupplyTrace — Pre-Seed
+
+Sector: Supply Chain Tech / Blockchain
+Geography: Not disclosed
+Stage: Pre-Seed / Idea Stage
+
+Business: Blockchain-based provenance and traceability platform for the food and beverage supply chain. Enables retailers and distributors to verify origin, handling, and certification of products from farm to shelf.
+
+Team: Devpost Global Hackathon winner. Indicates strong execution under pressure and validated technical concept, but hackathon origin means the team is likely still forming and the product is prototype-stage.
+
+Why Interesting: F&B supply chain fraud and mislabelling is a significant problem in GCC import markets. Halal certification traceability is a specific high-value use case with regulatory tailwinds.
+
+What Is Unknown: No team background disclosed. Product is prototype-stage — no production deployments confirmed. Blockchain-based supply chain is a crowded space with many failed attempts. Adoption by large F&B distributors requires significant enterprise sales effort.`,
   },
   {
     id: "t0-005",
@@ -227,5 +280,18 @@ export const TIER0_FEED: Tier0FeedSignal[] = [
     description: "Harvard iLab fellowship. Carbon credit tokenisation platform targeting GCC sovereign funds.",
     confidence: "High",
     scoreBoost: 50,
+    dealMemo: `Deal: CarbonLedger — Seed
+
+Sector: Climate Tech / Carbon Markets
+Geography: US (HQ) + GCC (target market)
+Stage: Seed
+
+Business: Carbon credit tokenisation platform that converts verified carbon offsets into on-chain digital assets, enabling institutional investors and sovereign funds to trade, retire, and report carbon credits with full auditability.
+
+Team: Harvard iLab fellowship recipient. Harvard's innovation lab is highly selective and provides access to Harvard Business School mentors, legal resources, and investor networks.
+
+Why Interesting: GCC sovereign funds (PIF, ADIA, QIA) have made public net-zero commitments and are actively seeking credible carbon offset instruments. Tokenisation adds transparency and liquidity to an opaque market.
+
+What Is Unknown: Regulatory status of tokenised carbon credits in GCC jurisdictions is unclear. No disclosed AUM or trading volume. Competition from established carbon registries (Verra, Gold Standard) entering digital formats is a risk. Sovereign fund sales cycles are long.`,
   },
 ];

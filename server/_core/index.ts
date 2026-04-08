@@ -26,6 +26,7 @@ import dealIngestionRouter from "../dealIngestionRoute";
 import intelligenceParseRouter from "../intelligenceParseRoute";
 import gmailOAuthRouter from "../gmailOAuthRoute";
 import { startGmailPolling } from "../gmailTracker";
+import { runTier0Ingestion } from "../tier0Ingestion";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -152,6 +153,12 @@ async function startServer() {
     startCriticAgentJob();
     // Email Reply Tracker: poll Gmail every 30 minutes
     startGmailPolling();
+    // Tier 0 University Signal ingestion — run once at startup, then daily at 02:00 KWT (23:00 UTC)
+    runTier0Ingestion().catch(err => console.warn("[Tier0] Initial ingestion failed:", err?.message));
+    const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
+    setInterval(() => {
+      runTier0Ingestion().catch(err => console.warn("[Tier0] Daily ingestion failed:", err?.message));
+    }, TWENTY_FOUR_HOURS);
   });
 }
 

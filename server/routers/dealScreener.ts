@@ -16,6 +16,7 @@ import { generateICMemoPdf, type ICMemoInput } from "../icMemoPdf";
 import { runComparison } from "../comparisonEngine";
 import { generateSingleDealICReport, generateComparisonICReport } from "../icReportEngine";
 import { detectTier0Signal, TIER0_FEED } from "../tier0Signals";
+import { getSurfacedSignals } from "../tier0Ingestion";
 import { randomUUID } from "crypto";
 
 // ── Owner whitelist — these users always bypass payment and rate limits ────────
@@ -631,7 +632,14 @@ export const dealScreenerRouter = router({
    * Tier 0 University Signal Feed — Phase 2 (controlled release)
    * Returns up to 5 high-confidence early-stage signals for discovery.
    */
-  tier0Feed: protectedProcedure.query(() => {
+  tier0Feed: protectedProcedure.query(async () => {
+    // Try live DB signals first; fall back to static curated feed if DB is empty
+    try {
+      const dbSignals = await getSurfacedSignals();
+      if (dbSignals.length > 0) return dbSignals;
+    } catch (err) {
+      console.warn("[Tier0] DB feed unavailable, using static fallback:", err instanceof Error ? err.message : String(err));
+    }
     return TIER0_FEED.slice(0, 5);
   }),
 });

@@ -1692,3 +1692,12 @@
 - [x] Add SIGNALS nav tab (same page, new view state)
 - [x] Server: tier0Feed endpoint returning max 5 high-confidence signals
 - [x] UI: company name, signal type, short description, RUN IC button with pre-fill
+
+## Tier 0 Signal Quality Enhancements (08 Apr 2026)
+
+- [x] Add generated dealMemo (120-180 words) to each static Tier 0 signal in tier0Signals.ts
+- [x] Create tier0_signals DB table (schema + direct SQL creation)
+- [x] Build tier0Ingestion.ts: NSF SBIR API + Devpost RSS ingestion with noise filter
+- [x] Add daily cron job for signal ingestion (startup + every 24h)
+- [x] Wire Signals feed tab to DB (replace static TIER0_FEED with live DB query + static fallback)
+- [x] Tier 0 ingestion verified — 396 tests passing, 0 TypeScript errors

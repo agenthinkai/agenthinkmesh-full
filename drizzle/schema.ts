@@ -1,5 +1,29 @@
 import { bigint, boolean, decimal, index, int, longtext, mysqlEnum, mysqlTable, text, tinyint, timestamp, varchar } from "drizzle-orm/mysql-core";
 
+// ── Tier 0 University Signals ─────────────────────────────────────────────────
+export const tier0Signals = mysqlTable("tier0_signals", {
+  id: varchar("id", { length: 64 }).primaryKey(), // e.g. "nsf-2024-001"
+  companyName: varchar("companyName", { length: 255 }).notNull(),
+  source: varchar("source", { length: 100 }).notNull(),         // "NSF SBIR", "Devpost"
+  subtype: mysqlEnum("subtype", ["Accelerator", "Grant", "Hackathon", "Research"]).notNull(),
+  tier: mysqlEnum("tier", ["0A", "0B"]).notNull(),
+  classification: mysqlEnum("classification", ["Startup", "Emerging", "Project"]).notNull(),
+  description: text("description").notNull(),
+  dealMemo: text("dealMemo").notNull(),
+  confidence: mysqlEnum("confidence", ["High", "Medium"]).notNull(),
+  scoreBoost: int("scoreBoost").notNull().default(30),
+  externalUrl: varchar("externalUrl", { length: 512 }),          // link to original source
+  surfaced: boolean("surfaced").notNull().default(false),        // shown in feed
+  ingestedAt: timestamp("ingestedAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  t0SourceIdx: index("t0_source_idx").on(table.source),
+  t0TierIdx: index("t0_tier_idx").on(table.tier),
+  t0SurfacedIdx: index("t0_surfaced_idx").on(table.surfaced),
+}));
+export type Tier0Signal = typeof tier0Signals.$inferSelect;
+export type InsertTier0Signal = typeof tier0Signals.$inferInsert;
+
 // ── V2.2 Transactions (FX-aware billing) ─────────────────────────────────────
 export const transactions = mysqlTable("transactions", {
   id: int("id").autoincrement().primaryKey(),
