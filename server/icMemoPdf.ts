@@ -547,9 +547,11 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       },
     });
 
-    // White background on every new page
+    // White background + header on every new page
+    // _pageNum is incremented by the caller (ensureSpace / newSectionPage)
     doc.on("pageAdded", () => {
       doc.rect(0, 0, A4_W, A4_H).fill(BG);
+      // pageHeader will be called by the caller after incrementing _pageNum
     });
 
     const chunks: Buffer[] = [];
@@ -561,9 +563,11 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
 
     /** Ensure at least `needed` pts remain on page; add page if not */
     function ensureSpace(needed: number) {
-      if (doc.y + needed > A4_H - 56) {
+      if (doc.y + needed > A4_H - 60) {
         doc.addPage();
-        doc.y = MT;
+        _pageNum++;
+        pageHeader();  // draw header on the new continuation page
+        doc.y = MT + 8;
       }
     }
 
@@ -774,15 +778,16 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       const colW = (BODY_W - labelW) / numCols;
 
       ensureSpace(28);
-      // Corner + headers
-      doc.rect(ML, doc.y, BODY_W, 18).fill(BG3);
+      // Corner + headers — save hdrY so all headers render on the same line
+      const stHdrY = doc.y;
+      doc.rect(ML, stHdrY, BODY_W, 18).fill(BG3);
       doc.fontSize(6.5).fillColor(MUTED).font("Helvetica-Bold")
-        .text(`${rowLabel} ↓ / ${colLabel} →`, ML + 3, doc.y + 5, { width: labelW - 4 });
+        .text(`${rowLabel} / ${colLabel}`, ML + 3, stHdrY + 5, { width: labelW - 4, lineBreak: false });
       colHeaders.forEach((h, i) => {
         doc.fontSize(7.5).fillColor(ACCENT).font("Helvetica-Bold")
-          .text(h, ML + labelW + i * colW + 2, doc.y + 5, { width: colW - 4, align: "center" });
+          .text(h, ML + labelW + i * colW + 2, stHdrY + 5, { width: colW - 4, align: "center", lineBreak: false });
       });
-      doc.y += 20;
+      doc.y = stHdrY + 20;
 
       rows.forEach((row) => {
         ensureSpace(16);
@@ -835,16 +840,12 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       doc.y = rowY + rowH + 1;  // ← advance once per row
     }
 
-    /** Start a new section page with header — only adds page if needed */
+    /** Start a new section page with header — always starts on a fresh page */
     function newSectionPage(sectionLabel: string) {
-      // Only force a new page if we're past 40% of the page
-      if (doc.y > MT + 120) {
-        doc.addPage();
-        _pageNum++;
-        doc.y = MT;
-      }
+      doc.addPage();
+      _pageNum++;
       pageHeader(sectionLabel);
-      doc.y = Math.max(doc.y, MT) + 8;
+      doc.y = MT + 8;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -1582,9 +1583,12 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     // ─────────────────────────────────────────────────────────────────────────
     // FOOTER ON ALL PAGES
     // ─────────────────────────────────────────────────────────────────────────
-    const totalPages = (doc as any)._pageBuffer?.length ?? 1;
+    // Render footer on all pages using PDFKit's internal page list
+    const totalPages = (doc as any).bufferedPageRange
+      ? (doc as any).bufferedPageRange().count
+      : ((doc as any)._pageBuffer?.length ?? _pageNum);
     for (let i = 0; i < totalPages; i++) {
-      if (i > 0) doc.switchToPage(i);
+      doc.switchToPage(i);
       pageFooter(i + 1);
     }
 
