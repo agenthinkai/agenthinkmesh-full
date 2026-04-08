@@ -1113,14 +1113,15 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
 
       (it.pillars ?? []).forEach((p, i) => {
         ensureSpace(56);
-        // Pillar header card
-        doc.rect(ML, doc.y, BODY_W, 20).fill(BG3);
-        doc.rect(ML, doc.y, 3, 20).fill(GREEN);
+        // Pillar header card — label and title on the SAME row
+        const pillarY = doc.y;
+        doc.rect(ML, pillarY, BODY_W, 20).fill(BG3);
+        doc.rect(ML, pillarY, 3, 20).fill(GREEN);
         doc.fontSize(7).fillColor(MUTED).font("Helvetica-Bold")
-          .text(`PILLAR ${i + 1}`, ML + 10, doc.y + 4, { characterSpacing: 0.6 });
+          .text(`PILLAR ${i + 1}`, ML + 10, pillarY + 7, { width: 50, lineBreak: false, characterSpacing: 0.6 });
         doc.fontSize(10.5).fillColor(TEXT).font("Helvetica-Bold")
-          .text(p.title ?? "", ML + 60, doc.y + 4);
-        doc.y += 26;
+          .text(p.title ?? "", ML + 62, pillarY + 5, { width: BODY_W - 70, lineBreak: false });
+        doc.y = pillarY + 26;
         bodyText(p.narrative ?? "");
         if (p.supportingData) {
           // Strip any stray %¶ or unicode arrow artifacts from LLM output
@@ -1274,17 +1275,21 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       subHeading("EBITDA Bridge (Entry → Exit)");
       if (fm.ebitdaBridge?.length) {
         fm.ebitdaBridge.forEach((b) => {
-          ensureSpace(16);
+          ensureSpace(18);
           const isTotal = /exit|entry/i.test(b.item);
-          if (isTotal) doc.rect(ML, doc.y, BODY_W, 15).fill(BG3);
+          const bridgeRowY = doc.y;  // capture y before any text call
+          if (isTotal) doc.rect(ML, bridgeRowY, BODY_W, 16).fill(BG3);
+          // Col 1: item label
           doc.fontSize(9).fillColor(isTotal ? GOLD : TEXT2)
             .font(isTotal ? "Helvetica-Bold" : "Helvetica")
-            .text(b.item, ML + 8, doc.y + 3, { width: 200 });
+            .text(b.item, ML + 8, bridgeRowY + 3, { width: 200, lineBreak: false });
+          // Col 2: amount — same row y
           doc.fontSize(9).fillColor(isTotal ? GOLD : ACCENT).font("Helvetica-Bold")
-            .text(b.amount, ML + 215, doc.y + 3, { width: 80, align: "right" });
+            .text(b.amount, ML + 215, bridgeRowY + 3, { width: 80, align: "right", lineBreak: false });
+          // Col 3: notes — same row y
           doc.fontSize(8).fillColor(MUTED).font("Helvetica")
-            .text(b.notes, ML + 305, doc.y + 3, { width: BODY_W - 305 });
-          doc.y += 16;
+            .text(b.notes, ML + 305, bridgeRowY + 3, { width: BODY_W - 310, lineBreak: false });
+          doc.y = bridgeRowY + 17;  // advance once per row
         });
         doc.y += 8;
       }
@@ -1328,17 +1333,19 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       const catW = 80; const riskW = 155; const lhW = 55; const impW = 55;
       const mitW = BODY_W - catW - riskW - lhW - impW;
       doc.rect(ML, doc.y, BODY_W, 18).fill(BG3);
+      // Risk matrix header — all columns on same row
+      const riskHdrY = doc.y;
       doc.fontSize(7.5).fillColor(RED).font("Helvetica-Bold")
-        .text("CATEGORY", ML + 4, doc.y + 5, { width: catW - 8 });
+        .text("CATEGORY", ML + 4, riskHdrY + 5, { width: catW - 8, lineBreak: false });
       doc.fontSize(7.5).fillColor(RED).font("Helvetica-Bold")
-        .text("RISK", ML + catW + 4, doc.y + 5, { width: riskW - 8 });
+        .text("RISK", ML + catW + 4, riskHdrY + 5, { width: riskW - 8, lineBreak: false });
       doc.fontSize(7.5).fillColor(RED).font("Helvetica-Bold")
-        .text("LIKELIHOOD", ML + catW + riskW + 4, doc.y + 5, { width: lhW - 8, align: "center" });
+        .text("LIKELIHOOD", ML + catW + riskW + 4, riskHdrY + 5, { width: lhW - 8, align: "center", lineBreak: false });
       doc.fontSize(7.5).fillColor(RED).font("Helvetica-Bold")
-        .text("IMPACT", ML + catW + riskW + lhW + 4, doc.y + 5, { width: impW - 8, align: "center" });
+        .text("IMPACT", ML + catW + riskW + lhW + 4, riskHdrY + 5, { width: impW - 8, align: "center", lineBreak: false });
       doc.fontSize(7.5).fillColor(RED).font("Helvetica-Bold")
-        .text("MITIGANT", ML + catW + riskW + lhW + impW + 4, doc.y + 5, { width: mitW - 8 });
-      doc.y += 20;
+        .text("MITIGANT", ML + catW + riskW + lhW + impW + 4, riskHdrY + 5, { width: mitW - 8, lineBreak: false });
+      doc.y = riskHdrY + 20;
       (ra.riskMatrix ?? []).forEach((row, i) => riskRow(row, i));
     }
 
@@ -1557,25 +1564,34 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
         doc.y += 6;
       }
       if (v.keyFlags.length) {
+        const flagLabel = "FLAGS  ";
+        doc.fontSize(7.5).font("Helvetica-Bold");
+        const flagLabelW = doc.widthOfString(flagLabel) + 4;
         doc.fontSize(7.5).fillColor(AMBER).font("Helvetica-Bold")
-          .text("FLAGS  ", ML + 12, doc.y, { continued: true });
+          .text(flagLabel, ML + 12, doc.y, { lineBreak: false });
         doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
-          .text(v.keyFlags.join("  ·  "), { width: BODY_W - 60, continued: false });
-        doc.y += 6;
+          .text(v.keyFlags.join("  ·  "), ML + 12 + flagLabelW, doc.y, { width: BODY_W - 24 - flagLabelW, lineBreak: false });
+        doc.y += 14;
       }
       if (v.conditions.length) {
+        const condLabel = "CONDITIONS  ";
+        doc.fontSize(7.5).font("Helvetica-Bold");
+        const condLabelW = doc.widthOfString(condLabel) + 4;
         doc.fontSize(7.5).fillColor(ACCENT).font("Helvetica-Bold")
-          .text("CONDITIONS  ", ML + 12, doc.y, { continued: true });
+          .text(condLabel, ML + 12, doc.y, { lineBreak: false });
         doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
-          .text(v.conditions.slice(0, 3).join("  ·  "), { width: BODY_W - 80, continued: false });
-        doc.y += 6;
+          .text(v.conditions.slice(0, 3).join("  ·  "), ML + 12 + condLabelW, doc.y, { width: BODY_W - 24 - condLabelW, lineBreak: false });
+        doc.y += 14;
       }
       if (v.blockers.length) {
+        const blockLabel = "BLOCKERS  ";
+        doc.fontSize(7.5).font("Helvetica-Bold");
+        const blockLabelW = doc.widthOfString(blockLabel) + 4;
         doc.fontSize(7.5).fillColor(RED).font("Helvetica-Bold")
-          .text("BLOCKERS  ", ML + 12, doc.y, { continued: true });
+          .text(blockLabel, ML + 12, doc.y, { lineBreak: false });
         doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
-          .text(v.blockers.slice(0, 3).join("  ·  "), { width: BODY_W - 70, continued: false });
-        doc.y += 6;
+          .text(v.blockers.slice(0, 3).join("  ·  "), ML + 12 + blockLabelW, doc.y, { width: BODY_W - 24 - blockLabelW, lineBreak: false });
+        doc.y += 14;
       }
       doc.rect(ML, doc.y + 3, BODY_W, 0.5).fill(BORDER_C);
       doc.y += 12;
