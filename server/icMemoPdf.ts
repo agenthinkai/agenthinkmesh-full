@@ -379,6 +379,109 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       doc.y += 10;
     }
 
+    // ── Council Vote Cards (all 10 personas) ────────────────────────────────
+    doc.addPage();
+    doc.y = 60;
+
+    // Section divider header
+    doc.rect(ML, doc.y, BODY_W, 28).fill(BG2);
+    doc.fontSize(11).fillColor(ACCENT).font("Helvetica-Bold")
+      .text("COUNCIL OF 10 — INDIVIDUAL VOTES", ML + 12, doc.y + 8, { characterSpacing: 1.2 });
+    doc.y += 38;
+
+    const voteColorMap: Record<string, string> = {
+      HARD_YES: GREEN,
+      SOFT_YES: ACCENT,
+      SOFT_NO:  AMBER,
+      HARD_NO:  RED,
+    };
+    const voteLabelMap: Record<string, string> = {
+      HARD_YES: "HARD YES",
+      SOFT_YES: "SOFT YES",
+      SOFT_NO:  "SOFT NO",
+      HARD_NO:  "HARD NO",
+    };
+
+    input.votes.forEach((v, idx) => {
+      const vColor = voteColorMap[v.vote] ?? WHITE;
+      const vLabel = voteLabelMap[v.vote] ?? v.vote;
+      const confPct = Math.round(v.confidence * 100);
+
+      // Estimate card height: header(28) + rationale(~40) + flags/conditions/blockers
+      const flagLines   = v.keyFlags.length   ? Math.ceil(v.keyFlags.join(" · ").length / 80) + 1 : 0;
+      const condLines   = v.conditions.length ? Math.ceil(v.conditions.slice(0, 3).join(" · ").length / 80) + 1 : 0;
+      const blockLines  = v.blockers.length   ? Math.ceil(v.blockers.slice(0, 3).join(" · ").length / 80) + 1 : 0;
+      const estHeight   = 28 + 14 + Math.ceil(v.rationale.length / 90) * 13 + (flagLines + condLines + blockLines) * 14 + 20;
+      ensureSpace(estHeight);
+
+      // Card background
+      const cardY = doc.y;
+      doc.rect(ML, cardY, BODY_W, 24).fill(BG3);
+
+      // Persona number + role
+      doc.fontSize(8).fillColor(MUTED).font("Helvetica-Bold")
+        .text(`${String(idx + 1).padStart(2, "0")}`, ML + 8, cardY + 7, { continued: false });
+      doc.fontSize(9.5).fillColor(WHITE).font("Helvetica-Bold")
+        .text(v.personaRole, ML + 26, cardY + 6, { width: BODY_W - 130, continued: false });
+
+      // Vote badge (right-aligned)
+      const badgeW = 72;
+      doc.rect(ML + BODY_W - badgeW - 4, cardY + 4, badgeW, 16)
+        .fillAndStroke(`${vColor}18`, `${vColor}55`);
+      doc.fontSize(8).fillColor(vColor).font("Helvetica-Bold")
+        .text(vLabel, ML + BODY_W - badgeW - 4, cardY + 8, { width: badgeW, align: "center" });
+
+      // Confidence bar
+      const barX  = ML + BODY_W - badgeW - 90;
+      const barW  = 70;
+      const barH  = 5;
+      const barY  = cardY + 10;
+      doc.rect(barX, barY, barW, barH).fill(BG2);
+      doc.rect(barX, barY, barW * (v.confidence), barH).fill(vColor);
+      doc.fontSize(7).fillColor(MUTED).font("Helvetica")
+        .text(`${confPct}%`, barX + barW + 4, barY - 1);
+
+      doc.y = cardY + 28;
+
+      // Rationale
+      if (v.rationale) {
+        doc.fontSize(9).fillColor("#94A3B8").font("Helvetica")
+          .text(v.rationale, ML + 12, doc.y, { width: BODY_W - 24, lineGap: 2 });
+        doc.y += 8;
+      }
+
+      // Key flags
+      if (v.keyFlags.length) {
+        doc.fontSize(7.5).fillColor(AMBER).font("Helvetica-Bold")
+          .text("FLAGS  ", ML + 12, doc.y, { continued: true });
+        doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
+          .text(v.keyFlags.join("  ·  "), { width: BODY_W - 60, continued: false });
+        doc.y += 6;
+      }
+
+      // Conditions
+      if (v.conditions.length) {
+        doc.fontSize(7.5).fillColor(ACCENT).font("Helvetica-Bold")
+          .text("CONDITIONS  ", ML + 12, doc.y, { continued: true });
+        doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
+          .text(v.conditions.slice(0, 3).join("  ·  "), { width: BODY_W - 80, continued: false });
+        doc.y += 6;
+      }
+
+      // Blockers
+      if (v.blockers.length) {
+        doc.fontSize(7.5).fillColor(RED).font("Helvetica-Bold")
+          .text("BLOCKERS  ", ML + 12, doc.y, { continued: true });
+        doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
+          .text(v.blockers.slice(0, 3).join("  ·  "), { width: BODY_W - 70, continued: false });
+        doc.y += 6;
+      }
+
+      // Bottom separator
+      doc.rect(ML, doc.y + 4, BODY_W, 0.5).fill(BORDER_C);
+      doc.y += 14;
+    });
+
     // ── Footer on all pages ───────────────────────────────────────────────────
     const totalPages = (doc as any)._pageBuffer?.length ?? 1;
     for (let i = 0; i < totalPages; i++) {
