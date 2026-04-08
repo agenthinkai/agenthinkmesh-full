@@ -1679,3 +1679,16 @@
 - [x] History filter chips: All | Approved | Conditional | Rejected/Vetoed (client-side)
 - [x] Remove redundant "+ RUN ANOTHER DEAL" button from verdict header (duplicate of NEW DEAL nav button)
 - [x] Fix corrupted lines in DealScreener.tsx (boundary artifacts from previous edits)
+
+## Tier 0 University Signal Layer (08 Apr 2026)
+
+### Phase 1 — Enrichment
+- [x] Create server/tier0Signals.ts: keyword matching against Tier 0A/0B sources with scoring
+- [x] Integrate tier0 check into dealScreener router — run after memo ingestion, before council
+- [x] Add universitySignal field to CouncilResult type (runtime-only, no DB schema change needed)
+- [x] Display University Signal badge in IC report (subtype + confidence)
+
+### Phase 2 — Signals Feed Tab
+- [x] Add SIGNALS nav tab (same page, new view state)
+- [x] Server: tier0Feed endpoint returning max 5 high-confidence signals
+- [x] UI: company name, signal type, short description, RUN IC button with pre-fill

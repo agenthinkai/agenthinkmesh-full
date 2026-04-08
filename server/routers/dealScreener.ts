@@ -15,6 +15,7 @@ import { generateCfoDeepDivePdf, type CouncilSummaryInput } from "../cfoDeepDive
 import { generateICMemoPdf, type ICMemoInput } from "../icMemoPdf";
 import { runComparison } from "../comparisonEngine";
 import { generateSingleDealICReport, generateComparisonICReport } from "../icReportEngine";
+import { detectTier0Signal, TIER0_FEED } from "../tier0Signals";
 import { randomUUID } from "crypto";
 
 // ── Owner whitelist — these users always bypass payment and rate limits ────────
@@ -147,7 +148,8 @@ export const dealScreenerRouter = router({
         });
         let ownerIcReport = null;
         try { ownerIcReport = await generateSingleDealICReport(input.dealName, input.dealText, ownerResult); } catch {}
-        return { dealId: ownerDealId, dealName: input.dealName, ...ownerResult, icReport: ownerIcReport };
+        const ownerTier0 = detectTier0Signal(input.dealText, input.dealName);
+        return { dealId: ownerDealId, dealName: input.dealName, ...ownerResult, icReport: ownerIcReport, universitySignal: ownerTier0 };
       }
 
       // Rate limit check (plan-based daily limit)
@@ -257,11 +259,20 @@ export const dealScreenerRouter = router({
         console.error("[ICReport] Failed to generate IC report:", err);
       }
 
+      // Detect Tier 0 university signal (non-fatal, additive)
+      let universitySignal = null;
+      try {
+        universitySignal = detectTier0Signal(input.dealText, input.dealName);
+      } catch (err) {
+        console.error("[Tier0] Signal detection failed:", err);
+      }
+
       return {
         dealId,
         dealName: input.dealName,
         ...result,
         icReport,
+        universitySignal,
       };
     }),
 
@@ -614,5 +625,13 @@ export const dealScreenerRouter = router({
     const tomorrow = new Date(windowStart);
     tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
     return { remaining, limit, plan: planLabel, resetAt: tomorrow };
+  }),
+
+  /**
+   * Tier 0 University Signal Feed — Phase 2 (controlled release)
+   * Returns up to 5 high-confidence early-stage signals for discovery.
+   */
+  tier0Feed: protectedProcedure.query(() => {
+    return TIER0_FEED.slice(0, 5);
   }),
 });

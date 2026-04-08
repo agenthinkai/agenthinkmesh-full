@@ -62,6 +62,18 @@ interface CouncilResult {
   blockingIssues: string[];
   votes: PersonaVote[];
   icReport?: ICReportData | null;
+  universitySignal?: UniversitySignal | null;
+}
+
+// ── Tier 0 University Signal type ───────────────────────────────────────────────────────────────
+interface UniversitySignal {
+  tier: "0A" | "0B";
+  source: string;
+  subtype: "Accelerator" | "Grant" | "Hackathon" | "Research";
+  classification: "Startup" | "Emerging" | "Project";
+  confidence: "High" | "Medium";
+  scoreBoost: number;
+  matchedKeywords: string[];
 }
 
 // ── IC Report types (mirrors server icReportEngine.ts) ────────────────────────
@@ -601,6 +613,56 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
           <VerdictBadge verdict={result.verdict} />
         </div>
       </div>
+      {/* University Signal Badge — shown only when a Tier 0 signal was detected */}
+      {result.universitySignal && (
+        <div style={{
+          background: "rgba(74,158,255,0.08)",
+          border: "1px solid rgba(74,158,255,0.4)",
+          borderRadius: 8,
+          padding: "12px 20px",
+          marginBottom: 16,
+          display: "flex",
+          alignItems: "center",
+          gap: 14,
+          flexWrap: "wrap",
+        }}>
+          <span style={{ fontSize: 18 }}>🎓</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: "#4a9eff", fontWeight: 700, letterSpacing: "0.12em", marginBottom: 3 }}>
+              UNIVERSITY SIGNAL DETECTED
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2 }}>
+              <span style={{ color: TEXT }}>{result.universitySignal.source}</span>
+              {" "}&mdash;{" "}
+              <span style={{ color: "#4a9eff" }}>{result.universitySignal.subtype}</span>
+              {" · "}
+              <span>{result.universitySignal.classification}</span>
+            </div>
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+            <span style={{
+              fontFamily: MONO, fontSize: 10, fontWeight: 700,
+              background: result.universitySignal.tier === "0A" ? "rgba(0,255,135,0.12)" : "rgba(255,159,67,0.12)",
+              border: `1px solid ${result.universitySignal.tier === "0A" ? "rgba(0,255,135,0.4)" : "rgba(255,159,67,0.4)"}`,
+              color: result.universitySignal.tier === "0A" ? GREEN : AMBER,
+              padding: "3px 10px", borderRadius: 3, letterSpacing: "0.08em",
+            }}>TIER {result.universitySignal.tier}</span>
+            <span style={{
+              fontFamily: MONO, fontSize: 10,
+              background: "rgba(74,158,255,0.1)",
+              border: "1px solid rgba(74,158,255,0.3)",
+              color: "#4a9eff",
+              padding: "3px 10px", borderRadius: 3, letterSpacing: "0.08em",
+            }}>+{result.universitySignal.scoreBoost} PTS</span>
+            <span style={{
+              fontFamily: MONO, fontSize: 10,
+              color: result.universitySignal.confidence === "High" ? GREEN : AMBER,
+              letterSpacing: "0.06em",
+            }}>{result.universitySignal.confidence.toUpperCase()} CONFIDENCE</span>
+          </div>
+        </div>
+      )}
+
       {/* VC Summary Block — shown only when vcSummary is present */}
       {ic.vcSummary && <VCSummaryBlock vc={ic.vcSummary} decisionColor={verdictColor} />}
 
@@ -1157,6 +1219,17 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
       if (savedText) setDealText(savedText);
     }
   }, [pendingPaymentSessionId]);
+
+  // Listen for Tier 0 signal pre-fill events from the Signals feed
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const { dealName: name, dealText: text } = (e as CustomEvent).detail;
+      if (name) setDealName(name);
+      if (text) setDealText(text);
+    };
+    window.addEventListener("tier0:prefill", handler);
+    return () => window.removeEventListener("tier0:prefill", handler);
+  }, []);
 
   const handlePdfUpload = async (file: File) => {
     if (file.size > 5 * 1024 * 1024) {
@@ -1797,8 +1870,103 @@ function HistoryTable({ onSelect }: { onSelect: (dealId: string) => void }) {
   );
 }
 
-// ── Main DealScreener page ────────────────────────────────────────────────────
-type View = "input" | "loading" | "report" | "history";
+// ── // ── Tier 0 Signal Feed (Phase 2) ───────────────────────────────────────────────────────────────
+function Tier0Feed({ onRunIC }: { onRunIC: (dealName: string, dealText: string) => void }) {
+  const { data: signals, isLoading } = trpc.dealScreener.tier0Feed.useQuery();
+
+  if (isLoading) {
+    return <div style={{ fontFamily: MONO, fontSize: 12, color: MUTED, textAlign: "center", padding: 40 }}>Loading signals...</div>;
+  }
+
+  if (!signals || signals.length === 0) {
+    return (
+      <div style={{ textAlign: "center", padding: 60 }}>
+        <div style={{ fontSize: 32, marginBottom: 12 }}>🎓</div>
+        <div style={{ fontFamily: MONO, fontSize: 12, color: MUTED }}>No Tier 0 signals available</div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Header */}
+      <div style={{ marginBottom: 20 }}>
+        <div style={{ fontFamily: MONO, fontSize: 10, color: "#4a9eff", letterSpacing: "0.14em", marginBottom: 4 }}>TIER 0 UNIVERSITY SIGNAL FEED</div>
+        <div style={{ fontFamily: MONO, fontSize: 11, color: MUTED }}>Controlled release · High-confidence early-stage signals only · Max 5 per session</div>
+      </div>
+      {/* Signal cards */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {signals.map((sig, i) => (
+          <div key={i} style={{
+            background: BG2,
+            border: `1px solid ${sig.tier === "0A" ? "rgba(0,255,135,0.25)" : "rgba(255,159,67,0.25)"}`,
+            borderRadius: 8,
+            padding: "16px 20px",
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 16,
+            flexWrap: "wrap",
+          }}>
+            <span style={{ fontSize: 22, marginTop: 2 }}>🎓</span>
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: TEXT }}>{sig.companyName}</span>
+                <span style={{
+                  fontFamily: MONO, fontSize: 9, fontWeight: 700,
+                  background: sig.tier === "0A" ? "rgba(0,255,135,0.12)" : "rgba(255,159,67,0.12)",
+                  border: `1px solid ${sig.tier === "0A" ? "rgba(0,255,135,0.4)" : "rgba(255,159,67,0.4)"}`,
+                  color: sig.tier === "0A" ? GREEN : AMBER,
+                  padding: "2px 8px", borderRadius: 3, letterSpacing: "0.08em",
+                }}>TIER {sig.tier}</span>
+                <span style={{
+                  fontFamily: MONO, fontSize: 9,
+                  background: "rgba(74,158,255,0.1)",
+                  border: "1px solid rgba(74,158,255,0.3)",
+                  color: "#4a9eff",
+                  padding: "2px 8px", borderRadius: 3, letterSpacing: "0.08em",
+                }}>{sig.subtype.toUpperCase()}</span>
+                <span style={{
+                  fontFamily: MONO, fontSize: 9,
+                  color: sig.classification === "Startup" ? GREEN : sig.classification === "Emerging" ? AMBER : MUTED,
+                  letterSpacing: "0.06em",
+                }}>{sig.classification.toUpperCase()}</span>
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, marginBottom: 6 }}>
+                {sig.source} · {sig.description}
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED }}>
+                Score boost: <span style={{ color: sig.tier === "0A" ? GREEN : AMBER }}>+{sig.scoreBoost} pts</span>
+                {" · "}
+                Confidence: <span style={{ color: sig.confidence === "High" ? GREEN : AMBER }}>{sig.confidence}</span>
+              </div>
+            </div>
+            <button
+              onClick={() => onRunIC(sig.companyName, `${sig.companyName} — ${sig.subtype} signal from ${sig.source}.\n\n${sig.description}\n\nClassification: ${sig.classification}\nTier: ${sig.tier}\nConfidence: ${sig.confidence}`)}
+              style={{
+                fontFamily: MONO, fontSize: 10, fontWeight: 700,
+                background: "rgba(74,158,255,0.1)",
+                border: "1px solid rgba(74,158,255,0.4)",
+                color: "#4a9eff",
+                padding: "8px 16px", borderRadius: 4,
+                cursor: "pointer", letterSpacing: "0.08em",
+                whiteSpace: "nowrap",
+                transition: "all 0.12s",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(74,158,255,0.2)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(74,158,255,0.1)"; }}
+            >⚡ RUN IC</button>
+          </div>
+        ))}
+      </div>
+      <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, textAlign: "center", marginTop: 20, letterSpacing: "0.08em" }}>
+        EXPERIMENTAL · CONTROLLED RELEASE · HIGH-CONFIDENCE SIGNALS ONLY
+      </div>
+    </div>
+  );
+}
+
+// ── Main DealScreener page ────────────────────────────────────────────
+type View = "input" | "loading" | "report" | "history" | "signals";
 
 // ── Demo Deal Cards ──────────────────────────────────────────────────────────
 function DemoDealCards() {
@@ -1967,6 +2135,7 @@ export default function DealScreener() {
           {[
             { id: "input" as View, label: "NEW DEAL" },
             { id: "history" as View, label: "HISTORY" },
+            { id: "signals" as View, label: "SIGNALS 🎓" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -2043,6 +2212,16 @@ export default function DealScreener() {
         )}
         {view === "history" && (
           <HistoryTable onSelect={(id) => { setSelectedDealId(id); }} />
+        )}
+        {view === "signals" && (
+          <Tier0Feed onRunIC={(dealName, dealText) => {
+            // Pre-fill and auto-submit from signals feed
+            setView("input");
+            // Small delay to let the form mount, then trigger via a custom event
+            setTimeout(() => {
+              window.dispatchEvent(new CustomEvent("tier0:prefill", { detail: { dealName, dealText } }));
+            }, 100);
+          }} />
         )}
       </div>
     </div>
