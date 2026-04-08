@@ -603,24 +603,24 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     /** Section divider bar — does NOT force a new page */
     function sectionDivider(num: string, title: string, color: string = ACCENT) {
       ensureSpace(36);
-      doc.rect(ML, doc.y, BODY_W, 28).fill(BG3);
-      doc.rect(ML, doc.y, 3, 28).fill(color);
-      const sy = doc.y + 7;
+      const sy = doc.y;
+      doc.rect(ML, sy, BODY_W, 28).fill(BG3);
+      doc.rect(ML, sy, 3, 28).fill(color);
       doc.fontSize(7.5).fillColor(color).font("Helvetica-Bold")
-        .text(num, ML + 10, sy);
+        .text(num, ML + 10, sy + 7, { lineBreak: false });
       doc.fontSize(11).fillColor(TEXT).font("Helvetica-Bold")
-        .text(title, ML + 28, sy - 1);
-      doc.y += 34;
+        .text(title, ML + 28, sy + 6, { lineBreak: false });
+      doc.y = sy + 34;
     }
 
     /** Sub-heading with thin rule above */
     function subHeading(title: string, color: string = ACCENT) {
       ensureSpace(20);
-      doc.rect(ML, doc.y, BODY_W, 0.5).fill(BORDER_C);
-      doc.y += 5;
+      const shY = doc.y;
+      doc.rect(ML, shY, BODY_W, 0.5).fill(BORDER_C);
       doc.fontSize(7.5).fillColor(color).font("Helvetica-Bold")
-        .text(title.toUpperCase(), ML, doc.y, { characterSpacing: 0.8 });
-      doc.y += 13;
+        .text(title.toUpperCase(), ML, shY + 6, { characterSpacing: 0.8, lineBreak: false });
+      doc.y = shY + 18;
     }
 
     /** Body paragraph text */
@@ -688,32 +688,35 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       const cw = colWidths ?? headers.map(() => totalW / numCols);
 
       ensureSpace(24);
-      // Header row
-      doc.rect(ML, doc.y, totalW, 18).fill(BG3);
+      // Header row — save Y, render all headers at same Y, then advance once
+      const hdrY = doc.y;
+      doc.rect(ML, hdrY, totalW, 18).fill(BG3);
       let cx = ML;
       headers.forEach((h, i) => {
         doc.fontSize(7.5).fillColor(headerColor).font("Helvetica-Bold")
-          .text(h, cx + 5, doc.y + 5, { width: cw[i] - 10, lineBreak: false });
+          .text(h, cx + 5, hdrY + 5, { width: cw[i] - 10, lineBreak: false });
         cx += cw[i];
       });
-      doc.y += 20;
+      doc.y = hdrY + 20;
 
       rows.forEach((row, ri) => {
-        // Estimate height based on longest cell
-        const maxChars = Math.max(...row.map((cell, ci) =>
+        // Estimate row height based on longest cell content
+        const maxLines = Math.max(...row.map((cell, ci) =>
           Math.ceil((cell ?? "").length / Math.max(1, (cw[ci] - 10) / 5.5))
         ));
-        const rowH = Math.max(16, maxChars * 11 + 6);
+        const rowH = Math.max(18, maxLines * 11 + 8);
         ensureSpace(rowH + 2);
 
-        if (ri % 2 === 0) doc.rect(ML, doc.y, totalW, rowH).fill(BG2);
+        const rowY = doc.y;  // ← capture row Y before any text calls
+        if (ri % 2 === 0) doc.rect(ML, rowY, totalW, rowH).fill(BG2);
         cx = ML;
         row.forEach((cell, ci) => {
           doc.fontSize(8.5).fillColor(TEXT2).font("Helvetica")
-            .text(cell ?? "", cx + 5, doc.y + 4, { width: cw[ci] - 10, lineGap: 1.5 });
+            .text(cell ?? "", cx + 5, rowY + 4, { width: cw[ci] - 10, lineGap: 1.5, lineBreak: true });
           cx += cw[ci];
+          doc.y = rowY;  // ← restore Y after each cell so next cell is on same row
         });
-        doc.y += rowH + 1;
+        doc.y = rowY + rowH + 1;  // ← advance Y by full row height only once
       });
       doc.y += 8;
     }
@@ -725,31 +728,36 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       const colW = (BODY_W - labelW) / numCols;
 
       ensureSpace(22);
-      // Header
-      doc.rect(ML, doc.y, BODY_W, 18).fill(BG3);
+      // Header — save Y, render all headers at same Y
+      const hdrY = doc.y;
+      doc.rect(ML, hdrY, BODY_W, 18).fill(BG3);
       years.forEach((y, i) => {
         const x = ML + labelW + i * colW;
         const isAccent = i === accentCol;
         doc.fontSize(7.5).fillColor(isAccent ? GOLD : ACCENT).font("Helvetica-Bold")
-          .text(y, x + 2, doc.y + 5, { width: colW - 4, align: "right" });
+          .text(y, x + 2, hdrY + 5, { width: colW - 4, align: "right" });
       });
-      doc.y += 20;
+      doc.y = hdrY + 20;
 
       rows.forEach((row, ri) => {
         const isHighlight = /EBITDA|Revenue|Free Cash/i.test(row.label);
-        ensureSpace(16);
-        if (ri % 2 === 0) doc.rect(ML, doc.y, BODY_W, 15).fill(BG2);
+        const rowH = 16;
+        ensureSpace(rowH + 2);
+        const rowY = doc.y;  // ← capture row Y
+        if (ri % 2 === 0) doc.rect(ML, rowY, BODY_W, rowH).fill(BG2);
+        // Label column
         doc.fontSize(8.5)
           .fillColor(isHighlight ? TEXT : MUTED)
           .font(isHighlight ? "Helvetica-Bold" : "Helvetica")
-          .text(row.label, ML + 5, doc.y + 3, { width: labelW - 10 });
+          .text(row.label, ML + 5, rowY + 3, { width: labelW - 10, lineBreak: false });
+        // Value columns — each restores rowY
         row.values.forEach((val, i) => {
           const x = ML + labelW + i * colW;
           const isAccent = i === accentCol;
           doc.fontSize(8.5).fillColor(isAccent ? GOLD : TEXT2).font("Helvetica")
-            .text(val ?? "—", x + 2, doc.y + 3, { width: colW - 4, align: "right" });
+            .text(val ?? "—", x + 2, rowY + 3, { width: colW - 4, align: "right", lineBreak: false });
         });
-        doc.y += 16;
+        doc.y = rowY + rowH;  // ← advance once per row
       });
       doc.y += 8;
     }
@@ -778,9 +786,10 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
 
       rows.forEach((row) => {
         ensureSpace(16);
-        doc.rect(ML, doc.y, labelW, 15).fill(BG3);
+        const rowY = doc.y;  // ← capture row Y
+        doc.rect(ML, rowY, labelW, 15).fill(BG3);
         doc.fontSize(8).fillColor(GOLD).font("Helvetica-Bold")
-          .text(row.label, ML + 3, doc.y + 3, { width: labelW - 6, align: "center" });
+          .text(row.label, ML + 3, rowY + 3, { width: labelW - 6, align: "center", lineBreak: false });
         row.values.forEach((val, i) => {
           const numVal = parseFloat(val.replace("%", ""));
           const cellBg =
@@ -793,11 +802,11 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
             numVal >= 20 ? "#166534" :
             numVal >= 15 ? "#92400E" :
             numVal >= 10 ? "#C2410C" : "#DC2626";
-          doc.rect(ML + labelW + i * colW, doc.y, colW, 15).fill(cellBg);
+          doc.rect(ML + labelW + i * colW, rowY, colW, 15).fill(cellBg);
           doc.fontSize(8.5).fillColor(cellTxt).font("Helvetica-Bold")
-            .text(val, ML + labelW + i * colW + 2, doc.y + 3, { width: colW - 4, align: "center" });
+            .text(val, ML + labelW + i * colW + 2, rowY + 3, { width: colW - 4, align: "center", lineBreak: false });
         });
-        doc.y += 16;
+        doc.y = rowY + 16;  // ← advance once per row
       });
       doc.y += 8;
     }
@@ -810,27 +819,32 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       const mitW = BODY_W - catW - riskW - lhW - impW;
       const rowH = Math.max(22, Math.ceil(row.risk.length / 26) * 11 + 8);
       ensureSpace(rowH + 2);
-      if (ri % 2 === 0) doc.rect(ML, doc.y, BODY_W, rowH).fill(BG2);
+      const rowY = doc.y;  // ← capture row Y before any text calls
+      if (ri % 2 === 0) doc.rect(ML, rowY, BODY_W, rowH).fill(BG2);
       doc.fontSize(7.5).fillColor(ACCENT).font("Helvetica-Bold")
-        .text(row.category, ML + 4, doc.y + 5, { width: catW - 8 });
+        .text(row.category, ML + 4, rowY + 5, { width: catW - 8, lineBreak: false });
       doc.fontSize(8).fillColor(TEXT2).font("Helvetica")
-        .text(row.risk, ML + catW + 4, doc.y + 5, { width: riskW - 8, lineGap: 1.5 });
+        .text(row.risk, ML + catW + 4, rowY + 5, { width: riskW - 8, lineGap: 1.5, lineBreak: true });
+      doc.y = rowY;  // restore after potentially multi-line risk text
       doc.fontSize(8).fillColor(lhColor).font("Helvetica-Bold")
-        .text(row.likelihood, ML + catW + riskW + 4, doc.y + 5, { width: lhW - 8, align: "center" });
+        .text(row.likelihood, ML + catW + riskW + 4, rowY + 5, { width: lhW - 8, align: "center", lineBreak: false });
       doc.fontSize(8).fillColor(impColor).font("Helvetica-Bold")
-        .text(row.impact, ML + catW + riskW + lhW + 4, doc.y + 5, { width: impW - 8, align: "center" });
+        .text(row.impact, ML + catW + riskW + lhW + 4, rowY + 5, { width: impW - 8, align: "center", lineBreak: false });
       doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
-        .text(row.mitigant, ML + catW + riskW + lhW + impW + 4, doc.y + 5, { width: mitW - 8, lineGap: 1.5 });
-      doc.y += rowH + 1;
+        .text(row.mitigant, ML + catW + riskW + lhW + impW + 4, rowY + 5, { width: mitW - 8, lineGap: 1.5, lineBreak: true });
+      doc.y = rowY + rowH + 1;  // ← advance once per row
     }
 
-    /** Start a new section page with header */
+    /** Start a new section page with header — only adds page if needed */
     function newSectionPage(sectionLabel: string) {
-      doc.addPage();
-      _pageNum++;
-      doc.y = MT;
+      // Only force a new page if we're past 40% of the page
+      if (doc.y > MT + 120) {
+        doc.addPage();
+        _pageNum++;
+        doc.y = MT;
+      }
       pageHeader(sectionLabel);
-      doc.y = MT + 8;
+      doc.y = Math.max(doc.y, MT) + 8;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -932,15 +946,16 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
 
     tocItems.forEach(([num, title]) => {
       ensureSpace(18);
+      const tocY = doc.y;  // ← capture Y so number and title are on same line
       // Number
       doc.fontSize(9.5).fillColor(ACCENT).font("Helvetica-Bold")
-        .text(num, ML, doc.y, { width: 28, continued: false });
+        .text(num, ML, tocY, { width: 28, lineBreak: false });
       // Title on same line
       doc.fontSize(9.5).fillColor(TEXT).font("Helvetica")
-        .text(title, ML + 28, doc.y - 10.5, { continued: false });
-      // Dotted rule
-      doc.rect(ML + 28, doc.y + 1, BODY_W - 28, 0.3).fill(BORDER_C);
-      doc.y += 16;
+        .text(title, ML + 28, tocY, { width: BODY_W - 28, lineBreak: false });
+      // Thin rule below
+      doc.rect(ML, tocY + 13, BODY_W, 0.3).fill(BORDER_C);
+      doc.y = tocY + 20;
     });
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -1106,10 +1121,14 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
         doc.y += 26;
         bodyText(p.narrative ?? "");
         if (p.supportingData) {
-          ensureSpace(14);
-          doc.fontSize(8.5).fillColor(AMBER).font("Helvetica-Bold")
-            .text(`\u25B6  ${p.supportingData}`, ML + 12, doc.y, { width: BODY_W - 12 });
-          doc.y += 12;
+          // Strip any stray %¶ or unicode arrow artifacts from LLM output
+          const cleanData = p.supportingData.replace(/[%\u00B6\u25B6]+\s*/g, "").trim();
+          if (cleanData) {
+            ensureSpace(14);
+            doc.fontSize(8.5).fillColor(AMBER).font("Helvetica-Bold")
+              .text(`> ${cleanData}`, ML + 12, doc.y, { width: BODY_W - 12 });
+            doc.y += 12;
+          }
         }
         doc.y += 4;
       });
