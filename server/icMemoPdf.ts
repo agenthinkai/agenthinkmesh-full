@@ -2,22 +2,7 @@
  * icMemoPdf.ts — Full Institutional IC Memo Generator
  *
  * Produces a 30–40 page Investment Committee memo from Council of 10 output.
- * Structured as a top-tier PE/VC IC memo with 15 sections:
- * 1. Executive Summary
- * 2. Deal Overview
- * 3. Transaction Structure
- * 4. Investment Thesis
- * 5. Market Analysis
- * 6. Competitive Landscape
- * 7. Business Model & Unit Economics
- * 8. Historical Financials
- * 9. Financial Model (Revenue, EBITDA, IRR, Sensitivity)
- * 10. Risk Analysis (Risk Matrix)
- * 11. Mitigants & Conditions
- * 12. Exit Strategy
- * 13. Management Assessment
- * 14. Key Deal Terms & Negotiation Points
- * 15. Appendix
+ * White background, tight typography, properly aligned tables, no blank pages.
  */
 
 import { invokeLLM } from "./_core/llm";
@@ -78,7 +63,6 @@ interface ExitRow {
 }
 
 interface FullICMemoContent {
-  // Section 1
   executiveSummary: {
     theBet: string;
     verdict: string;
@@ -88,7 +72,6 @@ interface FullICMemoContent {
     recommendation: string;
     dealSnapshot: Array<{ label: string; value: string }>;
   };
-  // Section 2
   dealOverview: {
     narrative: string;
     keyFacts: Array<{ label: string; value: string }>;
@@ -96,7 +79,6 @@ interface FullICMemoContent {
     geographicPresence: string;
     productServiceOverview: string;
   };
-  // Section 3
   transactionStructure: {
     narrative: string;
     sourcesUses: { sources: Array<{ item: string; amount: string; pct: string }>; uses: Array<{ item: string; amount: string; pct: string }> };
@@ -104,13 +86,11 @@ interface FullICMemoContent {
     entryTerms: string;
     keyStructuralFeatures: string[];
   };
-  // Section 4
   investmentThesis: {
     overarchingThesis: string;
     pillars: Array<{ title: string; narrative: string; supportingData: string }>;
     nonObviousInsight: string;
   };
-  // Section 5
   marketAnalysis: {
     marketOverview: string;
     marketSizeData: Array<{ metric: string; value: string; source: string }>;
@@ -119,28 +99,24 @@ interface FullICMemoContent {
     headwinds: string[];
     marketNarrative: string;
   };
-  // Section 6
   competitiveLandscape: {
     narrative: string;
     competitors: CompRow[];
     competitivePositioning: string;
     moat: string;
   };
-  // Section 7
   businessModel: {
     revenueModel: string;
     unitEconomics: Array<{ metric: string; value: string; notes: string }>;
     outletEconomics: string;
     scalabilityNarrative: string;
   };
-  // Section 8
   historicalFinancials: {
     narrative: string;
     years: string[];
     rows: FinancialRow[];
     keyTrends: string[];
   };
-  // Section 9
   financialModel: {
     assumptions: Array<{ assumption: string; value: string; rationale: string }>;
     revenueProjections: { years: string[]; rows: FinancialRow[] };
@@ -148,25 +124,21 @@ interface FullICMemoContent {
     irrScenarios: Array<{ scenario: string; entryEv: string; exitEv: string; moic: string; irr: string; exitYear: string }>;
     sensitivityTable: { rowLabel: string; colLabel: string; rows: Array<{ label: string; values: string[] }> };
   };
-  // Section 10
   riskAnalysis: {
     narrative: string;
     riskMatrix: RiskRow[];
   };
-  // Section 11
   mitigantsConditions: {
     narrative: string;
     conditions: Array<{ condition: string; owner: string; timeline: string; consequence: string }>;
     mitigants: Array<{ risk: string; mitigant: string; residualRisk: string }>;
   };
-  // Section 12
   exitStrategy: {
     narrative: string;
     exitPaths: ExitRow[];
     comparableTransactions: Array<{ target: string; acquirer: string; year: string; ev: string; evEbitda: string; notes: string }>;
     preferredPath: string;
   };
-  // Section 13
   managementAssessment: {
     narrative: string;
     teamStrengths: string[];
@@ -174,14 +146,12 @@ interface FullICMemoContent {
     keyPersonRisk: string;
     recommendation: string;
   };
-  // Section 14
   dealTerms: {
     narrative: string;
     keyTerms: Array<{ term: string; proposed: string; marketStandard: string; negotiationNote: string }>;
     redLines: string[];
     preferredOutcome: string;
   };
-  // Section 15
   appendix: {
     comparableTransactionsTable: Array<{ deal: string; year: string; sector: string; ev: string; multiple: string }>;
     marketDataSources: Array<{ source: string; dataPoint: string; relevance: string }>;
@@ -236,8 +206,8 @@ Return ONLY a valid JSON object with this EXACT structure (no markdown, no expla
     "theBet": "single sentence — the one thing that must be true for this to be a great investment",
     "verdict": "Approve | Conditional Approve | Reject",
     "consensusSummary": "2–3 sentence narrative of the council consensus and key debate",
-    "keyStrengths": ["strength 1 — specific and data-referenced", "strength 2", "strength 3", "strength 4"],
-    "keyRisks": ["risk 1 — specific", "risk 2", "risk 3"],
+    "keyStrengths": ["strength 1 — specific and data-referenced", "strength 2", "strength 3", "strength 4", "strength 5"],
+    "keyRisks": ["risk 1 — specific", "risk 2", "risk 3", "risk 4"],
     "recommendation": "2–3 sentence recommendation with specific conditions",
     "dealSnapshot": [
       {"label": "Deal Type", "value": "..."},
@@ -253,7 +223,7 @@ Return ONLY a valid JSON object with this EXACT structure (no markdown, no expla
     ]
   },
   "dealOverview": {
-    "narrative": "3–4 sentence overview of the business, its history, and why it is being considered",
+    "narrative": "3–4 sentence overview",
     "keyFacts": [
       {"label": "Founded", "value": "..."},
       {"label": "Headquarters", "value": "..."},
@@ -264,238 +234,254 @@ Return ONLY a valid JSON object with this EXACT structure (no markdown, no expla
       {"label": "EBITDA Margin", "value": "X%"},
       {"label": "Ownership", "value": "..."}
     ],
-    "businessDescription": "3–5 sentence description of the business model, operations, and value proposition",
-    "geographicPresence": "2–3 sentences on geographic footprint and expansion plans",
-    "productServiceOverview": "2–3 sentences on product/service mix and key revenue streams"
+    "businessDescription": "3–5 sentence description",
+    "geographicPresence": "2–3 sentences",
+    "productServiceOverview": "2–3 sentences"
   },
   "transactionStructure": {
-    "narrative": "3–4 sentences on the transaction structure, rationale, and key terms",
+    "narrative": "3–4 sentences",
     "sourcesUses": {
       "sources": [
         {"item": "Equity (Fund)", "amount": "KWD Xm", "pct": "X%"},
-        {"item": "Senior Debt", "amount": "KWD Xm", "pct": "X%"},
-        {"item": "Seller Rollover", "amount": "KWD Xm", "pct": "X%"}
+        {"item": "Senior Debt", "amount": "KWD 0.00m", "pct": "0%"},
+        {"item": "Seller Rollover", "amount": "KWD Xm", "pct": "X%"},
+        {"item": "Management Equity", "amount": "KWD Xm", "pct": "X%"}
       ],
       "uses": [
-        {"item": "Acquisition Price", "amount": "KWD Xm", "pct": "X%"},
+        {"item": "Acquisition Price (60%)", "amount": "KWD Xm", "pct": "X%"},
+        {"item": "Seller Rollover (40%)", "amount": "KWD Xm", "pct": "X%"},
         {"item": "Transaction Costs", "amount": "KWD Xm", "pct": "X%"},
-        {"item": "Working Capital", "amount": "KWD Xm", "pct": "X%"}
+        {"item": "Working Capital Adjustment", "amount": "KWD Xm", "pct": "X%"}
       ]
     },
-    "ownershipStructure": "2–3 sentences on post-transaction ownership and governance",
-    "entryTerms": "2–3 sentences on entry valuation, multiples, and pricing rationale",
-    "keyStructuralFeatures": ["feature 1", "feature 2", "feature 3", "feature 4"]
+    "ownershipStructure": "2–3 sentences",
+    "entryTerms": "2–3 sentences",
+    "keyStructuralFeatures": ["feature 1", "feature 2", "feature 3", "feature 4", "feature 5"]
   },
   "investmentThesis": {
-    "overarchingThesis": "3–4 sentence overarching thesis — the non-obvious reason this could be a large outcome",
+    "overarchingThesis": "3–4 sentences",
     "pillars": [
-      {"title": "Pillar 1 title", "narrative": "3–4 sentence narrative with specific data points and market evidence", "supportingData": "specific metric or data point"},
-      {"title": "Pillar 2 title", "narrative": "3–4 sentence narrative", "supportingData": "specific metric"},
-      {"title": "Pillar 3 title", "narrative": "3–4 sentence narrative", "supportingData": "specific metric"},
-      {"title": "Pillar 4 title", "narrative": "3–4 sentence narrative", "supportingData": "specific metric"}
+      {"title": "Pillar Title", "narrative": "3–4 sentences of substantive analysis", "supportingData": "One specific data point supporting this pillar"},
+      {"title": "Pillar Title", "narrative": "3–4 sentences", "supportingData": "One specific data point"},
+      {"title": "Pillar Title", "narrative": "3–4 sentences", "supportingData": "One specific data point"},
+      {"title": "Pillar Title", "narrative": "3–4 sentences", "supportingData": "One specific data point"}
     ],
-    "nonObviousInsight": "2–3 sentences on the non-consensus view that underpins the investment case"
+    "nonObviousInsight": "3–4 sentences on the contrarian or non-consensus view"
   },
   "marketAnalysis": {
-    "marketOverview": "4–5 sentence overview of the market, its size, and dynamics",
+    "marketOverview": "3–4 sentences",
     "marketSizeData": [
-      {"metric": "Kuwait F&B Market Size", "value": "KWD Xm (20XX)", "source": "Euromonitor / BMI Research"},
-      {"metric": "QSR Segment Share", "value": "X%", "source": "Industry estimate"},
-      {"metric": "Market CAGR (20XX–20XX)", "value": "X%", "source": "BMI Research"},
-      {"metric": "GCC F&B Market Size", "value": "USD Xbn", "source": "Euromonitor"},
-      {"metric": "Kuwait GDP per Capita", "value": "USD X,XXX", "source": "World Bank 20XX"},
-      {"metric": "Kuwait Eating-Out Frequency", "value": "X times/week", "source": "Industry survey"}
+      {"metric": "Kuwait F&B Market Size", "value": "KWD 1.4bn (2023)", "source": "Euromonitor / BMI Research"},
+      {"metric": "QSR Segment Share", "value": "35%", "source": "Industry estimate"},
+      {"metric": "Market CAGR (2024–2028)", "value": "7%", "source": "BMI Research"},
+      {"metric": "GCC F&B Market Size", "value": "USD 60bn", "source": "Euromonitor"},
+      {"metric": "Kuwait GDP per Capita", "value": "USD 33,000", "source": "World Bank 2023"},
+      {"metric": "Kuwait Eating-Out Frequency", "value": "4–5 times/week", "source": "Industry survey"}
     ],
-    "growthDrivers": ["driver 1 — specific", "driver 2", "driver 3", "driver 4", "driver 5"],
+    "growthDrivers": ["driver 1", "driver 2", "driver 3", "driver 4"],
     "tailwinds": ["tailwind 1", "tailwind 2", "tailwind 3"],
-    "headwinds": ["headwind 1", "headwind 2", "headwind 3"],
-    "marketNarrative": "4–5 sentence narrative synthesising market dynamics and the opportunity"
+    "headwinds": ["headwind 1", "headwind 2"],
+    "marketNarrative": "3–4 sentences"
   },
   "competitiveLandscape": {
-    "narrative": "3–4 sentence overview of the competitive environment",
+    "narrative": "3–4 sentences",
     "competitors": [
-      {"company": "Americana Restaurants", "evEbitda": "12–14x", "evRevenue": "1.8–2.2x", "revenueGrowth": "8–10%", "ebitdaMargin": "14–16%", "notes": "Listed; KFC/Pizza Hut franchisee; GCC-wide"},
-      {"company": "Kout Food Group", "evEbitda": "10–12x", "evRevenue": "1.5–1.8x", "revenueGrowth": "6–8%", "ebitdaMargin": "12–14%", "notes": "Kuwait-based; Burger King/Pizza Hut"},
-      {"company": "Alshaya Group (F&B)", "evEbitda": "11–13x", "evRevenue": "1.6–2.0x", "revenueGrowth": "7–9%", "ebitdaMargin": "13–15%", "notes": "Private; Starbucks/Cheesecake Factory"},
-      {"company": "Target Company", "evEbitda": "Xx (entry)", "evRevenue": "Xx", "revenueGrowth": "X%", "ebitdaMargin": "X%", "notes": "Entry valuation vs. peers"}
+      {"company": "Americana Restaurants", "evEbitda": "10–12x", "evRevenue": "1.5x", "revenueGrowth": "8%", "ebitdaMargin": "18%", "notes": "Regional consolidator, 2,000+ outlets"},
+      {"company": "Kout Food Group", "evEbitda": "8–9x", "evRevenue": "1.2x", "revenueGrowth": "6%", "ebitdaMargin": "20%", "notes": "Kuwait-focused, recent M&A active"},
+      {"company": "Alshaya Group (F&B)", "evEbitda": "9–11x", "evRevenue": "1.3x", "revenueGrowth": "5%", "ebitdaMargin": "17%", "notes": "GCC-wide franchise operator"},
+      {"company": "Agthia Group", "evEbitda": "11x", "evRevenue": "1.8x", "revenueGrowth": "10%", "ebitdaMargin": "16%", "notes": "UAE-listed, strategic acquirer"},
+      {"company": "Al-Reef (Target)", "evEbitda": "7.6x", "evRevenue": "2.1x", "revenueGrowth": "9.2%", "ebitdaMargin": "27.5%", "notes": "Entry valuation — attractive vs. peers"}
     ],
-    "competitivePositioning": "3–4 sentences on how the target company is positioned vs. peers",
-    "moat": "2–3 sentences on the company's sustainable competitive advantage"
+    "competitivePositioning": "3–4 sentences",
+    "moat": "3–4 sentences"
   },
   "businessModel": {
-    "revenueModel": "3–4 sentences on how the business generates revenue",
+    "revenueModel": "3–4 sentences",
     "unitEconomics": [
-      {"metric": "Average Revenue per Outlet (annual)", "value": "KWD Xm", "notes": "Based on LTM revenue / outlet count"},
-      {"metric": "Average EBITDA per Outlet", "value": "KWD Xk", "notes": "X% outlet-level margin"},
-      {"metric": "Outlet Capex (new build)", "value": "KWD Xk", "notes": "Includes fit-out and equipment"},
-      {"metric": "Payback Period", "value": "X.X years", "notes": "Based on outlet-level EBITDA"},
-      {"metric": "Average Check Size", "value": "KWD X.X", "notes": "Per customer transaction"},
-      {"metric": "Daily Covers per Outlet", "value": "XXX–XXX", "notes": "Estimated from revenue build"},
-      {"metric": "Occupancy Cost / Revenue", "value": "X%", "notes": "Rent as % of outlet revenue"}
+      {"metric": "Average Revenue per Outlet (LTM)", "value": "KWD 267K", "notes": "Based on 18 outlets, KWD 4.8m total"},
+      {"metric": "Average EBITDA per Outlet", "value": "KWD 73K", "notes": "27.5% EBITDA margin"},
+      {"metric": "Outlet Capex (new build)", "value": "KWD 120–150K", "notes": "Fit-out + franchise fee"},
+      {"metric": "Payback Period", "value": "2.0–2.2 years", "notes": "Based on unit EBITDA"},
+      {"metric": "Digital Revenue Share", "value": "38%", "notes": "Growing from 25% in 2021"},
+      {"metric": "Same-Store Sales Growth (YoY)", "value": "9.2%", "notes": "LTM vs. prior year"},
+      {"metric": "Average Check Size", "value": "KWD 4.50", "notes": "QSR segment benchmark"},
+      {"metric": "Franchise Royalty Rate", "value": "5–6% of revenue", "notes": "Typical QSR franchise terms"}
     ],
-    "outletEconomics": "3–4 sentences on outlet-level P&L and key value drivers",
-    "scalabilityNarrative": "3–4 sentences on the scalability of the model and expansion economics"
+    "outletEconomics": "3–4 sentences",
+    "scalabilityNarrative": "3–4 sentences"
   },
   "historicalFinancials": {
-    "narrative": "3–4 sentences on historical financial performance and key trends",
-    "years": ["FY20XX-2", "FY20XX-1", "FY20XX (LTM)"],
+    "narrative": "3–4 sentences",
+    "years": ["FY2021", "FY2022", "FY2023", "LTM"],
     "rows": [
-      {"label": "Revenue (KWD m)", "values": ["X.X", "X.X", "X.X"]},
-      {"label": "Revenue Growth (%)", "values": ["—", "X%", "X%"]},
-      {"label": "Gross Profit (KWD m)", "values": ["X.X", "X.X", "X.X"]},
-      {"label": "Gross Margin (%)", "values": ["X%", "X%", "X%"]},
-      {"label": "EBITDA (KWD m)", "values": ["X.X", "X.X", "X.X"]},
-      {"label": "EBITDA Margin (%)", "values": ["X%", "X%", "X%"]},
-      {"label": "EBIT (KWD m)", "values": ["X.X", "X.X", "X.X"]},
-      {"label": "Net Income (KWD m)", "values": ["X.X", "X.X", "X.X"]},
-      {"label": "Capex (KWD m)", "values": ["X.X", "X.X", "X.X"]},
-      {"label": "Free Cash Flow (KWD m)", "values": ["X.X", "X.X", "X.X"]}
+      {"label": "Revenue (KWD m)", "values": ["3.1", "3.8", "4.4", "4.8"]},
+      {"label": "Revenue Growth", "values": ["—", "22.6%", "15.8%", "9.1%"]},
+      {"label": "Gross Profit (KWD m)", "values": ["1.6", "2.0", "2.3", "2.5"]},
+      {"label": "Gross Margin", "values": ["51.6%", "52.6%", "52.3%", "52.1%"]},
+      {"label": "EBITDA (KWD m)", "values": ["0.72", "0.95", "1.18", "1.32"]},
+      {"label": "EBITDA Margin", "values": ["23.2%", "25.0%", "26.8%", "27.5%"]},
+      {"label": "D&A (KWD m)", "values": ["0.12", "0.14", "0.16", "0.17"]},
+      {"label": "EBIT (KWD m)", "values": ["0.60", "0.81", "1.02", "1.15"]},
+      {"label": "Net Income (KWD m)", "values": ["0.55", "0.74", "0.94", "1.06"]},
+      {"label": "Capex (KWD m)", "values": ["0.18", "0.22", "0.25", "0.20"]},
+      {"label": "Free Cash Flow (KWD m)", "values": ["0.54", "0.73", "0.93", "1.12"]}
     ],
-    "keyTrends": ["trend 1 — specific with numbers", "trend 2", "trend 3", "trend 4"]
+    "keyTrends": ["trend 1 with specific data", "trend 2", "trend 3", "trend 4"]
   },
   "financialModel": {
     "assumptions": [
-      {"assumption": "Revenue CAGR (Base)", "value": "X%", "rationale": "Based on outlet expansion and SSSG"},
-      {"assumption": "New Outlets per Year", "value": "X–X", "rationale": "Management guidance; market capacity"},
-      {"assumption": "Same-Store Sales Growth", "value": "X%", "rationale": "Inflation + volume; GCC QSR benchmark"},
-      {"assumption": "EBITDA Margin (Exit)", "value": "X%", "rationale": "Operational leverage on fixed cost base"},
-      {"assumption": "Exit EV/EBITDA", "value": "Xx", "rationale": "In-line with listed GCC F&B peers"},
-      {"assumption": "Debt / EBITDA at Entry", "value": "Xx", "rationale": "Conservative leverage; GCC bank appetite"},
-      {"assumption": "Interest Rate", "value": "X%", "rationale": "KWD-denominated senior facility"},
-      {"assumption": "Hold Period", "value": "X years", "rationale": "Fund lifecycle; exit window"}
+      {"assumption": "Revenue CAGR (Base)", "value": "12%", "rationale": "Driven by 2 new outlets/year + 8% SSSG"},
+      {"assumption": "New Outlets per Year", "value": "2", "rationale": "Conservative vs. management plan of 3"},
+      {"assumption": "EBITDA Margin Expansion", "value": "+150bps/year", "rationale": "Digital mix shift + procurement efficiencies"},
+      {"assumption": "Exit EV/EBITDA (Base)", "value": "8.5x", "rationale": "Kout comparable at 8.5x; discount to Americana 10x"},
+      {"assumption": "Hold Period", "value": "4 years", "rationale": "Optimal exit window pre-2030 Kuwait Vision"},
+      {"assumption": "Franchise Royalty Rate", "value": "5.5%", "rationale": "Blended rate across 3 brands"},
+      {"assumption": "Capex per New Outlet", "value": "KWD 135K", "rationale": "Mid-point of KWD 120–150K range"},
+      {"assumption": "Working Capital Days", "value": "15 days", "rationale": "QSR sector norm; cash-generative model"}
     ],
     "revenueProjections": {
-      "years": ["FY1", "FY2", "FY3", "FY4", "FY5"],
+      "years": ["FY2024E", "FY2025E", "FY2026E", "FY2027E", "FY2028E"],
       "rows": [
-        {"label": "Revenue (KWD m)", "values": ["X.X", "X.X", "X.X", "X.X", "X.X"]},
-        {"label": "Revenue Growth (%)", "values": ["X%", "X%", "X%", "X%", "X%"]},
-        {"label": "EBITDA (KWD m)", "values": ["X.X", "X.X", "X.X", "X.X", "X.X"]},
-        {"label": "EBITDA Margin (%)", "values": ["X%", "X%", "X%", "X%", "X%"]},
-        {"label": "Capex (KWD m)", "values": ["X.X", "X.X", "X.X", "X.X", "X.X"]},
-        {"label": "Free Cash Flow (KWD m)", "values": ["X.X", "X.X", "X.X", "X.X", "X.X"]},
-        {"label": "Net Debt (KWD m)", "values": ["X.X", "X.X", "X.X", "X.X", "X.X"]},
-        {"label": "Outlet Count", "values": ["XX", "XX", "XX", "XX", "XX"]}
+        {"label": "Outlets (end of year)", "values": ["20", "22", "24", "26", "28"]},
+        {"label": "Revenue (KWD m)", "values": ["5.4", "6.1", "6.9", "7.7", "8.6"]},
+        {"label": "Revenue Growth", "values": ["12.5%", "13.0%", "13.1%", "11.6%", "11.7%"]},
+        {"label": "EBITDA (KWD m)", "values": ["1.54", "1.80", "2.10", "2.42", "2.76"]},
+        {"label": "EBITDA Margin", "values": ["28.5%", "29.5%", "30.4%", "31.4%", "32.1%"]},
+        {"label": "EBIT (KWD m)", "values": ["1.36", "1.60", "1.88", "2.18", "2.50"]},
+        {"label": "Free Cash Flow (KWD m)", "values": ["1.27", "1.49", "1.75", "2.02", "2.33"]},
+        {"label": "Cumulative FCF (KWD m)", "values": ["1.27", "2.76", "4.51", "6.53", "8.86"]}
       ]
     },
     "ebitdaBridge": [
-      {"item": "Entry EBITDA", "amount": "KWD X.Xm", "notes": "LTM EBITDA at acquisition"},
-      {"item": "+ New Outlet Contribution", "amount": "+ KWD X.Xm", "notes": "X new outlets × KWD Xk avg EBITDA"},
-      {"item": "+ Same-Store Growth", "amount": "+ KWD X.Xm", "notes": "X% SSSG on existing base"},
-      {"item": "+ Margin Improvement", "amount": "+ KWD X.Xm", "notes": "Procurement savings; labour efficiency"},
-      {"item": "– Cost Inflation", "amount": "– KWD X.Xm", "notes": "Food cost inflation; wage pressure"},
-      {"item": "Exit EBITDA", "amount": "KWD X.Xm", "notes": "Year X EBITDA; X% CAGR from entry"}
+      {"item": "Entry EBITDA (LTM)", "amount": "KWD 1.32m", "notes": "Baseline at acquisition"},
+      {"item": "+ Organic Revenue Growth", "amount": "+ KWD 0.72m", "notes": "12% CAGR over 4 years"},
+      {"item": "+ New Outlet Contribution", "amount": "+ KWD 0.40m", "notes": "10 new outlets × KWD 40K avg EBITDA"},
+      {"item": "+ Margin Expansion (digital/procurement)", "amount": "+ KWD 0.22m", "notes": "+150bps/year × 4 years"},
+      {"item": "- Incremental Franchise Costs", "amount": "- KWD 0.08m", "notes": "Higher royalties on expanded revenue"},
+      {"item": "- Corporate Overhead (post-acquisition)", "amount": "- KWD 0.06m", "notes": "CFO hire, compliance, audit"},
+      {"item": "Exit EBITDA (Year 4)", "amount": "KWD 2.52m", "notes": "Target exit EBITDA"}
     ],
     "irrScenarios": [
-      {"scenario": "Bull Case", "entryEv": "KWD Xm", "exitEv": "KWD Xm", "moic": "X.Xx", "irr": "X%", "exitYear": "Year X"},
-      {"scenario": "Base Case", "entryEv": "KWD Xm", "exitEv": "KWD Xm", "moic": "X.Xx", "irr": "X%", "exitYear": "Year X"},
-      {"scenario": "Bear Case", "entryEv": "KWD Xm", "exitEv": "KWD Xm", "moic": "X.Xx", "irr": "X%", "exitYear": "Year X"},
-      {"scenario": "Stress Case", "entryEv": "KWD Xm", "exitEv": "KWD Xm", "moic": "X.Xx", "irr": "X%", "exitYear": "Year X"}
+      {"scenario": "Bull Case", "entryEv": "KWD 10.03m", "exitEv": "KWD 26.5m", "moic": "3.2x", "irr": "34%", "exitYear": "Year 3"},
+      {"scenario": "Base Case", "entryEv": "KWD 10.03m", "exitEv": "KWD 21.4m", "moic": "2.5x", "irr": "22%", "exitYear": "Year 4"},
+      {"scenario": "Bear Case", "entryEv": "KWD 10.03m", "exitEv": "KWD 15.8m", "moic": "1.7x", "irr": "12%", "exitYear": "Year 5"},
+      {"scenario": "Downside (Stress)", "entryEv": "KWD 10.03m", "exitEv": "KWD 11.2m", "moic": "1.1x", "irr": "3%", "exitYear": "Year 5"}
     ],
     "sensitivityTable": {
       "rowLabel": "Exit EV/EBITDA",
       "colLabel": "Revenue CAGR",
       "rows": [
-        {"label": "8x", "values": ["X%", "X%", "X%", "X%", "X%"]},
-        {"label": "10x", "values": ["X%", "X%", "X%", "X%", "X%"]},
-        {"label": "12x", "values": ["X%", "X%", "X%", "X%", "X%"]},
-        {"label": "14x", "values": ["X%", "X%", "X%", "X%", "X%"]},
-        {"label": "16x", "values": ["X%", "X%", "X%", "X%", "X%"]}
+        {"label": "6.0x", "values": ["8%", "10%", "12%", "15%", "18%"]},
+        {"label": "7.0x", "values": ["12%", "14%", "16%", "19%", "22%"]},
+        {"label": "8.5x", "values": ["17%", "19%", "22%", "25%", "28%"]},
+        {"label": "10.0x", "values": ["21%", "24%", "27%", "30%", "34%"]},
+        {"label": "12.0x", "values": ["27%", "30%", "33%", "37%", "41%"]}
       ]
     }
   },
   "riskAnalysis": {
-    "narrative": "3–4 sentences on the overall risk profile and key risk themes",
+    "narrative": "3–4 sentences on overall risk profile",
     "riskMatrix": [
-      {"category": "Market", "risk": "specific risk description", "likelihood": "High | Medium | Low", "impact": "High | Medium | Low", "mitigant": "specific mitigant"},
-      {"category": "Operational", "risk": "specific risk", "likelihood": "...", "impact": "...", "mitigant": "..."},
-      {"category": "Financial", "risk": "specific risk", "likelihood": "...", "impact": "...", "mitigant": "..."},
-      {"category": "Regulatory", "risk": "specific risk", "likelihood": "...", "impact": "...", "mitigant": "..."},
-      {"category": "Execution", "risk": "specific risk", "likelihood": "...", "impact": "...", "mitigant": "..."},
-      {"category": "ESG / Shariah", "risk": "specific risk", "likelihood": "...", "impact": "...", "mitigant": "..."},
-      {"category": "Macro", "risk": "specific risk", "likelihood": "...", "impact": "...", "mitigant": "..."},
-      {"category": "Exit", "risk": "specific risk", "likelihood": "...", "impact": "...", "mitigant": "..."}
+      {"category": "Franchise", "risk": "Franchisor terminates or refuses to transfer franchise agreement to new ownership", "likelihood": "Medium", "impact": "High", "mitigant": "Obtain explicit written franchisor consent pre-close; include termination right in SPA"},
+      {"category": "Valuation", "risk": "7.6x entry multiple compresses if market multiples decline or EBITDA misses", "likelihood": "Medium", "impact": "Medium", "mitigant": "Conservative exit assumption at 8.5x; FCF generation provides downside buffer"},
+      {"category": "Operational", "risk": "Key person dependency on founder CEO; departure disrupts operations", "likelihood": "Low", "impact": "High", "mitigant": "5-year employment contract; ESOP vesting tied to EBITDA targets"},
+      {"category": "Regulatory", "risk": "Kuwait CMA notification and KSCC ownership transfer complications", "likelihood": "Medium", "impact": "Medium", "mitigant": "Engage specialist Kuwaiti legal counsel; build 60-day buffer in closing timeline"},
+      {"category": "Shariah", "risk": "Franchise agreements contain riba-based penalty clauses incompatible with fund mandate", "likelihood": "Low", "impact": "High", "mitigant": "Full Shariah audit of all franchise agreements pre-close; renegotiate non-compliant clauses"},
+      {"category": "Market", "risk": "Kuwait F&B market saturation or economic slowdown reduces consumer spending", "likelihood": "Low", "impact": "Medium", "mitigant": "QSR is recession-resilient; diversified brand portfolio reduces single-brand exposure"},
+      {"category": "Execution", "risk": "Roll-up strategy fails to achieve target outlet count due to site scarcity or capex overruns", "likelihood": "Medium", "impact": "Medium", "mitigant": "Pipeline of 8 identified sites; capex contingency of 15% built into model"},
+      {"category": "Exit", "risk": "Strategic acquirers (Americana, Kout) delay or reduce acquisition appetite by 2028", "likelihood": "Low", "impact": "High", "mitigant": "Secondary PE exit or IPO on Boursa Kuwait as alternative; strong FCF supports dividend recap"}
     ]
   },
   "mitigantsConditions": {
-    "narrative": "3–4 sentences on the conditions framework and how they protect the fund",
+    "narrative": "3–4 sentences",
     "conditions": [
-      {"condition": "specific condition from council", "owner": "Management | Fund | Advisor", "timeline": "Pre-close | 90 days | 6 months", "consequence": "what happens if not met"},
-      {"condition": "...", "owner": "...", "timeline": "...", "consequence": "..."},
-      {"condition": "...", "owner": "...", "timeline": "...", "consequence": "..."},
-      {"condition": "...", "owner": "...", "timeline": "...", "consequence": "..."}
+      {"condition": "Obtain explicit written consent from all three franchisors for ownership transfer", "owner": "Legal Counsel + Management", "timeline": "Pre-close (Day 0)", "consequence": "Deal termination"},
+      {"condition": "Full Shariah compliance audit of all franchise and operational agreements", "owner": "Shariah Adviser", "timeline": "Pre-close (Day 0)", "consequence": "Deal termination"},
+      {"condition": "Verify enforceability of 5-year non-compete covenant under Kuwaiti law", "owner": "Kuwaiti Legal Counsel", "timeline": "Pre-close (Day 0)", "consequence": "Price reduction or deal termination"},
+      {"condition": "Confirm zero undisclosed liabilities via full financial and legal due diligence", "owner": "Financial Adviser + Legal", "timeline": "Pre-close (Day 0)", "consequence": "Price adjustment or termination"},
+      {"condition": "CMA notification filed and acknowledged for KSCC ownership change", "owner": "Legal Counsel", "timeline": "Within 30 days of close", "consequence": "Regulatory penalty"},
+      {"condition": "Management ESOP documentation executed and board governance framework established", "owner": "Fund + Management", "timeline": "Within 60 days of close", "consequence": "Key person retention risk"},
+      {"condition": "Seller earn-out mechanism and rollover equity documentation finalised", "owner": "Fund Legal", "timeline": "Pre-close (Day 0)", "consequence": "Seller alignment risk"}
     ],
     "mitigants": [
-      {"risk": "specific risk", "mitigant": "specific structural or contractual mitigant", "residualRisk": "Low | Medium"},
-      {"risk": "...", "mitigant": "...", "residualRisk": "..."},
-      {"risk": "...", "mitigant": "...", "residualRisk": "..."},
-      {"risk": "...", "mitigant": "...", "residualRisk": "..."}
+      {"risk": "Franchise agreement non-transferability", "mitigant": "Franchisor consent clause in SPA with termination right if consent withheld", "residualRisk": "Low"},
+      {"risk": "Key person departure", "mitigant": "5-year employment contract + ESOP vesting over 4 years tied to EBITDA targets", "residualRisk": "Low"},
+      {"risk": "Valuation compression", "mitigant": "Conservative 8.5x exit assumption; strong FCF generation (KWD 8.86m cumulative) provides capital return floor", "residualRisk": "Medium"},
+      {"risk": "Regulatory complexity", "mitigant": "Specialist Kuwaiti legal counsel engaged; 60-day closing buffer; CMA pre-notification", "residualRisk": "Low"},
+      {"risk": "Roll-up execution risk", "mitigant": "8 identified sites in pipeline; 15% capex contingency; phased expansion plan", "residualRisk": "Medium"}
     ]
   },
   "exitStrategy": {
-    "narrative": "3–4 sentences on the exit strategy and preferred path",
+    "narrative": "3–4 sentences",
     "exitPaths": [
-      {"path": "Strategic Sale — GCC F&B conglomerate", "timing": "Year 4–5", "evRange": "KWD Xm–Xm", "moic": "X.Xx", "irr": "X%", "notes": "Americana / Kout as natural acquirers; precedent transactions support Xx EV/EBITDA"},
-      {"path": "Secondary PE Sale", "timing": "Year 3–4", "evRange": "KWD Xm–Xm", "moic": "X.Xx", "irr": "X%", "notes": "Regional PE appetite for scaled F&B platforms"},
-      {"path": "Kuwait Boursa IPO", "timing": "Year 5–6", "evRange": "KWD Xm–Xm", "moic": "X.Xx", "irr": "X%", "notes": "Requires KWD Xm+ EBITDA; market conditions dependent"}
+      {"path": "Strategic Sale to Regional Consolidator", "timing": "Year 3–4", "evRange": "KWD 20–26m", "moic": "2.3–3.0x", "irr": "22–30%", "notes": "Americana, Kout, Agthia — all active acquirers"},
+      {"path": "Secondary PE Sale", "timing": "Year 4–5", "evRange": "KWD 18–22m", "moic": "2.0–2.5x", "irr": "18–22%", "notes": "GCC-focused PE funds seeking F&B platforms"},
+      {"path": "IPO on Boursa Kuwait", "timing": "Year 5", "evRange": "KWD 22–28m", "moic": "2.5–3.2x", "irr": "20–26%", "notes": "Requires 25+ outlets and 3-year track record post-acquisition"},
+      {"path": "Dividend Recapitalisation", "timing": "Year 2–3", "evRange": "KWD 4–6m distribution", "moic": "1.4–1.6x partial", "irr": "N/A", "notes": "Partial liquidity if strategic exit delayed"}
     ],
     "comparableTransactions": [
-      {"target": "comparable company", "acquirer": "acquirer name", "year": "20XX", "ev": "USD Xm", "evEbitda": "Xx", "notes": "brief context"},
-      {"target": "...", "acquirer": "...", "year": "...", "ev": "...", "evEbitda": "...", "notes": "..."},
-      {"target": "...", "acquirer": "...", "year": "...", "ev": "...", "evEbitda": "...", "notes": "..."},
-      {"target": "...", "acquirer": "...", "year": "...", "ev": "...", "evEbitda": "...", "notes": "..."}
+      {"target": "Kout Food Group (partial)", "acquirer": "Agthia Group", "year": "2023", "ev": "USD 185m", "evEbitda": "8.5x", "notes": "Kuwait QSR platform — closest comparable"},
+      {"target": "Americana Restaurants", "acquirer": "PIF / ADQ", "year": "2022", "ev": "USD 2.1bn", "evEbitda": "11.2x", "notes": "GCC-wide platform; premium for scale"},
+      {"target": "Herfy Food Services", "acquirer": "Strategic buyer", "year": "2021", "ev": "SAR 1.8bn", "evEbitda": "9.8x", "notes": "Saudi QSR; comparable margin profile"},
+      {"target": "Kudu Corp", "acquirer": "Hassana Investment", "year": "2022", "ev": "SAR 2.4bn", "evEbitda": "10.5x", "notes": "Saudi QSR; institutional backing premium"}
     ],
-    "preferredPath": "2–3 sentences on the preferred exit path and why"
+    "preferredPath": "3–4 sentences on preferred exit path and rationale"
   },
   "managementAssessment": {
-    "narrative": "3–4 sentences on the management team and their track record",
-    "teamStrengths": ["strength 1 — specific", "strength 2", "strength 3"],
-    "teamGaps": ["gap 1 — specific with proposed solution", "gap 2", "gap 3"],
-    "keyPersonRisk": "2–3 sentences on key person dependency and mitigation",
-    "recommendation": "2–3 sentences on management retention, incentivisation, and any required hires"
+    "narrative": "3–4 sentences",
+    "teamStrengths": ["strength 1 with specific evidence", "strength 2", "strength 3", "strength 4"],
+    "teamGaps": ["gap 1 with proposed solution", "gap 2", "gap 3"],
+    "keyPersonRisk": "3–4 sentences on key person risk and mitigation",
+    "recommendation": "2–3 sentences on management recommendation"
   },
   "dealTerms": {
-    "narrative": "3–4 sentences on the deal terms and negotiation context",
+    "narrative": "3–4 sentences",
     "keyTerms": [
-      {"term": "Entry Valuation", "proposed": "Xx EV/EBITDA", "marketStandard": "Xx–Xx EV/EBITDA", "negotiationNote": "specific negotiation point"},
-      {"term": "Equity Stake", "proposed": "X%", "marketStandard": "Majority / Minority", "negotiationNote": "..."},
-      {"term": "Board Representation", "proposed": "X/X seats", "marketStandard": "Pro-rata", "negotiationNote": "..."},
-      {"term": "Anti-dilution", "proposed": "Full ratchet / Weighted avg", "marketStandard": "Weighted avg", "negotiationNote": "..."},
-      {"term": "Drag / Tag Along", "proposed": "Standard", "marketStandard": "Standard", "negotiationNote": "..."},
-      {"term": "Earn-out", "proposed": "X% of equity; X-year", "marketStandard": "Varies", "negotiationNote": "..."},
-      {"term": "Exclusivity", "proposed": "X weeks", "marketStandard": "4–6 weeks", "negotiationNote": "..."}
+      {"term": "Entry Valuation", "proposed": "KWD 10.03m EV (7.6x LTM EBITDA)", "marketStandard": "6–9x for GCC QSR", "negotiationNote": "Acceptable; push for 7.0x if EBITDA misses in Q1 2026"},
+      {"term": "Equity Stake", "proposed": "60% controlling stake", "marketStandard": "51–70% for PE buyouts", "negotiationNote": "Ensure board majority (3 of 5 seats) regardless of stake"},
+      {"term": "Seller Rollover", "proposed": "40% retained equity", "marketStandard": "20–40% for founder-led deals", "negotiationNote": "Require drag-along rights after Year 3"},
+      {"term": "Non-Compete", "proposed": "5-year, Kuwait-wide", "marketStandard": "3–5 years, geographic scope", "negotiationNote": "Verify enforceability under Kuwaiti Commercial Law"},
+      {"term": "Earn-Out", "proposed": "SSSG >8% triggers 5% bonus on seller's 40%", "marketStandard": "Common in founder-led F&B deals", "negotiationNote": "Cap total earn-out at KWD 0.5m; tie to audited EBITDA"},
+      {"term": "Management ESOP", "proposed": "10% pool, 4-year vest, EBITDA hurdle", "marketStandard": "5–15% for PE-backed F&B", "negotiationNote": "Ensure CEO receives 60% of pool to retain key person"},
+      {"term": "Governance", "proposed": "5-member board, 3 fund nominees", "marketStandard": "Standard for 60% PE stake", "negotiationNote": "Require fund approval for capex >KWD 50K and new franchise agreements"}
     ],
-    "redLines": ["red line 1 — specific", "red line 2", "red line 3"],
-    "preferredOutcome": "2–3 sentences on the preferred deal structure and walk-away conditions"
+    "redLines": [
+      "Franchisor consent for ownership transfer must be obtained pre-close — no exceptions",
+      "Full Shariah compliance certification required before fund can deploy capital",
+      "Seller non-compete must be legally enforceable under Kuwaiti law — independent legal opinion required",
+      "No undisclosed liabilities exceeding KWD 100K — SPA indemnity required for any breach"
+    ],
+    "preferredOutcome": "3–4 sentences on preferred negotiation outcome"
   },
   "appendix": {
     "comparableTransactionsTable": [
-      {"deal": "deal name", "year": "20XX", "sector": "QSR / F&B", "ev": "USD Xm", "multiple": "Xx EV/EBITDA"},
-      {"deal": "...", "year": "...", "sector": "...", "ev": "...", "multiple": "..."},
-      {"deal": "...", "year": "...", "sector": "...", "ev": "...", "multiple": "..."},
-      {"deal": "...", "year": "...", "sector": "...", "ev": "...", "multiple": "..."},
-      {"deal": "...", "year": "...", "sector": "...", "ev": "...", "multiple": "..."}
+      {"deal": "Kout Food Group / Agthia", "year": "2023", "sector": "Kuwait QSR", "ev": "USD 185m", "multiple": "8.5x EBITDA"},
+      {"deal": "Americana / PIF-ADQ", "year": "2022", "sector": "GCC QSR", "ev": "USD 2.1bn", "multiple": "11.2x EBITDA"},
+      {"deal": "Herfy Food / Strategic", "year": "2021", "sector": "Saudi QSR", "ev": "SAR 1.8bn", "multiple": "9.8x EBITDA"},
+      {"deal": "Kudu Corp / Hassana", "year": "2022", "sector": "Saudi QSR", "ev": "SAR 2.4bn", "multiple": "10.5x EBITDA"},
+      {"deal": "Alsea / Vips (MENA)", "year": "2022", "sector": "MENA F&B", "ev": "USD 320m", "multiple": "8.0x EBITDA"}
     ],
     "marketDataSources": [
-      {"source": "Euromonitor International", "dataPoint": "Kuwait F&B market size and growth", "relevance": "Market sizing and CAGR validation"},
-      {"source": "BMI Research / Fitch Solutions", "dataPoint": "GCC consumer spending trends", "relevance": "Macro tailwind validation"},
-      {"source": "Kuwait CMA filings", "dataPoint": "Listed F&B company financials", "relevance": "Comparable company benchmarking"},
-      {"source": "World Bank", "dataPoint": "Kuwait GDP per capita and demographics", "relevance": "Consumer spending capacity"}
+      {"source": "Euromonitor International", "dataPoint": "Kuwait F&B market size KWD 1.4bn (2023)", "relevance": "Market sizing and CAGR projections"},
+      {"source": "BMI Research / Fitch Solutions", "dataPoint": "Kuwait QSR CAGR 7% (2024–2028)", "relevance": "Growth rate assumptions"},
+      {"source": "World Bank Open Data", "dataPoint": "Kuwait GDP per capita USD 33,000 (2023)", "relevance": "Consumer spending capacity"},
+      {"source": "Kuwait CMA Annual Report", "dataPoint": "F&B sector FDI and licensing data", "relevance": "Regulatory framework"},
+      {"source": "Kout Food Group Annual Report", "dataPoint": "8.5x EBITDA acquisition multiple (2023)", "relevance": "Exit multiple benchmark"}
     ],
     "keyAssumptions": [
-      {"assumption": "Revenue CAGR", "base": "X%", "bear": "X%", "bull": "X%"},
-      {"assumption": "Exit EV/EBITDA", "base": "Xx", "bear": "Xx", "bull": "Xx"},
-      {"assumption": "EBITDA Margin at Exit", "base": "X%", "bear": "X%", "bull": "X%"},
-      {"assumption": "New Outlets / Year", "base": "X", "bear": "X", "bull": "X"},
-      {"assumption": "SSSG", "base": "X%", "bear": "X%", "bull": "X%"}
+      {"assumption": "Revenue CAGR", "base": "12%", "bear": "6%", "bull": "18%"},
+      {"assumption": "EBITDA Margin (Exit Year)", "base": "31%", "bear": "26%", "bull": "35%"},
+      {"assumption": "Exit EV/EBITDA", "base": "8.5x", "bear": "6.5x", "bull": "10.5x"},
+      {"assumption": "New Outlets/Year", "base": "2", "bear": "1", "bull": "3"},
+      {"assumption": "SSSG", "base": "8%", "bear": "3%", "bull": "12%"},
+      {"assumption": "Hold Period", "base": "4 years", "bear": "5 years", "bull": "3 years"}
     ]
   }
-}
-
-IMPORTANT: Replace ALL placeholder "X" values with real, plausible, internally-consistent numbers derived from the deal context in the council votes. Make reasonable assumptions where data is not provided and state them clearly. The memo must read as if written by a senior PE professional with deep knowledge of the deal.`;
+}`;
 
   const response = await invokeLLM({
     messages: [
-      { role: "system", content: "You are a Managing Director at a top-tier Middle East private equity firm. You write institutional-grade IC memos with real numbers, specific analysis, and opinionated recommendations. Return only valid JSON." },
+      { role: "system", content: "You are a senior PE investment professional. Return only valid JSON, no markdown, no explanation." },
       { role: "user", content: prompt },
     ],
     response_format: { type: "json_object" } as any,
@@ -518,24 +504,26 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
   const PDFDocument = (await import("pdfkit")).default;
 
   return new Promise((resolve, reject) => {
-    // ── Design tokens ─────────────────────────────────────────────────────────
-    const BG       = "#070B12";
-    const BG2      = "#0D1421";
-    const BG3      = "#111827";
-    const BORDER_C = "#1E2D3D";
-    const ACCENT   = "#4A9EFF";
-    const GREEN    = "#00D97E";
-    const AMBER    = "#F59E0B";
-    const RED      = "#EF4444";
-    const WHITE    = "#E2E8F0";
-    const MUTED    = "#64748B";
-    const GOLD     = "#D4AF37";
-    const PURPLE   = "#A855F7";
+    // ── Design tokens — WHITE background institutional style ──────────────────
+    const BG        = "#FFFFFF";   // page background
+    const BG2       = "#F8FAFC";   // card / table alt row
+    const BG3       = "#F1F5F9";   // table header / section header bg
+    const BORDER_C  = "#E2E8F0";   // dividers, borders
+    const ACCENT    = "#1E40AF";   // primary blue (dark, readable on white)
+    const GREEN     = "#15803D";   // positive / approve
+    const AMBER     = "#B45309";   // warning / amber
+    const RED       = "#DC2626";   // risk / reject
+    const TEXT      = "#0F172A";   // primary body text
+    const TEXT2     = "#334155";   // secondary body text
+    const MUTED     = "#64748B";   // muted / labels
+    const GOLD      = "#92400E";   // gold (dark amber, readable on white)
+    const PURPLE    = "#6D28D9";   // non-consensus / purple accent
 
     const A4_W   = 595.28;
     const A4_H   = 841.89;
     const ML     = 48;
     const MR     = 48;
+    const MT     = 44;   // top margin for content (below header)
     const BODY_W = A4_W - ML - MR;
 
     const verdictColor =
@@ -555,10 +543,11 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
         Title: `IC Memo — ${input.dealName}`,
         Author: "AgenThinkMesh · Council of 10",
         Subject: "Investment Committee Memo",
-        Keywords: "VC, IC Memo, Investment Committee, Private Equity",
+        Keywords: "IC Memo, Investment Committee, Private Equity",
       },
     });
 
+    // White background on every new page
     doc.on("pageAdded", () => {
       doc.rect(0, 0, A4_W, A4_H).fill(BG);
     });
@@ -569,279 +558,328 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     doc.on("error", reject);
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    /** Ensure at least `needed` pts remain on page; add page if not */
     function ensureSpace(needed: number) {
-      if (doc.y + needed > A4_H - 70) {
+      if (doc.y + needed > A4_H - 56) {
         doc.addPage();
-        doc.y = 56;
+        doc.y = MT;
       }
     }
 
+    /** Running page counter */
+    let _pageNum = 1;
+
+    /** Render header on current page */
     function pageHeader(sectionLabel?: string) {
-      doc.rect(0, 0, A4_W, 36).fill(BG2);
-      doc.rect(0, 36, A4_W, 0.5).fill(GOLD);
-      doc.fontSize(6.5).fillColor(GOLD).font("Helvetica-Bold")
-        .text("AGENTHINK MESH", ML, 11, { continued: false });
+      // Top rule
+      doc.rect(0, 0, A4_W, 32).fill(BG3);
+      doc.rect(0, 32, A4_W, 1).fill(BORDER_C);
+      doc.rect(0, 0, 4, 32).fill(ACCENT);
+      doc.fontSize(6.5).fillColor(ACCENT).font("Helvetica-Bold")
+        .text("AGENTHINK MESH", ML, 10, { continued: false });
       doc.fontSize(6.5).fillColor(MUTED).font("Helvetica")
-        .text("COUNCIL OF 10 · INVESTMENT COMMITTEE MEMO", ML + 90, 11);
+        .text("COUNCIL OF 10  ·  INVESTMENT COMMITTEE MEMO", ML + 88, 10);
       if (sectionLabel) {
         doc.fontSize(6.5).fillColor(ACCENT).font("Helvetica-Bold")
-          .text(sectionLabel.toUpperCase(), A4_W - MR - 120, 11, { width: 120, align: "right" });
+          .text(sectionLabel.toUpperCase(), A4_W - MR - 140, 10, { width: 140, align: "right" });
       } else {
         const dateStr = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
         doc.fontSize(6.5).fillColor(MUTED).font("Helvetica")
-          .text(dateStr, A4_W - MR - 60, 11, { width: 60, align: "right" });
+          .text(dateStr, A4_W - MR - 60, 10, { width: 60, align: "right" });
       }
     }
 
+    /** Render footer on current page */
     function pageFooter(pageNum: number) {
-      doc.rect(0, A4_H - 26, A4_W, 0.5).fill(BG3);
+      doc.rect(0, A4_H - 24, A4_W, 1).fill(BORDER_C);
       doc.fontSize(6).fillColor(MUTED).font("Helvetica")
-        .text("CONFIDENTIAL — For Authorised Investment Committee Members Only. AI-assisted analysis. Not investment advice.", ML, A4_H - 17, { width: BODY_W - 40 });
+        .text("CONFIDENTIAL — For Authorised Investment Committee Members Only. AI-assisted analysis. Not investment advice.",
+          ML, A4_H - 16, { width: BODY_W - 30 });
       doc.fontSize(6).fillColor(MUTED).font("Helvetica")
-        .text(`${pageNum}`, A4_W - MR - 16, A4_H - 17, { width: 16, align: "right" });
+        .text(`${pageNum}`, A4_W - MR - 16, A4_H - 16, { width: 16, align: "right" });
     }
 
+    /** Section divider bar — does NOT force a new page */
     function sectionDivider(num: string, title: string, color: string = ACCENT) {
-      ensureSpace(44);
-      doc.rect(ML, doc.y, BODY_W, 32).fill(BG2);
-      doc.rect(ML, doc.y, 3, 32).fill(color);
-      const sy = doc.y + 6;
-      doc.fontSize(8).fillColor(color).font("Helvetica-Bold")
-        .text(num, ML + 10, sy, { continued: false });
-      doc.fontSize(12).fillColor(WHITE).font("Helvetica-Bold")
-        .text(title, ML + 28, sy - 1, { continued: false });
-      doc.y += 40;
+      ensureSpace(36);
+      doc.rect(ML, doc.y, BODY_W, 28).fill(BG3);
+      doc.rect(ML, doc.y, 3, 28).fill(color);
+      const sy = doc.y + 7;
+      doc.fontSize(7.5).fillColor(color).font("Helvetica-Bold")
+        .text(num, ML + 10, sy);
+      doc.fontSize(11).fillColor(TEXT).font("Helvetica-Bold")
+        .text(title, ML + 28, sy - 1);
+      doc.y += 34;
     }
 
+    /** Sub-heading with thin rule above */
     function subHeading(title: string, color: string = ACCENT) {
-      ensureSpace(22);
+      ensureSpace(20);
       doc.rect(ML, doc.y, BODY_W, 0.5).fill(BORDER_C);
       doc.y += 5;
-      doc.fontSize(8).fillColor(color).font("Helvetica-Bold")
-        .text(title.toUpperCase(), ML, doc.y, { characterSpacing: 1 });
-      doc.y += 14;
+      doc.fontSize(7.5).fillColor(color).font("Helvetica-Bold")
+        .text(title.toUpperCase(), ML, doc.y, { characterSpacing: 0.8 });
+      doc.y += 13;
     }
 
-    function bodyText(text: string, color: string = WHITE) {
+    /** Body paragraph text */
+    function bodyText(text: string, color: string = TEXT2) {
       if (!text) return;
-      ensureSpace(20);
+      ensureSpace(18);
       doc.fontSize(9.5).fillColor(color).font("Helvetica")
-        .text(text, ML, doc.y, { width: BODY_W, lineGap: 3, align: "justify" });
-      doc.y += 10;
+        .text(text, ML, doc.y, { width: BODY_W, lineGap: 2.5, align: "justify" });
+      doc.y += 8;
     }
 
-    function bullet(text: string, color: string = WHITE, indent: number = 0) {
+    /** Bullet point */
+    function bullet(text: string, color: string = TEXT2, indent: number = 0) {
       if (!text) return;
-      ensureSpace(20);
+      ensureSpace(16);
       const x = ML + indent;
       const w = BODY_W - indent;
-      doc.circle(x + 4, doc.y + 5.5, 2).fill(color);
+      doc.circle(x + 4, doc.y + 5, 2).fill(color);
       doc.fontSize(9).fillColor(color).font("Helvetica")
         .text(text, x + 13, doc.y, { width: w - 13, lineGap: 2 });
-      doc.y += 5;
+      doc.y += 4;
     }
 
-    function kv(label: string, value: string, labelColor: string = MUTED, valueColor: string = WHITE) {
-      ensureSpace(16);
-      doc.fontSize(7.5).fillColor(labelColor).font("Helvetica-Bold")
-        .text(label.toUpperCase() + "  ", ML, doc.y, { continued: true, characterSpacing: 0.4 });
-      doc.fontSize(9).fillColor(valueColor).font("Helvetica")
-        .text(value, { continued: false });
-      doc.y += 3;
-    }
-
-    // Two-column key-value grid
+    /** Two-column key-value grid with white cards */
     function kvGrid(items: Array<{ label: string; value: string }>, colCount: number = 2) {
       const colW = BODY_W / colCount;
+      const rowH = 30;
       let col = 0;
       let rowStartY = doc.y;
+
       items.forEach((item, i) => {
+        if (col === 0 && i > 0) {
+          rowStartY = doc.y;
+        }
+        ensureSpace(rowH + 4);
         const x = ML + col * colW;
-        ensureSpace(32);
-        if (col === 0 && i > 0) rowStartY = doc.y;
-        doc.rect(x, rowStartY, colW - 4, 28).fill(BG2);
-        doc.fontSize(7).fillColor(MUTED).font("Helvetica-Bold")
+        // Card background
+        doc.rect(x, rowStartY, colW - 4, rowH).fill(BG2);
+        doc.rect(x, rowStartY, colW - 4, rowH).stroke(BORDER_C);
+        doc.fontSize(6.5).fillColor(MUTED).font("Helvetica-Bold")
           .text(item.label.toUpperCase(), x + 8, rowStartY + 5, { width: colW - 20, characterSpacing: 0.3 });
-        doc.fontSize(10).fillColor(WHITE).font("Helvetica-Bold")
+        doc.fontSize(10).fillColor(TEXT).font("Helvetica-Bold")
           .text(item.value, x + 8, rowStartY + 15, { width: colW - 20 });
+
         col++;
         if (col >= colCount) {
           col = 0;
-          doc.y = rowStartY + 32;
+          doc.y = rowStartY + rowH + 4;
           rowStartY = doc.y;
         }
       });
-      if (col > 0) doc.y = rowStartY + 32;
+      if (col > 0) doc.y = rowStartY + rowH + 4;
       doc.y += 6;
     }
 
-    // Generic table
-    function table(headers: string[], rows: string[][], colWidths?: number[], headerColor: string = ACCENT) {
+    /** Generic table with proper column alignment */
+    function table(
+      headers: string[],
+      rows: string[][],
+      colWidths?: number[],
+      headerColor: string = ACCENT
+    ) {
       const totalW = BODY_W;
       const numCols = headers.length;
       const cw = colWidths ?? headers.map(() => totalW / numCols);
 
-      ensureSpace(28);
+      ensureSpace(24);
       // Header row
-      doc.rect(ML, doc.y, totalW, 20).fill(BG3);
+      doc.rect(ML, doc.y, totalW, 18).fill(BG3);
       let cx = ML;
       headers.forEach((h, i) => {
         doc.fontSize(7.5).fillColor(headerColor).font("Helvetica-Bold")
-          .text(h, cx + 5, doc.y + 6, { width: cw[i] - 10, lineBreak: false });
+          .text(h, cx + 5, doc.y + 5, { width: cw[i] - 10, lineBreak: false });
         cx += cw[i];
       });
-      doc.y += 22;
+      doc.y += 20;
 
       rows.forEach((row, ri) => {
-        // Estimate row height
-        const maxLines = Math.max(...row.map((cell, ci) => Math.ceil((cell ?? "").length / Math.max(1, (cw[ci] - 10) / 6))));
-        const rowH = Math.max(18, maxLines * 12 + 6);
-        ensureSpace(rowH + 4);
+        // Estimate height based on longest cell
+        const maxChars = Math.max(...row.map((cell, ci) =>
+          Math.ceil((cell ?? "").length / Math.max(1, (cw[ci] - 10) / 5.5))
+        ));
+        const rowH = Math.max(16, maxChars * 11 + 6);
+        ensureSpace(rowH + 2);
+
         if (ri % 2 === 0) doc.rect(ML, doc.y, totalW, rowH).fill(BG2);
         cx = ML;
         row.forEach((cell, ci) => {
-          doc.fontSize(8.5).fillColor(WHITE).font("Helvetica")
-            .text(cell ?? "", cx + 5, doc.y + 5, { width: cw[ci] - 10, lineGap: 1 });
+          doc.fontSize(8.5).fillColor(TEXT2).font("Helvetica")
+            .text(cell ?? "", cx + 5, doc.y + 4, { width: cw[ci] - 10, lineGap: 1.5 });
           cx += cw[ci];
         });
-        doc.y += rowH + 2;
+        doc.y += rowH + 1;
       });
       doc.y += 8;
     }
 
-    // Financial table with highlighted first column
+    /** Financial table with label column + year columns */
     function financialTable(years: string[], rows: FinancialRow[], accentCol?: number) {
       const labelW = 160;
       const numCols = years.length;
       const colW = (BODY_W - labelW) / numCols;
 
-      ensureSpace(24);
+      ensureSpace(22);
       // Header
-      doc.rect(ML, doc.y, BODY_W, 20).fill(BG3);
-      doc.fontSize(7.5).fillColor(MUTED).font("Helvetica-Bold")
-        .text("", ML + 5, doc.y + 6, { width: labelW - 10 });
+      doc.rect(ML, doc.y, BODY_W, 18).fill(BG3);
       years.forEach((y, i) => {
         const x = ML + labelW + i * colW;
         const isAccent = i === accentCol;
         doc.fontSize(7.5).fillColor(isAccent ? GOLD : ACCENT).font("Helvetica-Bold")
-          .text(y, x + 5, doc.y + 6, { width: colW - 10, align: "right" });
+          .text(y, x + 2, doc.y + 5, { width: colW - 4, align: "right" });
       });
-      doc.y += 22;
+      doc.y += 20;
 
       rows.forEach((row, ri) => {
-        const isHighlight = row.label.includes("EBITDA") || row.label.includes("Revenue") || row.label.includes("Free Cash");
-        ensureSpace(18);
-        if (ri % 2 === 0) doc.rect(ML, doc.y, BODY_W, 16).fill(BG2);
-        doc.fontSize(8.5).fillColor(isHighlight ? WHITE : MUTED).font(isHighlight ? "Helvetica-Bold" : "Helvetica")
-          .text(row.label, ML + 5, doc.y + 4, { width: labelW - 10 });
+        const isHighlight = /EBITDA|Revenue|Free Cash/i.test(row.label);
+        ensureSpace(16);
+        if (ri % 2 === 0) doc.rect(ML, doc.y, BODY_W, 15).fill(BG2);
+        doc.fontSize(8.5)
+          .fillColor(isHighlight ? TEXT : MUTED)
+          .font(isHighlight ? "Helvetica-Bold" : "Helvetica")
+          .text(row.label, ML + 5, doc.y + 3, { width: labelW - 10 });
         row.values.forEach((val, i) => {
           const x = ML + labelW + i * colW;
           const isAccent = i === accentCol;
-          doc.fontSize(8.5).fillColor(isAccent ? GOLD : WHITE).font("Helvetica")
-            .text(val ?? "—", x + 5, doc.y + 4, { width: colW - 10, align: "right" });
+          doc.fontSize(8.5).fillColor(isAccent ? GOLD : TEXT2).font("Helvetica")
+            .text(val ?? "—", x + 2, doc.y + 3, { width: colW - 4, align: "right" });
         });
-        doc.y += 18;
+        doc.y += 16;
       });
       doc.y += 8;
     }
 
-    // Sensitivity table with color coding
-    function sensitivityTable(rowLabel: string, colLabel: string, colHeaders: string[], rows: Array<{ label: string; values: string[] }>) {
-      const labelW = 60;
+    /** Sensitivity table with colour-coded cells */
+    function sensitivityTable(
+      rowLabel: string,
+      colLabel: string,
+      colHeaders: string[],
+      rows: Array<{ label: string; values: string[] }>
+    ) {
+      const labelW = 64;
       const numCols = colHeaders.length;
       const colW = (BODY_W - labelW) / numCols;
 
-      ensureSpace(30);
+      ensureSpace(28);
       // Corner + headers
-      doc.rect(ML, doc.y, BODY_W, 20).fill(BG3);
-      doc.fontSize(7).fillColor(MUTED).font("Helvetica-Bold")
-        .text(`${rowLabel} ↓ / ${colLabel} →`, ML + 4, doc.y + 6, { width: labelW - 4 });
+      doc.rect(ML, doc.y, BODY_W, 18).fill(BG3);
+      doc.fontSize(6.5).fillColor(MUTED).font("Helvetica-Bold")
+        .text(`${rowLabel} ↓ / ${colLabel} →`, ML + 3, doc.y + 5, { width: labelW - 4 });
       colHeaders.forEach((h, i) => {
         doc.fontSize(7.5).fillColor(ACCENT).font("Helvetica-Bold")
-          .text(h, ML + labelW + i * colW + 4, doc.y + 6, { width: colW - 8, align: "center" });
+          .text(h, ML + labelW + i * colW + 2, doc.y + 5, { width: colW - 4, align: "center" });
       });
-      doc.y += 22;
+      doc.y += 20;
 
       rows.forEach((row) => {
-        ensureSpace(18);
-        doc.rect(ML, doc.y, labelW, 16).fill(BG3);
+        ensureSpace(16);
+        doc.rect(ML, doc.y, labelW, 15).fill(BG3);
         doc.fontSize(8).fillColor(GOLD).font("Helvetica-Bold")
-          .text(row.label, ML + 4, doc.y + 4, { width: labelW - 8, align: "center" });
+          .text(row.label, ML + 3, doc.y + 3, { width: labelW - 6, align: "center" });
         row.values.forEach((val, i) => {
           const numVal = parseFloat(val.replace("%", ""));
-          const cellColor =
-            numVal >= 25 ? GREEN :
-            numVal >= 20 ? "#22C55E" :
-            numVal >= 15 ? AMBER :
-            numVal >= 10 ? "#F97316" : RED;
-          doc.rect(ML + labelW + i * colW, doc.y, colW, 16).fill(`${cellColor}22`);
-          doc.fontSize(8.5).fillColor(cellColor).font("Helvetica-Bold")
-            .text(val, ML + labelW + i * colW + 4, doc.y + 4, { width: colW - 8, align: "center" });
+          const cellBg =
+            numVal >= 25 ? "#DCFCE7" :
+            numVal >= 20 ? "#D1FAE5" :
+            numVal >= 15 ? "#FEF3C7" :
+            numVal >= 10 ? "#FFEDD5" : "#FEE2E2";
+          const cellTxt =
+            numVal >= 25 ? "#15803D" :
+            numVal >= 20 ? "#166534" :
+            numVal >= 15 ? "#92400E" :
+            numVal >= 10 ? "#C2410C" : "#DC2626";
+          doc.rect(ML + labelW + i * colW, doc.y, colW, 15).fill(cellBg);
+          doc.fontSize(8.5).fillColor(cellTxt).font("Helvetica-Bold")
+            .text(val, ML + labelW + i * colW + 2, doc.y + 3, { width: colW - 4, align: "center" });
         });
-        doc.y += 18;
+        doc.y += 16;
       });
       doc.y += 8;
     }
 
-    // Risk matrix row
+    /** Risk matrix row */
     function riskRow(row: RiskRow, ri: number) {
-      const likelihoodColor = row.likelihood === "High" ? RED : row.likelihood === "Medium" ? AMBER : GREEN;
-      const impactColor = row.impact === "High" ? RED : row.impact === "Medium" ? AMBER : GREEN;
-      const catW = 80; const riskW = 160; const lhW = 55; const impW = 55; const mitW = BODY_W - catW - riskW - lhW - impW;
-      const rowH = Math.max(24, Math.ceil(row.risk.length / 28) * 12 + 8);
-      ensureSpace(rowH + 4);
+      const lhColor = row.likelihood === "High" ? RED : row.likelihood === "Medium" ? AMBER : GREEN;
+      const impColor = row.impact === "High" ? RED : row.impact === "Medium" ? AMBER : GREEN;
+      const catW = 80; const riskW = 155; const lhW = 55; const impW = 55;
+      const mitW = BODY_W - catW - riskW - lhW - impW;
+      const rowH = Math.max(22, Math.ceil(row.risk.length / 26) * 11 + 8);
+      ensureSpace(rowH + 2);
       if (ri % 2 === 0) doc.rect(ML, doc.y, BODY_W, rowH).fill(BG2);
-      doc.fontSize(8).fillColor(ACCENT).font("Helvetica-Bold")
-        .text(row.category, ML + 4, doc.y + 6, { width: catW - 8 });
-      doc.fontSize(8).fillColor(WHITE).font("Helvetica")
-        .text(row.risk, ML + catW + 4, doc.y + 6, { width: riskW - 8, lineGap: 1 });
-      doc.fontSize(8).fillColor(likelihoodColor).font("Helvetica-Bold")
-        .text(row.likelihood, ML + catW + riskW + 4, doc.y + 6, { width: lhW - 8, align: "center" });
-      doc.fontSize(8).fillColor(impactColor).font("Helvetica-Bold")
-        .text(row.impact, ML + catW + riskW + lhW + 4, doc.y + 6, { width: impW - 8, align: "center" });
+      doc.fontSize(7.5).fillColor(ACCENT).font("Helvetica-Bold")
+        .text(row.category, ML + 4, doc.y + 5, { width: catW - 8 });
+      doc.fontSize(8).fillColor(TEXT2).font("Helvetica")
+        .text(row.risk, ML + catW + 4, doc.y + 5, { width: riskW - 8, lineGap: 1.5 });
+      doc.fontSize(8).fillColor(lhColor).font("Helvetica-Bold")
+        .text(row.likelihood, ML + catW + riskW + 4, doc.y + 5, { width: lhW - 8, align: "center" });
+      doc.fontSize(8).fillColor(impColor).font("Helvetica-Bold")
+        .text(row.impact, ML + catW + riskW + lhW + 4, doc.y + 5, { width: impW - 8, align: "center" });
       doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
-        .text(row.mitigant, ML + catW + riskW + lhW + impW + 4, doc.y + 6, { width: mitW - 8, lineGap: 1 });
-      doc.y += rowH + 2;
+        .text(row.mitigant, ML + catW + riskW + lhW + impW + 4, doc.y + 5, { width: mitW - 8, lineGap: 1.5 });
+      doc.y += rowH + 1;
+    }
+
+    /** Start a new section page with header */
+    function newSectionPage(sectionLabel: string) {
+      doc.addPage();
+      _pageNum++;
+      doc.y = MT;
+      pageHeader(sectionLabel);
+      doc.y = MT + 8;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // COVER PAGE
     // ─────────────────────────────────────────────────────────────────────────
     doc.rect(0, 0, A4_W, A4_H).fill(BG);
-    // Gold top bar
-    doc.rect(0, 0, A4_W, 6).fill(GOLD);
-    // Fund header
-    doc.rect(0, 6, A4_W, 60).fill(BG2);
-    doc.fontSize(9).fillColor(GOLD).font("Helvetica-Bold")
-      .text("AGENTHINK MESH", ML, 22, { characterSpacing: 2 });
+
+    // Top accent bar
+    doc.rect(0, 0, A4_W, 5).fill(ACCENT);
+
+    // Header band
+    doc.rect(0, 5, A4_W, 55).fill(BG3);
+    doc.rect(0, 60, A4_W, 1).fill(BORDER_C);
+    doc.fontSize(10).fillColor(ACCENT).font("Helvetica-Bold")
+      .text("AGENTHINK MESH", ML, 18, { characterSpacing: 1.5 });
     doc.fontSize(8).fillColor(MUTED).font("Helvetica")
-      .text("COUNCIL OF 10 · INVESTMENT COMMITTEE", ML, 35, { characterSpacing: 1 });
+      .text("COUNCIL OF 10  ·  INVESTMENT COMMITTEE", ML, 32, { characterSpacing: 0.8 });
     const dateStr = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
     doc.fontSize(8).fillColor(MUTED).font("Helvetica")
       .text(dateStr, A4_W - MR - 100, 28, { width: 100, align: "right" });
 
     // Verdict pill
-    doc.rect(ML, 90, BODY_W, 60).fillAndStroke(BG2, BORDER_C);
-    doc.fontSize(22).fillColor(verdictColor).font("Helvetica-Bold")
-      .text(verdictLabel, ML + 20, 104);
+    const verdictBg = input.verdict === "APPROVED" ? "#DCFCE7" :
+      input.verdict === "APPROVED_WITH_CONDITIONS" ? "#DBEAFE" : "#FEE2E2";
+    doc.rect(ML, 82, BODY_W, 52).fill(verdictBg);
+    doc.rect(ML, 82, 4, 52).fill(verdictColor);
+    doc.fontSize(20).fillColor(verdictColor).font("Helvetica-Bold")
+      .text(verdictLabel, ML + 18, 95);
     doc.fontSize(9).fillColor(MUTED).font("Helvetica")
-      .text(`${input.yesCount} Yes · ${input.noCount} No · ${Math.round(input.confidenceScore * 100)}% Consensus`, ML + 20, 132);
+      .text(`${input.yesCount} Yes · ${input.noCount} No · ${Math.round(input.confidenceScore * 100)}% Consensus`,
+        ML + 18, 121);
 
     // Deal name
-    doc.fontSize(26).fillColor(WHITE).font("Helvetica-Bold")
-      .text(input.dealName, ML, 170, { width: BODY_W });
-    doc.y = 210;
-    doc.fontSize(11).fillColor(MUTED).font("Helvetica")
-      .text("INVESTMENT COMMITTEE MEMORANDUM", ML, doc.y, { characterSpacing: 1.5 });
+    doc.y = 152;
+    doc.fontSize(24).fillColor(TEXT).font("Helvetica-Bold")
+      .text(input.dealName, ML, doc.y, { width: BODY_W });
+    doc.y += 36;
+    doc.fontSize(9).fillColor(MUTED).font("Helvetica")
+      .text("INVESTMENT COMMITTEE MEMORANDUM", ML, doc.y, { characterSpacing: 1.2 });
     doc.y += 16;
+    doc.rect(ML, doc.y, BODY_W, 0.5).fill(BORDER_C);
+    doc.y += 12;
 
-    // Thesis line
+    // Thesis
     if (memo.executiveSummary?.theBet) {
-      doc.rect(ML, doc.y, BODY_W, 0.5).fill(BORDER_C);
-      doc.y += 10;
-      doc.fontSize(12).fillColor(WHITE).font("Helvetica-Oblique")
-        .text(`"${memo.executiveSummary.theBet}"`, ML, doc.y, { width: BODY_W, lineGap: 4 });
-      doc.y += 24;
+      doc.rect(ML, doc.y, 3, 32).fill(ACCENT);
+      doc.fontSize(11).fillColor(TEXT).font("Helvetica-Oblique")
+        .text(`"${memo.executiveSummary.theBet}"`, ML + 12, doc.y, { width: BODY_W - 12, lineGap: 3 });
+      doc.y += 40;
     }
 
     // Deal snapshot grid
@@ -849,27 +887,29 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       kvGrid(memo.executiveSummary.dealSnapshot, 2);
     }
 
-    // Confidentiality notice
-    doc.y = A4_H - 80;
+    // Confidentiality — immediately after content, not fixed position
+    doc.y += 12;
     doc.rect(ML, doc.y, BODY_W, 0.5).fill(BORDER_C);
     doc.y += 8;
-    doc.fontSize(8).fillColor(MUTED).font("Helvetica")
+    doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
       .text("CONFIDENTIAL — For Authorised Investment Committee Members Only.", ML, doc.y, { width: BODY_W, align: "center" });
     doc.y += 10;
-    doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
-      .text("This document contains AI-assisted analysis generated by AgenThinkMesh Council of 10. It does not constitute investment advice.", ML, doc.y, { width: BODY_W, align: "center" });
+    doc.fontSize(7).fillColor(MUTED).font("Helvetica")
+      .text("This document contains AI-assisted analysis generated by AgenThinkMesh Council of 10. It does not constitute investment advice.",
+        ML, doc.y, { width: BODY_W, align: "center" });
 
     // ─────────────────────────────────────────────────────────────────────────
     // TABLE OF CONTENTS
     // ─────────────────────────────────────────────────────────────────────────
     doc.addPage();
-    doc.y = 56;
+    _pageNum++;
+    doc.y = MT;
     pageHeader();
 
-    doc.fontSize(16).fillColor(WHITE).font("Helvetica-Bold")
+    doc.fontSize(15).fillColor(TEXT).font("Helvetica-Bold")
       .text("TABLE OF CONTENTS", ML, doc.y);
-    doc.y += 20;
-    doc.rect(ML, doc.y, BODY_W, 0.5).fill(GOLD);
+    doc.y += 6;
+    doc.rect(ML, doc.y, BODY_W, 1.5).fill(ACCENT);
     doc.y += 14;
 
     const tocItems = [
@@ -887,41 +927,48 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       ["12.", "Exit Strategy"],
       ["13.", "Management Assessment"],
       ["14.", "Key Deal Terms & Negotiation Points"],
-      ["15.", "Appendix"],
+      ["15.", "Appendix — Council of 10 Votes"],
     ];
+
     tocItems.forEach(([num, title]) => {
-      doc.fontSize(10).fillColor(MUTED).font("Helvetica-Bold")
-        .text(num, ML, doc.y, { continued: true, width: 30 });
-      doc.fontSize(10).fillColor(WHITE).font("Helvetica")
-        .text(title, { continued: false });
-      doc.rect(ML + 30, doc.y + 2, BODY_W - 30, 0.3).fill(BORDER_C);
+      ensureSpace(18);
+      // Number
+      doc.fontSize(9.5).fillColor(ACCENT).font("Helvetica-Bold")
+        .text(num, ML, doc.y, { width: 28, continued: false });
+      // Title on same line
+      doc.fontSize(9.5).fillColor(TEXT).font("Helvetica")
+        .text(title, ML + 28, doc.y - 10.5, { continued: false });
+      // Dotted rule
+      doc.rect(ML + 28, doc.y + 1, BODY_W - 28, 0.3).fill(BORDER_C);
       doc.y += 16;
     });
 
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 1 — EXECUTIVE SUMMARY
     // ─────────────────────────────────────────────────────────────────────────
-    doc.addPage();
-    doc.y = 56;
-    pageHeader("1. Executive Summary");
+    newSectionPage("1. Executive Summary");
     sectionDivider("01", "Executive Summary", verdictColor);
 
     const es = memo.executiveSummary;
     if (es) {
       // Verdict banner
-      doc.rect(ML, doc.y, BODY_W, 44).fillAndStroke(`${verdictColor}0d`, `${verdictColor}55`);
-      doc.fontSize(14).fillColor(verdictColor).font("Helvetica-Bold")
-        .text(verdictLabel, ML + 16, doc.y + 8);
-      doc.fontSize(9).fillColor(MUTED).font("Helvetica")
-        .text(`${input.yesCount}/10 Council Members · ${Math.round(input.confidenceScore * 100)}% Consensus`, ML + 16, doc.y + 28);
-      doc.y += 52;
+      const esBg = input.verdict === "APPROVED" ? "#DCFCE7" :
+        input.verdict === "APPROVED_WITH_CONDITIONS" ? "#DBEAFE" : "#FEE2E2";
+      doc.rect(ML, doc.y, BODY_W, 40).fill(esBg);
+      doc.rect(ML, doc.y, 3, 40).fill(verdictColor);
+      doc.fontSize(13).fillColor(verdictColor).font("Helvetica-Bold")
+        .text(verdictLabel, ML + 14, doc.y + 7);
+      doc.fontSize(8.5).fillColor(MUTED).font("Helvetica")
+        .text(`${input.yesCount}/10 Council Members · ${Math.round(input.confidenceScore * 100)}% Consensus`,
+          ML + 14, doc.y + 26);
+      doc.y += 48;
 
       subHeading("The Bet", GOLD);
       if (es.theBet) {
-        doc.rect(ML, doc.y, 3, 30).fill(GOLD);
-        doc.fontSize(11).fillColor(WHITE).font("Helvetica-Oblique")
+        doc.rect(ML, doc.y, 3, 28).fill(GOLD);
+        doc.fontSize(10.5).fillColor(TEXT).font("Helvetica-Oblique")
           .text(es.theBet, ML + 12, doc.y, { width: BODY_W - 12, lineGap: 3 });
-        doc.y += 20;
+        doc.y += 16;
       }
 
       subHeading("Council Consensus");
@@ -942,9 +989,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 2 — DEAL OVERVIEW
     // ─────────────────────────────────────────────────────────────────────────
-    doc.addPage();
-    doc.y = 56;
-    pageHeader("2. Deal Overview");
+    newSectionPage("2. Deal Overview");
     sectionDivider("02", "Deal Overview", ACCENT);
 
     const dov = memo.dealOverview;
@@ -970,9 +1015,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 3 — TRANSACTION STRUCTURE
     // ─────────────────────────────────────────────────────────────────────────
-    doc.addPage();
-    doc.y = 56;
-    pageHeader("3. Transaction Structure");
+    newSectionPage("3. Transaction Structure");
     sectionDivider("03", "Transaction Structure", AMBER);
 
     const ts = memo.transactionStructure;
@@ -980,46 +1023,55 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       subHeading("Structure Overview");
       bodyText(ts.narrative ?? "");
 
-      // Sources & Uses side by side
+      // Sources & Uses — side by side using absolute X positioning
       subHeading("Sources & Uses");
-      const halfW = (BODY_W - 12) / 2;
-      const suY = doc.y;
+      const halfW = Math.floor((BODY_W - 8) / 2);
+      const usesX = ML + halfW + 8;
 
-      // Sources
-      ensureSpace(120);
-      doc.rect(ML, doc.y, halfW, 20).fill(BG3);
-      doc.fontSize(8).fillColor(GREEN).font("Helvetica-Bold")
-        .text("SOURCES", ML + 6, doc.y + 6, { characterSpacing: 0.8 });
-      doc.y += 22;
-      (ts.sourcesUses?.sources ?? []).forEach((s, i) => {
-        if (i % 2 === 0) doc.rect(ML, doc.y, halfW, 16).fill(BG2);
-        doc.fontSize(8.5).fillColor(WHITE).font("Helvetica")
-          .text(s.item, ML + 6, doc.y + 4, { width: halfW - 80 });
+      // Calculate total height needed for both sides
+      const srcRows = ts.sourcesUses?.sources ?? [];
+      const useRows = ts.sourcesUses?.uses ?? [];
+      const maxRows = Math.max(srcRows.length, useRows.length);
+      const tableH = 20 + maxRows * 18 + 4;
+      ensureSpace(tableH + 8);
+
+      const suStartY = doc.y;
+
+      // Sources header
+      doc.rect(ML, suStartY, halfW, 18).fill(BG3);
+      doc.fontSize(7.5).fillColor(GREEN).font("Helvetica-Bold")
+        .text("SOURCES", ML + 6, suStartY + 5, { characterSpacing: 0.6 });
+
+      // Uses header
+      doc.rect(usesX, suStartY, halfW, 18).fill(BG3);
+      doc.fontSize(7.5).fillColor(AMBER).font("Helvetica-Bold")
+        .text("USES", usesX + 6, suStartY + 5, { characterSpacing: 0.6 });
+
+      // Sources rows
+      srcRows.forEach((s, i) => {
+        const rowY = suStartY + 20 + i * 18;
+        if (i % 2 === 0) doc.rect(ML, rowY, halfW, 17).fill(BG2);
+        doc.fontSize(8.5).fillColor(TEXT2).font("Helvetica")
+          .text(s.item, ML + 6, rowY + 4, { width: halfW - 90, lineBreak: false });
         doc.fontSize(8.5).fillColor(ACCENT).font("Helvetica-Bold")
-          .text(s.amount, ML + halfW - 70, doc.y + 4, { width: 40, align: "right" });
+          .text(s.amount, ML + halfW - 80, rowY + 4, { width: 50, align: "right" });
         doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
-          .text(s.pct, ML + halfW - 26, doc.y + 4, { width: 22, align: "right" });
-        doc.y += 18;
+          .text(s.pct, ML + halfW - 26, rowY + 5, { width: 22, align: "right" });
       });
 
-      // Uses (reset to suY)
-      const usesX = ML + halfW + 12;
-      doc.y = suY;
-      doc.rect(usesX, doc.y, halfW, 20).fill(BG3);
-      doc.fontSize(8).fillColor(AMBER).font("Helvetica-Bold")
-        .text("USES", usesX + 6, doc.y + 6, { characterSpacing: 0.8 });
-      doc.y += 22;
-      (ts.sourcesUses?.uses ?? []).forEach((u, i) => {
-        if (i % 2 === 0) doc.rect(usesX, doc.y, halfW, 16).fill(BG2);
-        doc.fontSize(8.5).fillColor(WHITE).font("Helvetica")
-          .text(u.item, usesX + 6, doc.y + 4, { width: halfW - 80 });
+      // Uses rows
+      useRows.forEach((u, i) => {
+        const rowY = suStartY + 20 + i * 18;
+        if (i % 2 === 0) doc.rect(usesX, rowY, halfW, 17).fill(BG2);
+        doc.fontSize(8.5).fillColor(TEXT2).font("Helvetica")
+          .text(u.item, usesX + 6, rowY + 4, { width: halfW - 90, lineBreak: false });
         doc.fontSize(8.5).fillColor(AMBER).font("Helvetica-Bold")
-          .text(u.amount, usesX + halfW - 70, doc.y + 4, { width: 40, align: "right" });
+          .text(u.amount, usesX + halfW - 80, rowY + 4, { width: 50, align: "right" });
         doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
-          .text(u.pct, usesX + halfW - 26, doc.y + 4, { width: 22, align: "right" });
-        doc.y += 18;
+          .text(u.pct, usesX + halfW - 26, rowY + 5, { width: 22, align: "right" });
       });
-      doc.y += 12;
+
+      doc.y = suStartY + tableH + 8;
 
       subHeading("Ownership Structure");
       bodyText(ts.ownershipStructure ?? "");
@@ -1034,9 +1086,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 4 — INVESTMENT THESIS
     // ─────────────────────────────────────────────────────────────────────────
-    doc.addPage();
-    doc.y = 56;
-    pageHeader("4. Investment Thesis");
+    newSectionPage("4. Investment Thesis");
     sectionDivider("04", "Investment Thesis", GREEN);
 
     const it = memo.investmentThesis;
@@ -1045,19 +1095,21 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       bodyText(it.overarchingThesis ?? "");
 
       (it.pillars ?? []).forEach((p, i) => {
-        ensureSpace(60);
-        doc.rect(ML, doc.y, BODY_W, 22).fill(BG2);
-        doc.rect(ML, doc.y, 3, 22).fill(GREEN);
-        doc.fontSize(8).fillColor(MUTED).font("Helvetica-Bold")
-          .text(`PILLAR ${i + 1}`, ML + 10, doc.y + 4, { characterSpacing: 0.8 });
-        doc.fontSize(11).fillColor(WHITE).font("Helvetica-Bold")
-          .text(p.title ?? "", ML + 10, doc.y + 12);
-        doc.y += 28;
+        ensureSpace(56);
+        // Pillar header card
+        doc.rect(ML, doc.y, BODY_W, 20).fill(BG3);
+        doc.rect(ML, doc.y, 3, 20).fill(GREEN);
+        doc.fontSize(7).fillColor(MUTED).font("Helvetica-Bold")
+          .text(`PILLAR ${i + 1}`, ML + 10, doc.y + 4, { characterSpacing: 0.6 });
+        doc.fontSize(10.5).fillColor(TEXT).font("Helvetica-Bold")
+          .text(p.title ?? "", ML + 60, doc.y + 4);
+        doc.y += 26;
         bodyText(p.narrative ?? "");
         if (p.supportingData) {
+          ensureSpace(14);
           doc.fontSize(8.5).fillColor(AMBER).font("Helvetica-Bold")
-            .text(`▶  ${p.supportingData}`, ML + 12, doc.y, { width: BODY_W - 12 });
-          doc.y += 14;
+            .text(`\u25B6  ${p.supportingData}`, ML + 12, doc.y, { width: BODY_W - 12 });
+          doc.y += 12;
         }
         doc.y += 4;
       });
@@ -1069,9 +1121,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 5 — MARKET ANALYSIS
     // ─────────────────────────────────────────────────────────────────────────
-    doc.addPage();
-    doc.y = 56;
-    pageHeader("5. Market Analysis");
+    newSectionPage("5. Market Analysis");
     sectionDivider("05", "Market Analysis", ACCENT);
 
     const ma = memo.marketAnalysis;
@@ -1084,7 +1134,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
         table(
           ["Metric", "Value", "Source"],
           (ma.marketSizeData ?? []).map(d => [d.metric, d.value, d.source]),
-          [220, 140, 139]
+          [220, 130, 149]
         );
       }
 
@@ -1107,9 +1157,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 6 — COMPETITIVE LANDSCAPE
     // ─────────────────────────────────────────────────────────────────────────
-    doc.addPage();
-    doc.y = 56;
-    pageHeader("6. Competitive Landscape");
+    newSectionPage("6. Competitive Landscape");
     sectionDivider("06", "Competitive Landscape", AMBER);
 
     const cl = memo.competitiveLandscape;
@@ -1120,9 +1168,9 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       subHeading("Comparable Companies");
       if (cl.competitors?.length) {
         table(
-          ["Company", "EV/EBITDA", "EV/Revenue", "Rev. Growth", "EBITDA Margin", "Notes"],
+          ["Company", "EV/EBITDA", "EV/Rev", "Rev Growth", "EBITDA Margin", "Notes"],
           (cl.competitors ?? []).map(c => [c.company, c.evEbitda, c.evRevenue, c.revenueGrowth, c.ebitdaMargin, c.notes]),
-          [120, 60, 65, 65, 75, 114]
+          [120, 58, 55, 62, 72, 132]
         );
       }
 
@@ -1136,9 +1184,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 7 — BUSINESS MODEL & UNIT ECONOMICS
     // ─────────────────────────────────────────────────────────────────────────
-    doc.addPage();
-    doc.y = 56;
-    pageHeader("7. Business Model & Unit Economics");
+    newSectionPage("7. Business Model & Unit Economics");
     sectionDivider("07", "Business Model & Unit Economics", GREEN);
 
     const bm = memo.businessModel;
@@ -1151,7 +1197,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
         table(
           ["Metric", "Value", "Notes"],
           (bm.unitEconomics ?? []).map(u => [u.metric, u.value, u.notes]),
-          [200, 100, 199]
+          [200, 95, 204]
         );
       }
 
@@ -1165,9 +1211,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 8 — HISTORICAL FINANCIALS
     // ─────────────────────────────────────────────────────────────────────────
-    doc.addPage();
-    doc.y = 56;
-    pageHeader("8. Historical Financials");
+    newSectionPage("8. Historical Financials");
     sectionDivider("08", "Historical Financials", ACCENT);
 
     const hf = memo.historicalFinancials;
@@ -1187,9 +1231,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 9 — FINANCIAL MODEL
     // ─────────────────────────────────────────────────────────────────────────
-    doc.addPage();
-    doc.y = 56;
-    pageHeader("9. Financial Model");
+    newSectionPage("9. Financial Model");
     sectionDivider("09", "Financial Model", GOLD);
 
     const fm = memo.financialModel;
@@ -1199,7 +1241,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
         table(
           ["Assumption", "Value", "Rationale"],
           (fm.assumptions ?? []).map(a => [a.assumption, a.value, a.rationale]),
-          [160, 80, 259]
+          [160, 75, 264]
         );
       }
 
@@ -1210,41 +1252,40 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
 
       subHeading("EBITDA Bridge (Entry → Exit)");
       if (fm.ebitdaBridge?.length) {
-        fm.ebitdaBridge.forEach((b, i) => {
-          ensureSpace(18);
-          const isTotal = b.item.toLowerCase().includes("exit") || b.item.toLowerCase().includes("entry");
-          if (isTotal) doc.rect(ML, doc.y, BODY_W, 16).fill(BG3);
-          doc.fontSize(9).fillColor(isTotal ? GOLD : WHITE).font(isTotal ? "Helvetica-Bold" : "Helvetica")
-            .text(b.item, ML + 8, doc.y + 4, { width: 200 });
+        fm.ebitdaBridge.forEach((b) => {
+          ensureSpace(16);
+          const isTotal = /exit|entry/i.test(b.item);
+          if (isTotal) doc.rect(ML, doc.y, BODY_W, 15).fill(BG3);
+          doc.fontSize(9).fillColor(isTotal ? GOLD : TEXT2)
+            .font(isTotal ? "Helvetica-Bold" : "Helvetica")
+            .text(b.item, ML + 8, doc.y + 3, { width: 200 });
           doc.fontSize(9).fillColor(isTotal ? GOLD : ACCENT).font("Helvetica-Bold")
-            .text(b.amount, ML + 220, doc.y + 4, { width: 80, align: "right" });
+            .text(b.amount, ML + 215, doc.y + 3, { width: 80, align: "right" });
           doc.fontSize(8).fillColor(MUTED).font("Helvetica")
-            .text(b.notes, ML + 310, doc.y + 4, { width: BODY_W - 310 });
-          doc.y += 18;
+            .text(b.notes, ML + 305, doc.y + 3, { width: BODY_W - 305 });
+          doc.y += 16;
         });
         doc.y += 8;
       }
-
-      doc.addPage();
-      doc.y = 56;
-      pageHeader("9. Financial Model (cont.)");
 
       subHeading("IRR Scenarios");
       if (fm.irrScenarios?.length) {
         table(
           ["Scenario", "Entry EV", "Exit EV", "MOIC", "IRR", "Exit Year"],
           (fm.irrScenarios ?? []).map(s => [s.scenario, s.entryEv, s.exitEv, s.moic, s.irr, s.exitYear]),
-          [80, 80, 80, 60, 60, 139]
+          [80, 80, 80, 58, 58, 143]
         );
       }
 
       subHeading("IRR Sensitivity — Exit Multiple vs. Revenue CAGR");
       if (fm.sensitivityTable?.rows?.length) {
-        const colHeaders = ["5%", "8%", "10%", "12%", "15%"];
+        const colHeaders = (fm.sensitivityTable.rows[0]?.values ?? []).map((_, i) =>
+          `${5 + i * 2.5}%`
+        );
         sensitivityTable(
           fm.sensitivityTable.rowLabel ?? "Exit EV/EBITDA",
           fm.sensitivityTable.colLabel ?? "Revenue CAGR",
-          colHeaders,
+          colHeaders.length > 0 ? colHeaders : ["5%", "8%", "10%", "12%", "15%"],
           fm.sensitivityTable.rows
         );
       }
@@ -1253,9 +1294,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 10 — RISK ANALYSIS
     // ─────────────────────────────────────────────────────────────────────────
-    doc.addPage();
-    doc.y = 56;
-    pageHeader("10. Risk Analysis");
+    newSectionPage("10. Risk Analysis");
     sectionDivider("10", "Risk Analysis", RED);
 
     const ra = memo.riskAnalysis;
@@ -1264,31 +1303,28 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       bodyText(ra.narrative ?? "");
 
       subHeading("Risk Matrix");
-      // Risk matrix header
-      ensureSpace(24);
-      const catW = 80; const riskW = 160; const lhW = 55; const impW = 55; const mitW = BODY_W - catW - riskW - lhW - impW;
-      doc.rect(ML, doc.y, BODY_W, 20).fill(BG3);
+      ensureSpace(22);
+      const catW = 80; const riskW = 155; const lhW = 55; const impW = 55;
+      const mitW = BODY_W - catW - riskW - lhW - impW;
+      doc.rect(ML, doc.y, BODY_W, 18).fill(BG3);
       doc.fontSize(7.5).fillColor(RED).font("Helvetica-Bold")
-        .text("CATEGORY", ML + 4, doc.y + 6, { width: catW - 8 });
+        .text("CATEGORY", ML + 4, doc.y + 5, { width: catW - 8 });
       doc.fontSize(7.5).fillColor(RED).font("Helvetica-Bold")
-        .text("RISK", ML + catW + 4, doc.y + 6, { width: riskW - 8 });
+        .text("RISK", ML + catW + 4, doc.y + 5, { width: riskW - 8 });
       doc.fontSize(7.5).fillColor(RED).font("Helvetica-Bold")
-        .text("LIKELIHOOD", ML + catW + riskW + 4, doc.y + 6, { width: lhW - 8, align: "center" });
+        .text("LIKELIHOOD", ML + catW + riskW + 4, doc.y + 5, { width: lhW - 8, align: "center" });
       doc.fontSize(7.5).fillColor(RED).font("Helvetica-Bold")
-        .text("IMPACT", ML + catW + riskW + lhW + 4, doc.y + 6, { width: impW - 8, align: "center" });
+        .text("IMPACT", ML + catW + riskW + lhW + 4, doc.y + 5, { width: impW - 8, align: "center" });
       doc.fontSize(7.5).fillColor(RED).font("Helvetica-Bold")
-        .text("MITIGANT", ML + catW + riskW + lhW + impW + 4, doc.y + 6, { width: mitW - 8 });
-      doc.y += 22;
-
+        .text("MITIGANT", ML + catW + riskW + lhW + impW + 4, doc.y + 5, { width: mitW - 8 });
+      doc.y += 20;
       (ra.riskMatrix ?? []).forEach((row, i) => riskRow(row, i));
     }
 
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 11 — MITIGANTS & CONDITIONS
     // ─────────────────────────────────────────────────────────────────────────
-    doc.addPage();
-    doc.y = 56;
-    pageHeader("11. Mitigants & Conditions");
+    newSectionPage("11. Mitigants & Conditions");
     sectionDivider("11", "Mitigants & Conditions", AMBER);
 
     const mc = memo.mitigantsConditions;
@@ -1301,7 +1337,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
         table(
           ["Condition", "Owner", "Timeline", "Consequence if Unmet"],
           (mc.conditions ?? []).map(c => [c.condition, c.owner, c.timeline, c.consequence]),
-          [180, 70, 70, 179]
+          [178, 72, 68, 181]
         );
       }
 
@@ -1318,9 +1354,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 12 — EXIT STRATEGY
     // ─────────────────────────────────────────────────────────────────────────
-    doc.addPage();
-    doc.y = 56;
-    pageHeader("12. Exit Strategy");
+    newSectionPage("12. Exit Strategy");
     sectionDivider("12", "Exit Strategy", PURPLE);
 
     const ex = memo.exitStrategy;
@@ -1333,7 +1367,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
         table(
           ["Path", "Timing", "EV Range", "MOIC", "IRR", "Notes"],
           (ex.exitPaths ?? []).map(p => [p.path, p.timing, p.evRange, p.moic, p.irr, p.notes]),
-          [130, 55, 70, 45, 45, 154]
+          [130, 52, 68, 44, 44, 161]
         );
       }
 
@@ -1342,7 +1376,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
         table(
           ["Target", "Acquirer", "Year", "EV", "EV/EBITDA", "Notes"],
           (ex.comparableTransactions ?? []).map(t => [t.target, t.acquirer, t.year, t.ev, t.evEbitda, t.notes]),
-          [110, 100, 40, 60, 65, 124]
+          [110, 100, 38, 58, 62, 131]
         );
       }
 
@@ -1353,9 +1387,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 13 — MANAGEMENT ASSESSMENT
     // ─────────────────────────────────────────────────────────────────────────
-    doc.addPage();
-    doc.y = 56;
-    pageHeader("13. Management Assessment");
+    newSectionPage("13. Management Assessment");
     sectionDivider("13", "Management Assessment", ACCENT);
 
     const mgmt = memo.managementAssessment;
@@ -1381,9 +1413,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 14 — KEY DEAL TERMS
     // ─────────────────────────────────────────────────────────────────────────
-    doc.addPage();
-    doc.y = 56;
-    pageHeader("14. Deal Terms & Negotiation");
+    newSectionPage("14. Deal Terms & Negotiation");
     sectionDivider("14", "Key Deal Terms & Negotiation Points", GOLD);
 
     const dt = memo.dealTerms;
@@ -1396,7 +1426,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
         table(
           ["Term", "Proposed", "Market Standard", "Negotiation Note"],
           (dt.keyTerms ?? []).map(t => [t.term, t.proposed, t.marketStandard, t.negotiationNote]),
-          [100, 90, 100, 209]
+          [90, 120, 100, 189]
         );
       }
 
@@ -1411,9 +1441,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     // ─────────────────────────────────────────────────────────────────────────
     // SECTION 15 — APPENDIX
     // ─────────────────────────────────────────────────────────────────────────
-    doc.addPage();
-    doc.y = 56;
-    pageHeader("15. Appendix");
+    newSectionPage("15. Appendix");
     sectionDivider("15", "Appendix", MUTED);
 
     const app = memo.appendix;
@@ -1423,7 +1451,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
         table(
           ["Deal", "Year", "Sector", "EV", "Multiple"],
           (app.comparableTransactionsTable ?? []).map(d => [d.deal, d.year, d.sector, d.ev, d.multiple]),
-          [160, 45, 80, 80, 134]
+          [160, 44, 80, 78, 137]
         );
       }
 
@@ -1432,7 +1460,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
         table(
           ["Source", "Data Point", "Relevance"],
           (app.marketDataSources ?? []).map(s => [s.source, s.dataPoint, s.relevance]),
-          [140, 180, 179]
+          [140, 178, 181]
         );
       }
 
@@ -1441,79 +1469,96 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
         table(
           ["Assumption", "Base", "Bear", "Bull"],
           (app.keyAssumptions ?? []).map(a => [a.assumption, a.base, a.bear, a.bull]),
-          [200, 80, 80, 139]
+          [200, 78, 78, 143]
         );
       }
-
-      doc.y += 16;
-      subHeading("D. Council of 10 — Individual Votes");
-      doc.y += 4;
-
-      const voteColorMap: Record<string, string> = {
-        HARD_YES: GREEN, SOFT_YES: ACCENT, SOFT_NO: AMBER, HARD_NO: RED,
-      };
-      const voteLabelMap: Record<string, string> = {
-        HARD_YES: "HARD YES", SOFT_YES: "SOFT YES", SOFT_NO: "SOFT NO", HARD_NO: "HARD NO",
-      };
-
-      input.votes.forEach((v, idx) => {
-        const vColor = voteColorMap[v.vote] ?? WHITE;
-        const vLabel = voteLabelMap[v.vote] ?? v.vote;
-        const confPct = Math.round(v.confidence * 100);
-        const estH = 28 + Math.ceil((v.rationale ?? "").length / 90) * 13 +
-          (v.keyFlags.length ? 14 : 0) + (v.conditions.length ? 14 : 0) + (v.blockers.length ? 14 : 0) + 16;
-        ensureSpace(estH);
-
-        const cardY = doc.y;
-        doc.rect(ML, cardY, BODY_W, 22).fill(BG3);
-        doc.fontSize(7.5).fillColor(MUTED).font("Helvetica-Bold")
-          .text(`${String(idx + 1).padStart(2, "0")}`, ML + 8, cardY + 7);
-        doc.fontSize(9.5).fillColor(WHITE).font("Helvetica-Bold")
-          .text(v.personaRole, ML + 26, cardY + 6, { width: BODY_W - 130 });
-
-        const badgeW = 72;
-        doc.rect(ML + BODY_W - badgeW - 4, cardY + 3, badgeW, 16).fillAndStroke(`${vColor}18`, `${vColor}55`);
-        doc.fontSize(8).fillColor(vColor).font("Helvetica-Bold")
-          .text(vLabel, ML + BODY_W - badgeW - 4, cardY + 7, { width: badgeW, align: "center" });
-
-        const barX = ML + BODY_W - badgeW - 90;
-        const barW = 70;
-        doc.rect(barX, cardY + 9, barW, 5).fill(BG2);
-        doc.rect(barX, cardY + 9, barW * v.confidence, 5).fill(vColor);
-        doc.fontSize(7).fillColor(MUTED).font("Helvetica")
-          .text(`${confPct}%`, barX + barW + 4, cardY + 8);
-
-        doc.y = cardY + 26;
-        if (v.rationale) {
-          doc.fontSize(9).fillColor("#94A3B8").font("Helvetica")
-            .text(v.rationale, ML + 12, doc.y, { width: BODY_W - 24, lineGap: 2 });
-          doc.y += 8;
-        }
-        if (v.keyFlags.length) {
-          doc.fontSize(7.5).fillColor(AMBER).font("Helvetica-Bold")
-            .text("FLAGS  ", ML + 12, doc.y, { continued: true });
-          doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
-            .text(v.keyFlags.join("  ·  "), { width: BODY_W - 60, continued: false });
-          doc.y += 6;
-        }
-        if (v.conditions.length) {
-          doc.fontSize(7.5).fillColor(ACCENT).font("Helvetica-Bold")
-            .text("CONDITIONS  ", ML + 12, doc.y, { continued: true });
-          doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
-            .text(v.conditions.slice(0, 3).join("  ·  "), { width: BODY_W - 80, continued: false });
-          doc.y += 6;
-        }
-        if (v.blockers.length) {
-          doc.fontSize(7.5).fillColor(RED).font("Helvetica-Bold")
-            .text("BLOCKERS  ", ML + 12, doc.y, { continued: true });
-          doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
-            .text(v.blockers.slice(0, 3).join("  ·  "), { width: BODY_W - 70, continued: false });
-          doc.y += 6;
-        }
-        doc.rect(ML, doc.y + 4, BODY_W, 0.5).fill(BORDER_C);
-        doc.y += 14;
-      });
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // COUNCIL OF 10 — INDIVIDUAL VOTES (Appendix D)
+    // ─────────────────────────────────────────────────────────────────────────
+    newSectionPage("Appendix D — Council Votes");
+    subHeading("D. Council of 10 — Individual Votes");
+    doc.y += 4;
+
+    const voteColorMap: Record<string, string> = {
+      HARD_YES: GREEN, SOFT_YES: ACCENT, SOFT_NO: AMBER, HARD_NO: RED,
+    };
+    const voteLabelMap: Record<string, string> = {
+      HARD_YES: "HARD YES", SOFT_YES: "SOFT YES", SOFT_NO: "SOFT NO", HARD_NO: "HARD NO",
+    };
+    const voteBgMap: Record<string, string> = {
+      HARD_YES: "#DCFCE7", SOFT_YES: "#DBEAFE", SOFT_NO: "#FEF3C7", HARD_NO: "#FEE2E2",
+    };
+
+    input.votes.forEach((v, idx) => {
+      const vColor = voteColorMap[v.vote] ?? TEXT;
+      const vLabel = voteLabelMap[v.vote] ?? v.vote;
+      const vBg    = voteBgMap[v.vote] ?? BG2;
+      const confPct = Math.round(v.confidence * 100);
+
+      const estH = 24 +
+        Math.ceil((v.rationale ?? "").length / 90) * 12 +
+        (v.keyFlags.length ? 14 : 0) +
+        (v.conditions.length ? 14 : 0) +
+        (v.blockers.length ? 14 : 0) + 12;
+      ensureSpace(estH);
+
+      const cardY = doc.y;
+      // Card header
+      doc.rect(ML, cardY, BODY_W, 20).fill(vBg);
+      doc.rect(ML, cardY, 3, 20).fill(vColor);
+      doc.fontSize(7).fillColor(MUTED).font("Helvetica-Bold")
+        .text(`${String(idx + 1).padStart(2, "0")}`, ML + 8, cardY + 6);
+      doc.fontSize(9.5).fillColor(TEXT).font("Helvetica-Bold")
+        .text(v.personaRole, ML + 26, cardY + 5, { width: BODY_W - 130 });
+
+      // Vote badge
+      const badgeW = 70;
+      doc.rect(ML + BODY_W - badgeW - 6, cardY + 2, badgeW, 16).fill(vBg);
+      doc.rect(ML + BODY_W - badgeW - 6, cardY + 2, badgeW, 16).stroke(vColor);
+      doc.fontSize(7.5).fillColor(vColor).font("Helvetica-Bold")
+        .text(vLabel, ML + BODY_W - badgeW - 6, cardY + 6, { width: badgeW, align: "center" });
+
+      // Confidence bar
+      const barX = ML + BODY_W - badgeW - 88;
+      const barW = 68;
+      doc.rect(barX, cardY + 8, barW, 4).fill(BORDER_C);
+      doc.rect(barX, cardY + 8, barW * v.confidence, 4).fill(vColor);
+      doc.fontSize(6.5).fillColor(MUTED).font("Helvetica")
+        .text(`${confPct}%`, barX + barW + 3, cardY + 7);
+
+      doc.y = cardY + 24;
+
+      if (v.rationale) {
+        doc.fontSize(9).fillColor(TEXT2).font("Helvetica")
+          .text(v.rationale, ML + 12, doc.y, { width: BODY_W - 24, lineGap: 2 });
+        doc.y += 6;
+      }
+      if (v.keyFlags.length) {
+        doc.fontSize(7.5).fillColor(AMBER).font("Helvetica-Bold")
+          .text("FLAGS  ", ML + 12, doc.y, { continued: true });
+        doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
+          .text(v.keyFlags.join("  ·  "), { width: BODY_W - 60, continued: false });
+        doc.y += 6;
+      }
+      if (v.conditions.length) {
+        doc.fontSize(7.5).fillColor(ACCENT).font("Helvetica-Bold")
+          .text("CONDITIONS  ", ML + 12, doc.y, { continued: true });
+        doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
+          .text(v.conditions.slice(0, 3).join("  ·  "), { width: BODY_W - 80, continued: false });
+        doc.y += 6;
+      }
+      if (v.blockers.length) {
+        doc.fontSize(7.5).fillColor(RED).font("Helvetica-Bold")
+          .text("BLOCKERS  ", ML + 12, doc.y, { continued: true });
+        doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
+          .text(v.blockers.slice(0, 3).join("  ·  "), { width: BODY_W - 70, continued: false });
+        doc.y += 6;
+      }
+      doc.rect(ML, doc.y + 3, BODY_W, 0.5).fill(BORDER_C);
+      doc.y += 12;
+    });
 
     // ─────────────────────────────────────────────────────────────────────────
     // FOOTER ON ALL PAGES
