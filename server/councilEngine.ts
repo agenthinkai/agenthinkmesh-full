@@ -99,6 +99,7 @@ export interface CouncilResult {
   votes:                 PersonaVote[];
   decisionMemoryId:      number | null;
   memoryContextUsed:     boolean;
+  precedents:            Array<{ taskDescription: string; finalVerdict: string | null; similarity: number; }>;
   sessionId:             string;
   durationMs:            number;
   actionsTriggered:      string[];
@@ -864,12 +865,18 @@ export async function runCouncil(
   // Phase 3: Retrieve similar past decisions
   let memoryContext     = "";
   let memoryContextUsed = false;
+  let similarDecisions: Array<{ taskDescription: string; finalVerdict: string | null; similarity: number; }> = [];
   if (!skipMemory) {
     try {
       const similar = await findSimilarDecisions(dealText, 3, taskDomain);
       if (similar.length > 0) {
         memoryContext     = buildMemoryContext(similar);
         memoryContextUsed = true;
+        similarDecisions  = similar.map((s) => ({
+          taskDescription: s.taskDescription,
+          finalVerdict:    s.finalVerdict,
+          similarity:      s.similarity,
+        }));
       }
     } catch (err) {
       console.warn("[CouncilEngine] Memory retrieval failed silently:", err);
@@ -1075,6 +1082,7 @@ export async function runCouncil(
     votes:                 workingVotes,
     decisionMemoryId:      null,
     memoryContextUsed,
+    precedents:            similarDecisions,
     sessionId,
     durationMs:            Date.now() - startMs,
     actionsTriggered:      [],

@@ -1701,3 +1701,14 @@
 - [x] Add daily cron job for signal ingestion (startup + every 24h)
 - [x] Wire Signals feed tab to DB (replace static TIER0_FEED with live DB query + static fallback)
 - [x] Tier 0 ingestion verified — 396 tests passing, 0 TypeScript errors
+
+## RAG Layer — Council of 10 Precedent Memory (08 Apr 2026)
+
+- [ ] Add `embedding` TEXT column to dealScreenings schema
+- [ ] Create server/embeddings.ts: generateEmbedding() + cosineSimilarity() + findSimilarDeals()
+- [ ] Push DB migration for embedding column
+- [ ] Wire RAG into dealScreener router: generate embedding before council run, query top-3 similar deals
+- [ ] Inject PRECEDENT CONTEXT block into councilEngine persona prompts
+- [ ] Store embedding after council run completes
+- [ ] Add precedents array to API response
+- [ ] Display "Similar deals screened previously" section on IC report page

@@ -63,6 +63,7 @@ interface CouncilResult {
   votes: PersonaVote[];
   icReport?: ICReportData | null;
   universitySignal?: UniversitySignal | null;
+  precedents?: Array<{ taskDescription: string; finalVerdict: string | null; similarity: number; }>;
 }
 
 // ── Tier 0 University Signal type ───────────────────────────────────────────────────────────────
@@ -1109,7 +1110,63 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
             ))
           )}
         </div>
-      </div>
+       </div>
+
+      {/* Similar Deals — RAG precedent layer */}
+      {result.precedents && result.precedents.length > 0 && (
+        <div style={{ marginBottom: 20 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.1em", marginBottom: 12 }}>SIMILAR DEALS SCREENED PREVIOUSLY</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {result.precedents.map((p, i) => {
+              const simPct = Math.round(p.similarity * 100);
+              const simColor = simPct >= 80 ? GREEN : simPct >= 60 ? AMBER : TEXT2;
+              const verdictCfg: Record<string, { color: string; label: string }> = {
+                APPROVED: { color: GREEN, label: "APPROVED" },
+                APPROVED_WITH_CONDITIONS: { color: ACCENT, label: "CONDITIONAL" },
+                REJECTED: { color: RED, label: "REJECTED" },
+                VETOED: { color: RED, label: "VETOED" },
+              };
+              const vc = p.finalVerdict ? (verdictCfg[p.finalVerdict] ?? { color: MUTED, label: p.finalVerdict }) : { color: MUTED, label: "UNKNOWN" };
+              return (
+                <div key={i} style={{
+                  background: BG2,
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 6,
+                  padding: "12px 16px",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 14,
+                }}>
+                  {/* Similarity score */}
+                  <div style={{ flexShrink: 0, textAlign: "center", minWidth: 52 }}>
+                    <div style={{ fontFamily: MONO, fontSize: 16, fontWeight: 800, color: simColor }}>{simPct}%</div>
+                    <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED, letterSpacing: "0.08em" }}>MATCH</div>
+                  </div>
+                  {/* Deal description */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, color: TEXT, lineHeight: 1.5, marginBottom: 4 }}>
+                      {p.taskDescription.length > 180 ? p.taskDescription.slice(0, 180) + "…" : p.taskDescription}
+                    </div>
+                  </div>
+                  {/* Prior verdict */}
+                  <div style={{ flexShrink: 0 }}>
+                    <span style={{
+                      fontFamily: MONO, fontSize: 9, fontWeight: 700,
+                      background: `${vc.color}18`,
+                      border: `1px solid ${vc.color}55`,
+                      color: vc.color,
+                      padding: "3px 8px", borderRadius: 3, letterSpacing: "0.08em",
+                    }}>{vc.label}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginTop: 8, letterSpacing: "0.06em" }}>
+            ↑ Retrieved via TF-IDF cosine similarity from your deal history. For reference only — this deal evaluated independently.
+          </div>
+        </div>
+      )}
 
       </div>
       )}
