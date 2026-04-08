@@ -636,10 +636,16 @@ export const dealScreenerRouter = router({
     // Try live DB signals first; fall back to static curated feed if DB is empty
     try {
       const dbSignals = await getSurfacedSignals();
-      if (dbSignals.length > 0) return dbSignals;
+      if (dbSignals.length > 0) {
+        const lastRefreshed = dbSignals.reduce((latest, s) => {
+          const t = new Date(s.ingestedAt).getTime();
+          return t > latest ? t : latest;
+        }, 0);
+        return { signals: dbSignals, lastRefreshed: new Date(lastRefreshed).toISOString() };
+      }
     } catch (err) {
       console.warn("[Tier0] DB feed unavailable, using static fallback:", err instanceof Error ? err.message : String(err));
     }
-    return TIER0_FEED.slice(0, 5);
+    return { signals: TIER0_FEED.slice(0, 5), lastRefreshed: null };
   }),
 });

@@ -1929,7 +1929,9 @@ function HistoryTable({ onSelect }: { onSelect: (dealId: string) => void }) {
 
 // ── // ── Tier 0 Signal Feed (Phase 2) ───────────────────────────────────────────────────────────────
 function Tier0Feed({ onRunIC }: { onRunIC: (dealName: string, dealText: string) => void }) {
-  const { data: signals, isLoading } = trpc.dealScreener.tier0Feed.useQuery();
+  const { data: feedData, isLoading } = trpc.dealScreener.tier0Feed.useQuery();
+  const signals = feedData?.signals;
+  const lastRefreshed = feedData?.lastRefreshed;
 
   if (isLoading) {
     return <div style={{ fontFamily: MONO, fontSize: 12, color: MUTED, textAlign: "center", padding: 40 }}>Loading signals...</div>;
@@ -1947,9 +1949,16 @@ function Tier0Feed({ onRunIC }: { onRunIC: (dealName: string, dealText: string) 
   return (
     <div>
       {/* Header */}
-      <div style={{ marginBottom: 20 }}>
-        <div style={{ fontFamily: MONO, fontSize: 10, color: "#4a9eff", letterSpacing: "0.14em", marginBottom: 4 }}>TIER 0 UNIVERSITY SIGNAL FEED</div>
-        <div style={{ fontFamily: MONO, fontSize: 11, color: MUTED }}>Controlled release · High-confidence early-stage signals only · Max 5 per session</div>
+      <div style={{ marginBottom: 20, display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: "#4a9eff", letterSpacing: "0.14em", marginBottom: 4 }}>TIER 0 UNIVERSITY SIGNAL FEED</div>
+          <div style={{ fontFamily: MONO, fontSize: 11, color: MUTED }}>Controlled release · High-confidence early-stage signals only · Max 5 per session</div>
+        </div>
+        {lastRefreshed && (
+          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.06em", textAlign: "right", flexShrink: 0 }}>
+            Last refreshed {new Date(lastRefreshed).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+          </div>
+        )}
       </div>
       {/* Signal cards */}
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
