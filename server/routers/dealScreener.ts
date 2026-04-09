@@ -26,6 +26,10 @@ function isOwner(email: string | null | undefined): boolean {
   return OWNER_EMAILS.includes(email.toLowerCase().trim());
 }
 
+// ── Payment gate flag — set to true to disable Stripe payment for all users ────────
+// To re-enable: set PAYMENT_GATE_DISABLED = false
+const PAYMENT_GATE_DISABLED = true;
+
 // ── Plan-based daily rate limits ─────────────────────────────────────────────
 
 type PlanTier = "trial" | "standard" | "pro" | "enterprise" | null | undefined;
@@ -158,11 +162,12 @@ export const dealScreenerRouter = router({
 
       const dealId = randomUUID();
 
-      // ── Pay-per-run: verify Stripe payment and bypass token guard ──────────
+      // ── Pay-per-run: verify Stripe payment and bypass token guard ──────
       // When a stripeSessionId is provided, the user paid $32.50 for this run.
       // We verify the payment is confirmed and skip the subscription token guard.
-      let skipTokenGuard = false;
-      if (input.stripeSessionId) {
+      // When PAYMENT_GATE_DISABLED=true, all users bypass payment entirely.
+      let skipTokenGuard = PAYMENT_GATE_DISABLED; // true = all users run free
+      if (!PAYMENT_GATE_DISABLED && input.stripeSessionId) {
         const [paymentRow] = await db
           .select()
           .from(dealScreenerPayments)

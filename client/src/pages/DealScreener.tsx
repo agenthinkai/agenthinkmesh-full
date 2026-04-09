@@ -1344,8 +1344,9 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
     }
   };
 
-  // ── FREE MODE — owner accounts always bypass payment ────────────────
-  const FREE_MODE = authUser?.email ? OWNER_EMAILS_LIST.includes(authUser.email.toLowerCase().trim()) : false;
+  // ── FREE MODE — payment disabled for all users (demo/open access mode) ────────────────
+  // To re-enable payment: replace `true` with: authUser?.email ? OWNER_EMAILS_LIST.includes(authUser.email.toLowerCase().trim()) : false
+  const FREE_MODE = true;
 
   // Build IC memo from guided form fields
   const buildMemoFromGuided = () => [
