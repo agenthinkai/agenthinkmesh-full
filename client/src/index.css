@@ -878,3 +878,8 @@
   --intel-muted:  #6b7585;
   --intel-dim:    #333844;
 }
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

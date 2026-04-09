@@ -790,6 +790,7 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
   const [shareCopied, setShareCopied] = useState(false);
   const [icMemoLoading, setIcMemoLoading] = useState(false);
   const [icMemoError, setIcMemoError] = useState<string | null>(null);
+  const [icMemoStatus, setIcMemoStatus] = useState<"idle" | "synthesising" | "rendering" | "done">("idle");
 
   const icMemoPdfMutation = trpc.dealScreener.icMemoPdf.useMutation();
   const createShare = trpc.shareReport.create.useMutation();
@@ -797,7 +798,10 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
   const handleICMemoPdf = async () => {
     setIcMemoLoading(true);
     setIcMemoError(null);
+    setIcMemoStatus("synthesising");
     try {
+      // Stage 1: synthesising (LLM call, ~15-25s)
+      const synthesisTimer = setTimeout(() => setIcMemoStatus("rendering"), 20000);
       const res = await icMemoPdfMutation.mutateAsync({
         dealName:            result.dealName,
         verdict:             result.verdict,
@@ -818,6 +822,8 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
           blockers:    v.blockers,
         })),
       });
+      clearTimeout(synthesisTimer);
+      setIcMemoStatus("done");
       const bytes = Uint8Array.from(atob(res.base64), c => c.charCodeAt(0));
       const blob = new Blob([bytes], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
@@ -828,8 +834,10 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
       a.click();
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
+      setTimeout(() => setIcMemoStatus("idle"), 2000);
     } catch (err) {
-      setIcMemoError(err instanceof Error ? err.message : "Failed to generate IC memo");
+      setIcMemoStatus("idle");
+      setIcMemoError(err instanceof Error ? err.message.slice(0, 80) : "Failed to generate IC memo");
     } finally {
       setIcMemoLoading(false);
     }
@@ -956,27 +964,48 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
           <button
             onClick={handleICMemoPdf}
             disabled={icMemoLoading}
-            title="Generate a VC-facing IC Memo PDF synthesised from all agent votes"
+            title="Generate a full institutional IC Memo PDF (~30 pages)"
             style={{
               padding: "5px 14px",
-              background: icMemoLoading ? "rgba(212,175,55,0.08)" : "rgba(212,175,55,0.12)",
+              background: icMemoStatus === "done" ? "rgba(0,255,135,0.12)" : icMemoLoading ? "rgba(212,175,55,0.06)" : "rgba(212,175,55,0.12)",
               border: `1px solid rgba(212,175,55,${icMemoLoading ? 0.3 : 0.5})`,
-              color: "#D4AF37",
+              color: icMemoStatus === "done" ? GREEN : "#D4AF37",
               fontFamily: MONO,
               fontSize: 10,
               cursor: icMemoLoading ? "not-allowed" : "pointer",
               borderRadius: 4,
               letterSpacing: "0.06em",
-              opacity: icMemoLoading ? 0.7 : 1,
+              opacity: icMemoLoading ? 0.8 : 1,
               display: "flex",
               alignItems: "center",
               gap: 5,
+              minWidth: 160,
+              justifyContent: "center",
             }}
           >
-            {icMemoLoading ? "⏳ GENERATING..." : "📋 IC MEMO PDF"}
+            {icMemoStatus === "synthesising" && (
+              <>
+                <span style={{ display: "inline-block", animation: "spin 1s linear infinite", fontSize: 11 }}>&#9696;</span>
+                SYNTHESISING...
+              </>
+            )}
+            {icMemoStatus === "rendering" && (
+              <>
+                <span style={{ display: "inline-block", animation: "spin 1s linear infinite", fontSize: 11 }}>&#9696;</span>
+                RENDERING PDF...
+              </>
+            )}
+            {icMemoStatus === "done" && "✓ DOWNLOADED"}
+            {icMemoStatus === "idle" && "📋 IC MEMO PDF"}
           </button>
           {icMemoError && (
-            <div style={{ fontSize: 9, color: RED, fontFamily: MONO, maxWidth: 180, textAlign: "right" }}>{icMemoError}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 9, color: RED, fontFamily: MONO, maxWidth: 160 }}>&#9888; {icMemoError}</span>
+              <button
+                onClick={handleICMemoPdf}
+                style={{ fontSize: 9, color: RED, fontFamily: MONO, background: "none", border: `1px solid ${RED}`, borderRadius: 3, padding: "2px 7px", cursor: "pointer" }}
+              >RETRY</button>
+            </div>
           )}
           <button
             onClick={onNewDeal}

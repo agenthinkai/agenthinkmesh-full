@@ -850,69 +850,94 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     }
 
     // ─────────────────────────────────────────────────────────────────────────
-    // COVER PAGE
+    // COVER PAGE — Full-page professional institutional design
     // ─────────────────────────────────────────────────────────────────────────
+    const dateStr = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
+    const modeLabel =
+      (input as ICMemoInput & { councilMode?: string }).councilMode === "global_vc" ? "Global VC" :
+      (input as ICMemoInput & { councilMode?: string }).councilMode === "india_pe"  ? "India PE" : "GCC PE";
+
+    // Full white background
     doc.rect(0, 0, A4_W, A4_H).fill(BG);
 
-    // Top accent bar
+    // Top accent stripe (5px)
     doc.rect(0, 0, A4_W, 5).fill(ACCENT);
 
-    // Header band
-    doc.rect(0, 5, A4_W, 55).fill(BG3);
-    doc.rect(0, 60, A4_W, 1).fill(BORDER_C);
-    doc.fontSize(10).fillColor(ACCENT).font("Helvetica-Bold")
-      .text("AGENTHINK MESH", ML, 18, { characterSpacing: 1.5 });
-    doc.fontSize(8).fillColor(MUTED).font("Helvetica")
-      .text("COUNCIL OF 10  ·  INVESTMENT COMMITTEE", ML, 32, { characterSpacing: 0.8 });
-    const dateStr = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
-    doc.fontSize(8).fillColor(MUTED).font("Helvetica")
-      .text(dateStr, A4_W - MR - 100, 28, { width: 100, align: "right" });
+    // Left sidebar stripe
+    doc.rect(0, 5, 5, A4_H - 5).fill(ACCENT);
 
-    // Verdict pill
+    // ── Logo / wordmark — centered at ~28% from top ──────────────────────────
+    const logoY = A4_H * 0.28;
+    doc.fontSize(30).fillColor(ACCENT).font("Helvetica-Bold")
+      .text("AGENTHINK", 0, logoY, { width: A4_W, align: "center", characterSpacing: 3 });
+    doc.fontSize(30).fillColor(TEXT).font("Helvetica")
+      .text("MESH", 0, logoY + 38, { width: A4_W, align: "center", characterSpacing: 6 });
+    doc.fontSize(8.5).fillColor(MUTED).font("Helvetica")
+      .text("COUNCIL OF 10  ·  AI-POWERED INVESTMENT INTELLIGENCE",
+        0, logoY + 78, { width: A4_W, align: "center", characterSpacing: 1.2 });
+
+    // ── Horizontal rule ──────────────────────────────────────────────────────
+    const ruleY = logoY + 102;
+    doc.rect(ML + 40, ruleY, BODY_W - 80, 1).fill(BORDER_C);
+
+    // ── Document type label ──────────────────────────────────────────────────
+    doc.fontSize(9).fillColor(MUTED).font("Helvetica")
+      .text("INVESTMENT COMMITTEE MEMORANDUM",
+        0, ruleY + 14, { width: A4_W, align: "center", characterSpacing: 1.5 });
+
+    // ── Deal name (large, centered) ──────────────────────────────────────────
+    const dealNameY = ruleY + 40;
+    doc.fontSize(20).fillColor(TEXT).font("Helvetica-Bold")
+      .text(input.dealName, ML, dealNameY, { width: BODY_W, align: "center" });
+
+    // ── Verdict badge (centered pill) ────────────────────────────────────────
+    const badgeY = dealNameY + 50;
+    const badgeW = 220;
+    const badgeX = (A4_W - badgeW) / 2;
     const verdictBg = input.verdict === "APPROVED" ? "#DCFCE7" :
       input.verdict === "APPROVED_WITH_CONDITIONS" ? "#DBEAFE" : "#FEE2E2";
-    doc.rect(ML, 82, BODY_W, 52).fill(verdictBg);
-    doc.rect(ML, 82, 4, 52).fill(verdictColor);
-    doc.fontSize(20).fillColor(verdictColor).font("Helvetica-Bold")
-      .text(verdictLabel, ML + 18, 95);
-    doc.fontSize(9).fillColor(MUTED).font("Helvetica")
-      .text(`${input.yesCount} Yes · ${input.noCount} No · ${Math.round(input.confidenceScore * 100)}% Consensus`,
-        ML + 18, 121);
-
-    // Deal name
-    doc.y = 152;
-    doc.fontSize(24).fillColor(TEXT).font("Helvetica-Bold")
-      .text(input.dealName, ML, doc.y, { width: BODY_W });
-    doc.y += 36;
-    doc.fontSize(9).fillColor(MUTED).font("Helvetica")
-      .text("INVESTMENT COMMITTEE MEMORANDUM", ML, doc.y, { characterSpacing: 1.2 });
-    doc.y += 16;
-    doc.rect(ML, doc.y, BODY_W, 0.5).fill(BORDER_C);
-    doc.y += 12;
-
-    // Thesis
-    if (memo.executiveSummary?.theBet) {
-      doc.rect(ML, doc.y, 3, 32).fill(ACCENT);
-      doc.fontSize(11).fillColor(TEXT).font("Helvetica-Oblique")
-        .text(`"${memo.executiveSummary.theBet}"`, ML + 12, doc.y, { width: BODY_W - 12, lineGap: 3 });
-      doc.y += 40;
-    }
-
-    // Deal snapshot grid
-    if (memo.executiveSummary?.dealSnapshot?.length) {
-      kvGrid(memo.executiveSummary.dealSnapshot, 2);
-    }
-
-    // Confidentiality — immediately after content, not fixed position
-    doc.y += 12;
-    doc.rect(ML, doc.y, BODY_W, 0.5).fill(BORDER_C);
-    doc.y += 8;
+    doc.rect(badgeX, badgeY, badgeW, 34).fill(verdictBg);
+    doc.rect(badgeX, badgeY, badgeW, 34).stroke(verdictColor);
+    doc.rect(badgeX, badgeY, 4, 34).fill(verdictColor);
+    doc.fontSize(11).fillColor(verdictColor).font("Helvetica-Bold")
+      .text(verdictLabel, badgeX + 14, badgeY + 5,
+        { width: badgeW - 18, align: "center", lineBreak: false });
     doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
-      .text("CONFIDENTIAL — For Authorised Investment Committee Members Only.", ML, doc.y, { width: BODY_W, align: "center" });
-    doc.y += 10;
+      .text(`${input.yesCount} YES  ·  ${input.noCount} NO  ·  ${Math.round(input.confidenceScore * 100)}% CONSENSUS`,
+        badgeX + 14, badgeY + 21, { width: badgeW - 18, align: "center", lineBreak: false });
+
+    // ── Metadata grid (4 cells, inline) ─────────────────────────────────────
+    const metaY = badgeY + 58;
+    const metaItems = [
+      { label: "DATE",         value: dateStr },
+      { label: "COUNCIL MODE", value: modeLabel },
+      { label: "VOTE",          value: `${input.yesCount} / 10 YES` },
+      { label: "CONSENSUS",     value: `${Math.round(input.confidenceScore * 100)}%` },
+    ];
+    const metaCellW = BODY_W / 4;
+    metaItems.forEach((item, i) => {
+      const mx = ML + i * metaCellW;
+      doc.rect(mx, metaY, metaCellW - 6, 38).fill(BG3);
+      doc.rect(mx, metaY, metaCellW - 6, 38).stroke(BORDER_C);
+      doc.fontSize(6.5).fillColor(MUTED).font("Helvetica-Bold")
+        .text(item.label, mx + 8, metaY + 6,
+          { width: metaCellW - 22, characterSpacing: 0.5, lineBreak: false });
+      doc.fontSize(10).fillColor(TEXT).font("Helvetica-Bold")
+        .text(item.value, mx + 8, metaY + 18,
+          { width: metaCellW - 22, lineBreak: false });
+    });
+
+    // ── Bottom confidentiality footer ────────────────────────────────────────
+    doc.rect(0, A4_H - 52, A4_W, 1).fill(BORDER_C);
+    doc.fontSize(7.5).fillColor(MUTED).font("Helvetica-Bold")
+      .text("CONFIDENTIAL — Internal Use Only",
+        0, A4_H - 42, { width: A4_W, align: "center" });
     doc.fontSize(7).fillColor(MUTED).font("Helvetica")
-      .text("This document contains AI-assisted analysis generated by AgenThinkMesh Council of 10. It does not constitute investment advice.",
-        ML, doc.y, { width: BODY_W, align: "center" });
+      .text("AI-assisted analysis generated by AgenThinkMesh Council of 10. Not investment advice.",
+        0, A4_H - 28, { width: A4_W, align: "center" });
+    doc.fontSize(7).fillColor(MUTED).font("Helvetica")
+      .text("\u00a9 AgenThinkMesh. All rights reserved.",
+        0, A4_H - 16, { width: A4_W, align: "center" });
 
     // ─────────────────────────────────────────────────────────────────────────
     // TABLE OF CONTENTS
@@ -1001,6 +1026,73 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
 
       subHeading("Recommendation", GOLD);
       bodyText(es.recommendation ?? "");
+    }
+
+    // ── ANALYSIS CONFIDENCE BOX ───────────────────────────────────────────────────────────────────────
+    {
+      ensureSpace(90);
+      doc.y += 10;
+      subHeading("Analysis Confidence", ACCENT);
+
+      // Compute confidence ratings dynamically from vote data
+      const allRationales = input.votes.map(v => v.rationale.toLowerCase()).join(" ");
+      const allFlags     = input.votes.flatMap(v => v.keyFlags).join(" ").toLowerCase();
+
+      // Data Integrity: check for missing-data signals in flags/rationales
+      const missingDataKeywords = ["missing", "no financial", "no revenue", "no ebitda", "unaudited",
+        "incomplete", "no data", "insufficient", "not provided", "unavailable", "no historical"];
+      const missingHits = missingDataKeywords.filter(k => allRationales.includes(k) || allFlags.includes(k)).length;
+      const dataIntegrityScore = missingHits >= 3 ? "Low" : missingHits >= 1 ? "Medium" : "High";
+      const dataIntegrityColor = missingHits >= 3 ? RED : missingHits >= 1 ? GOLD : GREEN;
+
+      // Model Behaviour: based on vote spread (high spread = more uncertainty)
+      const yesVotes = input.votes.filter(v => v.vote.includes("YES")).length;
+      const modelBehaviourScore = yesVotes >= 8 ? "High" : yesVotes >= 5 ? "Medium" : "Low";
+      const modelBehaviourColor = yesVotes >= 8 ? GREEN : yesVotes >= 5 ? GOLD : RED;
+
+      // Market Benchmarks: check if comps are inferred or data-backed
+      const inferredKeywords = ["inferred", "estimated", "assumed", "approximate", "comparable",
+        "benchmark", "industry average", "typical", "standard"];
+      const inferredHits = inferredKeywords.filter(k => allRationales.includes(k)).length;
+      const marketBenchmarkScore = inferredHits >= 3 ? "Inferred" : inferredHits >= 1 ? "Partial" : "Data-Backed";
+      const marketBenchmarkColor = inferredHits >= 3 ? GOLD : inferredHits >= 1 ? GOLD : GREEN;
+
+      // Risk Visibility: based on number of blockers and conditions surfaced
+      const totalBlockers   = input.votes.reduce((s, v) => s + v.blockers.length, 0);
+      const totalConditions = input.votes.reduce((s, v) => s + v.conditions.length, 0);
+      const riskVisibilityScore = totalBlockers + totalConditions >= 15 ? "High" : totalBlockers + totalConditions >= 6 ? "Medium" : "Low";
+      const riskVisibilityColor = totalBlockers + totalConditions >= 15 ? GREEN : totalBlockers + totalConditions >= 6 ? GOLD : RED;
+
+      const confItems = [
+        { label: "Data Integrity",    score: dataIntegrityScore,    color: dataIntegrityColor,
+          note: missingHits >= 1 ? "Some financial fields flagged as missing or unaudited" : "Financial inputs appear complete" },
+        { label: "Model Behaviour",   score: modelBehaviourScore,   color: modelBehaviourColor,
+          note: `${yesVotes}/10 personas reached a consistent directional view` },
+        { label: "Market Benchmarks", score: marketBenchmarkScore,  color: marketBenchmarkColor,
+          note: inferredHits >= 1 ? "Some comps are inferred from industry context" : "Benchmarks derived from stated data" },
+        { label: "Risk Visibility",   score: riskVisibilityScore,   color: riskVisibilityColor,
+          note: `${totalBlockers} blockers and ${totalConditions} conditions surfaced across 10 personas` },
+      ];
+
+      // Render 4-cell confidence grid
+      const confCellW = BODY_W / 4;
+      const confBoxY  = doc.y;
+      confItems.forEach((item, i) => {
+        const cx = ML + i * confCellW;
+        doc.rect(cx, confBoxY, confCellW - 4, 52).fill(BG3);
+        doc.rect(cx, confBoxY, confCellW - 4, 52).stroke(BORDER_C);
+        doc.rect(cx, confBoxY, confCellW - 4, 3).fill(item.color);
+        doc.fontSize(6.5).fillColor(MUTED).font("Helvetica-Bold")
+          .text(item.label.toUpperCase(), cx + 6, confBoxY + 8,
+            { width: confCellW - 16, characterSpacing: 0.3, lineBreak: false });
+        doc.fontSize(9).fillColor(item.color).font("Helvetica-Bold")
+          .text(item.score, cx + 6, confBoxY + 20,
+            { width: confCellW - 16, lineBreak: false });
+        doc.fontSize(6.5).fillColor(MUTED).font("Helvetica")
+          .text(item.note, cx + 6, confBoxY + 33,
+            { width: confCellW - 16, lineGap: 1 });
+      });
+      doc.y = confBoxY + 60;
     }
 
     // ─────────────────────────────────────────────────────────────────────────

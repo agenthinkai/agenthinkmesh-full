@@ -1712,3 +1712,12 @@
 - [ ] Store embedding after council run completes
 - [ ] Add precedents array to API response
 - [ ] Display "Similar deals screened previously" section on IC report page
+
+## Tencent Demo Production Upgrades
+
+- [ ] Part 1: PDF cover page (logo, title, deal name, verdict, consensus %, mode, footer)
+- [ ] Part 2: Dynamic confidence box in PDF (data integrity, model behavior, market benchmarks, risk visibility)
+- [ ] Part 3: Loading states on IC Memo PDF button (idle/loading/complete, sub-status messages, prevent double-click)
+- [ ] Part 4: Error safety (clean UI errors, retry on failure, isolate failing test routes)
+- [ ] Part 5: Verify parallel agent execution (Promise.all), target <60s council, <120s full memo
+- [ ] Part 6: Final output quality review (formatting, verdict visibility, professional tone)
