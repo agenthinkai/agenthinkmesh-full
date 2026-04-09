@@ -25,9 +25,9 @@ export class KillSwitchError extends Error {
 
   constructor(proposedSpend: number, txId: number | string) {
     super(
-      `KILL SWITCH TRIGGERED: Autonomous outbound spend of $${proposedSpend.toFixed(2)} ` +
-      `exceeds the hard limit of $${AUTONOMOUS_SPEND_LIMIT_USD.toFixed(2)}. ` +
-      `Transaction ${txId} has been blocked. Human approval is required.`
+      `Execution Guardrail — Approval Required: Proposed spend of $${proposedSpend.toFixed(2)} ` +
+      `exceeds the authorised limit of $${AUTONOMOUS_SPEND_LIMIT_USD.toFixed(2)}. ` +
+      `Transaction ${txId} is pending human approval before it can proceed.`
     );
     this.name = "KillSwitchError";
     this.proposedSpend = proposedSpend;
@@ -72,14 +72,14 @@ export class TreasuryKillSwitch {
       }
 
       // 2. Fire ops alert
-      const alertTitle = `🚨 KILL SWITCH: Autonomous spend blocked — TX #${txId}`;
+      const alertTitle = `Execution Guardrail — Approval Required (TX #${txId})`;
       const alertContent =
-        `An autonomous treasury action attempted to spend $${proposedSpendUSD.toFixed(2)} USD.\n` +
-        `This exceeds the hard limit of $${AUTONOMOUS_SPEND_LIMIT_USD.toFixed(2)} USD.\n\n` +
-        `Transaction ID: ${txId}\n` +
+        `A treasury action requires human approval before proceeding.\n\n` +
         `Proposed spend: $${proposedSpendUSD.toFixed(2)} USD\n` +
-        `Status: KILLED\n` +
-        `Action required: Human approval before retrying.`;
+        `Authorised limit: $${AUTONOMOUS_SPEND_LIMIT_USD.toFixed(2)} USD\n` +
+        `Transaction ID: ${txId}\n` +
+        `Status: Pending approval\n\n` +
+        `Please review and approve or reject this transaction in the Treasury panel.`;
 
       try {
         await notifyOwner({ title: alertTitle, content: alertContent });

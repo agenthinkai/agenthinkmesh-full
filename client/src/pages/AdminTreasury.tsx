@@ -56,7 +56,7 @@ function KillBadge({ triggered }: { triggered: boolean }) {
       fontFamily: MONO, fontSize: 10, fontWeight: 700, letterSpacing: "0.08em",
       boxShadow: `0 0 8px rgba(255,71,87,0.4)`,
     }}>
-      ⚡ KILLED
+      PENDING APPROVAL
     </span>
   );
 }
@@ -106,7 +106,7 @@ export default function AdminTreasury() {
           </div>
         </div>
         <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED }}>
-          Kill-switch limit: <span style={{ color: RED, fontWeight: 700 }}>$500.00 USD</span>
+          Approval threshold: <span style={{ color: RED, fontWeight: 700 }}>$500.00 USD</span>
         </div>
       </div>
 
@@ -119,7 +119,7 @@ export default function AdminTreasury() {
               { label: "COMPLETED", value: stats.completed, color: GREEN  },
               { label: "PENDING",   value: stats.pending,   color: AMBER  },
               { label: "FAILED",    value: stats.failed,    color: RED    },
-              { label: "KILLED",    value: stats.killed,    color: RED, glow: true },
+              { label: "PENDING APPROVAL", value: stats.killed, color: RED, glow: true },
             ].map(({ label, value, color, glow }) => (
               <div key={label} style={{
                 background: BG2, border: `1px solid ${glow ? RED : BORDER}`,
@@ -173,7 +173,7 @@ export default function AdminTreasury() {
             color: killOnly ? RED : TEXT2,
             letterSpacing: "0.05em",
           }}>
-            ⚡ KILL-SWITCH ONLY
+            PENDING APPROVAL ONLY
           </button>
         </div>
 

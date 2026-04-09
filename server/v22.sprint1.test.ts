@@ -154,7 +154,7 @@ describe("TreasuryKillSwitch", () => {
     const err = new KillSwitchError(600, 5);
     expect(err.message).toContain("$600.00");
     expect(err.message).toContain("$500.00");
-    expect(err.message).toContain("Human approval");
+    expect(err.message).toContain("Approval Required");
   });
 
   it("hard limit is exactly 500 (not configurable)", async () => {
