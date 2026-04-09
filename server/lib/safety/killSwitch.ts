@@ -13,9 +13,14 @@
 import { eq } from "drizzle-orm";
 import { getDb } from "../../db";
 import { notifyOwner } from "../../_core/notification";
-
 // ── Hard-coded limit — DO NOT make this an env var ────────────────────────────
 const AUTONOMOUS_SPEND_LIMIT_USD = 500.00 as const;
+// ── Demo / test mode — suppress all owner notifications ───────────────────────
+// Set DEMO_MODE=true or run under NODE_ENV=test to prevent notifications from
+// firing during demos or automated test runs.
+const NOTIFICATIONS_SUPPRESSED =
+  process.env.DEMO_MODE === "true" ||
+  process.env.NODE_ENV === "test";
 
 // ── KillSwitchError ───────────────────────────────────────────────────────────
 
@@ -71,21 +76,24 @@ export class TreasuryKillSwitch {
         console.error("[KillSwitch] DB update failed:", dbErr);
       }
 
-      // 2. Fire ops alert
-      const alertTitle = `Execution Guardrail — Approval Required (TX #${txId})`;
-      const alertContent =
-        `A treasury action requires human approval before proceeding.\n\n` +
-        `Proposed spend: $${proposedSpendUSD.toFixed(2)} USD\n` +
-        `Authorised limit: $${AUTONOMOUS_SPEND_LIMIT_USD.toFixed(2)} USD\n` +
-        `Transaction ID: ${txId}\n` +
-        `Status: Pending approval\n\n` +
-        `Please review and approve or reject this transaction in the Treasury panel.`;
-
-      try {
-        await notifyOwner({ title: alertTitle, content: alertContent });
-      } catch (notifyErr) {
-        // Notification failure must not suppress the kill — log and continue
-        console.error("[KillSwitch] Ops alert failed:", notifyErr);
+      // 2. Fire ops alert (suppressed in demo/test mode)
+      if (!NOTIFICATIONS_SUPPRESSED) {
+        const alertTitle = `Execution Guardrail — Approval Required (TX #${txId})`;
+        const alertContent =
+          `A treasury action requires human approval before proceeding.\n\n` +
+          `Proposed spend: $${proposedSpendUSD.toFixed(2)} USD\n` +
+          `Authorised limit: $${AUTONOMOUS_SPEND_LIMIT_USD.toFixed(2)} USD\n` +
+          `Transaction ID: ${txId}\n` +
+          `Status: Pending approval\n\n` +
+          `Please review and approve or reject this transaction in the Treasury panel.`;
+        try {
+          await notifyOwner({ title: alertTitle, content: alertContent });
+        } catch (notifyErr) {
+          // Notification failure must not suppress the kill — log and continue
+          console.error("[KillSwitch] Ops alert failed:", notifyErr);
+        }
+      } else {
+        console.log(`[KillSwitch] Notification suppressed (DEMO_MODE/test) — TX #${txId} spend $${proposedSpendUSD.toFixed(2)} blocked`);
       }
 
       // 3. Throw — must propagate, never caught silently
