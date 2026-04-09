@@ -6,6 +6,23 @@
  */
 
 import { invokeLLM } from "./_core/llm";
+import https from "https";
+import http from "http";
+
+// Fetch a remote URL and return a Buffer (used for logo embedding in PDF)
+function fetchBuffer(url: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
+    const client = url.startsWith("https") ? https : http;
+    client.get(url, (res) => {
+      const chunks: Buffer[] = [];
+      res.on("data", (c: Buffer) => chunks.push(c));
+      res.on("end", () => resolve(Buffer.concat(chunks)));
+      res.on("error", reject);
+    }).on("error", reject);
+  });
+}
+
+const LOGO_CDN_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663268376562/7EnctkaNppkKLbjFfnH6YY/agenthink-logo_f76cbf68.png";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface PersonaVoteInput {
@@ -501,6 +518,9 @@ Return ONLY a valid JSON object with this EXACT structure (no markdown, no expla
 // ── PDF Generator ─────────────────────────────────────────────────────────────
 export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
   const memo = await synthesiseFullICMemo(input);
+  // Pre-fetch logo for cover page (non-fatal if unavailable)
+  let logoBuf: Buffer | null = null;
+  try { logoBuf = await fetchBuffer(LOGO_CDN_URL); } catch { logoBuf = null; }
   const PDFDocument = (await import("pdfkit")).default;
 
   return new Promise((resolve, reject) => {
@@ -868,13 +888,29 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
 
     // ── Logo / wordmark — centered at ~28% from top ──────────────────────────
     const logoY = A4_H * 0.28;
-    doc.fontSize(30).fillColor(ACCENT).font("Helvetica-Bold")
-      .text("AGENTHINK", 0, logoY, { width: A4_W, align: "center", characterSpacing: 3 });
-    doc.fontSize(30).fillColor(TEXT).font("Helvetica")
-      .text("MESH", 0, logoY + 38, { width: A4_W, align: "center", characterSpacing: 6 });
+    if (logoBuf) {
+      // Embed PNG logo (440×80 source → display at 260×47, centred)
+      const logoDisplayW = 260;
+      const logoDisplayH = 47;
+      const logoX = (A4_W - logoDisplayW) / 2;
+      try {
+        doc.image(logoBuf, logoX, logoY, { width: logoDisplayW, height: logoDisplayH });
+      } catch {
+        // Fallback text if image embedding fails
+        doc.fontSize(30).fillColor(ACCENT).font("Helvetica-Bold")
+          .text("AGENTHINK", 0, logoY, { width: A4_W, align: "center", characterSpacing: 3 });
+        doc.fontSize(30).fillColor(TEXT).font("Helvetica")
+          .text("MESH", 0, logoY + 38, { width: A4_W, align: "center", characterSpacing: 6 });
+      }
+    } else {
+      doc.fontSize(30).fillColor(ACCENT).font("Helvetica-Bold")
+        .text("AGENTHINK", 0, logoY, { width: A4_W, align: "center", characterSpacing: 3 });
+      doc.fontSize(30).fillColor(TEXT).font("Helvetica")
+        .text("MESH", 0, logoY + 38, { width: A4_W, align: "center", characterSpacing: 6 });
+    }
     doc.fontSize(8.5).fillColor(MUTED).font("Helvetica")
       .text("COUNCIL OF 10  ·  AI-POWERED INVESTMENT INTELLIGENCE",
-        0, logoY + 78, { width: A4_W, align: "center", characterSpacing: 1.2 });
+        0, logoY + 58, { width: A4_W, align: "center", characterSpacing: 1.2 });
 
     // ── Horizontal rule ──────────────────────────────────────────────────────
     const ruleY = logoY + 102;

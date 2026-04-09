@@ -1841,6 +1841,58 @@ type HistoryFilter = "ALL" | "APPROVED" | "CONDITIONAL" | "REJECTED";
 function HistoryTable({ onSelect }: { onSelect: (dealId: string) => void }) {
   const { data: history, isLoading } = trpc.dealScreener.history.useQuery();
   const [filter, setFilter] = useState<HistoryFilter>("ALL");
+  const [reExportingId, setReExportingId] = useState<string | null>(null);
+  const [reExportError, setReExportError] = useState<string | null>(null);
+  const utils = trpc.useUtils();
+  const icMemoPdfMutation = trpc.dealScreener.icMemoPdf.useMutation();
+
+  const handleReExportPdf = async (e: React.MouseEvent, dealId: string) => {
+    e.stopPropagation(); // prevent row click (navigating to report)
+    setReExportingId(dealId);
+    setReExportError(null);
+    try {
+      // Fetch full deal data
+      const deal = await utils.dealScreener.getById.fetch({ dealId });
+      const res = await icMemoPdfMutation.mutateAsync({
+        dealName:            deal.dealName,
+        verdict:             deal.verdict,
+        yesCount:            deal.yesCount,
+        noCount:             deal.noCount,
+        confidenceScore:     typeof deal.confidenceScore === "string" ? parseFloat(deal.confidenceScore) : deal.confidenceScore,
+        conditionsToProceed: deal.conditionsToProceed as string[],
+        blockingIssues:      deal.blockingIssues as string[],
+        votes: (deal.votes as Array<{
+          personaId: string; personaName?: string; personaRole: string;
+          vote: string; confidence: number; rationale: string;
+          keyFlags: string[]; conditions: string[]; blockers: string[];
+        }>).map(v => ({
+          personaId:   v.personaId,
+          personaName: v.personaId,
+          personaRole: v.personaRole,
+          vote:        v.vote,
+          confidence:  v.confidence,
+          rationale:   v.rationale,
+          keyFlags:    v.keyFlags ?? [],
+          conditions:  v.conditions ?? [],
+          blockers:    v.blockers ?? [],
+        })),
+      });
+      const bytes = Uint8Array.from(atob(res.base64), c => c.charCodeAt(0));
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = res.filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setReExportError(err instanceof Error ? err.message.slice(0, 80) : "Failed to generate PDF");
+    } finally {
+      setReExportingId(null);
+    }
+  };
 
   const FILTER_CHIPS: { label: string; value: HistoryFilter; color: string }[] = [
     { label: "All", value: "ALL", color: TEXT2 },
@@ -1912,12 +1964,12 @@ function HistoryTable({ onSelect }: { onSelect: (dealId: string) => void }) {
         {/* Header */}
         <div style={{
           display: "grid",
-          gridTemplateColumns: "2fr 1.2fr 80px 80px 100px 120px",
+          gridTemplateColumns: "2fr 1.2fr 80px 80px 100px 120px 130px",
           padding: "10px 16px",
           background: BG3,
           borderBottom: `1px solid ${BORDER}`,
         }}>
-          {["DEAL NAME", "VERDICT", "YES", "NO", "CONFIDENCE", "DATE"].map((h) => (
+          {["DEAL NAME", "VERDICT", "YES", "NO", "CONFIDENCE", "DATE", ""].map((h) => (
             <div key={h} style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em" }}>{h}</div>
           ))}
         </div>
@@ -1928,11 +1980,12 @@ function HistoryTable({ onSelect }: { onSelect: (dealId: string) => void }) {
             onClick={() => onSelect(row.dealId)}
             style={{
               display: "grid",
-              gridTemplateColumns: "2fr 1.2fr 80px 80px 100px 120px",
+              gridTemplateColumns: "2fr 1.2fr 80px 80px 100px 120px 130px",
               padding: "12px 16px",
               borderBottom: `1px solid ${BORDER}`,
               cursor: "pointer",
               transition: "background 0.1s",
+              alignItems: "center",
             }}
             onMouseEnter={(e) => (e.currentTarget.style.background = BG2)}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
@@ -1949,8 +2002,37 @@ function HistoryTable({ onSelect }: { onSelect: (dealId: string) => void }) {
             <div style={{ fontFamily: MONO, fontSize: 11, color: MUTED }}>
               {new Date(row.createdAt).toLocaleDateString()}
             </div>
+            <div onClick={(e) => e.stopPropagation()}>
+              <button
+                onClick={(e) => handleReExportPdf(e, row.dealId)}
+                disabled={reExportingId === row.dealId}
+                style={{
+                  fontFamily: MONO,
+                  fontSize: 9,
+                  fontWeight: 700,
+                  letterSpacing: "0.06em",
+                  padding: "5px 10px",
+                  borderRadius: 3,
+                  border: `1px solid ${ACCENT}40`,
+                  background: reExportingId === row.dealId ? `${ACCENT}18` : "transparent",
+                  color: reExportingId === row.dealId ? MUTED : ACCENT,
+                  cursor: reExportingId === row.dealId ? "not-allowed" : "pointer",
+                  whiteSpace: "nowrap",
+                  transition: "all 0.12s",
+                }}
+                onMouseEnter={e => { if (reExportingId !== row.dealId) e.currentTarget.style.background = `${ACCENT}18`; }}
+                onMouseLeave={e => { if (reExportingId !== row.dealId) e.currentTarget.style.background = "transparent"; }}
+              >
+                {reExportingId === row.dealId ? "⟳ GENERATING..." : "↓ RE-EXPORT PDF"}
+              </button>
+            </div>
           </div>
         ))}
+        {reExportError && (
+          <div style={{ padding: "8px 16px", fontFamily: MONO, fontSize: 10, color: RED, borderTop: `1px solid ${BORDER}` }}>
+            PDF error: {reExportError}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1721,3 +1721,9 @@
 - [ ] Part 4: Error safety (clean UI errors, retry on failure, isolate failing test routes)
 - [ ] Part 5: Verify parallel agent execution (Promise.all), target <60s council, <120s full memo
 - [ ] Part 6: Final output quality review (formatting, verdict visibility, professional tone)
+
+## Tencent Demo Reliability (Priority)
+- [ ] Audit end-to-end Sahara demo flow (council run → memo → PDF download → open)
+- [ ] Fix any runtime issues affecting demo flow
+- [ ] Add Re-export PDF button to History tab
+- [ ] Embed AgenThinkMesh logo on PDF cover page
