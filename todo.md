@@ -1798,3 +1798,9 @@
 - [x] Build /portfolio-mesh/share/:token public page
 - [x] Add Share Run button to Run Detail page
 - [x] Add PortfolioMesh to SiteNav Tools dropdown
+
+- [x] Add signalDeals table to schema and run migration
+- [x] Add listSignals, ingestSignals, toggleAutoScreen procedures to dealScreener router
+- [x] Add Recent Signals panel to DealScreener input view (5 items, click to screen)
+- [x] Add auto-screen toggle to DealScreener
+- [x] Preload 5 demo signals for demo mode

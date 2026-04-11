@@ -9,7 +9,7 @@ import { TRPCError } from "@trpc/server";
 import { eq, desc, and, gte } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { dealScreenings, dealScreeningRateLimit, dealComparisons, dealScreenerPayments } from "../../drizzle/schema";
+import { dealScreenings, dealScreeningRateLimit, dealComparisons, dealScreenerPayments, signalDeals, userSignalPrefs } from "../../drizzle/schema";
 import { runCouncil } from "../councilEngine";
 import { generateCfoDeepDivePdf, type CouncilSummaryInput } from "../cfoDeepDivePdf";
 import { generateICMemoPdf, type ICMemoInput } from "../icMemoPdf";
@@ -653,4 +653,158 @@ export const dealScreenerRouter = router({
     }
     return { signals: TIER0_FEED.slice(0, 5), lastRefreshed: null };
   }),
+
+  // ── Deal Signal Layer ──────────────────────────────────────────────────────
+
+  /**
+   * List recent market signals for the current user (max 5).
+   * Falls back to 5 static demo signals if the user has no stored signals.
+   */
+  listSignals: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { signals: DEMO_SIGNALS, isDemo: true };
+    const rows = await db
+      .select()
+      .from(signalDeals)
+      .where(eq(signalDeals.userId, ctx.user.id))
+      .orderBy(desc(signalDeals.createdAt))
+      .limit(5);
+    if (rows.length === 0) return { signals: DEMO_SIGNALS, isDemo: true };
+    return { signals: rows, isDemo: false };
+  }),
+
+  /**
+   * Ingest a new market signal manually (or via background job).
+   */
+  ingestSignal: protectedProcedure
+    .input(z.object({
+      company: z.string().min(1).max(255),
+      sector: z.string().min(1).max(128),
+      stage: z.string().min(1).max(64),
+      summary: z.string().min(1),
+      source: z.string().min(1).max(255),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      const [result] = await db.insert(signalDeals).values({
+        userId: ctx.user.id,
+        company: input.company,
+        sector: input.sector,
+        stage: input.stage,
+        summary: input.summary,
+        source: input.source,
+      });
+      return { id: (result as { insertId: number }).insertId };
+    }),
+
+  /**
+   * Toggle the auto-screen preference for the current user.
+   */
+  toggleAutoScreen: protectedProcedure
+    .input(z.object({ autoScreen: z.boolean() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      const existing = await db
+        .select()
+        .from(userSignalPrefs)
+        .where(eq(userSignalPrefs.userId, ctx.user.id))
+        .limit(1);
+      if (existing.length === 0) {
+        await db.insert(userSignalPrefs).values({ userId: ctx.user.id, autoScreen: input.autoScreen });
+      } else {
+        await db.update(userSignalPrefs)
+          .set({ autoScreen: input.autoScreen })
+          .where(eq(userSignalPrefs.userId, ctx.user.id));
+      }
+      return { autoScreen: input.autoScreen };
+    }),
+
+  /**
+   * Get the current auto-screen preference for the current user.
+   */
+  getSignalPrefs: protectedProcedure.query(async ({ ctx }) => {
+    const db = await getDb();
+    if (!db) return { autoScreen: false };
+    const rows = await db
+      .select()
+      .from(userSignalPrefs)
+      .where(eq(userSignalPrefs.userId, ctx.user.id))
+      .limit(1);
+    return { autoScreen: rows[0]?.autoScreen ?? false };
+  }),
+
+  /**
+   * Mark a signal as screened (after the user opens the Deal Screener for it).
+   */
+  markSignalScreened: protectedProcedure
+    .input(z.object({ signalId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { ok: true };
+      await db.update(signalDeals)
+        .set({ screened: true })
+        .where(and(eq(signalDeals.id, input.signalId), eq(signalDeals.userId, ctx.user.id)));
+      return { ok: true };
+    }),
 });
+
+// ── Static demo signals — shown when user has no stored signals ────────────────
+const DEMO_SIGNALS = [
+  {
+    id: -1,
+    company: "Finvera",
+    sector: "Fintech",
+    stage: "Series A",
+    summary: "Embedded lending infrastructure for GCC SMEs. $4M ARR, 3 bank partnerships signed.",
+    source: "Wamda Capital Portfolio Update",
+    screened: false,
+    autoScreened: false,
+    createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: -2,
+    company: "CarbonTrace MENA",
+    sector: "Climate Tech",
+    stage: "Seed",
+    summary: "Carbon credit tokenisation for GCC sovereign funds. Harvard iLab cohort. Pre-revenue.",
+    source: "Harvard iLab Cohort Announcement",
+    screened: false,
+    autoScreened: false,
+    createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: -3,
+    company: "Arabi NLP",
+    sector: "B2B AI",
+    stage: "Pre-Seed",
+    summary: "Arabic-first LLM for legal and financial document processing. MIT delta v cohort.",
+    source: "MIT delta v Accelerator",
+    screened: false,
+    autoScreened: false,
+    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: -4,
+    company: "GridSoft",
+    sector: "Energy Tech",
+    stage: "Seed",
+    summary: "Software-defined smart grid optimisation for MENA utilities. NSF SBIR Phase I awardee.",
+    source: "NSF SBIR Phase I Awards",
+    screened: false,
+    autoScreened: false,
+    createdAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000),
+  },
+  {
+    id: -5,
+    company: "SupplyTrace",
+    sector: "Supply Chain Tech",
+    stage: "Pre-Seed",
+    summary: "Blockchain-based F&B supply chain provenance. Devpost Global Hackathon winner.",
+    source: "Devpost Global Hackathon",
+    screened: false,
+    autoScreened: false,
+    createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+  },
+];

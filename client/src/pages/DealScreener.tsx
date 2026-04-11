@@ -2143,6 +2143,117 @@ function Tier0Feed({ onRunIC }: { onRunIC: (dealName: string, dealText: string) 
   );
 }
 
+// ── Recent Signals Panel ─────────────────────────────────────────────────────
+function RecentSignalsPanel({ onScreen }: { onScreen: (text: string) => void }) {
+  const { data, isLoading } = trpc.dealScreener.listSignals.useQuery();
+  const { data: prefs } = trpc.dealScreener.getSignalPrefs.useQuery();
+  const toggleAutoScreen = trpc.dealScreener.toggleAutoScreen.useMutation();
+  const markScreened = trpc.dealScreener.markSignalScreened.useMutation();
+  const utils = trpc.useUtils();
+
+  const signals = data?.signals ?? [];
+  const isDemo = data?.isDemo ?? true;
+  const autoScreen = prefs?.autoScreen ?? false;
+
+  if (isLoading) return (
+    <div style={{ fontFamily: MONO, fontSize: 11, color: MUTED, padding: "12px 0" }}>Loading signals...</div>
+  );
+  if (signals.length === 0) return null;
+
+  return (
+    <div style={{ marginTop: 28, maxWidth: 680, margin: "28px auto 0" }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, gap: 8, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: "0.14em", color: ACCENT }}>RECENT MARKET SIGNALS</span>
+          {isDemo && (
+            <span style={{ fontFamily: MONO, fontSize: 8, padding: "1px 6px", borderRadius: 3, background: "rgba(255,159,67,0.12)", border: "1px solid rgba(255,159,67,0.3)", color: AMBER, letterSpacing: "0.08em" }}>DEMO</span>
+          )}
+        </div>
+        {/* Auto-screen toggle */}
+        <label style={{ display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+          <div
+            onClick={() => {
+              toggleAutoScreen.mutate({ autoScreen: !autoScreen }, {
+                onSuccess: () => utils.dealScreener.getSignalPrefs.invalidate(),
+              });
+            }}
+            style={{
+              width: 28, height: 16, borderRadius: 8,
+              background: autoScreen ? "rgba(0,255,135,0.3)" : "rgba(255,255,255,0.1)",
+              border: `1px solid ${autoScreen ? GREEN : BORDER}`,
+              position: "relative", cursor: "pointer", transition: "all 0.15s",
+            }}
+          >
+            <div style={{
+              position: "absolute", top: 2, left: autoScreen ? 13 : 2,
+              width: 10, height: 10, borderRadius: "50%",
+              background: autoScreen ? GREEN : MUTED,
+              transition: "all 0.15s",
+            }} />
+          </div>
+          <span style={{ fontFamily: MONO, fontSize: 9, color: autoScreen ? GREEN : MUTED, letterSpacing: "0.06em" }}>AUTO-SCREEN</span>
+        </label>
+      </div>
+      {/* Signal cards */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {signals.slice(0, 5).map((sig) => (
+          <div
+            key={sig.id}
+            style={{
+              background: BG2,
+              border: `1px solid ${sig.screened ? BORDER : "rgba(74,158,255,0.25)"}`,
+              borderRadius: 6,
+              padding: "12px 16px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 12,
+              opacity: sig.screened ? 0.6 : 1,
+              transition: "opacity 0.15s",
+            }}
+          >
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4, flexWrap: "wrap" }}>
+                <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>{sig.company}</span>
+                <span style={{ fontFamily: MONO, fontSize: 8, padding: "1px 6px", borderRadius: 3, background: "rgba(74,158,255,0.1)", border: "1px solid rgba(74,158,255,0.25)", color: ACCENT, letterSpacing: "0.08em" }}>{sig.sector.toUpperCase()}</span>
+                <span style={{ fontFamily: MONO, fontSize: 8, padding: "1px 6px", borderRadius: 3, background: "rgba(255,255,255,0.04)", border: `1px solid ${BORDER}`, color: TEXT2, letterSpacing: "0.06em" }}>{sig.stage}</span>
+                {sig.screened && <span style={{ fontFamily: MONO, fontSize: 8, color: GREEN, letterSpacing: "0.06em" }}>✓ SCREENED</span>}
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, marginBottom: 4, lineHeight: 1.5 }}>{sig.summary}</div>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED }}>
+                {sig.source} · {new Date(sig.createdAt).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+              </div>
+            </div>
+            <button
+              onClick={() => {
+                const prefillText = `${sig.company} — ${sig.stage} · ${sig.sector}\n\n${sig.summary}\n\nSource: ${sig.source}`;
+                if (sig.id > 0) {
+                  markScreened.mutate({ signalId: sig.id }, {
+                    onSuccess: () => utils.dealScreener.listSignals.invalidate(),
+                  });
+                }
+                onScreen(prefillText);
+              }}
+              style={{
+                fontFamily: MONO, fontSize: 9, fontWeight: 700,
+                background: "rgba(74,158,255,0.1)",
+                border: "1px solid rgba(74,158,255,0.4)",
+                color: ACCENT,
+                padding: "6px 12px", borderRadius: 4,
+                cursor: "pointer", letterSpacing: "0.08em",
+                whiteSpace: "nowrap",
+                flexShrink: 0,
+              }}
+              onMouseEnter={e => { e.currentTarget.style.background = "rgba(74,158,255,0.2)"; }}
+              onMouseLeave={e => { e.currentTarget.style.background = "rgba(74,158,255,0.1)"; }}
+            >⚡ SCREEN</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Main DealScreener page ────────────────────────────────────────────
 type View = "input" | "loading" | "report" | "history" | "signals";
 
@@ -2369,15 +2480,23 @@ export default function DealScreener() {
       {/* Main content */}
       <div style={{ padding: "40px 24px", maxWidth: 960, margin: "0 auto" }}>
         {view === "input" && (
-          <DealForm
-            onResult={handleResult}
-            onSubmitStart={() => { setScreenError(null); setView("loading"); }}
-            onError={(msg) => { setScreenError(msg); setView("input"); }}
-            pendingPaymentSessionId={pendingPaymentSessionId}
-            onPaymentVerified={() => setPendingPaymentSessionId(null)}
-            councilMode={councilMode}
-            setCouncilMode={setCouncilMode}
-          />
+          <>
+            <DealForm
+              onResult={handleResult}
+              onSubmitStart={() => { setScreenError(null); setView("loading"); }}
+              onError={(msg) => { setScreenError(msg); setView("input"); }}
+              pendingPaymentSessionId={pendingPaymentSessionId}
+              onPaymentVerified={() => setPendingPaymentSessionId(null)}
+              councilMode={councilMode}
+              setCouncilMode={setCouncilMode}
+            />
+            <RecentSignalsPanel onScreen={(text) => {
+              // Pre-fill deal text via the tier0:prefill event
+              setTimeout(() => {
+                window.dispatchEvent(new CustomEvent("tier0:prefill", { detail: { dealName: "", dealText: text } }));
+              }, 50);
+            }} />
+          </>
         )}
         {view === "input" && screenError && (
           <div style={{ maxWidth: 680, margin: "-16px auto 0", padding: "10px 14px", background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", borderRadius: 6, fontFamily: MONO, fontSize: 11, color: "#F87171" }}>

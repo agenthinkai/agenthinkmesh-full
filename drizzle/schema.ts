@@ -1395,3 +1395,33 @@ export const portfolioRuns = mysqlTable("portfolio_runs", {
 }));
 export type PortfolioRun = typeof portfolioRuns.$inferSelect;
 export type InsertPortfolioRun = typeof portfolioRuns.$inferInsert;
+
+// ============================================================
+// DEAL SIGNAL LAYER — Background market signal ingestion
+// ============================================================
+export const signalDeals = mysqlTable("signal_deals", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  company: varchar("company", { length: 255 }).notNull(),
+  sector: varchar("sector", { length: 128 }).notNull(),
+  stage: varchar("stage", { length: 64 }).notNull(),
+  summary: text("summary").notNull(),
+  source: varchar("source", { length: 255 }).notNull(),
+  screened: boolean("screened").default(false).notNull(),
+  autoScreened: boolean("autoScreened").default(false).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  sdUserIdx: index("sd_user_idx").on(table.userId),
+  sdCreatedIdx: index("sd_created_idx").on(table.createdAt),
+}));
+export type SignalDeal = typeof signalDeals.$inferSelect;
+export type InsertSignalDeal = typeof signalDeals.$inferInsert;
+
+// User preference: auto-create screening tasks from signals
+export const userSignalPrefs = mysqlTable("user_signal_prefs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique().references(() => users.id, { onDelete: "cascade" }),
+  autoScreen: boolean("autoScreen").default(false).notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type UserSignalPref = typeof userSignalPrefs.$inferSelect;
