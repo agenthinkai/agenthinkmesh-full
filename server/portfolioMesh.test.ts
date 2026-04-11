@@ -124,14 +124,14 @@ describe("generateCioOutput procedure", () => {
     expect(src).toContain("cioRisks");
   });
 
-  it("boardMemo uses allocationRationale (not rationale)", () => {
+  it("boardMemo uses allocationTable (9-section schema)", () => {
     const src = readFileSync(join(ROOT, "server/routers/portfolioMesh.ts"), "utf-8");
-    expect(src).toContain("allocationRationale");
+    expect(src).toContain("allocationTable");
   });
 
-  it("boardMemo uses keyRisks (not risks)", () => {
+  it("boardMemo uses riskAssessment (9-section schema)", () => {
     const src = readFileSync(join(ROOT, "server/routers/portfolioMesh.ts"), "utf-8");
-    expect(src).toContain("keyRisks");
+    expect(src).toContain("riskAssessment");
   });
 });
 

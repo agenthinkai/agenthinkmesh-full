@@ -514,30 +514,81 @@ Respond in JSON only:
 
       const compliance = checkIpsCompliance(cioReturn, cioVol, input.ipsSnapshot);
 
+      // Build 60/40 benchmark weights for comparison
+      const bench6040: Record<AssetClass, number> = {
+        "US Equity": 0.40, "International Equity": 0.20, "Bonds": 0.40,
+        "Credit": 0.00, "Gold": 0.00, "Cash": 0.00,
+      };
+      const equityWeight = round4((cioWeights["US Equity"] ?? 0) + (cioWeights["International Equity"] ?? 0));
+      const bondWeight = round4((cioWeights["Bonds"] ?? 0) + (cioWeights["Credit"] ?? 0));
+      const altWeight = round4(cioWeights["Gold"] ?? 0);
+      const cashWeight = round4(cioWeights["Cash"] ?? 0);
+      void bench6040; // used in prompt below
+
       // LLM generates the Board Memo (reasoning only, not math)
       const memoPrompt = `You are the Chief Investment Officer of an institutional asset management firm.
-Generate a structured Board Memo for the following portfolio allocation decision.
+You are writing a formal Board Memo for an Investment Committee. Your tone must be institutional, calm, precise, and authoritative.
+Do NOT use hype language, vague statements, or AI-generated filler. Every sentence must be defensible and decision-oriented.
 
+DATA PROVIDED (do not invent numbers — use only what is given):
 MACRO REGIME: ${input.macroRegime}
 FINAL ALLOCATION: ${JSON.stringify(cioWeights, null, 2)}
 EXPECTED RETURN: ${(cioReturn * 100).toFixed(2)}%
 EXPECTED VOLATILITY: ${(cioVol * 100).toFixed(2)}%
 SHARPE RATIO: ${cioSharpe}
+EQUITY WEIGHT: ${(equityWeight * 100).toFixed(1)}% (benchmark: 60%)
+BOND+CREDIT WEIGHT: ${(bondWeight * 100).toFixed(1)}% (benchmark: 40%)
+ALTERNATIVES (Gold): ${(altWeight * 100).toFixed(1)}% (benchmark: 0%)
+CASH: ${(cashWeight * 100).toFixed(1)}%
 IPS COMPLIANT: ${compliance.compliant}
 IPS ISSUES: ${compliance.issues.join("; ") || "None"}
 BENCHMARK: ${input.ipsSnapshot.benchmark}
-TOP METHODS SELECTED: ${top3.map(m => m.method).join(", ")}
+TARGET RETURN: ${(input.ipsSnapshot.targetReturn * 100).toFixed(1)}%
+VOLATILITY RANGE: ${(input.ipsSnapshot.targetVolatilityMin * 100).toFixed(1)}%–${(input.ipsSnapshot.targetVolatilityMax * 100).toFixed(1)}%
+MAX DRAWDOWN LIMIT: ${(input.ipsSnapshot.maxDrawdown * 100).toFixed(1)}%
+APPROX MAX DRAWDOWN: ${(cioVol * 2 * 100).toFixed(1)}%
+TOP CONSTRUCTION METHODS: ${top3.map(m => m.method).join(", ")}
 
-Respond in JSON only:
-{
-  "title": "Board Memo title",
-  "macroSummary": "2-3 sentences on macro regime and implications",
-  "allocationRationale": "2-3 sentences on why this allocation was selected",
-  "keyRisks": ["risk 1", "risk 2", "risk 3"],
-  "benchmarkComparison": "1-2 sentences comparing to benchmark",
-  "recommendation": "1 sentence CIO recommendation",
-  "disclaimer": "This is a structured decision-support output. Not investment advice."
-}`;
+PRODUCE A BOARD MEMO WITH EXACTLY THESE 9 SECTIONS:
+
+1. executiveSummary: Array of exactly 3-4 bullet strings. Include: clear recommendation, macro positioning, portfolio stance (risk-on/defensive/balanced).
+
+2. macroRegime: Object with:
+   - regime: string (e.g. "Late-Cycle")
+   - confidenceLevel: string ("High", "Medium", or "Low")
+   - rationale: string (2-3 sentences covering growth, inflation, policy, and market conditions — be specific)
+
+3. allocationTable: Array of 6 objects, one per asset class:
+   - asset: string
+   - weight: number (as decimal, e.g. 0.35)
+   - role: string (one of: "growth driver", "defensive hedge", "income stabilizer", "inflation hedge", "liquidity buffer", "return enhancer")
+
+4. benchmarkComparison: Object with:
+   - equityDelta: string (e.g. "Underweight equities by 8.5% vs 60/40 benchmark due to late-cycle risk")
+   - bondDelta: string
+   - alternativesDelta: string
+   - cashDelta: string
+   - summary: string (1-2 sentences plain English explaining the overall positioning vs benchmark)
+
+5. keyAllocationDecisions: Array of 4-6 strings. Each must explain WHY a specific asset is overweight or underweight. Be explicit and logical. No vague language.
+
+6. riskAssessment: Array of 3-5 objects:
+   - risk: string (e.g. "Inflation re-acceleration")
+   - portfolioImpact: string (what specifically happens to this portfolio if this risk materialises)
+   - severity: string ("High", "Medium", or "Low")
+
+7. rebalanceTriggers: Array of 3-5 strings. Each must be a specific, measurable condition (e.g. "If US equity drawdown exceeds 15%, reduce US Equity allocation to IPS minimum").
+
+8. ipsCompliance: Object with:
+   - status: string ("Compliant" or "Breach Detected")
+   - volatilityCheck: string (state actual vs range)
+   - drawdownCheck: string (state estimated vs limit)
+   - returnCheck: string (state expected vs target)
+   - notes: string (any additional compliance observations)
+
+9. disclaimer: string (short, professional — decision-support only, requires human approval before implementation)
+
+Respond in valid JSON only. No markdown. No extra keys.`;
 
       const memoResp = await invokeLLM({
         messages: [
@@ -552,15 +603,72 @@ Respond in JSON only:
             schema: {
               type: "object",
               properties: {
-                title: { type: "string" },
-                macroSummary: { type: "string" },
-                allocationRationale: { type: "string" },
-                keyRisks: { type: "array", items: { type: "string" } },
-                benchmarkComparison: { type: "string" },
-                recommendation: { type: "string" },
+                executiveSummary: { type: "array", items: { type: "string" } },
+                macroRegime: {
+                  type: "object",
+                  properties: {
+                    regime: { type: "string" },
+                    confidenceLevel: { type: "string" },
+                    rationale: { type: "string" },
+                  },
+                  required: ["regime", "confidenceLevel", "rationale"],
+                  additionalProperties: false,
+                },
+                allocationTable: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      asset: { type: "string" },
+                      weight: { type: "number" },
+                      role: { type: "string" },
+                    },
+                    required: ["asset", "weight", "role"],
+                    additionalProperties: false,
+                  },
+                },
+                benchmarkComparison: {
+                  type: "object",
+                  properties: {
+                    equityDelta: { type: "string" },
+                    bondDelta: { type: "string" },
+                    alternativesDelta: { type: "string" },
+                    cashDelta: { type: "string" },
+                    summary: { type: "string" },
+                  },
+                  required: ["equityDelta", "bondDelta", "alternativesDelta", "cashDelta", "summary"],
+                  additionalProperties: false,
+                },
+                keyAllocationDecisions: { type: "array", items: { type: "string" } },
+                riskAssessment: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      risk: { type: "string" },
+                      portfolioImpact: { type: "string" },
+                      severity: { type: "string" },
+                    },
+                    required: ["risk", "portfolioImpact", "severity"],
+                    additionalProperties: false,
+                  },
+                },
+                rebalanceTriggers: { type: "array", items: { type: "string" } },
+                ipsCompliance: {
+                  type: "object",
+                  properties: {
+                    status: { type: "string" },
+                    volatilityCheck: { type: "string" },
+                    drawdownCheck: { type: "string" },
+                    returnCheck: { type: "string" },
+                    notes: { type: "string" },
+                  },
+                  required: ["status", "volatilityCheck", "drawdownCheck", "returnCheck", "notes"],
+                  additionalProperties: false,
+                },
                 disclaimer: { type: "string" },
               },
-              required: ["title", "macroSummary", "allocationRationale", "keyRisks", "benchmarkComparison", "recommendation", "disclaimer"],
+              required: ["executiveSummary", "macroRegime", "allocationTable", "benchmarkComparison", "keyAllocationDecisions", "riskAssessment", "rebalanceTriggers", "ipsCompliance", "disclaimer"],
               additionalProperties: false,
             },
           },

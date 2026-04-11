@@ -503,9 +503,93 @@ function StrategyReviewStep({
 
 // ─── Step 6: CIO Output ───────────────────────────────────────────────────────
 
-function CioOutputStep({
-  cioResult, onRun, isRunning,
-}: {
+type BoardMemo = {
+  executiveSummary?: string[];
+  macroRegime?: { regime: string; confidenceLevel: string; rationale: string };
+  allocationTable?: { asset: string; weight: number; role: string }[];
+  benchmarkComparison?: { equityDelta: string; bondDelta: string; alternativesDelta: string; cashDelta: string; summary: string };
+  keyAllocationDecisions?: string[];
+  riskAssessment?: { risk: string; portfolioImpact: string; severity: string }[];
+  rebalanceTriggers?: string[];
+  ipsCompliance?: { status: string; volatilityCheck: string; drawdownCheck: string; returnCheck: string; notes: string };
+  disclaimer?: string;
+  // legacy backward-compat fields
+  title?: string; macroSummary?: string; allocationRationale?: string;
+  keyRisks?: string[]; recommendation?: string;
+};
+
+function severityBadge(s: string) {
+  if (s === "High") return "bg-red-500/20 text-red-300 border border-red-500/40";
+  if (s === "Medium") return "bg-amber-500/20 text-amber-300 border border-amber-500/40";
+  return "bg-slate-500/20 text-slate-300 border border-slate-500/40";
+}
+
+function exportBoardMemo(cioResult: NonNullable<CioOutputStepProps["cioResult"]>) {
+  const m = cioResult.boardMemo as BoardMemo;
+  const lines: string[] = [
+    "AGENTHINK MESH — CIO BOARD MEMO",
+    "================================",
+    "",
+  ];
+  if (m.executiveSummary?.length) {
+    lines.push("EXECUTIVE SUMMARY");
+    m.executiveSummary.forEach(b => lines.push(`• ${b}`));
+    lines.push("");
+  }
+  if (m.macroRegime) {
+    lines.push(`MACRO REGIME: ${m.macroRegime.regime} (Confidence: ${m.macroRegime.confidenceLevel})`);
+    lines.push(m.macroRegime.rationale);
+    lines.push("");
+  }
+  if (m.allocationTable?.length) {
+    lines.push("FINAL ALLOCATION");
+    m.allocationTable.forEach(r => lines.push(`  ${r.asset.padEnd(26)} ${(r.weight * 100).toFixed(1).padStart(5)}%   ${r.role}`));
+    lines.push("");
+  }
+  lines.push(`Expected Return: ${(cioResult.cioExpectedReturn * 100).toFixed(2)}%   Volatility: ${(cioResult.cioExpectedVolatility * 100).toFixed(2)}%   Sharpe: ${cioResult.cioSharpe.toFixed(3)}`);
+  lines.push("");
+  if (m.benchmarkComparison) {
+    lines.push("BENCHMARK COMPARISON");
+    lines.push(`Equity: ${m.benchmarkComparison.equityDelta}`);
+    lines.push(`Bonds/Credit: ${m.benchmarkComparison.bondDelta}`);
+    lines.push(`Alternatives: ${m.benchmarkComparison.alternativesDelta}`);
+    lines.push(`Cash: ${m.benchmarkComparison.cashDelta}`);
+    lines.push(m.benchmarkComparison.summary);
+    lines.push("");
+  }
+  if (m.keyAllocationDecisions?.length) {
+    lines.push("KEY ALLOCATION DECISIONS");
+    m.keyAllocationDecisions.forEach(d => lines.push(`• ${d}`));
+    lines.push("");
+  }
+  if (m.riskAssessment?.length) {
+    lines.push("RISK ASSESSMENT");
+    m.riskAssessment.forEach(r => lines.push(`[${r.severity}] ${r.risk}: ${r.portfolioImpact}`));
+    lines.push("");
+  }
+  if (m.rebalanceTriggers?.length) {
+    lines.push("REBALANCE TRIGGERS");
+    m.rebalanceTriggers.forEach(t => lines.push(`• ${t}`));
+    lines.push("");
+  }
+  if (m.ipsCompliance) {
+    lines.push("IPS COMPLIANCE");
+    lines.push(`Status: ${m.ipsCompliance.status}`);
+    lines.push(`Return: ${m.ipsCompliance.returnCheck}`);
+    lines.push(`Volatility: ${m.ipsCompliance.volatilityCheck}`);
+    lines.push(`Drawdown: ${m.ipsCompliance.drawdownCheck}`);
+    if (m.ipsCompliance.notes) lines.push(m.ipsCompliance.notes);
+    lines.push("");
+  }
+  if (m.disclaimer) { lines.push("DISCLAIMER"); lines.push(m.disclaimer); }
+  const blob = new Blob([lines.join("\n")], { type: "text/plain" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = "AgenThinkMesh_CIO_BoardMemo.txt";
+  a.click(); URL.revokeObjectURL(url);
+}
+
+type CioOutputStepProps = {
   cioResult: {
     cioWeights: Record<string, number>;
     cioExpectedReturn: number;
@@ -513,12 +597,15 @@ function CioOutputStep({
     cioSharpe: number;
     ipsCompliant: boolean;
     ipsIssues: string[];
-    boardMemo: { title?: string; macroSummary?: string; allocationRationale?: string; keyRisks?: string[]; benchmarkComparison?: string; recommendation?: string; disclaimer?: string };
+    boardMemo: BoardMemo;
   } | null;
   onRun: () => void;
   isRunning: boolean;
-}) {
+};
+
+function CioOutputStep({ cioResult, onRun, isRunning }: CioOutputStepProps) {
   const [, navigate] = useLocation();
+  const memo = cioResult?.boardMemo as BoardMemo | undefined;
 
   return (
     <div className="space-y-6">
@@ -526,7 +613,7 @@ function CioOutputStep({
         <SectionCard title="CIO Output Agent">
           <p className="text-slate-400 text-sm mb-4">
             The CIO Agent synthesises macro regime, asset estimates, and construction results to produce a final
-            recommended portfolio with IPS compliance check and a Board Memo.
+            recommended portfolio with IPS compliance check and an institutional Board Memo.
           </p>
           <Button onClick={onRun} disabled={isRunning} className="bg-blue-600 hover:bg-blue-500 text-white">
             {isRunning ? (
@@ -536,33 +623,93 @@ function CioOutputStep({
         </SectionCard>
       ) : (
         <>
-          {/* Compliance badge */}
-          <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${
-            cioResult.ipsCompliant
-              ? "bg-emerald-900/20 border-emerald-500/40 text-emerald-300"
-              : "bg-red-900/20 border-red-500/40 text-red-300"
-          }`}>
-            <span className="text-lg">{cioResult.ipsCompliant ? "✅" : "⚠️"}</span>
-            <span className="font-semibold">{cioResult.ipsCompliant ? "IPS Compliant" : "IPS Breach Detected"}</span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* CIO Weights */}
-            <SectionCard title="CIO Recommended Weights">
-              <div className="space-y-3">
-                {Object.entries(cioResult.cioWeights).map(([asset, w], i) => (
-                  <div key={asset}>
-                    <div className="flex justify-between text-xs mb-1">
-                      <span className="text-slate-300">{asset}</span>
-                      <span className="text-slate-400">{(w * 100).toFixed(1)}%</span>
-                    </div>
-                    <PctBar value={w} color={CONSTRUCTION_COLORS[i % CONSTRUCTION_COLORS.length]} />
-                  </div>
-                ))}
+          {/* 1. Executive Summary (opinion-first) */}
+          {memo?.executiveSummary?.length ? (
+            <div className={`rounded-lg border px-5 py-4 ${
+              cioResult.ipsCompliant
+                ? "bg-emerald-900/20 border-emerald-500/40"
+                : "bg-red-900/20 border-red-500/40"
+            }`}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-lg">{cioResult.ipsCompliant ? "✅" : "⚠️"}</span>
+                <span className={`font-semibold text-sm ${cioResult.ipsCompliant ? "text-emerald-300" : "text-red-300"}`}>
+                  {cioResult.ipsCompliant ? "IPS Compliant" : "IPS Breach Detected"}
+                </span>
               </div>
+              <p className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-2">Executive Summary</p>
+              <ul className="space-y-1.5">
+                {memo.executiveSummary.map((b, i) => (
+                  <li key={i} className="text-slate-200 text-sm flex items-start gap-2">
+                    <span className="text-blue-400 mt-0.5 shrink-0">•</span><span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <div className={`flex items-center gap-3 px-4 py-3 rounded-lg border ${
+              cioResult.ipsCompliant
+                ? "bg-emerald-900/20 border-emerald-500/40 text-emerald-300"
+                : "bg-red-900/20 border-red-500/40 text-red-300"
+            }`}>
+              <span className="text-lg">{cioResult.ipsCompliant ? "✅" : "⚠️"}</span>
+              <span className="font-semibold">{cioResult.ipsCompliant ? "IPS Compliant" : "IPS Breach Detected"}</span>
+            </div>
+          )}
+
+          {/* 2. Macro Regime */}
+          {memo?.macroRegime && (
+            <SectionCard title="2. Macro Regime">
+              <div className="flex items-center gap-3 mb-3">
+                <Badge className="bg-blue-600/30 text-blue-300 border border-blue-500/40 text-xs">{memo.macroRegime.regime}</Badge>
+                <Badge className={`text-xs ${
+                  memo.macroRegime.confidenceLevel === "High" ? "bg-emerald-600/30 text-emerald-300 border-emerald-500/40" :
+                  memo.macroRegime.confidenceLevel === "Medium" ? "bg-amber-600/30 text-amber-300 border-amber-500/40" :
+                  "bg-slate-600/30 text-slate-300 border-slate-500/40"
+                }`}>{memo.macroRegime.confidenceLevel} Confidence</Badge>
+              </div>
+              <p className="text-slate-300 text-sm leading-relaxed">{memo.macroRegime.rationale}</p>
+            </SectionCard>
+          )}
+
+          {/* 3. Final Allocation + Metrics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <SectionCard title="3. Final Portfolio Allocation">
+              {memo?.allocationTable?.length ? (
+                <table className="w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-white/10">
+                      <th className="text-left text-slate-400 font-medium pb-2">Asset Class</th>
+                      <th className="text-right text-slate-400 font-medium pb-2">Weight</th>
+                      <th className="text-left text-slate-400 font-medium pb-2 pl-3">Role</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {memo.allocationTable.map((r, i) => (
+                      <tr key={i} className="border-b border-white/5">
+                        <td className="text-slate-200 py-2">{r.asset}</td>
+                        <td className="text-right">
+                          <span className="text-blue-300 font-semibold">{(r.weight * 100).toFixed(1)}%</span>
+                        </td>
+                        <td className="pl-3 text-slate-400 italic">{r.role}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              ) : (
+                <div className="space-y-3">
+                  {Object.entries(cioResult.cioWeights).map(([asset, w], i) => (
+                    <div key={asset}>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-slate-300">{asset}</span>
+                        <span className="text-slate-400">{(w * 100).toFixed(1)}%</span>
+                      </div>
+                      <PctBar value={w} color={CONSTRUCTION_COLORS[i % CONSTRUCTION_COLORS.length]} />
+                    </div>
+                  ))}
+                </div>
+              )}
             </SectionCard>
 
-            {/* Portfolio metrics */}
             <SectionCard title="Portfolio Metrics">
               <div className="space-y-2">
                 {[
@@ -591,62 +738,112 @@ function CioOutputStep({
             </SectionCard>
           </div>
 
-          {/* Board Memo */}
-          {cioResult.boardMemo && (
-            <SectionCard title="Board Memo">
-              <div className="space-y-4">
-                {cioResult.boardMemo.title && (
-                  <div>
-                    <p className="text-slate-400 text-xs font-medium mb-1">Subject</p>
-                    <p className="text-slate-200 text-sm font-semibold">{cioResult.boardMemo.title}</p>
+          {/* 4. Benchmark Comparison */}
+          {memo?.benchmarkComparison && (
+            <SectionCard title="4. Benchmark Comparison">
+              <p className="text-slate-300 text-sm mb-3">{memo.benchmarkComparison.summary}</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {[
+                  { label: "Equity", value: memo.benchmarkComparison.equityDelta },
+                  { label: "Bonds / Credit", value: memo.benchmarkComparison.bondDelta },
+                  { label: "Alternatives", value: memo.benchmarkComparison.alternativesDelta },
+                  { label: "Cash", value: memo.benchmarkComparison.cashDelta },
+                ].map(row => (
+                  <div key={row.label} className="bg-white/5 rounded p-3 border border-white/10">
+                    <p className="text-slate-500 text-xs mb-1">{row.label}</p>
+                    <p className="text-slate-200 text-xs">{row.value}</p>
                   </div>
-                )}
-                {cioResult.boardMemo.recommendation && (
-                  <div>
-                    <p className="text-slate-400 text-xs font-medium mb-1">Recommendation</p>
-                    <p className="text-slate-300 text-sm">{cioResult.boardMemo.recommendation}</p>
-                  </div>
-                )}
-                {cioResult.boardMemo.allocationRationale && (
-                  <div>
-                    <p className="text-slate-400 text-xs font-medium mb-1">Allocation Rationale</p>
-                    <p className="text-slate-300 text-sm leading-relaxed">{cioResult.boardMemo.allocationRationale}</p>
-                  </div>
-                )}
-                {cioResult.boardMemo.macroSummary && (
-                  <div>
-                    <p className="text-slate-400 text-xs font-medium mb-1">Macro Summary</p>
-                    <p className="text-slate-300 text-sm leading-relaxed">{cioResult.boardMemo.macroSummary}</p>
-                  </div>
-                )}
-                {(cioResult.boardMemo.keyRisks?.length ?? 0) > 0 && (
-                  <div>
-                    <p className="text-slate-400 text-xs font-medium mb-1">Key Risks</p>
-                    <ul className="space-y-1">
-                      {cioResult.boardMemo.keyRisks!.map((r: string, i: number) => (
-                        <li key={i} className="text-slate-300 text-sm flex items-start gap-2">
-                          <span className="text-red-400 mt-0.5">•</span><span>{r}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                {cioResult.boardMemo.benchmarkComparison && (
-                  <div>
-                    <p className="text-slate-400 text-xs font-medium mb-1">Benchmark Comparison</p>
-                    <p className="text-slate-300 text-sm">{cioResult.boardMemo.benchmarkComparison}</p>
-                  </div>
-                )}
-                {cioResult.boardMemo.disclaimer && (
-                  <div className="bg-white/5 rounded p-3 border border-white/10">
-                    <p className="text-slate-500 text-xs italic">{cioResult.boardMemo.disclaimer}</p>
-                  </div>
-                )}
+                ))}
               </div>
             </SectionCard>
           )}
 
-          <div className="flex gap-3">
+          {/* 5. Key Allocation Decisions */}
+          {(memo?.keyAllocationDecisions?.length ?? 0) > 0 && (
+            <SectionCard title="5. Key Allocation Decisions">
+              <ul className="space-y-2">
+                {memo!.keyAllocationDecisions!.map((d, i) => (
+                  <li key={i} className="text-slate-300 text-sm flex items-start gap-2">
+                    <span className="text-blue-400 shrink-0 mt-0.5">{i + 1}.</span><span>{d}</span>
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          )}
+
+          {/* 6. Risk Assessment */}
+          {(memo?.riskAssessment?.length ?? 0) > 0 && (
+            <SectionCard title="6. Risk Assessment">
+              <div className="space-y-3">
+                {memo!.riskAssessment!.map((r, i) => (
+                  <div key={i} className="bg-white/5 rounded p-3 border border-white/10">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${severityBadge(r.severity)}`}>{r.severity}</span>
+                      <span className="text-slate-200 text-sm font-medium">{r.risk}</span>
+                    </div>
+                    <p className="text-slate-400 text-xs leading-relaxed">{r.portfolioImpact}</p>
+                  </div>
+                ))}
+              </div>
+            </SectionCard>
+          )}
+
+          {/* 7. Rebalance Triggers */}
+          {(memo?.rebalanceTriggers?.length ?? 0) > 0 && (
+            <SectionCard title="7. Rebalance Triggers">
+              <ul className="space-y-2">
+                {memo!.rebalanceTriggers!.map((t, i) => (
+                  <li key={i} className="text-slate-300 text-sm flex items-start gap-2">
+                    <span className="text-amber-400 shrink-0 mt-0.5">⚠</span><span>{t}</span>
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          )}
+
+          {/* 8. IPS Compliance */}
+          {memo?.ipsCompliance && (
+            <SectionCard title="8. IPS Compliance">
+              <div className="flex items-center gap-2 mb-3">
+                <Badge className={`text-xs ${
+                  memo.ipsCompliance.status === "Compliant"
+                    ? "bg-emerald-600/30 text-emerald-300 border-emerald-500/40"
+                    : "bg-red-600/30 text-red-300 border-red-500/40"
+                }`}>{memo.ipsCompliance.status}</Badge>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {[
+                  { label: "Return Check", value: memo.ipsCompliance.returnCheck },
+                  { label: "Volatility Check", value: memo.ipsCompliance.volatilityCheck },
+                  { label: "Drawdown Check", value: memo.ipsCompliance.drawdownCheck },
+                ].map(row => (
+                  <div key={row.label} className="bg-white/5 rounded p-3 border border-white/10">
+                    <p className="text-slate-500 text-xs mb-1">{row.label}</p>
+                    <p className="text-slate-200 text-xs">{row.value}</p>
+                  </div>
+                ))}
+              </div>
+              {memo.ipsCompliance.notes && (
+                <p className="text-slate-400 text-xs mt-3">{memo.ipsCompliance.notes}</p>
+              )}
+            </SectionCard>
+          )}
+
+          {/* 9. Disclaimer */}
+          {memo?.disclaimer && (
+            <div className="bg-white/5 rounded p-3 border border-white/10">
+              <p className="text-slate-500 text-xs italic">{memo.disclaimer}</p>
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => exportBoardMemo(cioResult)}
+              variant="outline"
+              className="border-white/20 text-slate-300 hover:bg-white/5"
+            >
+              ⤓ Download Board Memo
+            </Button>
             <Button onClick={() => navigate("/portfolio-mesh/history")} variant="outline" className="border-white/20 text-slate-300 hover:bg-white/5">
               View History
             </Button>
@@ -695,7 +892,7 @@ export default function PortfolioMesh() {
     cioSharpe: number;
     ipsCompliant: boolean;
     ipsIssues: string[];
-    boardMemo: { title?: string; macroSummary?: string; allocationRationale?: string; keyRisks?: string[]; benchmarkComparison?: string; recommendation?: string; disclaimer?: string };
+    boardMemo: BoardMemo;
   } | null>(null);
 
   // tRPC mutations
