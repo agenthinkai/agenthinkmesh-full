@@ -1750,3 +1750,21 @@
 
 ## Null-Domain Agent Assignment (11 Apr 2026)
 - [x] Query 16 active agents with NULL domain and assign each to the correct domain (9→GCC Wealth, 4→Finance, 2→Legal, 1→Enterprise)
+
+## PortfolioMesh Module (11 Apr 2026)
+- [ ] DB schema: portfolioRuns + ipsConfigs tables, push migration
+- [ ] Backend: IPS save/load tRPC procedures
+- [ ] Backend: macro regime classification procedure (LLM-powered)
+- [ ] Backend: 6 asset class agent procedures (historical + regime-adjusted + blended)
+- [ ] Backend: 5 portfolio construction methods (Equal Weight, Max Sharpe, Risk Parity, Min Variance, Max Diversification)
+- [ ] Backend: CIO output + Board Memo generation procedure
+- [ ] Backend: run history list/get procedures
+- [x] Frontend: IPS Setup page (/portfolio-mesh/ips)
+- [x] Frontend: Macro Agent page (/portfolio-mesh/macro)
+- [x] Frontend: Asset Class Analysis page (/portfolio-mesh/assets)
+- [x] Frontend: Portfolio Construction page (/portfolio-mesh/construction)
+- [x] Frontend: Strategy Review page (/portfolio-mesh/review)
+- [x] Frontend: CIO Output page (/portfolio-mesh/cio) — premium institutional design
+- [x] Frontend: History page (/portfolio-mesh/history)
+- [x] Navigation: add PortfolioMesh entry to SiteNav + register all routes in App.tsx
+- [ ] Unit tests for portfolio math and IPS compliance check

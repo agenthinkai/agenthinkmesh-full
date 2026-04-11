@@ -73,6 +73,8 @@ import PaymentHistory from "./pages/PaymentHistory";
 import { DemoBanner } from "./pages/Home";
 import { useAuth } from "./_core/hooks/useAuth";
 import Tracker from "./pages/Tracker";
+import PortfolioMesh from "./pages/PortfolioMesh";
+import PortfolioMeshHistory from "./pages/PortfolioMeshHistory";
 
 function Router() {
   const { isAuthenticated, loading } = useAuth();
@@ -211,6 +213,10 @@ function Router() {
 
       {/* Revenue Bridge — Public Pitch Evaluation */}
       <Route path="/pitch" component={Pitch} />
+
+      {/* PortfolioMesh — Institutional Asset Allocation Engine */}
+      <Route path="/portfolio-mesh" component={PortfolioMesh} />
+      <Route path="/portfolio-mesh/history" component={PortfolioMeshHistory} />
 
       {/* Pricing */}
       <Route path="/pricing" component={Pricing} />

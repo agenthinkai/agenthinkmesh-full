@@ -1338,3 +1338,56 @@ export const gmailSyncLog = mysqlTable("gmail_sync_log", {
 });
 export type GmailSyncLog = typeof gmailSyncLog.$inferSelect;
 export type InsertGmailSyncLog = typeof gmailSyncLog.$inferInsert;
+
+// ============================================================
+// PORTFOLIOMESH — Strategic Asset Allocation Engine
+// ============================================================
+
+// Stores a user's Investment Policy Statement configuration
+export const ipsConfigs = mysqlTable("ips_configs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  name: varchar("name", { length: 255 }).notNull().default("My IPS"),
+  // Asset universe weights constraints (JSON: { assetClass: { min, max } })
+  constraints: longtext("constraints").notNull(), // JSON
+  // Objectives
+  targetReturn: decimal("targetReturn", { precision: 6, scale: 4 }).notNull(),
+  targetVolatilityMin: decimal("targetVolatilityMin", { precision: 6, scale: 4 }).notNull(),
+  targetVolatilityMax: decimal("targetVolatilityMax", { precision: 6, scale: 4 }).notNull(),
+  maxDrawdown: decimal("maxDrawdown", { precision: 6, scale: 4 }).notNull(),
+  benchmark: varchar("benchmark", { length: 64 }).notNull().default("60/40"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  ipsUserIdx: index("ips_user_idx").on(table.userId),
+}));
+export type IpsConfig = typeof ipsConfigs.$inferSelect;
+export type InsertIpsConfig = typeof ipsConfigs.$inferInsert;
+
+// Stores a complete PortfolioMesh run (one per workflow execution)
+export const portfolioRuns = mysqlTable("portfolio_runs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  ipsConfigId: int("ipsConfigId").references(() => ipsConfigs.id, { onDelete: "set null" }),
+  ipsSnapshot: longtext("ipsSnapshot").notNull(), // JSON snapshot of IPS at run time
+  macroRegime: varchar("macroRegime", { length: 32 }),
+  macroConfidence: decimal("macroConfidence", { precision: 5, scale: 4 }),
+  macroRationale: text("macroRationale"),
+  assetEstimates: longtext("assetEstimates"), // JSON array of 6 asset estimates
+  constructionResults: longtext("constructionResults"), // JSON: 5 methods
+  cioWeights: longtext("cioWeights"), // JSON: { assetClass: weight }
+  cioExpectedReturn: decimal("cioExpectedReturn", { precision: 6, scale: 4 }),
+  cioExpectedVolatility: decimal("cioExpectedVolatility", { precision: 6, scale: 4 }),
+  cioSharpe: decimal("cioSharpe", { precision: 6, scale: 4 }),
+  cioRisks: text("cioRisks"),
+  ipsCompliant: boolean("ipsCompliant").default(false),
+  boardMemo: longtext("boardMemo"), // JSON: structured board memo
+  status: mysqlEnum("status", ["draft", "macro_done", "assets_done", "construction_done", "complete"]).notNull().default("draft"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  prUserIdx: index("pr_user_idx").on(table.userId),
+  prStatusIdx: index("pr_status_idx").on(table.status),
+}));
+export type PortfolioRun = typeof portfolioRuns.$inferSelect;
+export type InsertPortfolioRun = typeof portfolioRuns.$inferInsert;

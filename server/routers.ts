@@ -28,6 +28,7 @@ import { treasuryRouter } from "./routers/treasury";
 import { shareReportRouter } from "./routers/shareReport";
 import { contactsRouter } from "./routers/contacts";
 import { trackerRouter } from "./routers/tracker";
+import { portfolioMeshRouter } from "./routers/portfolioMesh";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
 import { eq, desc, gte, sql, and, like, or, isNull, lt } from "drizzle-orm";
@@ -3338,6 +3339,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
   billing: billingRouter,
   treasury: treasuryRouter,
   portfolioIntel: portfolioRouter,
+  portfolioMesh: portfolioMeshRouter,
   insurance: insuranceRouter,
   admesh: admeshRouter,
   openclaw: openclawRouter,
