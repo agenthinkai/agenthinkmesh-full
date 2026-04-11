@@ -1747,3 +1747,6 @@
 
 ## Bug: Agent Count Discrepancy (11 Apr 2026)
 - [x] Domains page shows 99 total agents but landing page shows 127 — fixed: both now show 115 (active agents only, no null-domain exclusion)
+
+## Null-Domain Agent Assignment (11 Apr 2026)
+- [x] Query 16 active agents with NULL domain and assign each to the correct domain (9→GCC Wealth, 4→Finance, 2→Legal, 1→Enterprise)
