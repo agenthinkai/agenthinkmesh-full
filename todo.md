@@ -1741,3 +1741,6 @@
 
 ## Education Domain Metadata (11 Apr 2026)
 - [x] Add "Education" entry to DOMAIN_META in DomainAgents.tsx so the domain detail page renders correctly
+
+## Education Agents Seeding (11 Apr 2026)
+- [x] Seed built-in Education agents into the database (Citation Generator, Essay Outliner, Study Planner, Research Assistant, Language Tutor — 8 agents total now live)
