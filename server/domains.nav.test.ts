@@ -66,4 +66,16 @@ describe("Domains nav feature", () => {
       expect(decoded).toBe(domain);
     }
   });
+
+  it("DomainAgents DOMAIN_META includes Education entry with correct fields", () => {
+    const domainAgentsSrc = fs.readFileSync(
+      path.join(CLIENT_SRC, "pages/DomainAgents.tsx"),
+      "utf-8"
+    );
+    expect(domainAgentsSrc).toContain('"Education"');
+    // Must have icon, color, gradient, description, contexts
+    expect(domainAgentsSrc).toContain('"\u{1F393}"'); // 🎓
+    expect(domainAgentsSrc).toContain('"#818CF8"');
+    expect(domainAgentsSrc).toContain('"Student Research"');
+  });
 });

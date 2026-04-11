@@ -49,6 +49,13 @@ const DOMAIN_META: Record<string, { icon: string; color: string; gradient: strin
     description: "Private wealth, investment banking, and family office agents for GCC institutions.",
     contexts: ["Private Wealth", "Investment Banking", "Family Office", "Fund Distribution"],
   },
+  "Education": {
+    icon: "🎓",
+    color: "#818CF8",
+    gradient: "from-indigo-600/20 to-violet-600/20",
+    description: "Research assistance, citation generation, essay outlining, and study planning agents for students and educators.",
+    contexts: ["Student Research", "Essay Writing", "Study Planning", "Citation Management"],
+  },
 };
 
 type AgentRow = {

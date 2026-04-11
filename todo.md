@@ -1738,3 +1738,6 @@
 - [x] Clicking an agent navigates to /ask with agent pre-selected (same as PersonaSelector role flow)
 - [x] Update SiteNav "Domains" link (desktop + mobile) from /pricing to /domains
 - [x] Add /domains route to App.tsx (existing /domain/:name route already present)
+
+## Education Domain Metadata (11 Apr 2026)
+- [x] Add "Education" entry to DOMAIN_META in DomainAgents.tsx so the domain detail page renders correctly
