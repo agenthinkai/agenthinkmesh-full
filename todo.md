@@ -1790,3 +1790,6 @@
 - [ ] History page: benchmark badge on pinned runs
 - [ ] History page: quick metrics preview (return / vol / Sharpe)
 - [ ] Unit tests: benchmark logic, delta calculations, CIO output structure
+- [x] Wire compareToBenchmark into CIO Output step with color-coded delta strip
+- [x] Build /portfolio-mesh/run/:id Run Detail page
+- [x] Add Method Attribution bar to Construction step

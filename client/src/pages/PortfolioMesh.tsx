@@ -422,6 +422,36 @@ function ConstructionStep({
               </div>
             )}
 
+            {/* Method Attribution Bar */}
+            {(() => {
+              // Compute Sharpe-weighted contribution of each method
+              const totalSharpe = results.reduce((s, r) => s + Math.max(r.sharpe, 0.001), 0);
+              return (
+                <div className="bg-white/5 rounded-lg border border-white/10 p-4">
+                  <p className="text-slate-400 text-xs font-medium uppercase tracking-wide mb-3">Method Attribution (Sharpe-weighted)</p>
+                  <div className="space-y-2">
+                    {results.map((r, i) => {
+                      const pct = (Math.max(r.sharpe, 0.001) / totalSharpe) * 100;
+                      return (
+                        <div key={r.method}>
+                          <div className="flex justify-between text-xs mb-1">
+                            <span className="text-slate-300">{r.method}</span>
+                            <span className="text-slate-400">{pct.toFixed(1)}%</span>
+                          </div>
+                          <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                            <div
+                              className="h-full rounded-full transition-all duration-500"
+                              style={{ width: `${pct}%`, background: CONSTRUCTION_COLORS[i % CONSTRUCTION_COLORS.length] }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })()}
+
             <div className="flex gap-3">
               <Button onClick={onRun} disabled={isRunning} variant="outline" size="sm" className="border-white/20 text-slate-300 hover:bg-white/5">
                 Re-run
@@ -619,11 +649,34 @@ type CioOutputStepProps = {
   runId?: number | null;
 };
 
+function deltaColor(delta: number | null, lowerIsBetter = false) {
+  if (delta === null) return "text-slate-400";
+  const positive = lowerIsBetter ? delta < 0 : delta > 0;
+  if (Math.abs(delta) < 0.001) return "text-slate-400";
+  return positive ? "text-emerald-400" : "text-red-400";
+}
+
+function deltaSign(delta: number | null) {
+  if (delta === null) return "—";
+  return delta >= 0 ? `+${(delta * 100).toFixed(2)}%` : `${(delta * 100).toFixed(2)}%`;
+}
+
+function deltaSharpe(delta: number | null) {
+  if (delta === null) return "—";
+  return delta >= 0 ? `+${delta.toFixed(3)}` : `${delta.toFixed(3)}`;
+}
+
 function CioOutputStep({ cioResult, onRun, isRunning, runId }: CioOutputStepProps) {
   const [, navigate] = useLocation();
   const [benchmarkSaved, setBenchmarkSaved] = useState(false);
   const saveBenchmark = trpc.portfolioMesh.saveBenchmark.useMutation();
   const memo = cioResult?.boardMemo as BoardMemo | undefined;
+
+  // Benchmark comparison — only fires when we have a runId and a result
+  const { data: benchDelta } = trpc.portfolioMesh.compareToBenchmark.useQuery(
+    { runId: runId! },
+    { enabled: !!runId && !!cioResult }
+  );
 
   async function handleSaveBenchmark() {
     if (!runId) return;
@@ -766,6 +819,58 @@ function CioOutputStep({ cioResult, onRun, isRunning, runId }: CioOutputStepProp
               )}
             </SectionCard>
           </div>
+
+          {/* 3a. Benchmark Delta Strip */}
+          {benchDelta && (
+            <div className="rounded-lg border border-white/10 bg-white/5 px-5 py-4">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-slate-400 text-xs font-medium uppercase tracking-wide">
+                  vs {benchDelta.benchmarkLabel}
+                </span>
+                {!benchDelta.isUserBenchmark && (
+                  <span className="text-xs text-slate-500 italic">(default 60/40 baseline)</span>
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center">
+                  <p className="text-slate-500 text-xs mb-1">Return Δ</p>
+                  <p className={`text-lg font-semibold ${deltaColor(benchDelta.returnDelta)}`}>
+                    {deltaSign(benchDelta.returnDelta)}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-slate-500 text-xs mb-1">Volatility Δ</p>
+                  <p className={`text-lg font-semibold ${deltaColor(benchDelta.volDelta, true)}`}>
+                    {deltaSign(benchDelta.volDelta)}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-slate-500 text-xs mb-1">Sharpe Δ</p>
+                  <p className={`text-lg font-semibold ${deltaColor(benchDelta.sharpeDelta)}`}>
+                    {deltaSharpe(benchDelta.sharpeDelta)}
+                  </p>
+                </div>
+              </div>
+              {benchDelta.allocationShifts?.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-white/10">
+                  <p className="text-slate-500 text-xs mb-2">Largest allocation shifts</p>
+                  <div className="space-y-1">
+                    {benchDelta.allocationShifts.map((s: { asset: string; runWeight: number; benchWeight: number; delta: number }) => (
+                      <div key={s.asset} className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400">{s.asset}</span>
+                        <span className={deltaColor(s.delta)}>
+                          {s.delta >= 0 ? "+" : ""}{(s.delta * 100).toFixed(1)}pp
+                          <span className="text-slate-600 ml-1">
+                            ({(s.benchWeight * 100).toFixed(1)}% → {(s.runWeight * 100).toFixed(1)}%)
+                          </span>
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* 3b. Portfolio Construction Logic */}
           {memo?.constructionLogic && (
