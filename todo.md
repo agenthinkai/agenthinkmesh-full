@@ -1727,3 +1727,14 @@
 - [ ] Fix any runtime issues affecting demo flow
 - [ ] Add Re-export PDF button to History tab
 - [ ] Embed AgenThinkMesh logo on PDF cover page
+
+## Architecture Diagram
+
+- [x] Generate clean SVG/HTML architecture diagram showing 8-layer system flow (Client Browser → tRPC → councilEngine.ts → LLM API → Responses → Consensus Logic → MySQL → Report/PDF)
+
+## Domains Nav Feature (11 Apr 2026)
+- [x] Create /domains page: list all domains with agent counts
+- [x] Clicking a domain navigates to /domain/:name showing agents in that domain
+- [x] Clicking an agent navigates to /ask with agent pre-selected (same as PersonaSelector role flow)
+- [x] Update SiteNav "Domains" link (desktop + mobile) from /pricing to /domains
+- [x] Add /domains route to App.tsx (existing /domain/:name route already present)

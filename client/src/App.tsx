@@ -43,6 +43,7 @@ import PartnerCRM from "./pages/PartnerCRM";
 import AdminUsageDashboard from "./pages/AdminUsageDashboard";
 import AdminTreasury from "./pages/AdminTreasury";
 import DomainAgents from "./pages/DomainAgents";
+import DomainsPage from "./pages/DomainsPage";
 import BetaAccess from "./pages/BetaAccess";
 import RosieProtocol from "./pages/RosieProtocol";
 import AdminBetaRequests from "./pages/AdminBetaRequests";
@@ -146,7 +147,8 @@ function Router() {
       {/* Mesh Identity Layer */}
       <Route path="/persona-setup" component={PersonaSelector} />
 
-      {/* Domain agent explorer */}
+      {/* Domains directory + domain agent explorer */}
+      <Route path="/domains" component={DomainsPage} />
       <Route path="/domain/:name" component={DomainAgents} />
 
       {/* Specialist Agents */}

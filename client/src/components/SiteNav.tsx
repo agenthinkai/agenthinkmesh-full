@@ -181,7 +181,7 @@ function MobileDrawer({ open, onClose, currentPath, isAuthenticated, user, logou
         {/* Static links */}
         <div style={{ padding: "8px 0", borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
           {[
-            { label: "Domains", href: "/pricing" },
+            { label: "Domains", href: "/domains" },
             { label: "Contact", href: "/contact" },
           ].map(item => (
             <a
@@ -423,7 +423,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
 
             {/* Desktop-only static links */}
             {!isMobile && [
-              { label: "Domains", href: "/pricing" },
+              { label: "Domains", href: "/domains" },
               {
                 label: "Contact",
                 href: isLandingPage ? "#contact" : "/contact",

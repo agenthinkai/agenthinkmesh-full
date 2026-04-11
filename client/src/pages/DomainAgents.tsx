@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, Link } from "wouter";
+import { useParams, Link, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -71,10 +71,18 @@ function AgentCard({ agent, domainColor }: { agent: AgentRow; domainColor: strin
   const caps: string[] = (() => {
     try { return JSON.parse(agent.capabilities); } catch { return []; }
   })();
+  const [, navigate] = useLocation();
+  const handleClick = () => {
+    navigate(`/ask?agent=${agent.id}&agentName=${encodeURIComponent(agent.agentName)}`);
+  };
 
   return (
     <div
-      className="group relative p-5 rounded-2xl border transition-all duration-300 hover:-translate-y-1"
+      role="button"
+      tabIndex={0}
+      onClick={handleClick}
+      onKeyDown={(e) => e.key === "Enter" && handleClick()}
+      className="group relative p-5 rounded-2xl border transition-all duration-300 hover:-translate-y-1 cursor-pointer"
       style={{
         background: "rgba(255,255,255,0.03)",
         borderColor: agent.isBuiltIn ? `${domainColor}33` : `${domainColor}55`,
@@ -112,17 +120,22 @@ function AgentCard({ agent, domainColor }: { agent: AgentRow; domainColor: strin
         ))}
       </div>
 
-      {/* Stats */}
-      <div className="flex items-center gap-4 text-[10px] text-white/35 font-mono">
-        {agent.tasksCompleted != null && (
-          <span className="flex items-center gap-1"><Zap className="w-3 h-3" /> {agent.tasksCompleted} tasks</span>
-        )}
-        {agent.avgLatency != null && (
-          <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {agent.avgLatency}ms</span>
-        )}
-        {agent.successRate && (
-          <span className="flex items-center gap-1"><Star className="w-3 h-3" /> {agent.successRate}%</span>
-        )}
+      {/* Stats + Run CTA row */}
+      <div className="flex items-center justify-between gap-4 mt-1">
+        <div className="flex items-center gap-4 text-[10px] text-white/35 font-mono">
+          {agent.tasksCompleted != null && (
+            <span className="flex items-center gap-1"><Zap className="w-3 h-3" /> {agent.tasksCompleted} tasks</span>
+          )}
+          {agent.avgLatency != null && (
+            <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> {agent.avgLatency}ms</span>
+          )}
+          {agent.successRate && (
+            <span className="flex items-center gap-1"><Star className="w-3 h-3" /> {agent.successRate}%</span>
+          )}
+        </div>
+        <span className="text-[11px] font-semibold flex-shrink-0 transition-colors" style={{ color: domainColor }}>
+          Run →
+        </span>
       </div>
     </div>
   );
@@ -193,9 +206,9 @@ export default function DomainAgents() {
       {/* ── Sticky Nav ── */}
       <nav className="sticky top-0 z-50 flex items-center justify-between px-6 md:px-12 h-14 bg-[#0B1629]/90 backdrop-blur-xl border-b border-white/5">
         <div className="flex items-center gap-3">
-          <Link href="/">
+          <Link href="/domains">
             <button className="flex items-center gap-2 text-white/50 hover:text-white transition-colors text-sm">
-              <ArrowLeft className="w-4 h-4" /> Home
+              <ArrowLeft className="w-4 h-4" /> Domains
             </button>
           </Link>
           <span className="text-white/20">/</span>
