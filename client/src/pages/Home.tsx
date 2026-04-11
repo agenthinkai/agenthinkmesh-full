@@ -380,14 +380,14 @@ export default function Home() {
             <p className="text-xs text-violet-400 font-mono uppercase tracking-widest mb-3">Agent Domains</p>
             <h2 className="text-4xl font-bold tracking-tight mb-3">Six institutional domains</h2>
             <p className="text-sm text-white/40 max-w-xl mx-auto">
-              Each domain hosts specialist agents trained on domain-specific workflows, terminology, and decision frameworks.
+              Each domain hosts specialist agents configured for domain-specific workflows, terminology, and decision frameworks.
             </p>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
             {[
               { color: "from-violet-500 to-purple-600", icon: "💼", domain: "Finance", contexts: ["VC / PE Fund", "Sovereign Wealth", "Fund Manager"] },
               { color: "from-sky-500 to-blue-600", icon: "⚖️", domain: "Legal", contexts: ["Contract Review", "Compliance", "Regulatory"] },
-              { color: "from-emerald-500 to-teal-600", icon: "🏥", domain: "Healthcare", contexts: ["Clinical AI", "Claims AI", "Risk Scoring"] },
+              { color: "from-emerald-500 to-teal-600", icon: "🏥", domain: "Healthcare", contexts: ["Clinical workflows", "Claims review", "Risk assessment"] },
               { color: "from-orange-500 to-amber-600", icon: "🏢", domain: "Enterprise", contexts: ["Strategy", "Operations", "Procurement"] },
               { color: "from-pink-500 to-rose-600", icon: "🌍", domain: "GCC Wealth", contexts: ["Family Office", "Private Banking", "Endowment"] },
               { color: "from-indigo-500 to-violet-600", icon: "🎓", domain: "Education", contexts: ["Research", "Essay Writing", "Study Planning"] },
@@ -462,8 +462,8 @@ export default function Home() {
                 icon: <FileText className="w-6 h-6 text-violet-400" />,
                 step: "01",
                 title: "Deal Evaluation",
-                desc: "The Deal Screener runs a Council of 10 specialist agents against any investment opportunity. Each agent produces a structured verdict. Outputs are consolidated into an IC Memo with a PDF export.",
-                tags: ["IC Memo", "10 Agents", "PDF Export"],
+                desc: "The Deal Screener runs a structured Council of 10 evaluation roles against any investment opportunity. Each role produces a structured verdict. Outputs are consolidated into an IC Memo with PDF export.",
+                tags: ["IC Memo", "10 Roles", "PDF Export"],
               },
               {
                 icon: <BarChart3 className="w-6 h-6 text-cyan-400" />,
@@ -475,7 +475,7 @@ export default function Home() {
               {
                 icon: <Building2 className="w-6 h-6 text-emerald-400" />,
                 step: "03",
-                title: "Committee-Ready Outputs",
+                title: "Committee-ready outputs",
                 desc: "Every run produces structured, auditable outputs: Board Memos with 9 institutional sections, IPS compliance checks, benchmark comparisons, and risk assessments with severity ratings.",
                 tags: ["Board Memo", "IPS Compliance", "Audit Trail"],
               },

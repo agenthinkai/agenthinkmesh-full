@@ -1768,3 +1768,9 @@
 - [x] Frontend: History page (/portfolio-mesh/history)
 - [x] Navigation: add PortfolioMesh entry to SiteNav + register all routes in App.tsx
 - [ ] Unit tests for portfolio math and IPS compliance check
+
+## Landing Page — Spec Copy Corrections (Pasted_content_34)
+- [x] Fix domains sub-copy: replace "trained on" with "configured for"
+- [x] Fix Healthcare contexts: "Clinical workflows, claims review, risk assessment"
+- [x] Fix Deal Evaluation body: "structured Council of 10 evaluation roles" + "10 Roles" tag
+- [x] Fix Deal Evaluation step 3 title: "Committee-ready outputs" (lowercase)
