@@ -10,7 +10,7 @@
  */
 
 import { z } from "zod";
-import { router, protectedProcedure } from "../_core/trpc";
+import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { ipsConfigs, portfolioRuns } from "../../drizzle/schema";
 import { eq, desc, and } from "drizzle-orm";
@@ -922,6 +922,59 @@ Respond in valid JSON only. No markdown. No extra keys.`;
         cioExpectedVolatility: row.cioExpectedVolatility ? parseFloat(row.cioExpectedVolatility) : null,
         cioSharpe: row.cioSharpe ? parseFloat(row.cioSharpe) : null,
         macroConfidence: row.macroConfidence ? parseFloat(row.macroConfidence) : null,
+        shareToken: row.shareToken,
+      };
+    }),
+
+  // ── Share: Generate Token ───────────────────────────────────────────────────────────────
+  generateShareToken: protectedProcedure
+    .input(z.object({ runId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await requireDb();
+      const [row] = await db
+        .select({ id: portfolioRuns.id, userId: portfolioRuns.userId, shareToken: portfolioRuns.shareToken })
+        .from(portfolioRuns)
+        .where(and(eq(portfolioRuns.id, input.runId), eq(portfolioRuns.userId, ctx.user.id)))
+        .limit(1);
+      if (!row) throw new TRPCError({ code: "NOT_FOUND" });
+      // Return existing token if already generated
+      if (row.shareToken) return { shareToken: row.shareToken };
+      // Generate a cryptographically random token
+      const { randomBytes } = await import("crypto");
+      const token = randomBytes(24).toString("base64url"); // 32-char URL-safe string
+      await db
+        .update(portfolioRuns)
+        .set({ shareToken: token })
+        .where(eq(portfolioRuns.id, input.runId));
+      return { shareToken: token };
+    }),
+
+  // ── Share: Get Run by Token (public) ─────────────────────────────────────────────
+  getRunByToken: publicProcedure
+    .input(z.object({ token: z.string().min(8).max(64) }))
+    .query(async ({ input }) => {
+      const db = await requireDb();
+      const [row] = await db
+        .select()
+        .from(portfolioRuns)
+        .where(eq(portfolioRuns.shareToken, input.token))
+        .limit(1);
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Share link not found or has been revoked." });
+      // Only expose run content — no userId, no private IDs
+      return {
+        id: row.id,
+        macroRegime: row.macroRegime,
+        macroConfidence: row.macroConfidence ? parseFloat(row.macroConfidence) : null,
+        macroRationale: row.macroRationale,
+        ipsSnapshot: JSON.parse(row.ipsSnapshot),
+        cioExpectedReturn: row.cioExpectedReturn ? parseFloat(row.cioExpectedReturn) : null,
+        cioExpectedVolatility: row.cioExpectedVolatility ? parseFloat(row.cioExpectedVolatility) : null,
+        cioSharpe: row.cioSharpe ? parseFloat(row.cioSharpe) : null,
+        ipsCompliant: row.ipsCompliant,
+        boardMemo: row.boardMemo ? JSON.parse(row.boardMemo) : null,
+        isBenchmark: row.isBenchmark,
+        benchmarkLabel: row.benchmarkLabel,
+        createdAt: row.createdAt,
       };
     }),
 });

@@ -77,6 +77,7 @@ import PortfolioMesh from "./pages/PortfolioMesh";
 import PortfolioMeshHistory from "./pages/PortfolioMeshHistory";
 import PortfolioMeshDemo from "./pages/PortfolioMeshDemo";
 import PortfolioMeshRunDetail from "./pages/PortfolioMeshRunDetail";
+import PortfolioMeshShare from "./pages/PortfolioMeshShare";
 
 function Router() {
   const { isAuthenticated, loading } = useAuth();
@@ -221,6 +222,7 @@ function Router() {
       <Route path="/portfolio-mesh/demo" component={PortfolioMeshDemo} />
       <Route path="/portfolio-mesh/history" component={PortfolioMeshHistory} />
       <Route path="/portfolio-mesh/run/:id" component={PortfolioMeshRunDetail} />
+      <Route path="/portfolio-mesh/share/:token" component={PortfolioMeshShare} />
 
       {/* Pricing */}
       <Route path="/pricing" component={Pricing} />

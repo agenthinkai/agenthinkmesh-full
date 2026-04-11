@@ -2,6 +2,7 @@
  * PortfolioMesh Run Detail — renders a stored CIO Board Memo from DB
  * Route: /portfolio-mesh/run/:id
  */
+import React, { useState } from "react";
 import { useLocation, useParams } from "wouter";
 import SiteNav from "@/components/SiteNav";
 import { useAuth } from "@/_core/hooks/useAuth";
@@ -160,6 +161,19 @@ export default function PortfolioMeshRunDetail() {
     { enabled: !!user && !!runId && !!run?.cioExpectedReturn }
   );
 
+  const [shareToken, setShareToken] = useState<string | null>((run as { shareToken?: string | null } | null)?.shareToken ?? null);
+  const [shareCopied, setShareCopied] = useState(false);
+  const generateShare = trpc.portfolioMesh.generateShareToken.useMutation({
+    onSuccess: (data) => {
+      setShareToken(data.shareToken);
+      const url = `${window.location.origin}/portfolio-mesh/share/${data.shareToken}`;
+      navigator.clipboard.writeText(url).then(() => {
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2500);
+      });
+    },
+  });
+
   if (!user) {
     return (
       <div className="min-h-screen bg-[#0B1629] flex items-center justify-center">
@@ -230,16 +244,37 @@ export default function PortfolioMeshRunDetail() {
               {ips?.benchmark && <span>Benchmark: <span className="text-slate-300">{ips.benchmark}</span></span>}
             </div>
           </div>
-          {memo && (
+          <div className="flex gap-2 shrink-0">
+            {memo && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportMemo({ ipsSnapshot: ips, boardMemo: memo, cioExpectedReturn: run.cioExpectedReturn, cioExpectedVolatility: run.cioExpectedVolatility, cioSharpe: run.cioSharpe })}
+                className="border-white/20 text-slate-300 hover:bg-white/5"
+              >
+                ⤓ Download Memo
+              </Button>
+            )}
             <Button
               variant="outline"
               size="sm"
-              onClick={() => exportMemo({ ipsSnapshot: ips, boardMemo: memo, cioExpectedReturn: run.cioExpectedReturn, cioExpectedVolatility: run.cioExpectedVolatility, cioSharpe: run.cioSharpe })}
-              className="border-white/20 text-slate-300 hover:bg-white/5 shrink-0"
+              disabled={generateShare.isPending}
+              onClick={() => {
+                if (shareToken) {
+                  const url = `${window.location.origin}/portfolio-mesh/share/${shareToken}`;
+                  navigator.clipboard.writeText(url).then(() => {
+                    setShareCopied(true);
+                    setTimeout(() => setShareCopied(false), 2500);
+                  });
+                } else {
+                  generateShare.mutate({ runId });
+                }
+              }}
+              className={`border-white/20 hover:bg-white/5 ${shareCopied ? "text-emerald-400 border-emerald-500/40" : "text-slate-300"}`}
             >
-              ⤓ Download Memo
+              {shareCopied ? "✓ Link Copied" : shareToken ? "⎘ Copy Share Link" : "↗ Share Run"}
             </Button>
-          )}
+          </div>
         </div>
 
         {/* Portfolio Metrics */}

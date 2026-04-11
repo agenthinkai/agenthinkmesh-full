@@ -1384,12 +1384,14 @@ export const portfolioRuns = mysqlTable("portfolio_runs", {
   boardMemo: longtext("boardMemo"), // JSON: structured board memo
   isBenchmark: boolean("isBenchmark").default(false).notNull(),
   benchmarkLabel: varchar("benchmarkLabel", { length: 128 }),
+  shareToken: varchar("shareToken", { length: 64 }).unique(),
   status: mysqlEnum("status", ["draft", "macro_done", "assets_done", "construction_done", "complete"]).notNull().default("draft"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 }, (table) => ({
   prUserIdx: index("pr_user_idx").on(table.userId),
   prStatusIdx: index("pr_status_idx").on(table.status),
+  prShareTokenIdx: index("pr_share_token_idx").on(table.shareToken),
 }));
 export type PortfolioRun = typeof portfolioRuns.$inferSelect;
 export type InsertPortfolioRun = typeof portfolioRuns.$inferInsert;

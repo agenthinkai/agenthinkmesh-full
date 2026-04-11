@@ -183,6 +183,8 @@ function MobileDrawer({ open, onClose, currentPath, isAuthenticated, user, logou
         <div style={{ padding: "8px 0", borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
           {[
             { label: "Domains", href: "/domains" },
+            { label: "Deal Screener", href: "/deals" },
+            { label: "PortfolioMesh", href: "/portfolio-mesh" },
             { label: "Contact", href: "/contact" },
           ].map(item => (
             <a
@@ -368,6 +370,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
   const [dropOpen, setDropOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [activeHover, setActiveHover] = useState<string | null>(null);
+  const [toolsDropdownOpen, setToolsDropdownOpen] = useState(false);
   const dropRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 
@@ -450,6 +453,68 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
                 {item.label}
               </a>
             ))}
+
+            {/* Tools dropdown */}
+            {!isMobile && (
+              <div
+                style={{ position: "relative", height: "100%", display: "flex", alignItems: "center" }}
+                onMouseEnter={() => setToolsDropdownOpen(true)}
+                onMouseLeave={() => setToolsDropdownOpen(false)}
+              >
+                <button
+                  style={{
+                    color: toolsDropdownOpen ? WHITE : MUTED,
+                    fontSize: 13, fontWeight: 500,
+                    background: "none", border: "none", cursor: "pointer",
+                    padding: "0 10px", height: "100%",
+                    display: "flex", alignItems: "center", gap: 4,
+                    transition: "color 0.15s", whiteSpace: "nowrap",
+                  }}
+                >
+                  Tools
+                  <span style={{ fontSize: 9, opacity: 0.7, marginTop: 1 }}>▾</span>
+                </button>
+                {toolsDropdownOpen && (
+                  <div style={{
+                    position: "absolute", top: "100%", left: 0,
+                    background: "#0f1a2e",
+                    border: `1px solid ${BORDER}`,
+                    borderRadius: 8, padding: "6px 0",
+                    minWidth: 180, zIndex: 200,
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                  }}>
+                    {[
+                      { label: "Deal Screener", icon: "⚖️", href: "/deals", color: "#4ADE80" },
+                      { label: "PortfolioMesh", icon: "🏦", href: "/portfolio-mesh", color: "#7BA3D4" },
+                    ].map(tool => (
+                      <a
+                        key={tool.label}
+                        href={tool.href}
+                        style={{
+                          display: "flex", alignItems: "center", gap: 10,
+                          padding: "9px 16px",
+                          textDecoration: "none",
+                          color: currentPath.startsWith(tool.href) ? tool.color : MUTED,
+                          fontSize: 13, fontWeight: 500,
+                          transition: "background 0.12s, color 0.12s",
+                        }}
+                        onMouseEnter={e => {
+                          (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.05)";
+                          (e.currentTarget as HTMLAnchorElement).style.color = tool.color;
+                        }}
+                        onMouseLeave={e => {
+                          (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
+                          (e.currentTarget as HTMLAnchorElement).style.color = currentPath.startsWith(tool.href) ? tool.color : MUTED;
+                        }}
+                      >
+                        <span style={{ fontSize: 14 }}>{tool.icon}</span>
+                        {tool.label}
+                      </a>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Desktop scrollable tab row */}

@@ -1793,3 +1793,8 @@
 - [x] Wire compareToBenchmark into CIO Output step with color-coded delta strip
 - [x] Build /portfolio-mesh/run/:id Run Detail page
 - [x] Add Method Attribution bar to Construction step
+- [x] Add shareToken column to portfolioRuns schema and migrate
+- [x] Add generateShareToken and getRunByToken procedures
+- [x] Build /portfolio-mesh/share/:token public page
+- [x] Add Share Run button to Run Detail page
+- [x] Add PortfolioMesh to SiteNav Tools dropdown
