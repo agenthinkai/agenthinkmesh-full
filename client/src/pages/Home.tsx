@@ -162,20 +162,28 @@ export default function Home() {
         <div className="relative max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-mono mb-8">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            100,000 agents · GCC Multi-Agent Platform
+            115 verified specialist agents · Live
           </div>
 
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.02] mb-6">
-            The mesh that{" "}
+            A structured{" "}
             <span className="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
-              thinks, routes,
+              decision layer
             </span>
-            <br />and delivers.
+            <br />for institutional workflows.
           </h1>
 
-          <p className="text-lg text-white/60 max-w-2xl mx-auto mb-10 leading-relaxed">
-            Type a task. AgenThinkMesh assembles the right specialist agents in real time,
-            runs them in parallel, and synthesises a single executive brief — in seconds.
+          <p className="text-lg text-white/60 max-w-2xl mx-auto mb-4 leading-relaxed">
+            AgenThinkMesh transforms unstructured inputs into consistent, auditable outputs
+            across multiple institutional domains.
+          </p>
+
+          <p className="text-sm text-white/40 max-w-xl mx-auto mb-10 leading-relaxed">
+            Now extended with{" "}
+            <Link href="/portfolio-mesh" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">PortfolioMesh</Link>
+            {" "}(institutional asset allocation) and the{" "}
+            <Link href="/domains" className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2">Education</Link>
+            {" "}domain.
           </p>
 
           <div className="flex items-center justify-center gap-4 flex-wrap">
@@ -222,10 +230,10 @@ export default function Home() {
           {/* Hero stat pills */}
           <div className="flex items-center justify-center gap-3 mt-12 flex-wrap">
             {[
-              { icon: <Cpu className="w-3.5 h-3.5" />, label: "100K Agents" },
-              { icon: <Layers className="w-3.5 h-3.5" />, label: "5+ Domains" },
+              { icon: <Cpu className="w-3.5 h-3.5" />, label: "115 Active Agents" },
+              { icon: <Layers className="w-3.5 h-3.5" />, label: "6 Domains" },
               { icon: <Zap className="w-3.5 h-3.5" />, label: "<2s Routing" },
-              { icon: <Shield className="w-3.5 h-3.5" />, label: "99.9% Uptime" },
+              { icon: <Shield className="w-3.5 h-3.5" />, label: "Auditable Outputs" },
             ].map((s) => (
               <div key={s.label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/5 border border-white/8 text-xs text-white/60">
                 {s.icon} {s.label}
@@ -370,26 +378,119 @@ export default function Home() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <p className="text-xs text-violet-400 font-mono uppercase tracking-widest mb-3">Agent Domains</p>
-            <h2 className="text-4xl font-bold tracking-tight">Specialist agents for every industry</h2>
+            <h2 className="text-4xl font-bold tracking-tight mb-3">Six institutional domains</h2>
+            <p className="text-sm text-white/40 max-w-xl mx-auto">
+              Each domain hosts specialist agents trained on domain-specific workflows, terminology, and decision frameworks.
+            </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-10">
             {[
               { color: "from-violet-500 to-purple-600", icon: "💼", domain: "Finance", contexts: ["VC / PE Fund", "Sovereign Wealth", "Fund Manager"] },
-              { color: "from-cyan-500 to-blue-600", icon: "📡", domain: "Telecom", contexts: ["MVNO Strategy", "Network Ops", "Churn Analysis"] },
-              { color: "from-emerald-500 to-teal-600", icon: "🏥", domain: "Insurance", contexts: ["Underwriting", "Claims AI", "Risk Scoring"] },
-              { color: "from-orange-500 to-amber-600", icon: "🏢", domain: "Enterprise", contexts: ["Strategy", "Operations"] },
-              { color: "from-pink-500 to-rose-600", icon: "🌍", domain: "GCC Wealth", contexts: ["Family Office", "Private Banking"] },
+              { color: "from-sky-500 to-blue-600", icon: "⚖️", domain: "Legal", contexts: ["Contract Review", "Compliance", "Regulatory"] },
+              { color: "from-emerald-500 to-teal-600", icon: "🏥", domain: "Healthcare", contexts: ["Clinical AI", "Claims AI", "Risk Scoring"] },
+              { color: "from-orange-500 to-amber-600", icon: "🏢", domain: "Enterprise", contexts: ["Strategy", "Operations", "Procurement"] },
+              { color: "from-pink-500 to-rose-600", icon: "🌍", domain: "GCC Wealth", contexts: ["Family Office", "Private Banking", "Endowment"] },
+              { color: "from-indigo-500 to-violet-600", icon: "🎓", domain: "Education", contexts: ["Research", "Essay Writing", "Study Planning"] },
             ].map((d) => (
-              <div key={d.domain} className="p-5 rounded-2xl bg-white/[0.03] border border-white/8 hover:border-white/15 transition-all hover:-translate-y-1 duration-300">
-                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${d.color} flex items-center justify-center text-lg mb-3 shadow-lg`}>
-                  {d.icon}
+              <Link key={d.domain} href="/domains">
+                <div className="p-5 rounded-2xl bg-white/[0.03] border border-white/8 hover:border-white/15 transition-all hover:-translate-y-1 duration-300 cursor-pointer h-full">
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${d.color} flex items-center justify-center text-lg mb-3 shadow-lg`}>
+                    {d.icon}
+                  </div>
+                  <h3 className="font-semibold text-sm mb-2">{d.domain}</h3>
+                  <div className="space-y-1">
+                    {d.contexts.map((c) => (
+                      <div key={c} className="flex items-center gap-1.5 text-xs text-white/40">
+                        <ChevronRight className="w-3 h-3" /> {c}
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <h3 className="font-semibold text-sm mb-2">{d.domain}</h3>
-                <div className="space-y-1">
-                  {d.contexts.map((c) => (
-                    <div key={c} className="flex items-center gap-1.5 text-xs text-white/40">
-                      <ChevronRight className="w-3 h-3" /> {c}
-                    </div>
+              </Link>
+            ))}
+          </div>
+
+          {/* PortfolioMesh — core system module */}
+          <div className="rounded-2xl bg-gradient-to-br from-blue-950/40 to-violet-950/40 border border-blue-500/20 p-6">
+            <div className="flex flex-col md:flex-row md:items-center gap-6">
+              <div className="flex-shrink-0">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-violet-600 flex items-center justify-center text-2xl shadow-lg shadow-blue-500/20">
+                  📈
+                </div>
+              </div>
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="font-semibold text-base text-white">PortfolioMesh</h3>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-500/15 border border-blue-500/25 text-blue-400 font-mono">Core Module</span>
+                </div>
+                <p className="text-sm text-white/50 leading-relaxed">
+                  A 6-step institutional asset allocation engine. Covers IPS configuration, macro regime classification,
+                  per-asset-class agent estimates, five portfolio construction methods, and CIO-level Board Memo output.
+                </p>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {["IPS Setup", "Macro Regime", "Asset Agents", "Portfolio Construction", "CIO Board Memo"].map(tag => (
+                    <span key={tag} className="text-xs px-2 py-0.5 rounded bg-white/5 border border-white/10 text-white/40">{tag}</span>
+                  ))}
+                </div>
+              </div>
+              <div className="flex-shrink-0">
+                <Link href="/portfolio-mesh">
+                  <Button variant="outline" size="sm" className="border-blue-500/30 text-blue-300 hover:bg-blue-500/10 text-xs">
+                    Open PortfolioMesh <ArrowRight className="w-3 h-3 ml-1" />
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── DECISION TO PORTFOLIO SECTION ── */}
+      <section className="py-24 px-6 md:px-12 bg-white/[0.015] border-t border-white/5">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <p className="text-xs text-violet-400 font-mono uppercase tracking-widest mb-3">Platform Scope</p>
+            <h2 className="text-4xl font-bold tracking-tight mb-4">From Decision Analysis to Portfolio Construction</h2>
+            <p className="text-sm text-white/40 max-w-2xl mx-auto leading-relaxed">
+              AgenThinkMesh covers the full institutional decision workflow — from evaluating individual opportunities
+              to constructing and reviewing a complete portfolio allocation.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {[
+              {
+                icon: <FileText className="w-6 h-6 text-violet-400" />,
+                step: "01",
+                title: "Deal Evaluation",
+                desc: "The Deal Screener runs a Council of 10 specialist agents against any investment opportunity. Each agent produces a structured verdict. Outputs are consolidated into an IC Memo with a PDF export.",
+                tags: ["IC Memo", "10 Agents", "PDF Export"],
+              },
+              {
+                icon: <BarChart3 className="w-6 h-6 text-cyan-400" />,
+                step: "02",
+                title: "Portfolio Construction",
+                desc: "PortfolioMesh allocates capital across six asset classes using five construction methods (Equal Weight, Max Sharpe, Risk Parity, Min Variance, Max Diversification) within IPS constraints.",
+                tags: ["5 Methods", "6 Asset Classes", "IPS Constraints"],
+              },
+              {
+                icon: <Building2 className="w-6 h-6 text-emerald-400" />,
+                step: "03",
+                title: "Committee-Ready Outputs",
+                desc: "Every run produces structured, auditable outputs: Board Memos with 9 institutional sections, IPS compliance checks, benchmark comparisons, and risk assessments with severity ratings.",
+                tags: ["Board Memo", "IPS Compliance", "Audit Trail"],
+              },
+            ].map((item, i) => (
+              <div key={item.step} className="relative p-6 rounded-2xl bg-white/[0.03] border border-white/8 hover:border-white/15 transition-all duration-300">
+                {i < 2 && <div className="hidden md:block absolute top-10 right-0 translate-x-1/2 z-10 text-white/20 text-lg">→</div>}
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-12 h-12 rounded-xl bg-white/5 flex items-center justify-center">{item.icon}</div>
+                  <span className="text-xs font-mono text-white/25">{item.step}</span>
+                </div>
+                <h3 className="font-semibold text-sm mb-2 text-white">{item.title}</h3>
+                <p className="text-xs text-white/45 leading-relaxed mb-4">{item.desc}</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {item.tags.map(tag => (
+                    <span key={tag} className="text-xs px-2 py-0.5 rounded bg-white/5 border border-white/10 text-white/35">{tag}</span>
                   ))}
                 </div>
               </div>
