@@ -112,6 +112,7 @@ export default function Home() {
           <a href="#features" className="text-sm text-white/50 hover:text-white transition-colors">Features</a>
           <a href="#how-it-works" className="text-sm text-white/50 hover:text-white transition-colors">How It Works</a>
           <a href="#domains" className="text-sm text-white/50 hover:text-white transition-colors">Domains</a>
+          <a href="#platform-scope" onClick={(e) => { e.preventDefault(); document.getElementById('platform-scope')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-sm text-white/50 hover:text-white transition-colors cursor-pointer">Platform</a>
           <a href="#contact" className="text-sm text-white/50 hover:text-white transition-colors">Contact</a>
         </div>
         <div className="flex items-center gap-3">
@@ -251,7 +252,7 @@ export default function Home() {
               <p className="text-xs text-violet-400 font-mono uppercase tracking-widest mb-3">Live Demo</p>
               <h2 className="text-3xl font-bold tracking-tight mb-3">See it working — no sign-up required</h2>
               <p className="text-sm text-white/50 max-w-xl mx-auto">
-                Explore 8 real GCC enterprise scenarios across ForecastMesh, MVNO Intelligence, and Deal Screening — all pre-loaded with authentic synthetic data.
+                Explore pre-loaded institutional scenarios across forecasting, knowledge retrieval, and multi-agent workflows — no sign-up required.
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
@@ -259,21 +260,21 @@ export default function Home() {
                 {
                   icon: <TrendingUp className="w-5 h-5 text-violet-400" />,
                   title: "ForecastMesh",
-                  desc: "8 GCC enterprise probability forecasts with 30–60 day history, agent analysis, and trigger alerts",
+                  desc: "Structured forecasting workflows for institutional planning and decision support.",
                   badge: "8 scenarios",
                   href: "/forecast",
                 },
                 {
                   icon: <Database className="w-5 h-5 text-cyan-400" />,
                   title: "Knowledge Vault",
-                  desc: "460 GCC synthetic scenarios across Deal Screening, MVNO, Insurance, Legal, Wealth Management",
+                  desc: "Document-grounded institutional memory for consistent, auditable outputs.",
                   badge: "460 scenarios",
                   href: "/knowledge-vault",
                 },
                 {
                   icon: <Activity className="w-5 h-5 text-emerald-400" />,
                   title: "Agent Mesh",
-                  desc: "Run multi-agent tasks with GCC-grounded context. Deal screening, MVNO analysis, IC reports.",
+                  desc: "Specialist agent workflows across domains, designed for structured review and execution.",
                   badge: "120+ agents",
                   href: "/mesh",
                 },
@@ -446,7 +447,7 @@ export default function Home() {
       </section>
 
       {/* ── DECISION TO PORTFOLIO SECTION ── */}
-      <section className="py-24 px-6 md:px-12 bg-white/[0.015] border-t border-white/5">
+      <section id="platform-scope" className="py-24 px-6 md:px-12 bg-white/[0.015] border-t border-white/5">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-14">
             <p className="text-xs text-violet-400 font-mono uppercase tracking-widest mb-3">Platform Scope</p>

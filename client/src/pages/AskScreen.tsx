@@ -443,7 +443,7 @@ export default function AskScreen() {
         <p style={{ color: MUTED, fontSize: 16, textAlign: "center", marginBottom: 36, lineHeight: 1.6, maxWidth: 560 }}>
           {identityProfile.data?.activePersona
             ? `Your Mesh is configured for ${identityProfile.data.activePersona.replace(/_/g, " ").toLowerCase()} workflows. The right agents are ready.`
-            : "AgenThinkMesh activates the right specialist agents across Finance, Legal, Healthcare, and GCC Wealth — delivering institutional-grade results in seconds."}
+            : "AgenThinkMesh transforms unstructured inputs into consistent, auditable outputs across Finance, Legal, Healthcare, GCC Wealth, and Education."}
         </p>
 
         {/* Input area */}

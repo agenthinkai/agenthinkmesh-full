@@ -1382,6 +1382,8 @@ export const portfolioRuns = mysqlTable("portfolio_runs", {
   cioRisks: text("cioRisks"),
   ipsCompliant: boolean("ipsCompliant").default(false),
   boardMemo: longtext("boardMemo"), // JSON: structured board memo
+  isBenchmark: boolean("isBenchmark").default(false).notNull(),
+  benchmarkLabel: varchar("benchmarkLabel", { length: 128 }),
   status: mysqlEnum("status", ["draft", "macro_done", "assets_done", "construction_done", "complete"]).notNull().default("draft"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),

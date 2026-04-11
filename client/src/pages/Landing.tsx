@@ -426,15 +426,15 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
         </div>
 
         {/* Headline */}
-        <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(40px, 5.5vw, 76px)", fontWeight: 900, lineHeight: 1.0, letterSpacing: "-0.03em", color: "#F0F4FA", marginBottom: 24 }}>
-          The{" "}
-          <span style={{ background: "linear-gradient(120deg, #60C8F5 0%, #7BA3D4 40%, #4ADE80 70%, #A78BFA 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", filter: "drop-shadow(0 0 30px rgba(96,200,245,0.5))" }}>Google</span>
-          <br />of AI Agents
+        <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(36px, 5vw, 68px)", fontWeight: 900, lineHeight: 1.05, letterSpacing: "-0.03em", color: "#F0F4FA", marginBottom: 24 }}>
+          A structured{" "}
+          <span style={{ background: "linear-gradient(120deg, #60C8F5 0%, #7BA3D4 40%, #4ADE80 70%, #A78BFA 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", filter: "drop-shadow(0 0 30px rgba(96,200,245,0.5))" }}>decision layer</span>
+          <br />for institutional workflows
         </h1>
 
         {/* Subtext */}
         <p style={{ fontSize: 16, color: "#6B7A8D", maxWidth: 480, lineHeight: 1.75, marginBottom: 40 }}>
-          Describe any complex business task. <strong style={{ color: "#A8C4E0" }}>AgenThinkMesh</strong> activates the right specialist agents across Finance, Legal, Healthcare, GCC Wealth, Insurance, AdMesh, and Social AI — delivering institutional-grade results in seconds.
+          <strong style={{ color: "#A8C4E0" }}>AgenThinkMesh</strong> transforms unstructured inputs into consistent, auditable outputs across multiple institutional domains. Now extended with PortfolioMesh and Education.
         </p>
 
         {/* Search bar */}

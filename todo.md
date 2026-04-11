@@ -1774,3 +1774,19 @@
 - [x] Fix Healthcare contexts: "Clinical workflows, claims review, risk assessment"
 - [x] Fix Deal Evaluation body: "structured Council of 10 evaluation roles" + "10 Roles" tag
 - [x] Fix Deal Evaluation step 3 title: "Committee-ready outputs" (lowercase)
+
+## PortfolioMesh — Institutional Credibility Layer (Pasted_content_35)
+- [ ] DB schema: add isBenchmark (boolean) + benchmarkLabel (varchar) to portfolioRuns
+- [ ] Run pnpm db:push to migrate schema
+- [ ] Server: saveBenchmark procedure (unsets previous, sets new)
+- [ ] Server: getBenchmark procedure (returns active benchmark for user)
+- [ ] Server: compareToBenchmark procedure (returns Return/Vol/Sharpe deltas)
+- [ ] CIO Output UI: "Save as Benchmark" button with optional label input
+- [ ] CIO Output UI: Benchmark delta display (Return Δ / Vol Δ / Sharpe Δ with green/red coloring)
+- [ ] CIO Output UI: Method Attribution section (top 3 methods with weights)
+- [ ] CIO Output UI: Confidence Level badge (from macroRegime.confidenceLevel)
+- [ ] Demo route: /portfolio-mesh/demo with pre-filled IPS, auto-run, demo banner, CTA
+- [ ] Register /portfolio-mesh/demo in App.tsx
+- [ ] History page: benchmark badge on pinned runs
+- [ ] History page: quick metrics preview (return / vol / Sharpe)
+- [ ] Unit tests: benchmark logic, delta calculations, CIO output structure
