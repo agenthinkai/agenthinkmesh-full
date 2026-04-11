@@ -503,30 +503,30 @@ function Step4CreateAgent({ active }: { active: boolean }) {
 const STEPS = [
   {
     num: "01",
-    title: "Select your role",
-    subtitle: "Tell the Mesh who you are",
-    desc: "Choose your professional role. The Mesh personalises the agent catalogue to match your domain — Finance, Legal, Healthcare, Enterprise, and more.",
+    title: "Ingest",
+    subtitle: "Structured input mapping",
+    desc: "Upload documents, briefs, or structured inputs into the platform. AgenThinkMesh maps them into the relevant workflow context.",
     color: "#60A5FA",
   },
   {
     num: "02",
-    title: "Pick your agents",
-    subtitle: "Browse specialist agents",
-    desc: "Select from a curated list of specialist agents built for your domain. Each agent is purpose-built with domain-specific knowledge and capabilities.",
+    title: "Evaluate",
+    subtitle: "Domain-specific decision frameworks",
+    desc: "Specialist agents and workflow modules apply structured decision frameworks across the selected domain.",
     color: "#4ADE80",
   },
   {
     num: "03",
-    title: "Run & get results",
-    subtitle: "Parallel execution in seconds",
-    desc: "Selected agents run in parallel on your task. A synthesis layer combines all outputs into a structured result: summary, key findings, flags, and next actions.",
+    title: "Output",
+    subtitle: "Committee-ready structured results",
+    desc: "The platform produces consistent, auditable outputs for review, including memos, risk flags, comparisons, and committee-ready summaries.",
     color: "#FBBF24",
   },
   {
     num: "04",
-    title: "Build missing agents",
-    subtitle: "Don't see what you need?",
-    desc: "Describe the agent you need in plain language. The platform builds, configures, and registers it in your domain automatically — ready to use immediately.",
+    title: "Extend",
+    subtitle: "Configure additional workflows",
+    desc: "Describe the workflow or agent you need in plain language. The platform configures and registers it in your domain automatically — ready to use immediately.",
     color: "#A78BFA",
   },
 ];
@@ -612,13 +612,13 @@ export function HowItWorks() {
             letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15,
             margin: "0 auto 16px",
           }}>
-            From task to institutional output{" "}
+            From input to structured output{" "}
             <span style={{ background: "linear-gradient(135deg, #7BA3D4 0%, #4ADE80 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
               in 4 steps
             </span>
           </h2>
           <p style={{ fontSize: 15, color: SILVER_300, maxWidth: 520, margin: "0 auto", lineHeight: 1.7 }}>
-            AgenThinkMesh routes your task to the right specialist agents, runs them in parallel, and synthesises a structured result — all in seconds.
+            AgenThinkMesh maps inputs to the right specialist agents, applies structured decision frameworks, and produces consistent, auditable outputs.
           </p>
         </div>
 

@@ -11,7 +11,7 @@ import {
   Brain, Zap, FileText, Shield, ArrowRight, CheckCircle2,
   Users, BarChart3, Globe, Mail, Building2, MessageSquare,
   ChevronRight, Layers, Network, Cpu, Play, X, TrendingUp,
-  Database, Activity
+  Database, Activity, Menu
 } from "lucide-react";
 
 // ── Demo Mode Context ────────────────────────────────────────────────────────
@@ -61,6 +61,7 @@ export default function Home() {
   const { user, isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
   const [demoLaunching, setDemoLaunching] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Contact form state
   const [contactForm, setContactForm] = useState({
@@ -99,7 +100,8 @@ export default function Home() {
     <div className="min-h-screen bg-[#080B14] text-white overflow-x-hidden">
 
       {/* ── NAV ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 h-16 bg-[#080B14]/80 backdrop-blur-xl border-b border-white/5">
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#080B14]/80 backdrop-blur-xl border-b border-white/5">
+        <div className="flex items-center justify-between px-6 md:px-12 h-16">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-violet-500/30">
             <Network className="w-4 h-4 text-white" />
@@ -115,6 +117,13 @@ export default function Home() {
           <a href="#platform-scope" onClick={(e) => { e.preventDefault(); document.getElementById('platform-scope')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-sm text-white/50 hover:text-white transition-colors cursor-pointer">Platform</a>
           <a href="#contact" className="text-sm text-white/50 hover:text-white transition-colors">Contact</a>
         </div>
+        <button
+          className="md:hidden p-2 text-white/50 hover:text-white transition-colors"
+          onClick={() => setMobileNavOpen(v => !v)}
+          aria-label="Toggle navigation"
+        >
+          {mobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+        </button>
         <div className="flex items-center gap-3">
           {isAuthenticated ? (
             <Link href="/dashboard">
@@ -150,6 +159,33 @@ export default function Home() {
             </>
           )}
         </div>
+        </div>{/* end flex row */}
+        {/* Mobile nav drawer */}
+        {mobileNavOpen && (
+          <div className="md:hidden border-t border-white/5 bg-[#080B14]/95 px-6 py-4 flex flex-col gap-4">
+            {[
+              { label: "Features", href: "#features" },
+              { label: "How It Works", href: "#how-it-works" },
+              { label: "Domains", href: "#domains" },
+              { label: "Platform", href: "#platform-scope" },
+              { label: "Contact", href: "#contact" },
+            ].map(({ label, href }) => (
+              <a
+                key={label}
+                href={href}
+                className="text-sm text-white/60 hover:text-white transition-colors"
+                onClick={(e) => {
+                  e.preventDefault();
+                  setMobileNavOpen(false);
+                  const el = document.querySelector(href);
+                  if (el) el.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
+                {label}
+              </a>
+            ))}
+          </div>
+        )}
       </nav>
 
       {/* ── HERO ── */}
@@ -623,7 +659,7 @@ export default function Home() {
             </div>
             <span className="text-sm font-semibold bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">AgenThinkMesh</span>
           </div>
-          <p className="text-xs text-white/30 font-mono">© 2026 AgenThink · Built in the GCC</p>
+          <p className="text-xs text-white/30 font-mono">© 2026 AgenThink · A structured decision layer for institutional workflows</p>
           <div className="flex gap-6">
             {["Privacy", "Terms", "Docs"].map((l) => (
               <a key={l} href="#" className="text-xs text-white/30 hover:text-white/60 transition-colors">{l}</a>
