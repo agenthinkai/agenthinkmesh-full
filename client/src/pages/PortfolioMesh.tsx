@@ -507,9 +507,11 @@ type BoardMemo = {
   executiveSummary?: string[];
   macroRegime?: { regime: string; confidenceLevel: string; rationale: string };
   allocationTable?: { asset: string; weight: number; role: string }[];
+  constructionLogic?: { topMethods: string; blendRationale: string; methodAttribution: string };
   benchmarkComparison?: { equityDelta: string; bondDelta: string; alternativesDelta: string; cashDelta: string; summary: string };
   keyAllocationDecisions?: string[];
   riskAssessment?: { risk: string; portfolioImpact: string; severity: string }[];
+  whatWouldChangeView?: string[];
   rebalanceTriggers?: string[];
   ipsCompliance?: { status: string; volatilityCheck: string; drawdownCheck: string; returnCheck: string; notes: string };
   disclaimer?: string;
@@ -548,6 +550,13 @@ function exportBoardMemo(cioResult: NonNullable<CioOutputStepProps["cioResult"]>
   }
   lines.push(`Expected Return: ${(cioResult.cioExpectedReturn * 100).toFixed(2)}%   Volatility: ${(cioResult.cioExpectedVolatility * 100).toFixed(2)}%   Sharpe: ${cioResult.cioSharpe.toFixed(3)}`);
   lines.push("");
+  if (m.constructionLogic) {
+    lines.push("PORTFOLIO CONSTRUCTION LOGIC");
+    lines.push(`Methods: ${m.constructionLogic.topMethods}`);
+    lines.push(`Blend Rationale: ${m.constructionLogic.blendRationale}`);
+    lines.push(`Method Attribution: ${m.constructionLogic.methodAttribution}`);
+    lines.push("");
+  }
   if (m.benchmarkComparison) {
     lines.push("BENCHMARK COMPARISON");
     lines.push(`Equity: ${m.benchmarkComparison.equityDelta}`);
@@ -565,6 +574,11 @@ function exportBoardMemo(cioResult: NonNullable<CioOutputStepProps["cioResult"]>
   if (m.riskAssessment?.length) {
     lines.push("RISK ASSESSMENT");
     m.riskAssessment.forEach(r => lines.push(`[${r.severity}] ${r.risk}: ${r.portfolioImpact}`));
+    lines.push("");
+  }
+  if (m.whatWouldChangeView?.length) {
+    lines.push("WHAT WOULD CHANGE THIS VIEW");
+    m.whatWouldChangeView.forEach(t => lines.push(`• ${t}`));
     lines.push("");
   }
   if (m.rebalanceTriggers?.length) {
@@ -598,14 +612,29 @@ type CioOutputStepProps = {
     ipsCompliant: boolean;
     ipsIssues: string[];
     boardMemo: BoardMemo;
+    topMethods?: string[];
   } | null;
   onRun: () => void;
   isRunning: boolean;
+  runId?: number | null;
 };
 
-function CioOutputStep({ cioResult, onRun, isRunning }: CioOutputStepProps) {
+function CioOutputStep({ cioResult, onRun, isRunning, runId }: CioOutputStepProps) {
   const [, navigate] = useLocation();
+  const [benchmarkSaved, setBenchmarkSaved] = useState(false);
+  const saveBenchmark = trpc.portfolioMesh.saveBenchmark.useMutation();
   const memo = cioResult?.boardMemo as BoardMemo | undefined;
+
+  async function handleSaveBenchmark() {
+    if (!runId) return;
+    try {
+      await saveBenchmark.mutateAsync({ runId, label: "User Benchmark" });
+      setBenchmarkSaved(true);
+      toast.success("Saved as benchmark");
+    } catch {
+      toast.error("Failed to save benchmark");
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -738,9 +767,29 @@ function CioOutputStep({ cioResult, onRun, isRunning }: CioOutputStepProps) {
             </SectionCard>
           </div>
 
-          {/* 4. Benchmark Comparison */}
+          {/* 3b. Portfolio Construction Logic */}
+          {memo?.constructionLogic && (
+            <SectionCard title="4. Portfolio Construction Logic">
+              <div className="space-y-3">
+                <div className="bg-white/5 rounded p-3 border border-white/10">
+                  <p className="text-slate-500 text-xs mb-1">Methods Used</p>
+                  <p className="text-slate-200 text-sm">{memo.constructionLogic.topMethods}</p>
+                </div>
+                <div className="bg-white/5 rounded p-3 border border-white/10">
+                  <p className="text-slate-500 text-xs mb-1">Blend Rationale</p>
+                  <p className="text-slate-200 text-sm">{memo.constructionLogic.blendRationale}</p>
+                </div>
+                <div className="bg-white/5 rounded p-3 border border-white/10">
+                  <p className="text-slate-500 text-xs mb-1">Method Attribution</p>
+                  <p className="text-slate-200 text-sm">{memo.constructionLogic.methodAttribution}</p>
+                </div>
+              </div>
+            </SectionCard>
+          )}
+
+          {/* 5. Benchmark Comparison */}
           {memo?.benchmarkComparison && (
-            <SectionCard title="4. Benchmark Comparison">
+            <SectionCard title="5. Benchmark Comparison">
               <p className="text-slate-300 text-sm mb-3">{memo.benchmarkComparison.summary}</p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {[
@@ -758,9 +807,9 @@ function CioOutputStep({ cioResult, onRun, isRunning }: CioOutputStepProps) {
             </SectionCard>
           )}
 
-          {/* 5. Key Allocation Decisions */}
+          {/* 6. Key Allocation Decisions */}
           {(memo?.keyAllocationDecisions?.length ?? 0) > 0 && (
-            <SectionCard title="5. Key Allocation Decisions">
+            <SectionCard title="6. Key Allocation Decisions">
               <ul className="space-y-2">
                 {memo!.keyAllocationDecisions!.map((d, i) => (
                   <li key={i} className="text-slate-300 text-sm flex items-start gap-2">
@@ -771,9 +820,9 @@ function CioOutputStep({ cioResult, onRun, isRunning }: CioOutputStepProps) {
             </SectionCard>
           )}
 
-          {/* 6. Risk Assessment */}
+          {/* 7. Risk Assessment */}
           {(memo?.riskAssessment?.length ?? 0) > 0 && (
-            <SectionCard title="6. Risk Assessment">
+            <SectionCard title="7. Risk Assessment">
               <div className="space-y-3">
                 {memo!.riskAssessment!.map((r, i) => (
                   <div key={i} className="bg-white/5 rounded p-3 border border-white/10">
@@ -788,9 +837,22 @@ function CioOutputStep({ cioResult, onRun, isRunning }: CioOutputStepProps) {
             </SectionCard>
           )}
 
-          {/* 7. Rebalance Triggers */}
+          {/* 8. What Would Change This View */}
+          {(memo?.whatWouldChangeView?.length ?? 0) > 0 && (
+            <SectionCard title="8. What Would Change This View">
+              <ul className="space-y-2">
+                {memo!.whatWouldChangeView!.map((t, i) => (
+                  <li key={i} className="text-slate-300 text-sm flex items-start gap-2">
+                    <span className="text-violet-400 shrink-0 mt-0.5">◈</span><span>{t}</span>
+                  </li>
+                ))}
+              </ul>
+            </SectionCard>
+          )}
+
+          {/* 9. Rebalance Triggers */}
           {(memo?.rebalanceTriggers?.length ?? 0) > 0 && (
-            <SectionCard title="7. Rebalance Triggers">
+            <SectionCard title="9. Rebalance Triggers">
               <ul className="space-y-2">
                 {memo!.rebalanceTriggers!.map((t, i) => (
                   <li key={i} className="text-slate-300 text-sm flex items-start gap-2">
@@ -801,9 +863,9 @@ function CioOutputStep({ cioResult, onRun, isRunning }: CioOutputStepProps) {
             </SectionCard>
           )}
 
-          {/* 8. IPS Compliance */}
+          {/* 10. IPS Compliance */}
           {memo?.ipsCompliance && (
-            <SectionCard title="8. IPS Compliance">
+            <SectionCard title="10. IPS Compliance">
               <div className="flex items-center gap-2 mb-3">
                 <Badge className={`text-xs ${
                   memo.ipsCompliance.status === "Compliant"
@@ -842,7 +904,17 @@ function CioOutputStep({ cioResult, onRun, isRunning }: CioOutputStepProps) {
               variant="outline"
               className="border-white/20 text-slate-300 hover:bg-white/5"
             >
-              ⤓ Download Board Memo
+              ⥄ Download Board Memo
+            </Button>
+            <Button
+              onClick={handleSaveBenchmark}
+              disabled={benchmarkSaved || saveBenchmark.isPending || !runId}
+              variant="outline"
+              className={`border-white/20 hover:bg-white/5 ${
+                benchmarkSaved ? "text-emerald-400 border-emerald-500/40" : "text-slate-300"
+              }`}
+            >
+              {benchmarkSaved ? "✓ Saved as Benchmark" : saveBenchmark.isPending ? "Saving…" : "◎ Save as Benchmark"}
             </Button>
             <Button onClick={() => navigate("/portfolio-mesh/history")} variant="outline" className="border-white/20 text-slate-300 hover:bg-white/5">
               View History
@@ -1083,6 +1155,7 @@ export default function PortfolioMesh() {
             cioResult={cioResult}
             onRun={handleGenerateCio}
             isRunning={generateCioOutput.isPending}
+            runId={runId}
           />
         )}
       </div>

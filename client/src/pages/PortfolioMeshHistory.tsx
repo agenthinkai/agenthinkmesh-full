@@ -1,5 +1,6 @@
 /**
  * PortfolioMesh History — list of all past allocation runs
+ * Upgraded: benchmark badge, expected return, volatility, Sharpe, memo link
  */
 import { useLocation } from "wouter";
 import SiteNav from "@/components/SiteNav";
@@ -36,11 +37,21 @@ export default function PortfolioMeshHistory() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-bold text-slate-100 mb-1">PortfolioMesh History</h1>
-            <p className="text-slate-400 text-sm">All your past allocation runs</p>
+            <p className="text-slate-400 text-sm">All past allocation runs — click any row to view the full CIO memo</p>
           </div>
-          <Button onClick={() => navigate("/portfolio-mesh")} className="bg-blue-600 hover:bg-blue-500 text-white">
-            + New Run
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate("/portfolio-mesh/demo")}
+              className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10"
+            >
+              ⚡ Demo
+            </Button>
+            <Button onClick={() => navigate("/portfolio-mesh")} className="bg-blue-600 hover:bg-blue-500 text-white">
+              + New Run
+            </Button>
+          </div>
         </div>
 
         {isLoading && (
@@ -50,9 +61,18 @@ export default function PortfolioMeshHistory() {
         {!isLoading && (!runs || runs.length === 0) && (
           <div className="text-center py-16">
             <p className="text-slate-500 mb-4">No runs yet. Start your first allocation run.</p>
-            <Button onClick={() => navigate("/portfolio-mesh")} className="bg-blue-600 hover:bg-blue-500 text-white">
-              Start First Run
-            </Button>
+            <div className="flex justify-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => navigate("/portfolio-mesh/demo")}
+                className="border-amber-500/40 text-amber-300 hover:bg-amber-500/10"
+              >
+                ⚡ Try Demo Mode
+              </Button>
+              <Button onClick={() => navigate("/portfolio-mesh")} className="bg-blue-600 hover:bg-blue-500 text-white">
+                Start First Run
+              </Button>
+            </div>
           </div>
         )}
 
@@ -66,7 +86,8 @@ export default function PortfolioMeshHistory() {
               <CardContent className="p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
+                    {/* Row 1: Name + status badges */}
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
                       <span className="text-slate-200 font-medium text-sm truncate">{run.ipsName}</span>
                       <Badge className={`text-xs ${statusColor(run.status)}`}>{run.status}</Badge>
                       {run.ipsCompliant !== null && (
@@ -74,22 +95,56 @@ export default function PortfolioMeshHistory() {
                           {run.ipsCompliant ? "IPS ✓" : "IPS ✗"}
                         </Badge>
                       )}
+                      {run.isBenchmark && (
+                        <Badge className="text-xs bg-violet-600/20 text-violet-300 border-violet-500/30">
+                          ◉ {run.benchmarkLabel ?? "Benchmark"}
+                        </Badge>
+                      )}
+                      {run.hasMemo && (
+                        <Badge className="text-xs bg-blue-600/20 text-blue-300 border-blue-500/30">
+                          Board Memo
+                        </Badge>
+                      )}
                     </div>
-                    <div className="flex items-center gap-4 text-xs text-slate-500">
-                      {run.macroRegime && <span className="capitalize">Regime: {run.macroRegime}</span>}
+
+                    {/* Row 2: Key metrics */}
+                    <div className="flex items-center gap-4 text-xs flex-wrap">
+                      {run.macroRegime && (
+                        <span className="text-slate-500 capitalize">
+                          Regime: <span className="text-slate-300">{run.macroRegime}</span>
+                        </span>
+                      )}
                       {run.cioExpectedReturn !== null && (
-                        <span className="text-emerald-400">Return: {(run.cioExpectedReturn * 100).toFixed(2)}%</span>
+                        <span className="text-emerald-400 font-medium">
+                          Return: {(run.cioExpectedReturn * 100).toFixed(2)}%
+                        </span>
                       )}
                       {run.cioExpectedVolatility !== null && (
-                        <span className="text-amber-400">Vol: {(run.cioExpectedVolatility * 100).toFixed(2)}%</span>
+                        <span className="text-amber-400 font-medium">
+                          Vol: {(run.cioExpectedVolatility * 100).toFixed(2)}%
+                        </span>
                       )}
                       {run.cioSharpe !== null && (
-                        <span className="text-blue-400">Sharpe: {run.cioSharpe.toFixed(3)}</span>
+                        <span className="text-blue-400 font-medium">
+                          Sharpe: {run.cioSharpe.toFixed(3)}
+                        </span>
                       )}
                     </div>
                   </div>
-                  <div className="text-xs text-slate-500 shrink-0">
-                    {new Date(run.createdAt).toLocaleDateString()}
+
+                  {/* Right: date + memo link */}
+                  <div className="flex flex-col items-end gap-2 shrink-0">
+                    <span className="text-xs text-slate-500">
+                      {new Date(run.createdAt).toLocaleDateString()}
+                    </span>
+                    {run.hasMemo && (
+                      <span
+                        className="text-xs text-blue-400 hover:text-blue-300 underline underline-offset-2"
+                        onClick={e => { e.stopPropagation(); navigate(`/portfolio-mesh/run/${run.id}`); }}
+                      >
+                        View Memo →
+                      </span>
+                    )}
                   </div>
                 </div>
               </CardContent>

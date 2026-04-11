@@ -13,7 +13,7 @@ import { z } from "zod";
 import { router, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
 import { ipsConfigs, portfolioRuns } from "../../drizzle/schema";
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, and } from "drizzle-orm";
 import { invokeLLM } from "../_core/llm";
 import { TRPCError } from "@trpc/server";
 import { drizzle } from "drizzle-orm/mysql2";
@@ -551,42 +551,49 @@ TOP CONSTRUCTION METHODS: ${top3.map(m => m.method).join(", ")}
 
 PRODUCE A BOARD MEMO WITH EXACTLY THESE 9 SECTIONS:
 
-1. executiveSummary: Array of exactly 3-4 bullet strings. Include: clear recommendation, macro positioning, portfolio stance (risk-on/defensive/balanced).
+1. executiveSummary: Array of exactly 3-4 bullet strings. Opinion-first: lead with the recommendation, then macro positioning, then portfolio stance (risk-on/defensive/balanced). No generic language.
 
 2. macroRegime: Object with:
    - regime: string (e.g. "Late-Cycle")
    - confidenceLevel: string ("High", "Medium", or "Low")
-   - rationale: string (2-3 sentences covering growth, inflation, policy, and market conditions — be specific)
+   - rationale: string (2-3 sentences covering growth, inflation, policy, and market conditions — be specific, no filler)
 
 3. allocationTable: Array of 6 objects, one per asset class:
    - asset: string
    - weight: number (as decimal, e.g. 0.35)
    - role: string (one of: "growth driver", "defensive hedge", "income stabilizer", "inflation hedge", "liquidity buffer", "return enhancer")
 
-4. benchmarkComparison: Object with:
+4. constructionLogic: Object with:
+   - topMethods: string (name the top 2 construction methods used and why they were selected over alternatives)
+   - blendRationale: string (explain the 60/40 blend of top 2 methods — what each contributes to the final portfolio)
+   - methodAttribution: string (which method drove the largest allocation decisions and why)
+
+5. benchmarkComparison: Object with:
    - equityDelta: string (e.g. "Underweight equities by 8.5% vs 60/40 benchmark due to late-cycle risk")
    - bondDelta: string
    - alternativesDelta: string
    - cashDelta: string
    - summary: string (1-2 sentences plain English explaining the overall positioning vs benchmark)
 
-5. keyAllocationDecisions: Array of 4-6 strings. Each must explain WHY a specific asset is overweight or underweight. Be explicit and logical. No vague language.
+6. keyAllocationDecisions: Array of 4-6 strings. Each must explain WHY a specific asset is overweight or underweight. Be explicit and logical. No vague language.
 
-6. riskAssessment: Array of 3-5 objects:
+7. riskAssessment: Array of 3-5 objects:
    - risk: string (e.g. "Inflation re-acceleration")
    - portfolioImpact: string (what specifically happens to this portfolio if this risk materialises)
    - severity: string ("High", "Medium", or "Low")
 
-7. rebalanceTriggers: Array of 3-5 strings. Each must be a specific, measurable condition (e.g. "If US equity drawdown exceeds 15%, reduce US Equity allocation to IPS minimum").
+8. whatWouldChangeView: Array of 3-5 strings. Each must be a specific, observable condition that would cause the CIO to revise this allocation. Examples: "If central bank pivots to rate cuts within 90 days, increase duration exposure", "If inflation re-accelerates above 4%, reduce bond allocation by 10%".
 
-8. ipsCompliance: Object with:
+9. ipsCompliance: Object with:
    - status: string ("Compliant" or "Breach Detected")
    - volatilityCheck: string (state actual vs range)
    - drawdownCheck: string (state estimated vs limit)
    - returnCheck: string (state expected vs target)
    - notes: string (any additional compliance observations)
 
-9. disclaimer: string (short, professional — decision-support only, requires human approval before implementation)
+Also include:
+- rebalanceTriggers: Array of 3-5 strings. Each must be a specific, measurable condition.
+- disclaimer: string (short, professional — decision-support only, requires human approval before implementation)
 
 Respond in valid JSON only. No markdown. No extra keys.`;
 
@@ -666,9 +673,20 @@ Respond in valid JSON only. No markdown. No extra keys.`;
                   required: ["status", "volatilityCheck", "drawdownCheck", "returnCheck", "notes"],
                   additionalProperties: false,
                 },
+                constructionLogic: {
+                  type: "object",
+                  properties: {
+                    topMethods: { type: "string" },
+                    blendRationale: { type: "string" },
+                    methodAttribution: { type: "string" },
+                  },
+                  required: ["topMethods", "blendRationale", "methodAttribution"],
+                  additionalProperties: false,
+                },
+                whatWouldChangeView: { type: "array", items: { type: "string" } },
                 disclaimer: { type: "string" },
               },
-              required: ["executiveSummary", "macroRegime", "allocationTable", "benchmarkComparison", "keyAllocationDecisions", "riskAssessment", "rebalanceTriggers", "ipsCompliance", "disclaimer"],
+              required: ["executiveSummary", "macroRegime", "allocationTable", "constructionLogic", "benchmarkComparison", "keyAllocationDecisions", "riskAssessment", "whatWouldChangeView", "rebalanceTriggers", "ipsCompliance", "disclaimer"],
               additionalProperties: false,
             },
           },
@@ -729,6 +747,119 @@ Respond in valid JSON only. No markdown. No extra keys.`;
       return { runId: result.insertId };
     }),
 
+  // ── Benchmark: Save ────────────────────────────────────────────────────────
+  saveBenchmark: protectedProcedure
+    .input(z.object({
+      runId: z.number(),
+      label: z.string().max(128).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await requireDb();
+      // Verify ownership
+      const [run] = await db.select({ id: portfolioRuns.id, userId: portfolioRuns.userId })
+        .from(portfolioRuns).where(eq(portfolioRuns.id, input.runId)).limit(1);
+      if (!run || run.userId !== ctx.user.id) throw new TRPCError({ code: "NOT_FOUND" });
+      // Clear any existing benchmark for this user
+      await db.update(portfolioRuns)
+        .set({ isBenchmark: false, benchmarkLabel: null })
+        .where(eq(portfolioRuns.userId, ctx.user.id));
+      // Set new benchmark
+      await db.update(portfolioRuns)
+        .set({ isBenchmark: true, benchmarkLabel: input.label ?? "My Benchmark" })
+        .where(eq(portfolioRuns.id, input.runId));
+      return { ok: true };
+    }),
+
+  // ── Benchmark: Get ─────────────────────────────────────────────────────────
+  getBenchmark: protectedProcedure.query(async ({ ctx }) => {
+    const db = await requireDb();
+    const [row] = await db
+      .select({
+        id: portfolioRuns.id,
+        benchmarkLabel: portfolioRuns.benchmarkLabel,
+        cioWeights: portfolioRuns.cioWeights,
+        cioExpectedReturn: portfolioRuns.cioExpectedReturn,
+        cioExpectedVolatility: portfolioRuns.cioExpectedVolatility,
+        cioSharpe: portfolioRuns.cioSharpe,
+        macroRegime: portfolioRuns.macroRegime,
+        createdAt: portfolioRuns.createdAt,
+      })
+      .from(portfolioRuns)
+      .where(and(eq(portfolioRuns.userId, ctx.user.id), eq(portfolioRuns.isBenchmark, true)))
+      .limit(1);
+    if (!row) return null;
+    return {
+      id: row.id,
+      label: row.benchmarkLabel ?? "My Benchmark",
+      cioWeights: row.cioWeights ? JSON.parse(row.cioWeights) : null,
+      cioExpectedReturn: row.cioExpectedReturn ? parseFloat(row.cioExpectedReturn) : null,
+      cioExpectedVolatility: row.cioExpectedVolatility ? parseFloat(row.cioExpectedVolatility) : null,
+      cioSharpe: row.cioSharpe ? parseFloat(row.cioSharpe) : null,
+      macroRegime: row.macroRegime,
+      createdAt: row.createdAt,
+    };
+  }),
+
+  // ── Benchmark: Compare ─────────────────────────────────────────────────────
+  compareToBenchmark: protectedProcedure
+    .input(z.object({ runId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = await requireDb();
+      // Get the current run
+      const [run] = await db.select()
+        .from(portfolioRuns)
+        .where(and(eq(portfolioRuns.id, input.runId), eq(portfolioRuns.userId, ctx.user.id)))
+        .limit(1);
+      if (!run) throw new TRPCError({ code: "NOT_FOUND" });
+      const runReturn = run.cioExpectedReturn ? parseFloat(run.cioExpectedReturn) : null;
+      const runVol = run.cioExpectedVolatility ? parseFloat(run.cioExpectedVolatility) : null;
+      const runSharpe = run.cioSharpe ? parseFloat(run.cioSharpe) : null;
+      const runWeights: Record<string, number> = run.cioWeights ? JSON.parse(run.cioWeights) : {};
+      // Try user's pinned benchmark first
+      const [bench] = await db
+        .select()
+        .from(portfolioRuns)
+        .where(and(eq(portfolioRuns.userId, ctx.user.id), eq(portfolioRuns.isBenchmark, true)))
+        .limit(1);
+      // Fall back to 60/40 synthetic benchmark
+      const benchLabel = bench?.benchmarkLabel ?? "60/40 Blend";
+      const benchReturn = bench?.cioExpectedReturn ? parseFloat(bench.cioExpectedReturn) : 0.065;
+      const benchVol = bench?.cioExpectedVolatility ? parseFloat(bench.cioExpectedVolatility) : 0.10;
+      const benchSharpe = bench?.cioSharpe ? parseFloat(bench.cioSharpe) : 0.55;
+      const benchWeights: Record<string, number> = bench?.cioWeights
+        ? JSON.parse(bench.cioWeights)
+        : { "US Equity": 0.40, "International Equity": 0.20, "Bonds": 0.40, "Credit": 0.00, "Gold": 0.00, "Cash": 0.00 };
+      // Compute deltas
+      const returnDelta = runReturn !== null ? runReturn - benchReturn : null;
+      const volDelta = runVol !== null ? runVol - benchVol : null;
+      const sharpeDelta = runSharpe !== null ? runSharpe - benchSharpe : null;
+      // Largest allocation shifts
+      const allAssets = Array.from(new Set([...Object.keys(runWeights), ...Object.keys(benchWeights)]));
+      const allocationShifts = allAssets
+        .map(asset => ({
+          asset,
+          runWeight: runWeights[asset] ?? 0,
+          benchWeight: benchWeights[asset] ?? 0,
+          delta: (runWeights[asset] ?? 0) - (benchWeights[asset] ?? 0),
+        }))
+        .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
+        .slice(0, 4);
+      return {
+        benchmarkLabel: benchLabel,
+        isUserBenchmark: !!bench,
+        returnDelta,
+        volDelta,
+        sharpeDelta,
+        runReturn,
+        runVol,
+        runSharpe,
+        benchReturn,
+        benchVol,
+        benchSharpe,
+        allocationShifts,
+      };
+    }),
+
   // ── History: List ──────────────────────────────────────────────────────────
   listRuns: protectedProcedure.query(async ({ ctx }) => {
     const db = await requireDb();
@@ -742,6 +873,9 @@ Respond in valid JSON only. No markdown. No extra keys.`;
         cioExpectedVolatility: portfolioRuns.cioExpectedVolatility,
         cioSharpe: portfolioRuns.cioSharpe,
         ipsCompliant: portfolioRuns.ipsCompliant,
+        isBenchmark: portfolioRuns.isBenchmark,
+        benchmarkLabel: portfolioRuns.benchmarkLabel,
+        boardMemo: portfolioRuns.boardMemo,
         createdAt: portfolioRuns.createdAt,
       })
       .from(portfolioRuns)
@@ -758,6 +892,9 @@ Respond in valid JSON only. No markdown. No extra keys.`;
       cioExpectedVolatility: r.cioExpectedVolatility ? parseFloat(r.cioExpectedVolatility) : null,
       cioSharpe: r.cioSharpe ? parseFloat(r.cioSharpe) : null,
       ipsCompliant: r.ipsCompliant,
+      isBenchmark: r.isBenchmark,
+      benchmarkLabel: r.benchmarkLabel,
+      hasMemo: !!r.boardMemo,
       createdAt: r.createdAt,
     }));
   }),
