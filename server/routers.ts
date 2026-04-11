@@ -123,8 +123,8 @@ export const appRouter = router({
       const [taskCount, agentCount, avgExec, domainCount] = await Promise.all([
         // Total tasks ever run
         db.select({ count: sql<number>`count(*)` }).from(taskHistory),
-        // All agents (active + inactive — total catalogue size)
-        db.select({ count: sql<number>`count(*)` }).from(agents),
+        // Active agents only (status = 'active') — matches the Domains page count
+        db.select({ count: sql<number>`count(*)` }).from(agents).where(eq(agents.status, "active")),
         // Average execution time in ms across all tasks
         db.select({ avg: sql<number>`avg(${taskHistory.executionTime})` }).from(taskHistory),
         // Distinct domain values across all agents

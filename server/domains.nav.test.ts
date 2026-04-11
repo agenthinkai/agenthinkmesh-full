@@ -67,6 +67,34 @@ describe("Domains nav feature", () => {
     }
   });
 
+  it("DomainsPage uses platformStats for total agent count (not domain-bucket sum)", () => {
+    const domainsPageSrc = fs.readFileSync(
+      path.join(CLIENT_SRC, "pages/DomainsPage.tsx"),
+      "utf-8"
+    );
+    // Must query platformStats for the authoritative count
+    expect(domainsPageSrc).toContain("platformStats");
+    // Must use verifiedAgents from that query
+    expect(domainsPageSrc).toContain("verifiedAgents");
+    // Must NOT rely solely on domain-bucket sum for the displayed total
+    // (the reduce is kept as fallback, but platformStats takes precedence)
+    expect(domainsPageSrc).toContain("statsQuery.data?.verifiedAgents");
+  });
+
+  it("platformStats procedure filters to active agents only", () => {
+    const routersSrc = fs.readFileSync(
+      path.join(__dirname, "routers.ts"),
+      "utf-8"
+    );
+    // The agentCount query must include a status='active' filter
+    // Check that the line with count(*) from agents also has .where(eq(agents.status
+    const platformStatsBlock = routersSrc.slice(
+      routersSrc.indexOf("platformStats:"),
+      routersSrc.indexOf("platformStats:") + 1200
+    );
+    expect(platformStatsBlock).toContain('agents.status, "active"');
+  });
+
   it("DomainAgents DOMAIN_META includes Education entry with correct fields", () => {
     const domainAgentsSrc = fs.readFileSync(
       path.join(CLIENT_SRC, "pages/DomainAgents.tsx"),

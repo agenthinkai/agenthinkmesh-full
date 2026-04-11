@@ -1744,3 +1744,6 @@
 
 ## Education Agents Seeding (11 Apr 2026)
 - [x] Seed built-in Education agents into the database (Citation Generator, Essay Outliner, Study Planner, Research Assistant, Language Tutor — 8 agents total now live)
+
+## Bug: Agent Count Discrepancy (11 Apr 2026)
+- [x] Domains page shows 99 total agents but landing page shows 127 — fixed: both now show 115 (active agents only, no null-domain exclusion)

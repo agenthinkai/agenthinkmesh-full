@@ -149,8 +149,11 @@ function SkeletonCard() {
 /* ─── Main page ──────────────────────────────────────────────────────── */
 export default function DomainsPage() {
   const domainsQuery = trpc.agent.listDomains.useQuery(undefined, { staleTime: 60_000 });
+  const statsQuery   = trpc.public.platformStats.useQuery(undefined, { staleTime: 60_000 });
   const domains = domainsQuery.data ?? [];
-  const totalAgents = domains.reduce((s, d) => s + d.count, 0);
+  // Use the authoritative platform count (all active agents) rather than summing
+  // domain buckets, which misses agents whose domain field is NULL.
+  const totalAgents = statsQuery.data?.verifiedAgents ?? domains.reduce((s, d) => s + d.count, 0);
 
   return (
     <div style={{
