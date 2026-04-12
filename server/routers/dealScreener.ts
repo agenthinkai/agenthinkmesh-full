@@ -18,6 +18,8 @@ import { generateSingleDealICReport, generateComparisonICReport } from "../icRep
 import { detectTier0Signal, TIER0_FEED } from "../tier0Signals";
 import { getSurfacedSignals } from "../tier0Ingestion";
 import { randomUUID } from "crypto";
+import { runTriage } from "../triageEngine";
+import { checkDuplicate } from "../dealDedup";
 
 // ── Owner whitelist — these users always bypass payment and rate limits ────────
 const OWNER_EMAILS = ["farouq@agenthink.ai", "farouqsultan@gmail.com"];
@@ -120,6 +122,7 @@ export const dealScreenerRouter = router({
         stripeSessionId: z.string().optional(), // link payment row to this deal run
         councilMode: z.enum(["gcc", "global_vc", "india_pe"]).optional().default("gcc"),
         sourceType: z.enum(["manual", "signal"]).optional().default("manual"),
+        includeReport: z.boolean().optional().default(true),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -211,6 +214,102 @@ export const dealScreenerRouter = router({
         }
       }
 
+      // ── Layer 0: Deduplication ──────────────────────────────────────────────
+      const dedupResult = await checkDuplicate(ctx.user.id, input.dealText);
+      if (dedupResult.isDuplicate && dedupResult.previousDealId) {
+        const prevRows = await db
+          .select()
+          .from(dealScreenings)
+          .where(eq(dealScreenings.dealId, dedupResult.previousDealId))
+          .limit(1);
+        if (prevRows.length > 0) {
+          const prev = prevRows[0];
+          return {
+            dealId: prev.dealId,
+            dealName: prev.dealName,
+            verdict: prev.verdict,
+            yesCount: prev.yesCount,
+            noCount: prev.noCount,
+            hardYesCount: prev.hardYesCount,
+            softYesCount: prev.softYesCount,
+            softNoCount: prev.softNoCount,
+            hardNoCount: prev.hardNoCount,
+            confidenceScore: Number(prev.confidenceScore),
+            gccVetoTriggered: prev.gccVetoTriggered,
+            tiebreakerTriggered: prev.tiebreakerTriggered,
+            tiebreakerSwingAgent: prev.tiebreakerSwingAgent ?? null,
+            conditionsToProceed: JSON.parse(prev.conditionsToProceed || "[]"),
+            blockingIssues: JSON.parse(prev.blockingIssues || "[]"),
+            votes: JSON.parse(prev.votes || "[]"),
+            icReport: null,
+            universitySignal: null,
+            duplicate: true,
+            triage: null,
+          };
+        }
+      }
+
+      // ── Layer 1: Fast Triage ────────────────────────────────────────────────
+      const triageResult = await runTriage(input.dealText);
+      console.log(`[Triage] ${triageResult.decision} (conf=${triageResult.confidence.toFixed(2)}) in ${triageResult.durationMs}ms`);
+
+      if (triageResult.decision !== "PROCEED") {
+        const triageDealId = randomUUID();
+        try {
+          await db.insert(dealScreenings).values({
+            userId: ctx.user.id,
+            dealId: triageDealId,
+            dealName: input.dealName,
+            dealText: input.dealText,
+            pdfFileKey: input.pdfFileKey ?? null,
+            pdfFileUrl: input.pdfFileUrl ?? null,
+            verdict: "REJECTED",
+            yesCount: 0,
+            noCount: 0,
+            hardYesCount: 0,
+            softYesCount: 0,
+            softNoCount: 0,
+            hardNoCount: 0,
+            confidenceScore: "0.000",
+            gccVetoTriggered: false,
+            tiebreakerTriggered: false,
+            tiebreakerSwingAgent: null,
+            conditionsToProceed: "[]",
+            blockingIssues: JSON.stringify([triageResult.reason]),
+            votes: "[]",
+            sourceType: input.sourceType ?? "manual",
+            dealHash: dedupResult.dealHash,
+            triageResult: JSON.stringify(triageResult),
+            triageSkipped: false,
+          });
+        } catch (e) {
+          console.error("[Triage] Failed to persist triage record:", e);
+        }
+        return {
+          dealId: triageDealId,
+          dealName: input.dealName,
+          verdict: "REJECTED" as const,
+          yesCount: 0,
+          noCount: 0,
+          hardYesCount: 0,
+          softYesCount: 0,
+          softNoCount: 0,
+          hardNoCount: 0,
+          confidenceScore: 0,
+          gccVetoTriggered: false,
+          tiebreakerTriggered: false,
+          tiebreakerSwingAgent: null,
+          conditionsToProceed: [],
+          blockingIssues: [triageResult.reason],
+          votes: [],
+          icReport: null,
+          universitySignal: null,
+          duplicate: false,
+          triage: triageResult,
+        };
+      }
+
+      // ── Layer 2: Full Council ───────────────────────────────────────────────
       // Run the council engine — skip subscription token guard for pay-per-run sessions
       const result = await runCouncil(input.dealText, {
         userId: skipTokenGuard ? undefined : ctx.user.id,
@@ -240,6 +339,9 @@ export const dealScreenerRouter = router({
         blockingIssues: JSON.stringify(result.blockingIssues),
         votes: JSON.stringify(result.votes),
         sourceType: input.sourceType ?? "manual",
+        dealHash: dedupResult.dealHash,
+        triageResult: JSON.stringify(triageResult),
+        triageSkipped: false,
       });
 
       // Link the Stripe payment row to this deal run (so billing history shows the deal name)
@@ -259,13 +361,19 @@ export const dealScreenerRouter = router({
         }
       }
 
-      // Generate boardroom-ready IC Report (additive — does not modify result)
+      // ── Layer 3: Conditional IC Report ─────────────────────────────────────
+      // Only generate for APPROVED or APPROVED_WITH_CONDITIONS, and only if requested.
+      // Saves ~$0.14 per rejected deal.
       let icReport = null;
-      try {
-        icReport = await generateSingleDealICReport(input.dealName, input.dealText, result);
-      } catch (err) {
-        // IC report generation failure is non-fatal — raw Council result still returned
-        console.error("[ICReport] Failed to generate IC report:", err);
+      const shouldGenerateReport =
+        input.includeReport !== false &&
+        (result.verdict === "APPROVED" || result.verdict === "APPROVED_WITH_CONDITIONS");
+      if (shouldGenerateReport) {
+        try {
+          icReport = await generateSingleDealICReport(input.dealName, input.dealText, result);
+        } catch (err) {
+          console.error("[ICReport] Failed to generate IC report:", err);
+        }
       }
 
       // Detect Tier 0 university signal (non-fatal, additive)
@@ -282,6 +390,8 @@ export const dealScreenerRouter = router({
         ...result,
         icReport,
         universitySignal,
+        duplicate: false,
+        triage: triageResult,
       };
     }),
 

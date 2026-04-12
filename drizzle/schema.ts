@@ -766,6 +766,11 @@ export const dealScreenings = mysqlTable("deal_screenings", {
   blockingIssues: text("blockingIssues").notNull(),           // JSON string[]
   votes: text("votes").notNull(),                             // JSON PersonaVote[]
 
+  // Tiered pipeline fields (v2)
+  dealHash: varchar("dealHash", { length: 64 }),               // SHA-256 of normalised deal text
+  triageResult: text("triageResult"),                          // JSON: { decision, confidence, reason }
+  triageSkipped: boolean("triageSkipped").notNull().default(false), // true if duplicate bypass
+
   // Provenance
   sourceType: mysqlEnum("sourceType", ["manual", "signal"]).default("manual").notNull(),
 

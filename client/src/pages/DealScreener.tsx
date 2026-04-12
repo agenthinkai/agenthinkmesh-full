@@ -64,6 +64,8 @@ interface CouncilResult {
   icReport?: ICReportData | null;
   universitySignal?: UniversitySignal | null;
   precedents?: Array<{ taskDescription: string; finalVerdict: string | null; similarity: number; }>;
+  duplicate?: boolean;
+  triage?: { decision: string; confidence: number; reason: string; durationMs: number; } | null;
 }
 
 // ── Tier 0 University Signal type ───────────────────────────────────────────────────────────────
@@ -886,6 +888,23 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
+      {/* Duplicate banner */}
+      {result.duplicate && (
+        <div style={{ padding: "10px 16px", background: "rgba(74,158,255,0.10)", border: "1px solid rgba(74,158,255,0.5)", borderRadius: 6, marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontSize: 16 }}>⚡</span>
+          <span style={{ fontFamily: MONO, fontSize: 12, color: ACCENT, fontWeight: 700 }}>DUPLICATE DETECTED — Returning cached result (0 LLM calls used)</span>
+        </div>
+      )}
+      {/* Triage early-exit banner */}
+      {result.triage && result.triage.decision !== "PROCEED" && (
+        <div style={{ padding: "10px 16px", background: "rgba(255,159,67,0.10)", border: "1px solid rgba(255,159,67,0.5)", borderRadius: 6, marginBottom: 16, display: "flex", alignItems: "flex-start", gap: 10 }}>
+          <span style={{ fontSize: 16, marginTop: 1 }}>⚠️</span>
+          <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+            <span style={{ fontFamily: MONO, fontSize: 12, color: AMBER, fontWeight: 700 }}>TRIAGE FILTER — {result.triage.decision.replace(/_/g, " ")} ({(result.triage.confidence * 100).toFixed(0)}% confidence, {result.triage.durationMs}ms)</span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: MUTED }}>{result.triage.reason}</span>
+          </div>
+        </div>
+      )}
       {/* Special banners */}
       {result.gccVetoTriggered && (
         <div style={{

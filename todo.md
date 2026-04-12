@@ -188,7 +188,7 @@
 - [ ] Register all five Arabic agents in the database with verified status
 - [ ] Write tests for annotation.submit, annotation.review, annotation.export
 - [x] TypeScript check — zero errors
-- [ ] Save checkpoint
+- [x] Save checkpoint
 
 ## Session 4b — Arabic Labeling as Flagship Feature
 
@@ -1595,7 +1595,7 @@
 ## Tracker Enhancements (Bulk Import + Notes + Follow-up Reminders)
 - [ ] Add notes column to outbound_emails table in drizzle schema
 - [ ] Add followUpDate column (nullable datetime) to outbound_emails table
-- [ ] Push DB migration
+- [x] Push DB migration
 - [ ] Update updateStatus procedure to accept notes and followUpDate
 - [ ] Add bulk import procedure (accepts array of name/email/firm/market lines)
 - [ ] Build bulk paste import modal in Tracker UI
@@ -1706,7 +1706,7 @@
 
 - [ ] Add `embedding` TEXT column to dealScreenings schema
 - [ ] Create server/embeddings.ts: generateEmbedding() + cosineSimilarity() + findSimilarDeals()
-- [ ] Push DB migration for embedding column
+- [x] Push DB migration for embedding column
 - [ ] Wire RAG into dealScreener router: generate embedding before council run, query top-3 similar deals
 - [ ] Inject PRECEDENT CONTEXT block into councilEngine persona prompts
 - [ ] Store embedding after council run completes
@@ -1822,3 +1822,15 @@
 - [ ] Add Revoke Share button with confirm dialog to Run Detail page
 - [ ] Add PortfolioMesh Demo entry to SiteNav Tools dropdown
 - [ ] Add PortfolioMesh Demo to mobile drawer in SiteNav
+
+## Tiered Deal Screener Pipeline (Pre-Tencent)
+- [x] Add triage_result (json) and deal_hash (varchar 64) columns to deal_screenings schema
+- [x] Push DB migration
+- [x] Build triageEngine.ts: single Haiku call, strict JSON output
+- [x] Build dealDedup.ts: SHA-256 hash utility + DB lookup
+- [x] Update dealScreener router: dedup → triage → council → conditional IC report
+- [x] Add includeReport flag to screen procedure input
+- [x] Update frontend to handle triage early-exit and duplicate flag display
+- [x] Write vitest tests for triage engine and dedup utility
+- [x] TypeScript check: 0 errors
+- [x] Save checkpoint
