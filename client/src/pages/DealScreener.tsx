@@ -1839,7 +1839,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
 }
 
 // ── History Table ─────────────────────────────────────────────────────────────
-type HistoryFilter = "ALL" | "APPROVED" | "CONDITIONAL" | "REJECTED";
+type HistoryFilter = "ALL" | "APPROVED" | "CONDITIONAL" | "REJECTED" | "FROM_SIGNAL";
 
 function HistoryTable({ onSelect }: { onSelect: (dealId: string) => void }) {
   const { data: history, isLoading } = trpc.dealScreener.history.useQuery();
@@ -1902,6 +1902,7 @@ function HistoryTable({ onSelect }: { onSelect: (dealId: string) => void }) {
     { label: "Approved", value: "APPROVED", color: GREEN },
     { label: "Conditional", value: "CONDITIONAL", color: ACCENT },
     { label: "Rejected / Vetoed", value: "REJECTED", color: RED },
+    { label: "From Signal", value: "FROM_SIGNAL", color: "#a855f7" },
   ];
 
   const verdictColor: Record<string, string> = {
@@ -1929,6 +1930,7 @@ function HistoryTable({ onSelect }: { onSelect: (dealId: string) => void }) {
     if (filter === "APPROVED") return row.verdict === "APPROVED";
     if (filter === "CONDITIONAL") return row.verdict === "APPROVED_WITH_CONDITIONS";
     if (filter === "REJECTED") return row.verdict === "REJECTED" || row.verdict === "VETOED";
+    if (filter === "FROM_SIGNAL") return row.sourceType === "signal";
     return true;
   });
 

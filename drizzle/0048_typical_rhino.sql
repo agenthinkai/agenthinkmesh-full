@@ -1,0 +1,1 @@
+ALTER TABLE `signal_deals` MODIFY COLUMN `userId` int;

@@ -25,6 +25,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Logo from "@/components/Logo";
 import { PlanUsageBadge } from "@/components/PlanUsageBadge";
+import { trpc } from "@/lib/trpc";
 
 /* ─── Design tokens ─────────────────────────────────────────────────── */
 const NAVY   = "#080D1A";
@@ -374,6 +375,13 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
   const dropRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
 
+  // Unread signals count for Tools dropdown badge
+  const { data: signalsData } = trpc.dealScreener.listSignals.useQuery(undefined, {
+    refetchInterval: 60_000, // refresh every minute
+    enabled: !!user,         // only when logged in
+  });
+  const unreadSignalCount = signalsData?.unreadCount ?? 0;
+
   const currentPath = typeof window !== "undefined" ? window.location.pathname : "";
 
   // Close desktop dropdown on outside click
@@ -508,7 +516,20 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
                         }}
                       >
                         <span style={{ fontSize: 14 }}>{tool.icon}</span>
-                        {tool.label}
+                        <span style={{ flex: 1 }}>{tool.label}</span>
+                        {tool.label === "Deal Screener" && unreadSignalCount > 0 && (
+                          <span style={{
+                            background: "#3B82F6",
+                            color: "#fff",
+                            fontSize: 10, fontWeight: 700,
+                            borderRadius: 10,
+                            padding: "1px 6px",
+                            lineHeight: "16px",
+                            minWidth: 18, textAlign: "center",
+                          }}>
+                            {unreadSignalCount}
+                          </span>
+                        )}
                       </a>
                     ))}
                   </div>

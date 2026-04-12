@@ -27,6 +27,7 @@ import intelligenceParseRouter from "../intelligenceParseRoute";
 import gmailOAuthRouter from "../gmailOAuthRoute";
 import { startGmailPolling } from "../gmailTracker";
 import { runTier0Ingestion } from "../tier0Ingestion";
+import signalsIngestRouter from "../signalsIngestRoute";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -77,6 +78,8 @@ async function startServer() {
   app.use("/api/deals", dealScreenerUploadRouter);
   // Deal Data Room Ingestion V1 — multi-file upload + LLM extraction
   app.use("/api/deals", dealIngestionRouter);
+  // Deal Signal Layer — lightweight ingestion endpoint for external signals
+  app.use("/api/signals", signalsIngestRouter);
   // Intelligence Agent document parse endpoint
   app.use("/api/intelligence/parse-document", intelligenceParseRouter);
   // Gmail OAuth for Reply Tracker

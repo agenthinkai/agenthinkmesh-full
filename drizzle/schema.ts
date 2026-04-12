@@ -1404,7 +1404,7 @@ export type InsertPortfolioRun = typeof portfolioRuns.$inferInsert;
 // ============================================================
 export const signalDeals = mysqlTable("signal_deals", {
   id: int("id").autoincrement().primaryKey(),
-  userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
+  userId: int("userId").references(() => users.id, { onDelete: "cascade" }),
   company: varchar("company", { length: 255 }).notNull(),
   sector: varchar("sector", { length: 128 }).notNull(),
   stage: varchar("stage", { length: 64 }).notNull(),
