@@ -949,6 +949,24 @@ Respond in valid JSON only. No markdown. No extra keys.`;
       return { shareToken: token };
     }),
 
+  // ── Share: Revoke Share Token ────────────────────────────────────────────────────
+  revokeShare: protectedProcedure
+    .input(z.object({ runId: z.number() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await requireDb();
+      const [row] = await db
+        .select({ id: portfolioRuns.id, userId: portfolioRuns.userId })
+        .from(portfolioRuns)
+        .where(and(eq(portfolioRuns.id, input.runId), eq(portfolioRuns.userId, ctx.user.id)))
+        .limit(1);
+      if (!row) throw new TRPCError({ code: "NOT_FOUND" });
+      await db
+        .update(portfolioRuns)
+        .set({ shareToken: null })
+        .where(eq(portfolioRuns.id, input.runId));
+      return { revoked: true };
+    }),
+
   // ── Share: Get Run by Token (public) ─────────────────────────────────────────────
   getRunByToken: publicProcedure
     .input(z.object({ token: z.string().min(8).max(64) }))

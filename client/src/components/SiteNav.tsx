@@ -186,6 +186,7 @@ function MobileDrawer({ open, onClose, currentPath, isAuthenticated, user, logou
             { label: "Domains", href: "/domains" },
             { label: "Deal Screener", href: "/deals" },
             { label: "PortfolioMesh", href: "/portfolio-mesh" },
+            { label: "PortfolioMesh Demo", href: "/portfolio-mesh/demo" },
             { label: "Contact", href: "/contact" },
           ].map(item => (
             <a
@@ -494,6 +495,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
                     {[
                       { label: "Deal Screener", icon: "⚖️", href: "/deals", color: "#4ADE80" },
                       { label: "PortfolioMesh", icon: "🏦", href: "/portfolio-mesh", color: "#7BA3D4" },
+                      { label: "PortfolioMesh Demo", icon: "🚀", href: "/portfolio-mesh/demo", color: "#F59E0B" },
                     ].map(tool => (
                       <a
                         key={tool.label}

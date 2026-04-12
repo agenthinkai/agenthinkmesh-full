@@ -163,6 +163,13 @@ export default function PortfolioMeshRunDetail() {
 
   const [shareToken, setShareToken] = useState<string | null>((run as { shareToken?: string | null } | null)?.shareToken ?? null);
   const [shareCopied, setShareCopied] = useState(false);
+  const [revokeConfirm, setRevokeConfirm] = useState(false);
+  const revokeShare = trpc.portfolioMesh.revokeShare.useMutation({
+    onSuccess: () => {
+      setShareToken(null);
+      setRevokeConfirm(false);
+    },
+  });
   const generateShare = trpc.portfolioMesh.generateShareToken.useMutation({
     onSuccess: (data) => {
       setShareToken(data.shareToken);
@@ -274,6 +281,39 @@ export default function PortfolioMeshRunDetail() {
             >
               {shareCopied ? "✓ Link Copied" : shareToken ? "⎘ Copy Share Link" : "↗ Share Run"}
             </Button>
+            {shareToken && (
+              revokeConfirm ? (
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-slate-400">Revoke?</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={revokeShare.isPending}
+                    onClick={() => revokeShare.mutate({ runId })}
+                    className="border-red-500/40 text-red-400 hover:bg-red-500/10 text-xs px-2"
+                  >
+                    {revokeShare.isPending ? "…" : "Confirm"}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setRevokeConfirm(false)}
+                    className="text-slate-400 hover:text-slate-200 text-xs px-2"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setRevokeConfirm(true)}
+                  className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:border-red-500/50"
+                >
+                  ✕ Revoke Share
+                </Button>
+              )
+            )}
           </div>
         </div>
 

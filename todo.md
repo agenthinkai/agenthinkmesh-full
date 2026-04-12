@@ -1816,3 +1816,9 @@
 - [x] Add sourceType field to dealScreenings table
 - [ ] Update screen procedure to accept sourceType
 - [x] Add FROM SIGNAL badge to History rows
+
+## Final Demo/Governance Pass
+- [ ] Add revokeShare server procedure (sets shareToken = null)
+- [ ] Add Revoke Share button with confirm dialog to Run Detail page
+- [ ] Add PortfolioMesh Demo entry to SiteNav Tools dropdown
+- [ ] Add PortfolioMesh Demo to mobile drawer in SiteNav
