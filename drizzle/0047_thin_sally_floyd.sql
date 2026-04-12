@@ -1,0 +1,1 @@
+ALTER TABLE `deal_screenings` ADD `sourceType` enum('manual','signal') DEFAULT 'manual' NOT NULL;

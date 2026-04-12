@@ -766,6 +766,9 @@ export const dealScreenings = mysqlTable("deal_screenings", {
   blockingIssues: text("blockingIssues").notNull(),           // JSON string[]
   votes: text("votes").notNull(),                             // JSON PersonaVote[]
 
+  // Provenance
+  sourceType: mysqlEnum("sourceType", ["manual", "signal"]).default("manual").notNull(),
+
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
 

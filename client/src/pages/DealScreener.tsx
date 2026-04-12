@@ -1217,6 +1217,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
   const { user: authUser } = useAuth();
   const [dealName, setDealName] = useState("");
   const [dealText, setDealText] = useState("");
+  const [sourceType, setSourceType] = useState<"manual" | "signal">("manual");
   // Guided form mode
   const [guidedMode, setGuidedMode] = useState(true);
   const [g_what, setGWhat] = useState("");
@@ -1309,9 +1310,10 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
   // Listen for Tier 0 signal pre-fill events from the Signals feed
   useEffect(() => {
     const handler = (e: Event) => {
-      const { dealName: name, dealText: text } = (e as CustomEvent).detail;
+      const { dealName: name, dealText: text, sourceType: src } = (e as CustomEvent).detail;
       if (name) setDealName(name);
       if (text) setDealText(text);
+      if (src) setSourceType(src as "manual" | "signal");
     };
     window.addEventListener("tier0:prefill", handler);
     return () => window.removeEventListener("tier0:prefill", handler);
@@ -1374,7 +1376,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
     lastSubmittedTextRef.current = finalText;
     if (FREE_MODE) {
       onSubmitStart();
-      screenMutation.mutate({ dealName: dealName.trim(), dealText: finalText, councilMode });
+      screenMutation.mutate({ dealName: dealName.trim(), dealText: finalText, councilMode, sourceType });
       return;
     }
     sessionStorage.setItem("ds_pending_deal_text", finalText);
@@ -1991,7 +1993,23 @@ function HistoryTable({ onSelect }: { onSelect: (dealId: string) => void }) {
             onMouseEnter={(e) => (e.currentTarget.style.background = BG2)}
             onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
           >
-            <div style={{ fontSize: 13, color: TEXT, fontWeight: 500 }}>{row.dealName}</div>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+              <span style={{ fontSize: 13, color: TEXT, fontWeight: 500 }}>{row.dealName}</span>
+              {row.sourceType === "signal" && (
+                <span style={{
+                  fontFamily: MONO,
+                  fontSize: 8,
+                  fontWeight: 700,
+                  letterSpacing: "0.1em",
+                  padding: "2px 6px",
+                  borderRadius: 3,
+                  background: "rgba(168,85,247,0.12)",
+                  color: "#a855f7",
+                  border: "1px solid rgba(168,85,247,0.3)",
+                  whiteSpace: "nowrap",
+                }}>FROM SIGNAL</span>
+              )}
+            </div>
             <div>
               <VerdictBadge verdict={row.verdict as VerdictType} compact />
             </div>
@@ -2320,6 +2338,11 @@ export default function DealScreener() {
   const isDemo = isDemoMode();
   const { isAuthenticated, loading, user } = useAuth();
   const [view, setView] = useState<View>("input");
+  const { data: signalData } = trpc.dealScreener.listSignals.useQuery(
+    undefined,
+    { enabled: !isDemo }
+  );
+  const unreadSignalCount = signalData?.unreadCount ?? 0;
   const [result, setResult] = useState<CouncilResult | null>(null);
   const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
   const [screenError, setScreenError] = useState<string | null>(null);
@@ -2439,9 +2462,29 @@ export default function DealScreener() {
                 fontSize: 10,
                 cursor: "pointer",
                 letterSpacing: "0.08em",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
               }}
             >
               {tab.label}
+              {tab.id === "signals" && unreadSignalCount > 0 && (
+                <span style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  minWidth: 14,
+                  height: 14,
+                  borderRadius: 7,
+                  background: ACCENT,
+                  color: "#000",
+                  fontFamily: MONO,
+                  fontSize: 8,
+                  fontWeight: 700,
+                  padding: "0 3px",
+                  lineHeight: 1,
+                }}>{unreadSignalCount}</span>
+              )}
             </button>
           ))}
           {(view === "report" || view === "loading") && (
@@ -2491,9 +2534,9 @@ export default function DealScreener() {
               setCouncilMode={setCouncilMode}
             />
             <RecentSignalsPanel onScreen={(text) => {
-              // Pre-fill deal text via the tier0:prefill event
+              // Pre-fill deal text via the tier0:prefill event (mark as signal-sourced)
               setTimeout(() => {
-                window.dispatchEvent(new CustomEvent("tier0:prefill", { detail: { dealName: "", dealText: text } }));
+                window.dispatchEvent(new CustomEvent("tier0:prefill", { detail: { dealName: "", dealText: text, sourceType: "signal" } }));
               }, 50);
             }} />
           </>

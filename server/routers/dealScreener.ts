@@ -119,6 +119,7 @@ export const dealScreenerRouter = router({
         pdfFileUrl: z.string().optional(),
         stripeSessionId: z.string().optional(), // link payment row to this deal run
         councilMode: z.enum(["gcc", "global_vc", "india_pe"]).optional().default("gcc"),
+        sourceType: z.enum(["manual", "signal"]).optional().default("manual"),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -150,6 +151,7 @@ export const dealScreenerRouter = router({
           conditionsToProceed: JSON.stringify(ownerResult.conditionsToProceed),
           blockingIssues: JSON.stringify(ownerResult.blockingIssues),
           votes: JSON.stringify(ownerResult.votes),
+          sourceType: input.sourceType ?? "manual",
         });
         let ownerIcReport = null;
         try { ownerIcReport = await generateSingleDealICReport(input.dealName, input.dealText, ownerResult); } catch {}
@@ -237,6 +239,7 @@ export const dealScreenerRouter = router({
         conditionsToProceed: JSON.stringify(result.conditionsToProceed),
         blockingIssues: JSON.stringify(result.blockingIssues),
         votes: JSON.stringify(result.votes),
+        sourceType: input.sourceType ?? "manual",
       });
 
       // Link the Stripe payment row to this deal run (so billing history shows the deal name)
@@ -460,6 +463,7 @@ export const dealScreenerRouter = router({
           confidenceScore: dealScreenings.confidenceScore,
           gccVetoTriggered: dealScreenings.gccVetoTriggered,
           tiebreakerTriggered: dealScreenings.tiebreakerTriggered,
+          sourceType: dealScreenings.sourceType,
           createdAt: dealScreenings.createdAt,
         })
         .from(dealScreenings)
@@ -662,15 +666,22 @@ export const dealScreenerRouter = router({
    */
   listSignals: protectedProcedure.query(async ({ ctx }) => {
     const db = await getDb();
-    if (!db) return { signals: DEMO_SIGNALS, isDemo: true };
+    if (!db) {
+      const unreadCount = DEMO_SIGNALS.filter(s => !s.screened).length;
+      return { signals: DEMO_SIGNALS, isDemo: true, unreadCount };
+    }
     const rows = await db
       .select()
       .from(signalDeals)
       .where(eq(signalDeals.userId, ctx.user.id))
       .orderBy(desc(signalDeals.createdAt))
       .limit(5);
-    if (rows.length === 0) return { signals: DEMO_SIGNALS, isDemo: true };
-    return { signals: rows, isDemo: false };
+    if (rows.length === 0) {
+      const unreadCount = DEMO_SIGNALS.filter(s => !s.screened).length;
+      return { signals: DEMO_SIGNALS, isDemo: true, unreadCount };
+    }
+    const unreadCount = rows.filter(r => !r.screened).length;
+    return { signals: rows, isDemo: false, unreadCount };
   }),
 
   /**

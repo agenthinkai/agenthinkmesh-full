@@ -1804,3 +1804,15 @@
 - [x] Add Recent Signals panel to DealScreener input view (5 items, click to screen)
 - [x] Add auto-screen toggle to DealScreener
 - [x] Preload 5 demo signals for demo mode
+- [x] Add unread count to listSignals response
+- [ ] Render unread badge on Signals nav tab
+- [x] Add sourceType field to dealScreenings table
+- [ ] Update screen procedure to accept sourceType
+- [x] Add FROM SIGNAL badge to History rows
+
+## Signal Layer Polish
+- [x] Add unread count to listSignals response
+- [ ] Render unread badge on Signals nav tab
+- [x] Add sourceType field to dealScreenings table
+- [ ] Update screen procedure to accept sourceType
+- [x] Add FROM SIGNAL badge to History rows
