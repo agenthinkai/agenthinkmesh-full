@@ -1870,3 +1870,7 @@
 - [x] Fix: display Yes/No vote count bar on each completed deal tile
 - [x] Fix: spread `dealId` and `dealText` into `councilResult` so ICReport drill-down has all required fields
 - [x] TypeScript: 0 errors | Tests: 448 passed
+
+## Back to Summary Button (Apr 2026)
+
+- [x] Add "← Back to Summary" button on drill-down ICReport page when opened from Data Room batch results

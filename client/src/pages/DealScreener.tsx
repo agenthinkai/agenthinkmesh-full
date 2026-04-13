@@ -2361,6 +2361,7 @@ export default function DealScreener() {
   const isDemo = isDemoMode();
   const { isAuthenticated, loading, user } = useAuth();
   const [view, setView] = useState<View>("input");
+  const [previousView, setPreviousView] = useState<View | null>(null);
   const { data: signalData } = trpc.dealScreener.listSignals.useQuery(
     undefined,
     { enabled: !isDemo }
@@ -2584,7 +2585,33 @@ export default function DealScreener() {
         )}
         {view === "loading" && <PersonaLoadingGrid councilMode={councilMode} />}
         {view === "report" && result && (
-          <ICReport result={result} onNewDeal={handleNewDeal} />
+          <div>
+            {previousView === "batch" && (
+              <div style={{ maxWidth: 900, margin: "0 auto 12px", padding: "0 16px" }}>
+                <button
+                  onClick={() => { setPreviousView(null); setView("batch"); }}
+                  style={{
+                    background: "none",
+                    border: "1px solid #1e2d3d",
+                    color: "#94a3b8",
+                    padding: "7px 16px",
+                    borderRadius: 6,
+                    cursor: "pointer",
+                    fontFamily: "'IBM Plex Mono', monospace",
+                    fontSize: 11,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#4a9eff"; (e.currentTarget as HTMLButtonElement).style.color = "#4a9eff"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "#1e2d3d"; (e.currentTarget as HTMLButtonElement).style.color = "#94a3b8"; }}
+                >
+                  ← Back to Deal Summary
+                </button>
+              </div>
+            )}
+            <ICReport result={result} onNewDeal={handleNewDeal} />
+          </div>
         )}
         {view === "history" && (
           <HistoryTable onSelect={(id) => { setSelectedDealId(id); }} />
@@ -2599,21 +2626,26 @@ export default function DealScreener() {
             }, 100);
           }} />
         )}
-        {view === "batch" && (
-          <DataRoomV2
-            onDrillDown={(councilResult) => {
-              setResult(councilResult as CouncilResult);
-              setView("report");
-            }}
-            onCancel={() => setView("input")}
-            onSingleDeal={(dealName, dealText, mode) => {
-              // 1 file uploaded — hand off to single-deal council flow
-              setCouncilMode(mode);
-              setScreenError(null);
-              setView("loading");
-              topLevelScreenMutation.mutate({ dealName, dealText, councilMode: mode });
-            }}
-          />
+        {/* DataRoomV2 stays mounted while in batch or drilling down so results grid state is preserved */}
+        {(view === "batch" || previousView === "batch") && (
+          <div style={{ display: view === "batch" ? "block" : "none" }}>
+            <DataRoomV2
+              onDrillDown={(councilResult) => {
+                setResult(councilResult as CouncilResult);
+                setPreviousView("batch");
+                setView("report");
+              }}
+              onCancel={() => { setPreviousView(null); setView("input"); }}
+              onSingleDeal={(dealName, dealText, mode) => {
+                // 1 file uploaded — hand off to single-deal council flow
+                setCouncilMode(mode);
+                setScreenError(null);
+                setPreviousView(null);
+                setView("loading");
+                topLevelScreenMutation.mutate({ dealName, dealText, councilMode: mode });
+              }}
+            />
+          </div>
         )}
       </div>
     </div>
