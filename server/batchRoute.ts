@@ -15,7 +15,7 @@ import { Router, Request, Response } from "express";
 import { randomUUID } from "crypto";
 import { getDb } from "./db";
 import { batchJobs, batchDealItems } from "../drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc, sql } from "drizzle-orm";
 import { runScreeningPipeline } from "./runScreeningPipeline";
 import { sdk } from "./_core/sdk";
 
@@ -54,10 +54,10 @@ async function runBatchWorkerPool(batchId: string, userId: number): Promise<void
       .set({ status: "processing" })
       .where(eq(batchJobs.batchId, batchId));
 
-    // Fetch all queued items for this batch
+    // Fetch only queued items for this batch (skip already-completed/failed)
     const items = await db.select()
       .from(batchDealItems)
-      .where(eq(batchDealItems.batchId, batchId));
+      .where(and(eq(batchDealItems.batchId, batchId), eq(batchDealItems.status, "queued")));
 
     let nextIndex = 0;
 
@@ -173,6 +173,32 @@ async function runBatchWorkerPool(batchId: string, userId: number): Promise<void
   }
 }
 
+// ── GET /api/batch/list ─────────────────────────────────────────────────────
+/**
+ * List all batch jobs for the current user (most recent first).
+ * Used by the Batch History tab in the Data Room UI.
+ */
+router.get("/list", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = await resolveUserId(req);
+    if (userId === null) {
+      res.status(401).json({ success: false, error: "Authentication required." });
+      return;
+    }
+    const db7 = await getDb();
+    if (!db7) { res.status(503).json({ success: false, error: "Database unavailable." }); return; }
+    const jobs = await db7.select()
+      .from(batchJobs)
+      .where(eq(batchJobs.userId, userId))
+      .orderBy(desc(batchJobs.createdAt))
+      .limit(50);
+    res.json({ success: true, batches: jobs });
+  } catch (err) {
+    console.error("[GET /api/batch/list] Error:", err);
+    res.status(500).json({ success: false, error: "Failed to list batches." });
+  }
+});
+
 // ── POST /api/batch/create ────────────────────────────────────────────────────
 /**
  * Enqueue a batch of deals for processing.
@@ -204,12 +230,12 @@ router.post("/create", async (req: Request, res: Response): Promise<void> => {
       res.status(400).json({ success: false, error: "deals must be a non-empty array." });
       return;
     }
-    if (deals.length > 20) {
-      res.status(400).json({ success: false, error: "Batch limit is 20 deals per request." });
+    if (deals.length > 200) {
+      res.status(400).json({ success: false, error: "Batch limit is 200 deals per request." });
       return;
     }
 
-    const validModes = new Set(["gcc", "global_vc", "india_pe"]);
+    const validModes = new Set(["gcc", "global_vc", "india_pe", "global", "india"]);
     const batchId = randomUUID();
 
     const db4 = await getDb();
@@ -231,7 +257,12 @@ router.post("/create", async (req: Request, res: Response): Promise<void> => {
       itemIndex: i,
       dealName: (d.dealName ?? `Deal ${i + 1}`).trim(),
       dealText: (d.dealText ?? "").trim(),
-      councilMode: (validModes.has(d.councilMode ?? "") ? d.councilMode : "gcc") as "gcc" | "global_vc" | "india_pe",
+      councilMode: (() => {
+        const m = d.councilMode ?? "gcc";
+        if (m === "global") return "global_vc";
+        if (m === "india") return "india_pe";
+        return (validModes.has(m) ? m : "gcc") as "gcc" | "global_vc" | "india_pe";
+      })() as "gcc" | "global_vc" | "india_pe",
       status: "queued" as const,
     }));
 
@@ -459,6 +490,39 @@ router.post("/:batchId/retry-item", async (req: Request, res: Response): Promise
   } catch (err) {
     console.error("[POST /api/batch/:batchId/retry-item] Error:", err);
     res.status(500).json({ success: false, error: "Failed to retry item." });
+  }
+});
+
+// ── POST /api/batch/:batchId/resume ─────────────────────────────────────────
+/**
+ * Resume a stalled batch — resets stuck "processing" items back to "queued"
+ * and restarts the worker pool. Safe to call multiple times (idempotent).
+ */
+router.post("/:batchId/resume", async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = await resolveUserId(req);
+    if (userId === null) {
+      res.status(401).json({ success: false, error: "Authentication required." });
+      return;
+    }
+    const { batchId } = req.params;
+    const db6 = await getDb();
+    if (!db6) { res.status(503).json({ success: false, error: "Database unavailable." }); return; }
+    const [job] = await db6.select().from(batchJobs).where(eq(batchJobs.batchId, batchId));
+    if (!job) {
+      res.status(404).json({ success: false, error: "Batch job not found." });
+      return;
+    }
+    // Reset stuck "processing" items back to "queued"
+    await db6.update(batchDealItems)
+      .set({ status: "queued", startedAt: null })
+      .where(and(eq(batchDealItems.batchId, batchId), eq(batchDealItems.status, "processing")));
+    // Restart worker pool in background
+    runBatchWorkerPool(batchId, job.userId).catch(console.error);
+    res.json({ success: true, message: "Batch resumed." });
+  } catch (err) {
+    console.error("[POST /api/batch/:batchId/resume] Error:", err);
+    res.status(500).json({ success: false, error: "Failed to resume batch." });
   }
 });
 

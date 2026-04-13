@@ -71,7 +71,18 @@ const AGENTS_BY_MODE: Record<string, Array<{ id: string; name: string; role: str
 };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-type Stage = "upload" | "review" | "processing" | "results";
+type Stage = "upload" | "review" | "processing" | "results" | "history";
+
+interface BatchHistoryItem {
+  id: number;
+  batchId: string;
+  status: string;
+  totalDeals: number;
+  completedCount: number;
+  failedCount: number;
+  createdAt: string;
+  completedAt: string | null;
+}
 type VerdictType = "APPROVED" | "APPROVED_WITH_CONDITIONS" | "REJECTED" | "VETOED";
 type DealStatus = "pending" | "processing" | "completed" | "failed";
 
@@ -151,6 +162,8 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
   const [filterVerdict, setFilterVerdict] = useState<"all" | VerdictType>("all");
   const [isDownloadingZip, setIsDownloadingZip] = useState(false);
   const [batchId, setBatchId] = useState<string | null>(null);
+  const [historyBatches, setHistoryBatches] = useState<BatchHistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef(false);
   const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -160,6 +173,20 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
     return () => {
       if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
     };
+  }, []);
+
+  // ── History loader ───────────────────────────────────────────────────────────
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const res = await fetch("/api/batch/list", { credentials: "include" });
+      const data = await res.json();
+      if (data.success) setHistoryBatches(data.batches || []);
+    } catch (err) {
+      toast.error("Failed to load batch history.");
+    } finally {
+      setHistoryLoading(false);
+    }
   }, []);
 
   // ── Upload handlers ──────────────────────────────────────────────────────────
@@ -502,12 +529,20 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
               Upload deal files or a ZIP archive. Name files with <span style={{ color: AMBER }}>gcc</span>, <span style={{ color: ACCENT }}>global</span>, or <span style={{ color: GREEN }}>india</span> to set council mode.
             </div>
           </div>
-          <button
-            onClick={onCancel}
-            style={{ background: "none", border: `1px solid ${BORDER}`, color: TEXT2, padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
-          >
-            ← Back
-          </button>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => { loadHistory(); setStage("history"); }}
+              style={{ background: BG3, border: `1px solid ${BORDER}`, color: TEXT2, padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
+            >
+              🕐 History
+            </button>
+            <button
+              onClick={onCancel}
+              style={{ background: "none", border: `1px solid ${BORDER}`, color: TEXT2, padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
+            >
+              ← Back
+            </button>
+          </div>
         </div>
 
         {/* Drop zone */}
@@ -573,6 +608,80 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
             </div>
           ))}
         </div>
+      </div>
+    );
+  }
+
+  // ── STAGE: HISTORY ──────────────────────────────────────────────────────────
+  if (stage === "history") {
+    const statusColor = (s: string) => s === "completed" ? GREEN : s === "partial" ? AMBER : s === "processing" ? ACCENT : MUTED;
+    const statusIcon = (s: string) => s === "completed" ? "✅" : s === "partial" ? "⚠️" : s === "processing" ? "⚡" : "⏳";
+    return (
+      <div style={{ fontFamily: MONO, color: TEXT, display: "flex", flexDirection: "column", gap: 20 }}>
+        {/* Header */}
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontSize: 20, fontWeight: 700, color: ACCENT, letterSpacing: 1 }}>🕐 BATCH HISTORY</div>
+            <div style={{ fontSize: 12, color: TEXT2, marginTop: 4 }}>All previous batch runs (most recent first)</div>
+          </div>
+          <button
+            onClick={() => setStage("upload")}
+            style={{ background: "none", border: `1px solid ${BORDER}`, color: TEXT2, padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
+          >
+            ← Back
+          </button>
+        </div>
+
+        {historyLoading ? (
+          <div style={{ textAlign: "center", color: TEXT2, padding: 40 }}>Loading…</div>
+        ) : historyBatches.length === 0 ? (
+          <div style={{ textAlign: "center", color: MUTED, padding: 40 }}>No batch runs found.</div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {historyBatches.map((batch) => {
+              const created = new Date(batch.createdAt).toLocaleString();
+              const completed = batch.completedAt ? new Date(batch.completedAt).toLocaleString() : null;
+              const duration = batch.completedAt
+                ? Math.round((new Date(batch.completedAt).getTime() - new Date(batch.createdAt).getTime()) / 1000)
+                : null;
+              return (
+                <div key={batch.batchId} style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "16px 20px", display: "flex", alignItems: "center", gap: 16 }}>
+                  {/* Status icon */}
+                  <div style={{ fontSize: 20 }}>{statusIcon(batch.status)}</div>
+
+                  {/* Main info */}
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, color: statusColor(batch.status) }}>{batch.status.toUpperCase()}</span>
+                      <span style={{ fontSize: 10, color: MUTED, fontFamily: "monospace" }}>{batch.batchId.slice(0, 8)}…</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: TEXT2 }}>
+                      {batch.totalDeals} deals · {batch.completedCount} completed · {batch.failedCount} failed
+                    </div>
+                    <div style={{ fontSize: 10, color: MUTED, marginTop: 4 }}>
+                      Started: {created}{completed ? ` · Finished: ${completed}` : ""}
+                      {duration !== null ? ` · ${duration}s total` : ""}
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ textAlign: "center", background: BG3, border: `1px solid ${BORDER}`, borderRadius: 6, padding: "6px 12px" }}>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: ACCENT }}>{batch.completedCount}</div>
+                      <div style={{ fontSize: 9, color: TEXT2 }}>DONE</div>
+                    </div>
+                    {batch.failedCount > 0 && (
+                      <div style={{ textAlign: "center", background: BG3, border: `1px solid ${RED}44`, borderRadius: 6, padding: "6px 12px" }}>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: RED }}>{batch.failedCount}</div>
+                        <div style={{ fontSize: 9, color: TEXT2 }}>FAILED</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     );
   }

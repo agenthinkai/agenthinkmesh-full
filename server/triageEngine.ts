@@ -17,11 +17,7 @@
  *   - Cost: ~$0.002 per call
  */
 
-import Anthropic from "@anthropic-ai/sdk";
-
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+import { ENV } from "./_core/env";
 
 export type TriageDecision =
   | "PROCEED"
@@ -53,6 +49,31 @@ Respond with STRICT JSON only. No explanation outside the JSON.`;
 
 const TRIAGE_TIMEOUT_MS = 15_000;
 
+// BUILT_IN_FORGE_API helper — OpenAI-compatible endpoint (works even when Anthropic key is expired)
+async function callForgeAPI(systemPrompt: string, userMessage: string, maxTokens: number): Promise<string> {
+  const forgeUrl = (ENV.forgeApiUrl || "").replace(/\/$/, "");
+  const forgeKey = ENV.forgeApiKey;
+  if (!forgeUrl || !forgeKey) throw new Error("BUILT_IN_FORGE_API not configured");
+  const res = await fetch(`${forgeUrl}/v1/chat/completions`, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${forgeKey}` },
+    body: JSON.stringify({
+      model: "claude-haiku-3-5",
+      max_tokens: maxTokens,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`${res.status} ${errText.slice(0, 200)}`);
+  }
+  const data = await res.json() as { choices: Array<{ message: { content: string } }> };
+  return data.choices[0]?.message?.content ?? "";
+}
+
 export async function runTriage(dealText: string): Promise<TriageResult> {
   const startMs = Date.now();
 
@@ -63,21 +84,13 @@ export async function runTriage(dealText: string): Promise<TriageResult> {
   );
 
   try {
-    const response = await Promise.race([
-      anthropic.messages.create({
-        model: "claude-haiku-3-5",
-        max_tokens: 256,
-        system: TRIAGE_SYSTEM_PROMPT,
-        messages: [{ role: "user", content: userMessage }],
-      }),
+    const rawText = await Promise.race([
+      callForgeAPI(TRIAGE_SYSTEM_PROMPT, userMessage, 256),
       timeoutPromise,
     ]);
 
-    const content = response.content[0];
-    if (content.type !== "text") throw new Error("Non-text triage response");
-
     // Parse JSON — strip any markdown fences if present
-    const raw = content.text.trim().replace(/^```json\s*/i, "").replace(/```\s*$/, "");
+    const raw = rawText.trim().replace(/^```json\s*/i, "").replace(/```\s*$/, "");
     const parsed = JSON.parse(raw);
 
     const decision: TriageDecision = ["PROCEED", "OBVIOUS_REJECT", "INSUFFICIENT_INPUT", "OUT_OF_SCOPE"].includes(parsed.decision)

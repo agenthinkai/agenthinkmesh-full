@@ -1897,3 +1897,16 @@
 - [x] Update DataRoomV2 frontend: submit batch → poll progress → live progress table
 - [x] Show per-deal status (queued / processing / done / failed) in real time
 - [x] Auto-navigate to results grid when all deals complete
+
+## 100-Deal Batch Test Run & Fixes (Apr 2026)
+
+- [x] Run full 100-deal batch test (batchId: e5508b01-0abc-4f0a-be27-91926c47a739)
+- [x] Fix: councilEngine.ts switched from direct Anthropic SDK (expired key) to BUILT_IN_FORGE_API
+- [x] Fix: triageEngine.ts switched to BUILT_IN_FORGE_API
+- [x] Fix: batchRoute.ts worker pool now fetches only queued items (not already-completed) on resume
+- [x] Add POST /api/batch/:batchId/resume endpoint to restart worker pool after server restart
+- [x] Add GET /api/batch/list endpoint to list all batch jobs for a user
+- [x] Add Batch History tab (🕐 History button) to DataRoomV2 upload stage
+- [x] Council mode auto-detection: explicit GCC/MENA/Gulf/Shariah → gcc, India/INR/India PE → india, else → global
+- [x] Batch completed: 100/100 deals, 0 failures, total runtime ~22 min, avg 13.3s/deal
+- [x] Verdict breakdown: REJECTED 62%, VETOED 34%, APPROVED_WITH_CONDITIONS 1%, NULL 3%

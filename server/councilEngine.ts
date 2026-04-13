@@ -39,8 +39,33 @@ import {
 } from "../drizzle/schema";
 import { TOKENS_PER_COUNCIL_RUN } from "./lib/stripePlans";
 
-// Module-level Anthropic client (required for vi.mock() to intercept in tests)
+// Module-level Anthropic client (kept for test mocking compatibility)
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? "" });
+
+// BUILT_IN_FORGE_API helper — OpenAI-compatible endpoint (works even when Anthropic key is expired)
+async function callForgeAPI(systemPrompt: string, userMessage: string, maxTokens: number): Promise<string> {
+  const forgeUrl = (ENV.forgeApiUrl || "").replace(/\/$/, "");
+  const forgeKey = ENV.forgeApiKey;
+  if (!forgeUrl || !forgeKey) throw new Error("BUILT_IN_FORGE_API not configured");
+  const res = await fetch(`${forgeUrl}/v1/chat/completions`, {
+    method: "POST",
+    headers: { "content-type": "application/json", authorization: `Bearer ${forgeKey}` },
+    body: JSON.stringify({
+      model: "claude-sonnet-4-5",
+      max_tokens: maxTokens,
+      messages: [
+        { role: "system", content: systemPrompt },
+        { role: "user", content: userMessage },
+      ],
+    }),
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    throw new Error(`${res.status} ${errText.slice(0, 200)}`);
+  }
+  const data = await res.json() as { choices: Array<{ message: { content: string } }> };
+  return data.choices[0]?.message?.content ?? "";
+}
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -757,21 +782,13 @@ async function callPersona(
     setTimeout(() => reject(new Error("TIMEOUT")), AGENT_TIMEOUT_MS)
   );
 
-   try {
-    const response = await Promise.race([
-      anthropic.messages.create({
-        model:      "claude-sonnet-4-5",
-        max_tokens: 2048,
-        system:     persona.systemPrompt,
-        messages:   [{ role: "user", content: userMessage }],
-      }),
+  try {
+    const rawText = await Promise.race([
+      callForgeAPI(persona.systemPrompt, userMessage, 2048),
       timeoutPromise,
     ]);
 
-    const content = response.content[0];
-    if (content.type !== "text") throw new Error("Non-text response");
-
-    const parsed     = parsePersonaResponse(content.text);
+    const parsed     = parsePersonaResponse(rawText);
     const confidence = parsed.confidence;
 
     // [FIX 3] Silent fail detection
