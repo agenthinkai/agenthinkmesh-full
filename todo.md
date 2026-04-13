@@ -1862,3 +1862,11 @@
 - [x] "Download All IC Memos" ZIP button at top of results page
 - [x] Click any deal tile → drill-down to full ICReport page
 - [x] TypeScript: 0 errors | Tests: 448 passed
+
+## Data Room Results Tile Fix (Apr 2026)
+
+- [x] Fix: response parsing bug — unwrap `data.data` envelope from `/api/deal/screen` response
+- [x] Fix: add `yesCount` / `noCount` fields to `DealResult` interface
+- [x] Fix: display Yes/No vote count bar on each completed deal tile
+- [x] Fix: spread `dealId` and `dealText` into `councilResult` so ICReport drill-down has all required fields
+- [x] TypeScript: 0 errors | Tests: 448 passed

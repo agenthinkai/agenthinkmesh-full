@@ -93,6 +93,8 @@ interface DealResult {
   triage?: { decision: string; confidence: number; reason: string } | null;
   hasIcReport: boolean;
   councilResult?: object | null;
+  yesCount?: number;
+  noCount?: number;
   error?: string;
   processingAgents?: string[]; // agents currently being shown as "processing"
 }
@@ -268,21 +270,29 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
           return;
         }
 
-        const data = await res.json();
-        const council = data.council as Record<string, unknown> | null;
+        const json = await res.json();
+        // Response shape: { success: true, data: { council, triage, ic_report, ... } }
+        const payload = (json.data ?? json) as Record<string, unknown>;
+        const council = payload.council as Record<string, unknown> | null;
         const verdict = council?.verdict as VerdictType | undefined;
+        const yesCount = typeof council?.yesCount === "number" ? council.yesCount : undefined;
+        const noCount  = typeof council?.noCount  === "number" ? council.noCount  : undefined;
 
         setDeals(prev => prev.map((d, i) =>
           i === idx ? {
             ...d,
             status: "completed",
             verdict: verdict ?? null,
-            triage: data.triage ?? null,
-            hasIcReport: !!data.ic_report,
-            councilResult: data.council ? {
-              ...data.council,
-              icReport: data.ic_report,
+            triage: (payload.triage as DealResult["triage"]) ?? null,
+            hasIcReport: !!payload.ic_report,
+            yesCount,
+            noCount,
+            councilResult: council ? {
+              ...council,
+              icReport: payload.ic_report,
               dealName: deal.dealName,
+              dealId: payload.dealId ?? council.dealId,
+              dealText: deal.dealText,
             } : null,
             processingAgents: undefined,
           } : d
@@ -757,6 +767,28 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
                 </div>
               )}
             </div>
+
+            {/* Yes / No vote count bar */}
+            {deal.status === "completed" && (deal.yesCount !== undefined || deal.noCount !== undefined) && (
+              <div style={{ display: "flex", gap: 8, marginBottom: 10 }}>
+                <div style={{
+                  flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                  background: `${GREEN}18`, border: `1px solid ${GREEN}44`, borderRadius: 6, padding: "5px 0",
+                }}>
+                  <span style={{ fontSize: 14 }}>✅</span>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: GREEN }}>{deal.yesCount ?? 0}</span>
+                  <span style={{ fontSize: 9, color: TEXT2, fontWeight: 600 }}>YES</span>
+                </div>
+                <div style={{
+                  flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 5,
+                  background: `${RED}18`, border: `1px solid ${RED}44`, borderRadius: 6, padding: "5px 0",
+                }}>
+                  <span style={{ fontSize: 14 }}>❌</span>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: RED }}>{deal.noCount ?? 0}</span>
+                  <span style={{ fontSize: 9, color: TEXT2, fontWeight: 600 }}>NO</span>
+                </div>
+              </div>
+            )}
 
             {/* Triage info */}
             {deal.triage && deal.triage.decision !== "PROCEED" && (
