@@ -1886,3 +1886,14 @@
 - [x] Diagnose and fix intermittent "Screening failed" error in batch mode
 - [x] Add automatic retry logic (up to 2 retries) for transient failures
 - [x] Add "Retry" button on failed deal tiles
+
+## Batch Orchestration Layer (Apr 2026)
+
+- [x] Add batchJobs and batchDealItems tables to DB schema
+- [x] Build server-side deal splitter (parse multi-deal text into individual deals)
+- [x] Build batch enqueue endpoint: POST /api/batch/create
+- [x] Build worker pool: process deals in parallel (max 3 concurrent council calls)
+- [x] Build live progress polling endpoint: GET /api/batch/:batchId/status
+- [x] Update DataRoomV2 frontend: submit batch → poll progress → live progress table
+- [x] Show per-deal status (queued / processing / done / failed) in real time
+- [x] Auto-navigate to results grid when all deals complete

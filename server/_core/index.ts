@@ -30,6 +30,7 @@ import { runTier0Ingestion } from "../tier0Ingestion";
 import signalsIngestRouter from "../signalsIngestRoute";
 import dealScreenRouter from "../dealScreenRoute";
 import { dataRoomUploadRouter } from "../dataRoomUploadRoute";
+import batchRouter from "../batchRoute";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -87,6 +88,8 @@ async function startServer() {
   app.use("/api/deal", dealScreenRouter);
   // Data Room Upload — file/ZIP upload + bulk PDF download
   app.use("/api/dataroom", dataRoomUploadRouter);
+  // Batch Orchestration — server-side worker pool for multi-deal processing
+  app.use("/api/batch", batchRouter);
   // Intelligence Agent document parse endpoint
   app.use("/api/intelligence/parse-document", intelligenceParseRouter);
   // Gmail OAuth for Reply Tracker

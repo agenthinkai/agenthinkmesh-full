@@ -1433,3 +1433,47 @@ export const userSignalPrefs = mysqlTable("user_signal_prefs", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type UserSignalPref = typeof userSignalPrefs.$inferSelect;
+
+// ── Batch Orchestration — Job Queue ──────────────────────────────────────────
+// A batchJob represents a group of deals submitted together for council evaluation.
+// Each deal within the batch is tracked as a batchDealItem.
+export const batchJobs = mysqlTable("batch_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  batchId: varchar("batchId", { length: 64 }).notNull().unique(), // UUID
+  userId: int("userId").notNull(),
+  status: mysqlEnum("status", ["queued", "processing", "completed", "partial"]).notNull().default("queued"),
+  totalDeals: int("totalDeals").notNull().default(0),
+  completedCount: int("completedCount").notNull().default(0),
+  failedCount: int("failedCount").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+}, (table) => ({
+  bjBatchIdx: index("bj_batch_idx").on(table.batchId),
+  bjUserIdx: index("bj_user_idx").on(table.userId),
+}));
+export type BatchJob = typeof batchJobs.$inferSelect;
+export type InsertBatchJob = typeof batchJobs.$inferInsert;
+
+export const batchDealItems = mysqlTable("batch_deal_items", {
+  id: int("id").autoincrement().primaryKey(),
+  batchId: varchar("batchId", { length: 64 }).notNull(),
+  itemIndex: int("itemIndex").notNull(), // 0-based position in batch
+  dealName: varchar("dealName", { length: 255 }).notNull(),
+  dealText: longtext("dealText").notNull(),
+  councilMode: mysqlEnum("councilMode", ["gcc", "global_vc", "india_pe"]).notNull().default("gcc"),
+  status: mysqlEnum("status", ["queued", "processing", "completed", "failed"]).notNull().default("queued"),
+  verdict: mysqlEnum("verdict", ["APPROVED", "APPROVED_WITH_CONDITIONS", "REJECTED", "VETOED"]),
+  yesCount: int("yesCount"),
+  noCount: int("noCount"),
+  hasIcReport: boolean("hasIcReport").notNull().default(false),
+  councilResult: longtext("councilResult"), // JSON blob of full council result
+  errorMessage: text("errorMessage"),
+  startedAt: timestamp("startedAt"),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  bdiJobIdx: index("bdi_job_idx").on(table.batchId),
+  bdiStatusIdx: index("bdi_status_idx").on(table.status),
+}));
+export type BatchDealItem = typeof batchDealItems.$inferSelect;
+export type InsertBatchDealItem = typeof batchDealItems.$inferInsert;
