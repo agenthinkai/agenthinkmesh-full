@@ -29,6 +29,7 @@ import { startGmailPolling } from "../gmailTracker";
 import { runTier0Ingestion } from "../tier0Ingestion";
 import signalsIngestRouter from "../signalsIngestRoute";
 import dealScreenRouter from "../dealScreenRoute";
+import { dataRoomUploadRouter } from "../dataRoomUploadRoute";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -84,6 +85,8 @@ async function startServer() {
   // Deal Screener REST API — internal testing + enterprise integration
   // Open mode (no auth): ENABLE_INTERNAL_SCREEN_API=true
   app.use("/api/deal", dealScreenRouter);
+  // Data Room Upload — file/ZIP upload + bulk PDF download
+  app.use("/api/dataroom", dataRoomUploadRouter);
   // Intelligence Agent document parse endpoint
   app.use("/api/intelligence/parse-document", intelligenceParseRouter);
   // Gmail OAuth for Reply Tracker

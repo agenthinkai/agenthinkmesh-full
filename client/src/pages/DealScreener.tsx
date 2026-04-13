@@ -11,6 +11,7 @@ import { getLoginUrl } from "@/const";
 import { isDemoMode, DEMO_DEAL_SCREENER_DATA } from "@/lib/demo";
 import DataRoomUpload, { type DataRoomResult } from "@/components/DataRoomUpload";
 import DataRoomBatch from "@/components/DataRoomBatch";
+import DataRoomV2 from "@/components/DataRoomV2";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const BG = "#070b12";
@@ -2587,8 +2588,7 @@ export default function DealScreener() {
           }} />
         )}
         {view === "batch" && (
-          <DataRoomBatch
-            councilMode={councilMode}
+          <DataRoomV2
             onDrillDown={(councilResult) => {
               setResult(councilResult as CouncilResult);
               setView("report");
