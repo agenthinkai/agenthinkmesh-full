@@ -52,7 +52,13 @@ export function detectCouncilMode(filename: string): "gcc" | "global_vc" | "indi
 }
 
 // ── Auth helper ───────────────────────────────────────────────────────────────
+function isInternalMode(): boolean {
+  return process.env.ENABLE_INTERNAL_SCREEN_API === "true";
+}
+
 async function resolveUser(req: Request): Promise<{ id: number } | null> {
+  // Allow bypass in internal testing / open-access mode
+  if (isInternalMode()) return { id: 0 };
   try {
     return await sdk.authenticateRequest(req) ?? null;
   } catch {
