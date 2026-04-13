@@ -257,8 +257,10 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
           credentials: "include",
           body: JSON.stringify({
             dealText: deal.dealText,
+            dealName: deal.dealName,
             councilMode: deal.councilMode,
             includeReport: true,
+            forceReport: true, // Generate IC Memo for ALL deals regardless of verdict
           }),
         });
 
@@ -330,14 +332,19 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
 
     setIsDownloadingZip(true);
     try {
-      // Build memo inputs from councilResult
+      // Build ICMemoInput from councilResult — uses council fields (votes, counts, etc.)
       const memos = completed.map(d => {
         const cr = d.councilResult as Record<string, unknown>;
         return {
           dealName: d.dealName,
-          ...(cr.icReport as object || {}),
+          verdict: (cr.verdict as string) || d.verdict || "REJECTED",
+          yesCount: typeof cr.yesCount === "number" ? cr.yesCount : (d.yesCount ?? 0),
+          noCount:  typeof cr.noCount  === "number" ? cr.noCount  : (d.noCount  ?? 0),
+          confidenceScore: typeof cr.confidenceScore === "number" ? cr.confidenceScore : 0.5,
+          conditionsToProceed: Array.isArray(cr.conditionsToProceed) ? cr.conditionsToProceed : [],
+          blockingIssues: Array.isArray(cr.blockingIssues) ? cr.blockingIssues : [],
+          votes: Array.isArray(cr.votes) ? cr.votes : [],
           councilMode: d.councilMode,
-          verdict: d.verdict,
         };
       });
 

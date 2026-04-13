@@ -86,11 +86,12 @@ router.post("/screen", async (req: Request, res: Response): Promise<void> => {
     const userId = await resolveUserId(req);
     if (!requireAuth(userId, res)) return;
 
-    const { dealText, dealName, councilMode, includeReport } = req.body as {
+    const { dealText, dealName, councilMode, includeReport, forceReport } = req.body as {
       dealText?: string;
       dealName?: string;
       councilMode?: string;
       includeReport?: boolean;
+      forceReport?: boolean;
     };
 
     // Validate required fields
@@ -117,6 +118,7 @@ router.post("/screen", async (req: Request, res: Response): Promise<void> => {
       dealName: dealName?.trim(),
       councilMode: (councilMode as "gcc" | "global_vc" | "india_pe") ?? "gcc",
       includeReport: includeReport !== false,
+      forceReport: forceReport === true,
       userId,
       sourceType: "manual",
     });

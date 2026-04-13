@@ -1874,3 +1874,9 @@
 ## Back to Summary Button (Apr 2026)
 
 - [x] Add "← Back to Summary" button on drill-down ICReport page when opened from Data Room batch results
+
+## Data Room 3 Bug Fixes (Apr 2026)
+
+- [x] Fix: generate IC Memo for ALL batch deals (including REJECTED/VETOED), not just APPROVED/CONDITIONAL
+- [x] Fix: bulk PDF ZIP download endpoint error
+- [x] Fix: drill-down from deal summary must open IC Report tab by default (not Raw Council tab)

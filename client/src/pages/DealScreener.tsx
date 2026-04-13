@@ -2610,7 +2610,7 @@ export default function DealScreener() {
                 </button>
               </div>
             )}
-            <ICReport result={result} onNewDeal={handleNewDeal} />
+            <ICReport key={result.dealId ?? result.dealName} result={result} onNewDeal={handleNewDeal} />
           </div>
         )}
         {view === "history" && (

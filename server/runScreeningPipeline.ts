@@ -33,6 +33,8 @@ export interface ScreeningInput {
   dealName?: string;
   councilMode?: CouncilMode;
   includeReport?: boolean;
+  /** When true, generate IC report for ALL verdicts (including REJECTED/VETOED). Used by batch Data Room mode. */
+  forceReport?: boolean;
   /** Internal user ID for dedup + rate-limit scoping. Pass null for anonymous API calls. */
   userId: number | null;
   /** Source label written to deal_screenings.sourceType */
@@ -66,6 +68,7 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
     dealName = "Untitled Deal",
     councilMode = "gcc",
     includeReport = true,
+    forceReport = false,
     userId,
     sourceType = "manual",
   } = input;
@@ -197,7 +200,9 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
   let icReport = null;
   const shouldGenerateReport =
     includeReport &&
-    (result.verdict === "APPROVED" || result.verdict === "APPROVED_WITH_CONDITIONS");
+    (forceReport ||
+      result.verdict === "APPROVED" ||
+      result.verdict === "APPROVED_WITH_CONDITIONS");
   if (shouldGenerateReport) {
     try {
       icReport = await generateSingleDealICReport(dealName, dealText, result);
