@@ -100,6 +100,8 @@ interface DealResult {
 interface Props {
   onDrillDown: (result: object) => void;
   onCancel: () => void;
+  /** Called when exactly 1 deal is uploaded — hands off to single-deal flow */
+  onSingleDeal?: (dealName: string, dealText: string, councilMode: "gcc" | "global_vc" | "india_pe") => void;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -136,7 +138,7 @@ function councilColor(mode: string): string {
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
-export default function DataRoomV2({ onDrillDown, onCancel }: Props) {
+export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Props) {
   const [stage, setStage] = useState<Stage>("upload");
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -174,6 +176,14 @@ export default function DataRoomV2({ onDrillDown, onCancel }: Props) {
       const data = await res.json();
       if (!data.success || !data.deals?.length) {
         toast.error("No readable deal content found in uploaded files.");
+        return;
+      }
+
+      // If only 1 deal and caller wants single-deal flow, hand off immediately
+      if (data.deals.length === 1 && onSingleDeal) {
+        const d = data.deals[0];
+        toast.success(`1 deal extracted — launching single-deal council`);
+        onSingleDeal(d.dealName, d.dealText, d.councilMode);
         return;
       }
 
@@ -476,7 +486,7 @@ export default function DataRoomV2({ onDrillDown, onCancel }: Props) {
               onClick={startProcessing}
               style={{ background: ACCENT, border: "none", color: "#000", padding: "8px 20px", borderRadius: 6, cursor: "pointer", fontSize: 13, fontWeight: 700 }}
             >
-              ⚡ Extract & Review ({uploadedDeals.length} deals)
+              ⚡ Run Council on All {uploadedDeals.length} Deals →
             </button>
           </div>
         </div>

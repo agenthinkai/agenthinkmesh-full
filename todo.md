@@ -1850,3 +1850,15 @@
 - [x] Write vitest tests for route (dealScreenRoute.test.ts) — 14 tests
 - [x] TypeScript: 0 errors
 - [x] All tests pass (448 passed / 1 skipped)
+
+## Data Room Multi-Deal Routing Fix (Apr 2026)
+
+- [x] Fix: 1 file uploaded → hand off to single-deal council flow (PersonaLoadingGrid + ICReport)
+- [x] Fix: 2+ files uploaded → stay in DataRoomV2 batch flow (review → processing → results grid)
+- [x] Council mode auto-detected from filename (gcc / global / india) for each deal
+- [x] Review stage shows all deals with council badges before running
+- [x] Processing screen shows 10-agent grid per deal with overall progress bar
+- [x] Results page shows deal summary tiles (verdict, Yes/No counts, IC Report link)
+- [x] "Download All IC Memos" ZIP button at top of results page
+- [x] Click any deal tile → drill-down to full ICReport page
+- [x] TypeScript: 0 errors | Tests: 448 passed

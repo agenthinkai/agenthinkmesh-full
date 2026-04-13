@@ -2386,6 +2386,18 @@ export default function DealScreener() {
     { enabled: !!selectedDealId }
   );
 
+  // Top-level screen mutation — used when Data Room tab uploads exactly 1 deal
+  const topLevelScreenMutation = trpc.dealScreener.screen.useMutation({
+    onSuccess: (data) => {
+      setResult(data as unknown as CouncilResult);
+      setView("report");
+    },
+    onError: (err) => {
+      setScreenError(err.message);
+      setView("input");
+    },
+  });
+
   const handleResult = (r: CouncilResult) => {
     setResult(r);
     setView("report");
@@ -2594,6 +2606,13 @@ export default function DealScreener() {
               setView("report");
             }}
             onCancel={() => setView("input")}
+            onSingleDeal={(dealName, dealText, mode) => {
+              // 1 file uploaded — hand off to single-deal council flow
+              setCouncilMode(mode);
+              setScreenError(null);
+              setView("loading");
+              topLevelScreenMutation.mutate({ dealName, dealText, councilMode: mode });
+            }}
           />
         )}
       </div>
