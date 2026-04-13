@@ -1834,3 +1834,19 @@
 - [x] Write vitest tests for triage engine and dedup utility
 - [x] TypeScript check: 0 errors
 - [x] Save checkpoint
+
+## REST API for Deal Screener (Enterprise Integration)
+- [x] Create runScreeningPipeline.ts — pure service function (dedup + triage + council + IC report)
+- [x] Create dealScreenRoute.ts — POST /api/deal/screen and POST /api/deal/screen/batch
+- [x] Mount /api/deal route in _core/index.ts
+- [x] Write vitest tests for route (dealScreenRoute.test.ts) — 14 tests
+- [x] TypeScript: 0 errors
+- [x] All tests pass (448 passed / 1 skipped)
+
+## REST API for Deal Screener (Enterprise Integration)
+- [x] Create runScreeningPipeline.ts — pure service function (dedup + triage + council + IC report)
+- [x] Create dealScreenRoute.ts — POST /api/deal/screen and POST /api/deal/screen/batch
+- [x] Mount /api/deal route in _core/index.ts
+- [x] Write vitest tests for route (dealScreenRoute.test.ts) — 14 tests
+- [x] TypeScript: 0 errors
+- [x] All tests pass (448 passed / 1 skipped)

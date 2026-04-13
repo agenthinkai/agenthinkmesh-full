@@ -28,6 +28,7 @@ import gmailOAuthRouter from "../gmailOAuthRoute";
 import { startGmailPolling } from "../gmailTracker";
 import { runTier0Ingestion } from "../tier0Ingestion";
 import signalsIngestRouter from "../signalsIngestRoute";
+import dealScreenRouter from "../dealScreenRoute";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -80,6 +81,9 @@ async function startServer() {
   app.use("/api/deals", dealIngestionRouter);
   // Deal Signal Layer — lightweight ingestion endpoint for external signals
   app.use("/api/signals", signalsIngestRouter);
+  // Deal Screener REST API — internal testing + enterprise integration
+  // Open mode (no auth): ENABLE_INTERNAL_SCREEN_API=true
+  app.use("/api/deal", dealScreenRouter);
   // Intelligence Agent document parse endpoint
   app.use("/api/intelligence/parse-document", intelligenceParseRouter);
   // Gmail OAuth for Reply Tracker
