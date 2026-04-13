@@ -1880,3 +1880,9 @@
 - [x] Fix: generate IC Memo for ALL batch deals (including REJECTED/VETOED), not just APPROVED/CONDITIONAL
 - [x] Fix: bulk PDF ZIP download endpoint error
 - [x] Fix: drill-down from deal summary must open IC Report tab by default (not Raw Council tab)
+
+## Screening Failure Fix (Apr 2026)
+
+- [x] Diagnose and fix intermittent "Screening failed" error in batch mode
+- [x] Add automatic retry logic (up to 2 retries) for transient failures
+- [x] Add "Retry" button on failed deal tiles

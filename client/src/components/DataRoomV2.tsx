@@ -227,7 +227,7 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
     setDeals(initialDeals);
     setStage("processing");
 
-    const CONCURRENCY = 3;
+    const CONCURRENCY = 1; // Sequential to avoid Anthropic API overload (30 concurrent calls = 529 errors)
     let nextIndex = 0;
 
     async function processOne(idx: number) {
@@ -250,22 +250,51 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
         ));
       }
 
-      try {
-        const res = await fetch("/api/deal/screen", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({
-            dealText: deal.dealText,
-            dealName: deal.dealName,
-            councilMode: deal.councilMode,
-            includeReport: true,
-            forceReport: true, // Generate IC Memo for ALL deals regardless of verdict
-          }),
-        });
+      // Auto-retry helper: attempt up to 2 times with 5s delay on failure
+      const attemptScreen = async (): Promise<Response | null> => {
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const r = await fetch("/api/deal/screen", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({
+                dealText: deal.dealText,
+                dealName: deal.dealName,
+                councilMode: deal.councilMode,
+                includeReport: true,
+                forceReport: true,
+              }),
+            });
+            if (r.ok) return r;
+            // On non-ok response, retry once after 5s
+            if (attempt < 2) {
+              setDeals(prev => prev.map((d, i) =>
+                i === idx ? { ...d, error: `Attempt ${attempt} failed — retrying in 5s…` } : d
+              ));
+              await new Promise(res => setTimeout(res, 5000));
+            } else {
+              return r; // return the failed response on last attempt
+            }
+          } catch (netErr) {
+            if (attempt < 2) {
+              setDeals(prev => prev.map((d, i) =>
+                i === idx ? { ...d, error: `Network error — retrying in 5s…` } : d
+              ));
+              await new Promise(res => setTimeout(res, 5000));
+            } else {
+              throw netErr;
+            }
+          }
+        }
+        return null;
+      };
 
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: "Screening failed" }));
+      try {
+        const res = await attemptScreen();
+
+        if (!res || !res.ok) {
+          const err = res ? await res.json().catch(() => ({ error: "Screening failed" })) : { error: "Screening failed" };
           setDeals(prev => prev.map((d, i) =>
             i === idx ? { ...d, status: "failed", error: err.error || "Screening failed" } : d
           ));
@@ -375,6 +404,81 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
       setIsDownloadingZip(false);
     }
   }, [deals]);
+
+  // ── Retry a single failed deal ────────────────────────────────────────────────
+  const retryDeal = useCallback(async (idx: number) => {
+    const deal = uploadedDeals[idx];
+    if (!deal) return;
+
+    // Reset to processing state
+    setDeals(prev => prev.map((d, i) =>
+      i === idx ? { ...d, status: "processing", error: undefined, processingAgents: [] } : d
+    ));
+
+    // Animate agents
+    const agents = AGENTS_BY_MODE[deal.councilMode] || AGENTS_BY_MODE.gcc;
+    for (let a = 0; a < agents.length; a++) {
+      await new Promise(r => setTimeout(r, 200));
+      setDeals(prev => prev.map((d, i) =>
+        i === idx ? { ...d, processingAgents: agents.slice(0, a + 1).map(ag => ag.name) } : d
+      ));
+    }
+
+    try {
+      const res = await fetch("/api/deal/screen", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          dealText: deal.dealText,
+          dealName: deal.dealName,
+          councilMode: deal.councilMode,
+          includeReport: true,
+          forceReport: true,
+        }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: "Screening failed" }));
+        setDeals(prev => prev.map((d, i) =>
+          i === idx ? { ...d, status: "failed", error: err.error || "Screening failed", processingAgents: undefined } : d
+        ));
+        return;
+      }
+
+      const json = await res.json();
+      const payload = (json.data ?? json) as Record<string, unknown>;
+      const council = payload.council as Record<string, unknown> | null;
+      const verdict = council?.verdict as VerdictType | undefined;
+      const yesCount = typeof council?.yesCount === "number" ? council.yesCount : undefined;
+      const noCount  = typeof council?.noCount  === "number" ? council.noCount  : undefined;
+
+      setDeals(prev => prev.map((d, i) =>
+        i === idx ? {
+          ...d,
+          status: "completed",
+          verdict: verdict ?? null,
+          triage: (payload.triage as DealResult["triage"]) ?? null,
+          hasIcReport: !!payload.ic_report,
+          yesCount,
+          noCount,
+          councilResult: council ? {
+            ...council,
+            icReport: payload.ic_report,
+            dealName: deal.dealName,
+            dealId: payload.dealId ?? council.dealId,
+            dealText: deal.dealText,
+          } : null,
+          processingAgents: undefined,
+          error: undefined,
+        } : d
+      ));
+    } catch {
+      setDeals(prev => prev.map((d, i) =>
+        i === idx ? { ...d, status: "failed", error: "Network error", processingAgents: undefined } : d
+      ));
+    }
+  }, [uploadedDeals]);
 
   // ── Filtered results ─────────────────────────────────────────────────────────
   const filteredDeals = deals.filter(d => {
@@ -766,7 +870,15 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
                 <div style={{ fontSize: 12, color: MUTED }}>⏳ Queued</div>
               )}
               {deal.status === "failed" && (
-                <div style={{ fontSize: 12, color: RED }}>❌ {deal.error || "Failed"}</div>
+                <div>
+                  <div style={{ fontSize: 12, color: RED, marginBottom: 8 }}>❌ {deal.error || "Screening failed"}</div>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); retryDeal(deal.index); }}
+                    style={{ fontSize: 10, padding: "4px 12px", background: `${ACCENT}22`, border: `1px solid ${ACCENT}55`, color: ACCENT, borderRadius: 5, cursor: "pointer" }}
+                  >
+                    🔄 Retry
+                  </button>
+                </div>
               )}
               {deal.status === "completed" && (
                 <div style={{ fontSize: 14, fontWeight: 700, color: verdictColor(deal.verdict) }}>
