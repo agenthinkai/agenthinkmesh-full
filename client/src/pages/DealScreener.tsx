@@ -10,6 +10,7 @@ import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { isDemoMode, DEMO_DEAL_SCREENER_DATA } from "@/lib/demo";
 import DataRoomUpload, { type DataRoomResult } from "@/components/DataRoomUpload";
+import DataRoomBatch from "@/components/DataRoomBatch";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const BG = "#070b12";
@@ -2294,7 +2295,7 @@ function RecentSignalsPanel({ onScreen }: { onScreen: (text: string) => void }) 
 }
 
 // ── Main DealScreener page ────────────────────────────────────────────
-type View = "input" | "loading" | "report" | "history" | "signals";
+type View = "input" | "loading" | "report" | "history" | "signals" | "batch";
 
 // ── Demo Deal Cards ──────────────────────────────────────────────────────────
 function DemoDealCards() {
@@ -2469,6 +2470,7 @@ export default function DealScreener() {
             { id: "input" as View, label: "NEW DEAL" },
             { id: "history" as View, label: "HISTORY" },
             { id: "signals" as View, label: "SIGNALS 🎓" },
+            { id: "batch" as View, label: "DATA ROOM" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -2583,6 +2585,16 @@ export default function DealScreener() {
               window.dispatchEvent(new CustomEvent("tier0:prefill", { detail: { dealName, dealText } }));
             }, 100);
           }} />
+        )}
+        {view === "batch" && (
+          <DataRoomBatch
+            councilMode={councilMode}
+            onDrillDown={(councilResult) => {
+              setResult(councilResult as CouncilResult);
+              setView("report");
+            }}
+            onCancel={() => setView("input")}
+          />
         )}
       </div>
     </div>

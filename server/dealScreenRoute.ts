@@ -26,11 +26,14 @@ import { runScreeningPipeline } from "./runScreeningPipeline";
 
 const router = Router();
 
-const INTERNAL_API_ENABLED = process.env.ENABLE_INTERNAL_SCREEN_API === "true";
+// Read env var dynamically so tests can toggle it at runtime
+function isInternalApiEnabled(): boolean {
+  return process.env.ENABLE_INTERNAL_SCREEN_API === "true";
+}
 
 // ── Auth helper ───────────────────────────────────────────────────────────────
 async function resolveUserId(req: Request): Promise<number | null> {
-  if (INTERNAL_API_ENABLED) return null; // anonymous mode — skip DB write
+  if (isInternalApiEnabled()) return null; // anonymous mode — skip DB write
   try {
     const user = await sdk.authenticateRequest(req);
     return user?.id ?? null;
@@ -40,7 +43,7 @@ async function resolveUserId(req: Request): Promise<number | null> {
 }
 
 function requireAuth(userId: number | null, res: Response): boolean {
-  if (INTERNAL_API_ENABLED) return true; // open mode — no auth required
+  if (isInternalApiEnabled()) return true; // open mode — no auth required
   if (userId === null) {
     res.status(401).json({
       success: false,

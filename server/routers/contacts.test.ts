@@ -217,7 +217,7 @@ describe("contacts router — ARE Phase 1 & 2 Enhanced (integration)", () => {
     expect(examples[0].exampleText).toContain("Ahmed");
   });
 
-  it("should generate a WhatsApp-optimised outreach message", async () => {
+  it("should generate a WhatsApp-optimised outreach message", async () => {  // LLM call — needs extended timeout
     const caller = appRouter.createCaller(createMockContext(testUserId));
     const result = await caller.contacts.generateMessage({
       contactId: testContactId,

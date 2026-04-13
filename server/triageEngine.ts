@@ -2,7 +2,7 @@
  * triageEngine.ts
  * Layer 1 — Fast Deal Triage
  *
- * Single LLM call (claude-haiku-3-5) that decides whether a deal memo
+ * Single LLM call (claude-haiku-4-5) that decides whether a deal memo
  * is worth running through the full 10-agent council.
  *
  * Decisions:
@@ -65,7 +65,7 @@ export async function runTriage(dealText: string): Promise<TriageResult> {
   try {
     const response = await Promise.race([
       anthropic.messages.create({
-        model: "claude-haiku-3-5",
+        model: "claude-haiku-4-5",
         max_tokens: 256,
         system: TRIAGE_SYSTEM_PROMPT,
         messages: [{ role: "user", content: userMessage }],

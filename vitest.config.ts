@@ -18,5 +18,6 @@ export default defineConfig({
     env: {
       NODE_ENV: "test",
     },
+    testTimeout: 30000,
   },
 });
