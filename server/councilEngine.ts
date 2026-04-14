@@ -18,7 +18,7 @@
  *   Weighted voting — Each persona's vote weighted by authority score
  */
 
-import Anthropic from "@anthropic-ai/sdk";
+import { invokeLLM } from "./_core/llm";
 import Stripe from "stripe";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -39,8 +39,7 @@ import {
 } from "../drizzle/schema";
 import { TOKENS_PER_COUNCIL_RUN } from "./lib/stripePlans";
 
-// Module-level Anthropic client (required for vi.mock() to intercept in tests)
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY ?? "" });
+// invokeLLM uses BUILT_IN_FORGE_API — no Anthropic SDK needed
 
 // ── Config ────────────────────────────────────────────────────────────────────
 
@@ -60,7 +59,7 @@ const COST_PER_RUN_USD    = parseFloat(process.env.COST_PER_RUN        ?? "0.18"
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 export type VoteType    = "HARD_YES" | "SOFT_YES" | "SOFT_NO" | "HARD_NO";
-export type VerdictType = "APPROVED" | "APPROVED_WITH_CONDITIONS" | "REJECTED" | "VETOED";
+export type VerdictType = "APPROVED" | "APPROVED_WITH_CONDITIONS" | "REJECTED" | "VETOED" | "INSUFFICIENT_DATA";
 
 export interface PersonaVote {
   personaId:    string;
@@ -88,6 +87,9 @@ export interface CouncilResult {
   weightedYesScore:      number;
   weightedNoScore:       number;
   confidenceScore:       number;
+  finalScore:            number;     // (weightedAgentScore * 0.6) + (consensusQuality * 0.4)
+  consensusQuality:      number;     // composite quality score 0–1
+  weightedAgentScore:    number;     // domain-weighted agent score 0–1
   gccVetoTriggered:      boolean;
   tiebreakerTriggered:   boolean;
   tiebreakerSwingAgent:  string | null;
@@ -113,6 +115,7 @@ export interface RunCouncilOptions {
   clientId?:    string;   // rate-limit key
   userId?:      number;   // for token deduction (subscription billing)
   councilMode?: CouncilMode; // which set of 10 agents to use
+  investorMode?: boolean; // when true, agents balance upside vs risk and answer "what would make this a winning investment?"
 }
 
 // ── Zod schema for each persona response ─────────────────────────────────────
@@ -745,33 +748,39 @@ async function callPersona(
   persona: PersonaDef,
   dealText: string,
   memoryContext: string,
+  investorMode: boolean = false,
 ): Promise<Omit<PersonaVote, "weight">> {
   const contextualDeal = memoryContext
     ? `${memoryContext}\n\n---\n\nDEAL MEMO TO EVALUATE:\n${dealText}`
     : `Here is the deal memo to evaluate:\n\n${dealText}`;
 
-  const userMessage = `${contextualDeal}\n\nProvide your vote and analysis as strict JSON only.`;
+  const investorModeInstruction = investorMode
+    ? `\n\nINVESTOR MODE ACTIVE: Balance upside vs risk. Before voting, explicitly answer: "What would make this a winning investment?" Include this in your rationale.`
+    : "";
+
+  const userMessage = `${contextualDeal}${investorModeInstruction}\n\nProvide your vote and analysis as strict JSON only.`;
 
   // [FIX 4] Hard 30s timeout per agent
   const timeoutPromise = new Promise<never>((_, reject) =>
     setTimeout(() => reject(new Error("TIMEOUT")), AGENT_TIMEOUT_MS)
   );
 
-   try {
-    const response = await Promise.race([
-      anthropic.messages.create({
-        model:      "claude-sonnet-4-5",
+  try {
+    const llmResponse = await Promise.race([
+      invokeLLM({
+        messages: [
+          { role: "system", content: persona.systemPrompt },
+          { role: "user",   content: userMessage },
+        ],
         max_tokens: 2048,
-        system:     persona.systemPrompt,
-        messages:   [{ role: "user", content: userMessage }],
       }),
       timeoutPromise,
     ]);
 
-    const content = response.content[0];
-    if (content.type !== "text") throw new Error("Non-text response");
+    const content = llmResponse.choices[0]?.message?.content;
+    if (typeof content !== "string") throw new Error("Non-text response");
 
-    const parsed     = parsePersonaResponse(content.text);
+    const parsed     = parsePersonaResponse(content);
     const confidence = parsed.confidence;
 
     // [FIX 3] Silent fail detection
@@ -829,11 +838,12 @@ export async function runCouncil(
     clientId = "default",
     userId,
     councilMode = "gcc",
+    investorMode = false,
   } = options;
 
   const activePersonas = getPersonasForMode(councilMode);
-
-  // ── Token guard — check balance before running ────────────────────────────
+  // investorMode already destructured above — do not redeclare
+  // ── Token guard — check balance before running ─────────────────────────────
   if (!skipMemory && userId) {
     try {
       const db = await getDb();
@@ -893,9 +903,11 @@ export async function runCouncil(
     }
   }
 
+  // (investorMode already destructured from options above)
+
   // Run all 10 personas in parallel
   const results = await Promise.allSettled(
-    activePersonas.map((p) => callPersona(p, dealText, memoryContext))
+    activePersonas.map((p) => callPersona(p, dealText, memoryContext, investorMode))
   );
 
   const votes: PersonaVote[] = results.map((r, i) => {
@@ -1031,16 +1043,64 @@ export async function runCouncil(
   const finalYesCount = hardYesCount + softYesCount;
   const finalNoCount  = softNoCount  + hardNoCount;
 
-  // Verdict
+  // ── Weighted Agent Score (domain-weighted) ────────────────────────────────
+  // Weights: Unit Economics 25%, Execution 25%, Market 20%, Deal Structure 15%,
+  //          Regulatory 10%, Macro 5%
+  const DOMAIN_WEIGHTS_VERDICT: Record<string, number> = {
+    CFO: 0.25, IN_CFO: 0.25, VC_CFO: 0.25,
+    ANALYST: 0.25, IN_ANALYST: 0.25, VC_ANALYST: 0.25,
+    SKEPTIC: 0.15, IN_SKEPTIC: 0.15, VC_SKEPTIC: 0.15,
+    MACRO: 0.20, IN_MACRO: 0.20, VC_MARKET: 0.20, IN_MARKET: 0.20,
+    CONTRARIAN: 0.10, IN_CONTRARIAN: 0.10, VC_CONTRARIAN: 0.10,
+    EXIT: 0.15, IN_EXIT: 0.15, VC_EXIT: 0.15,
+    DEVILS_ADVOCATE: 0.10, IN_DEVILS_ADVOCATE: 0.10, VC_DEVILS_ADVOCATE: 0.10,
+    GCC_REG: 0.10, GCC_SHARIAH: 0.10, IN_LEGAL: 0.10, VC_LEGAL: 0.10,
+    GEOPOLITICAL: 0.08, IN_ESG: 0.08,
+  };
+  const DEFAULT_WEIGHT = 0.12;
+
+  let totalDomainWeight = 0;
+  let weightedAgentScore = 0;
+  for (const v of workingVotes) {
+    const dw = DOMAIN_WEIGHTS_VERDICT[v.personaId] ?? DEFAULT_WEIGHT;
+    const vs = v.vote === "HARD_YES" ? 1.0 : v.vote === "SOFT_YES" ? 0.7 : v.vote === "SOFT_NO" ? 0.3 : 0.0;
+    weightedAgentScore += dw * vs * v.confidence;
+    totalDomainWeight  += dw;
+  }
+  weightedAgentScore = totalDomainWeight > 0
+    ? Math.round((weightedAgentScore / totalDomainWeight) * 1000) / 1000
+    : 0;
+
+  // ── Consensus Quality (simplified inline version for verdict engine) ──────
+  const agreementScore = Math.max(finalYesCount, finalNoCount) / workingVotes.length;
+  const dataConfidenceScore = confidenceScore; // proxy: avg agent confidence
+  const conflictScore = (hardYesCount > 0 && hardNoCount > 0)
+    ? Math.min(1, (hardYesCount * hardNoCount) / (workingVotes.length * workingVotes.length / 4))
+    : 0;
+  const consensusQuality = Math.round(
+    (agreementScore * 0.4 + dataConfidenceScore * 0.3 + (1 - conflictScore) * 0.3) * 1000
+  ) / 1000;
+
+  // ── Final Score ───────────────────────────────────────────────────────────
+  // finalScore = (weightedAgentScore * 0.6) + (consensusQuality * 0.4)
+  const finalScore = Math.round(
+    (weightedAgentScore * 0.6 + consensusQuality * 0.4) * 1000
+  ) / 1000;
+
+  // ── Verdict — new thresholds ──────────────────────────────────────────────
   let verdict: VerdictType;
   if (gccVetoTriggered) {
     verdict = "VETOED";
-  } else if (finalYesCount >= CONSENSUS_THRESHOLD && hardYesCount >= 6) {
+  } else if (confidenceScore < 0.4 || consensusQuality < 0.6) {
+    // Confidence gate: refuse to decide when data/consensus is too weak
+    verdict = "INSUFFICIENT_DATA";
+  } else if (finalScore >= 0.75) {
     verdict = "APPROVED";
-  } else if (finalYesCount >= CONSENSUS_THRESHOLD && hardYesCount < 6) {
+  } else if (finalScore >= 0.60) {
     verdict = "APPROVED_WITH_CONDITIONS";
-  } else if (tiebreakerTriggered) {
-    verdict = "APPROVED_WITH_CONDITIONS";
+  } else if (finalScore >= 0.40) {
+    // CONDITIONAL / NEEDS WORK — map to APPROVED_WITH_CONDITIONS with strong conditions
+    verdict = tiebreakerTriggered ? "APPROVED_WITH_CONDITIONS" : "REJECTED";
   } else {
     verdict = "REJECTED";
   }
@@ -1071,6 +1131,9 @@ export async function runCouncil(
     weightedYesScore,
     weightedNoScore,
     confidenceScore:       Math.round(confidenceScore * 1000) / 1000,
+    finalScore,
+    consensusQuality,
+    weightedAgentScore,
     gccVetoTriggered,
     tiebreakerTriggered,
     tiebreakerSwingAgent,

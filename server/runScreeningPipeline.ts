@@ -1,11 +1,12 @@
 /**
  * runScreeningPipeline.ts
  *
- * Pure service function that executes the full 3-layer Deal Screener pipeline:
- *   Layer 0 — Deduplication (SHA-256 hash lookup)
- *   Layer 1 — Fast triage (Haiku 3.5, ~3–5s, $0.002)
- *   Layer 2 — Full Council (Sonnet 4.5, 10 agents, ~30–50s)
- *   Layer 3 — Conditional IC Report (Sonnet 4.5, APPROVED/APPROVED_WITH_CONDITIONS only)
+ * Pure service function that executes the full 4-layer Deal Screener pipeline:
+ *   Layer 0   — Deduplication (SHA-256 hash lookup)
+ *   Layer 1   — Fast triage (Haiku 3.5, ~3–5s, $0.002)
+ *   Layer 2   — Full Council (Sonnet 4.5, 10 agents, ~30–50s)
+ *   Layer 2.5 — Reality Alignment Engine (data integrity, claim grounding, conflict detection)
+ *   Layer 3   — Conditional IC Report (Sonnet 4.5, APPROVED/APPROVED_WITH_CONDITIONS only)
  *
  * This function is the single source of truth for the screening logic.
  * It is consumed by:
@@ -24,6 +25,7 @@ import { generateSingleDealICReport } from "./icReportEngine";
 import { detectTier0Signal } from "./tier0Signals";
 import { runTriage } from "./triageEngine";
 import { checkDuplicate } from "./dealDedup";
+import { runRealityAlignment, type RealityAlignmentResult } from "./realityAlignmentEngine";
 
 export type CouncilMode = "gcc" | "global_vc" | "india_pe";
 export type SourceType = "manual" | "signal";
@@ -39,6 +41,8 @@ export interface ScreeningInput {
   userId: number | null;
   /** Source label written to deal_screenings.sourceType */
   sourceType?: "manual" | "signal";
+  /** When true, agents balance upside vs risk and answer "what would make this a winning investment?" */
+  investorMode?: boolean;
 }
 
 export interface TriageResult {
@@ -55,10 +59,14 @@ export interface ScreeningResult {
   council: object | null;
   ic_report: object | null;
   universitySignal: object | null;
+  /** Layer 2.5 output — always present when council runs */
+  realityAlignment: RealityAlignmentResult | null;
+  /** Debug log for the Reality Alignment Engine */
+  debugLog: RealityAlignmentResult["debugLog"] | null;
 }
 
 /**
- * Run the full 3-layer screening pipeline.
+ * Run the full 4-layer screening pipeline.
  * Persists results to deal_screenings when userId is provided.
  * When userId is null (anonymous API call), skips dedup and DB write.
  */
@@ -71,6 +79,7 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
     forceReport = false,
     userId,
     sourceType = "manual",
+    investorMode = false,
   } = input;
 
   const dealId = randomUUID();
@@ -104,6 +113,8 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
           },
           ic_report: null,
           universitySignal: null,
+          realityAlignment: null,
+          debugLog: null,
         };
       }
     }
@@ -155,6 +166,8 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
       council: null,
       ic_report: null,
       universitySignal: null,
+      realityAlignment: null,
+      debugLog: null,
     };
   }
 
@@ -162,7 +175,25 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
   const result = await runCouncil(dealText, {
     userId: userId ?? undefined,
     councilMode,
+    investorMode,
   });
+
+  // ── Layer 2.5: Reality Alignment Engine ────────────────────────────────────
+  const realityAlignment = runRealityAlignment(dealText, result);
+  console.log("[RealityAlignment] Debug log:", JSON.stringify(realityAlignment.debugLog, null, 2));
+
+  // Override verdict to INSUFFICIENT_DATA if reality alignment gates it
+  // (only when the council itself didn't already gate it)
+  if (
+    realityAlignment.shouldGate &&
+    result.verdict !== "VETOED" &&
+    result.verdict !== "INSUFFICIENT_DATA"
+  ) {
+    (result as any).verdict = "INSUFFICIENT_DATA";
+    console.warn(
+      `[RealityAlignment] Verdict overridden to INSUFFICIENT_DATA. Reason: ${realityAlignment.gateReason}`
+    );
+  }
 
   // Persist council result if we have a userId
   if (userId !== null && db) {
@@ -174,7 +205,7 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
         dealText,
         pdfFileKey: null,
         pdfFileUrl: null,
-        verdict: result.verdict,
+        verdict: result.verdict as "APPROVED" | "APPROVED_WITH_CONDITIONS" | "REJECTED" | "VETOED" | "INSUFFICIENT_DATA",
         yesCount: result.yesCount,
         noCount: result.noCount,
         hardYesCount: result.hardYesCount,
@@ -229,5 +260,7 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
     council: result,
     ic_report: icReport,
     universitySignal,
+    realityAlignment,
+    debugLog: realityAlignment.debugLog,
   };
 }

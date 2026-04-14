@@ -314,6 +314,10 @@ router.post("/:dealId/generate-memo", async (req: Request, res: Response): Promi
       weightedYesScore: record.hardYesCount * 1.5 + record.softYesCount * 1.0,
       weightedNoScore: record.hardNoCount * 1.5 + record.softNoCount * 1.0,
       confidenceScore: parseFloat(record.confidenceScore),
+      // New fields added in v4.0 — not stored in DB, computed as best-effort
+      finalScore: 0,
+      consensusQuality: 0,
+      weightedAgentScore: 0,
       gccVetoTriggered: record.gccVetoTriggered,
       tiebreakerTriggered: record.tiebreakerTriggered,
       tiebreakerSwingAgent: record.tiebreakerSwingAgent ?? null,

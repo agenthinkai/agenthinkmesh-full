@@ -43,7 +43,7 @@ export interface SingleDealICReport {
     conflictStatus: string;           // "No high-risk conflicts detected" | "High disagreement detected..."
   };
   executiveVerdict: {
-    decision: "APPROVE" | "REJECT" | "CONDITIONAL APPROVE";
+    decision: "APPROVE" | "REJECT" | "CONDITIONAL APPROVE" | "INSUFFICIENT DATA";
     recommendedAction: string;
     rationale: string;
   };
@@ -61,6 +61,18 @@ export interface SingleDealICReport {
   };
   thirtyDayActionPlan: string[];      // numbered list
   marketAndRegulatoryContext: string[]; // max 5 bullets
+  /** NEW: Decision Confidence & Limitations section */
+  decisionConfidence: {
+    dataGaps: string[];               // specific missing fields
+    keyAssumptions: string[];         // inferred claims agents relied on
+    confidenceLevel: "LOW" | "MEDIUM" | "HIGH";
+    limitationNote: string;           // one sentence: what this decision cannot account for
+  };
+  /** NEW: What Would Change This Decision */
+  whatWouldChangeDecision: string[];  // 3 measurable triggers / specific data required
+  /** NEW: Grounded vs inferred fact summary */
+  groundedFacts: string[];            // facts directly from input
+  inferredInsights: string[];         // insights the agents derived (labeled as inferred)
   rawText: string;                    // full formatted report as plain text (for copy)
 }
 
@@ -195,6 +207,12 @@ ${allConditions.slice(0, 8).map((c, i) => `${i + 1}. ${c}`).join("\n")}
 
 ---
 
+CRITICAL RULES FOR THIS REPORT:
+- Replace absolute language ("will", "is", "definitely") with conditional reasoning ("if X holds", "assuming Y", "subject to Z")
+- Separate facts directly stated in the deal text from insights the agents inferred
+- The decisionConfidence section must be honest about what data was missing
+- whatWouldChangeDecision must be measurable triggers, not vague conditions
+
 Respond with a JSON object matching this exact schema (no markdown, raw JSON only):
 {
   "vcSummary": {
@@ -211,8 +229,8 @@ Respond with a JSON object matching this exact schema (no markdown, raw JSON onl
   },
   "executiveVerdict": {
     "decision": "APPROVE",
-    "recommendedAction": "<one of: Proceed to IC review | Validate via pilot | Defer pending conditions | Reject and archive>",
-    "rationale": "<one sharp sentence>"
+    "recommendedAction": "<one of: Proceed to IC review | Validate via pilot | Defer pending conditions | Reject and archive | Request additional data>",
+    "rationale": "<one sharp sentence using conditional language>"
   },
   "investmentThesis": ["<point 1>", "<point 2>", "<point 3>"],
   "keyRisks": ["<risk 1>", "<risk 2>", "<risk 3>"],
@@ -227,7 +245,20 @@ Respond with a JSON object matching this exact schema (no markdown, raw JSON onl
     "keyDisagreements": ["<disagreement 1>", "<disagreement 2>"]
   },
   "thirtyDayActionPlan": ["<action 1>", "<action 2>", "<action 3>", "<action 4>", "<action 5>"],
-  "marketAndRegulatoryContext": ["<point 1>", "<point 2>", "<point 3>"]
+  "marketAndRegulatoryContext": ["<point 1>", "<point 2>", "<point 3>"],
+  "decisionConfidence": {
+    "dataGaps": ["<specific field missing from input, e.g. 'Revenue figures not provided'>"],
+    "keyAssumptions": ["<inferred claim agents relied on, e.g. 'Assumed market size of $500M based on sector benchmarks'>"],
+    "confidenceLevel": "MEDIUM",
+    "limitationNote": "<one sentence: what this decision cannot account for given available data>"
+  },
+  "whatWouldChangeDecision": [
+    "<measurable trigger 1, e.g. 'Audited revenue >$2M ARR with <18 month payback'>",
+    "<measurable trigger 2>",
+    "<measurable trigger 3>"
+  ],
+  "groundedFacts": ["<fact directly stated in the deal text>"],
+  "inferredInsights": ["<INFERRED: insight derived by agents, not stated in input>"]
 }`;
 
 
@@ -288,6 +319,20 @@ Respond with a JSON object matching this exact schema (no markdown, raw JSON onl
             },
             thirtyDayActionPlan: { type: "array", items: { type: "string" } },
             marketAndRegulatoryContext: { type: "array", items: { type: "string" } },
+            decisionConfidence: {
+              type: "object",
+              properties: {
+                dataGaps: { type: "array", items: { type: "string" } },
+                keyAssumptions: { type: "array", items: { type: "string" } },
+                confidenceLevel: { type: "string", enum: ["LOW", "MEDIUM", "HIGH"] },
+                limitationNote: { type: "string" },
+              },
+              required: ["dataGaps", "keyAssumptions", "confidenceLevel", "limitationNote"],
+              additionalProperties: false,
+            },
+            whatWouldChangeDecision: { type: "array", items: { type: "string" } },
+            groundedFacts: { type: "array", items: { type: "string" } },
+            inferredInsights: { type: "array", items: { type: "string" } },
             vcSummary: {
               type: "object",
               properties: {
@@ -305,6 +350,7 @@ Respond with a JSON object matching this exact schema (no markdown, raw JSON onl
             "vcSummary", "verificationBanner", "executiveVerdict", "investmentThesis",
             "keyRisks", "decisionTriggers", "consensusBreakdown",
             "thirtyDayActionPlan", "marketAndRegulatoryContext",
+            "decisionConfidence", "whatWouldChangeDecision", "groundedFacts", "inferredInsights",
           ],
           additionalProperties: false,
         },
@@ -330,6 +376,15 @@ Respond with a JSON object matching this exact schema (no markdown, raw JSON onl
     consensusBreakdown: parsed.consensusBreakdown,
     thirtyDayActionPlan: parsed.thirtyDayActionPlan,
     marketAndRegulatoryContext: parsed.marketAndRegulatoryContext,
+    decisionConfidence: parsed.decisionConfidence ?? {
+      dataGaps: [],
+      keyAssumptions: [],
+      confidenceLevel: parsed.verificationBanner?.confidenceLevel ?? "MEDIUM",
+      limitationNote: "Confidence assessment not available.",
+    },
+    whatWouldChangeDecision: parsed.whatWouldChangeDecision ?? parsed.vcSummary?.whatWouldChange ?? [],
+    groundedFacts: parsed.groundedFacts ?? [],
+    inferredInsights: parsed.inferredInsights ?? [],
     vcSummary: parsed.vcSummary ? {
       verdictLine:        parsed.vcSummary.verdictLine,
       theBet:             parsed.vcSummary.theBet,
@@ -497,7 +552,36 @@ function formatSingleDealReportText(dealName: string, p: Record<string, unknown>
   lines.push("-".repeat(40));
   (p.keyRisks as string[]).forEach((r, i) => lines.push(`${i + 1}. ${r}`));
   lines.push("");
-  lines.push("5. WHAT WOULD CHANGE THIS DECISION");
+  lines.push("5. DECISION CONFIDENCE & LIMITATIONS");
+  lines.push("-".repeat(40));
+  const dc = (p as any).decisionConfidence;
+  if (dc) {
+    lines.push(`Confidence Level: ${dc.confidenceLevel}`);
+    if (dc.limitationNote) lines.push(`Limitation: ${dc.limitationNote}`);
+    if (dc.dataGaps?.length > 0) {
+      lines.push("Data Gaps:");
+      dc.dataGaps.forEach((g: string) => lines.push(`  ! ${g}`));
+    }
+    if (dc.keyAssumptions?.length > 0) {
+      lines.push("Key Assumptions (Inferred):");
+      dc.keyAssumptions.forEach((a: string) => lines.push(`  ~ ${a}`));
+    }
+  }
+  lines.push("");
+  lines.push("5a. GROUNDED FACTS vs INFERRED INSIGHTS");
+  lines.push("-".repeat(40));
+  const gf = (p as any).groundedFacts ?? [];
+  const ii = (p as any).inferredInsights ?? [];
+  if (gf.length > 0) {
+    lines.push("Grounded Facts (from input):");
+    gf.forEach((f: string) => lines.push(`  ✓ ${f}`));
+  }
+  if (ii.length > 0) {
+    lines.push("Inferred Insights (agent-derived):");
+    ii.forEach((i: string) => lines.push(`  ~ ${i}`));
+  }
+  lines.push("");
+  lines.push("6. WHAT WOULD CHANGE THIS DECISION");
   lines.push("-".repeat(40));
   lines.push("Upgrade Triggers:");
   dt.upgradeTriggers.forEach(t => lines.push(`  + ${t}`));

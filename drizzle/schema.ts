@@ -743,7 +743,7 @@ export const dealScreenings = mysqlTable("deal_screenings", {
   pdfFileUrl: text("pdfFileUrl"),               // S3 URL if PDF was uploaded
 
   // Verdict
-  verdict: mysqlEnum("verdict", ["APPROVED", "APPROVED_WITH_CONDITIONS", "REJECTED", "VETOED"]).notNull(),
+  verdict: mysqlEnum("verdict", ["APPROVED", "APPROVED_WITH_CONDITIONS", "REJECTED", "VETOED", "INSUFFICIENT_DATA"]).notNull(),
 
   // Vote counts
   yesCount: int("yesCount").notNull().default(0),

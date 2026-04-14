@@ -1953,3 +1953,39 @@
 - [x] Fix 3: Pass councilMode state when rendering ICReport in parent
 - [x] Fix 4: Change default councilMode state from "gcc" to "global_vc"
 - [x] TypeScript: 0 errors
+
+## Decision Engine Upgrade — Institutional Grade (Apr 2026)
+
+### Layer 2.5: Reality Alignment Engine
+- [x] Build realityAlignmentEngine.ts: data integrity check, claim grounding, conflict detection, consensus quality score
+- [x] Guard detectConflicts against empty votes array (NaN fix)
+- [x] Agreement score fallback to councilResult.consensusQuality when votes are empty
+- [x] 11/11 vitest tests passing for realityAlignmentEngine
+
+### councilEngine.ts Upgrades
+- [x] Switch from Anthropic SDK to invokeLLM (BUILT_IN_FORGE_API)
+- [x] Add investorMode to RunCouncilOptions and callPersona prompt
+- [x] Add INSUFFICIENT_DATA to VerdictType
+- [x] Weighted scoring formula: Unit Economics 25%, Execution 25%, Market 20%, Deal Structure 15%, Regulatory 10%, Macro 5%
+- [x] Add finalScore, consensusQuality, weightedAgentScore to CouncilResult
+- [x] INSUFFICIENT_DATA gate: triggered when confidenceScore < 0.4 or consensusQuality < 0.6
+
+### icReportEngine.ts Upgrades
+- [x] Add decisionConfidence section to SingleDealICReport (confidenceLevel, limitations, whatWouldChangeDecision)
+- [x] Add groundedFacts and inferredInsights arrays to IC report
+- [x] Update JSON schema in invokeLLM call to include new fields
+- [x] Update formatSingleDealReportText to include new sections in plain text output
+
+### runScreeningPipeline.ts Upgrades
+- [x] Wire Reality Alignment Engine between Layer 2 (Council) and Layer 3 (IC Memo)
+- [x] Override verdict to INSUFFICIENT_DATA when realityAlignment.shouldGate is true
+- [x] Log ARE debug output to console
+
+### Database
+- [x] Add INSUFFICIENT_DATA to verdict enum in drizzle/schema.ts
+- [x] Run ALTER TABLE to add INSUFFICIENT_DATA to deal_screenings.verdict in production DB
+- [x] Cast verdict to proper enum type in all db.insert calls
+
+### TypeScript
+- [x] 0 TypeScript errors (confirmed via fresh npx tsc --noEmit --skipLibCheck)
+- [x] Checkpoint saved
