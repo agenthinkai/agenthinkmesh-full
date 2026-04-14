@@ -20,6 +20,7 @@ import { getSurfacedSignals } from "../tier0Ingestion";
 import { randomUUID } from "crypto";
 import { runTriage } from "../triageEngine";
 import { checkDuplicate } from "../dealDedup";
+import { runRealityAlignment } from "../realityAlignmentEngine";
 
 // ── Owner whitelist — these users always bypass payment and rate limits ────────
 const OWNER_EMAILS = ["farouq@agenthink.ai", "farouqsultan@gmail.com"];
@@ -123,6 +124,7 @@ export const dealScreenerRouter = router({
         councilMode: z.enum(["gcc", "global_vc", "india_pe"]).optional().default("global_vc"),
         sourceType: z.enum(["manual", "signal"]).optional().default("manual"),
         includeReport: z.boolean().optional().default(true),
+        investorMode: z.boolean().optional().default(false),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -132,7 +134,7 @@ export const dealScreenerRouter = router({
       // Owner bypass — skip rate limit and payment entirely
       if (isOwner(ctx.user.email)) {
         const ownerDealId = randomUUID();
-        const ownerResult = await runCouncil(input.dealText, { userId: undefined, councilMode: input.councilMode });
+        const ownerResult = await runCouncil(input.dealText, { userId: undefined, councilMode: input.councilMode, investorMode: input.investorMode });
         await db.insert(dealScreenings).values({
           dealId: ownerDealId,
           userId: ctx.user.id,
@@ -159,7 +161,8 @@ export const dealScreenerRouter = router({
         let ownerIcReport = null;
         try { ownerIcReport = await generateSingleDealICReport(input.dealName, input.dealText, ownerResult); } catch {}
         const ownerTier0 = detectTier0Signal(input.dealText, input.dealName);
-        return { dealId: ownerDealId, dealName: input.dealName, ...ownerResult, icReport: ownerIcReport, universitySignal: ownerTier0 };
+        const ownerAre = runRealityAlignment(input.dealText, ownerResult);
+        return { dealId: ownerDealId, dealName: input.dealName, ...ownerResult, icReport: ownerIcReport, universitySignal: ownerTier0, realityAlignment: ownerAre };
       }
 
       // Rate limit check (plan-based daily limit)
@@ -309,13 +312,13 @@ export const dealScreenerRouter = router({
         };
       }
 
-      // ── Layer 2: Full Council ───────────────────────────────────────────────
+      // ── Layer 2: Full Council ────────────────────────────────────────────────────────────────────────
       // Run the council engine — skip subscription token guard for pay-per-run sessions
       const result = await runCouncil(input.dealText, {
         userId: skipTokenGuard ? undefined : ctx.user.id,
         councilMode: input.councilMode,
+        investorMode: input.investorMode,
       });
-
       // Persist to database
       await db.insert(dealScreenings).values({
         userId: ctx.user.id,
@@ -384,15 +387,23 @@ export const dealScreenerRouter = router({
         console.error("[Tier0] Signal detection failed:", err);
       }
 
+      // ── Layer 2.5: Reality Alignment Engine ────────────────────────────────────────────────────────────────────────
+      const realityAlignment = runRealityAlignment(input.dealText, result);
+      // Override verdict if ARE gates the deal
+      const finalVerdict = (realityAlignment.shouldGate && result.verdict !== "REJECTED" && result.verdict !== "VETOED")
+        ? "INSUFFICIENT_DATA" as const
+        : result.verdict;
       return {
         dealId,
         dealName: input.dealName,
         ...result,
+        verdict: finalVerdict,
         councilMode: input.councilMode,
         icReport,
         universitySignal,
         duplicate: false,
         triage: triageResult,
+        realityAlignment,
       };
     }),
 

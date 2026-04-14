@@ -1989,3 +1989,19 @@
 ### TypeScript
 - [x] 0 TypeScript errors (confirmed via fresh npx tsc --noEmit --skipLibCheck)
 - [x] Checkpoint saved
+
+## PDF Parse Fix & UI Upgrades — Apr 14 2026
+
+- [x] Fix pdf-parse v2 "pdfParse2 is not a function" error in fileIngestion.ts, dealScreenerUploadRoute.ts, intelligenceParseRoute.ts
+- [x] Add INSUFFICIENT_DATA to VerdictType and VerdictBadge (amber styling)
+- [x] Add RealityAlignmentResult type to CouncilResult frontend interface
+- [x] Add INSUFFICIENT_DATA banner in ICReport (shows gateReason + missingFields tags)
+- [x] Add ARE Data Quality badge in ICReport (LOW/MEDIUM/HIGH with missing field count + conflict indicator)
+- [x] Add investorMode state to DealForm and wire to all screenMutation.mutate calls
+- [x] Add Investor Mode toggle UI to DealForm (animated pill toggle above submit button)
+- [x] Add decisionConfidence, whatWouldChangeDecision, groundedFacts, inferredInsights to ICReportData interface
+- [x] Add Decision Confidence & Limitations section (section 9) to BoardroomICReport
+- [x] Add Grounded Facts vs Inferred Insights section (sections 10/11) to BoardroomICReport
+- [x] Add Top Decision Drivers block (FOR/AGAINST from keyFlags) above vote cards in Raw Council tab
+- [x] Backend: add investorMode to screen input schema and pass to runCouncil in dealScreener.ts
+- [x] Backend: run ARE after council in screen procedure and include realityAlignment in return

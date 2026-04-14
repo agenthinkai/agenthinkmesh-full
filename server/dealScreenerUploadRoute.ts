@@ -11,7 +11,8 @@ import { createRequire } from "module";
 
 const _require = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const pdfParse = _require("pdf-parse") as (buffer: Buffer, options?: Record<string, unknown>) => Promise<{ text: string; numpages: number }>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const { PDFParse } = _require("pdf-parse") as { PDFParse: new (opts: { data: Buffer | Uint8Array }) => { getText(): Promise<{ text: string; total: number }> } };
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5 MB
 const MAX_PAGES = 10;
@@ -41,10 +42,9 @@ dealScreenerUploadRouter.post(
         return;
       }
 
-      // Extract text — limit to first MAX_PAGES pages to avoid blocking event loop
-      const data = await pdfParse(req.file.buffer, {
-        max: MAX_PAGES,
-      });
+      // Extract text using pdf-parse v2 class-based API
+      const parser = new PDFParse({ data: req.file.buffer });
+      const data = await parser.getText();
 
       const extractedText = data.text
         .replace(/\s+/g, " ")
@@ -54,7 +54,7 @@ dealScreenerUploadRouter.post(
       res.json({
         success: true,
         text: extractedText,
-        pages: data.numpages,
+        pages: data.total,
         truncated: data.text.length > MAX_CHARS,
       });
     } catch (err) {

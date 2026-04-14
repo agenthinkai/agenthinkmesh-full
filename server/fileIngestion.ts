@@ -13,14 +13,15 @@
  *   - Total combined text is capped at MAX_COMBINED_CHARS to protect LLM context.
  */
 
-import { createRequire } from "module";
 import * as XLSX from "xlsx";
 import JSZip from "jszip";
 import mammoth from "mammoth";
+import { createRequire } from "module";
 
 const _require = createRequire(import.meta.url);
+// pdf-parse v2 exports a class-based API: new PDFParse({ data: buffer }).getText()
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const pdfParse = _require("pdf-parse") as (buf: Buffer) => Promise<{ text: string; numpages: number }>;
+const { PDFParse } = _require("pdf-parse") as { PDFParse: new (opts: { data: Buffer | Uint8Array }) => { getText(): Promise<{ text: string; total: number }> } };
 
 /** Maximum combined characters fed to the extraction LLM (~60k tokens). */
 const MAX_COMBINED_CHARS = 80_000;
@@ -75,7 +76,8 @@ async function extractTextFromBuffer(buf: Buffer, fileName: string): Promise<str
   const ext = getExt(fileName);
 
   if (PDF_EXTS.has(ext)) {
-    const result = await pdfParse(buf);
+    const parser = new PDFParse({ data: buf });
+    const result = await parser.getText();
     return result.text
       .replace(/\r\n/g, "\n")
       .replace(/[ \t]{2,}/g, " ")

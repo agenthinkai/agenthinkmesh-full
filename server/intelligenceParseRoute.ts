@@ -10,7 +10,8 @@ import mammoth from "mammoth";
 
 const _require = createRequire(import.meta.url);
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-const pdfParse = _require("pdf-parse") as (buffer: Buffer) => Promise<{ text: string; numpages: number }>;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const { PDFParse } = _require("pdf-parse") as { PDFParse: new (opts: { data: Buffer | Uint8Array }) => { getText(): Promise<{ text: string; total: number }> } };
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -38,7 +39,8 @@ router.post("/", upload.single("file"), async (req, res) => {
     let text = "";
 
     if (mimetype === "application/pdf" || originalname.toLowerCase().endsWith(".pdf")) {
-      const result = await pdfParse(buffer);
+      const parser = new PDFParse({ data: buffer });
+      const result = await parser.getText();
       text = result.text;
     } else if (
       mimetype === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" ||

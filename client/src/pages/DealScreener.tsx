@@ -30,7 +30,20 @@ const MONO = "'IBM Plex Mono', 'Fira Code', 'JetBrains Mono', monospace";
 
 // ── Types (mirrors server types) ─────────────────────────────────────────────
 type VoteType = "HARD_YES" | "SOFT_YES" | "SOFT_NO" | "HARD_NO";
-type VerdictType = "APPROVED" | "APPROVED_WITH_CONDITIONS" | "REJECTED" | "VETOED";
+type VerdictType = "APPROVED" | "APPROVED_WITH_CONDITIONS" | "REJECTED" | "VETOED" | "INSUFFICIENT_DATA";
+
+// ── Reality Alignment Engine result type ─────────────────────────────────────
+interface RealityAlignmentResult {
+  dataConfidence: "LOW" | "MEDIUM" | "HIGH";
+  missingFields: string[];
+  conflictScore: number;
+  consensusQuality: number;
+  shouldGate: boolean;
+  gateReason?: string;
+  agentAlignments: Array<{ personaId: string; alignmentScore: number; flaggedClaims: string[] }>;
+  conflictDetails: string[];
+  debugLog: string[];
+}
 
 interface PersonaVote {
   personaId: string;
@@ -69,6 +82,10 @@ interface CouncilResult {
   precedents?: Array<{ taskDescription: string; finalVerdict: string | null; similarity: number; }>;
   duplicate?: boolean;
   triage?: { decision: string; confidence: number; reason: string; durationMs: number; } | null;
+  realityAlignment?: RealityAlignmentResult | null;
+  finalScore?: number;
+  consensusQuality?: number;
+  investorMode?: boolean;
 }
 
 // ── Tier 0 University Signal type ───────────────────────────────────────────────────────────────
@@ -118,6 +135,18 @@ interface ICReportData {
     reasonsNotToInvest: string[];
     whatWouldChange: string[];
   } | null;
+  decisionConfidence?: {
+    level: "HIGH" | "MEDIUM" | "LOW";
+    limitations: string[];
+    dataGaps: string[];
+  } | null;
+  whatWouldChangeDecision?: {
+    upgradeFactors: string[];
+    downgradeFactors: string[];
+    keyMonitoringMetrics: string[];
+  } | null;
+  groundedFacts?: string[];
+  inferredInsights?: string[];
 }
 
 // ── Persona metadata ──────────────────────────────────────────────────────────
@@ -231,7 +260,8 @@ function VerdictBadge({ verdict, compact = false }: { verdict: VerdictType; comp
     APPROVED_WITH_CONDITIONS: { label: compact ? "CONDITIONAL" : "APPROVED WITH CONDITIONS", bg: "rgba(74,158,255,0.12)", border: "#4a9eff", color: "#4a9eff", glow: compact ? "none" : "0 0 20px rgba(74,158,255,0.3)" },
     REJECTED: { label: "REJECTED", bg: "rgba(255,71,87,0.12)", border: "#ff4757", color: "#ff4757", glow: compact ? "none" : "0 0 20px rgba(255,71,87,0.3)" },
     VETOED: { label: "VETOED", bg: "rgba(255,71,87,0.18)", border: "#ff4757", color: "#ff4757", glow: compact ? "none" : "0 0 30px rgba(255,71,87,0.5)" },
-  }[verdict];
+    INSUFFICIENT_DATA: { label: compact ? "INSUFF. DATA" : "INSUFFICIENT DATA", bg: "rgba(255,159,67,0.12)", border: "#ff9f43", color: "#ff9f43", glow: compact ? "none" : "0 0 20px rgba(255,159,67,0.3)" },
+  }[verdict] ?? { label: verdict, bg: "rgba(100,100,100,0.12)", border: "#888", color: "#888", glow: "none" };
   return (
     <div style={{
       display: "inline-flex",
@@ -767,6 +797,66 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
         </div>
       </div>
 
+      {/* Decision Confidence & Limitations — shown when decisionConfidence is present */}
+      {ic.decisionConfidence && (
+        <div style={{ background: BG2, border: `1px solid ${
+          ic.decisionConfidence.level === "HIGH" ? "rgba(0,255,135,0.3)"
+          : ic.decisionConfidence.level === "MEDIUM" ? "rgba(74,158,255,0.3)"
+          : "rgba(255,159,67,0.3)"
+        }`, borderRadius: 8, padding: "16px 20px", marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.12em" }}>9. DECISION CONFIDENCE</div>
+            <span style={{
+              fontFamily: MONO, fontSize: 11, fontWeight: 700,
+              color: ic.decisionConfidence.level === "HIGH" ? GREEN : ic.decisionConfidence.level === "MEDIUM" ? ACCENT : AMBER,
+              background: ic.decisionConfidence.level === "HIGH" ? "rgba(0,255,135,0.12)" : ic.decisionConfidence.level === "MEDIUM" ? "rgba(74,158,255,0.12)" : "rgba(255,159,67,0.12)",
+              border: `1px solid ${ic.decisionConfidence.level === "HIGH" ? "rgba(0,255,135,0.35)" : ic.decisionConfidence.level === "MEDIUM" ? "rgba(74,158,255,0.35)" : "rgba(255,159,67,0.35)"}`,
+              padding: "2px 10px", borderRadius: 3, letterSpacing: "0.08em",
+            }}>{ic.decisionConfidence.level}</span>
+          </div>
+          {ic.decisionConfidence.limitations.length > 0 && (
+            <div style={{ marginBottom: 10 }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: AMBER, marginBottom: 6, letterSpacing: "0.08em" }}>LIMITATIONS</div>
+              {ic.decisionConfidence.limitations.map((l, i) => (
+                <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${AMBER}`, lineHeight: 1.5 }}>⚠ {l}</div>
+              ))}
+            </div>
+          )}
+          {ic.decisionConfidence.dataGaps.length > 0 && (
+            <div>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: RED, marginBottom: 6, letterSpacing: "0.08em" }}>DATA GAPS</div>
+              {ic.decisionConfidence.dataGaps.map((g, i) => (
+                <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${RED}`, lineHeight: 1.5 }}>✗ {g}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Grounded Facts vs Inferred Insights */}
+      {((ic.groundedFacts && ic.groundedFacts.length > 0) || (ic.inferredInsights && ic.inferredInsights.length > 0)) && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+          {ic.groundedFacts && ic.groundedFacts.length > 0 && (
+            <div style={{ background: BG2, border: `1px solid rgba(0,255,135,0.2)`, borderRadius: 8, padding: "16px 20px" }}>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: GREEN, letterSpacing: "0.12em", marginBottom: 12 }}>10. GROUNDED FACTS</div>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 8 }}>Directly supported by submitted data</div>
+              {ic.groundedFacts.map((f, i) => (
+                <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${GREEN}`, lineHeight: 1.5 }}>✓ {f}</div>
+              ))}
+            </div>
+          )}
+          {ic.inferredInsights && ic.inferredInsights.length > 0 && (
+            <div style={{ background: BG2, border: `1px solid rgba(74,158,255,0.2)`, borderRadius: 8, padding: "16px 20px" }}>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.12em", marginBottom: 12 }}>11. INFERRED INSIGHTS</div>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 8 }}>Analyst inference — not directly stated in data</div>
+              {ic.inferredInsights.map((ins, i) => (
+                <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${ACCENT}`, lineHeight: 1.5 }}>~ {ins}</div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Copy IC Report button */}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }} className="no-print">
         <button
@@ -909,6 +999,82 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp }: { result:
           </div>
         </div>
       )}
+      {/* INSUFFICIENT_DATA banner — shown when ARE gates the deal */}
+      {result.verdict === "INSUFFICIENT_DATA" && (
+        <div style={{
+          padding: "14px 18px",
+          background: "rgba(255,159,67,0.10)",
+          border: "1px solid rgba(255,159,67,0.6)",
+          borderRadius: 8,
+          marginBottom: 16,
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 12,
+        }}>
+          <span style={{ fontSize: 18, marginTop: 1 }}>⚠️</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: MONO, fontSize: 12, color: AMBER, fontWeight: 700, marginBottom: 4, letterSpacing: "0.06em" }}>
+              INSUFFICIENT DATA — COUNCIL VERDICT WITHHELD
+            </div>
+            <div style={{ fontSize: 12, color: TEXT2, lineHeight: 1.6 }}>
+              {result.realityAlignment?.gateReason ?? "The Reality Alignment Engine detected critical data gaps. The council cannot issue a reliable verdict without the missing information."}
+            </div>
+            {result.realityAlignment && result.realityAlignment.missingFields.length > 0 && (
+              <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
+                <span style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.06em", alignSelf: "center" }}>MISSING:</span>
+                {result.realityAlignment.missingFields.map((f, i) => (
+                  <span key={i} style={{
+                    fontFamily: MONO, fontSize: 10,
+                    background: "rgba(255,159,67,0.12)",
+                    border: "1px solid rgba(255,159,67,0.35)",
+                    color: AMBER,
+                    padding: "2px 8px", borderRadius: 3,
+                  }}>{f}</span>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ARE Data Quality badge — shown when realityAlignment is present */}
+      {result.realityAlignment && result.verdict !== "INSUFFICIENT_DATA" && (
+        <div style={{
+          padding: "10px 16px",
+          background: result.realityAlignment.dataConfidence === "HIGH"
+            ? "rgba(0,255,135,0.07)" : result.realityAlignment.dataConfidence === "MEDIUM"
+            ? "rgba(74,158,255,0.07)" : "rgba(255,159,67,0.07)",
+          border: `1px solid ${
+            result.realityAlignment.dataConfidence === "HIGH" ? "rgba(0,255,135,0.35)"
+            : result.realityAlignment.dataConfidence === "MEDIUM" ? "rgba(74,158,255,0.35)"
+            : "rgba(255,159,67,0.35)"
+          }`,
+          borderRadius: 6,
+          marginBottom: 16,
+          display: "flex",
+          alignItems: "center",
+          gap: 12,
+          flexWrap: "wrap" as const,
+        }}>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.08em" }}>DATA QUALITY</span>
+          <span style={{
+            fontFamily: MONO, fontSize: 11, fontWeight: 700,
+            color: result.realityAlignment.dataConfidence === "HIGH" ? GREEN
+              : result.realityAlignment.dataConfidence === "MEDIUM" ? ACCENT : AMBER,
+            letterSpacing: "0.08em",
+          }}>{result.realityAlignment.dataConfidence}</span>
+          {result.realityAlignment.missingFields.length > 0 && (
+            <span
+              title={`Missing: ${result.realityAlignment.missingFields.join(", ")}`}
+              style={{ fontFamily: MONO, fontSize: 10, color: MUTED, cursor: "help" }}
+            >· {result.realityAlignment.missingFields.length} field{result.realityAlignment.missingFields.length !== 1 ? "s" : ""} missing</span>
+          )}
+          {result.realityAlignment.conflictScore > 0.3 && (
+            <span style={{ fontFamily: MONO, fontSize: 10, color: AMBER }}>· ⚡ Agent conflict detected</span>
+          )}
+        </div>
+      )}
+
       {/* Special banners */}
       {result.gccVetoTriggered && (
         <div style={{
@@ -1095,6 +1261,43 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp }: { result:
         </div>
       </div>
 
+      {/* Top Decision Drivers — derived from vote keyFlags */}
+      {result.votes.length > 0 && (() => {
+        // Collect all keyFlags from YES votes and NO votes, label them
+        const yesFlags = result.votes
+          .filter(v => v.vote === "HARD_YES" || v.vote === "SOFT_YES")
+          .flatMap(v => (v.keyFlags ?? []).map(f => ({ flag: f, type: "FOR" as const })));
+        const noFlags = result.votes
+          .filter(v => v.vote === "HARD_NO" || v.vote === "SOFT_NO")
+          .flatMap(v => (v.keyFlags ?? []).map(f => ({ flag: f, type: "AGAINST" as const })));
+        const topFor = yesFlags.slice(0, 3);
+        const topAgainst = noFlags.slice(0, 3);
+        if (topFor.length === 0 && topAgainst.length === 0) return null;
+        return (
+          <div style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "16px 20px", marginBottom: 20 }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.1em", marginBottom: 12 }}>TOP DECISION DRIVERS</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              {topFor.length > 0 && (
+                <div>
+                  <div style={{ fontFamily: MONO, fontSize: 9, color: GREEN, marginBottom: 8, letterSpacing: "0.08em" }}>FOR THE DEAL</div>
+                  {topFor.map((item, i) => (
+                    <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${GREEN}`, lineHeight: 1.5 }}>+ {item.flag}</div>
+                  ))}
+                </div>
+              )}
+              {topAgainst.length > 0 && (
+                <div>
+                  <div style={{ fontFamily: MONO, fontSize: 9, color: RED, marginBottom: 8, letterSpacing: "0.08em" }}>AGAINST THE DEAL</div>
+                  {topAgainst.map((item, i) => (
+                    <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${RED}`, lineHeight: 1.5 }}>− {item.flag}</div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Persona vote cards */}
       <div style={{ marginBottom: 20 }}>
         <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.1em", marginBottom: 12 }}>COUNCIL VOTES — click to expand</div>
@@ -1253,6 +1456,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
   const [pdfFilename, setPdfFilename] = useState<string | null>(null);
   // Data Room Ingestion V1 — toggle state
   const [dataRoomMode, setDataRoomMode] = useState(false);
+  const [investorMode, setInvestorMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [touchedSubmit, setTouchedSubmit] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -1399,7 +1603,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
     lastSubmittedTextRef.current = finalText;
     if (FREE_MODE) {
       onSubmitStart();
-      screenMutation.mutate({ dealName: dealName.trim(), dealText: finalText, councilMode, sourceType });
+      screenMutation.mutate({ dealName: dealName.trim(), dealText: finalText, councilMode, sourceType, investorMode });
       return;
     }
     sessionStorage.setItem("ds_pending_deal_text", finalText);
@@ -1422,7 +1626,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
     // Auto-submit: set lastSubmittedTextRef and fire the mutation directly
     lastSubmittedTextRef.current = result.dealText;
     onSubmitStart();
-    screenMutation.mutate({ dealName: result.dealName, dealText: result.dealText, councilMode });
+    screenMutation.mutate({ dealName: result.dealName, dealText: result.dealText, councilMode, investorMode });
   };
 
   // If data room mode is active, render the upload/review component
@@ -1786,6 +1990,53 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
           </button>
           <span style={{ marginLeft: 10, fontSize: 11, color: MUTED }}>
             Text will auto-fill the memo field if empty
+          </span>
+        </div>
+
+        {/* Investor Mode toggle */}
+        <div
+          onClick={() => setInvestorMode(v => !v)}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            padding: "10px 14px",
+            background: investorMode ? "rgba(0,255,135,0.07)" : "rgba(255,255,255,0.03)",
+            border: `1px solid ${investorMode ? "rgba(0,255,135,0.35)" : BORDER}`,
+            borderRadius: 6,
+            cursor: "pointer",
+            marginBottom: 16,
+            transition: "all 0.15s",
+          }}
+        >
+          {/* Toggle pill */}
+          <div style={{
+            width: 36, height: 20,
+            background: investorMode ? GREEN : "rgba(255,255,255,0.1)",
+            borderRadius: 10,
+            position: "relative",
+            transition: "background 0.2s",
+            flexShrink: 0,
+          }}>
+            <div style={{
+              position: "absolute",
+              top: 3, left: investorMode ? 18 : 3,
+              width: 14, height: 14,
+              background: investorMode ? "#000" : "#888",
+              borderRadius: "50%",
+              transition: "left 0.2s",
+            }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: investorMode ? GREEN : TEXT2, fontWeight: 700, letterSpacing: "0.06em" }}>
+              INVESTOR MODE
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginTop: 2 }}>
+              Reframes agents to upside-first: “what would make this a winning investment?”
+            </div>
+          </div>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: investorMode ? GREEN : MUTED }}>
+            {investorMode ? "ON" : "OFF"}
           </span>
         </div>
 
