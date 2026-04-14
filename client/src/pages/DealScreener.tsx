@@ -786,7 +786,7 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
 }
 
 // ── IC Report (raw Council output + boardroom IC Report tabs) ─────────────────
-function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () => void }) {
+function ICReport({ result, onNewDeal, councilMode: councilModeProp }: { result: CouncilResult; onNewDeal: () => void; councilMode?: CouncilModeType }) {
   const [activeTab, setActiveTab] = useState<"raw" | "boardroom">(result.icReport ? "boardroom" : "raw");
   const [copied, setCopied] = useState(false);
   const [copiedRaw, setCopiedRaw] = useState(false);
@@ -815,7 +815,7 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
         confidenceScore:     result.confidenceScore,
         conditionsToProceed: result.conditionsToProceed,
         blockingIssues:      result.blockingIssues,
-        councilMode:         result.councilMode,
+        councilMode:         councilModeProp ?? result.councilMode,
         votes: result.votes.map(v => ({
           personaId:   v.personaId,
           personaName: v.personaId,
@@ -2373,7 +2373,7 @@ export default function DealScreener() {
   const [result, setResult] = useState<CouncilResult | null>(null);
   const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
   const [screenError, setScreenError] = useState<string | null>(null);
-  const [councilMode, setCouncilMode] = useState<CouncilModeType>("gcc");
+  const [councilMode, setCouncilMode] = useState<CouncilModeType>("global_vc");
 
   // Parse Stripe return params from URL
   const urlParams = new URLSearchParams(window.location.search);
@@ -2613,7 +2613,7 @@ export default function DealScreener() {
                 </button>
               </div>
             )}
-            <ICReport key={result.dealId ?? result.dealName} result={result} onNewDeal={handleNewDeal} />
+            <ICReport key={result.dealId ?? result.dealName} result={result} onNewDeal={handleNewDeal} councilMode={councilMode} />
           </div>
         )}
         {view === "history" && (

@@ -1945,3 +1945,11 @@
 - [x] Pass councilMode in icMemoPdf mutation calls (both ICReport and history re-export)
 - [x] Fix default councilMode from "gcc" to "global_vc" across all entry points
 - [x] Fix modeLabel ternary in icMemoPdf.ts to handle all 3 modes correctly
+
+## Bug Fix: India PE Council Mode Shows "Global VC" in IC Memo PDF (Apr 2026)
+- [x] Traced: root cause = ICReport component did not receive councilMode as prop; relied on result.councilMode which was undefined at runtime
+- [x] Fix 1: Add councilMode prop to ICReport component signature
+- [x] Fix 2: Use councilModeProp ?? result.councilMode in icMemoPdf mutation call
+- [x] Fix 3: Pass councilMode state when rendering ICReport in parent
+- [x] Fix 4: Change default councilMode state from "gcc" to "global_vc"
+- [x] TypeScript: 0 errors
