@@ -1900,3 +1900,38 @@
 - [ ] Data integrity: confirm councilResult JSON, vote arrays, rationales, timestamps stored for ALL deals
 - [ ] Optional: "Download IC Memo (PDF)" per deal
 - [x] Optional: memoVersion field for regeneration tracking (icMemoVersion in DB)
+
+## Reliability + Observability Upgrade (Apr 2026 — Demo-Critical)
+
+### 1. NULL Verdict Resolution
+- [x] DB: retryCount, resolutionMethod tracked in client-side BatchDealResult
+- [x] councilEngine: forced resolution fallback (majority vote → REJECTED or APPROVED_WITH_CONDITIONS)
+- [x] batchRoute: auto-retry NULL verdict items (max 2 retries) in client-side worker pool
+- [x] Store resolutionMethod field (council / auto_retry / forced_fallback / failed)
+- [x] UI: NULL badge replaced with auto-retry indicator + FORCED FALLBACK warning badge
+
+### 2. Batch Metrics API
+- [x] BatchMetricsPanel component: runtime, avg/deal, concurrency, null count, auto-retry count, forced fallback count
+- [x] Verdict donut chart with counts and percentages
+- [x] Computed client-side from deals array (batch runs client-side, no server-side batchId)
+
+### 3. Controlled Bulk IC Package Export
+- [x] "Export Full IC Package" button in Batch History header
+- [x] Confirmation modal with cost warning
+- [x] Sequential generation for deals without memo (POST /api/deal/:id/generate-memo)
+- [x] Progress indicator: X / Y completed with progress bar
+- [x] Cancel button that stops the queue mid-run
+- [x] Output: ZIP of PDFs via /api/data-room/bulk-pdf
+
+### 4. PDF Export (Per-Deal)
+- [x] "↓ PDF" button in IC Memo modal
+- [x] Server-side endpoint: POST /api/deal/:dealId/memo-pdf (uses manus-md-to-pdf pipeline)
+- [x] PDF includes: deal name, verdict, timestamp, memo content
+- [x] Filename: IC-Memo_<dealName>_<date>.pdf
+
+### 5. Demo Cleanup
+- [x] 0 NULL verdicts in batch (auto-retry + fallback)
+- [x] MEMO button idempotent (no duplicate generation)
+- [x] Terminology consistent: Screening Result / IC Memo / Audit Trail
+- [x] TypeScript: 0 errors
+- [x] Checkpoint saved

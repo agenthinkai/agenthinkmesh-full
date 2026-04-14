@@ -28,6 +28,7 @@ import { dealScreenings } from "../drizzle/schema";
 import { runScreeningPipeline } from "./runScreeningPipeline";
 import { generateSingleDealICReport } from "./icReportEngine";
 import type { CouncilResult } from "./councilEngine";
+import { generateICMemoPdf } from "./icMemoPdf";
 
 const router = Router();
 
@@ -363,6 +364,77 @@ router.post("/:dealId/generate-memo", async (req: Request, res: Response): Promi
       generatedAt,
       cached: false,
     });
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`${routeName} Error:`, err);
+    res.status(500).json({ success: false, error: msg });
+  }
+});
+
+// ── POST /api/deal/:dealId/memo-pdf ──────────────────────────────────────────
+// Generate and stream a PDF of the IC Memo for a given deal.
+// Uses the stored councilResult + icMemoText from DB.
+router.post("/:dealId/memo-pdf", async (req: Request, res: Response): Promise<void> => {
+  const routeName = "[POST /api/deal/:dealId/memo-pdf]";
+  try {
+    const userId = await resolveUserId(req);
+    if (!requireAuth(userId, res)) return;
+
+    const { dealId } = req.params;
+    const db = await getDb();
+    if (!db) { res.status(503).json({ success: false, error: "Database unavailable." }); return; }
+    const whereClause = userId !== null
+      ? and(eq(dealScreenings.dealId, dealId), eq(dealScreenings.userId, userId))
+      : eq(dealScreenings.dealId, dealId);
+    const [record] = await db.select().from(dealScreenings).where(whereClause).limit(1);
+    if (!record) { res.status(404).json({ success: false, error: "Screening record not found." }); return; }
+
+    // Parse stored votes
+    let votes: Array<{
+      personaId: string; personaName: string; personaRole: string;
+      vote: string; confidence: number; rationale: string;
+      keyFlags: string[]; conditions: string[]; blockers: string[];
+    }> = [];
+    try { votes = JSON.parse(record.votes || "[]"); } catch { /* ignore */ }
+    let conditions: string[] = [];
+    try { conditions = JSON.parse(record.conditionsToProceed || "[]"); } catch { /* ignore */ }
+    let blockers: string[] = [];
+    try { blockers = JSON.parse(record.blockingIssues || "[]"); } catch { /* ignore */ }
+
+    const memoInput = {
+      dealName: record.dealName,
+      verdict: record.verdict,
+      yesCount: record.yesCount,
+      noCount: record.noCount,
+      confidenceScore: parseFloat(record.confidenceScore),
+      conditionsToProceed: conditions,
+      blockingIssues: blockers,
+      votes: votes.map(v => ({
+        personaId: v.personaId ?? "",
+        personaName: v.personaName ?? v.personaRole ?? "",
+        personaRole: v.personaRole ?? "",
+        vote: v.vote ?? "SOFT_NO",
+        confidence: typeof v.confidence === "number" ? v.confidence : 0.5,
+        rationale: v.rationale ?? "",
+        keyFlags: Array.isArray(v.keyFlags) ? v.keyFlags : [],
+        conditions: Array.isArray(v.conditions) ? v.conditions : [],
+        blockers: Array.isArray(v.blockers) ? v.blockers : [],
+      })),
+    };
+
+    const pdfBuffer = await generateICMemoPdf(memoInput);
+    const safeName = record.dealName
+      .replace(/[^a-zA-Z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .slice(0, 60);
+    const dateStr = new Date().toISOString().slice(0, 10);
+    const filename = `IC-Memo_${safeName}_${dateStr}.pdf`;
+
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Length", pdfBuffer.length);
+    res.send(pdfBuffer);
+    console.log(`${routeName} Generated PDF for deal ${dealId} (${pdfBuffer.length} bytes)`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`${routeName} Error:`, err);
