@@ -1935,3 +1935,13 @@
 - [x] Terminology consistent: Screening Result / IC Memo / Audit Trail
 - [x] TypeScript: 0 errors
 - [x] Checkpoint saved
+
+## Bug Fix: IC Memo Council Mode Label (Apr 2026)
+- [x] Fix: IC Memo always shows "GCC PE" as council mode — must read actual councilMode from screening result
+- [x] Add councilMode column to deal_screenings table in DB
+- [x] Save councilMode on every new screening in runScreeningPipeline.ts and dealScreener.ts
+- [x] Return councilMode in screen tRPC response
+- [x] Add councilMode to CouncilResult interface in DealScreener.tsx
+- [x] Pass councilMode in icMemoPdf mutation calls (both ICReport and history re-export)
+- [x] Fix default councilMode from "gcc" to "global_vc" across all entry points
+- [x] Fix modeLabel ternary in icMemoPdf.ts to handle all 3 modes correctly

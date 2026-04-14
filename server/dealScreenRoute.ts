@@ -123,7 +123,7 @@ router.post("/screen", async (req: Request, res: Response): Promise<void> => {
     const result = await runScreeningPipeline({
       dealText: dealText.trim(),
       dealName: dealName?.trim(),
-      councilMode: (councilMode as "gcc" | "global_vc" | "india_pe") ?? "gcc",
+      councilMode: (councilMode as "gcc" | "global_vc" | "india_pe") ?? "global_vc",
       includeReport: includeReport !== false,
       forceReport: forceReport === true,
       userId,
@@ -208,7 +208,7 @@ router.post("/screen/batch", async (req: Request, res: Response): Promise<void> 
         const result = await runScreeningPipeline({
           dealText: deal.dealText.trim(),
           dealName: deal.dealName?.trim(),
-          councilMode: (councilMode as "gcc" | "global_vc" | "india_pe") ?? "gcc",
+          councilMode: (councilMode as "gcc" | "global_vc" | "india_pe") ?? "global_vc",
           includeReport: includeReport !== false,
           forceReport: forceReport === true,
           userId,
@@ -409,6 +409,7 @@ router.post("/:dealId/memo-pdf", async (req: Request, res: Response): Promise<vo
       confidenceScore: parseFloat(record.confidenceScore),
       conditionsToProceed: conditions,
       blockingIssues: blockers,
+      councilMode: (record.councilMode as "gcc" | "global_vc" | "india_pe" | undefined) ?? "global_vc",
       votes: votes.map(v => ({
         personaId: v.personaId ?? "",
         personaName: v.personaName ?? v.personaRole ?? "",

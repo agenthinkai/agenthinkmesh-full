@@ -120,7 +120,7 @@ export const dealScreenerRouter = router({
         pdfFileKey: z.string().optional(),
         pdfFileUrl: z.string().optional(),
         stripeSessionId: z.string().optional(), // link payment row to this deal run
-        councilMode: z.enum(["gcc", "global_vc", "india_pe"]).optional().default("gcc"),
+        councilMode: z.enum(["gcc", "global_vc", "india_pe"]).optional().default("global_vc"),
         sourceType: z.enum(["manual", "signal"]).optional().default("manual"),
         includeReport: z.boolean().optional().default(true),
       })
@@ -388,6 +388,7 @@ export const dealScreenerRouter = router({
         dealId,
         dealName: input.dealName,
         ...result,
+        councilMode: input.councilMode,
         icReport,
         universitySignal,
         duplicate: false,
@@ -677,6 +678,7 @@ export const dealScreenerRouter = router({
         confidenceScore:     z.number(),
         conditionsToProceed: z.array(z.string()),
         blockingIssues:      z.array(z.string()),
+        councilMode:         z.enum(["gcc", "global_vc", "india_pe"]).optional(),
         votes: z.array(z.object({
           personaId:   z.string(),
           personaName: z.string(),
@@ -699,6 +701,7 @@ export const dealScreenerRouter = router({
         confidenceScore:     input.confidenceScore,
         conditionsToProceed: input.conditionsToProceed,
         blockingIssues:      input.blockingIssues,
+        councilMode:         input.councilMode,
         votes:               input.votes,
       };
       const pdfBuffer = await generateICMemoPdf(memoInput);

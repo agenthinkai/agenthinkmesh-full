@@ -1,0 +1,1 @@
+ALTER TABLE `deal_screenings` ADD `councilMode` enum('gcc','global_vc','india_pe') DEFAULT 'global_vc' NOT NULL;

@@ -777,6 +777,9 @@ export const dealScreenings = mysqlTable("deal_screenings", {
   icMemoVersion: int("icMemoVersion").default(0).notNull(), // increments on each regeneration
   icMemoGeneratedAt: timestamp("icMemoGeneratedAt"), // when memo was last generated
 
+  // Council mode used for this screening
+  councilMode: mysqlEnum("councilMode", ["gcc", "global_vc", "india_pe"]).default("global_vc").notNull(),
+
   // Provenance
   sourceType: mysqlEnum("sourceType", ["manual", "signal"]).default("manual").notNull(),
 

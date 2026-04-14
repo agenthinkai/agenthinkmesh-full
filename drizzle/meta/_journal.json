@@ -358,6 +358,13 @@
       "when": 1776143983676,
       "tag": "0050_wide_black_cat",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "5",
+      "when": 1776147213662,
+      "tag": "0051_outstanding_supernaut",
+      "breakpoints": true
     }
   ]
 }

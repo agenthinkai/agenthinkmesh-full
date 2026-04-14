@@ -66,7 +66,7 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
   const {
     dealText,
     dealName = "Untitled Deal",
-    councilMode = "gcc",
+    councilMode = "global_vc",
     includeReport = true,
     forceReport = false,
     userId,
@@ -139,6 +139,7 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
           blockingIssues: JSON.stringify([triageResult.reason]),
           votes: "[]",
           sourceType,
+          councilMode,
           triageResult: JSON.stringify(triageResult),
           triageSkipped: false,
         });
@@ -185,11 +186,12 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
         tiebreakerTriggered: result.tiebreakerTriggered,
         tiebreakerSwingAgent: result.tiebreakerSwingAgent ?? null,
         conditionsToProceed: JSON.stringify(result.conditionsToProceed),
-        blockingIssues: JSON.stringify(result.blockingIssues),
-        votes: JSON.stringify(result.votes),
-        sourceType,
-        triageResult: JSON.stringify(triageResult),
-        triageSkipped: false,
+          blockingIssues: JSON.stringify(result.blockingIssues),
+          votes: JSON.stringify(result.votes),
+          sourceType,
+          councilMode,
+          triageResult: JSON.stringify(triageResult),
+          triageSkipped: false,
       });
     } catch (e) {
       console.error("[runScreeningPipeline][Council] Failed to persist council record:", e);

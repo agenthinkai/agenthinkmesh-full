@@ -63,6 +63,7 @@ interface CouncilResult {
   conditionsToProceed: string[];
   blockingIssues: string[];
   votes: PersonaVote[];
+  councilMode?: "gcc" | "global_vc" | "india_pe";
   icReport?: ICReportData | null;
   universitySignal?: UniversitySignal | null;
   precedents?: Array<{ taskDescription: string; finalVerdict: string | null; similarity: number; }>;
@@ -814,6 +815,7 @@ function ICReport({ result, onNewDeal }: { result: CouncilResult; onNewDeal: () 
         confidenceScore:     result.confidenceScore,
         conditionsToProceed: result.conditionsToProceed,
         blockingIssues:      result.blockingIssues,
+        councilMode:         result.councilMode,
         votes: result.votes.map(v => ({
           personaId:   v.personaId,
           personaName: v.personaId,
@@ -1885,6 +1887,7 @@ function HistoryTable({ onSelect }: { onSelect: (dealId: string) => void }) {
         confidenceScore:     typeof deal.confidenceScore === "string" ? parseFloat(deal.confidenceScore) : deal.confidenceScore,
         conditionsToProceed: deal.conditionsToProceed as string[],
         blockingIssues:      deal.blockingIssues as string[],
+        councilMode:         (deal as { councilMode?: "gcc" | "global_vc" | "india_pe" }).councilMode,
         votes: (deal.votes as Array<{
           personaId: string; personaName?: string; personaRole: string;
           vote: string; confidence: number; rationale: string;

@@ -46,6 +46,7 @@ export interface ICMemoInput {
   conditionsToProceed: string[];
   blockingIssues:      string[];
   votes:               PersonaVoteInput[];
+  councilMode?:        "gcc" | "global_vc" | "india_pe";
 }
 
 interface FinancialRow {
@@ -874,8 +875,9 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     // ─────────────────────────────────────────────────────────────────────────
     const dateStr = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
     const modeLabel =
-      (input as ICMemoInput & { councilMode?: string }).councilMode === "global_vc" ? "Global VC" :
-      (input as ICMemoInput & { councilMode?: string }).councilMode === "india_pe"  ? "India PE" : "GCC PE";
+      input.councilMode === "global_vc" ? "Global VC" :
+      input.councilMode === "india_pe"  ? "India PE" :
+      input.councilMode === "gcc"       ? "GCC PE" : "Global VC";
 
     // Full white background
     doc.rect(0, 0, A4_W, A4_H).fill(BG);
