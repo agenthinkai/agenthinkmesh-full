@@ -12,7 +12,7 @@
  *               Click any deal card → drill-down into full ICReport.
  */
 
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useCallback } from "react";
 import { toast } from "sonner";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -71,18 +71,7 @@ const AGENTS_BY_MODE: Record<string, Array<{ id: string; name: string; role: str
 };
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-type Stage = "upload" | "review" | "processing" | "results" | "history";
-
-interface BatchHistoryItem {
-  id: number;
-  batchId: string;
-  status: string;
-  totalDeals: number;
-  completedCount: number;
-  failedCount: number;
-  createdAt: string;
-  completedAt: string | null;
-}
+type Stage = "upload" | "review" | "processing" | "results";
 type VerdictType = "APPROVED" | "APPROVED_WITH_CONDITIONS" | "REJECTED" | "VETOED";
 type DealStatus = "pending" | "processing" | "completed" | "failed";
 
@@ -161,33 +150,8 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
   const [processingIndex, setProcessingIndex] = useState(0);
   const [filterVerdict, setFilterVerdict] = useState<"all" | VerdictType>("all");
   const [isDownloadingZip, setIsDownloadingZip] = useState(false);
-  const [batchId, setBatchId] = useState<string | null>(null);
-  const [historyBatches, setHistoryBatches] = useState<BatchHistoryItem[]>([]);
-  const [historyLoading, setHistoryLoading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortRef = useRef(false);
-  const pollIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
-  // Cleanup polling on unmount
-  useEffect(() => {
-    return () => {
-      if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-    };
-  }, []);
-
-  // ── History loader ───────────────────────────────────────────────────────────
-  const loadHistory = useCallback(async () => {
-    setHistoryLoading(true);
-    try {
-      const res = await fetch("/api/batch/list", { credentials: "include" });
-      const data = await res.json();
-      if (data.success) setHistoryBatches(data.batches || []);
-    } catch (err) {
-      toast.error("Failed to load batch history.");
-    } finally {
-      setHistoryLoading(false);
-    }
-  }, []);
 
   // ── Upload handlers ──────────────────────────────────────────────────────────
   const handleFiles = useCallback(async (files: FileList | File[]) => {
@@ -250,12 +214,9 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
 
   const handleDragLeave = useCallback(() => setIsDragging(false), []);
 
-  // ── Server-side batch processing with live polling ───────────────────────────
+  // ── Process deals ────────────────────────────────────────────────────────────
   const startProcessing = useCallback(async () => {
     abortRef.current = false;
-    if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-
-    // Initialise deal list in "pending" state for immediate UI feedback
     const initialDeals: DealResult[] = uploadedDeals.map((d, i) => ({
       index: i,
       dealName: d.dealName,
@@ -266,111 +227,128 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
     setDeals(initialDeals);
     setStage("processing");
 
-    // Step 1: Enqueue all deals server-side
-    let newBatchId: string;
-    try {
-      const enqueueRes = await fetch("/api/batch/create", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({
-          deals: uploadedDeals.map(d => ({
-            dealName: d.dealName,
-            dealText: d.dealText,
-            councilMode: d.councilMode,
-          })),
-        }),
-      });
-      if (!enqueueRes.ok) {
-        const err = await enqueueRes.json().catch(() => ({ error: "Failed to start batch" }));
-        toast.error(err.error || "Failed to start batch processing.");
-        setStage("review");
-        return;
+    const CONCURRENCY = 1; // Sequential to avoid Anthropic API overload (30 concurrent calls = 529 errors)
+    let nextIndex = 0;
+
+    async function processOne(idx: number) {
+      if (abortRef.current) return;
+      const deal = uploadedDeals[idx];
+
+      // Mark as processing + show agent animation
+      setDeals(prev => prev.map((d, i) =>
+        i === idx ? { ...d, status: "processing", processingAgents: [] } : d
+      ));
+      setProcessingIndex(idx);
+
+      // Animate agents appearing one by one
+      const agents = AGENTS_BY_MODE[deal.councilMode] || AGENTS_BY_MODE.gcc;
+      for (let a = 0; a < agents.length; a++) {
+        if (abortRef.current) return;
+        await new Promise(r => setTimeout(r, 200));
+        setDeals(prev => prev.map((d, i) =>
+          i === idx ? { ...d, processingAgents: agents.slice(0, a + 1).map(ag => ag.name) } : d
+        ));
       }
-      const enqueueData = await enqueueRes.json();
-      newBatchId = enqueueData.batchId;
-      setBatchId(newBatchId);
-      toast.success(`Batch job started — ${enqueueData.totalDeals} deals queued on server`);
-    } catch {
-      toast.error("Failed to connect to batch server.");
-      setStage("review");
-      return;
-    }
 
-    // Step 2: Poll /api/batch/:batchId/status every 2s
-    const poll = async () => {
-      if (abortRef.current) {
-        if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-        return;
-      }
-      try {
-        const statusRes = await fetch(`/api/batch/${newBatchId}/status`, {
-          credentials: "include",
-        });
-        if (!statusRes.ok) return;
-        const statusData = await statusRes.json();
-        if (!statusData.success) return;
-
-        // Map server items → DealResult state
-        const updatedDeals: DealResult[] = statusData.items.map((item: {
-          index: number;
-          dealName: string;
-          councilMode: string;
-          status: string;
-          verdict?: string | null;
-          yesCount?: number | null;
-          noCount?: number | null;
-          hasIcReport: boolean;
-          councilResult?: Record<string, unknown> | null;
-          error?: string | null;
-        }) => {
-          const isProcessing = item.status === "processing";
-          const processingAgents = isProcessing
-            ? (AGENTS_BY_MODE[item.councilMode] || AGENTS_BY_MODE.gcc).map(a => a.name)
-            : undefined;
-          return {
-            index: item.index,
-            dealName: item.dealName,
-            councilMode: item.councilMode as DealResult["councilMode"],
-            status: (item.status === "queued" ? "pending" : item.status) as DealStatus,
-            verdict: (item.verdict ?? null) as VerdictType | null | undefined,
-            yesCount: item.yesCount ?? undefined,
-            noCount: item.noCount ?? undefined,
-            hasIcReport: item.hasIcReport,
-            councilResult: item.councilResult ?? null,
-            processingAgents,
-            error: item.error ?? undefined,
-            triage: null,
-          };
-        });
-
-        setDeals(updatedDeals);
-
-        // Track which deal is currently processing
-        const processingIdx = updatedDeals.findIndex(d => d.status === "processing");
-        if (processingIdx >= 0) setProcessingIndex(processingIdx);
-
-        // Check if batch is fully done
-        const isDone = statusData.status === "completed" || statusData.status === "partial";
-        if (isDone) {
-          if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-          pollIntervalRef.current = null;
-          setStage("results");
-          const failedCount = statusData.failedCount ?? 0;
-          if (failedCount > 0) {
-            toast.warning(`Batch complete — ${failedCount} deal${failedCount > 1 ? "s" : ""} failed. Use the Retry button to re-run them.`);
-          } else {
-            toast.success(`All ${statusData.totalDeals} deals processed successfully!`);
+      // Auto-retry helper: attempt up to 2 times with 5s delay on failure
+      const attemptScreen = async (): Promise<Response | null> => {
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const r = await fetch("/api/deal/screen", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              credentials: "include",
+              body: JSON.stringify({
+                dealText: deal.dealText,
+                dealName: deal.dealName,
+                councilMode: deal.councilMode,
+                includeReport: true,
+                forceReport: true,
+              }),
+            });
+            if (r.ok) return r;
+            // On non-ok response, retry once after 5s
+            if (attempt < 2) {
+              setDeals(prev => prev.map((d, i) =>
+                i === idx ? { ...d, error: `Attempt ${attempt} failed — retrying in 5s…` } : d
+              ));
+              await new Promise(res => setTimeout(res, 5000));
+            } else {
+              return r; // return the failed response on last attempt
+            }
+          } catch (netErr) {
+            if (attempt < 2) {
+              setDeals(prev => prev.map((d, i) =>
+                i === idx ? { ...d, error: `Network error — retrying in 5s…` } : d
+              ));
+              await new Promise(res => setTimeout(res, 5000));
+            } else {
+              throw netErr;
+            }
           }
         }
-      } catch (err) {
-        console.warn("[DataRoomV2] Poll error:", err);
-      }
-    };
+        return null;
+      };
 
-    // Poll immediately then every 2s
-    await poll();
-    pollIntervalRef.current = setInterval(poll, 2000);
+      try {
+        const res = await attemptScreen();
+
+        if (!res || !res.ok) {
+          const err = res ? await res.json().catch(() => ({ error: "Screening failed" })) : { error: "Screening failed" };
+          setDeals(prev => prev.map((d, i) =>
+            i === idx ? { ...d, status: "failed", error: err.error || "Screening failed" } : d
+          ));
+          return;
+        }
+
+        const json = await res.json();
+        // Response shape: { success: true, data: { council, triage, ic_report, ... } }
+        const payload = (json.data ?? json) as Record<string, unknown>;
+        const council = payload.council as Record<string, unknown> | null;
+        const verdict = council?.verdict as VerdictType | undefined;
+        const yesCount = typeof council?.yesCount === "number" ? council.yesCount : undefined;
+        const noCount  = typeof council?.noCount  === "number" ? council.noCount  : undefined;
+
+        setDeals(prev => prev.map((d, i) =>
+          i === idx ? {
+            ...d,
+            status: "completed",
+            verdict: verdict ?? null,
+            triage: (payload.triage as DealResult["triage"]) ?? null,
+            hasIcReport: !!payload.ic_report,
+            yesCount,
+            noCount,
+            councilResult: council ? {
+              ...council,
+              icReport: payload.ic_report,
+              dealName: deal.dealName,
+              dealId: payload.dealId ?? council.dealId,
+              dealText: deal.dealText,
+            } : null,
+            processingAgents: undefined,
+          } : d
+        ));
+      } catch (err) {
+        setDeals(prev => prev.map((d, i) =>
+          i === idx ? { ...d, status: "failed", error: "Network error" } : d
+        ));
+      }
+    }
+
+    // Worker pool
+    async function worker() {
+      while (nextIndex < uploadedDeals.length && !abortRef.current) {
+        const idx = nextIndex++;
+        await processOne(idx);
+      }
+    }
+
+    const workers = Array.from({ length: Math.min(CONCURRENCY, uploadedDeals.length) }, () => worker());
+    await Promise.all(workers);
+
+    if (!abortRef.current) {
+      setStage("results");
+    }
   }, [uploadedDeals]);
 
   // ── Bulk ZIP download ────────────────────────────────────────────────────────
@@ -427,78 +405,80 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
     }
   }, [deals]);
 
-  // ── Retry a single failed deal via server-side batch retry endpoint ─────────────
+  // ── Retry a single failed deal ────────────────────────────────────────────────
   const retryDeal = useCallback(async (idx: number) => {
-    if (!batchId) return;
-    // Optimistically reset to processing state
+    const deal = uploadedDeals[idx];
+    if (!deal) return;
+
+    // Reset to processing state
     setDeals(prev => prev.map((d, i) =>
-      i === idx ? {
-        ...d, status: "processing", error: undefined,
-        processingAgents: (AGENTS_BY_MODE[prev[i].councilMode] || AGENTS_BY_MODE.gcc).map(a => a.name)
-      } : d
+      i === idx ? { ...d, status: "processing", error: undefined, processingAgents: [] } : d
     ));
+
+    // Animate agents
+    const agents = AGENTS_BY_MODE[deal.councilMode] || AGENTS_BY_MODE.gcc;
+    for (let a = 0; a < agents.length; a++) {
+      await new Promise(r => setTimeout(r, 200));
+      setDeals(prev => prev.map((d, i) =>
+        i === idx ? { ...d, processingAgents: agents.slice(0, a + 1).map(ag => ag.name) } : d
+      ));
+    }
+
     try {
-      const res = await fetch(`/api/batch/${batchId}/retry-item`, {
+      const res = await fetch("/api/deal/screen", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ itemIndex: idx }),
+        body: JSON.stringify({
+          dealText: deal.dealText,
+          dealName: deal.dealName,
+          councilMode: deal.councilMode,
+          includeReport: true,
+          forceReport: true,
+        }),
       });
+
       if (!res.ok) {
-        const err = await res.json().catch(() => ({ error: "Retry failed" }));
-        toast.error(err.error || "Retry failed");
+        const err = await res.json().catch(() => ({ error: "Screening failed" }));
         setDeals(prev => prev.map((d, i) =>
-          i === idx ? { ...d, status: "failed", error: "Retry failed", processingAgents: undefined } : d
+          i === idx ? { ...d, status: "failed", error: err.error || "Screening failed", processingAgents: undefined } : d
         ));
         return;
       }
-      toast.success(`Retrying deal ${idx + 1}…`);
-      // Resume polling if not already active
-      if (!pollIntervalRef.current) {
-        const currentBatchId = batchId;
-        const poll = async () => {
-          try {
-            const statusRes = await fetch(`/api/batch/${currentBatchId}/status`, { credentials: "include" });
-            if (!statusRes.ok) return;
-            const statusData = await statusRes.json();
-            if (!statusData.success) return;
-            const updatedDeals: DealResult[] = statusData.items.map((item: {
-              index: number; dealName: string; councilMode: string; status: string;
-              verdict?: string | null; yesCount?: number | null; noCount?: number | null;
-              hasIcReport: boolean; councilResult?: Record<string, unknown> | null; error?: string | null;
-            }) => ({
-              index: item.index,
-              dealName: item.dealName,
-              councilMode: item.councilMode as DealResult["councilMode"],
-              status: (item.status === "queued" ? "pending" : item.status) as DealStatus,
-              verdict: (item.verdict ?? null) as VerdictType | null | undefined,
-              yesCount: item.yesCount ?? undefined,
-              noCount: item.noCount ?? undefined,
-              hasIcReport: item.hasIcReport,
-              councilResult: item.councilResult ?? null,
-              processingAgents: item.status === "processing"
-                ? (AGENTS_BY_MODE[item.councilMode] || AGENTS_BY_MODE.gcc).map(a => a.name)
-                : undefined,
-              error: item.error ?? undefined,
-              triage: null,
-            }));
-            setDeals(updatedDeals);
-            if (statusData.status === "completed" || statusData.status === "partial") {
-              if (pollIntervalRef.current) clearInterval(pollIntervalRef.current);
-              pollIntervalRef.current = null;
-            }
-          } catch { /* ignore poll errors */ }
-        };
-        await poll();
-        pollIntervalRef.current = setInterval(poll, 2000);
-      }
+
+      const json = await res.json();
+      const payload = (json.data ?? json) as Record<string, unknown>;
+      const council = payload.council as Record<string, unknown> | null;
+      const verdict = council?.verdict as VerdictType | undefined;
+      const yesCount = typeof council?.yesCount === "number" ? council.yesCount : undefined;
+      const noCount  = typeof council?.noCount  === "number" ? council.noCount  : undefined;
+
+      setDeals(prev => prev.map((d, i) =>
+        i === idx ? {
+          ...d,
+          status: "completed",
+          verdict: verdict ?? null,
+          triage: (payload.triage as DealResult["triage"]) ?? null,
+          hasIcReport: !!payload.ic_report,
+          yesCount,
+          noCount,
+          councilResult: council ? {
+            ...council,
+            icReport: payload.ic_report,
+            dealName: deal.dealName,
+            dealId: payload.dealId ?? council.dealId,
+            dealText: deal.dealText,
+          } : null,
+          processingAgents: undefined,
+          error: undefined,
+        } : d
+      ));
     } catch {
-      toast.error("Failed to connect to retry endpoint.");
       setDeals(prev => prev.map((d, i) =>
         i === idx ? { ...d, status: "failed", error: "Network error", processingAgents: undefined } : d
       ));
     }
-  }, [batchId]);
+  }, [uploadedDeals]);
 
   // ── Filtered results ─────────────────────────────────────────────────────────
   const filteredDeals = deals.filter(d => {
@@ -529,20 +509,12 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
               Upload deal files or a ZIP archive. Name files with <span style={{ color: AMBER }}>gcc</span>, <span style={{ color: ACCENT }}>global</span>, or <span style={{ color: GREEN }}>india</span> to set council mode.
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button
-              onClick={() => { loadHistory(); setStage("history"); }}
-              style={{ background: BG3, border: `1px solid ${BORDER}`, color: TEXT2, padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
-            >
-              🕐 History
-            </button>
-            <button
-              onClick={onCancel}
-              style={{ background: "none", border: `1px solid ${BORDER}`, color: TEXT2, padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
-            >
-              ← Back
-            </button>
-          </div>
+          <button
+            onClick={onCancel}
+            style={{ background: "none", border: `1px solid ${BORDER}`, color: TEXT2, padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
+          >
+            ← Back
+          </button>
         </div>
 
         {/* Drop zone */}
@@ -608,80 +580,6 @@ export default function DataRoomV2({ onDrillDown, onCancel, onSingleDeal }: Prop
             </div>
           ))}
         </div>
-      </div>
-    );
-  }
-
-  // ── STAGE: HISTORY ──────────────────────────────────────────────────────────
-  if (stage === "history") {
-    const statusColor = (s: string) => s === "completed" ? GREEN : s === "partial" ? AMBER : s === "processing" ? ACCENT : MUTED;
-    const statusIcon = (s: string) => s === "completed" ? "✅" : s === "partial" ? "⚠️" : s === "processing" ? "⚡" : "⏳";
-    return (
-      <div style={{ fontFamily: MONO, color: TEXT, display: "flex", flexDirection: "column", gap: 20 }}>
-        {/* Header */}
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div>
-            <div style={{ fontSize: 20, fontWeight: 700, color: ACCENT, letterSpacing: 1 }}>🕐 BATCH HISTORY</div>
-            <div style={{ fontSize: 12, color: TEXT2, marginTop: 4 }}>All previous batch runs (most recent first)</div>
-          </div>
-          <button
-            onClick={() => setStage("upload")}
-            style={{ background: "none", border: `1px solid ${BORDER}`, color: TEXT2, padding: "6px 14px", borderRadius: 6, cursor: "pointer", fontSize: 12 }}
-          >
-            ← Back
-          </button>
-        </div>
-
-        {historyLoading ? (
-          <div style={{ textAlign: "center", color: TEXT2, padding: 40 }}>Loading…</div>
-        ) : historyBatches.length === 0 ? (
-          <div style={{ textAlign: "center", color: MUTED, padding: 40 }}>No batch runs found.</div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {historyBatches.map((batch) => {
-              const created = new Date(batch.createdAt).toLocaleString();
-              const completed = batch.completedAt ? new Date(batch.completedAt).toLocaleString() : null;
-              const duration = batch.completedAt
-                ? Math.round((new Date(batch.completedAt).getTime() - new Date(batch.createdAt).getTime()) / 1000)
-                : null;
-              return (
-                <div key={batch.batchId} style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "16px 20px", display: "flex", alignItems: "center", gap: 16 }}>
-                  {/* Status icon */}
-                  <div style={{ fontSize: 20 }}>{statusIcon(batch.status)}</div>
-
-                  {/* Main info */}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                      <span style={{ fontSize: 12, fontWeight: 700, color: statusColor(batch.status) }}>{batch.status.toUpperCase()}</span>
-                      <span style={{ fontSize: 10, color: MUTED, fontFamily: "monospace" }}>{batch.batchId.slice(0, 8)}…</span>
-                    </div>
-                    <div style={{ fontSize: 11, color: TEXT2 }}>
-                      {batch.totalDeals} deals · {batch.completedCount} completed · {batch.failedCount} failed
-                    </div>
-                    <div style={{ fontSize: 10, color: MUTED, marginTop: 4 }}>
-                      Started: {created}{completed ? ` · Finished: ${completed}` : ""}
-                      {duration !== null ? ` · ${duration}s total` : ""}
-                    </div>
-                  </div>
-
-                  {/* Stats */}
-                  <div style={{ display: "flex", gap: 8 }}>
-                    <div style={{ textAlign: "center", background: BG3, border: `1px solid ${BORDER}`, borderRadius: 6, padding: "6px 12px" }}>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: ACCENT }}>{batch.completedCount}</div>
-                      <div style={{ fontSize: 9, color: TEXT2 }}>DONE</div>
-                    </div>
-                    {batch.failedCount > 0 && (
-                      <div style={{ textAlign: "center", background: BG3, border: `1px solid ${RED}44`, borderRadius: 6, padding: "6px 12px" }}>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: RED }}>{batch.failedCount}</div>
-                        <div style={{ fontSize: 9, color: TEXT2 }}>FAILED</div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
       </div>
     );
   }

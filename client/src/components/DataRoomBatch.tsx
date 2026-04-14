@@ -1,9 +1,17 @@
 /**
  * DataRoomBatch.tsx
  * Multi-deal "Data Room Mode" for Deal Screener.
+ *
+ * Terminology:
+ *   Screening Result = full pipeline output (triage + council + votes + rationale + verdict)
+ *   IC Memo          = long-form generated investment report (on-demand, per deal)
+ *   Audit Trail      = stored reasoning (votes, rationales, timestamps, status)
+ *
  * Supports: paste (delimiter-separated) + JSON file upload.
  * Processes up to 100 deals concurrently (5-worker pool).
- * Shows live progress table with drill-down into existing ICReport.
+ * Shows live progress table with drill-down into full Screening Result.
+ * Per-deal "Generate IC Memo" button calls POST /api/deal/:dealId/generate-memo.
+ * Verdict donut chart shown in the done stage summary.
  */
 import React, { useState, useRef, useCallback } from "react";
 
@@ -26,6 +34,7 @@ const MONO = "'IBM Plex Mono', 'Fira Code', 'JetBrains Mono', monospace";
 type VerdictType = "APPROVED" | "APPROVED_WITH_CONDITIONS" | "REJECTED" | "VETOED";
 type BatchStatus = "pending" | "processing" | "completed" | "failed";
 type FilterType = "all" | "approved" | "rejected" | "review" | "failed";
+type MemoStatus = "idle" | "loading" | "done" | "error";
 
 export interface BatchDealResult {
   index: number;
@@ -35,7 +44,10 @@ export interface BatchDealResult {
   triage?: { decision: string; confidence: number; reason: string } | null;
   verdict?: VerdictType | null;
   hasIcReport: boolean;
-  councilResult?: object | null; // full CouncilResult for drill-down
+  dealId?: string | null;           // DB deal ID for generate-memo endpoint
+  councilResult?: object | null;    // full Screening Result for drill-down
+  memoStatus?: MemoStatus;          // per-deal IC Memo generation state
+  memoText?: string | null;         // generated IC Memo text
   error?: string;
 }
 
@@ -50,14 +62,12 @@ const CONCURRENCY = 5;
 const MAX_DEALS = 100;
 
 function parsePastedDeals(raw: string): Array<{ dealText: string; dealName: string }> {
-  // Split on common delimiters: "---", "===", triple newline, or numbered "1." prefix
   const blocks = raw
     .split(/\n---+\n|\n===+\n|\n{3,}/)
     .map(b => b.trim())
-    .filter(b => b.length > 30); // ignore tiny fragments
+    .filter(b => b.length > 30);
 
   return blocks.map((block, i) => {
-    // Try to extract a deal name from the first line if it looks like a title
     const lines = block.split("\n");
     const firstLine = lines[0].trim();
     const looksLikeTitle = firstLine.length < 80 && !firstLine.includes(". ") && lines.length > 2;
@@ -85,6 +95,136 @@ function triageColor(d?: string): string {
   return MUTED;
 }
 
+// ── Verdict Donut Chart ───────────────────────────────────────────────────────
+interface DonutProps {
+  approved: number;
+  conditional: number;
+  rejected: number;
+  vetoed: number;
+  total: number;
+}
+
+function VerdictDonut({ approved, conditional, rejected, vetoed, total }: DonutProps) {
+  if (total === 0) return null;
+
+  const size = 140;
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = 52;
+  const strokeWidth = 18;
+  const circumference = 2 * Math.PI * r;
+
+  const segments: Array<{ value: number; color: string; label: string }> = [
+    { value: approved, color: GREEN, label: "APPROVED" },
+    { value: conditional, color: AMBER, label: "CONDITIONAL" },
+    { value: rejected, color: RED, label: "REJECTED" },
+    { value: vetoed, color: PURPLE, label: "VETOED" },
+  ].filter(s => s.value > 0);
+
+  let offset = 0;
+  const arcs = segments.map(seg => {
+    const pct = seg.value / total;
+    const dash = pct * circumference;
+    const gap = circumference - dash;
+    const arc = { ...seg, pct, dash, gap, offset };
+    offset += dash;
+    return arc;
+  });
+
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 28 }}>
+      {/* SVG donut */}
+      <svg width={size} height={size} style={{ flexShrink: 0 }}>
+        {/* Background ring */}
+        <circle cx={cx} cy={cy} r={r} fill="none" stroke={BG3} strokeWidth={strokeWidth} />
+        {/* Segments */}
+        {arcs.map((arc, i) => (
+          <circle
+            key={i}
+            cx={cx}
+            cy={cy}
+            r={r}
+            fill="none"
+            stroke={arc.color}
+            strokeWidth={strokeWidth}
+            strokeDasharray={`${arc.dash} ${arc.gap}`}
+            strokeDashoffset={-arc.offset}
+            style={{ transform: "rotate(-90deg)", transformOrigin: `${cx}px ${cy}px` }}
+          />
+        ))}
+        {/* Center text */}
+        <text x={cx} y={cy - 6} textAnchor="middle" fill={TEXT} fontFamily={MONO} fontSize={22} fontWeight={700}>{total}</text>
+        <text x={cx} y={cy + 12} textAnchor="middle" fill={MUTED} fontFamily={MONO} fontSize={8} letterSpacing="0.1em">DEALS</text>
+      </svg>
+
+      {/* Legend */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        {[
+          { label: "APPROVED", value: approved, color: GREEN },
+          { label: "CONDITIONAL", value: conditional, color: AMBER },
+          { label: "REJECTED", value: rejected, color: RED },
+          { label: "VETOED", value: vetoed, color: PURPLE },
+        ].map(item => (
+          <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 8, height: 8, borderRadius: "50%", background: item.color, flexShrink: 0 }} />
+            <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, letterSpacing: "0.06em", minWidth: 90 }}>{item.label}</span>
+            <span style={{ fontFamily: MONO, fontSize: 11, color: item.value > 0 ? item.color : MUTED, fontWeight: 700 }}>{item.value}</span>
+            <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED }}>
+              ({total > 0 ? Math.round((item.value / total) * 100) : 0}%)
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── IC Memo Modal ─────────────────────────────────────────────────────────────
+function IcMemoModal({ memoText, dealName, onClose }: { memoText: string; dealName: string; onClose: () => void }) {
+  return (
+    <div style={{
+      position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)", zIndex: 1000,
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+    }}>
+      <div style={{
+        background: BG2, border: `1px solid ${BORDER}`, borderRadius: 10,
+        maxWidth: 760, width: "100%", maxHeight: "85vh",
+        display: "flex", flexDirection: "column",
+      }}>
+        {/* Header */}
+        <div style={{ padding: "16px 20px", borderBottom: `1px solid ${BORDER}`, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: ACCENT, letterSpacing: "0.15em", marginBottom: 2 }}>IC MEMO</div>
+            <div style={{ fontFamily: MONO, fontSize: 13, color: TEXT }}>{dealName}</div>
+          </div>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(memoText);
+              }}
+              style={{ padding: "6px 14px", background: "rgba(74,158,255,0.1)", border: `1px solid ${ACCENT}`, borderRadius: 4, color: ACCENT, fontFamily: MONO, fontSize: 10, cursor: "pointer", letterSpacing: "0.06em" }}
+            >
+              COPY
+            </button>
+            <button
+              onClick={onClose}
+              style={{ padding: "6px 14px", background: "transparent", border: `1px solid ${BORDER}`, borderRadius: 4, color: TEXT2, fontFamily: MONO, fontSize: 10, cursor: "pointer" }}
+            >
+              CLOSE
+            </button>
+          </div>
+        </div>
+        {/* Content */}
+        <div style={{ padding: "20px 24px", overflowY: "auto", flex: 1 }}>
+          <pre style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, whiteSpace: "pre-wrap", lineHeight: 1.7, margin: 0 }}>
+            {memoText}
+          </pre>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Props) {
   const [stage, setStage] = useState<"input" | "processing" | "done">("input");
@@ -94,6 +234,7 @@ export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Pr
   const [processed, setProcessed] = useState(0);
   const [total, setTotal] = useState(0);
   const [filter, setFilter] = useState<FilterType>("all");
+  const [memoModal, setMemoModal] = useState<{ dealName: string; memoText: string } | null>(null);
   const abortRef = useRef(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -109,6 +250,7 @@ export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Pr
       dealText: d.dealText,
       status: "pending",
       hasIcReport: false,
+      memoStatus: "idle",
     }));
     setDeals(initial);
     setTotal(rawDeals.length);
@@ -123,7 +265,6 @@ export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Pr
         const idx = cursor++;
         const deal = rawDeals[idx];
 
-        // Mark as processing
         setDeals(prev => prev.map(d => d.index === idx ? { ...d, status: "processing" } : d));
 
         try {
@@ -148,7 +289,9 @@ export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Pr
             triage: data.triage ?? null,
             verdict: data.council?.verdict ?? null,
             hasIcReport: !!data.ic_report,
+            dealId: data.dealId ?? null,
             councilResult: data,
+            memoStatus: "idle",
           } : d));
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
@@ -159,7 +302,6 @@ export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Pr
       }
     };
 
-    // Spawn CONCURRENCY workers
     await Promise.all(Array.from({ length: Math.min(CONCURRENCY, rawDeals.length) }, runWorker));
     setStage("done");
   }, [councilMode]);
@@ -215,11 +357,42 @@ export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Pr
         triage: data.triage ?? null,
         verdict: data.council?.verdict ?? null,
         hasIcReport: !!data.ic_report,
+        dealId: data.dealId ?? null,
         councilResult: data,
+        memoStatus: "idle",
       } : d));
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       setDeals(prev => prev.map(d => d.index === idx ? { ...d, status: "failed", error: msg } : d));
+    }
+  };
+
+  // ── Generate IC Memo for a deal ──────────────────────────────────────────
+  const generateMemo = async (idx: number) => {
+    const deal = deals.find(d => d.index === idx);
+    if (!deal || !deal.dealId) return;
+
+    setDeals(prev => prev.map(d => d.index === idx ? { ...d, memoStatus: "loading" } : d));
+    try {
+      const resp = await fetch(`/api/deal/${deal.dealId}/generate-memo`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ forceRegenerate: false }),
+      });
+      const json = await resp.json();
+      if (!resp.ok || !json.success) throw new Error(json.error ?? "Unknown error");
+      setDeals(prev => prev.map(d => d.index === idx ? {
+        ...d,
+        memoStatus: "done",
+        memoText: json.memoText,
+        hasIcReport: true,
+      } : d));
+      // Auto-open the memo modal
+      setMemoModal({ dealName: deal.dealName, memoText: json.memoText });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      setDeals(prev => prev.map(d => d.index === idx ? { ...d, memoStatus: "error", error: msg } : d));
     }
   };
 
@@ -237,10 +410,12 @@ export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Pr
   const stats = {
     approved: deals.filter(d => d.verdict === "APPROVED").length,
     conditional: deals.filter(d => d.verdict === "APPROVED_WITH_CONDITIONS").length,
-    rejected: deals.filter(d => d.verdict === "REJECTED" || d.verdict === "VETOED").length,
+    rejected: deals.filter(d => d.verdict === "REJECTED").length,
+    vetoed: deals.filter(d => d.verdict === "VETOED").length,
     failed: deals.filter(d => d.status === "failed").length,
     triageFiltered: deals.filter(d => d.triage?.decision !== "PROCEED" && d.triage !== undefined && d.triage !== null).length,
   };
+  const totalVerdicted = stats.approved + stats.conditional + stats.rejected + stats.vetoed;
 
   // ── INPUT STAGE ──────────────────────────────────────────────────────────
   if (stage === "input") {
@@ -252,50 +427,46 @@ export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Pr
             <button onClick={onCancel} style={{ background: "transparent", border: `1px solid ${BORDER}`, color: TEXT2, fontFamily: MONO, fontSize: 10, padding: "4px 10px", borderRadius: 4, cursor: "pointer", letterSpacing: "0.06em" }}>
               ← BACK
             </button>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.15em" }}>DATA ROOM MODE · MULTI-DEAL BATCH</div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.15em" }}>DATA ROOM · BATCH SCREENING</div>
           </div>
-          <h2 style={{ margin: 0, fontSize: 22, color: TEXT, fontWeight: 700 }}>Upload Multiple Deals</h2>
-          <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, marginTop: 6 }}>
-            Up to {MAX_DEALS} deals · {CONCURRENCY} parallel workers · Full council analysis per deal
+          <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, lineHeight: 1.6 }}>
+            Submit up to {MAX_DEALS} deals for parallel screening. Each deal receives a full Screening Result (triage + 10-agent council + audit trail). IC Memos can be generated on-demand per deal after screening.
           </div>
         </div>
 
         {/* Option A: Paste */}
         <div style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "24px 28px", marginBottom: 16 }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.12em", marginBottom: 12 }}>OPTION A — PASTE MULTIPLE DEALS</div>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.12em", marginBottom: 12 }}>OPTION A — PASTE DEAL TEXT</div>
           <div style={{ fontSize: 12, color: TEXT2, marginBottom: 12 }}>
-            Separate deals with <code style={{ background: BG3, padding: "1px 5px", borderRadius: 3, color: AMBER }}>---</code> on its own line, or use 3+ blank lines between deals.
+            Separate multiple deals with <code style={{ background: BG3, padding: "1px 5px", borderRadius: 3, color: AMBER }}>---</code> on its own line, or use triple blank lines.
           </div>
           <textarea
             value={pasteText}
-            onChange={e => { setPasteText(e.target.value); setInputError(null); }}
-            placeholder={"Deal Alpha — Fintech GCC\nWe are building a BNPL platform for SMEs in Kuwait...\n\n---\n\nDeal Beta — HealthTech\nTelehealth platform for GCC with 12K active users..."}
-            rows={10}
+            onChange={e => setPasteText(e.target.value)}
+            placeholder={`Deal Alpha — SaaS for logistics\nWe are building a route optimization platform...\n\n---\n\nDeal Beta — Telehealth\nOur platform connects patients with specialists...`}
             style={{
-              width: "100%", padding: "12px 14px",
-              background: BG3, border: `1px solid ${BORDER}`,
-              borderRadius: 4, color: TEXT, fontFamily: MONO, fontSize: 12,
-              outline: "none", resize: "vertical", boxSizing: "border-box",
-              lineHeight: 1.6,
+              width: "100%", minHeight: 180, background: BG3,
+              border: `1px solid ${BORDER}`, borderRadius: 4,
+              color: TEXT, fontFamily: MONO, fontSize: 12,
+              padding: "12px 14px", resize: "vertical",
+              outline: "none", boxSizing: "border-box",
             }}
           />
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 12 }}>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED }}>
-              {pasteText.trim() ? `~${parsePastedDeals(pasteText).length} deal(s) detected` : "Paste deal memos above"}
-            </div>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 12 }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: MUTED }}>
+              {pasteText.trim() ? `~${parsePastedDeals(pasteText).length} deals detected` : ""}
+            </span>
             <button
               onClick={handlePasteSubmit}
               disabled={!pasteText.trim()}
               style={{
-                padding: "10px 24px", background: pasteText.trim() ? ACCENT : BG3,
-                border: "none", borderRadius: 4,
-                color: pasteText.trim() ? "#000" : MUTED,
-                fontFamily: MONO, fontSize: 12, fontWeight: 700,
-                cursor: pasteText.trim() ? "pointer" : "not-allowed",
-                letterSpacing: "0.08em",
+                padding: "10px 28px", background: pasteText.trim() ? "rgba(74,158,255,0.15)" : "transparent",
+                border: `1px solid ${pasteText.trim() ? ACCENT : BORDER}`, borderRadius: 4,
+                color: pasteText.trim() ? ACCENT : MUTED, fontFamily: MONO, fontSize: 12,
+                cursor: pasteText.trim() ? "pointer" : "not-allowed", letterSpacing: "0.08em",
               }}
             >
-              PROCESS BATCH →
+              SCREEN ALL DEALS →
             </button>
           </div>
         </div>
@@ -350,18 +521,27 @@ export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Pr
   const progressPct = total > 0 ? Math.round((processed / total) * 100) : 0;
 
   return (
-    <div style={{ maxWidth: 960, margin: "0 auto" }}>
+    <div style={{ maxWidth: 1020, margin: "0 auto" }}>
+      {/* IC Memo Modal */}
+      {memoModal && (
+        <IcMemoModal
+          dealName={memoModal.dealName}
+          memoText={memoModal.memoText}
+          onClose={() => setMemoModal(null)}
+        />
+      )}
+
       {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 24 }}>
         <button onClick={onCancel} style={{ background: "transparent", border: `1px solid ${BORDER}`, color: TEXT2, fontFamily: MONO, fontSize: 10, padding: "4px 10px", borderRadius: 4, cursor: "pointer", letterSpacing: "0.06em" }}>
           ← NEW BATCH
         </button>
         <div>
-          <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.15em", marginBottom: 2 }}>DATA ROOM MODE · BATCH ANALYSIS</div>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.15em", marginBottom: 2 }}>DATA ROOM · BATCH SCREENING</div>
           <div style={{ fontFamily: MONO, fontSize: 12, color: TEXT }}>
             {stage === "processing"
               ? `Processing ${processed} / ${total} deals...`
-              : `Completed — ${total} deals analysed`}
+              : `Completed — ${total} deals screened`}
           </div>
         </div>
         {stage === "processing" && (
@@ -379,21 +559,30 @@ export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Pr
         <div style={{ height: "100%", width: `${progressPct}%`, background: stage === "done" ? GREEN : ACCENT, transition: "width 0.3s ease", borderRadius: 4 }} />
       </div>
 
-      {/* Stats row */}
+      {/* Done stage: Donut chart + stats row */}
       {stage === "done" && (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 10, marginBottom: 20 }}>
-          {[
-            { label: "APPROVED", value: stats.approved, color: GREEN },
-            { label: "CONDITIONAL", value: stats.conditional, color: AMBER },
-            { label: "REJECTED", value: stats.rejected, color: RED },
-            { label: "TRIAGE FILTERED", value: stats.triageFiltered, color: PURPLE },
-            { label: "FAILED", value: stats.failed, color: MUTED },
-          ].map(s => (
-            <div key={s.label} style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 6, padding: "12px 14px", textAlign: "center" }}>
-              <div style={{ fontFamily: MONO, fontSize: 18, fontWeight: 700, color: s.color }}>{s.value}</div>
-              <div style={{ fontFamily: MONO, fontSize: 9, color: TEXT2, letterSpacing: "0.08em", marginTop: 3 }}>{s.label}</div>
-            </div>
-          ))}
+        <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: 20, marginBottom: 24, background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "20px 24px", alignItems: "center" }}>
+          {/* Donut */}
+          <VerdictDonut
+            approved={stats.approved}
+            conditional={stats.conditional}
+            rejected={stats.rejected}
+            vetoed={stats.vetoed}
+            total={totalVerdicted}
+          />
+          {/* Stats grid */}
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+            {[
+              { label: "TRIAGE FILTERED", value: stats.triageFiltered, color: PURPLE },
+              { label: "FAILED", value: stats.failed, color: RED },
+              { label: "IC MEMOS READY", value: deals.filter(d => d.hasIcReport).length, color: AMBER },
+            ].map(s => (
+              <div key={s.label} style={{ background: BG3, border: `1px solid ${BORDER}`, borderRadius: 6, padding: "12px 14px", textAlign: "center" }}>
+                <div style={{ fontFamily: MONO, fontSize: 20, fontWeight: 700, color: s.color }}>{s.value}</div>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: TEXT2, letterSpacing: "0.08em", marginTop: 3 }}>{s.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -412,7 +601,11 @@ export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Pr
               textTransform: "uppercase",
             }}
           >
-            {f === "all" ? `ALL (${deals.length})` : f === "approved" ? `APPROVED (${stats.approved + stats.conditional})` : f === "rejected" ? `REJECTED (${stats.rejected})` : f === "review" ? `CONDITIONAL (${stats.conditional})` : `FAILED (${stats.failed})`}
+            {f === "all" ? `ALL (${deals.length})`
+              : f === "approved" ? `APPROVED (${stats.approved + stats.conditional})`
+              : f === "rejected" ? `REJECTED / VETOED (${stats.rejected + stats.vetoed})`
+              : f === "review" ? `CONDITIONAL (${stats.conditional})`
+              : `FAILED (${stats.failed})`}
           </button>
         ))}
       </div>
@@ -420,8 +613,8 @@ export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Pr
       {/* Summary table */}
       <div style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, overflow: "hidden" }}>
         {/* Table header */}
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1.5fr 0.8fr 0.8fr 0.8fr", gap: 0, padding: "10px 16px", background: BG3, borderBottom: `1px solid ${BORDER}` }}>
-          {["DEAL NAME", "TRIAGE", "VERDICT", "IC REPORT", "STATUS", "ACTION"].map(h => (
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr 1.5fr 0.7fr 0.7fr 1.2fr", gap: 0, padding: "10px 16px", background: BG3, borderBottom: `1px solid ${BORDER}` }}>
+          {["DEAL NAME", "TRIAGE", "VERDICT", "IC MEMO", "STATUS", "ACTIONS"].map(h => (
             <div key={h} style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em" }}>{h}</div>
           ))}
         </div>
@@ -432,12 +625,13 @@ export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Pr
             No deals match the current filter.
           </div>
         )}
+
         {filteredDeals.map((deal, rowIdx) => (
           <div
             key={deal.index}
             style={{
               display: "grid",
-              gridTemplateColumns: "2fr 1fr 1.5fr 0.8fr 0.8fr 0.8fr",
+              gridTemplateColumns: "2fr 1fr 1.5fr 0.7fr 0.7fr 1.2fr",
               gap: 0,
               padding: "12px 16px",
               borderBottom: rowIdx < filteredDeals.length - 1 ? `1px solid ${BORDER}` : "none",
@@ -454,10 +648,11 @@ export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Pr
             <div>
               {deal.triage ? (
                 <span style={{ fontFamily: MONO, fontSize: 9, color: triageColor(deal.triage.decision), background: `${triageColor(deal.triage.decision)}15`, padding: "2px 6px", borderRadius: 3, letterSpacing: "0.06em" }}>
-                  {deal.triage.decision === "PROCEED" ? "PROCEED" : deal.triage.decision === "OBVIOUS_REJECT" ? "REJECTED" : deal.triage.decision === "INSUFFICIENT_INPUT" ? "INSUFFICIENT" : "OUT OF SCOPE"}
+                  {deal.triage.decision === "PROCEED" ? "PROCEED"
+                    : deal.triage.decision === "OBVIOUS_REJECT" ? "REJECTED"
+                    : deal.triage.decision === "INSUFFICIENT_INPUT" ? "INSUFFICIENT"
+                    : "OUT OF SCOPE"}
                 </span>
-              ) : deal.status === "processing" ? (
-                <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED }}>—</span>
               ) : (
                 <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED }}>—</span>
               )}
@@ -467,18 +662,26 @@ export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Pr
             <div>
               {deal.verdict ? (
                 <span style={{ fontFamily: MONO, fontSize: 9, color: verdictColor(deal.verdict), background: `${verdictColor(deal.verdict)}15`, padding: "2px 6px", borderRadius: 3, letterSpacing: "0.06em" }}>
-                  {deal.verdict.replace("_", " ")}
+                  {deal.verdict === "APPROVED_WITH_CONDITIONS" ? "CONDITIONAL" : deal.verdict}
                 </span>
               ) : deal.status === "processing" ? (
-                <span style={{ fontFamily: MONO, fontSize: 9, color: ACCENT, animation: "pulse 1.5s infinite" }}>ANALYSING...</span>
+                <span style={{ fontFamily: MONO, fontSize: 9, color: ACCENT }}>ANALYSING...</span>
               ) : (
                 <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED }}>—</span>
               )}
             </div>
 
-            {/* IC Report */}
-            <div style={{ fontFamily: MONO, fontSize: 10, color: deal.hasIcReport ? GREEN : MUTED }}>
-              {deal.hasIcReport ? "YES" : "NO"}
+            {/* IC Memo status */}
+            <div style={{ fontFamily: MONO, fontSize: 10 }}>
+              {deal.hasIcReport ? (
+                <span style={{ color: GREEN }}>READY</span>
+              ) : deal.memoStatus === "loading" ? (
+                <span style={{ color: AMBER }}>GEN...</span>
+              ) : deal.memoStatus === "error" ? (
+                <span style={{ color: RED }}>ERR</span>
+              ) : (
+                <span style={{ color: MUTED }}>—</span>
+              )}
             </div>
 
             {/* Status */}
@@ -492,26 +695,63 @@ export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Pr
               </span>
             </div>
 
-            {/* Action */}
-            <div style={{ display: "flex", gap: 6 }}>
+            {/* Actions */}
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+              {/* View Screening Result */}
               {deal.status === "completed" && deal.councilResult && (
                 <button
                   onClick={() => onDrillDown(deal.councilResult!)}
                   style={{
-                    padding: "4px 10px", background: "rgba(74,158,255,0.1)",
+                    padding: "3px 8px", background: "rgba(74,158,255,0.1)",
                     border: `1px solid ${ACCENT}`, borderRadius: 3,
                     color: ACCENT, fontFamily: MONO, fontSize: 9,
                     cursor: "pointer", letterSpacing: "0.06em",
                   }}
                 >
-                  VIEW →
+                  VIEW
                 </button>
               )}
+
+              {/* Generate IC Memo */}
+              {deal.status === "completed" && deal.dealId && (
+                deal.memoStatus === "done" && deal.memoText ? (
+                  <button
+                    onClick={() => setMemoModal({ dealName: deal.dealName, memoText: deal.memoText! })}
+                    style={{
+                      padding: "3px 8px", background: "rgba(0,255,135,0.1)",
+                      border: `1px solid ${GREEN}`, borderRadius: 3,
+                      color: GREEN, fontFamily: MONO, fontSize: 9,
+                      cursor: "pointer", letterSpacing: "0.06em",
+                    }}
+                  >
+                    MEMO ↗
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => generateMemo(deal.index)}
+                    disabled={deal.memoStatus === "loading"}
+                    style={{
+                      padding: "3px 8px",
+                      background: deal.memoStatus === "loading" ? "rgba(212,175,55,0.06)" : "rgba(212,175,55,0.1)",
+                      border: `1px solid ${deal.memoStatus === "loading" ? "rgba(212,175,55,0.3)" : AMBER}`,
+                      borderRadius: 3,
+                      color: deal.memoStatus === "loading" ? "rgba(212,175,55,0.5)" : AMBER,
+                      fontFamily: MONO, fontSize: 9,
+                      cursor: deal.memoStatus === "loading" ? "not-allowed" : "pointer",
+                      letterSpacing: "0.06em",
+                    }}
+                  >
+                    {deal.memoStatus === "loading" ? "GEN..." : "+ MEMO"}
+                  </button>
+                )
+              )}
+
+              {/* Retry failed */}
               {deal.status === "failed" && (
                 <button
                   onClick={() => retryDeal(deal.index)}
                   style={{
-                    padding: "4px 10px", background: "rgba(255,71,87,0.1)",
+                    padding: "3px 8px", background: "rgba(255,71,87,0.1)",
                     border: `1px solid ${RED}`, borderRadius: 3,
                     color: RED, fontFamily: MONO, fontSize: 9,
                     cursor: "pointer", letterSpacing: "0.06em",
@@ -525,15 +765,24 @@ export default function DataRoomBatch({ councilMode, onDrillDown, onCancel }: Pr
         ))}
       </div>
 
-      {/* Error detail tooltip area */}
+      {/* Error detail area */}
       {deals.some(d => d.status === "failed" && d.error) && (
         <div style={{ marginTop: 16, background: "rgba(255,71,87,0.06)", border: `1px solid rgba(255,71,87,0.2)`, borderRadius: 6, padding: "12px 16px" }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, color: RED, marginBottom: 8, letterSpacing: "0.08em" }}>FAILED DEALS:</div>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: RED, marginBottom: 8, letterSpacing: "0.08em" }}>FAILED DEALS — AUDIT TRAIL:</div>
           {deals.filter(d => d.status === "failed" && d.error).map(d => (
             <div key={d.index} style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, marginBottom: 4 }}>
               <span style={{ color: TEXT }}>{d.dealName}</span>: {d.error}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Terminology note */}
+      {stage === "done" && (
+        <div style={{ marginTop: 16, padding: "10px 14px", background: "rgba(74,158,255,0.04)", border: `1px solid rgba(74,158,255,0.12)`, borderRadius: 4 }}>
+          <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED }}>
+            SCREENING RESULT = triage + council votes + rationale + verdict (stored in DB) · IC MEMO = long-form investment report (on-demand, click + MEMO) · AUDIT TRAIL = full vote log per deal
+          </span>
         </div>
       )}
     </div>

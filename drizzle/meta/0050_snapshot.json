@@ -1,7 +1,7 @@
 {
   "version": "5",
   "dialect": "mysql",
-  "id": "a490d717-50a8-4cd5-8943-9e7749fa6bb3",
+  "id": "9702b1dd-c3f0-4180-9f53-89fbadaf8b87",
   "prevId": "e8565f4c-8566-4fba-a4f9-6f183b0c55f0",
   "tables": {
     "admesh_ads": {
@@ -1059,261 +1059,6 @@
         }
       },
       "uniqueConstraints": {},
-      "checkConstraint": {}
-    },
-    "batch_deal_items": {
-      "name": "batch_deal_items",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "batchId": {
-          "name": "batchId",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "itemIndex": {
-          "name": "itemIndex",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "dealName": {
-          "name": "dealName",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "dealText": {
-          "name": "dealText",
-          "type": "longtext",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "councilMode": {
-          "name": "councilMode",
-          "type": "enum('gcc','global_vc','india_pe')",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'gcc'"
-        },
-        "status": {
-          "name": "status",
-          "type": "enum('queued','processing','completed','failed')",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'queued'"
-        },
-        "verdict": {
-          "name": "verdict",
-          "type": "enum('APPROVED','APPROVED_WITH_CONDITIONS','REJECTED','VETOED')",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "yesCount": {
-          "name": "yesCount",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "noCount": {
-          "name": "noCount",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "hasIcReport": {
-          "name": "hasIcReport",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": false
-        },
-        "councilResult": {
-          "name": "councilResult",
-          "type": "longtext",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "errorMessage": {
-          "name": "errorMessage",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "startedAt": {
-          "name": "startedAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "completedAt": {
-          "name": "completedAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
-        }
-      },
-      "indexes": {
-        "bdi_job_idx": {
-          "name": "bdi_job_idx",
-          "columns": [
-            "batchId"
-          ],
-          "isUnique": false
-        },
-        "bdi_status_idx": {
-          "name": "bdi_status_idx",
-          "columns": [
-            "status"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "batch_deal_items_id": {
-          "name": "batch_deal_items_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {},
-      "checkConstraint": {}
-    },
-    "batch_jobs": {
-      "name": "batch_jobs",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": true
-        },
-        "batchId": {
-          "name": "batchId",
-          "type": "varchar(64)",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "userId": {
-          "name": "userId",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "status": {
-          "name": "status",
-          "type": "enum('queued','processing','completed','partial')",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "'queued'"
-        },
-        "totalDeals": {
-          "name": "totalDeals",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
-        },
-        "completedCount": {
-          "name": "completedCount",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
-        },
-        "failedCount": {
-          "name": "failedCount",
-          "type": "int",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": 0
-        },
-        "createdAt": {
-          "name": "createdAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(now())"
-        },
-        "completedAt": {
-          "name": "completedAt",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "bj_batch_idx": {
-          "name": "bj_batch_idx",
-          "columns": [
-            "batchId"
-          ],
-          "isUnique": false
-        },
-        "bj_user_idx": {
-          "name": "bj_user_idx",
-          "columns": [
-            "userId"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {
-        "batch_jobs_id": {
-          "name": "batch_jobs_id",
-          "columns": [
-            "id"
-          ]
-        }
-      },
-      "uniqueConstraints": {
-        "batch_jobs_batchId_unique": {
-          "name": "batch_jobs_batchId_unique",
-          "columns": [
-            "batchId"
-          ]
-        }
-      },
       "checkConstraint": {}
     },
     "beta_access_requests": {
@@ -2436,6 +2181,28 @@
           "notNull": true,
           "autoincrement": false,
           "default": false
+        },
+        "icMemoText": {
+          "name": "icMemoText",
+          "type": "longtext",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "icMemoVersion": {
+          "name": "icMemoVersion",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": 0
+        },
+        "icMemoGeneratedAt": {
+          "name": "icMemoGeneratedAt",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         },
         "sourceType": {
           "name": "sourceType",
