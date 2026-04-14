@@ -132,7 +132,7 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
           userId,
           dealId: triageDealId,
           dealName,
-          dealText,
+          // dealText intentionally omitted — enterprise data security policy
           pdfFileKey: null,
           pdfFileUrl: null,
           verdict: "REJECTED",
@@ -202,7 +202,7 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
         userId,
         dealId,
         dealName,
-        dealText,
+        // dealText intentionally omitted — enterprise data security policy
         pdfFileKey: null,
         pdfFileUrl: null,
         verdict: result.verdict as "APPROVED" | "APPROVED_WITH_CONDITIONS" | "REJECTED" | "VETOED" | "INSUFFICIENT_DATA",

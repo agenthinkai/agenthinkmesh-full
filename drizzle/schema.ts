@@ -738,7 +738,8 @@ export const dealScreenings = mysqlTable("deal_screenings", {
   userId: int("userId").notNull(),              // FK → users.id
   dealId: varchar("dealId", { length: 64 }).notNull().unique(), // UUID generated server-side
   dealName: varchar("dealName", { length: 255 }).notNull(),
-  dealText: text("dealText").notNull(),         // raw input (pasted or extracted from PDF)
+  // dealText intentionally NOT stored — enterprise data security policy:
+  // raw deal input is processed in server-side memory only and never persisted.
   pdfFileKey: varchar("pdfFileKey", { length: 512 }), // S3 key if PDF was uploaded
   pdfFileUrl: text("pdfFileUrl"),               // S3 URL if PDF was uploaded
 

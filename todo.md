@@ -2025,3 +2025,15 @@
 - [x] Fix: marked Mortality Insight Analyst and 3 other degraded agents as inactive — 0 degraded agents remaining
 - [x] Confirmed: degraded agents are excluded from discover procedure (status filter), so live council runs were NOT affected
 - [x] TypeScript: 0 errors (confirmed via fresh npx tsc --noEmit --skipLibCheck)
+
+## Enterprise Data Security — Raw Input Non-Persistence (Priority)
+
+- [x] Audit: dealText found in 1 column (deal_screenings.deal_text), 425 rows, ~432 KB. No raw text in logs.
+- [x] Schema: removed dealText column from deal_screenings table (schema.ts + ALTER TABLE)
+- [x] Removed dealText from all DB inserts: dealScreener.ts (3 insert blocks), runScreeningPipeline.ts (2 insert blocks)
+- [x] Updated generate-memo route: now requires dealText in request body since it is no longer stored
+- [x] Log sanitisation: confirmed no raw deal text in any console.log/error/warn call
+- [x] Purge: deal_text column dropped from production DB — all 425 rows purged of raw input
+- [x] BANANA123 verification test: PASSED — 0 occurrences in 73 tables + 3 log files
+- [x] TypeScript: 0 errors (confirmed via fresh npx tsc --noEmit --skipLibCheck)
+- [x] Checkpoint saved

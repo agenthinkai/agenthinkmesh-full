@@ -263,7 +263,9 @@ router.post("/:dealId/generate-memo", async (req: Request, res: Response): Promi
     if (!requireAuth(userId, res)) return;
 
     const { dealId } = req.params;
-    const { forceRegenerate = false } = req.body as { forceRegenerate?: boolean };
+    // dealText is no longer stored in DB (enterprise data security policy).
+    // Callers must supply it in the request body for memo regeneration.
+    const { forceRegenerate = false, dealText: bodyDealText } = req.body as { forceRegenerate?: boolean; dealText?: string };
 
     const db = await getDb();
     if (!db) {
@@ -336,9 +338,20 @@ router.post("/:dealId/generate-memo", async (req: Request, res: Response): Promi
     };
 
     // Generate the IC Memo
+    // dealText is no longer stored in DB — use the value from the request body.
+    // If not provided and no cached memo exists, return an error.
+    if (!bodyDealText && !record.icMemoText) {
+      res.status(400).json({
+        success: false,
+        error: "deal_text_required",
+        message: "Raw deal input is not stored for security reasons. Please re-submit the deal text to regenerate the IC memo.",
+      });
+      return;
+    }
+    const dealTextForMemo = bodyDealText ?? "";
     const icReport = await generateSingleDealICReport(
       record.dealName,
-      record.dealText,
+      dealTextForMemo,
       councilResult as Parameters<typeof generateSingleDealICReport>[2]
     );
 

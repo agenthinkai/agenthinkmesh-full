@@ -139,7 +139,7 @@ export const dealScreenerRouter = router({
           dealId: ownerDealId,
           userId: ctx.user.id,
           dealName: input.dealName,
-          dealText: input.dealText,
+          // dealText intentionally omitted — enterprise data security policy
           pdfFileKey: input.pdfFileKey ?? null,
           pdfFileUrl: input.pdfFileUrl ?? null,
           verdict: ownerResult.verdict as "APPROVED" | "APPROVED_WITH_CONDITIONS" | "REJECTED" | "VETOED" | "INSUFFICIENT_DATA",
@@ -265,7 +265,7 @@ export const dealScreenerRouter = router({
             userId: ctx.user.id,
             dealId: triageDealId,
             dealName: input.dealName,
-            dealText: input.dealText,
+            // dealText intentionally omitted — enterprise data security policy
             pdfFileKey: input.pdfFileKey ?? null,
             pdfFileUrl: input.pdfFileUrl ?? null,
             verdict: "REJECTED",
@@ -326,7 +326,7 @@ export const dealScreenerRouter = router({
         userId: ctx.user.id,
         dealId,
         dealName: input.dealName,
-        dealText: input.dealText,
+        // dealText intentionally omitted — enterprise data security policy
         pdfFileKey: input.pdfFileKey ?? null,
         pdfFileUrl: input.pdfFileUrl ?? null,
         verdict: result.verdict as "APPROVED" | "APPROVED_WITH_CONDITIONS" | "REJECTED" | "VETOED" | "INSUFFICIENT_DATA",
