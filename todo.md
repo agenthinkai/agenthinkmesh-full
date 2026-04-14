@@ -2037,3 +2037,12 @@
 - [x] BANANA123 verification test: PASSED — 0 occurrences in 73 tables + 3 log files
 - [x] TypeScript: 0 errors (confirmed via fresh npx tsc --noEmit --skipLibCheck)
 - [x] Checkpoint saved
+
+## Session N — Product Positioning Fix (Pre-Demo)
+
+- [x] Fix BoardroomICReport crash: undefined.length at line 1252 (consensusBreakdown fields)
+- [x] Add horizontal positioning statement at top of app ("AgenThink Mesh is not a model...")
+- [x] Rename "Investment Council" → "Decision Council" across UI
+- [x] Add Workflow Selector step before deal screen (Investment, Procurement, Compliance, Healthcare, Custom)
+- [x] Reposition Deal Screener label to "Investment Workflow (Example Use Case)"
+- [x] Save checkpoint after all positioning changes

@@ -771,7 +771,7 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
           <span style={{ fontFamily: MONO, fontSize: 13, color: RED }}>Reject: <strong>{ic.consensusBreakdown.reject}</strong></span>
           <span style={{ fontFamily: MONO, fontSize: 13, color: AMBER }}>Conditional: <strong>{ic.consensusBreakdown.conditional}</strong></span>
         </div>
-        {ic.consensusBreakdown.keyDisagreements.length > 0 && (
+        {(ic.consensusBreakdown.keyDisagreements ?? []).length > 0 && (
           <div>
             <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 8 }}>KEY DISAGREEMENTS</div>
             {ic.consensusBreakdown.keyDisagreements.map((d, i) => (
@@ -814,18 +814,18 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
               padding: "2px 10px", borderRadius: 3, letterSpacing: "0.08em",
             }}>{ic.decisionConfidence.level}</span>
           </div>
-          {ic.decisionConfidence.limitations.length > 0 && (
+          {(ic.decisionConfidence.limitations ?? []).length > 0 && (
             <div style={{ marginBottom: 10 }}>
               <div style={{ fontFamily: MONO, fontSize: 9, color: AMBER, marginBottom: 6, letterSpacing: "0.08em" }}>LIMITATIONS</div>
-              {ic.decisionConfidence.limitations.map((l, i) => (
+              {(ic.decisionConfidence.limitations ?? []).map((l, i) => (
                 <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${AMBER}`, lineHeight: 1.5 }}>⚠ {l}</div>
               ))}
             </div>
           )}
-          {ic.decisionConfidence.dataGaps.length > 0 && (
+          {(ic.decisionConfidence.dataGaps ?? []).length > 0 && (
             <div>
               <div style={{ fontFamily: MONO, fontSize: 9, color: RED, marginBottom: 6, letterSpacing: "0.08em" }}>DATA GAPS</div>
-              {ic.decisionConfidence.dataGaps.map((g, i) => (
+              {(ic.decisionConfidence.dataGaps ?? []).map((g, i) => (
                 <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${RED}`, lineHeight: 1.5 }}>✗ {g}</div>
               ))}
             </div>
@@ -834,9 +834,9 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
       )}
 
       {/* Grounded Facts vs Inferred Insights */}
-      {((ic.groundedFacts && ic.groundedFacts.length > 0) || (ic.inferredInsights && ic.inferredInsights.length > 0)) && (
+      {((ic.groundedFacts && (ic.groundedFacts ?? []).length > 0) || (ic.inferredInsights && (ic.inferredInsights ?? []).length > 0)) && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-          {ic.groundedFacts && ic.groundedFacts.length > 0 && (
+          {ic.groundedFacts && (ic.groundedFacts ?? []).length > 0 && (
             <div style={{ background: BG2, border: `1px solid rgba(0,255,135,0.2)`, borderRadius: 8, padding: "16px 20px" }}>
               <div style={{ fontFamily: MONO, fontSize: 10, color: GREEN, letterSpacing: "0.12em", marginBottom: 12 }}>10. GROUNDED FACTS</div>
               <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 8 }}>Directly supported by submitted data</div>
@@ -845,7 +845,7 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
               ))}
             </div>
           )}
-          {ic.inferredInsights && ic.inferredInsights.length > 0 && (
+          {ic.inferredInsights && (ic.inferredInsights ?? []).length > 0 && (
             <div style={{ background: BG2, border: `1px solid rgba(74,158,255,0.2)`, borderRadius: 8, padding: "16px 20px" }}>
               <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.12em", marginBottom: 12 }}>11. INFERRED INSIGHTS</div>
               <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 8 }}>Analyst inference — not directly stated in data</div>
@@ -862,7 +862,7 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
         <div style={{ marginTop: 24 }}>
           <div style={{ fontFamily: MONO, fontSize: 10, color: AMBER, letterSpacing: "0.12em", marginBottom: 16 }}>12. WHAT WOULD CHANGE THIS DECISION</div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
-            {ic.whatWouldChangeDecision.upgradeFactors && ic.whatWouldChangeDecision.upgradeFactors.length > 0 && (
+            {ic.whatWouldChangeDecision?.upgradeFactors && (ic.whatWouldChangeDecision.upgradeFactors ?? []).length > 0 && (
               <div style={{ background: "rgba(0,255,135,0.04)", border: "1px solid rgba(0,255,135,0.18)", borderRadius: 8, padding: "14px 16px" }}>
                 <div style={{ fontFamily: MONO, fontSize: 9, color: GREEN, letterSpacing: "0.1em", marginBottom: 10 }}>UPGRADE FACTORS</div>
                 <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 8 }}>Would make this a stronger YES</div>
@@ -871,7 +871,7 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
                 ))}
               </div>
             )}
-            {ic.whatWouldChangeDecision.downgradeFactors && ic.whatWouldChangeDecision.downgradeFactors.length > 0 && (
+            {ic.whatWouldChangeDecision?.downgradeFactors && (ic.whatWouldChangeDecision.downgradeFactors ?? []).length > 0 && (
               <div style={{ background: "rgba(255,68,68,0.04)", border: "1px solid rgba(255,68,68,0.18)", borderRadius: 8, padding: "14px 16px" }}>
                 <div style={{ fontFamily: MONO, fontSize: 9, color: RED, letterSpacing: "0.1em", marginBottom: 10 }}>DOWNGRADE FACTORS</div>
                 <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 8 }}>Would flip this to a NO</div>
@@ -880,7 +880,7 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
                 ))}
               </div>
             )}
-            {ic.whatWouldChangeDecision.keyMonitoringMetrics && ic.whatWouldChangeDecision.keyMonitoringMetrics.length > 0 && (
+            {ic.whatWouldChangeDecision?.keyMonitoringMetrics && (ic.whatWouldChangeDecision.keyMonitoringMetrics ?? []).length > 0 && (
               <div style={{ background: "rgba(255,159,67,0.04)", border: "1px solid rgba(255,159,67,0.18)", borderRadius: 8, padding: "14px 16px" }}>
                 <div style={{ fontFamily: MONO, fontSize: 9, color: AMBER, letterSpacing: "0.1em", marginBottom: 10 }}>KEY MONITORING METRICS</div>
                 <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 8 }}>Watch these post-investment</div>
@@ -1477,7 +1477,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp }: { result:
 
 // ──// ── Deal Form ─────────────────────────────────────────────────────
 const OWNER_EMAILS_LIST = ["farouq@agenthink.ai", "farouqsultan@gmail.com"];
-function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaymentSessionId, onPaymentVerified, councilMode, setCouncilMode }: {
+function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaymentSessionId, onPaymentVerified, councilMode, setCouncilMode, onChangeWorkflow }: {
   onResult: (r: CouncilResult) => void;
   onSubmitStart: () => void;
   onError: (msg: string) => void;
@@ -1485,6 +1485,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
   onPaymentVerified: () => void;
   councilMode: CouncilModeType;
   setCouncilMode: (m: CouncilModeType) => void;
+  onChangeWorkflow?: () => void;
 }) {
   const { user: authUser } = useAuth();
   const [dealName, setDealName] = useState("");
@@ -1682,10 +1683,10 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
         {/* Header */}
         <div style={{ marginBottom: 24, textAlign: "center" }}>
           <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.15em", marginBottom: 8 }}>
-            DEAL SCREENER v1.0 · COUNCIL OF 10
+            DECISION ENGINE · COUNCIL OF 10
           </div>
           <h1 style={{ margin: 0, fontSize: 28, color: TEXT, fontWeight: 800, letterSpacing: "-0.02em" }}>
-            Investment Council
+            Decision Council
           </h1>
         </div>
         <div style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "28px 32px" }}>
@@ -1703,14 +1704,25 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
       {/* Header */}
       <div style={{ marginBottom: 32, textAlign: "center" }}>
         <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.15em", marginBottom: 8 }}>
-          DEAL SCREENER v1.0 · COUNCIL OF 10
+          DECISION ENGINE · COUNCIL OF 10
         </div>
         <h1 style={{ margin: 0, fontSize: 28, color: TEXT, fontWeight: 800, letterSpacing: "-0.02em" }}>
-          Investment Council
+          Decision Council
         </h1>
+        <div style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "center", gap: 10, flexWrap: "wrap" }}>
+          <span style={{ fontFamily: MONO, fontSize: 10, padding: "3px 12px", borderRadius: 3, background: "rgba(0,255,135,0.1)", border: "1px solid rgba(0,255,135,0.3)", color: GREEN, letterSpacing: "0.08em" }}>📊 INVESTMENT WORKFLOW</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: MUTED }}>·</span>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.06em" }}>EXAMPLE USE CASE</span>
+          {onChangeWorkflow && (
+            <button
+              onClick={onChangeWorkflow}
+              style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, background: "none", border: "none", cursor: "pointer", textDecoration: "underline", padding: 0, letterSpacing: "0.06em" }}
+            >← CHANGE WORKFLOW</button>
+          )}
+        </div>
         <p style={{ margin: "8px 0 0", fontSize: 13, color: TEXT2, lineHeight: 1.6 }}>
-          Submit a deal memo. 10 specialist AI advisors vote in parallel.<br />
-          Receive an IC-ready decision report with verdict, risks, and conditions.
+          Run structured, multi-agent evaluations across any workflow.<br />
+          Investment · Procurement · Compliance · Healthcare · Custom
         </p>
         {/* Pay-per-run pricing badge */}
         <div style={{ marginTop: 16, display: "flex", justifyContent: "center", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
@@ -2610,7 +2622,17 @@ function RecentSignalsPanel({ onScreen }: { onScreen: (text: string) => void }) 
 }
 
 // ── Main DealScreener page ────────────────────────────────────────────
-type View = "input" | "loading" | "report" | "history" | "signals" | "batch";
+type View = "workflow" | "input" | "loading" | "report" | "history" | "signals" | "batch";
+
+type WorkflowType = "investment" | "procurement" | "compliance" | "healthcare" | "custom";
+
+const WORKFLOW_OPTIONS: Array<{ id: WorkflowType; label: string; sublabel: string; icon: string; badge?: string }> = [
+  { id: "investment", label: "Investment / Deal Screening", sublabel: "VC, PE, M&A, and growth equity evaluation", icon: "📊", badge: "EXAMPLE USE CASE" },
+  { id: "procurement", label: "Procurement / Vendor Evaluation", sublabel: "Supplier selection, RFP scoring, contract risk", icon: "🏗️" },
+  { id: "compliance", label: "Compliance / Risk Review", sublabel: "Regulatory, AML/KYC, policy adherence checks", icon: "⚖️" },
+  { id: "healthcare", label: "Healthcare / Clinical Decision", sublabel: "Treatment protocols, diagnostic support, triage", icon: "🏥" },
+  { id: "custom", label: "Custom Workflow", sublabel: "Define your own agent configuration and criteria", icon: "⚙️" },
+];
 
 // ── Demo Deal Cards ──────────────────────────────────────────────────────────
 function DemoDealCards() {
@@ -2674,7 +2696,8 @@ function DemoDealCards() {
 export default function DealScreener() {
   const isDemo = isDemoMode();
   const { isAuthenticated, loading, user } = useAuth();
-  const [view, setView] = useState<View>("input");
+  const [view, setView] = useState<View>("workflow");
+  const [selectedWorkflow, setSelectedWorkflow] = useState<WorkflowType | null>(null);
   const [previousView, setPreviousView] = useState<View | null>(null);
   const { data: signalData } = trpc.dealScreener.listSignals.useQuery(
     undefined,
@@ -2780,6 +2803,22 @@ export default function DealScreener() {
           @page { margin: 16mm 12mm; size: A4 portrait; }
         }
       `}</style>
+      {/* Positioning statement banner */}
+      <div data-print-hide style={{
+        background: "rgba(74,158,255,0.06)",
+        borderBottom: `1px solid rgba(74,158,255,0.18)`,
+        padding: "8px 24px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 16,
+      }}>
+        <span style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.12em", fontWeight: 700 }}>AGENTHINK MESH</span>
+        <span style={{ fontFamily: MONO, fontSize: 10, color: MUTED }}>·</span>
+        <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT2 }}>Not a model. A structured decision layer that orchestrates specialized AI agents.</span>
+        <span style={{ fontFamily: MONO, fontSize: 10, color: MUTED }}>·</span>
+        <span style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.08em" }}>Investment · Procurement · Compliance · Healthcare · Custom</span>
+      </div>
       {/* Top nav */}
       <div data-print-hide style={{
         borderBottom: `1px solid ${BORDER}`,
@@ -2795,7 +2834,7 @@ export default function DealScreener() {
         </a>
         <div style={{ display: "flex", gap: 2 }}>
           {[
-            { id: "input" as View, label: "NEW DEAL" },
+            { id: "workflow" as View, label: "NEW DEAL" },
             { id: "history" as View, label: "HISTORY" },
             { id: "signals" as View, label: "SIGNALS 🎓" },
             { id: "batch" as View, label: "DATA ROOM" },
@@ -2866,13 +2905,71 @@ export default function DealScreener() {
             BILLING ↗
           </a>
           <span style={{ fontFamily: MONO, fontSize: 10, color: MUTED }}>
-            DEAL SCREENER · COUNCIL OF 10
+            DECISION ENGINE · COUNCIL OF 10
           </span>
         </div>
       </div>
 
       {/* Main content */}
       <div style={{ padding: "40px 24px", maxWidth: 960, margin: "0 auto" }}>
+        {view === "workflow" && (
+          <div style={{ maxWidth: 680, margin: "0 auto" }}>
+            <div style={{ marginBottom: 32, textAlign: "center" }}>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.15em", marginBottom: 8 }}>DECISION ENGINE · COUNCIL OF 10</div>
+              <h1 style={{ margin: 0, fontSize: 28, color: TEXT, fontWeight: 800, letterSpacing: "-0.02em" }}>Select Workflow Type</h1>
+              <p style={{ margin: "10px 0 0", fontSize: 13, color: TEXT2, lineHeight: 1.6 }}>
+                AgenThink Mesh runs structured multi-agent evaluations across any domain.<br />
+                Choose a workflow to configure the council for your use case.
+              </p>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {WORKFLOW_OPTIONS.map((wf) => (
+                <button
+                  key={wf.id}
+                  onClick={() => {
+                    setSelectedWorkflow(wf.id);
+                    if (wf.id === "investment") {
+                      setView("input");
+                    } else {
+                      // For non-investment workflows, show a "coming soon" state but still enter input
+                      setView("input");
+                    }
+                  }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 16,
+                    padding: "18px 24px",
+                    background: wf.id === "investment" ? "rgba(74,158,255,0.06)" : BG2,
+                    border: `1px solid ${wf.id === "investment" ? "rgba(74,158,255,0.4)" : BORDER}`,
+                    borderRadius: 8,
+                    cursor: "pointer",
+                    textAlign: "left",
+                    width: "100%",
+                    transition: "border-color 0.15s, background 0.15s",
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = ACCENT; (e.currentTarget as HTMLButtonElement).style.background = "rgba(74,158,255,0.08)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = wf.id === "investment" ? "rgba(74,158,255,0.4)" : BORDER; (e.currentTarget as HTMLButtonElement).style.background = wf.id === "investment" ? "rgba(74,158,255,0.06)" : BG2; }}
+                >
+                  <span style={{ fontSize: 28, lineHeight: 1 }}>{wf.icon}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{wf.label}</span>
+                      {wf.badge && (
+                        <span style={{ fontFamily: MONO, fontSize: 9, padding: "2px 8px", borderRadius: 3, background: "rgba(0,255,135,0.12)", border: "1px solid rgba(0,255,135,0.3)", color: GREEN, letterSpacing: "0.08em" }}>{wf.badge}</span>
+                      )}
+                      {wf.id !== "investment" && (
+                        <span style={{ fontFamily: MONO, fontSize: 9, padding: "2px 8px", borderRadius: 3, background: "rgba(255,159,67,0.1)", border: "1px solid rgba(255,159,67,0.25)", color: AMBER, letterSpacing: "0.08em" }}>COMING SOON</span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: 12, color: TEXT2 }}>{wf.sublabel}</div>
+                  </div>
+                  <span style={{ fontFamily: MONO, fontSize: 14, color: wf.id === "investment" ? ACCENT : MUTED }}>→</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
         {view === "input" && (
           <>
             <DealForm
@@ -2883,6 +2980,7 @@ export default function DealScreener() {
               onPaymentVerified={() => setPendingPaymentSessionId(null)}
               councilMode={councilMode}
               setCouncilMode={setCouncilMode}
+              onChangeWorkflow={() => setView("workflow")}
             />
             <RecentSignalsPanel onScreen={(text) => {
               // Pre-fill deal text via the tier0:prefill event (mark as signal-sourced)
