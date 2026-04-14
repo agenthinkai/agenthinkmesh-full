@@ -2005,3 +2005,23 @@
 - [x] Add Top Decision Drivers block (FOR/AGAINST from keyFlags) above vote cards in Raw Council tab
 - [x] Backend: add investorMode to screen input schema and pass to runCouncil in dealScreener.ts
 - [x] Backend: run ARE after council in screen procedure and include realityAlignment in return
+
+## Priority Tasks — Apr 14 2026 (Session 2)
+
+- [x] Render "What Would Change This Decision" in IC Memo (upgrade factors, downgrade factors, monitoring metrics)
+- [x] Persist investorMode in deal_screenings table (schema + migration)
+- [x] Return investorMode in screen result and history APIs
+- [x] Show Investor Mode badge in history list and result header
+- [x] Investigate Mortality Insight Analyst degraded status (1,444 failures)
+- [x] Fix or re-register Mortality Insight Analyst agent
+
+## Priority Tasks — Apr 14 2026 (Session 3)
+
+- [x] Render "What Would Change This Decision" (section 12) in IC Memo — 3-column grid: upgrade factors, downgrade factors, key monitoring metrics
+- [x] Persist investorMode in deal_screenings DB — boolean column added via ALTER TABLE
+- [x] Return investorMode in screen result, owner bypass result, and history API
+- [x] Show INVESTOR MODE badge in history list rows and raw council result header
+- [x] Investigate Mortality Insight Analyst: root cause confirmed (external mesh.agenthink.ai endpoint not live, 1444 failures)
+- [x] Fix: marked Mortality Insight Analyst and 3 other degraded agents as inactive — 0 degraded agents remaining
+- [x] Confirmed: degraded agents are excluded from discover procedure (status filter), so live council runs were NOT affected
+- [x] TypeScript: 0 errors (confirmed via fresh npx tsc --noEmit --skipLibCheck)

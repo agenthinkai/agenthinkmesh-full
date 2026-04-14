@@ -156,13 +156,15 @@ export const dealScreenerRouter = router({
           conditionsToProceed: JSON.stringify(ownerResult.conditionsToProceed),
           blockingIssues: JSON.stringify(ownerResult.blockingIssues),
           votes: JSON.stringify(ownerResult.votes),
+          councilMode: input.councilMode,
+          investorMode: input.investorMode ?? false,
           sourceType: input.sourceType ?? "manual",
         });
         let ownerIcReport = null;
         try { ownerIcReport = await generateSingleDealICReport(input.dealName, input.dealText, ownerResult); } catch {}
         const ownerTier0 = detectTier0Signal(input.dealText, input.dealName);
         const ownerAre = runRealityAlignment(input.dealText, ownerResult);
-        return { dealId: ownerDealId, dealName: input.dealName, ...ownerResult, icReport: ownerIcReport, universitySignal: ownerTier0, realityAlignment: ownerAre };
+        return { dealId: ownerDealId, dealName: input.dealName, ...ownerResult, investorMode: input.investorMode ?? false, icReport: ownerIcReport, universitySignal: ownerTier0, realityAlignment: ownerAre };
       }
 
       // Rate limit check (plan-based daily limit)
@@ -341,6 +343,8 @@ export const dealScreenerRouter = router({
         conditionsToProceed: JSON.stringify(result.conditionsToProceed),
         blockingIssues: JSON.stringify(result.blockingIssues),
         votes: JSON.stringify(result.votes),
+        councilMode: input.councilMode,
+        investorMode: input.investorMode ?? false,
         sourceType: input.sourceType ?? "manual",
         dealHash: dedupResult.dealHash,
         triageResult: JSON.stringify(triageResult),
@@ -399,6 +403,7 @@ export const dealScreenerRouter = router({
         ...result,
         verdict: finalVerdict,
         councilMode: input.councilMode,
+        investorMode: input.investorMode ?? false,
         icReport,
         universitySignal,
         duplicate: false,
@@ -585,6 +590,8 @@ export const dealScreenerRouter = router({
           confidenceScore: dealScreenings.confidenceScore,
           gccVetoTriggered: dealScreenings.gccVetoTriggered,
           tiebreakerTriggered: dealScreenings.tiebreakerTriggered,
+          councilMode: dealScreenings.councilMode,
+          investorMode: dealScreenings.investorMode,
           sourceType: dealScreenings.sourceType,
           createdAt: dealScreenings.createdAt,
         })
@@ -592,7 +599,6 @@ export const dealScreenerRouter = router({
         .where(eq(dealScreenings.userId, ctx.user.id))
         .orderBy(desc(dealScreenings.createdAt))
         .limit(limit);
-
       return rows;
     }),
 

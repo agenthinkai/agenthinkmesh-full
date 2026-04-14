@@ -780,6 +780,9 @@ export const dealScreenings = mysqlTable("deal_screenings", {
   // Council mode used for this screening
   councilMode: mysqlEnum("councilMode", ["gcc", "global_vc", "india_pe"]).default("global_vc").notNull(),
 
+  // Investor Mode flag — when true, council uses upside-first framing
+  investorMode: boolean("investorMode").notNull().default(false),
+
   // Provenance
   sourceType: mysqlEnum("sourceType", ["manual", "signal"]).default("manual").notNull(),
 

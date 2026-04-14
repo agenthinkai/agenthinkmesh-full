@@ -857,6 +857,42 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
         </div>
       )}
 
+      {/* What Would Change This Decision — section 12 */}
+      {ic.whatWouldChangeDecision && (
+        <div style={{ marginTop: 24 }}>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: AMBER, letterSpacing: "0.12em", marginBottom: 16 }}>12. WHAT WOULD CHANGE THIS DECISION</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 12 }}>
+            {ic.whatWouldChangeDecision.upgradeFactors && ic.whatWouldChangeDecision.upgradeFactors.length > 0 && (
+              <div style={{ background: "rgba(0,255,135,0.04)", border: "1px solid rgba(0,255,135,0.18)", borderRadius: 8, padding: "14px 16px" }}>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: GREEN, letterSpacing: "0.1em", marginBottom: 10 }}>UPGRADE FACTORS</div>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 8 }}>Would make this a stronger YES</div>
+                {ic.whatWouldChangeDecision.upgradeFactors.map((f, i) => (
+                  <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${GREEN}`, lineHeight: 1.5 }}>↑ {f}</div>
+                ))}
+              </div>
+            )}
+            {ic.whatWouldChangeDecision.downgradeFactors && ic.whatWouldChangeDecision.downgradeFactors.length > 0 && (
+              <div style={{ background: "rgba(255,68,68,0.04)", border: "1px solid rgba(255,68,68,0.18)", borderRadius: 8, padding: "14px 16px" }}>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: RED, letterSpacing: "0.1em", marginBottom: 10 }}>DOWNGRADE FACTORS</div>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 8 }}>Would flip this to a NO</div>
+                {ic.whatWouldChangeDecision.downgradeFactors.map((f, i) => (
+                  <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${RED}`, lineHeight: 1.5 }}>↓ {f}</div>
+                ))}
+              </div>
+            )}
+            {ic.whatWouldChangeDecision.keyMonitoringMetrics && ic.whatWouldChangeDecision.keyMonitoringMetrics.length > 0 && (
+              <div style={{ background: "rgba(255,159,67,0.04)", border: "1px solid rgba(255,159,67,0.18)", borderRadius: 8, padding: "14px 16px" }}>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: AMBER, letterSpacing: "0.1em", marginBottom: 10 }}>KEY MONITORING METRICS</div>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 8 }}>Watch these post-investment</div>
+                {ic.whatWouldChangeDecision.keyMonitoringMetrics.map((m, i) => (
+                  <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${AMBER}`, lineHeight: 1.5 }}>◎ {m}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Copy IC Report button */}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }} className="no-print">
         <button
@@ -1222,7 +1258,17 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp }: { result:
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 20 }}>
           <div>
             <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>RAW COUNCIL OUTPUT</div>
-            <h2 style={{ margin: 0, fontSize: 22, color: TEXT, fontWeight: 700 }}>{result.dealName}</h2>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+              <h2 style={{ margin: 0, fontSize: 22, color: TEXT, fontWeight: 700 }}>{result.dealName}</h2>
+              {result.investorMode && (
+                <span style={{
+                  fontFamily: MONO, fontSize: 9, fontWeight: 700, letterSpacing: "0.1em",
+                  padding: "3px 8px", borderRadius: 3,
+                  background: "rgba(0,255,135,0.10)", color: GREEN,
+                  border: "1px solid rgba(0,255,135,0.3)",
+                }}>INVESTOR MODE</span>
+              )}
+            </div>
           </div>
           <VerdictBadge verdict={result.verdict} />
         </div>
@@ -2285,6 +2331,20 @@ function HistoryTable({ onSelect }: { onSelect: (dealId: string) => void }) {
                   border: "1px solid rgba(168,85,247,0.3)",
                   whiteSpace: "nowrap",
                 }}>FROM SIGNAL</span>
+              )}
+              {row.investorMode && (
+                <span style={{
+                  fontFamily: MONO,
+                  fontSize: 8,
+                  fontWeight: 700,
+                  letterSpacing: "0.1em",
+                  padding: "2px 6px",
+                  borderRadius: 3,
+                  background: "rgba(0,255,135,0.10)",
+                  color: GREEN,
+                  border: "1px solid rgba(0,255,135,0.3)",
+                  whiteSpace: "nowrap",
+                }}>INVESTOR MODE</span>
               )}
             </div>
             <div>

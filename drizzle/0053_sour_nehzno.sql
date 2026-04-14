@@ -1,0 +1,1 @@
+ALTER TABLE `deal_screenings` ADD `investorMode` boolean DEFAULT false NOT NULL;
