@@ -2046,3 +2046,14 @@
 - [x] Add Workflow Selector step before deal screen (Investment, Procurement, Compliance, Healthcare, Custom)
 - [x] Reposition Deal Screener label to "Investment Workflow (Example Use Case)"
 - [x] Save checkpoint after all positioning changes
+
+## Session P — Procurement Workflow (Tencent Pilot)
+
+- [x] Build procurementEngine.ts: 8 specialist agents, triage layer, consensus, final report
+- [x] Add procurement DB table (vendor_evaluations)
+- [x] Add tRPC procedure: procurement.screen
+- [x] Build ProcurementScreener.tsx page (form + result)
+- [x] Connect Workflow Selector to procurement route
+- [x] Add active workflow indicator in UI (Active Workflow: Procurement / Agents Loaded: 8)
+- [x] Test end-to-end with sample vendor proposal
+- [x] Save checkpoint

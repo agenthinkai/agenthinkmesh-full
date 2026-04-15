@@ -18,6 +18,7 @@ import { admeshRouter } from "./routers/admesh";
 import { openclawRouter } from "./routers/openclaw";
 import { socialMediaRouter } from "./routers/socialMedia";
 import { dealScreenerRouter } from "./routers/dealScreener";
+import { procurementRouter } from "./routers/procurement";
 import { intelligenceRouter } from "./routers/intelligence";
 import { mvnoRouter } from "./routers/mvno";
 import { forecastRouter } from "./routers/forecast";
@@ -3345,6 +3346,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
   openclaw: openclawRouter,
   socialMedia: socialMediaRouter,
   dealScreener: dealScreenerRouter,
+  procurement: procurementRouter,
   shareReport: shareReportRouter,
   intelligence: intelligenceRouter,
   mvno: mvnoRouter,

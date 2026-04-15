@@ -2930,8 +2930,10 @@ export default function DealScreener() {
                     setSelectedWorkflow(wf.id);
                     if (wf.id === "investment") {
                       setView("input");
+                    } else if (wf.id === "procurement") {
+                      window.location.href = "/procurement";
                     } else {
-                      // For non-investment workflows, show a "coming soon" state but still enter input
+                      // Other workflows coming soon
                       setView("input");
                     }
                   }}
@@ -2958,7 +2960,10 @@ export default function DealScreener() {
                       {wf.badge && (
                         <span style={{ fontFamily: MONO, fontSize: 9, padding: "2px 8px", borderRadius: 3, background: "rgba(0,255,135,0.12)", border: "1px solid rgba(0,255,135,0.3)", color: GREEN, letterSpacing: "0.08em" }}>{wf.badge}</span>
                       )}
-                      {wf.id !== "investment" && (
+                      {wf.id === "procurement" && (
+                        <span style={{ fontFamily: MONO, fontSize: 9, padding: "2px 8px", borderRadius: 3, background: "rgba(0,255,135,0.12)", border: "1px solid rgba(0,255,135,0.3)", color: GREEN, letterSpacing: "0.08em" }}>LIVE</span>
+                      )}
+                      {wf.id !== "investment" && wf.id !== "procurement" && (
                         <span style={{ fontFamily: MONO, fontSize: 9, padding: "2px 8px", borderRadius: 3, background: "rgba(255,159,67,0.1)", border: "1px solid rgba(255,159,67,0.25)", color: AMBER, letterSpacing: "0.08em" }}>COMING SOON</span>
                       )}
                     </div>

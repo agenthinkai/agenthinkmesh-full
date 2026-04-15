@@ -1446,3 +1446,25 @@ export const userSignalPrefs = mysqlTable("user_signal_prefs", {
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
 export type UserSignalPref = typeof userSignalPrefs.$inferSelect;
+
+// ============================================================
+// PROCUREMENT WORKFLOW — Vendor Evaluation Engine
+// ============================================================
+export const vendorEvaluations = mysqlTable("vendor_evaluations", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").references(() => users.id, { onDelete: "cascade" }),
+  vendorName: varchar("vendorName", { length: 255 }).notNull(),
+  category: varchar("category", { length: 128 }).notNull(),
+  contractValue: varchar("contractValue", { length: 128 }),
+  duration: varchar("duration", { length: 128 }),
+  finalRecommendation: mysqlEnum("finalRecommendation", ["APPROVE", "REJECT", "CONDITIONAL_APPROVAL"]).notNull(),
+  overallScore: decimal("overallScore", { precision: 4, scale: 1 }).notNull(),
+  overallConfidence: mysqlEnum("overallConfidence", ["High", "Medium", "Low"]).notNull(),
+  reportJson: longtext("reportJson").notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  veUserIdx: index("ve_user_idx").on(table.userId),
+  veCreatedIdx: index("ve_created_idx").on(table.createdAt),
+}));
+export type VendorEvaluation = typeof vendorEvaluations.$inferSelect;
+export type InsertVendorEvaluation = typeof vendorEvaluations.$inferInsert;
