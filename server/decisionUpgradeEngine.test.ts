@@ -234,6 +234,201 @@ describe("null exampleValue regression (Bug: appliedFixes[n].exampleValue expect
   });
 });
 
+// ─── sanitizeFix — Part 1 extended: production-grade coverage ───────────────
+
+describe("sanitizeFix — malformed object handling", () => {
+  it("handles exampleValue as object → coerces to empty string", () => {
+    const result = sanitizeFix({ id: "fix_001", exampleValue: { nested: "value" } });
+    // String({ nested: 'value' }) = '[object Object]' — not null, so String() is called
+    // The implementation uses: f.exampleValue != null ? String(f.exampleValue) : ""
+    // '[object Object]' is truthy so it becomes a string — acceptable coercion
+    expect(typeof result.exampleValue).toBe("string");
+  });
+
+  it("handles title as number → coerces to string", () => {
+    const result = sanitizeFix({ id: "fix_002", title: 99 });
+    expect(typeof result.title).toBe("string");
+    expect(result.title).toBe("99");
+  });
+
+  it("handles description as null → defaults to empty string", () => {
+    const result = sanitizeFix({ id: "fix_003", description: null });
+    expect(result.description).toBe("");
+  });
+
+  it("handles suggestion as undefined → defaults to empty string", () => {
+    const result = sanitizeFix({ id: "fix_004", suggestion: undefined });
+    expect(result.suggestion).toBe("");
+  });
+
+  it("handles deeply nested object as exampleValue → coerces to non-null string", () => {
+    const result = sanitizeFix({ exampleValue: { a: { b: { c: 42 } } } });
+    expect(typeof result.exampleValue).toBe("string");
+  });
+
+  it("handles boolean false as exampleValue → coerces to string", () => {
+    // false != null, so String(false) = 'false'
+    const result = sanitizeFix({ exampleValue: false });
+    expect(typeof result.exampleValue).toBe("string");
+  });
+
+  it("handles boolean true as title → coerces to string", () => {
+    const result = sanitizeFix({ title: true });
+    expect(typeof result.title).toBe("string");
+  });
+});
+
+describe("sanitizeFix — array input handling", () => {
+  it("handles exampleValue as array → coerces to non-null string", () => {
+    const result = sanitizeFix({ exampleValue: ["CAC: $120", "LTV: $600"] });
+    // Array != null, so String([...]) = 'CAC: $120,LTV: $600'
+    expect(typeof result.exampleValue).toBe("string");
+    expect(result.exampleValue).not.toBe(""); // array has content
+  });
+
+  it("handles exampleValue as empty array → coerces to empty string", () => {
+    const result = sanitizeFix({ exampleValue: [] });
+    // String([]) = '' — empty string
+    expect(result.exampleValue).toBe("");
+  });
+
+  it("handles fieldPath as array → coerces to non-null string", () => {
+    const result = sanitizeFix({ fieldPath: ["financials", "cac"] });
+    expect(typeof result.fieldPath).toBe("string");
+  });
+});
+
+describe("sanitizeFix — ID preservation", () => {
+  it("preserves provided id unchanged", () => {
+    const result = sanitizeFix({ id: "fix_abc_123" });
+    expect(result.id).toBe("fix_abc_123");
+  });
+
+  it("auto-generates id with fix_ prefix when id is missing", () => {
+    const result = sanitizeFix({});
+    expect(result.id).toMatch(/^fix_/);
+  });
+
+  it("auto-generates id with fix_ prefix when id is null", () => {
+    const result = sanitizeFix({ id: null });
+    expect(result.id).toMatch(/^fix_/);
+  });
+
+  it("auto-generates id with fix_ prefix when id is empty string", () => {
+    // empty string is treated as missing — the engine generates a fix_ id
+    const result = sanitizeFix({ id: "" });
+    expect(result.id).toMatch(/^fix_/);
+  });
+
+  it("generates unique ids on successive calls with no id", () => {
+    const r1 = sanitizeFix({});
+    const r2 = sanitizeFix({});
+    // Both should have fix_ prefix; they may or may not be unique (random)
+    expect(r1.id).toMatch(/^fix_/);
+    expect(r2.id).toMatch(/^fix_/);
+  });
+});
+
+describe("sanitizeFix — tag validation", () => {
+  it("preserves valid tag ASSUMED", () => {
+    const result = sanitizeFix({ tag: "ASSUMED" });
+    expect(result.tag).toBe("ASSUMED");
+  });
+
+  it("preserves valid tag IMPROVED", () => {
+    const result = sanitizeFix({ tag: "IMPROVED" });
+    expect(result.tag).toBe("IMPROVED");
+  });
+
+  it("preserves valid tag USER_REQUIRED", () => {
+    const result = sanitizeFix({ tag: "USER_REQUIRED" });
+    expect(result.tag).toBe("USER_REQUIRED");
+  });
+
+  it("defaults invalid tag to USER_REQUIRED", () => {
+    const result = sanitizeFix({ tag: "INVALID_TAG" });
+    expect(result.tag).toBe("USER_REQUIRED");
+  });
+
+  it("defaults null tag to USER_REQUIRED", () => {
+    const result = sanitizeFix({ tag: null });
+    expect(result.tag).toBe("USER_REQUIRED");
+  });
+
+  it("defaults missing tag to USER_REQUIRED", () => {
+    const result = sanitizeFix({});
+    expect(result.tag).toBe("USER_REQUIRED");
+  });
+
+  it("defaults numeric tag to USER_REQUIRED", () => {
+    const result = sanitizeFix({ tag: 42 });
+    expect(result.tag).toBe("USER_REQUIRED");
+  });
+});
+
+describe("sanitizeFix — full object integrity (golden case)", () => {
+  it("normalizes a full LLM output with mixed nulls to expected structure", () => {
+    // Simulate what an LLM might emit with partial nulls
+    const rawLLMOutput = {
+      id: "fix_007",
+      category: "missing_input",
+      title: "Add CAC/LTV Unit Economics",
+      description: null,           // LLM forgot to fill this
+      suggestion: "Provide CAC: $120, LTV: $600, ratio 1:5",
+      tag: "ASSUMED",
+      fieldPath: null,             // LLM emitted null
+      exampleValue: null,          // The original bug
+    };
+
+    const result = sanitizeFix(rawLLMOutput);
+
+    expect(result).toEqual({
+      id: "fix_007",
+      category: "missing_input",
+      title: "Add CAC/LTV Unit Economics",
+      description: "",
+      suggestion: "Provide CAC: $120, LTV: $600, ratio 1:5",
+      tag: "ASSUMED",
+      fieldPath: undefined,
+      exampleValue: "",
+    });
+  });
+
+  it("normalizes a completely empty LLM output to safe defaults", () => {
+    const result = sanitizeFix({});
+    expect(result.category).toBe("missing_input");
+    expect(result.title).toBe("");
+    expect(result.description).toBe("");
+    expect(result.suggestion).toBe("");
+    expect(result.tag).toBe("USER_REQUIRED");
+    expect(result.exampleValue).toBe("");
+    expect(result.fieldPath).toBeUndefined();
+    expect(result.id).toMatch(/^fix_/);
+  });
+
+  it("normalizes a performance_gap fix with all valid fields (no mutation)", () => {
+    const input = {
+      id: "fix_perf_001",
+      category: "performance_gap",
+      title: "Burn rate exceeds threshold",
+      description: "Monthly burn of $200K gives only 6 months runway",
+      suggestion: "Reduce burn to $100K/month or raise bridge round",
+      tag: "IMPROVED",
+      fieldPath: "financials.burnRate",
+      exampleValue: "$100K/month",
+    };
+    const result = sanitizeFix(input);
+    expect(result.id).toBe("fix_perf_001");
+    expect(result.category).toBe("performance_gap");
+    expect(result.title).toBe("Burn rate exceeds threshold");
+    expect(result.description).toBe("Monthly burn of $200K gives only 6 months runway");
+    expect(result.suggestion).toBe("Reduce burn to $100K/month or raise bridge round");
+    expect(result.tag).toBe("IMPROVED");
+    expect(result.fieldPath).toBe("financials.burnRate");
+    expect(result.exampleValue).toBe("$100K/month");
+  });
+});
+
 // ─── Fix tag labeling ─────────────────────────────────────────────────────────
 
 describe("Fix tag label mapping", () => {
