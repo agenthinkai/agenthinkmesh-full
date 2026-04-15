@@ -2087,3 +2087,10 @@
 - [ ] Add Procurement as top-level SiteNav link (not inside Tools dropdown)
 - [ ] Verify /procurement loads standalone without prior state
 - [ ] Save checkpoint
+
+## Procurement Report Export (Demo Readiness)
+- [x] Build server/procurementPdf.ts — PDF generator from VendorEvaluationReport JSON
+- [x] Add procurement.generatePdf tRPC procedure
+- [x] Add "Generate Report" + "Download PDF" button to EvaluationReport header
+- [x] Add "Export CSV" button to EvaluationReport header
+- [x] Write vitest for procurementPdf generator

@@ -16,6 +16,24 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
+// ─── Report export helpers ────────────────────────────────────────────────────
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function base64ToBuffer(b64: string): Uint8Array {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
 // ─── Types (mirrors procurementEngine.ts) ─────────────────────────────────────
 
 interface AgentScore {
@@ -472,10 +490,40 @@ function EvaluationReport({ report, onNewEvaluation }: { report: VendorEvaluatio
   const regularAgents = report.agentScores.filter((a) => a.agentId !== "devils_advocate");
   const devilsAdvocate = report.agentScores.find((a) => a.agentId === "devils_advocate");
 
+  const generatePdfMutation = trpc.procurement.generatePdf.useMutation({
+    onSuccess: (data) => {
+      const bytes = base64ToBuffer(data.pdf);
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const safeName = report.vendorName.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+      downloadBlob(blob, `vendor_evaluation_${safeName}.pdf`);
+      toast.success("PDF downloaded successfully.");
+    },
+    onError: (err) => toast.error("PDF generation failed: " + err.message),
+  });
+
+  const exportCsvMutation = trpc.procurement.exportCsv.useMutation({
+    onSuccess: (data) => {
+      const blob = new Blob([data.csv], { type: "text/csv;charset=utf-8;" });
+      const safeName = report.vendorName.replace(/[^a-z0-9]/gi, "_").toLowerCase();
+      downloadBlob(blob, `vendor_evaluation_${safeName}.csv`);
+      toast.success("CSV exported successfully.");
+    },
+    onError: (err) => toast.error("CSV export failed: " + err.message),
+  });
+
+  const handleGeneratePdf = () => {
+    toast.info("Generating PDF report…");
+    generatePdfMutation.mutate({ reportJson: JSON.stringify(report) });
+  };
+
+  const handleExportCsv = () => {
+    exportCsvMutation.mutate({ reportJson: JSON.stringify(report) });
+  };
+
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h2 className="text-xl font-black text-slate-100 tracking-wide">
             🏛️ VENDOR EVALUATION REPORT
@@ -484,14 +532,34 @@ function EvaluationReport({ report, onNewEvaluation }: { report: VendorEvaluatio
             {report.agentScores.length} specialist agents · {new Date(report.generatedAt).toLocaleString()}
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={onNewEvaluation}
-          className="border-slate-600 text-slate-300 hover:bg-slate-700"
-        >
-          ← NEW EVALUATION
-        </Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Export actions */}
+          <Button
+            size="sm"
+            onClick={handleGeneratePdf}
+            disabled={generatePdfMutation.isPending}
+            className="bg-blue-700 hover:bg-blue-600 text-white font-bold text-xs tracking-wide"
+          >
+            {generatePdfMutation.isPending ? "Generating…" : "📄 Download Report (PDF)"}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleExportCsv}
+            disabled={exportCsvMutation.isPending}
+            className="border-slate-600 text-slate-300 hover:bg-slate-700 font-bold text-xs tracking-wide"
+          >
+            {exportCsvMutation.isPending ? "Exporting…" : "📊 Export CSV"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onNewEvaluation}
+            className="border-slate-600 text-slate-400 hover:bg-slate-700 text-xs"
+          >
+            ← NEW EVALUATION
+          </Button>
+        </div>
       </div>
 
       {/* Verdict banner */}

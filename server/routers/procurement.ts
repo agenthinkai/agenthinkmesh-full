@@ -12,6 +12,7 @@ import { getDb } from "../db";
 import { vendorEvaluations } from "../../drizzle/schema";
 import { desc, eq } from "drizzle-orm";
 import { runProcurementCouncil, runProcurementTriage, PROCUREMENT_AGENTS } from "../procurementEngine";
+import { generateProcurementPdf, generateProcurementCsv } from "../procurementPdf";
 
 // ─── Input schema ─────────────────────────────────────────────────────────────
 
@@ -106,6 +107,30 @@ export const procurementRouter = router({
         .limit(input.limit);
 
       return rows;
+    }),
+
+  /**
+   * Generate a PDF for a given evaluation report JSON.
+   * Returns base64-encoded PDF bytes.
+   */
+  generatePdf: protectedProcedure
+    .input(z.object({ reportJson: z.string() }))
+    .mutation(async ({ input }) => {
+      const report = JSON.parse(input.reportJson);
+      const pdfBuffer = await generateProcurementPdf(report);
+      return { pdf: pdfBuffer.toString("base64") };
+    }),
+
+  /**
+   * Generate a CSV export for a given evaluation report JSON.
+   * Returns the CSV string directly.
+   */
+  exportCsv: protectedProcedure
+    .input(z.object({ reportJson: z.string() }))
+    .mutation(async ({ input }) => {
+      const report = JSON.parse(input.reportJson);
+      const csv = generateProcurementCsv(report);
+      return { csv };
     }),
 
   /**
