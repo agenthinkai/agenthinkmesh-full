@@ -6,6 +6,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildImprovedInput,
   computeDeltaOutput,
+  sanitizeFix,
   type AppliedFix,
 } from "./decisionUpgradeEngine";
 
@@ -136,6 +137,57 @@ describe("computeDeltaOutput (synchronous path via mocked LLM)", () => {
     } catch {
       // LLM not available in test — acceptable
     }
+  });
+});
+
+// ─── sanitizeFix unit tests ─────────────────────────────────────────────────
+
+describe("sanitizeFix", () => {
+  it("converts null exampleValue to empty string", () => {
+    const result = sanitizeFix({ id: "fix_001", exampleValue: null });
+    expect(result.exampleValue).toBe("");
+  });
+
+  it("converts undefined exampleValue to empty string", () => {
+    const result = sanitizeFix({ id: "fix_002" }); // exampleValue omitted
+    expect(result.exampleValue).toBe("");
+  });
+
+  it("preserves non-null exampleValue as string", () => {
+    const result = sanitizeFix({ id: "fix_003", exampleValue: "CAC: $120" });
+    expect(result.exampleValue).toBe("CAC: $120");
+  });
+
+  it("coerces numeric exampleValue to string", () => {
+    const result = sanitizeFix({ id: "fix_004", exampleValue: 42 });
+    expect(result.exampleValue).toBe("42");
+  });
+
+  it("preserves empty string exampleValue unchanged", () => {
+    const result = sanitizeFix({ id: "fix_005", exampleValue: "" });
+    expect(result.exampleValue).toBe("");
+  });
+
+  it("fills in default values for all required fields when missing", () => {
+    const result = sanitizeFix({});
+    expect(result.id).toMatch(/^fix_/);
+    expect(result.category).toBe("missing_input");
+    expect(result.title).toBe("");
+    expect(result.description).toBe("");
+    expect(result.suggestion).toBe("");
+    expect(result.tag).toBe("USER_REQUIRED");
+    expect(result.exampleValue).toBe("");
+    expect(result.fieldPath).toBeUndefined();
+  });
+
+  it("sets fieldPath to undefined when null", () => {
+    const result = sanitizeFix({ fieldPath: null });
+    expect(result.fieldPath).toBeUndefined();
+  });
+
+  it("preserves fieldPath when provided", () => {
+    const result = sanitizeFix({ fieldPath: "financials.cac" });
+    expect(result.fieldPath).toBe("financials.cac");
   });
 });
 

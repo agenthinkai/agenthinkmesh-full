@@ -97,6 +97,26 @@ Common rejection reasons: experience gap, no verifiable references, skill mismat
 Benchmark thresholds: 3+ years direct experience, 2+ verifiable references.`,
 };
 
+// ─── Exported sanitizeFix (also used internally) ─────────────────────────────
+
+/**
+ * Sanitize a raw LLM-emitted fix object.
+ * Ensures exampleValue is always a string (never null/undefined).
+ * Exported for unit testing.
+ */
+export function sanitizeFix(f: any): UpgradeFix {
+  return {
+    id: f.id ?? `fix_${Math.random().toString(36).slice(2, 7)}`,
+    category: f.category ?? "missing_input",
+    title: f.title ?? "",
+    description: f.description ?? "",
+    suggestion: f.suggestion ?? "",
+    tag: f.tag ?? "USER_REQUIRED",
+    fieldPath: f.fieldPath != null ? String(f.fieldPath) : undefined,
+    exampleValue: f.exampleValue != null ? String(f.exampleValue) : "",
+  };
+}
+
 // ─── Generate Upgrade Protocol ────────────────────────────────────────────────
 
 export async function generateUpgradeProtocol(params: {
@@ -214,17 +234,7 @@ Rules:
     parsed = {};
   }
 
-  // Sanitize: ensure exampleValue is always a string, never null/undefined
-  const sanitizeFix = (f: any): UpgradeFix => ({
-    id: f.id ?? `fix_${Math.random().toString(36).slice(2, 7)}`,
-    category: f.category ?? "missing_input",
-    title: f.title ?? "",
-    description: f.description ?? "",
-    suggestion: f.suggestion ?? "",
-    tag: f.tag ?? "USER_REQUIRED",
-    fieldPath: f.fieldPath != null ? String(f.fieldPath) : undefined,
-    exampleValue: f.exampleValue != null ? String(f.exampleValue) : "",
-  });
+  // Sanitize: use exported sanitizeFix helper (ensures exampleValue is never null)
   const missingInputs: UpgradeFix[] = (parsed.missingInputs ?? []).slice(0, 4).map(sanitizeFix);
   const performanceGaps: UpgradeFix[] = (parsed.performanceGaps ?? []).slice(0, 4).map(sanitizeFix);
   const structuralIssues: UpgradeFix[] = (parsed.structuralIssues ?? []).slice(0, 4).map(sanitizeFix);
