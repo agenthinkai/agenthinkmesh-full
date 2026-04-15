@@ -139,6 +139,49 @@ describe("computeDeltaOutput (synchronous path via mocked LLM)", () => {
   });
 });
 
+// ─── Regression: null exampleValue handling ──────────────────────────────────
+
+describe("null exampleValue regression (Bug: appliedFixes[n].exampleValue expected string, received null)", () => {
+  it("Case 1: fix with exampleValue = null is handled without throwing", () => {
+    const fix: AppliedFix = baseFix({ exampleValue: null as any });
+    // Frontend normalization: ?? "" converts null to ""
+    const normalized = { ...fix, exampleValue: fix.exampleValue ?? "" };
+    expect(normalized.exampleValue).toBe("");
+    // buildImprovedInput should not throw with null exampleValue
+    expect(() => buildImprovedInput("base", [fix], emptyNarrativeFix)).not.toThrow();
+  });
+
+  it("Case 2: fix with exampleValue missing (undefined) is handled without throwing", () => {
+    const fix: AppliedFix = baseFix({ exampleValue: undefined });
+    const normalized = { ...fix, exampleValue: fix.exampleValue ?? "" };
+    expect(normalized.exampleValue).toBe("");
+    expect(() => buildImprovedInput("base", [fix], emptyNarrativeFix)).not.toThrow();
+  });
+
+  it("Case 3: fix with exampleValue = empty string passes through unchanged", () => {
+    const fix: AppliedFix = baseFix({ exampleValue: "" });
+    const normalized = { ...fix, exampleValue: fix.exampleValue ?? "" };
+    expect(normalized.exampleValue).toBe("");
+    expect(() => buildImprovedInput("base", [fix], emptyNarrativeFix)).not.toThrow();
+  });
+
+  it("Case 4: mixed appliedFixes array with null, undefined, and valid exampleValues all normalize correctly", () => {
+    const fixes: AppliedFix[] = [
+      baseFix({ id: "fix-1", exampleValue: null as any }),
+      baseFix({ id: "fix-2", exampleValue: undefined }),
+      baseFix({ id: "fix-3", exampleValue: "" }),
+      baseFix({ id: "fix-4", exampleValue: "CAC: $120, LTV: $600" }),
+    ];
+    const normalized = fixes.map(f => ({ ...f, exampleValue: f.exampleValue ?? "" }));
+    expect(normalized[0].exampleValue).toBe("");
+    expect(normalized[1].exampleValue).toBe("");
+    expect(normalized[2].exampleValue).toBe("");
+    expect(normalized[3].exampleValue).toBe("CAC: $120, LTV: $600");
+    // Full pipeline should not throw
+    expect(() => buildImprovedInput("base", fixes, emptyNarrativeFix)).not.toThrow();
+  });
+});
+
 // ─── Fix tag labeling ─────────────────────────────────────────────────────────
 
 describe("Fix tag label mapping", () => {

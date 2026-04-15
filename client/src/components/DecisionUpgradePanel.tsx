@@ -460,12 +460,19 @@ export function DecisionUpgradePanel(props: DecisionUpgradePanelProps) {
       return;
     }
     setState("rerunning");
+    // Normalize null/undefined fields to prevent backend validation errors
+    const normalizedFixes = selectedFixes.map(f => ({
+      ...f,
+      exampleValue: f.exampleValue ?? "",
+      userEdited: f.userEdited ?? undefined,
+      fieldPath: f.fieldPath ?? undefined,
+    }));
     try {
       const result = await applyFixesRerun.mutateAsync({
         upgradeRunId,
         domain,
         originalInput,
-        appliedFixes: selectedFixes,
+        appliedFixes: normalizedFixes,
         procurementMeta,
         dealMeta,
       });

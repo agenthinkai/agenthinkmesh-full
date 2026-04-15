@@ -37,13 +37,13 @@ const UpgradeFixSchema = z.object({
   description: z.string(),
   suggestion: z.string(),
   tag: FixTagSchema,
-  fieldPath: z.string().optional(),
-  exampleValue: z.string().optional(),
+  fieldPath: z.string().nullish().transform(v => v ?? undefined),
+  exampleValue: z.string().nullish().transform(v => v ?? ""),
 });
 
 const AppliedFixSchema = UpgradeFixSchema.extend({
   applied: z.boolean(),
-  userEdited: z.string().optional(),
+  userEdited: z.string().nullish().transform(v => v ?? undefined),
 });
 
 // ─── Router ───────────────────────────────────────────────────────────────────

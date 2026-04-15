@@ -214,10 +214,21 @@ Rules:
     parsed = {};
   }
 
-  const missingInputs: UpgradeFix[] = (parsed.missingInputs ?? []).slice(0, 4);
-  const performanceGaps: UpgradeFix[] = (parsed.performanceGaps ?? []).slice(0, 4);
-  const structuralIssues: UpgradeFix[] = (parsed.structuralIssues ?? []).slice(0, 4);
-  const riskMitigationActions: UpgradeFix[] = (parsed.riskMitigationActions ?? []).slice(0, 4);
+  // Sanitize: ensure exampleValue is always a string, never null/undefined
+  const sanitizeFix = (f: any): UpgradeFix => ({
+    id: f.id ?? `fix_${Math.random().toString(36).slice(2, 7)}`,
+    category: f.category ?? "missing_input",
+    title: f.title ?? "",
+    description: f.description ?? "",
+    suggestion: f.suggestion ?? "",
+    tag: f.tag ?? "USER_REQUIRED",
+    fieldPath: f.fieldPath != null ? String(f.fieldPath) : undefined,
+    exampleValue: f.exampleValue != null ? String(f.exampleValue) : "",
+  });
+  const missingInputs: UpgradeFix[] = (parsed.missingInputs ?? []).slice(0, 4).map(sanitizeFix);
+  const performanceGaps: UpgradeFix[] = (parsed.performanceGaps ?? []).slice(0, 4).map(sanitizeFix);
+  const structuralIssues: UpgradeFix[] = (parsed.structuralIssues ?? []).slice(0, 4).map(sanitizeFix);
+  const riskMitigationActions: UpgradeFix[] = (parsed.riskMitigationActions ?? []).slice(0, 4).map(sanitizeFix);
 
   const allFixes: UpgradeFix[] = [
     ...missingInputs,
