@@ -223,6 +223,36 @@ export default function Home() {
             {" "}domain.
           </p>
 
+          {/* ── LIVE WORKFLOW CTAs ── */}
+          <div className="flex items-center justify-center gap-4 flex-wrap mb-6">
+            <Link href="/deals">
+              <button className="group flex items-center gap-3 px-6 py-3.5 rounded-xl bg-gradient-to-r from-violet-600/20 to-violet-600/10 border border-violet-500/40 hover:border-violet-400/70 hover:from-violet-600/30 hover:to-violet-600/20 transition-all duration-200 shadow-lg shadow-violet-900/20">
+                <div className="w-8 h-8 rounded-lg bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0">
+                  <BarChart3 className="w-4 h-4 text-violet-400" />
+                </div>
+                <div className="text-left">
+                  <div className="text-[10px] font-mono text-violet-400/70 uppercase tracking-widest leading-none mb-0.5">Investment Workflow</div>
+                  <div className="text-sm font-semibold text-white group-hover:text-violet-100 flex items-center gap-1.5">
+                    Run Deal Screening <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
+              </button>
+            </Link>
+            <Link href="/procurement">
+              <button className="group flex items-center gap-3 px-6 py-3.5 rounded-xl bg-gradient-to-r from-cyan-600/20 to-cyan-600/10 border border-cyan-500/40 hover:border-cyan-400/70 hover:from-cyan-600/30 hover:to-cyan-600/20 transition-all duration-200 shadow-lg shadow-cyan-900/20">
+                <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center flex-shrink-0">
+                  <Building2 className="w-4 h-4 text-cyan-400" />
+                </div>
+                <div className="text-left">
+                  <div className="text-[10px] font-mono text-cyan-400/70 uppercase tracking-widest leading-none mb-0.5">Procurement Workflow</div>
+                  <div className="text-sm font-semibold text-white group-hover:text-cyan-100 flex items-center gap-1.5">
+                    Run Procurement Evaluation <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  </div>
+                </div>
+              </button>
+            </Link>
+          </div>
+
           <div className="flex items-center justify-center gap-4 flex-wrap">
             {isAuthenticated ? (
               <Link href="/dashboard">

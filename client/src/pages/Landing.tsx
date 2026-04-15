@@ -451,50 +451,52 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
         <p style={{ fontFamily: MONO, fontSize: 12, color: "#4ADE80", marginBottom: 6, fontWeight: 700, letterSpacing: "0.04em" }}>Free for 60 days. 50 runs. No credit card required.</p>
         <p style={{ fontFamily: MONO, fontSize: 11, color: "#3D4F63", marginBottom: 16 }}>No sign-in required to preview · {stats.verifiedAgents} specialist agents ready</p>
 
-        {/* Workflow Selector — primary entry point, above the fold */}
+        {/* Workflow CTAs — primary entry point, above the fold */}
         <div style={{ marginBottom: 20, width: "100%" }}>
-          <div style={{ fontSize: 10, fontFamily: MONO, color: "#3D4F63", letterSpacing: "0.1em", marginBottom: 10, textTransform: "uppercase" }}>Select Workflow</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-            {/* Investment */}
+          <div style={{ fontSize: 10, fontFamily: MONO, color: "#3D4F63", letterSpacing: "0.1em", marginBottom: 10, textTransform: "uppercase" }}>Live Workflows</div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {/* Deal Screening CTA */}
             <a
               href="/deals"
               style={{
-                display: "flex", flexDirection: "column", gap: 6,
-                padding: "16px 18px",
+                display: "flex", alignItems: "center", gap: 14,
+                padding: "14px 20px",
                 background: "rgba(74,158,255,0.06)",
                 border: "1px solid rgba(74,158,255,0.30)",
                 borderRadius: 10, textDecoration: "none",
                 transition: "border-color 0.15s, background 0.15s, transform 0.1s",
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(74,158,255,0.7)"; (e.currentTarget as HTMLAnchorElement).style.background = "rgba(74,158,255,0.12)"; (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-2px)"; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(74,158,255,0.7)"; (e.currentTarget as HTMLAnchorElement).style.background = "rgba(74,158,255,0.12)"; (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-1px)"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(74,158,255,0.30)"; (e.currentTarget as HTMLAnchorElement).style.background = "rgba(74,158,255,0.06)"; (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0)"; }}
             >
-              <span style={{ fontSize: 22 }}>📊</span>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#E2E8F0" }}>Investment Screening</div>
-              <div style={{ fontSize: 11, color: "#3D4F63", lineHeight: 1.4 }}>VC, PE, M&A · Council of 10</div>
-              <span style={{ fontFamily: MONO, fontSize: 9, color: "rgba(74,158,255,0.8)", letterSpacing: "0.06em", marginTop: 4 }}>RUN →</span>
+              <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(74,158,255,0.12)", border: "1px solid rgba(74,158,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>📊</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, fontFamily: MONO, color: "rgba(74,158,255,0.7)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 3 }}>Investment Workflow</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#E2E8F0", display: "flex", alignItems: "center", gap: 6 }}>Run Deal Screening <span style={{ fontSize: 12 }}>→</span></div>
+              </div>
             </a>
-            {/* Procurement — equal weight, green accent */}
+            {/* Procurement Evaluation CTA */}
             <a
               href="/procurement"
               style={{
-                display: "flex", flexDirection: "column", gap: 6,
-                padding: "16px 18px",
+                display: "flex", alignItems: "center", gap: 14,
+                padding: "14px 20px",
                 background: "rgba(0,255,135,0.06)",
                 border: "1px solid rgba(0,255,135,0.35)",
                 borderRadius: 10, textDecoration: "none",
                 transition: "border-color 0.15s, background 0.15s, transform 0.1s",
               }}
-              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "#00ff87"; (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,255,135,0.12)"; (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-2px)"; }}
+              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "#00ff87"; (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,255,135,0.12)"; (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-1px)"; }}
               onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(0,255,135,0.35)"; (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,255,135,0.06)"; (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0)"; }}
             >
-              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                <span style={{ fontSize: 22 }}>🏗️</span>
-                <span style={{ fontFamily: MONO, fontSize: 8, padding: "2px 6px", borderRadius: 3, background: "rgba(0,255,135,0.15)", border: "1px solid rgba(0,255,135,0.4)", color: "#4ADE80", letterSpacing: "0.08em" }}>LIVE</span>
+              <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(0,255,135,0.10)", border: "1px solid rgba(0,255,135,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, position: "relative" }}>
+                🏗️
+                <span style={{ position: "absolute", top: -4, right: -4, fontFamily: MONO, fontSize: 7, padding: "1px 4px", borderRadius: 3, background: "rgba(0,255,135,0.20)", border: "1px solid rgba(0,255,135,0.5)", color: "#4ADE80", letterSpacing: "0.06em" }}>LIVE</span>
               </div>
-              <div style={{ fontSize: 13, fontWeight: 700, color: "#E2E8F0" }}>Procurement Evaluation</div>
-              <div style={{ fontSize: 11, color: "#3D4F63", lineHeight: 1.4 }}>Vendor scoring · 9 agents</div>
-              <span style={{ fontFamily: MONO, fontSize: 9, color: "#4ADE80", letterSpacing: "0.06em", marginTop: 4 }}>RUN →</span>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, fontFamily: MONO, color: "rgba(74,222,128,0.7)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 3 }}>Procurement Workflow</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#E2E8F0", display: "flex", alignItems: "center", gap: 6 }}>Run Procurement Evaluation <span style={{ fontSize: 12 }}>→</span></div>
+              </div>
             </a>
           </div>
         </div>
