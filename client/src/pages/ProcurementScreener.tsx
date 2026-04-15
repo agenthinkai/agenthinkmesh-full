@@ -7,6 +7,7 @@
  */
 
 import { useState } from "react";
+import { DecisionUpgradePanel } from "@/components/DecisionUpgradePanel";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -27,11 +28,11 @@ function downloadBlob(blob: Blob, filename: string) {
   URL.revokeObjectURL(url);
 }
 
-function base64ToBuffer(b64: string): Uint8Array {
+function base64ToBuffer(b64: string): ArrayBuffer {
   const binary = atob(b64);
   const bytes = new Uint8Array(binary.length);
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-  return bytes;
+  return bytes.buffer;
 }
 
 // ─── Types (mirrors procurementEngine.ts) ─────────────────────────────────────
@@ -598,6 +599,34 @@ function EvaluationReport({ report, onNewEvaluation }: { report: VendorEvaluatio
           )}
         </div>
       )}
+
+      {/* ── Decision Upgrade Protocol ─────────────────────────────────────── */}
+      <DecisionUpgradePanel
+        domain="procurement"
+        originalRunId={String(report.vendorName + "_" + report.generatedAt)}
+        originalInput={report.recommendationRationale ?? ""}
+        verdictBefore={report.finalRecommendation}
+        confidenceBefore={
+          report.overallConfidence === "High" ? 0.82
+          : report.overallConfidence === "Medium" ? 0.62 : 0.42
+        }
+        blockingIssues={
+          report.agentScores
+            .filter(a => a.verdict === "REJECT")
+            .flatMap(a => a.topRisks ?? [])
+            .slice(0, 5)
+        }
+        conditions={report.suggestedNegotiationPoints ?? []}
+        agentFeedback={
+          report.agentScores
+            .map(a => `${a.agentName}: ${a.keyReasoning}`)
+            .join("\n")
+        }
+        procurementMeta={{
+          vendorName: report.vendorName,
+          category: report.category,
+        }}
+      />
     </div>
   );
 }

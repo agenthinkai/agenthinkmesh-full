@@ -12,13 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Link } from "wouter";
 
 export default function AdminUserList() {
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
   const { data: rows, isLoading: rowsLoading } = trpc.adminProvision.listProvisionedUsers.useQuery(
     undefined,
     { enabled: !!user && user.role === "admin" }
   );
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <p className="text-slate-500 text-sm">Loading…</p>

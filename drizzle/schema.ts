@@ -1499,3 +1499,31 @@ export const vendorEvaluations = mysqlTable("vendor_evaluations", {
 }));
 export type VendorEvaluation = typeof vendorEvaluations.$inferSelect;
 export type InsertVendorEvaluation = typeof vendorEvaluations.$inferInsert;
+
+// ============================================================
+// CLOSED-LOOP DECISION UPGRADE SYSTEM
+// ============================================================
+export const decisionUpgradeRuns = mysqlTable("decision_upgrade_runs", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").references(() => users.id, { onDelete: "cascade" }),
+  domain: mysqlEnum("domain", ["deal", "procurement", "enterprise", "hiring"]).notNull(),
+  originalRunId: varchar("originalRunId", { length: 128 }).notNull(),
+  improvedRunId: varchar("improvedRunId", { length: 128 }),
+  verdictBefore: varchar("verdictBefore", { length: 64 }).notNull(),
+  verdictAfter: varchar("verdictAfter", { length: 64 }),
+  confidenceBefore: decimal("confidenceBefore", { precision: 5, scale: 3 }).notNull(),
+  confidenceAfter: decimal("confidenceAfter", { precision: 5, scale: 3 }),
+  confidenceDelta: decimal("confidenceDelta", { precision: 5, scale: 3 }),
+  fixesApplied: longtext("fixesApplied"),
+  upgradeProtocolJson: longtext("upgradeProtocolJson").notNull(),
+  deltaOutputJson: longtext("deltaOutputJson"),
+  strictMode: tinyint("strictMode").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+}, (table) => ({
+  durUserIdx: index("dur_user_idx").on(table.userId),
+  durDomainIdx: index("dur_domain_idx").on(table.domain),
+  durCreatedIdx: index("dur_created_idx").on(table.createdAt),
+}));
+export type DecisionUpgradeRun = typeof decisionUpgradeRuns.$inferSelect;
+export type InsertDecisionUpgradeRun = typeof decisionUpgradeRuns.$inferInsert;

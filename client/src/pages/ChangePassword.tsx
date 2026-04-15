@@ -59,7 +59,7 @@ function StrengthBar({ password }: { password: string }) {
 
 export default function ChangePassword() {
   const [, navigate] = useLocation();
-  const { user, isLoading } = useAuth();
+  const { user, loading } = useAuth();
 
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -91,7 +91,7 @@ export default function ChangePassword() {
   };
 
   // ── Loading ──────────────────────────────────────────────────────────────
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="min-h-screen bg-slate-950 flex items-center justify-center">
         <p className="text-slate-500 text-sm">Loading…</p>

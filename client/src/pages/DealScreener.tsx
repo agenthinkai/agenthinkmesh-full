@@ -12,6 +12,7 @@ import { isDemoMode, DEMO_DEAL_SCREENER_DATA } from "@/lib/demo";
 import DataRoomUpload, { type DataRoomResult } from "@/components/DataRoomUpload";
 import DataRoomBatch from "@/components/DataRoomBatch";
 import DataRoomV2 from "@/components/DataRoomV2";
+import { DecisionUpgradePanel } from "@/components/DecisionUpgradePanel";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const BG = "#070b12";
@@ -1471,6 +1472,19 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp }: { result:
 
       </div>
       )}
+
+      {/* ── Section 10: Decision Upgrade Protocol ─────────────────────────── */}
+      <DecisionUpgradePanel
+        domain="deal"
+        originalRunId={result.dealId ?? result.dealName}
+        originalInput={result.dealText ?? ""}
+        verdictBefore={result.verdict}
+        confidenceBefore={result.confidenceScore}
+        blockingIssues={result.blockingIssues ?? []}
+        conditions={result.conditionsToProceed ?? []}
+        agentFeedback={result.votes?.map(v => `${v.personaName}: ${v.rationale}`).join("\n") ?? ""}
+        dealMeta={{ dealName: result.dealName ?? "Deal" }}
+      />
     </div>
   );
 }
