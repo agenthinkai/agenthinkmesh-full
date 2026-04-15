@@ -1457,7 +1457,7 @@ export const vendorEvaluations = mysqlTable("vendor_evaluations", {
   category: varchar("category", { length: 128 }).notNull(),
   contractValue: varchar("contractValue", { length: 128 }),
   duration: varchar("duration", { length: 128 }),
-  finalRecommendation: mysqlEnum("finalRecommendation", ["APPROVE", "REJECT", "CONDITIONAL_APPROVAL"]).notNull(),
+  finalRecommendation: mysqlEnum("finalRecommendation", ["APPROVE", "REJECT", "CONDITIONAL_APPROVAL", "INSUFFICIENT_DATA"]).notNull(),
   overallScore: decimal("overallScore", { precision: 4, scale: 1 }).notNull(),
   overallConfidence: mysqlEnum("overallConfidence", ["High", "Medium", "Low"]).notNull(),
   reportJson: longtext("reportJson").notNull(),

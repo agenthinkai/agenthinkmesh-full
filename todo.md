@@ -2057,3 +2057,15 @@
 - [x] Add active workflow indicator in UI (Active Workflow: Procurement / Agents Loaded: 8)
 - [x] Test end-to-end with sample vendor proposal
 - [x] Save checkpoint
+
+## Session P2 — Procurement Engine Upgrade (Tencent Pilot Critical)
+
+- [ ] Replace 8 generic agents with domain-specific procurement agents (Cost Optimization, Vendor Risk, Technical Integration, Security & Data Risk, Compliance/Regulatory, Operational Scalability, Contract & Legal, Devil's Advocate)
+- [ ] Enforce structured output format per agent: Score (0-10), Key Reasoning, Top Risks, Confidence Level
+- [ ] Add Devil's Advocate agent: actively argues for rejection even if others approve
+- [ ] Add disagreement logic: agents challenge assumptions and highlight contradictions
+- [ ] Add INSUFFICIENT DATA handling: override scoring if input is incomplete
+- [ ] Enhance consensus layer: conflicting scores, highest-risk dimensions, decision rationale
+- [ ] Add Top Decision Drivers section (3-5 items) to Vendor Evaluation Report
+- [ ] Update ProcurementScreener.tsx to render Top Decision Drivers and INSUFFICIENT DATA state
+- [ ] Save checkpoint

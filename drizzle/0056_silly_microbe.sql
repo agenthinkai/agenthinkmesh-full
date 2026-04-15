@@ -1,0 +1,1 @@
+ALTER TABLE `vendor_evaluations` MODIFY COLUMN `finalRecommendation` enum('APPROVE','REJECT','CONDITIONAL_APPROVAL','INSUFFICIENT_DATA') NOT NULL;

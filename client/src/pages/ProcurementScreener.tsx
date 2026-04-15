@@ -1,8 +1,8 @@
 /**
  * client/src/pages/ProcurementScreener.tsx
  * ─────────────────────────────────────────────────────────────────────────────
- * Procurement / Vendor Evaluation Workflow UI
- * Visually and structurally distinct from the Investment workflow.
+ * Procurement / Vendor Evaluation Workflow UI — v2
+ * Matches procurementEngine.ts v2 output schema.
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
@@ -14,47 +14,57 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types (mirrors procurementEngine.ts) ─────────────────────────────────────
 
-interface AgentEvaluation {
+interface AgentScore {
   agentId: string;
   agentName: string;
   agentRole: string;
-  verdict: "APPROVE" | "REJECT" | "CONDITIONAL_APPROVAL";
   score: number;
+  verdict: "APPROVE" | "REJECT" | "CONDITIONAL";
   confidence: "High" | "Medium" | "Low";
-  rationale: string;
-  keyRisks: string[];
-  keyStrengths: string[];
-  conditions?: string[];
+  keyReasoning: string;
+  topRisks: string[];
+  redFlags: string[];
+  positives: string[];
 }
 
-interface ConsensusData {
+interface ConsensusResult {
+  averageScore: number;
   approveCount: number;
   rejectCount: number;
   conditionalCount: number;
-  averageScore: number;
-  topRisks: string[];
-  topStrengths: string[];
-  keyConditions: string[];
+  majorDisagreements: string[];
+  highestRiskAreas: string[];
+  overallConfidence: "High" | "Medium" | "Low";
+  decisionRationale: string;
+  conflictingScoringPairs: string[];
 }
 
 interface VendorEvaluationReport {
   vendorName: string;
   category: string;
-  finalRecommendation: "APPROVE" | "REJECT" | "CONDITIONAL_APPROVAL";
+  insufficientData: boolean;
+  finalRecommendation: "APPROVE" | "REJECT" | "CONDITIONAL_APPROVAL" | "INSUFFICIENT_DATA";
+  recommendationRationale: string;
   overallScore: number;
   overallConfidence: "High" | "Medium" | "Low";
-  executiveSummary: string;
-  agentEvaluations: AgentEvaluation[];
-  consensus: ConsensusData;
-  approvedConditions?: string[];
-  rejectionReasons?: string[];
-  nextSteps: string[];
-  evaluatedAt: string;
+  agentScores: AgentScore[];
+  consensus: ConsensusResult;
+  topDecisionDrivers: string[];
+  topRisks: string[];
+  suggestedNegotiationPoints: string[];
+  missingRequiredInformation: string[];
+  triage: {
+    relevance: string;
+    dataQuality: string;
+    basicRiskFlags: string[];
+    missingFields: string[];
+    summary: string;
+  };
+  generatedAt: number;
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -81,6 +91,13 @@ const VERDICT_CONFIG = {
     badge: "bg-amber-900/80 text-amber-300 border-amber-700",
     icon: "⚠️",
   },
+  INSUFFICIENT_DATA: {
+    label: "INSUFFICIENT DATA",
+    color: "text-slate-400",
+    bg: "bg-slate-800/60 border-slate-600/50",
+    badge: "bg-slate-700/80 text-slate-300 border-slate-600",
+    icon: "🚫",
+  },
 };
 
 const CONFIDENCE_COLORS = {
@@ -92,16 +109,45 @@ const CONFIDENCE_COLORS = {
 const AGENT_VERDICT_COLORS = {
   APPROVE: "bg-emerald-900/60 border-emerald-700/40 text-emerald-300",
   REJECT: "bg-red-900/60 border-red-700/40 text-red-300",
-  CONDITIONAL_APPROVAL: "bg-amber-900/60 border-amber-700/40 text-amber-300",
+  CONDITIONAL: "bg-amber-900/60 border-amber-700/40 text-amber-300",
 };
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
 
 function VerdictBanner({ report }: { report: VendorEvaluationReport }) {
-  const cfg = VERDICT_CONFIG[report.finalRecommendation];
-  const approveRate = Math.round(
-    (report.consensus.approveCount / report.agentEvaluations.length) * 100
-  );
+  const cfg = VERDICT_CONFIG[report.finalRecommendation] ?? VERDICT_CONFIG.REJECT;
+  const totalAgents = report.agentScores.length;
+  const approveRate = totalAgents > 0 ? Math.round((report.consensus.approveCount / totalAgents) * 100) : 0;
+
+  if (report.insufficientData) {
+    return (
+      <div className="rounded-xl border border-slate-600/50 bg-slate-800/60 p-6 mb-6">
+        <div className="flex items-start gap-4">
+          <span className="text-4xl">🚫</span>
+          <div className="flex-1">
+            <div className="text-slate-300 text-2xl font-black tracking-widest mb-1">INSUFFICIENT DATA</div>
+            <div className="text-slate-400 text-sm mb-3">{report.vendorName} · {report.category}</div>
+            <p className="text-slate-300 text-sm leading-relaxed mb-4">{report.recommendationRationale}</p>
+            {report.missingRequiredInformation.length > 0 && (
+              <div>
+                <div className="text-amber-400 text-xs font-bold uppercase tracking-wider mb-2">
+                  Required Information Missing:
+                </div>
+                <ul className="space-y-1">
+                  {report.missingRequiredInformation.map((item, i) => (
+                    <li key={i} className="text-slate-300 text-sm flex gap-2">
+                      <span className="text-amber-500 shrink-0">→</span>
+                      <span>{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className={`rounded-xl border p-6 mb-6 ${cfg.bg}`}>
@@ -119,7 +165,7 @@ function VerdictBanner({ report }: { report: VendorEvaluationReport }) {
             </div>
           </div>
           <p className="text-slate-300 text-sm leading-relaxed max-w-2xl mt-3">
-            {report.executiveSummary}
+            {report.recommendationRationale}
           </p>
         </div>
         <div className="flex flex-col items-end gap-2 shrink-0">
@@ -132,74 +178,227 @@ function VerdictBanner({ report }: { report: VendorEvaluationReport }) {
           </div>
           <div className="flex gap-2 mt-1">
             <span className={`text-xs font-semibold px-2 py-1 rounded border ${cfg.badge}`}>
-              {CONFIDENCE_COLORS[report.overallConfidence] ? report.overallConfidence : "Medium"} Confidence
+              {report.overallConfidence} Confidence
             </span>
-            <span className="text-xs font-semibold px-2 py-1 rounded border bg-slate-800/80 text-slate-300 border-slate-600">
-              {approveRate}% Approve Rate
-            </span>
+            {totalAgents > 0 && (
+              <span className="text-xs font-semibold px-2 py-1 rounded border bg-slate-800/80 text-slate-300 border-slate-600">
+                {approveRate}% Approve Rate
+              </span>
+            )}
           </div>
         </div>
       </div>
 
       {/* Vote bar */}
-      <div className="mt-4 pt-4 border-t border-white/10">
-        <div className="flex items-center gap-4 text-sm">
-          <span className="text-emerald-400 font-semibold">
-            ✓ {report.consensus.approveCount} Approve
-          </span>
-          <span className="text-amber-400 font-semibold">
-            ◐ {report.consensus.conditionalCount} Conditional
-          </span>
-          <span className="text-red-400 font-semibold">
-            ✗ {report.consensus.rejectCount} Reject
-          </span>
-          <span className="ml-auto text-slate-400 text-xs">
-            {report.agentEvaluations.length} agents evaluated
-          </span>
+      {totalAgents > 0 && (
+        <div className="mt-4 pt-4 border-t border-white/10">
+          <div className="flex items-center gap-4 text-sm">
+            <span className="text-emerald-400 font-semibold">
+              ✓ {report.consensus.approveCount} Approve
+            </span>
+            <span className="text-amber-400 font-semibold">
+              ◐ {report.consensus.conditionalCount} Conditional
+            </span>
+            <span className="text-red-400 font-semibold">
+              ✗ {report.consensus.rejectCount} Reject
+            </span>
+            <span className="ml-auto text-slate-400 text-xs">
+              {totalAgents} agents evaluated
+            </span>
+          </div>
+          <div className="mt-2 h-2 rounded-full bg-slate-800 overflow-hidden flex">
+            <div
+              className="bg-emerald-500 h-full transition-all"
+              style={{ width: `${(report.consensus.approveCount / totalAgents) * 100}%` }}
+            />
+            <div
+              className="bg-amber-500 h-full transition-all"
+              style={{ width: `${(report.consensus.conditionalCount / totalAgents) * 100}%` }}
+            />
+            <div
+              className="bg-red-500 h-full transition-all"
+              style={{ width: `${(report.consensus.rejectCount / totalAgents) * 100}%` }}
+            />
+          </div>
         </div>
-        <div className="mt-2 h-2 rounded-full bg-slate-800 overflow-hidden flex">
-          <div
-            className="bg-emerald-500 h-full transition-all"
-            style={{ width: `${(report.consensus.approveCount / report.agentEvaluations.length) * 100}%` }}
-          />
-          <div
-            className="bg-amber-500 h-full transition-all"
-            style={{ width: `${(report.consensus.conditionalCount / report.agentEvaluations.length) * 100}%` }}
-          />
-          <div
-            className="bg-red-500 h-full transition-all"
-            style={{ width: `${(report.consensus.rejectCount / report.agentEvaluations.length) * 100}%` }}
-          />
-        </div>
-      </div>
+      )}
     </div>
   );
 }
 
-function AgentCard({ agent }: { agent: AgentEvaluation }) {
+function TopDecisionDrivers({ drivers }: { drivers: string[] }) {
+  if (!drivers || drivers.length === 0) return null;
+  return (
+    <div className="rounded-xl border border-blue-800/40 bg-blue-950/30 p-4 mb-6">
+      <div className="text-blue-400 text-xs font-bold uppercase tracking-widest mb-3">
+        🎯 TOP DECISION DRIVERS
+      </div>
+      <ol className="space-y-2">
+        {drivers.map((driver, i) => (
+          <li key={i} className="text-slate-200 text-sm flex gap-3">
+            <span className="text-blue-400 font-black shrink-0 w-5">{i + 1}.</span>
+            <span>{driver}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
+function ConsensusPanel({ report }: { report: VendorEvaluationReport }) {
+  const { consensus } = report;
+  return (
+    <div className="space-y-4 mb-6">
+      {/* Decision Rationale */}
+      {consensus.decisionRationale && (
+        <div className="rounded-xl border border-slate-700/40 bg-slate-800/30 p-4">
+          <div className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-2">
+            🧠 CONSENSUS RATIONALE
+          </div>
+          <p className="text-slate-300 text-sm leading-relaxed">{consensus.decisionRationale}</p>
+        </div>
+      )}
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Top Risks */}
+        <div className="rounded-xl border border-red-800/40 bg-red-950/30 p-4">
+          <div className="text-red-400 text-xs font-bold uppercase tracking-widest mb-3">
+            🚨 Top Risks Identified
+          </div>
+          {report.topRisks.length > 0 ? (
+            <ul className="space-y-2">
+              {report.topRisks.slice(0, 5).map((r, i) => (
+                <li key={i} className="text-slate-300 text-sm flex gap-2">
+                  <span className="text-red-500 shrink-0 font-bold">{i + 1}.</span>
+                  <span>{r}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-slate-500 text-sm">No major risks identified.</p>
+          )}
+        </div>
+
+        {/* Highest Risk Areas */}
+        <div className="rounded-xl border border-orange-800/40 bg-orange-950/30 p-4">
+          <div className="text-orange-400 text-xs font-bold uppercase tracking-widest mb-3">
+            ⚡ HIGHEST RISK DIMENSIONS
+          </div>
+          {consensus.highestRiskAreas.length > 0 ? (
+            <ul className="space-y-2">
+              {consensus.highestRiskAreas.map((area, i) => (
+                <li key={i} className="text-slate-300 text-sm flex gap-2">
+                  <span className="text-orange-500 shrink-0">▶</span>
+                  <span>{area}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-slate-500 text-sm">No high-risk dimensions.</p>
+          )}
+        </div>
+      </div>
+
+      {/* Conflicting Scores */}
+      {consensus.conflictingScoringPairs.length > 0 && (
+        <div className="rounded-xl border border-purple-800/40 bg-purple-950/30 p-4">
+          <div className="text-purple-400 text-xs font-bold uppercase tracking-widest mb-3">
+            ⚔️ CONFLICTING AGENT SCORES
+          </div>
+          <p className="text-slate-400 text-xs mb-3">
+            Significant scoring gaps between agents indicate genuine uncertainty in this evaluation.
+          </p>
+          <ul className="space-y-1.5">
+            {consensus.conflictingScoringPairs.map((pair, i) => (
+              <li key={i} className="text-slate-300 text-sm flex gap-2">
+                <span className="text-purple-500 shrink-0">↔</span>
+                <span>{pair}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Negotiation Points */}
+      {report.suggestedNegotiationPoints.length > 0 && (
+        <div className="rounded-xl border border-teal-800/40 bg-teal-950/30 p-4">
+          <div className="text-teal-400 text-xs font-bold uppercase tracking-widest mb-3">
+            🤝 SUGGESTED NEGOTIATION POINTS
+          </div>
+          <ul className="space-y-2">
+            {report.suggestedNegotiationPoints.map((point, i) => (
+              <li key={i} className="text-slate-300 text-sm flex gap-2">
+                <span className="text-teal-400 shrink-0 font-bold">{i + 1}.</span>
+                <span>{point}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Missing Information */}
+      {report.missingRequiredInformation.length > 0 && (
+        <div className="rounded-xl border border-amber-800/40 bg-amber-950/30 p-4">
+          <div className="text-amber-400 text-xs font-bold uppercase tracking-widest mb-3">
+            📋 MISSING INFORMATION
+          </div>
+          <ul className="space-y-1.5">
+            {report.missingRequiredInformation.map((item, i) => (
+              <li key={i} className="text-slate-300 text-sm flex gap-2">
+                <span className="text-amber-500 shrink-0">→</span>
+                <span>{item}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AgentCard({ agent }: { agent: AgentScore }) {
   const [expanded, setExpanded] = useState(false);
-  const verdictCfg = VERDICT_CONFIG[agent.verdict];
+  const isDevilsAdvocate = agent.agentId === "devils_advocate";
+  const verdictColor = agent.verdict === "APPROVE"
+    ? "text-emerald-400"
+    : agent.verdict === "REJECT"
+    ? "text-red-400"
+    : "text-amber-400";
+
+  const cardBg = isDevilsAdvocate
+    ? "border-red-700/60 bg-red-950/40"
+    : "border-slate-700/50 bg-slate-800/40";
 
   return (
-    <div className="rounded-lg border border-slate-700/50 bg-slate-800/40 overflow-hidden">
+    <div className={`rounded-lg border overflow-hidden ${cardBg}`}>
       <button
-        className="w-full text-left p-4 hover:bg-slate-700/20 transition-colors"
+        className="w-full text-left p-4 hover:bg-white/5 transition-colors"
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 min-w-0">
-            <div className={`text-xs font-bold px-2 py-1 rounded border shrink-0 ${AGENT_VERDICT_COLORS[agent.verdict]}`}>
-              {agent.verdict === "CONDITIONAL_APPROVAL" ? "CONDITIONAL" : agent.verdict}
+            {isDevilsAdvocate && (
+              <span className="text-base shrink-0">😈</span>
+            )}
+            <div className={`text-xs font-bold px-2 py-1 rounded border shrink-0 ${AGENT_VERDICT_COLORS[agent.verdict] ?? AGENT_VERDICT_COLORS.CONDITIONAL}`}>
+              {agent.verdict}
             </div>
             <div className="min-w-0">
-              <div className="text-slate-200 font-semibold text-sm truncate">{agent.agentName}</div>
+              <div className={`font-semibold text-sm truncate ${isDevilsAdvocate ? "text-red-300" : "text-slate-200"}`}>
+                {agent.agentName}
+                {isDevilsAdvocate && (
+                  <span className="ml-2 text-xs px-1.5 py-0.5 rounded bg-red-900/80 text-red-400 border border-red-700/50 font-bold">
+                    ADVERSARIAL
+                  </span>
+                )}
+              </div>
               <div className="text-slate-500 text-xs">{agent.agentRole}</div>
             </div>
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <div className="text-right">
-              <div className={`text-lg font-black ${verdictCfg.color}`}>{agent.score.toFixed(1)}</div>
-              <div className="text-slate-500 text-xs">{agent.confidence}</div>
+              <div className={`text-lg font-black ${verdictColor}`}>{agent.score.toFixed(1)}</div>
+              <div className={`text-xs ${CONFIDENCE_COLORS[agent.confidence]}`}>{agent.confidence}</div>
             </div>
             <span className="text-slate-500 text-sm">{expanded ? "▲" : "▼"}</span>
           </div>
@@ -208,15 +407,20 @@ function AgentCard({ agent }: { agent: AgentEvaluation }) {
 
       {expanded && (
         <div className="px-4 pb-4 border-t border-slate-700/30 pt-3 space-y-3">
-          <p className="text-slate-300 text-sm leading-relaxed">{agent.rationale}</p>
+          {isDevilsAdvocate && (
+            <div className="text-xs text-red-400 bg-red-950/60 border border-red-800/40 rounded px-3 py-2">
+              ⚠️ This agent is specifically tasked with arguing for rejection. Its score is capped at 5/10 by design.
+            </div>
+          )}
+          <p className="text-slate-300 text-sm leading-relaxed">{agent.keyReasoning}</p>
 
-          {agent.keyStrengths.length > 0 && (
+          {agent.positives.length > 0 && !isDevilsAdvocate && (
             <div>
               <div className="text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-1.5">
-                Key Strengths
+                Positives
               </div>
               <ul className="space-y-1">
-                {agent.keyStrengths.map((s, i) => (
+                {agent.positives.map((s, i) => (
                   <li key={i} className="text-slate-300 text-xs flex gap-2">
                     <span className="text-emerald-500 shrink-0">+</span>
                     <span>{s}</span>
@@ -226,15 +430,15 @@ function AgentCard({ agent }: { agent: AgentEvaluation }) {
             </div>
           )}
 
-          {agent.keyRisks.length > 0 && (
+          {agent.topRisks.length > 0 && (
             <div>
-              <div className="text-red-400 text-xs font-semibold uppercase tracking-wider mb-1.5">
-                Key Risks
+              <div className={`text-xs font-semibold uppercase tracking-wider mb-1.5 ${isDevilsAdvocate ? "text-red-400" : "text-red-400"}`}>
+                {isDevilsAdvocate ? "Rejection Arguments" : "Top Risks"}
               </div>
               <ul className="space-y-1">
-                {agent.keyRisks.map((r, i) => (
+                {agent.topRisks.map((r, i) => (
                   <li key={i} className="text-slate-300 text-xs flex gap-2">
-                    <span className="text-red-500 shrink-0">!</span>
+                    <span className={`shrink-0 ${isDevilsAdvocate ? "text-red-400" : "text-red-500"}`}>!</span>
                     <span>{r}</span>
                   </li>
                 ))}
@@ -242,16 +446,16 @@ function AgentCard({ agent }: { agent: AgentEvaluation }) {
             </div>
           )}
 
-          {agent.conditions && agent.conditions.length > 0 && (
+          {agent.redFlags.length > 0 && (
             <div>
-              <div className="text-amber-400 text-xs font-semibold uppercase tracking-wider mb-1.5">
-                Conditions
+              <div className="text-orange-400 text-xs font-semibold uppercase tracking-wider mb-1.5">
+                Red Flags
               </div>
               <ul className="space-y-1">
-                {agent.conditions.map((c, i) => (
+                {agent.redFlags.map((f, i) => (
                   <li key={i} className="text-slate-300 text-xs flex gap-2">
-                    <span className="text-amber-500 shrink-0">→</span>
-                    <span>{c}</span>
+                    <span className="text-orange-500 shrink-0">🚩</span>
+                    <span>{f}</span>
                   </li>
                 ))}
               </ul>
@@ -263,85 +467,11 @@ function AgentCard({ agent }: { agent: AgentEvaluation }) {
   );
 }
 
-function ConsensusPanel({ report }: { report: VendorEvaluationReport }) {
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-      {/* Top Risks */}
-      <div className="rounded-xl border border-red-800/40 bg-red-950/30 p-4">
-        <div className="text-red-400 text-xs font-bold uppercase tracking-widest mb-3">
-          🚨 Top Risks Identified
-        </div>
-        {report.consensus.topRisks.length > 0 ? (
-          <ul className="space-y-2">
-            {report.consensus.topRisks.slice(0, 5).map((r, i) => (
-              <li key={i} className="text-slate-300 text-sm flex gap-2">
-                <span className="text-red-500 shrink-0 font-bold">{i + 1}.</span>
-                <span>{r}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-slate-500 text-sm">No major risks identified.</p>
-        )}
-      </div>
-
-      {/* Top Strengths */}
-      <div className="rounded-xl border border-emerald-800/40 bg-emerald-950/30 p-4">
-        <div className="text-emerald-400 text-xs font-bold uppercase tracking-widest mb-3">
-          ✅ Top Strengths
-        </div>
-        {report.consensus.topStrengths.length > 0 ? (
-          <ul className="space-y-2">
-            {report.consensus.topStrengths.slice(0, 5).map((s, i) => (
-              <li key={i} className="text-slate-300 text-sm flex gap-2">
-                <span className="text-emerald-500 shrink-0 font-bold">{i + 1}.</span>
-                <span>{s}</span>
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-slate-500 text-sm">No strengths noted.</p>
-        )}
-      </div>
-
-      {/* Conditions */}
-      {report.consensus.keyConditions.length > 0 && (
-        <div className="rounded-xl border border-amber-800/40 bg-amber-950/30 p-4 md:col-span-2">
-          <div className="text-amber-400 text-xs font-bold uppercase tracking-widest mb-3">
-            ⚠️ Approval Conditions
-          </div>
-          <ul className="space-y-2">
-            {report.consensus.keyConditions.map((c, i) => (
-              <li key={i} className="text-slate-300 text-sm flex gap-2">
-                <span className="text-amber-500 shrink-0 font-bold">{i + 1}.</span>
-                <span>{c}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
-      {/* Next Steps */}
-      {report.nextSteps.length > 0 && (
-        <div className="rounded-xl border border-blue-800/40 bg-blue-950/30 p-4 md:col-span-2">
-          <div className="text-blue-400 text-xs font-bold uppercase tracking-widest mb-3">
-            📋 Recommended Next Steps
-          </div>
-          <ol className="space-y-2">
-            {report.nextSteps.map((s, i) => (
-              <li key={i} className="text-slate-300 text-sm flex gap-2">
-                <span className="text-blue-400 shrink-0 font-bold">{i + 1}.</span>
-                <span>{s}</span>
-              </li>
-            ))}
-          </ol>
-        </div>
-      )}
-    </div>
-  );
-}
-
 function EvaluationReport({ report, onNewEvaluation }: { report: VendorEvaluationReport; onNewEvaluation: () => void }) {
+  // Separate Devil's Advocate from other agents
+  const regularAgents = report.agentScores.filter((a) => a.agentId !== "devils_advocate");
+  const devilsAdvocate = report.agentScores.find((a) => a.agentId === "devils_advocate");
+
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
@@ -351,7 +481,7 @@ function EvaluationReport({ report, onNewEvaluation }: { report: VendorEvaluatio
             🏛️ VENDOR EVALUATION REPORT
           </h2>
           <p className="text-slate-500 text-xs mt-1">
-            {report.agentEvaluations.length} specialist agents · {new Date(report.evaluatedAt).toLocaleString()}
+            {report.agentScores.length} specialist agents · {new Date(report.generatedAt).toLocaleString()}
           </p>
         </div>
         <Button
@@ -364,23 +494,42 @@ function EvaluationReport({ report, onNewEvaluation }: { report: VendorEvaluatio
         </Button>
       </div>
 
-      {/* Verdict banner (opinion first) */}
+      {/* Verdict banner */}
       <VerdictBanner report={report} />
 
-      {/* Consensus panels */}
-      <ConsensusPanel report={report} />
+      {/* Top Decision Drivers (only if not insufficient data) */}
+      {!report.insufficientData && report.topDecisionDrivers?.length > 0 && (
+        <TopDecisionDrivers drivers={report.topDecisionDrivers} />
+      )}
 
-      {/* Agent evaluations */}
-      <div className="mb-6">
-        <div className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-3">
-          ⚡ AGENT EVALUATIONS ({report.agentEvaluations.length})
+      {/* Consensus panels (only if not insufficient data) */}
+      {!report.insufficientData && <ConsensusPanel report={report} />}
+
+      {/* Agent evaluations (only if not insufficient data) */}
+      {!report.insufficientData && report.agentScores.length > 0 && (
+        <div className="mb-6">
+          {/* Regular agents */}
+          <div className="text-slate-400 text-xs font-bold uppercase tracking-widest mb-3">
+            ⚡ SPECIALIST AGENT EVALUATIONS ({regularAgents.length})
+          </div>
+          <div className="space-y-2 mb-4">
+            {regularAgents.map((agent) => (
+              <AgentCard key={agent.agentId} agent={agent} />
+            ))}
+          </div>
+
+          {/* Devil's Advocate — separated visually */}
+          {devilsAdvocate && (
+            <div>
+              <div className="text-red-400 text-xs font-bold uppercase tracking-widest mb-3 flex items-center gap-2">
+                <span>😈</span>
+                <span>DEVIL'S ADVOCATE — ADVERSARIAL CHALLENGE</span>
+              </div>
+              <AgentCard agent={devilsAdvocate} />
+            </div>
+          )}
         </div>
-        <div className="space-y-2">
-          {report.agentEvaluations.map((agent) => (
-            <AgentCard key={agent.agentId} agent={agent} />
-          ))}
-        </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -402,19 +551,28 @@ function ProcessingState({ vendorName, agents }: { vendorName: string; agents: {
       </p>
 
       <div className="grid grid-cols-2 gap-2 max-w-md mx-auto">
-        {agents.map((agent, i) => (
-          <div
-            key={agent.id}
-            className="flex items-center gap-2 bg-slate-800/60 rounded-lg px-3 py-2 border border-slate-700/40"
-            style={{ animationDelay: `${i * 0.1}s` }}
-          >
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shrink-0" />
-            <div className="text-left min-w-0">
-              <div className="text-slate-300 text-xs font-semibold truncate">{agent.name}</div>
-              <div className="text-slate-500 text-xs truncate">{agent.role}</div>
+        {agents.map((agent, i) => {
+          const isDA = agent.id === "devils_advocate";
+          return (
+            <div
+              key={agent.id}
+              className={`flex items-center gap-2 rounded-lg px-3 py-2 border ${
+                isDA
+                  ? "bg-red-950/40 border-red-700/40"
+                  : "bg-slate-800/60 border-slate-700/40"
+              }`}
+              style={{ animationDelay: `${i * 0.1}s` }}
+            >
+              <div className={`w-1.5 h-1.5 rounded-full animate-pulse shrink-0 ${isDA ? "bg-red-400" : "bg-blue-400"}`} />
+              <div className="text-left min-w-0">
+                <div className={`text-xs font-semibold truncate ${isDA ? "text-red-300" : "text-slate-300"}`}>
+                  {isDA ? "😈 " : ""}{agent.name}
+                </div>
+                <div className="text-slate-500 text-xs truncate">{agent.role}</div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <p className="text-slate-600 text-xs mt-8">This typically takes 60–90 seconds</p>
@@ -445,7 +603,7 @@ function HistoryRow({
       className="flex items-center gap-4 p-3 rounded-lg border border-slate-700/40 bg-slate-800/30 hover:bg-slate-700/30 cursor-pointer transition-colors"
       onClick={() => onSelect(item.id)}
     >
-      <span className={`text-xs font-bold px-2 py-1 rounded border shrink-0 ${AGENT_VERDICT_COLORS[item.finalRecommendation as keyof typeof AGENT_VERDICT_COLORS] ?? ""}`}>
+      <span className={`text-xs font-bold px-2 py-1 rounded border shrink-0 ${cfg.badge}`}>
         {item.finalRecommendation === "CONDITIONAL_APPROVAL" ? "CONDITIONAL" : item.finalRecommendation}
       </span>
       <div className="min-w-0 flex-1">
@@ -453,7 +611,9 @@ function HistoryRow({
         <div className="text-slate-500 text-xs">{item.category}</div>
       </div>
       <div className="text-right shrink-0">
-        <div className={`text-sm font-black ${cfg.color}`}>{parseFloat(item.overallScore).toFixed(1)}</div>
+        <div className={`text-sm font-black ${cfg.color}`}>
+          {item.finalRecommendation === "INSUFFICIENT_DATA" ? "N/A" : parseFloat(item.overallScore || "0").toFixed(1)}
+        </div>
         <div className="text-slate-500 text-xs">{new Date(item.createdAt).toLocaleDateString()}</div>
       </div>
     </div>
@@ -557,7 +717,7 @@ export default function ProcurementScreener() {
             <span className="text-slate-600 text-xs">|</span>
             <span className="text-slate-400 text-xs">VENDOR EVALUATION ENGINE</span>
             <span className="text-xs px-2 py-0.5 rounded bg-blue-900/60 text-blue-300 border border-blue-700/50 font-semibold">
-              PROCUREMENT WORKFLOW
+              8 AGENTS · DEVIL'S ADVOCATE INCLUDED
             </span>
           </div>
           <div className="flex gap-2">
@@ -593,16 +753,20 @@ export default function ProcurementScreener() {
             <div className="mb-8">
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-xs px-2 py-1 rounded bg-blue-900/60 text-blue-300 border border-blue-700/50 font-bold tracking-wider">
-                  📦 PROCUREMENT WORKFLOW · EXAMPLE USE CASE
+                  📦 PROCUREMENT WORKFLOW · VENDOR EVALUATION
                 </span>
               </div>
               <h1 className="text-3xl font-black text-slate-100 tracking-tight">
-                Vendor Evaluation
+                Vendor Evaluation Engine
               </h1>
               <p className="text-slate-400 text-sm mt-2 leading-relaxed">
-                Submit a vendor proposal or RFP response. {agents.length} specialist agents will evaluate
-                financial stability, technical capability, compliance, risk, and strategic fit in parallel.
+                Submit a vendor proposal or RFP response. {agents.length} specialist agents — including a Devil's Advocate — will evaluate
+                financial stability, technical capability, compliance, security, risk, and strategic fit in parallel.
               </p>
+              <div className="mt-3 text-xs text-slate-500 bg-slate-800/40 border border-slate-700/30 rounded-lg px-3 py-2">
+                💡 For best results, include: pricing details, technical specifications, compliance certifications, and contract terms.
+                Vague proposals will trigger the <span className="text-amber-400 font-semibold">INSUFFICIENT DATA</span> override.
+              </div>
             </div>
 
             {/* Form */}
@@ -664,8 +828,8 @@ export default function ProcurementScreener() {
                 <Textarea
                   value={proposalText}
                   onChange={(e) => setProposalText(e.target.value)}
-                  placeholder="Paste the vendor's proposal, RFP response, or provide a detailed description of the vendor's offering, capabilities, pricing, and track record..."
-                  className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-blue-500 min-h-[160px] resize-y"
+                  placeholder="Paste the vendor's proposal, RFP response, or provide a detailed description of the vendor's offering, capabilities, pricing, security posture, compliance certifications, and track record..."
+                  className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-blue-500 min-h-[180px] resize-y"
                 />
               </div>
 
@@ -700,12 +864,24 @@ export default function ProcurementScreener() {
                     ⚡ {agents.length} SPECIALIST AGENTS WILL EVALUATE
                   </div>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-                    {agents.map((agent) => (
-                      <div key={agent.id} className="text-center p-2 rounded-lg bg-slate-800/60 border border-slate-700/30">
-                        <div className="text-slate-300 text-xs font-semibold">{agent.name}</div>
-                        <div className="text-slate-500 text-xs mt-0.5">{agent.role}</div>
-                      </div>
-                    ))}
+                    {agents.map((agent) => {
+                      const isDA = agent.id === "devils_advocate";
+                      return (
+                        <div
+                          key={agent.id}
+                          className={`text-center p-2 rounded-lg border ${
+                            isDA
+                              ? "bg-red-950/40 border-red-700/30"
+                              : "bg-slate-800/60 border-slate-700/30"
+                          }`}
+                        >
+                          <div className={`text-xs font-semibold ${isDA ? "text-red-300" : "text-slate-300"}`}>
+                            {isDA ? "😈 " : ""}{agent.name}
+                          </div>
+                          <div className="text-slate-500 text-xs mt-0.5">{agent.role}</div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -743,7 +919,7 @@ export default function ProcurementScreener() {
                   ← Back to History
                 </button>
                 <EvaluationReport
-                  report={historyReport.report as VendorEvaluationReport}
+                  report={historyReport.report as unknown as VendorEvaluationReport}
                   onNewEvaluation={handleNewEvaluation}
                 />
               </div>
