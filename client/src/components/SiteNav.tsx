@@ -496,6 +496,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
                   }}>
                     {[
                       { label: "Deal Screener", icon: "⚖️", href: "/deals", color: "#4ADE80" },
+                      { label: "Procurement Eval", icon: "🏗️", href: "/procurement", color: "#00ff87" },
                       { label: "PortfolioMesh", icon: "🏦", href: "/portfolio-mesh", color: "#7BA3D4" },
                       { label: "PortfolioMesh Demo", icon: "🚀", href: "/portfolio-mesh/demo", color: "#F59E0B" },
                     ].map(tool => (

@@ -2079,3 +2079,11 @@
 - [ ] Verify /procurement route loads standalone without prior navigation state
 - [ ] Remove ambiguous labels — procurement clearly distinct from investment
 - [ ] Save checkpoint
+
+## Session P4 — Critical Discoverability Fix (Demo Blocker)
+
+- [ ] Add blocking WorkflowSelector modal on /deals — appears on first load, blocks until selection
+- [ ] Add "Run Procurement Evaluation" primary CTA above the fold on Landing.tsx hero
+- [ ] Add Procurement as top-level SiteNav link (not inside Tools dropdown)
+- [ ] Verify /procurement loads standalone without prior state
+- [ ] Save checkpoint
