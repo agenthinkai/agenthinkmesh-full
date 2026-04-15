@@ -2069,3 +2069,13 @@
 - [ ] Add Top Decision Drivers section (3-5 items) to Vendor Evaluation Report
 - [ ] Update ProcurementScreener.tsx to render Top Decision Drivers and INSUFFICIENT DATA state
 - [ ] Save checkpoint
+
+## Session P3 — Procurement Discoverability Fix (Critical, Pre-Demo)
+
+- [ ] Force workflow selection on DealScreener entry: show Investment vs Procurement as equal-weight full-screen cards
+- [ ] Add "Run Procurement Evaluation" primary CTA button above the fold on DealScreener
+- [ ] Add Procurement nav link to global top nav bar (visible on all pages)
+- [ ] Add "Active Workflow: Procurement / Vendor Evaluation · Agents Loaded: 9" indicator to ProcurementScreener header
+- [ ] Verify /procurement route loads standalone without prior navigation state
+- [ ] Remove ambiguous labels — procurement clearly distinct from investment
+- [ ] Save checkpoint

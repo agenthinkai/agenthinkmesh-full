@@ -713,11 +713,14 @@ export default function ProcurementScreener() {
       <div className="border-b border-slate-800 bg-slate-900/80 backdrop-blur-sm sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <span className="text-blue-400 font-black text-sm tracking-widest">🏢 PROCUREMENT</span>
-            <span className="text-slate-600 text-xs">|</span>
-            <span className="text-slate-400 text-xs">VENDOR EVALUATION ENGINE</span>
-            <span className="text-xs px-2 py-0.5 rounded bg-blue-900/60 text-blue-300 border border-blue-700/50 font-semibold">
-              8 AGENTS · DEVIL'S ADVOCATE INCLUDED
+            <a href="/deals" className="text-slate-500 hover:text-slate-300 text-xs font-mono tracking-widest transition-colors" title="Back to Workflow Selector">← WORKFLOWS</a>
+            <span className="text-slate-700">|</span>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse"></span>
+              <span className="text-green-400 font-black text-sm tracking-widest">ACTIVE WORKFLOW: PROCUREMENT / VENDOR EVALUATION</span>
+            </div>
+            <span className="text-xs px-2 py-0.5 rounded bg-green-900/40 text-green-300 border border-green-700/40 font-semibold">
+              AGENTS LOADED: 9
             </span>
           </div>
           <div className="flex gap-2">

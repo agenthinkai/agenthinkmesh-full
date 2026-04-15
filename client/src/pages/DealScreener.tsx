@@ -2897,6 +2897,14 @@ export default function DealScreener() {
         </div>
         <div style={{ marginLeft: "auto", display: "flex", alignItems: "center", gap: 16 }}>
           <a
+            href="/procurement"
+            style={{ fontFamily: MONO, fontSize: 10, color: GREEN, textDecoration: "none", letterSpacing: "0.08em", padding: "5px 12px", border: "1px solid rgba(0,255,135,0.35)", borderRadius: 4, background: "rgba(0,255,135,0.07)" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,255,135,0.14)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,255,135,0.07)"; }}
+          >
+            🏗️ PROCUREMENT ↗
+          </a>
+          <a
             href="/account/payments"
             style={{ fontFamily: MONO, fontSize: 10, color: MUTED, textDecoration: "none", letterSpacing: "0.08em" }}
             onMouseEnter={e => (e.currentTarget.style.color = ACCENT)}
@@ -2913,69 +2921,83 @@ export default function DealScreener() {
       {/* Main content */}
       <div style={{ padding: "40px 24px", maxWidth: 960, margin: "0 auto" }}>
         {view === "workflow" && (
-          <div style={{ maxWidth: 680, margin: "0 auto" }}>
-            <div style={{ marginBottom: 32, textAlign: "center" }}>
-              <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.15em", marginBottom: 8 }}>DECISION ENGINE · COUNCIL OF 10</div>
-              <h1 style={{ margin: 0, fontSize: 28, color: TEXT, fontWeight: 800, letterSpacing: "-0.02em" }}>Select Workflow Type</h1>
-              <p style={{ margin: "10px 0 0", fontSize: 13, color: TEXT2, lineHeight: 1.6 }}>
-                AgenThink Mesh runs structured multi-agent evaluations across any domain.<br />
-                Choose a workflow to configure the council for your use case.
+          <div style={{ maxWidth: 860, margin: "0 auto" }}>
+            {/* Platform positioning statement */}
+            <div style={{ textAlign: "center", marginBottom: 48 }}>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.15em", marginBottom: 12 }}>AGENTHINK MESH · DECISION ENGINE</div>
+              <h1 style={{ margin: "0 0 12px", fontSize: 32, color: TEXT, fontWeight: 800, letterSpacing: "-0.02em", lineHeight: 1.2 }}>Select Your Workflow</h1>
+              <p style={{ margin: "0 auto", fontSize: 14, color: TEXT2, lineHeight: 1.7, maxWidth: 520 }}>
+                AgenThink Mesh is not a model. It is a structured decision layer that orchestrates specialized AI agents across any institutional workflow.
               </p>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-              {WORKFLOW_OPTIONS.map((wf) => (
-                <button
+
+            {/* Primary two-workflow grid — Investment and Procurement as equal-weight CTAs */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20, marginBottom: 28 }}>
+              {/* Investment Card */}
+              <button
+                onClick={() => { setSelectedWorkflow("investment"); setView("input"); }}
+                style={{
+                  display: "flex", flexDirection: "column", alignItems: "flex-start",
+                  padding: "32px 28px", background: "rgba(74,158,255,0.06)",
+                  border: "1px solid rgba(74,158,255,0.35)", borderRadius: 12,
+                  cursor: "pointer", textAlign: "left", width: "100%",
+                  transition: "border-color 0.15s, background 0.15s, transform 0.1s",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = ACCENT; (e.currentTarget as HTMLButtonElement).style.background = "rgba(74,158,255,0.1)"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(74,158,255,0.35)"; (e.currentTarget as HTMLButtonElement).style.background = "rgba(74,158,255,0.06)"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}
+              >
+                <span style={{ fontSize: 36, lineHeight: 1, marginBottom: 16 }}>📊</span>
+                <div style={{ fontSize: 17, fontWeight: 700, color: TEXT, marginBottom: 8 }}>Investment / Deal Screening</div>
+                <div style={{ fontSize: 13, color: TEXT2, marginBottom: 20, lineHeight: 1.5 }}>VC, PE, M&A, and growth equity evaluation. Council of 10 specialist agents.</div>
+                <span style={{ fontFamily: MONO, fontSize: 10, padding: "5px 14px", borderRadius: 4, background: "rgba(74,158,255,0.15)", border: "1px solid rgba(74,158,255,0.4)", color: ACCENT, letterSpacing: "0.08em" }}>RUN INVESTMENT SCREENING →</span>
+              </button>
+
+              {/* Procurement Card — equal weight, green accent */}
+              <button
+                onClick={() => { window.location.href = "/procurement"; }}
+                style={{
+                  display: "flex", flexDirection: "column", alignItems: "flex-start",
+                  padding: "32px 28px", background: "rgba(0,255,135,0.05)",
+                  border: "1px solid rgba(0,255,135,0.35)", borderRadius: 12,
+                  cursor: "pointer", textAlign: "left", width: "100%",
+                  transition: "border-color 0.15s, background 0.15s, transform 0.1s",
+                }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = GREEN; (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,255,135,0.1)"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(0,255,135,0.35)"; (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,255,135,0.05)"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 16 }}>
+                  <span style={{ fontSize: 36, lineHeight: 1 }}>🏗️</span>
+                  <span style={{ fontFamily: MONO, fontSize: 9, padding: "2px 8px", borderRadius: 3, background: "rgba(0,255,135,0.15)", border: "1px solid rgba(0,255,135,0.4)", color: GREEN, letterSpacing: "0.08em" }}>LIVE</span>
+                </div>
+                <div style={{ fontSize: 17, fontWeight: 700, color: TEXT, marginBottom: 8 }}>Procurement / Vendor Evaluation</div>
+                <div style={{ fontSize: 13, color: TEXT2, marginBottom: 20, lineHeight: 1.5 }}>Supplier selection, RFP scoring, contract risk. 9 agents including Devil's Advocate.</div>
+                <span style={{ fontFamily: MONO, fontSize: 10, padding: "5px 14px", borderRadius: 4, background: "rgba(0,255,135,0.15)", border: "1px solid rgba(0,255,135,0.4)", color: GREEN, letterSpacing: "0.08em" }}>RUN PROCUREMENT EVALUATION →</span>
+              </button>
+            </div>
+
+            {/* Secondary workflows — coming soon */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+              {WORKFLOW_OPTIONS.filter(wf => wf.id !== "investment" && wf.id !== "procurement").map((wf) => (
+                <div
                   key={wf.id}
-                  onClick={() => {
-                    setSelectedWorkflow(wf.id);
-                    if (wf.id === "investment") {
-                      setView("input");
-                    } else if (wf.id === "procurement") {
-                      window.location.href = "/procurement";
-                    } else {
-                      // Other workflows coming soon
-                      setView("input");
-                    }
-                  }}
                   style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 16,
-                    padding: "18px 24px",
-                    background: wf.id === "investment" ? "rgba(74,158,255,0.06)" : BG2,
-                    border: `1px solid ${wf.id === "investment" ? "rgba(74,158,255,0.4)" : BORDER}`,
-                    borderRadius: 8,
-                    cursor: "pointer",
-                    textAlign: "left",
-                    width: "100%",
-                    transition: "border-color 0.15s, background 0.15s",
+                    display: "flex", alignItems: "center", gap: 12,
+                    padding: "16px 20px", background: BG2,
+                    border: `1px solid ${BORDER}`, borderRadius: 8,
+                    opacity: 0.6,
                   }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = ACCENT; (e.currentTarget as HTMLButtonElement).style.background = "rgba(74,158,255,0.08)"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = wf.id === "investment" ? "rgba(74,158,255,0.4)" : BORDER; (e.currentTarget as HTMLButtonElement).style.background = wf.id === "investment" ? "rgba(74,158,255,0.06)" : BG2; }}
                 >
-                  <span style={{ fontSize: 28, lineHeight: 1 }}>{wf.icon}</span>
+                  <span style={{ fontSize: 22, lineHeight: 1 }}>{wf.icon}</span>
                   <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 4 }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{wf.label}</span>
-                      {wf.badge && (
-                        <span style={{ fontFamily: MONO, fontSize: 9, padding: "2px 8px", borderRadius: 3, background: "rgba(0,255,135,0.12)", border: "1px solid rgba(0,255,135,0.3)", color: GREEN, letterSpacing: "0.08em" }}>{wf.badge}</span>
-                      )}
-                      {wf.id === "procurement" && (
-                        <span style={{ fontFamily: MONO, fontSize: 9, padding: "2px 8px", borderRadius: 3, background: "rgba(0,255,135,0.12)", border: "1px solid rgba(0,255,135,0.3)", color: GREEN, letterSpacing: "0.08em" }}>LIVE</span>
-                      )}
-                      {wf.id !== "investment" && wf.id !== "procurement" && (
-                        <span style={{ fontFamily: MONO, fontSize: 9, padding: "2px 8px", borderRadius: 3, background: "rgba(255,159,67,0.1)", border: "1px solid rgba(255,159,67,0.25)", color: AMBER, letterSpacing: "0.08em" }}>COMING SOON</span>
-                      )}
-                    </div>
-                    <div style={{ fontSize: 12, color: TEXT2 }}>{wf.sublabel}</div>
+                    <div style={{ fontSize: 13, fontWeight: 600, color: TEXT, marginBottom: 3 }}>{wf.label}</div>
+                    <span style={{ fontFamily: MONO, fontSize: 9, padding: "2px 7px", borderRadius: 3, background: "rgba(255,159,67,0.1)", border: "1px solid rgba(255,159,67,0.25)", color: AMBER, letterSpacing: "0.08em" }}>COMING SOON</span>
                   </div>
-                  <span style={{ fontFamily: MONO, fontSize: 14, color: wf.id === "investment" ? ACCENT : MUTED }}>→</span>
-                </button>
+                </div>
               ))}
             </div>
           </div>
         )}
-        {view === "input" && (
+                {view === "input" && (
           <>
             <DealForm
               onResult={handleResult}

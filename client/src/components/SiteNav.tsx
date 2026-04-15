@@ -58,6 +58,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "ForecastMesh",    icon: "📊", href: "/forecast",        color: "#FBBF24", bg: "rgba(251,191,36,0.08)"   },
   { label: "Knowledge Vault", icon: "🗄️", href: "/knowledge-vault", color: "#F59E0B", bg: "rgba(245,158,11,0.08)"   },
   { label: "Deal Screener",   icon: "⚖️", href: "/deals",           color: "#4ADE80", bg: "rgba(74,222,128,0.08)"   },
+  { label: "Procurement Eval", icon: "🏗️", href: "/procurement",     color: "#4ADE80", bg: "rgba(74,222,128,0.08)"   },
   { label: "Contacts",        icon: "👥", href: "/contacts",        color: "#F59E0B", bg: "rgba(245,158,11,0.08)"   },
   { label: "Compare Deals",   icon: "🔷", href: "/deals/compare",   color: "#818CF8", bg: "rgba(129,140,248,0.08)"  },
   { label: "Pitch",           icon: "💡", href: "/pitch",           color: "#FF6B35", bg: "rgba(255,107,53,0.08)"   },
@@ -185,6 +186,7 @@ function MobileDrawer({ open, onClose, currentPath, isAuthenticated, user, logou
           {[
             { label: "Domains", href: "/domains" },
             { label: "Deal Screener", href: "/deals" },
+            { label: "Procurement Eval", href: "/procurement" },
             { label: "PortfolioMesh", href: "/portfolio-mesh" },
             { label: "PortfolioMesh Demo", href: "/portfolio-mesh/demo" },
             { label: "Contact", href: "/contact" },
