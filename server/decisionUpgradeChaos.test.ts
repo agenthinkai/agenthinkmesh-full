@@ -269,35 +269,39 @@ describe("sanitizeFix — chaos stress test (50 random malformed inputs)", () =>
 // ─── Deterministic edge cases ─────────────────────────────────────────────────
 
 describe("sanitizeFix — deterministic edge cases", () => {
-  it("handles Symbol as exampleValue without crashing", () => {
-    // Symbol cannot be converted with String() in all environments, but
-    // the implementation uses != null check first — Symbol is not null/undefined
-    // so String(Symbol('x')) throws TypeError in strict mode
-    // The implementation should handle this gracefully
-    expect(() => sanitizeFix({ exampleValue: Symbol("test") })).not.toThrow();
+  it("handles Symbol as exampleValue → collapses to empty string", () => {
+    // safeString: Symbol is not string/number/boolean — returns ""
+    const result = sanitizeFix({ exampleValue: Symbol("test") });
+    expect(result.exampleValue).toBe("");
   });
 
-  it("handles function as exampleValue without crashing", () => {
-    expect(() => sanitizeFix({ exampleValue: () => "fn" })).not.toThrow();
+  it("handles function as exampleValue → collapses to empty string", () => {
+    const result = sanitizeFix({ exampleValue: () => "fn" });
+    expect(result.exampleValue).toBe("");
   });
 
-  it("handles RegExp as exampleValue without crashing", () => {
-    expect(() => sanitizeFix({ exampleValue: /regex/ })).not.toThrow();
+  it("handles RegExp as exampleValue → collapses to empty string", () => {
+    const result = sanitizeFix({ exampleValue: /regex/ });
+    expect(result.exampleValue).toBe("");
   });
 
-  it("handles Error object as exampleValue without crashing", () => {
-    expect(() => sanitizeFix({ exampleValue: new Error("test") })).not.toThrow();
+  it("handles Error object as exampleValue → collapses to empty string", () => {
+    const result = sanitizeFix({ exampleValue: new Error("test") });
+    expect(result.exampleValue).toBe("");
   });
 
-  it("handles Date as exampleValue without crashing", () => {
-    expect(() => sanitizeFix({ exampleValue: new Date() })).not.toThrow();
+  it("handles Date as exampleValue → collapses to empty string", () => {
+    // Date is an object — safeString returns ""
+    const result = sanitizeFix({ exampleValue: new Date() });
+    expect(result.exampleValue).toBe("");
   });
 
-  it("handles circular reference object gracefully", () => {
+  it("handles circular reference object → collapses to empty string without crashing", () => {
     const circular: any = { a: 1 };
     circular.self = circular;
-    // sanitizeFix uses String() which calls .toString() — circular refs don't cause String() to throw
-    expect(() => sanitizeFix({ exampleValue: circular })).not.toThrow();
+    // safeString: object is non-primitive — returns "" without calling toString()
+    const result = sanitizeFix({ exampleValue: circular });
+    expect(result.exampleValue).toBe("");
   });
 
   it("handles extremely long string in title without crashing", () => {

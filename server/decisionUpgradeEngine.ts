@@ -99,19 +99,24 @@ Benchmark thresholds: 3+ years direct experience, 2+ verifiable references.`,
 
 // ─── Exported sanitizeFix (also used internally) ─────────────────────────────
 
-const VALID_TAGS: UpgradeFix["tag"][] = ["ASSUMED", "IMPROVED", "USER_REQUIRED"];
-const VALID_CATEGORIES: UpgradeFix["category"][] = [
-  "missing_input", "performance_gap", "structural_issue", "narrative", "risk_mitigation",
-];
+const VALID_TAGS = new Set(["ASSUMED", "IMPROVED", "USER_REQUIRED"] as const);
+const VALID_CATEGORIES = new Set([
+  "missing_input",
+  "performance_gap",
+  "structural_issue",
+  "narrative",
+  "risk_mitigation",
+] as const);
 
-/** Coerce a value to string safely — handles Symbol, functions, and other non-serializable types */
-function safeString(v: any): string {
+/** Coerce a value to string safely.
+ * Only primitives (string, number, boolean) are converted.
+ * Objects, arrays, Symbols, functions, and other non-primitives collapse to "".
+ */
+function safeString(v: unknown): string {
   if (v == null) return "";
-  try {
-    return String(v);
-  } catch {
-    return "";
-  }
+  if (typeof v === "string") return v;
+  if (typeof v === "number" || typeof v === "boolean") return String(v);
+  return "";
 }
 
 /**
@@ -121,24 +126,25 @@ function safeString(v: any): string {
  * - tag: always one of ASSUMED | IMPROVED | USER_REQUIRED
  * - category: always a valid category enum value
  * - All string fields: always strings (coerced from any type)
- * - fieldPath: always string or undefined (never null)
+ * - fieldPath: always string or undefined (never null, never empty string)
  * Exported for unit testing.
  */
 export function sanitizeFix(f: any): UpgradeFix {
-  const rawTag = f?.tag;
-  const rawCategory = f?.category;
-  const rawExampleValue = f?.exampleValue;
-  const rawFieldPath = f?.fieldPath;
-
   return {
-    id: (f?.id != null && f.id !== "") ? safeString(f.id) : `fix_${Math.random().toString(36).slice(2, 7)}`,
-    category: VALID_CATEGORIES.includes(rawCategory) ? rawCategory : "missing_input",
+    id:
+      typeof f?.id === "string" && f.id.trim() !== ""
+        ? f.id
+        : `fix_${Math.random().toString(36).slice(2, 7)}`,
+    category: VALID_CATEGORIES.has(f?.category) ? f.category : "missing_input",
     title: safeString(f?.title),
     description: safeString(f?.description),
     suggestion: safeString(f?.suggestion),
-    tag: VALID_TAGS.includes(rawTag) ? rawTag : "USER_REQUIRED",
-    fieldPath: rawFieldPath != null ? safeString(rawFieldPath) || undefined : undefined,
-    exampleValue: rawExampleValue != null ? safeString(rawExampleValue) : "",
+    tag: VALID_TAGS.has(f?.tag) ? f.tag : "USER_REQUIRED",
+    fieldPath:
+      typeof f?.fieldPath === "string" && f.fieldPath.trim() !== ""
+        ? f.fieldPath
+        : undefined,
+    exampleValue: safeString(f?.exampleValue),
   };
 }
 

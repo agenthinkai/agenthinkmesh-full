@@ -191,9 +191,8 @@ describe("Integration — core failure scenario (null exampleValue + missing fie
       "REJECTED", "APPROVED_WITH_CONDITIONS", 0.35, 0.72,
     );
 
-    // After sanitizeFix, exampleValue becomes '[object Object]' (String coercion)
-    // After Zod parse, it's still a string — no crash
-    expect(typeof parsed[0].exampleValue).toBe("string");
+    // safeString: object is non-primitive — collapses to ""
+    expect(parsed[0].exampleValue).toBe("");
     expect(delta).toBeDefined();
   });
 

@@ -237,12 +237,10 @@ describe("null exampleValue regression (Bug: appliedFixes[n].exampleValue expect
 // ─── sanitizeFix — Part 1 extended: production-grade coverage ───────────────
 
 describe("sanitizeFix — malformed object handling", () => {
-  it("handles exampleValue as object → coerces to empty string", () => {
+  it("handles exampleValue as object → collapses to empty string", () => {
     const result = sanitizeFix({ id: "fix_001", exampleValue: { nested: "value" } });
-    // String({ nested: 'value' }) = '[object Object]' — not null, so String() is called
-    // The implementation uses: f.exampleValue != null ? String(f.exampleValue) : ""
-    // '[object Object]' is truthy so it becomes a string — acceptable coercion
-    expect(typeof result.exampleValue).toBe("string");
+    // safeString: non-primitive types collapse to ""
+    expect(result.exampleValue).toBe("");
   });
 
   it("handles title as number → coerces to string", () => {
@@ -261,40 +259,41 @@ describe("sanitizeFix — malformed object handling", () => {
     expect(result.suggestion).toBe("");
   });
 
-  it("handles deeply nested object as exampleValue → coerces to non-null string", () => {
+  it("handles deeply nested object as exampleValue → collapses to empty string", () => {
     const result = sanitizeFix({ exampleValue: { a: { b: { c: 42 } } } });
-    expect(typeof result.exampleValue).toBe("string");
+    // safeString: object is non-primitive — collapses to ""
+    expect(result.exampleValue).toBe("");
   });
 
-  it("handles boolean false as exampleValue → coerces to string", () => {
-    // false != null, so String(false) = 'false'
+  it("handles boolean false as exampleValue → coerces to 'false'", () => {
+    // boolean is a primitive — safeString returns String(false) = 'false'
     const result = sanitizeFix({ exampleValue: false });
-    expect(typeof result.exampleValue).toBe("string");
+    expect(result.exampleValue).toBe("false");
   });
 
-  it("handles boolean true as title → coerces to string", () => {
+  it("handles boolean true as title → coerces to 'true'", () => {
     const result = sanitizeFix({ title: true });
-    expect(typeof result.title).toBe("string");
+    expect(result.title).toBe("true");
   });
 });
 
 describe("sanitizeFix — array input handling", () => {
-  it("handles exampleValue as array → coerces to non-null string", () => {
+  it("handles exampleValue as array → collapses to empty string", () => {
     const result = sanitizeFix({ exampleValue: ["CAC: $120", "LTV: $600"] });
-    // Array != null, so String([...]) = 'CAC: $120,LTV: $600'
-    expect(typeof result.exampleValue).toBe("string");
-    expect(result.exampleValue).not.toBe(""); // array has content
-  });
-
-  it("handles exampleValue as empty array → coerces to empty string", () => {
-    const result = sanitizeFix({ exampleValue: [] });
-    // String([]) = '' — empty string
+    // safeString: array is non-primitive — collapses to ""
     expect(result.exampleValue).toBe("");
   });
 
-  it("handles fieldPath as array → coerces to non-null string", () => {
+  it("handles exampleValue as empty array → collapses to empty string", () => {
+    const result = sanitizeFix({ exampleValue: [] });
+    // safeString: array is non-primitive — collapses to ""
+    expect(result.exampleValue).toBe("");
+  });
+
+  it("handles fieldPath as array → collapses to undefined (empty string → undefined)", () => {
     const result = sanitizeFix({ fieldPath: ["financials", "cac"] });
-    expect(typeof result.fieldPath).toBe("string");
+    // safeString([...]) = "" and "" || undefined = undefined
+    expect(result.fieldPath).toBeUndefined();
   });
 });
 
