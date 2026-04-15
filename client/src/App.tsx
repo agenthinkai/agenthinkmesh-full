@@ -79,6 +79,10 @@ import PortfolioMeshHistory from "./pages/PortfolioMeshHistory";
 import PortfolioMeshDemo from "./pages/PortfolioMeshDemo";
 import PortfolioMeshRunDetail from "./pages/PortfolioMeshRunDetail";
 import PortfolioMeshShare from "./pages/PortfolioMeshShare";
+import AdminUserCreate from "./pages/AdminUserCreate";
+import AdminUserList from "./pages/AdminUserList";
+import PasswordLogin from "./pages/PasswordLogin";
+import ChangePassword from "./pages/ChangePassword";
 
 function Router() {
   const { isAuthenticated, loading } = useAuth();
@@ -237,6 +241,14 @@ function Router() {
 
       {/* Email Reply Tracker */}
       <Route path="/tracker" component={Tracker} />
+
+      {/* Admin provisioning (admin-only, not in public nav) */}
+      <Route path="/admin/users/create" component={AdminUserCreate} />
+      <Route path="/admin/users" component={AdminUserList} />
+
+      {/* Password-based auth for provisioned users */}
+      <Route path="/login/password" component={PasswordLogin} />
+      <Route path="/account/change-password" component={ChangePassword} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

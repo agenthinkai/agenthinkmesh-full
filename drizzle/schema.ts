@@ -109,10 +109,41 @@ export const users = mysqlTable("users", {
   // ── Usage totals ──────────────────────────────────────────────────────────────
   totalCompletedRuns: int("totalCompletedRuns").notNull().default(0),
   totalAgentsFired: int("totalAgentsFired").notNull().default(0),
+
+  // ── Admin provisioning ────────────────────────────────────────────────────────
+  /** bcrypt hash of the provisioned temporary password. Null for OAuth users. */
+  passwordHash: varchar("passwordHash", { length: 255 }),
+  /** If true, user must change password before accessing the app. */
+  mustResetPassword: boolean("mustResetPassword").notNull().default(false),
+  /** ID of the admin who provisioned this account. Null for self-registered users. */
+  createdByAdminId: int("createdByAdminId"),
+  /** When the temporary password was issued. Used for 7-day expiry check. */
+  tempPasswordIssuedAt: timestamp("tempPasswordIssuedAt"),
 });
 
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
+
+// ── Admin User Provisioning Audit Log ─────────────────────────────────────────
+export const adminUserCreations = mysqlTable("admin_user_creations", {
+  id: int("id").autoincrement().primaryKey(),
+  /** The admin who performed the provisioning action. */
+  adminId: int("adminId").notNull(),
+  adminEmail: varchar("adminEmail", { length: 320 }),
+  /** The newly created user's email. */
+  createdEmail: varchar("createdEmail", { length: 320 }).notNull(),
+  /** The newly created user's display name (if provided). */
+  createdName: varchar("createdName", { length: 255 }),
+  /** Role assigned at creation. */
+  assignedRole: mysqlEnum("assignedRole", ["user", "admin"]).notNull().default("user"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  aucAdminIdx: index("auc_admin_idx").on(table.adminId),
+  aucEmailIdx: index("auc_email_idx").on(table.createdEmail),
+}));
+
+export type AdminUserCreation = typeof adminUserCreations.$inferSelect;
+export type InsertAdminUserCreation = typeof adminUserCreations.$inferInsert;
 
 // AgenThinkMesh tables
 export const taskHistory = mysqlTable("task_history", {

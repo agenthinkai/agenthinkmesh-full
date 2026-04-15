@@ -30,6 +30,7 @@ import { shareReportRouter } from "./routers/shareReport";
 import { contactsRouter } from "./routers/contacts";
 import { trackerRouter } from "./routers/tracker";
 import { portfolioMeshRouter } from "./routers/portfolioMesh";
+import { adminProvisionRouter } from "./routers/adminProvision";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
 import { eq, desc, gte, sql, and, like, or, isNull, lt } from "drizzle-orm";
@@ -104,6 +105,7 @@ function capabilityMatchScore(agentCaps: string[], taskCaps: string[]): number {
 
 export const appRouter = router({
   system: systemRouter,
+  adminProvision: adminProvisionRouter,
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   auth: router({

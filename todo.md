@@ -2094,3 +2094,29 @@
 - [x] Add "Generate Report" + "Download PDF" button to EvaluationReport header
 - [x] Add "Export CSV" button to EvaluationReport header
 - [x] Write vitest for procurementPdf generator
+
+## Admin User Provisioning
+- [x] Extend DB schema: passwordHash, mustResetPassword, createdByAdminId, tempPasswordIssuedAt on users table
+- [x] Create admin_user_creations audit table
+- [x] Build adminProvision tRPC router: createUser, loginWithPassword, changePassword, listProvisionedUsers
+- [x] Register adminProvision router in main appRouter
+- [x] Build /admin/users/create page with copy-credentials panel (admin-only, 403 gate)
+- [x] Build /admin/users audit log page
+- [x] Build /login/password page for provisioned users
+- [x] Build /account/change-password page with strength indicator
+- [x] Add force-redirect middleware in useAuth hook for mustResetPassword users
+- [x] Register all 4 new routes in App.tsx
+- [x] Write 11 vitest tests (password generation, bcrypt, openId derivation)
+
+## Admin User Provisioning (Session — Apr 15 2026)
+- [x] Extend DB schema: passwordHash, mustResetPassword, createdByAdminId, tempPasswordIssuedAt on users table
+- [x] Create admin_user_creations audit table
+- [x] Build adminProvision tRPC router: createUser, loginWithPassword, changePassword, listProvisionedUsers
+- [x] Register adminProvision router in main appRouter
+- [x] Build /admin/users/create page with copy-credentials panel (admin-only, 403 gate)
+- [x] Build /admin/users audit log page
+- [x] Build /login/password page for provisioned users
+- [x] Build /account/change-password page with strength indicator and force-reset mode
+- [x] Add force-redirect middleware in useAuth hook for mustResetPassword users
+- [x] Register all 4 new routes in App.tsx
+- [x] Write 11 vitest tests (password generation, bcrypt, openId derivation) — all passing

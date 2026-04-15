@@ -60,6 +60,18 @@ export function useAuth(options?: UseAuthOptions) {
     logoutMutation.isPending,
   ]);
 
+  // Force-redirect provisioned users who have not yet changed their temp password.
+  useEffect(() => {
+    if (meQuery.isLoading || logoutMutation.isPending) return;
+    if (!state.user) return;
+    if (typeof window === "undefined") return;
+    const EXEMPT = ["/account/change-password", "/login/password", "/api/oauth/callback"];
+    if (EXEMPT.some((p) => window.location.pathname.startsWith(p))) return;
+    if ((state.user as any).mustResetPassword) {
+      window.location.href = "/account/change-password";
+    }
+  }, [meQuery.isLoading, logoutMutation.isPending, state.user]);
+
   useEffect(() => {
     if (!redirectOnUnauthenticated) return;
     if (meQuery.isLoading || logoutMutation.isPending) return;
