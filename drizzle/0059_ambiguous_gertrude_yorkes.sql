@@ -1,0 +1,1 @@
+ALTER TABLE `deal_screenings` ADD `dealTextPreview` varchar(220);

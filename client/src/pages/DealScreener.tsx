@@ -87,6 +87,8 @@ interface CouncilResult {
   finalScore?: number;
   consensusQuality?: number;
   investorMode?: boolean;
+  createdAt?: Date | string | null;
+  dealTextPreview?: string | null;
 }
 
 // ── Tier 0 University Signal type ───────────────────────────────────────────────────────────────
@@ -945,7 +947,8 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
   const [activeTab, setActiveTab] = useState<"raw" | "boardroom">(result.icReport ? "boardroom" : "raw");
   // ── Re-run modal state ────────────────────────────────────────────────────
   const [rerunOpen, setRerunOpen] = useState(false);
-  const [rerunText, setRerunText] = useState("");
+  // Pre-fill with dealTextPreview if available (first 200 chars stored for Re-run UX)
+  const [rerunText, setRerunText] = useState(result.dealTextPreview ?? "");
   const [rerunMode, setRerunMode] = useState<CouncilModeType>(result.councilMode ?? councilModeProp ?? "global_vc");
   const [rerunError, setRerunError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -1303,7 +1306,14 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
               >✕</button>
             </div>
             <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, marginBottom: 16, lineHeight: 1.6, padding: "10px 14px", background: "rgba(168,85,247,0.06)", border: `1px solid ${PURPLE}30`, borderRadius: 6 }}>
-              ℹ️ Deal text is not stored for security. Paste the original deal memo below to re-run. This creates a <strong style={{ color: TEXT }}>new run</strong> — the original screening is preserved in history.
+              {result.dealTextPreview
+                ? <>ℹ️ A <strong style={{ color: PURPLE }}>preview snippet</strong> (first 200 chars) has been pre-filled from the original submission. Extend or replace it with the full deal memo for a complete re-run. This creates a <strong style={{ color: TEXT }}>new run</strong> — the original screening is preserved in history.
+                  <div style={{ marginTop: 8, padding: "8px 10px", background: "rgba(168,85,247,0.08)", border: `1px solid ${PURPLE}40`, borderRadius: 4, fontSize: 9, color: MUTED, letterSpacing: "0.04em", lineHeight: 1.7 }}>
+                    PREVIEW: <span style={{ color: TEXT2 }}>{result.dealTextPreview}</span>{result.dealTextPreview.length >= 200 ? <span style={{ color: AMBER }}>… (truncated)</span> : null}
+                  </div>
+                </>
+                : <>ℹ️ Deal text is not stored for security. Paste the original deal memo below to re-run. This creates a <strong style={{ color: TEXT }}>new run</strong> — the original screening is preserved in history.</>
+              }
             </div>
             {/* Council mode selector */}
             <div style={{ marginBottom: 16 }}>

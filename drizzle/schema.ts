@@ -771,6 +771,8 @@ export const dealScreenings = mysqlTable("deal_screenings", {
   dealName: varchar("dealName", { length: 255 }).notNull(),
   // dealText intentionally NOT stored — enterprise data security policy:
   // raw deal input is processed in server-side memory only and never persisted.
+  // dealTextPreview: first 200 chars only, stored for Re-run UX context (non-sensitive, truncated).
+  dealTextPreview: varchar("dealTextPreview", { length: 220 }),
   pdfFileKey: varchar("pdfFileKey", { length: 512 }), // S3 key if PDF was uploaded
   pdfFileUrl: text("pdfFileUrl"),               // S3 URL if PDF was uploaded
 

@@ -140,6 +140,8 @@ export const dealScreenerRouter = router({
           userId: ctx.user.id,
           dealName: input.dealName,
           // dealText intentionally omitted — enterprise data security policy
+          // dealTextPreview: first 200 chars stored for Re-run UX context only
+          dealTextPreview: input.dealText ? input.dealText.slice(0, 200) : null,
           pdfFileKey: input.pdfFileKey ?? null,
           pdfFileUrl: input.pdfFileUrl ?? null,
           verdict: ownerResult.verdict as "APPROVED" | "APPROVED_WITH_CONDITIONS" | "REJECTED" | "VETOED" | "INSUFFICIENT_DATA",
@@ -266,6 +268,8 @@ export const dealScreenerRouter = router({
             dealId: triageDealId,
             dealName: input.dealName,
             // dealText intentionally omitted — enterprise data security policy
+            // dealTextPreview: first 200 chars stored for Re-run UX context only
+            dealTextPreview: input.dealText ? input.dealText.slice(0, 200) : null,
             pdfFileKey: input.pdfFileKey ?? null,
             pdfFileUrl: input.pdfFileUrl ?? null,
             verdict: "REJECTED",
@@ -327,6 +331,8 @@ export const dealScreenerRouter = router({
         dealId,
         dealName: input.dealName,
         // dealText intentionally omitted — enterprise data security policy
+        // dealTextPreview: first 200 chars stored for Re-run UX context only
+        dealTextPreview: input.dealText ? input.dealText.slice(0, 200) : null,
         pdfFileKey: input.pdfFileKey ?? null,
         pdfFileUrl: input.pdfFileUrl ?? null,
         verdict: result.verdict as "APPROVED" | "APPROVED_WITH_CONDITIONS" | "REJECTED" | "VETOED" | "INSUFFICIENT_DATA",
@@ -584,6 +590,7 @@ export const dealScreenerRouter = router({
           id: dealScreenings.id,
           dealId: dealScreenings.dealId,
           dealName: dealScreenings.dealName,
+          dealTextPreview: dealScreenings.dealTextPreview,
           verdict: dealScreenings.verdict,
           yesCount: dealScreenings.yesCount,
           noCount: dealScreenings.noCount,
