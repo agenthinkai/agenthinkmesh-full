@@ -2762,11 +2762,13 @@ export default function DealScreener() {
 
   const handleHistorySelect = (dealId: string) => {
     setSelectedDealId(dealId);
+    setView("loading"); // show loading spinner while getById resolves
   };
 
   useEffect(() => {
     if (dealDetail) {
       setResult(dealDetail as unknown as CouncilResult);
+      setPreviousView("history");
       setView("report");
     }
   }, [dealDetail]);
@@ -3039,6 +3041,30 @@ export default function DealScreener() {
         {view === "loading" && <PersonaLoadingGrid councilMode={councilMode} />}
         {view === "report" && result && (
           <div>
+            {previousView === "history" && (
+              <div style={{ maxWidth: 900, margin: "0 auto 12px", padding: "0 16px" }}>
+                <button
+                  onClick={() => { setPreviousView(null); setSelectedDealId(null); setView("history"); }}
+                  style={{
+                    background: "none",
+                    border: `1px solid ${BORDER}`,
+                    color: TEXT2,
+                    padding: "7px 16px",
+                    borderRadius: 6,
+                    cursor: "pointer",
+                    fontFamily: MONO,
+                    fontSize: 11,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = ACCENT; (e.currentTarget as HTMLButtonElement).style.color = ACCENT; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.borderColor = BORDER; (e.currentTarget as HTMLButtonElement).style.color = TEXT2; }}
+                >
+                  ← Back to History
+                </button>
+              </div>
+            )}
             {previousView === "batch" && (
               <div style={{ maxWidth: 900, margin: "0 auto 12px", padding: "0 16px" }}>
                 <button
@@ -3067,7 +3093,7 @@ export default function DealScreener() {
           </div>
         )}
         {view === "history" && (
-          <HistoryTable onSelect={(id) => { setSelectedDealId(id); }} />
+          <HistoryTable onSelect={(id) => { handleHistorySelect(id); }} />
         )}
         {view === "signals" && (
           <Tier0Feed onRunIC={(dealName, dealText) => {
