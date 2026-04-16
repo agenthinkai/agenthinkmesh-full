@@ -98,11 +98,11 @@ function StepBar({ current }: { current: number }) {
 
 function SectionCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <Card className="bg-slate-900/60 border-white/10 backdrop-blur-sm">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base font-semibold text-slate-200">{title}</CardTitle>
-      </CardHeader>
-      <CardContent>{children}</CardContent>
+    <Card className="bg-slate-900/60 border-white/10 backdrop-blur-sm overflow-hidden">
+      <div className="px-5 py-2.5 border-b border-white/8 bg-white/3">
+        <CardTitle className="text-xs font-bold text-slate-400 uppercase tracking-wider">{title}</CardTitle>
+      </div>
+      <CardContent className="pt-4">{children}</CardContent>
     </Card>
   );
 }
@@ -705,6 +705,56 @@ function CioOutputStep({ cioResult, onRun, isRunning, runId }: CioOutputStepProp
         </SectionCard>
       ) : (
         <>
+          {/* ── CIO BOARD MEMO HEADER STRIP ── */}
+          <div style={{
+            background: "linear-gradient(135deg, rgba(109,40,217,0.15) 0%, rgba(13,20,33,0.95) 100%)",
+            border: "1px solid rgba(109,40,217,0.35)",
+            borderRadius: 10,
+            padding: "20px 24px",
+            position: "relative" as const,
+            overflow: "hidden" as const,
+          }}>
+            <div style={{
+              position: "absolute" as const, top: 0, left: 0, right: 0, height: 3,
+              background: "linear-gradient(90deg, #7c3aed, rgba(109,40,217,0.1))",
+              borderRadius: "10px 10px 0 0",
+            }} />
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div>
+                <div style={{ fontFamily: "monospace", fontSize: 9, color: "rgba(167,139,250,0.7)", letterSpacing: "0.15em", marginBottom: 6 }}>
+                  AGENTHINK MESH · CIO BOARD MEMO
+                </div>
+                <div style={{ fontSize: 18, fontWeight: 800, color: "#e2e8f0", marginBottom: 4 }}>
+                  Portfolio Construction Report
+                </div>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <span style={{
+                    fontFamily: "monospace", fontSize: 10, fontWeight: 700,
+                    padding: "3px 10px", borderRadius: 4,
+                    background: cioResult.ipsCompliant ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.15)",
+                    color: cioResult.ipsCompliant ? "#34d399" : "#f87171",
+                    border: `1px solid ${cioResult.ipsCompliant ? "rgba(16,185,129,0.4)" : "rgba(239,68,68,0.4)"}`,
+                  }}>
+                    {cioResult.ipsCompliant ? "✓ IPS COMPLIANT" : "⚠ IPS BREACH"}
+                  </span>
+                  <span style={{ fontFamily: "monospace", fontSize: 10, color: "rgba(148,163,184,0.6)" }}>
+                    E(R): {(cioResult.cioExpectedReturn * 100).toFixed(2)}% · Vol: {(cioResult.cioExpectedVolatility * 100).toFixed(2)}% · Sharpe: {cioResult.cioSharpe.toFixed(3)}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => exportBoardMemo(cioResult)}
+                style={{
+                  fontFamily: "monospace", fontSize: 10, fontWeight: 700,
+                  padding: "6px 14px", borderRadius: 6, cursor: "pointer",
+                  background: "rgba(109,40,217,0.2)", color: "#a78bfa",
+                  border: "1px solid rgba(109,40,217,0.4)",
+                }}
+              >
+                ↓ Export Board Memo
+              </button>
+            </div>
+          </div>
           {/* 1. Executive Summary (opinion-first) */}
           {memo?.executiveSummary?.length ? (
             <div className={`rounded-lg border px-5 py-4 ${
@@ -944,15 +994,22 @@ function CioOutputStep({ cioResult, onRun, isRunning, runId }: CioOutputStepProp
 
           {/* 8. What Would Change This View */}
           {(memo?.whatWouldChangeView?.length ?? 0) > 0 && (
-            <SectionCard title="8. What Would Change This View">
-              <ul className="space-y-2">
-                {memo!.whatWouldChangeView!.map((t, i) => (
-                  <li key={i} className="text-slate-300 text-sm flex items-start gap-2">
-                    <span className="text-violet-400 shrink-0 mt-0.5">◈</span><span>{t}</span>
-                  </li>
-                ))}
-              </ul>
-            </SectionCard>
+            <div className="rounded-xl border border-violet-500/30 overflow-hidden">
+              <div className="bg-violet-900/20 px-5 py-3 border-b border-violet-500/20 flex items-center gap-2">
+                <span className="text-violet-400">◈</span>
+                <span className="text-xs font-bold text-violet-300 uppercase tracking-widest">8. What Would Change This View</span>
+              </div>
+              <div className="p-5 bg-violet-900/10">
+                <ul className="space-y-3">
+                  {memo!.whatWouldChangeView!.map((t, i) => (
+                    <li key={i} className="flex items-start gap-3">
+                      <span className="text-violet-400 shrink-0 mt-0.5 font-bold">{i + 1}.</span>
+                      <span className="text-slate-200 text-sm leading-relaxed">{t}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           )}
 
           {/* 9. Rebalance Triggers */}

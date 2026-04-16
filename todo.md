@@ -2120,3 +2120,23 @@
 - [x] Add force-redirect middleware in useAuth hook for mustResetPassword users
 - [x] Register all 4 new routes in App.tsx
 - [x] Write 11 vitest tests (password generation, bcrypt, openId derivation) — all passing
+
+## Institutional UI Facelift
+
+- [x] Part 1 — IC Memo: top summary strip (verdict badge, confidence, 3 drivers)
+- [x] Part 1 — IC Memo: card-based section styling with dividers
+- [x] Part 1 — IC Memo: risk severity tags LOW/MEDIUM/HIGH with color coding
+- [x] Part 1 — IC Memo: Decision Upgrade Protocol — purple bg, 5 category blocks with icons
+- [x] Part 2 — Apply Fixes: sticky bottom action bar (Apply Fixes & Re-run + Strict Mode toggle)
+- [x] Part 2 — Apply Fixes: tag pill styling (ASSUMED amber, IMPROVED green, USER REQUIRED red)
+- [x] Part 2 — Apply Fixes: larger checkbox clickable area + clear selected state
+- [x] Part 3 — Delta Output: before/after comparison layout (left/right columns)
+- [x] Part 3 — Delta Output: metrics row with directional arrows and color
+- [x] Part 3 — Delta Output: animated verdict transition (e.g. REJECTED → CONDITIONAL)
+- [x] Part 3 — Delta Output: improvement chips (+ Unit economics clarity, etc.)
+- [x] Part 4 — PortfolioMesh: header strip (name, Expected Return / Vol / Sharpe, benchmark delta)
+- [x] Part 4 — PortfolioMesh: section separators (Macro View / Allocation / Risks / What Would Change)
+- [x] Part 4 — PortfolioMesh: violet highlight box for "What Would Change This View"
+- [x] Part 5 — Nav: Tools dropdown grouping (Decision Workflows / Portfolio)
+- [x] Part 5 — Nav: active module indicator
+- [x] Part 6 — Global: spacing, small text readability, consistent font sizes, mobile safe

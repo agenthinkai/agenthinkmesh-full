@@ -114,21 +114,21 @@ interface DecisionUpgradePanelProps {
 
 const TAG_CONFIG: Record<FixTag, { label: string; color: string; bg: string; border: string; description: string }> = {
   ASSUMED: {
-    label: "ASSUMED",
+    label: "⚠ ASSUMED",
     color: "text-amber-300",
     bg: "bg-amber-500/10",
     border: "border-amber-500/30",
     description: "AI-generated placeholder — review before re-running",
   },
   IMPROVED: {
-    label: "IMPROVED",
+    label: "✓ IMPROVED",
     color: "text-emerald-300",
     bg: "bg-emerald-500/10",
     border: "border-emerald-500/30",
     description: "AI-improved framing — no new data required",
   },
   USER_REQUIRED: {
-    label: "USER REQUIRED",
+    label: "⚡ USER REQUIRED",
     color: "text-blue-300",
     bg: "bg-blue-500/10",
     border: "border-blue-500/30",
@@ -194,11 +194,11 @@ function FixCard({
 
   return (
     <div className={`rounded-lg border p-3 transition-all ${appliedFix.applied ? `${tag.bg} ${tag.border}` : "bg-white/3 border-white/10 opacity-60"}`}>
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-3 cursor-pointer" onClick={() => onToggle(fix.id)}>
         <Checkbox
           checked={appliedFix.applied}
           onCheckedChange={() => onToggle(fix.id)}
-          className="mt-0.5 border-white/30"
+          className={`mt-0.5 border-white/30 w-5 h-5 ${appliedFix.applied ? "border-emerald-500" : ""}`}
         />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap mb-1">
@@ -271,96 +271,107 @@ function FixCard({
 function DeltaPanel({ delta, onReset }: { delta: DeltaOutput; onReset: () => void }) {
   const deltaSign = delta.confidenceDelta >= 0 ? "+" : "";
   const deltaColor = delta.confidenceDelta > 0 ? "text-emerald-400" : delta.confidenceDelta < 0 ? "text-red-400" : "text-gray-400";
-
+  const verdictUpgraded = delta.verdictChanged &&
+    (delta.verdictAfter === "APPROVED" || delta.verdictAfter === "APPROVED_WITH_CONDITIONS" || delta.verdictAfter === "CONDITIONAL_APPROVAL");
   return (
     <div className="space-y-4">
-      {/* Verdict change banner */}
-      <div className="rounded-xl border border-white/10 bg-gradient-to-r from-white/5 to-white/2 p-4">
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div className="flex items-center gap-3">
-            <div className="text-center">
-              <div className="text-[10px] text-white/40 uppercase tracking-wider mb-0.5">Before</div>
-              <div className={`text-sm font-bold ${verdictColor(delta.verdictBefore)}`}>
-                {verdictLabel(delta.verdictBefore)}
-              </div>
+      {/* ── BEFORE / AFTER COMPARISON STRIP ── */}
+      <div className="rounded-xl border border-white/15 overflow-hidden">
+        {/* Header */}
+        <div className="bg-white/5 px-4 py-2 border-b border-white/10 flex items-center gap-2">
+          <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="text-[10px] font-bold text-white/60 uppercase tracking-widest">Delta Report — Evaluation Upgrade</span>
+        </div>
+        {/* Before / After columns */}
+        <div className="grid grid-cols-2 divide-x divide-white/10">
+          <div className="p-4 bg-red-500/5">
+            <div className="text-[9px] text-white/30 uppercase tracking-widest mb-2">Before</div>
+            <div className={`text-xl font-black ${verdictColor(delta.verdictBefore)} mb-1`}>
+              {verdictLabel(delta.verdictBefore)}
             </div>
-            <ArrowRight className="w-4 h-4 text-white/30" />
-            <div className="text-center">
-              <div className="text-[10px] text-white/40 uppercase tracking-wider mb-0.5">After</div>
-              <div className={`text-sm font-bold ${verdictColor(delta.verdictAfter)}`}>
-                {verdictLabel(delta.verdictAfter)}
-              </div>
-            </div>
-          </div>
-          <div className="text-center">
-            <div className="text-[10px] text-white/40 uppercase tracking-wider mb-0.5">Confidence Δ</div>
-            <div className={`text-lg font-bold ${deltaColor}`}>
-              {deltaSign}{(delta.confidenceDelta * 100).toFixed(1)}%
+            <div className="text-[10px] text-white/40">
+              Confidence: <span className="text-white/60 font-semibold">{((delta.confidenceAfter - delta.confidenceDelta) * 100).toFixed(1)}%</span>
             </div>
           </div>
-          <div className="text-center">
-            <div className="text-[10px] text-white/40 uppercase tracking-wider mb-0.5">New Confidence</div>
-            <div className="text-lg font-bold text-white">
-              {(delta.confidenceAfter * 100).toFixed(1)}%
+          <div className={`p-4 ${verdictUpgraded ? "bg-emerald-500/8" : "bg-white/3"}`}>
+            <div className="text-[9px] text-white/30 uppercase tracking-widest mb-2">After</div>
+            <div className={`text-xl font-black ${verdictColor(delta.verdictAfter)} mb-1`}>
+              {verdictLabel(delta.verdictAfter)}
+            </div>
+            <div className="text-[10px] text-white/40">
+              Confidence: <span className={`font-semibold ${deltaColor}`}>{(delta.confidenceAfter * 100).toFixed(1)}%</span>
+              <span className={`ml-2 font-bold ${deltaColor}`}>({deltaSign}{(delta.confidenceDelta * 100).toFixed(1)}%)</span>
             </div>
           </div>
         </div>
+        {/* Verdict transition banner */}
         {delta.verdictChanged && (
-          <div className="mt-3 flex items-center gap-2 text-xs text-emerald-300 bg-emerald-500/10 rounded-lg px-3 py-2 border border-emerald-500/20">
+          <div className={`px-4 py-2.5 flex items-center gap-2 text-xs border-t ${verdictUpgraded ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-300" : "bg-amber-500/10 border-amber-500/20 text-amber-300"}`}>
             <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-            Verdict upgraded — the applied fixes resolved key blocking issues.
+            <span className="font-semibold">Verdict changed:</span>
+            <span className={verdictColor(delta.verdictBefore)}>{verdictLabel(delta.verdictBefore)}</span>
+            <ArrowRight className="w-3 h-3 opacity-50" />
+            <span className={`font-bold ${verdictColor(delta.verdictAfter)}`}>{verdictLabel(delta.verdictAfter)}</span>
+            {verdictUpgraded && <span className="ml-auto opacity-70">The applied fixes resolved key blocking issues.</span>}
           </div>
         )}
       </div>
-
       {/* Summary */}
       <div className="text-sm text-white/70 leading-relaxed bg-white/3 rounded-lg p-3 border border-white/8">
         {delta.summary}
       </div>
-
-      {/* Key metric changes */}
+      {/* ── METRICS ROW ── */}
       {delta.keyMetricChanges.length > 0 && (
         <div>
-          <h4 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Key Metric Changes</h4>
-          <div className="space-y-2">
+          <h4 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Key Metric Changes</h4>
+          <div className="grid grid-cols-1 gap-2">
             {delta.keyMetricChanges.map((m, i) => (
-              <div key={i} className="flex items-center gap-3 text-xs">
-                <div className="w-4 shrink-0">
-                  {m.direction === "improved" ? <TrendingUp className="w-3.5 h-3.5 text-emerald-400" /> :
-                   m.direction === "worsened" ? <TrendingDown className="w-3.5 h-3.5 text-red-400" /> :
-                   <Minus className="w-3.5 h-3.5 text-gray-400" />}
+              <div key={i} className={`flex items-center gap-3 rounded-lg px-3 py-2 border text-xs ${
+                m.direction === "improved" ? "bg-emerald-500/8 border-emerald-500/20" :
+                m.direction === "worsened" ? "bg-red-500/8 border-red-500/20" :
+                "bg-white/3 border-white/10"
+              }`}>
+                <div className="w-5 shrink-0 flex justify-center">
+                  {m.direction === "improved" ? <TrendingUp className="w-4 h-4 text-emerald-400" /> :
+                   m.direction === "worsened" ? <TrendingDown className="w-4 h-4 text-red-400" /> :
+                   <Minus className="w-4 h-4 text-gray-400" />}
                 </div>
-                <span className="text-white/60 w-32 shrink-0">{m.metric}</span>
-                <span className="text-white/40 line-through">{m.before}</span>
-                <ArrowRight className="w-3 h-3 text-white/20 shrink-0" />
-                <span className={m.direction === "improved" ? "text-emerald-300" : m.direction === "worsened" ? "text-red-300" : "text-white/60"}>
-                  {m.after}
-                </span>
+                <span className="text-white/60 w-28 shrink-0 font-medium">{m.metric}</span>
+                <div className="flex items-center gap-2 flex-1">
+                  <span className="text-white/35 line-through text-[11px]">{m.before}</span>
+                  <span className="text-white/20">→</span>
+                  <span className={`font-semibold ${m.direction === "improved" ? "text-emerald-300" : m.direction === "worsened" ? "text-red-300" : "text-white/60"}`}>
+                    {m.after}
+                  </span>
+                </div>
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wide ${
+                  m.direction === "improved" ? "bg-emerald-500/15 text-emerald-400" :
+                  m.direction === "worsened" ? "bg-red-500/15 text-red-400" :
+                  "bg-white/10 text-white/40"
+                }`}>{m.direction === "improved" ? "↑" : m.direction === "worsened" ? "↓" : "="}</span>
               </div>
             ))}
           </div>
         </div>
       )}
-
-      {/* Top improvement factors */}
+      {/* ── IMPROVEMENT CHIPS ── */}
       {delta.topImprovementFactors.length > 0 && (
         <div>
-          <h4 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Top Improvement Factors</h4>
-          <div className="space-y-1">
+          <h4 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-3">Top Improvements</h4>
+          <div className="flex flex-wrap gap-2">
             {delta.topImprovementFactors.map((f, i) => (
-              <div key={i} className="flex items-start gap-2 text-xs text-white/70">
-                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400 shrink-0 mt-0.5" />
+              <span key={i} className="inline-flex items-center gap-1.5 text-[11px] font-medium text-emerald-300 bg-emerald-500/10 border border-emerald-500/25 rounded-full px-3 py-1">
+                <span className="text-emerald-400 font-bold">+</span>
                 {f}
-              </div>
+              </span>
             ))}
           </div>
         </div>
       )}
-
       {/* Remaining gaps */}
       {delta.remainingGaps.length > 0 && (
         <div>
-          <h4 className="text-xs font-semibold text-white/50 uppercase tracking-wider mb-2">Remaining Gaps</h4>
+          <h4 className="text-[10px] font-bold text-white/40 uppercase tracking-widest mb-2">Remaining Gaps</h4>
           <div className="space-y-1">
             {delta.remainingGaps.map((g, i) => (
               <div key={i} className="flex items-start gap-2 text-xs text-white/60">
@@ -371,7 +382,6 @@ function DeltaPanel({ delta, onReset }: { delta: DeltaOutput; onReset: () => voi
           </div>
         </div>
       )}
-
       {/* Reset */}
       <Button
         variant="ghost"
@@ -653,16 +663,16 @@ export function DecisionUpgradePanel(props: DecisionUpgradePanelProps) {
                 </div>
               )}
 
-              {/* Actions */}
-              <div className="flex items-center gap-3 flex-wrap pt-1">
+              {/* ── STICKY ACTION BAR ── */}
+              <div className="sticky bottom-0 z-10 -mx-4 -mb-4 px-4 py-3 bg-[#0a1220]/95 backdrop-blur border-t border-white/10 flex items-center gap-3 flex-wrap rounded-b-xl">
                 <Button
                   onClick={handleRerun}
                   disabled={selectedCount === 0}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 font-semibold"
                   size="sm"
                 >
                   <RefreshCw className="w-3.5 h-3.5" />
-                  Apply {selectedCount} Fix{selectedCount !== 1 ? "es" : ""} & Re-run
+                  ⚡ Apply {selectedCount} Fix{selectedCount !== 1 ? "es" : ""} & Re-run
                 </Button>
                 <Button
                   variant="outline"
@@ -673,6 +683,16 @@ export function DecisionUpgradePanel(props: DecisionUpgradePanelProps) {
                   <CheckCircle2 className="w-3 h-3" />
                   Accept All
                 </Button>
+                <div className="flex items-center gap-2 ml-auto">
+                  <span className="text-[10px] text-white/40 uppercase tracking-wider">Strict Mode</span>
+                  <button
+                    onClick={() => setStrictMode(s => !s)}
+                    className={`relative w-8 h-4 rounded-full transition-colors ${strictMode ? "bg-emerald-600" : "bg-white/15"}`}
+                    title="Strict mode: only apply USER_REQUIRED fixes (no assumed values)"
+                  >
+                    <span className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-transform ${strictMode ? "translate-x-4" : "translate-x-0.5"}`} />
+                  </button>
+                </div>
                 <Button
                   variant="ghost"
                   size="sm"

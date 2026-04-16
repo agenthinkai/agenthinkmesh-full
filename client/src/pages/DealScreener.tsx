@@ -613,37 +613,50 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
       {/* ── PRIMARY VERDICT HEADER — always first, always visible ── */}
       <div style={{
-        background: `${verdictColor}0d`,
-        border: `2px solid ${verdictColor}`,
+        background: `linear-gradient(135deg, ${verdictColor}0d 0%, rgba(13,20,33,0.95) 100%)`,
+        border: `1px solid ${verdictColor}55`,
         borderRadius: 10,
         padding: "20px 26px",
         marginBottom: 20,
-        boxShadow: `0 0 28px ${verdictColor}22`,
+        position: "relative" as const,
+        overflow: "hidden" as const,
+        boxShadow: `0 0 32px ${verdictColor}18`,
       }}>
-        {/* Top row: label */}
-        <div style={{ marginBottom: 14 }}>
-          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.14em" }}>DEAL SCREENER — IC DECISION</div>
+        {/* Verdict accent line */}
+        <div style={{
+          position: "absolute" as const, top: 0, left: 0, right: 0, height: 3,
+          background: `linear-gradient(90deg, ${verdictColor}, transparent)`,
+          borderRadius: "10px 10px 0 0",
+        }} />
+        {/* Top row: label + date */}
+        <div style={{ marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.15em" }}>DEAL SCREENER · IC DECISION MEMO</div>
+          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.08em" }}>
+            {new Date(result.createdAt ?? Date.now()).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
+          </div>
         </div>
         {/* Bottom row: deal info + confidence + verdict badge */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
           <div>
-            <div style={{ fontSize: 20, fontWeight: 800, color: TEXT, marginBottom: 6 }}>{result.dealName}</div>
-            <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, display: "flex", gap: 12, flexWrap: "wrap", alignItems: "center" }}>
-              <span style={{ color: GREEN }}>{result.yesCount} YES</span>
-              <span style={{ color: MUTED }}>·</span>
-              <span style={{ color: RED }}>{result.noCount} NO</span>
-              <span style={{ color: MUTED }}>·</span>
+            <div style={{ fontSize: 22, fontWeight: 800, color: TEXT, marginBottom: 8 }}>{result.dealName}</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+              <span style={{
+                fontFamily: MONO, fontSize: 10, fontWeight: 700,
+                background: "rgba(0,255,135,0.1)", border: "1px solid rgba(0,255,135,0.3)",
+                color: GREEN, padding: "2px 8px", borderRadius: 3, letterSpacing: "0.08em",
+              }}>{result.yesCount} YES</span>
+              <span style={{
+                fontFamily: MONO, fontSize: 10, fontWeight: 700,
+                background: "rgba(255,71,87,0.1)", border: "1px solid rgba(255,71,87,0.3)",
+                color: RED, padding: "2px 8px", borderRadius: 3, letterSpacing: "0.08em",
+              }}>{result.noCount} NO</span>
               <span
                 title={`${result.yesCount} YES / ${result.noCount} NO — ${Math.round(yesPct * 100)}% council agreement`}
                 style={{
-                  background: `${confidenceColor}18`,
-                  border: `1px solid ${confidenceColor}55`,
-                  color: confidenceColor,
-                  padding: "2px 8px",
-                  borderRadius: 3,
-                  fontWeight: 700,
-                  letterSpacing: "0.08em",
-                  cursor: "help",
+                  fontFamily: MONO, fontSize: 10, fontWeight: 700,
+                  background: `${confidenceColor}18`, border: `1px solid ${confidenceColor}55`,
+                  color: confidenceColor, padding: "2px 8px", borderRadius: 3,
+                  letterSpacing: "0.08em", cursor: "help",
                 }}>CONFIDENCE: {confidenceLabel}</span>
             </div>
           </div>
@@ -739,9 +752,24 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
         </div>
         <div style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "16px 20px" }}>
           <div style={{ fontFamily: MONO, fontSize: 10, color: RED, letterSpacing: "0.12em", marginBottom: 12 }}>4. KEY RISKS / RED FLAGS</div>
-          {ic.keyRisks.map((r, i) => (
-            <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 8, paddingLeft: 12, borderLeft: `2px solid ${RED}`, lineHeight: 1.5 }}>{r}</div>
-          ))}
+          {ic.keyRisks.map((r, i) => {
+            const rLow = r.toLowerCase();
+            const sev = rLow.includes("critical") || rLow.includes("fatal") || rLow.includes("veto") || rLow.includes("block") ? "HIGH"
+              : rLow.includes("moderate") || rLow.includes("concern") || rLow.includes("uncertain") || rLow.includes("limited") ? "MEDIUM"
+              : "LOW";
+            const sevColor = sev === "HIGH" ? RED : sev === "MEDIUM" ? AMBER : GREEN;
+            const sevBg = sev === "HIGH" ? "rgba(255,71,87,0.12)" : sev === "MEDIUM" ? "rgba(255,159,67,0.10)" : "rgba(0,255,135,0.08)";
+            return (
+              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8, marginBottom: 8, paddingLeft: 12, borderLeft: `2px solid ${RED}`, lineHeight: 1.5 }}>
+                <span style={{ flex: 1, fontSize: 12, color: TEXT2 }}>{r}</span>
+                <span style={{
+                  flexShrink: 0, fontFamily: MONO, fontSize: 9, fontWeight: 700,
+                  background: sevBg, border: `1px solid ${sevColor}55`,
+                  color: sevColor, padding: "1px 6px", borderRadius: 3, letterSpacing: "0.08em", marginTop: 2,
+                }}>{sev}</span>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -1153,8 +1181,8 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
         </div>
       )}
 
-      {/* Tab switcher */}
-      <div style={{ display: "flex", gap: 2, marginBottom: 20, borderBottom: `1px solid ${BORDER}`, paddingBottom: 0 }}>
+      {/* Tab switcher — sticky */}
+      <div style={{ display: "flex", gap: 2, marginBottom: 20, borderBottom: `1px solid ${BORDER}`, paddingBottom: 0, position: "sticky", top: 0, zIndex: 10, background: "rgba(7,11,18,0.95)", backdropFilter: "blur(12px)", paddingTop: 8, marginTop: -4 }}>
         {(result.icReport ? [
           { id: "boardroom" as const, label: "🏛️ IC REPORT" },
           { id: "raw" as const, label: "⚡ RAW COUNCIL" },
@@ -1344,17 +1372,30 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
       {/* Raw Council tab */}
       {activeTab === "raw" && (
         <div>
-      {/* Top section */}
+      {/* ── IC SUMMARY STRIP ──────────────────────────────────────────────── */}
       <div style={{
-        background: BG2,
+        background: `linear-gradient(135deg, ${BG2} 0%, rgba(13,20,33,0.95) 100%)`,
         border: `1px solid ${BORDER}`,
-        borderRadius: 8,
+        borderRadius: 10,
         padding: "24px 28px",
         marginBottom: 20,
+        position: "relative" as const,
+        overflow: "hidden" as const,
       }}>
+        {/* Verdict accent line */}
+        <div style={{
+          position: "absolute" as const, top: 0, left: 0, right: 0, height: 3,
+          background: result.verdict === "APPROVED" ? `linear-gradient(90deg, ${GREEN}, transparent)`
+            : result.verdict === "APPROVED_WITH_CONDITIONS" ? `linear-gradient(90deg, ${ACCENT}, transparent)`
+            : result.verdict === "VETOED" ? `linear-gradient(90deg, ${RED}, transparent)`
+            : result.verdict === "REJECTED" ? `linear-gradient(90deg, ${RED}99, transparent)`
+            : `linear-gradient(90deg, ${AMBER}, transparent)`,
+          borderRadius: "10px 10px 0 0",
+        }} />
+        {/* Header: deal name + verdict badge */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 20 }}>
           <div>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>RAW COUNCIL OUTPUT</div>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.15em", marginBottom: 6 }}>INVESTMENT COMMITTEE · COUNCIL OF 10</div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <h2 style={{ margin: 0, fontSize: 22, color: TEXT, fontWeight: 700 }}>{result.dealName}</h2>
               {result.investorMode && (
@@ -1370,26 +1411,17 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
           <VerdictBadge verdict={result.verdict} />
         </div>
 
-        {/* Score bar */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
-            <span style={{ fontFamily: MONO, fontSize: 11, color: GREEN }}>YES {result.yesCount}/10</span>
-            <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT2 }}>Confidence {confidencePct}%</span>
-            <span style={{ fontFamily: MONO, fontSize: 11, color: RED }}>NO {result.noCount}/10</span>
+        {/* Confidence pill + vote breakdown */}
+        <div style={{ display: "flex", gap: 24, alignItems: "center", flexWrap: "wrap", marginBottom: 18 }}>
+          <div style={{
+            display: "flex", alignItems: "center", gap: 10,
+            background: confidencePct >= 70 ? "rgba(0,255,135,0.08)" : confidencePct >= 50 ? "rgba(74,158,255,0.08)" : "rgba(255,159,67,0.08)",
+            border: `1px solid ${confidencePct >= 70 ? "rgba(0,255,135,0.3)" : confidencePct >= 50 ? "rgba(74,158,255,0.3)" : "rgba(255,159,67,0.3)"}`,
+            borderRadius: 6, padding: "8px 16px",
+          }}>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em" }}>CONFIDENCE</div>
+            <div style={{ fontFamily: MONO, fontSize: 24, fontWeight: 800, color: confidencePct >= 70 ? GREEN : confidencePct >= 50 ? ACCENT : AMBER, lineHeight: 1 }}>{confidencePct}%</div>
           </div>
-          <div style={{ height: 8, background: BG3, borderRadius: 4, overflow: "hidden" }}>
-            <div style={{
-              height: "100%",
-              width: `${yesPct}%`,
-              background: `linear-gradient(90deg, ${GREEN}, ${ACCENT})`,
-              borderRadius: 4,
-              transition: "width 0.8s ease",
-            }} />
-          </div>
-        </div>
-
-        {/* Vote breakdown */}
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
           {[
             { label: "HARD YES", count: result.hardYesCount, color: GREEN },
             { label: "SOFT YES", count: result.softYesCount, color: ACCENT },
@@ -1402,11 +1434,28 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
             </div>
           ))}
         </div>
+
+        {/* Council vote distribution bar */}
+        <div>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: GREEN }}>YES {result.yesCount}/10</span>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT2 }}>Council Vote Distribution</span>
+            <span style={{ fontFamily: MONO, fontSize: 10, color: RED }}>NO {result.noCount}/10</span>
+          </div>
+          <div style={{ height: 6, background: BG3, borderRadius: 4, overflow: "hidden" }}>
+            <div style={{
+              height: "100%",
+              width: `${yesPct}%`,
+              background: `linear-gradient(90deg, ${GREEN}, ${ACCENT})`,
+              borderRadius: 4,
+              transition: "width 0.8s ease",
+            }} />
+          </div>
+        </div>
       </div>
 
-      {/* Top Decision Drivers — derived from vote keyFlags */}
+      {/* ── KEY DECISION DRIVERS ─────────────────────────────────────────── */}
       {result.votes.length > 0 && (() => {
-        // Collect all keyFlags from YES votes and NO votes, label them
         const yesFlags = result.votes
           .filter(v => v.vote === "HARD_YES" || v.vote === "SOFT_YES")
           .flatMap(v => (v.keyFlags ?? []).map(f => ({ flag: f, type: "FOR" as const })));
@@ -1417,12 +1466,20 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
         const topAgainst = noFlags.slice(0, 3);
         if (topFor.length === 0 && topAgainst.length === 0) return null;
         return (
-          <div style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "16px 20px", marginBottom: 20 }}>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.1em", marginBottom: 12 }}>TOP DECISION DRIVERS</div>
+          <div style={{
+            background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8,
+            padding: "16px 20px", marginBottom: 20,
+            borderLeft: `3px solid ${ACCENT}`,
+          }}>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: ACCENT, letterSpacing: "0.15em", marginBottom: 14, display: "flex", alignItems: "center", gap: 8 }}>
+              <span>⚡</span> KEY DECISION DRIVERS
+            </div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
               {topFor.length > 0 && (
                 <div>
-                  <div style={{ fontFamily: MONO, fontSize: 9, color: GREEN, marginBottom: 8, letterSpacing: "0.08em" }}>FOR THE DEAL</div>
+                  <div style={{ fontFamily: MONO, fontSize: 9, color: GREEN, marginBottom: 8, letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 6 }}>
+                    <span>✓</span> FOR THE DEAL
+                  </div>
                   {topFor.map((item, i) => (
                     <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${GREEN}`, lineHeight: 1.5 }}>+ {item.flag}</div>
                   ))}
@@ -1430,7 +1487,9 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
               )}
               {topAgainst.length > 0 && (
                 <div>
-                  <div style={{ fontFamily: MONO, fontSize: 9, color: RED, marginBottom: 8, letterSpacing: "0.08em" }}>AGAINST THE DEAL</div>
+                  <div style={{ fontFamily: MONO, fontSize: 9, color: RED, marginBottom: 8, letterSpacing: "0.08em", display: "flex", alignItems: "center", gap: 6 }}>
+                    <span>✗</span> AGAINST THE DEAL
+                  </div>
                   {topAgainst.map((item, i) => (
                     <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${RED}`, lineHeight: 1.5 }}>− {item.flag}</div>
                   ))}
@@ -1443,7 +1502,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
 
       {/* Persona vote cards */}
       <div style={{ marginBottom: 20 }}>
-        <div style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.1em", marginBottom: 12 }}>COUNCIL VOTES — click to expand</div>
+        <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.15em", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}><span>🗳️</span> COUNCIL VOTES — click to expand</div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {result.votes.map((v) => (
             <VoteCard key={v.personaId} vote={v} result={result} />
@@ -1453,27 +1512,25 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
 
       {/* Conditions + Blockers */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
-        {/* Conditions to proceed */}
+        {/* ── Conditions to proceed ── */}
         <div style={{
           background: BG2,
           border: `1px solid rgba(255,159,67,0.3)`,
           borderRadius: 8,
           padding: "16px 20px",
         }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, color: AMBER, letterSpacing: "0.1em", marginBottom: 12 }}>
-            CONDITIONS TO PROCEED ({result.conditionsToProceed.length})
+          <div style={{ fontFamily: MONO, fontSize: 9, color: AMBER, letterSpacing: "0.15em", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+            <span>📋</span> CONDITIONS TO PROCEED
+            <span style={{ marginLeft: "auto", background: "rgba(255,159,67,0.15)", border: "1px solid rgba(255,159,67,0.3)", borderRadius: 10, padding: "1px 8px", fontSize: 10, fontWeight: 700 }}>{result.conditionsToProceed.length}</span>
           </div>
           {result.conditionsToProceed.length === 0 ? (
             <div style={{ fontSize: 12, color: MUTED }}>No conditions required</div>
           ) : (
             result.conditionsToProceed.map((c, i) => (
               <div key={i} style={{
-                fontSize: 12,
-                color: TEXT2,
-                marginBottom: 8,
-                paddingLeft: 12,
-                borderLeft: `2px solid ${AMBER}`,
-                lineHeight: 1.5,
+                fontSize: 12, color: TEXT2, marginBottom: 6,
+                padding: "6px 12px", background: "rgba(255,159,67,0.04)",
+                borderLeft: `2px solid ${AMBER}`, borderRadius: "0 4px 4px 0", lineHeight: 1.5,
               }}>
                 {c}
               </div>
@@ -1481,27 +1538,25 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
           )}
         </div>
 
-        {/* Blocking issues */}
+        {/* ── Blocking issues ── */}
         <div style={{
           background: BG2,
           border: `1px solid rgba(255,71,87,0.3)`,
           borderRadius: 8,
           padding: "16px 20px",
         }}>
-          <div style={{ fontFamily: MONO, fontSize: 10, color: RED, letterSpacing: "0.1em", marginBottom: 12 }}>
-            BLOCKING ISSUES ({result.blockingIssues.length})
+          <div style={{ fontFamily: MONO, fontSize: 9, color: RED, letterSpacing: "0.15em", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+            <span>🚫</span> BLOCKING ISSUES
+            <span style={{ marginLeft: "auto", background: "rgba(255,71,87,0.15)", border: "1px solid rgba(255,71,87,0.3)", borderRadius: 10, padding: "1px 8px", fontSize: 10, fontWeight: 700 }}>{result.blockingIssues.length}</span>
           </div>
           {result.blockingIssues.length === 0 ? (
             <div style={{ fontSize: 12, color: MUTED }}>No blocking issues identified</div>
           ) : (
             result.blockingIssues.map((b, i) => (
               <div key={i} style={{
-                fontSize: 12,
-                color: TEXT2,
-                marginBottom: 8,
-                paddingLeft: 12,
-                borderLeft: `2px solid ${RED}`,
-                lineHeight: 1.5,
+                fontSize: 12, color: TEXT2, marginBottom: 6,
+                padding: "6px 12px", background: "rgba(255,71,87,0.04)",
+                borderLeft: `2px solid ${RED}`, borderRadius: "0 4px 4px 0", lineHeight: 1.5,
               }}>
                 {b}
               </div>

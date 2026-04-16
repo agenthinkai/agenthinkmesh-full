@@ -488,55 +488,103 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
                 {toolsDropdownOpen && (
                   <div style={{
                     position: "absolute", top: "100%", left: 0,
-                    background: "#0f1a2e",
+                    background: "#0d1525",
                     border: `1px solid ${BORDER}`,
-                    borderRadius: 8, padding: "6px 0",
-                    minWidth: 180, zIndex: 200,
-                    boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+                    borderRadius: 10, padding: "8px 0",
+                    minWidth: 220, zIndex: 200,
+                    boxShadow: "0 12px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04)",
                   }}>
+                    {/* Group: Deal Intelligence */}
+                    <div style={{ padding: "4px 14px 6px", fontFamily: "monospace", fontSize: 9, color: "rgba(148,163,184,0.4)", letterSpacing: "0.12em" }}>
+                      DEAL INTELLIGENCE
+                    </div>
                     {[
-                      { label: "Deal Screener", icon: "⚖️", href: "/deals", color: "#4ADE80" },
-                      { label: "Procurement Eval", icon: "🏗️", href: "/procurement", color: "#00ff87" },
+                      { label: "Deal Screener", icon: "⚖️", href: "/deals", color: "#4ADE80", badge: unreadSignalCount > 0 ? unreadSignalCount : null },
+                      { label: "Procurement Eval", icon: "🏗️", href: "/procurement", color: "#00ff87", badge: null },
+                    ].map(tool => {
+                      const isActive = currentPath.startsWith(tool.href);
+                      return (
+                        <a
+                          key={tool.label}
+                          href={tool.href}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 10,
+                            padding: "8px 14px",
+                            textDecoration: "none",
+                            color: isActive ? tool.color : MUTED,
+                            fontSize: 13, fontWeight: isActive ? 600 : 500,
+                            background: isActive ? `${tool.color}12` : "transparent",
+                            borderLeft: isActive ? `2px solid ${tool.color}` : "2px solid transparent",
+                            transition: "background 0.12s, color 0.12s",
+                          }}
+                          onMouseEnter={e => {
+                            if (!isActive) {
+                              (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.04)";
+                              (e.currentTarget as HTMLAnchorElement).style.color = tool.color;
+                            }
+                          }}
+                          onMouseLeave={e => {
+                            if (!isActive) {
+                              (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
+                              (e.currentTarget as HTMLAnchorElement).style.color = MUTED;
+                            }
+                          }}
+                        >
+                          <span style={{ fontSize: 14, opacity: isActive ? 1 : 0.7 }}>{tool.icon}</span>
+                          <span style={{ flex: 1 }}>{tool.label}</span>
+                          {tool.badge !== null && (
+                            <span style={{
+                              background: "#3B82F6", color: "#fff",
+                              fontSize: 10, fontWeight: 700, borderRadius: 10,
+                              padding: "1px 6px", lineHeight: "16px", minWidth: 18, textAlign: "center",
+                            }}>{tool.badge}</span>
+                          )}
+                        </a>
+                      );
+                    })}
+                    {/* Separator */}
+                    <div style={{ height: 1, background: BORDER, margin: "6px 0" }} />
+                    {/* Group: Portfolio */}
+                    <div style={{ padding: "4px 14px 6px", fontFamily: "monospace", fontSize: 9, color: "rgba(148,163,184,0.4)", letterSpacing: "0.12em" }}>
+                      PORTFOLIO MANAGEMENT
+                    </div>
+                    {[
                       { label: "PortfolioMesh", icon: "🏦", href: "/portfolio-mesh", color: "#7BA3D4" },
                       { label: "PortfolioMesh Demo", icon: "🚀", href: "/portfolio-mesh/demo", color: "#F59E0B" },
-                    ].map(tool => (
-                      <a
-                        key={tool.label}
-                        href={tool.href}
-                        style={{
-                          display: "flex", alignItems: "center", gap: 10,
-                          padding: "9px 16px",
-                          textDecoration: "none",
-                          color: currentPath.startsWith(tool.href) ? tool.color : MUTED,
-                          fontSize: 13, fontWeight: 500,
-                          transition: "background 0.12s, color 0.12s",
-                        }}
-                        onMouseEnter={e => {
-                          (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.05)";
-                          (e.currentTarget as HTMLAnchorElement).style.color = tool.color;
-                        }}
-                        onMouseLeave={e => {
-                          (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
-                          (e.currentTarget as HTMLAnchorElement).style.color = currentPath.startsWith(tool.href) ? tool.color : MUTED;
-                        }}
-                      >
-                        <span style={{ fontSize: 14 }}>{tool.icon}</span>
-                        <span style={{ flex: 1 }}>{tool.label}</span>
-                        {tool.label === "Deal Screener" && unreadSignalCount > 0 && (
-                          <span style={{
-                            background: "#3B82F6",
-                            color: "#fff",
-                            fontSize: 10, fontWeight: 700,
-                            borderRadius: 10,
-                            padding: "1px 6px",
-                            lineHeight: "16px",
-                            minWidth: 18, textAlign: "center",
-                          }}>
-                            {unreadSignalCount}
-                          </span>
-                        )}
-                      </a>
-                    ))}
+                    ].map(tool => {
+                      const isActive = currentPath === tool.href || (tool.href !== "/portfolio-mesh" && currentPath.startsWith(tool.href));
+                      return (
+                        <a
+                          key={tool.label}
+                          href={tool.href}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 10,
+                            padding: "8px 14px",
+                            textDecoration: "none",
+                            color: isActive ? tool.color : MUTED,
+                            fontSize: 13, fontWeight: isActive ? 600 : 500,
+                            background: isActive ? `${tool.color}12` : "transparent",
+                            borderLeft: isActive ? `2px solid ${tool.color}` : "2px solid transparent",
+                            transition: "background 0.12s, color 0.12s",
+                          }}
+                          onMouseEnter={e => {
+                            if (!isActive) {
+                              (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.04)";
+                              (e.currentTarget as HTMLAnchorElement).style.color = tool.color;
+                            }
+                          }}
+                          onMouseLeave={e => {
+                            if (!isActive) {
+                              (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
+                              (e.currentTarget as HTMLAnchorElement).style.color = MUTED;
+                            }
+                          }}
+                        >
+                          <span style={{ fontSize: 14, opacity: isActive ? 1 : 0.7 }}>{tool.icon}</span>
+                          <span style={{ flex: 1 }}>{tool.label}</span>
+                        </a>
+                      );
+                    })}
                   </div>
                 )}
               </div>
