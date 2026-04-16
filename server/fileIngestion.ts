@@ -16,12 +16,9 @@
 import * as XLSX from "xlsx";
 import JSZip from "jszip";
 import mammoth from "mammoth";
-import { createRequire } from "module";
-
-const _require = createRequire(import.meta.url);
 // pdf-parse v2 exports a class-based API: new PDFParse({ data: buffer }).getText()
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const { PDFParse } = _require("pdf-parse") as { PDFParse: new (opts: { data: Buffer | Uint8Array }) => { getText(): Promise<{ text: string; total: number }> } };
+// Direct ESM import so vitest vi.mock("pdf-parse") can intercept it in tests.
+import { PDFParse } from "pdf-parse";
 
 /** Maximum combined characters fed to the extraction LLM (~60k tokens). */
 const MAX_COMBINED_CHARS = 80_000;

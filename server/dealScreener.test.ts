@@ -2,29 +2,23 @@
  * dealScreener.test.ts
  * Tests for councilEngine.ts consensus logic.
  *
- * councilEngine.ts instantiates `const anthropic = new Anthropic(...)` at
- * module scope, so we must mock the entire @anthropic-ai/sdk module.
- * vi.mock() is hoisted to the top of the file by vitest, which means any
- * variable referenced inside vi.mock() must also be hoisted via vi.hoisted().
+ * councilEngine.ts calls invokeLLM() from ./_core/llm (a fetch-based helper).
+ * We mock that module so tests never hit the real API.
+ * vi.mock() is hoisted to the top of the file by vitest, so any variable
+ * referenced inside vi.mock() must also be hoisted via vi.hoisted().
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// ── Hoist mockCreate so it is available inside the hoisted vi.mock() call ─────
-const { mockCreate } = vi.hoisted(() => {
-  return { mockCreate: vi.fn() };
+// ── Hoist mockInvokeLLM so it is available inside the hoisted vi.mock() call ─
+const { mockInvokeLLM } = vi.hoisted(() => {
+  return { mockInvokeLLM: vi.fn() };
 });
 
-// ── Mock @anthropic-ai/sdk at module level ────────────────────────────────────
-vi.mock("@anthropic-ai/sdk", () => {
-  return {
-    default: vi.fn().mockImplementation(() => ({
-      messages: {
-        create: mockCreate,
-      },
-    })),
-  };
-});
+// ── Mock the LLM helper at module level ───────────────────────────────────────
+vi.mock("./_core/llm", () => ({
+  invokeLLM: mockInvokeLLM,
+}));
 
 // Import AFTER the mock is registered
 import { runCouncil } from "./councilEngine";
@@ -43,8 +37,8 @@ const PERSONA_IDS = [
   "DEVILS_ADVOCATE",
 ];
 
-// ── Helper: build a mock Anthropic response for a given vote ─────────────────
-function makeAnthropicResponse(
+// ── Helper: build a mock invokeLLM response for a given vote ─────────────────
+function makeLLMResponse(
   vote: "HARD_YES" | "SOFT_YES" | "SOFT_NO" | "HARD_NO",
   confidence = 0.8
 ) {
@@ -57,7 +51,16 @@ function makeAnthropicResponse(
     blockers: vote === "SOFT_NO" || vote === "HARD_NO" ? ["Blocker A"] : [],
   });
   return {
-    content: [{ type: "text", text: payload }],
+    id: "mock-id",
+    created: Date.now(),
+    model: "mock-model",
+    choices: [
+      {
+        index: 0,
+        message: { role: "assistant" as const, content: payload },
+        finish_reason: "stop",
+      },
+    ],
   };
 }
 
@@ -71,17 +74,17 @@ function setVotesWithOverrides(
 
 // ── Setup: reset mock before each test ───────────────────────────────────────
 beforeEach(() => {
-  mockCreate.mockReset();
+  mockInvokeLLM.mockReset();
 });
 
-// ── Helper: wire mockCreate to return votes in sequence ──────────────────────
+// ── Helper: wire mockInvokeLLM to return votes in sequence ───────────────────
 function wireMockVotes(
   votes: ("HARD_YES" | "SOFT_YES" | "SOFT_NO" | "HARD_NO")[]
 ) {
   let callIndex = 0;
-  mockCreate.mockImplementation(() => {
+  mockInvokeLLM.mockImplementation(() => {
     const vote = votes[callIndex++] ?? "HARD_YES";
-    return Promise.resolve(makeAnthropicResponse(vote));
+    return Promise.resolve(makeLLMResponse(vote));
   });
 }
 

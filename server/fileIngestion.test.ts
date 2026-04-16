@@ -15,9 +15,17 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
 // ── Hoist mocks so they run before imports ────────────────────────────────────
-const mockPdfParse = vi.hoisted(() =>
-  vi.fn().mockResolvedValue({ text: "PDF content from document", numpages: 2 })
-);
+// mockPdfParse is the PDFParse constructor mock.
+// fileIngestion.ts does: new PDFParse({ data: buf }).getText()
+// So we mock PDFParse as a class whose instances have a getText() method.
+const mockPdfParse = vi.hoisted(() => {
+  const instance = {
+    getText: vi.fn().mockResolvedValue({ text: "PDF content from document", total: 2 }),
+  };
+  const constructor = vi.fn().mockImplementation(() => instance);
+  (constructor as any).__instance = instance;
+  return constructor;
+});
 const mockMammoth = vi.hoisted(() => ({
   extractRawText: vi.fn().mockResolvedValue({ value: "DOCX content from document" }),
 }));
@@ -41,7 +49,8 @@ const mockJSZip = vi.hoisted(() => {
   return { default: constructor };
 });
 
-vi.mock("pdf-parse", () => ({ default: mockPdfParse }));
+// pdf-parse exports PDFParse as a named export (ESM import { PDFParse } from "pdf-parse")
+vi.mock("pdf-parse", () => ({ PDFParse: mockPdfParse }));
 vi.mock("mammoth", () => ({ default: mockMammoth }));
 vi.mock("xlsx", () => ({ default: mockXLSX, ...mockXLSX }));
 vi.mock("jszip", () => ({ default: mockJSZip.default }));
@@ -52,17 +61,7 @@ Object.defineProperty(mockJSZip.default, "loadAsync", {
   configurable: true,
 });
 
-// Mock the createRequire so pdf-parse is loaded via our mock
-vi.mock("module", async (importOriginal) => {
-  const mod = await importOriginal<typeof import("module")>();
-  return {
-    ...mod,
-    createRequire: () => (id: string) => {
-      if (id === "pdf-parse") return mockPdfParse;
-      return mod.createRequire(import.meta.url)(id);
-    },
-  };
-});
+// Note: createRequire mock removed — fileIngestion.ts now uses direct ESM import.
 
 import { ingestFiles } from "./fileIngestion";
 
@@ -82,8 +81,13 @@ function makeFile(name: string, content: string, mimeType = "text/plain") {
 describe("fileIngestion — ingestFiles()", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Reset default mocks
-    mockPdfParse.mockResolvedValue({ text: "PDF content from document", numpages: 2 });
+    // mockPdfParse is a constructor: new PDFParse({data}).getText() → { text, total }
+    // After vi.clearAllMocks() the constructor mock is reset; re-wire the instance.
+    const freshInstance = {
+      getText: vi.fn().mockResolvedValue({ text: "PDF content from document", total: 2 }),
+    };
+    mockPdfParse.mockImplementation(() => freshInstance);
+    (mockPdfParse as any).__instance = freshInstance;
     mockMammoth.extractRawText.mockResolvedValue({ value: "DOCX content from document" });
     mockXLSX.read.mockReturnValue({ SheetNames: ["Sheet1"], Sheets: { Sheet1: {} } });
     mockXLSX.utils.sheet_to_csv.mockReturnValue("col1,col2\nval1,val2");
@@ -122,7 +126,11 @@ describe("fileIngestion — ingestFiles()", () => {
   });
 
   it("captures a non-fatal error if pdf-parse throws", async () => {
-    mockPdfParse.mockRejectedValueOnce(new Error("Corrupted PDF"));
+    // Make the instance's getText() reject with a Corrupted PDF error
+    const throwingInstance = {
+      getText: vi.fn().mockRejectedValueOnce(new Error("Corrupted PDF")),
+    };
+    mockPdfParse.mockImplementationOnce(() => throwingInstance);
     const result = await ingestFiles([makeFile("bad.pdf", "garbage", "application/pdf")]);
     expect(result.files).toHaveLength(0);
     expect(result.errors).toHaveLength(1);
@@ -276,7 +284,10 @@ describe("fileIngestion — ingestFiles()", () => {
   // ── Empty result ────────────────────────────────────────────────────────────
 
   it("returns empty combinedText when all files fail to parse", async () => {
-    mockPdfParse.mockRejectedValueOnce(new Error("Parse error"));
+    const throwingInstance = {
+      getText: vi.fn().mockRejectedValueOnce(new Error("Parse error")),
+    };
+    mockPdfParse.mockImplementationOnce(() => throwingInstance);
     const result = await ingestFiles([makeFile("bad.pdf", "garbage", "application/pdf")]);
     expect(result.combinedText).toBe("");
     expect(result.files).toHaveLength(0);

@@ -913,8 +913,13 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
 }
 
 // ── IC Report (raw Council output + boardroom IC Report tabs) ─────────────────
-function ICReport({ result, onNewDeal, councilMode: councilModeProp }: { result: CouncilResult; onNewDeal: () => void; councilMode?: CouncilModeType }) {
+function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, isHistoryView }: { result: CouncilResult; onNewDeal: () => void; councilMode?: CouncilModeType; onRerun?: (dealName: string, dealText: string, mode: CouncilModeType) => void; isHistoryView?: boolean }) {
   const [activeTab, setActiveTab] = useState<"raw" | "boardroom">(result.icReport ? "boardroom" : "raw");
+  // ── Re-run modal state ────────────────────────────────────────────────────
+  const [rerunOpen, setRerunOpen] = useState(false);
+  const [rerunText, setRerunText] = useState("");
+  const [rerunMode, setRerunMode] = useState<CouncilModeType>(result.councilMode ?? councilModeProp ?? "global_vc");
+  const [rerunError, setRerunError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [copiedRaw, setCopiedRaw] = useState(false);
   const [shareUrl, setShareUrl] = useState<string | null>(null);
@@ -1233,12 +1238,103 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp }: { result:
               >RETRY</button>
             </div>
           )}
+          {isHistoryView && onRerun && (
+            <button
+              onClick={() => { setRerunText(""); setRerunError(null); setRerunMode(result.councilMode ?? councilModeProp ?? "global_vc"); setRerunOpen(true); }}
+              style={{ padding: "5px 14px", background: "rgba(168,85,247,0.15)", border: `1px solid ${PURPLE}`, color: PURPLE, fontFamily: MONO, fontSize: 10, fontWeight: 700, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em" }}
+              title="Re-run this deal through the council — creates a new run, original is preserved"
+            >↺ RE-RUN</button>
+          )}
           <button
             onClick={onNewDeal}
             style={{ padding: "5px 14px", background: ACCENT, border: "none", color: "#000", fontFamily: MONO, fontSize: 10, fontWeight: 700, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em" }}
           >NEW DEAL</button>
         </div>
       </div>
+      {/* ── Re-run modal ─────────────────────────────────────────────────── */}
+      {rerunOpen && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 9999,
+          background: "rgba(7,11,18,0.85)", backdropFilter: "blur(6px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: 24,
+        }}>
+          <div style={{
+            background: BG2, border: `1px solid ${BORDER}`, borderRadius: 12,
+            padding: "32px 36px", maxWidth: 560, width: "100%",
+            boxShadow: "0 24px 64px rgba(0,0,0,0.6)",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+              <div>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: PURPLE, letterSpacing: "0.15em", marginBottom: 4 }}>↺ RE-RUN · NEW INDEPENDENT SCREENING</div>
+                <div style={{ fontSize: 16, fontWeight: 700, color: TEXT }}>{result.dealName}</div>
+              </div>
+              <button
+                onClick={() => setRerunOpen(false)}
+                style={{ background: "none", border: "none", color: MUTED, fontSize: 18, cursor: "pointer", padding: "4px 8px" }}
+              >✕</button>
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, marginBottom: 16, lineHeight: 1.6, padding: "10px 14px", background: "rgba(168,85,247,0.06)", border: `1px solid ${PURPLE}30`, borderRadius: 6 }}>
+              ℹ️ Deal text is not stored for security. Paste the original deal memo below to re-run. This creates a <strong style={{ color: TEXT }}>new run</strong> — the original screening is preserved in history.
+            </div>
+            {/* Council mode selector */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 8 }}>COUNCIL MODE</div>
+              <div style={{ display: "flex", gap: 8 }}>
+                {(["gcc", "global_vc", "india_pe"] as CouncilModeType[]).map((m) => (
+                  <button
+                    key={m}
+                    onClick={() => setRerunMode(m)}
+                    style={{
+                      padding: "5px 12px", borderRadius: 4, fontFamily: MONO, fontSize: 9,
+                      cursor: "pointer", letterSpacing: "0.08em",
+                      background: rerunMode === m ? `${PURPLE}20` : "transparent",
+                      border: `1px solid ${rerunMode === m ? PURPLE : BORDER}`,
+                      color: rerunMode === m ? PURPLE : TEXT2,
+                    }}
+                  >{m === "gcc" ? "GCC" : m === "global_vc" ? "GLOBAL VC" : "INDIA PE"}</button>
+                ))}
+              </div>
+            </div>
+            {/* Deal text input */}
+            <div style={{ marginBottom: 16 }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 8 }}>DEAL TEXT <span style={{ color: RED }}>*</span></div>
+              <textarea
+                value={rerunText}
+                onChange={(e) => { setRerunText(e.target.value); setRerunError(null); }}
+                placeholder={`Paste the original deal memo for "${result.dealName}" here…`}
+                rows={8}
+                style={{
+                  width: "100%", boxSizing: "border-box",
+                  background: BG, border: `1px solid ${rerunError ? RED : BORDER}`, borderRadius: 6,
+                  color: TEXT, fontFamily: MONO, fontSize: 11, padding: "12px 14px",
+                  resize: "vertical", outline: "none", lineHeight: 1.6,
+                }}
+                onFocus={e => { e.currentTarget.style.borderColor = PURPLE; }}
+                onBlur={e => { e.currentTarget.style.borderColor = rerunError ? RED : BORDER; }}
+              />
+              {rerunError && <div style={{ fontFamily: MONO, fontSize: 10, color: RED, marginTop: 4 }}>{rerunError}</div>}
+            </div>
+            <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
+              <button
+                onClick={() => setRerunOpen(false)}
+                style={{ padding: "8px 18px", background: "none", border: `1px solid ${BORDER}`, color: TEXT2, fontFamily: MONO, fontSize: 10, cursor: "pointer", borderRadius: 4 }}
+              >CANCEL</button>
+              <button
+                onClick={() => {
+                  if (!rerunText.trim() || rerunText.trim().length < 10) {
+                    setRerunError("Deal text must be at least 10 characters");
+                    return;
+                  }
+                  setRerunOpen(false);
+                  onRerun!(result.dealName, rerunText.trim(), rerunMode);
+                }}
+                style={{ padding: "8px 18px", background: PURPLE, border: "none", color: "#fff", fontFamily: MONO, fontSize: 10, fontWeight: 700, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em" }}
+              >↺ LAUNCH RE-RUN →</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Boardroom IC Report tab */}
       {activeTab === "boardroom" && result.icReport && (
@@ -2764,6 +2860,20 @@ export default function DealScreener() {
     setSelectedDealId(dealId);
     setView("loading"); // show loading spinner while getById resolves
   };
+  const handleRerun = (dealName: string, dealText: string, mode: CouncilModeType) => {
+    // Navigate to input view and pre-fill the form with the original deal data
+    setCouncilMode(mode);
+    setPreviousView(null);
+    setSelectedDealId(null);
+    setResult(null);
+    setView("input");
+    // Fire the pre-fill event after a short delay so DealForm has mounted
+    setTimeout(() => {
+      window.dispatchEvent(new CustomEvent("tier0:prefill", {
+        detail: { dealName, dealText, sourceType: "manual" },
+      }));
+    }, 80);
+  };
 
   useEffect(() => {
     if (dealDetail) {
@@ -3089,7 +3199,7 @@ export default function DealScreener() {
                 </button>
               </div>
             )}
-            <ICReport key={result.dealId ?? result.dealName} result={result} onNewDeal={handleNewDeal} councilMode={councilMode} />
+            <ICReport key={result.dealId ?? result.dealName} result={result} onNewDeal={handleNewDeal} councilMode={councilMode} isHistoryView={previousView === "history"} onRerun={handleRerun} />
           </div>
         )}
         {view === "history" && (
