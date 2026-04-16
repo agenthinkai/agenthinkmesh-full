@@ -24,7 +24,7 @@ import { runRealityAlignment } from "../realityAlignmentEngine";
 
 // ── Owner whitelist — these users always bypass payment and rate limits ────────
 const OWNER_EMAILS = ["farouq@agenthink.ai", "farouqsultan@gmail.com"];
-function isOwner(email: string | null | undefined): boolean {
+export function isOwner(email: string | null | undefined): boolean {
   if (!email) return false;
   return OWNER_EMAILS.includes(email.toLowerCase().trim());
 }

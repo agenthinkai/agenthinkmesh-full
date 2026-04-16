@@ -1638,7 +1638,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
       <DecisionUpgradePanel
         domain="deal"
         originalRunId={result.dealId ?? result.dealName}
-        originalInput={result.dealText ?? ""}
+        originalInput={result.dealText ?? result.dealTextPreview ?? ""}
         verdictBefore={result.verdict}
         confidenceBefore={result.confidenceScore}
         blockingIssues={result.blockingIssues ?? []}

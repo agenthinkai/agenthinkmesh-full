@@ -25,6 +25,7 @@ import {
 } from "../decisionUpgradeEngine";
 import { runCouncil } from "../councilEngine";
 import { runProcurementCouncil } from "../procurementEngine";
+import { isOwner } from "./dealScreener";
 
 // ─── Zod schemas ─────────────────────────────────────────────────────────────
 
@@ -183,8 +184,10 @@ export const decisionUpgradeRouter = router({
       } else {
         // Deal (default)
         const meta = input.dealMeta ?? { dealName: "Improved Deal", councilMode: "global_vc" as const };
+        // Owner bypass: skip token guard (same as main screen procedure)
+        const upgradeUserId = isOwner(ctx.user.email) ? undefined : ctx.user.id;
         const result = await runCouncil(improvedInput, {
-          userId: ctx.user.id,
+          userId: upgradeUserId,
           councilMode: meta.councilMode,
         });
 
