@@ -50,6 +50,7 @@ import AdminBetaRequests from "./pages/AdminBetaRequests";
 import Upgrade from "./pages/Upgrade";
 import NotFound from "./pages/NotFound";
 import DealScreener from "./pages/DealScreener";
+import PitchTriage from "./pages/PitchTriage";
 import ProcurementScreener from "./pages/ProcurementScreener";
 import Contacts from "./pages/Contacts";
 import DealComparison from "./pages/DealComparison";
@@ -189,6 +190,8 @@ function Router() {
       <Route path="/build" component={Build} />
       <Route path="/annotate" component={AnnotationStudio} />
 
+      {/* Pitch Triage — Fast 6-agent pre-filter */}
+      <Route path="/pitch-triage" component={PitchTriage} />
       {/* Deal Screener — Council of 10 */}
       <Route path="/deals" component={DealScreener} />
       {/* Procurement — Vendor Evaluation Engine */}

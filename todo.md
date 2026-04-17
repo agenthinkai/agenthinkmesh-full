@@ -2140,3 +2140,20 @@
 - [x] Part 5 — Nav: Tools dropdown grouping (Decision Workflows / Portfolio)
 - [x] Part 5 — Nav: active module indicator
 - [x] Part 6 — Global: spacing, small text readability, consistent font sizes, mobile safe
+
+## Pitch Triage Mode
+
+- [x] Server: pitch.triage protectedProcedure — 6 parallel agents via Promise.all, deterministic scoring, ENGAGE/WATCH/IGNORE classification
+- [x] Server: invokeLLM integration with max_tokens:120 per agent, JSON parse + fallback handling
+- [x] Server: pitchRouter registered in server/routers.ts at pitch: pitchRouter
+- [x] Client: PitchTriage.tsx — INPUT / LOADING / RESULTS states, staggered agent reveal animation
+- [x] Client: Score badge (0-100, color-coded), classification banner (ENGAGE/WATCH/IGNORE)
+- [x] Client: 6-agent grid with label chips (green/amber/red), reasoning text, weight display
+- [x] Client: Key signals panel (green) + Missing info panel (red)
+- [x] Client: Escalation CTA — "Run Full Evaluation →" for ENGAGE only, sessionStorage handoff
+- [x] Routing: /pitch-triage route added to App.tsx
+- [x] Nav: Pitch Triage added to SiteNav Tools dropdown (Deal Intelligence group) + mobile drawer
+- [x] DealScreener: "⚡ Fast Triage first →" link added below submit button
+- [x] DealScreener: sessionStorage pitchTriageEscalation read on mount, auto-fills dealText + switches to expert mode
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: 601 passed / 1 skipped (602 total) — no regressions

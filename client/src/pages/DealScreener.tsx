@@ -1756,6 +1756,16 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
     }
   }, [pendingPaymentSessionId]);
 
+  // Pre-fill from Pitch Triage escalation (sessionStorage key set by PitchTriage.tsx)
+  useEffect(() => {
+    const triageText = sessionStorage.getItem("pitchTriageEscalation");
+    if (triageText) {
+      setDealText(triageText);
+      setGuidedMode(false); // Switch to free-text mode so the text is visible
+      sessionStorage.removeItem("pitchTriageEscalation");
+    }
+  }, []);
+
   // Listen for Tier 0 signal pre-fill events from the Signals feed
   useEffect(() => {
     const handler = (e: Event) => {
@@ -2324,7 +2334,24 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
         </div>
 
         {/* Secondary CTA — Compare mode */}
-        <div style={{ textAlign: "center", marginTop: 20, paddingTop: 20, borderTop: `1px solid ${BORDER}` }}>
+        <div style={{ textAlign: "center", marginTop: 12 }}>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.04em" }}>Not sure yet? </span>
+          <a
+            href="/pitch-triage"
+            style={{
+              fontFamily: MONO, fontSize: 10, color: "#a78bfa",
+              textDecoration: "none", letterSpacing: "0.04em",
+              borderBottom: "1px solid rgba(167,139,250,0.4)",
+              paddingBottom: 1,
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = "#c4b5fd")}
+            onMouseLeave={e => (e.currentTarget.style.color = "#a78bfa")}
+          >
+            ⚡ Fast Triage first →
+          </a>
+        </div>
+
+        <div style={{ textAlign: "center", marginTop: 12, paddingTop: 12, borderTop: `1px solid ${BORDER}` }}>
           <span style={{ fontFamily: MONO, fontSize: 10, color: MUTED, letterSpacing: "0.04em" }}>Have multiple deals? </span>
           <a
             href="/deals/compare"

@@ -14,6 +14,7 @@ import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { sql } from "drizzle-orm";
 import { runCouncil } from "../councilEngine";
+import { invokeLLM } from "../_core/llm";
 import crypto from "crypto";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -243,5 +244,200 @@ export const pitchRouter = router({
         reportUnlocked: number;
         createdAt: Date;
       }>;
+    }),
+
+  /**
+   * pitch.triage — Lightweight 6-agent micro-evaluation.
+   * All agents run in parallel via Promise.all.
+   * No DB persistence. Server-side only.
+   */
+  triage: protectedProcedure
+    .input(
+      z.object({
+        pitchText: z.string().min(10).max(20000),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const truncated = input.pitchText.slice(0, 3000);
+
+      // ── Agent definitions ─────────────────────────────────────────────────
+      type AgentName = "Market Signal" | "Business Model" | "Traction" | "Founder Signal" | "Risk" | "Completeness";
+      const AGENTS: Array<{
+        name: AgentName;
+        labels: string[];
+        fallback: string;
+        systemPrompt: string;
+      }> = [
+        {
+          name: "Market Signal",
+          labels: ["strong", "weak", "unclear"],
+          fallback: "weak",
+          systemPrompt: `You are a market signal analyst. Evaluate the pitch and return ONLY valid JSON: {"label": "strong"|"weak"|"unclear", "reasoning": "<max 18 words>"}`,
+        },
+        {
+          name: "Business Model",
+          labels: ["clear", "weak", "missing"],
+          fallback: "weak",
+          systemPrompt: `You are a business model analyst. Evaluate the pitch and return ONLY valid JSON: {"label": "clear"|"weak"|"missing", "reasoning": "<max 18 words>"}`,
+        },
+        {
+          name: "Traction",
+          labels: ["strong", "early", "none"],
+          fallback: "early",
+          systemPrompt: `You are a traction analyst. Evaluate the pitch and return ONLY valid JSON: {"label": "strong"|"early"|"none", "reasoning": "<max 18 words>"}`,
+        },
+        {
+          name: "Founder Signal",
+          labels: ["strong", "neutral", "risk"],
+          fallback: "neutral",
+          systemPrompt: `You are a founder signal analyst. Evaluate the pitch and return ONLY valid JSON: {"label": "strong"|"neutral"|"risk", "reasoning": "<max 18 words>"}`,
+        },
+        {
+          name: "Risk",
+          labels: ["low", "medium", "high"],
+          fallback: "medium",
+          systemPrompt: `You are a risk analyst. Evaluate the pitch and return ONLY valid JSON: {"label": "low"|"medium"|"high", "reasoning": "<max 18 words>"}`,
+        },
+        {
+          name: "Completeness",
+          labels: ["complete", "partial", "insufficient"],
+          fallback: "partial",
+          systemPrompt: `You are a pitch completeness analyst. Evaluate the pitch and return ONLY valid JSON: {"label": "complete"|"partial"|"insufficient", "reasoning": "<max 18 words>"}`,
+        },
+      ];
+
+      // ── Run all 6 agents in parallel ──────────────────────────────────────
+      type AgentResult = {
+        name: AgentName;
+        label: string;
+        reasoning: string;
+        fallback: boolean;
+      };
+
+      const agentOutputs: AgentResult[] = await Promise.all(
+        AGENTS.map(async (agent) => {
+          try {
+            const res = await invokeLLM({
+              messages: [
+                { role: "system", content: agent.systemPrompt },
+                { role: "user", content: `Pitch:\n${truncated}` },
+              ],
+              max_tokens: 120,
+            });
+            const contentRaw = res?.choices?.[0]?.message?.content;
+            const raw = (typeof contentRaw === "string" ? contentRaw : "").trim();
+            const cleaned = raw
+              .replace(/^```(?:json)?\s*/i, "")
+              .replace(/\s*```$/i, "")
+              .trim();
+            const parsed = JSON.parse(cleaned) as { label?: unknown; reasoning?: unknown };
+            const label =
+              typeof parsed.label === "string" && agent.labels.includes(parsed.label)
+                ? parsed.label
+                : agent.fallback;
+            const reasoning =
+              typeof parsed.reasoning === "string" && parsed.reasoning.length > 0
+                ? parsed.reasoning.slice(0, 120)
+                : "Unable to determine from available information.";
+            const usedFallback = label === agent.fallback && parsed.label !== agent.fallback;
+            return { name: agent.name, label, reasoning, fallback: usedFallback };
+          } catch {
+            return {
+              name: agent.name,
+              label: agent.fallback,
+              reasoning: "Unable to determine from available information.",
+              fallback: true,
+            };
+          }
+        })
+      );
+
+      // ── Deterministic scoring ─────────────────────────────────────────────
+      const WEIGHTS: Record<AgentName, number> = {
+        "Market Signal": 20,
+        "Business Model": 18,
+        "Traction": 22,
+        "Founder Signal": 20,
+        "Risk": 15,
+        "Completeness": 5,
+      };
+      const LABEL_SCORES: Record<string, number> = {
+        // Market Signal
+        strong: 100, weak: 40, unclear: 20,
+        // Business Model
+        clear: 100, missing: 0,
+        // Traction
+        early: 50, none: 0,
+        // Founder Signal
+        neutral: 50, risk: 0,
+        // Risk (inverted — low is good)
+        low: 100, medium: 50, high: 0,
+        // Completeness
+        complete: 100, partial: 50, insufficient: 0,
+      };
+
+      const byName = Object.fromEntries(
+        agentOutputs.map((r) => [r.name, r])
+      ) as Record<AgentName, AgentResult>;
+
+      let rawScore = 0;
+      for (const agent of AGENTS) {
+        const labelScore = LABEL_SCORES[byName[agent.name].label] ?? 50;
+        rawScore += (labelScore * WEIGHTS[agent.name]) / 100;
+      }
+      const score = Math.round(rawScore);
+
+      // ── Classification ────────────────────────────────────────────────────
+      const completenessLabel = byName["Completeness"].label;
+      const riskLabel = byName["Risk"].label;
+      const founderLabel = byName["Founder Signal"].label;
+
+      let classification: "ENGAGE" | "WATCH" | "IGNORE";
+      if (completenessLabel === "insufficient" && score < 35) {
+        classification = "IGNORE";
+      } else if (score >= 62 && riskLabel !== "high" && founderLabel !== "risk") {
+        classification = "ENGAGE";
+      } else if (score >= 38) {
+        classification = "WATCH";
+      } else {
+        classification = "IGNORE";
+      }
+
+      const confidence =
+        completenessLabel === "complete" ? "HIGH" :
+        completenessLabel === "partial" ? "MEDIUM" : "LOW";
+      const nextStep =
+        classification === "ENGAGE" ? "Run full evaluation" :
+        classification === "WATCH" ? "Request more information" : "No action";
+
+      // ── Key signals (top 3 positive agents) ──────────────────────────────
+      const positiveLabels = new Set(["strong", "clear", "low", "complete"]);
+      const keySignals: string[] = agentOutputs
+        .filter((r) => positiveLabels.has(r.label))
+        .slice(0, 3)
+        .map((r) => `${r.name}: ${r.reasoning}`);
+      if (keySignals.length < 3) {
+        for (const r of agentOutputs) {
+          if (keySignals.length >= 3) break;
+          const sig = `${r.name}: ${r.reasoning}`;
+          if (!keySignals.includes(sig)) keySignals.push(sig);
+        }
+      }
+
+      // ── Missing info (red-label agents) ──────────────────────────────────
+      const redLabels = new Set(["unclear", "missing", "none", "risk", "high", "insufficient"]);
+      const missingInfo: string[] = agentOutputs
+        .filter((r) => redLabels.has(r.label))
+        .map((r) => `${r.name}: ${r.reasoning}`);
+
+      return {
+        score,
+        classification,
+        confidence,
+        nextStep,
+        agentOutputs,
+        keySignals,
+        missingInfo,
+      };
     }),
 });
