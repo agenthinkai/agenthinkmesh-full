@@ -11,9 +11,42 @@
  *   - Legacy shared links (no stage) render without error — pill is simply hidden
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
+
+// ── Safe meta tag helpers (mirrors server/pitchMirrorMetaRoute.ts) ─────────────
+function buildPageTitle(stageLabel: string | null): string {
+  if (stageLabel) return `PitchMirror Result — ${stageLabel}`;
+  return "PitchMirror Result";
+}
+
+function buildPageDescription(stageLabel: string | null): string {
+  if (stageLabel) return `Evaluated at: ${stageLabel} · Founder-facing pitch feedback`;
+  return "Shared PitchMirror result · Founder-facing pitch feedback";
+}
+
+/** Inject or update a <meta> tag in document.head. Returns a cleanup function. */
+function setMetaTag(property: string, content: string, isName = false): () => void {
+  const attr = isName ? "name" : "property";
+  let el = document.querySelector<HTMLMetaElement>(`meta[${attr}="${property}"]`);
+  let created = false;
+  if (!el) {
+    el = document.createElement("meta");
+    el.setAttribute(attr, property);
+    document.head.appendChild(el);
+    created = true;
+  }
+  const prev = el.getAttribute("content") ?? "";
+  el.setAttribute("content", content);
+  return () => {
+    if (created) {
+      el?.parentNode?.removeChild(el);
+    } else {
+      el?.setAttribute("content", prev);
+    }
+  };
+}
 
 // ── Design tokens (matches PitchMirror dark theme) ────────────────────────────
 const BG = "#0d0d14";
@@ -87,6 +120,31 @@ export default function PitchMirrorShared() {
   const sections = data.sections as MirrorSections;
   // founderStageLabel is null for legacy shares — pill is hidden gracefully
   const founderStageLabel: string | null = (data as { founderStageLabel?: string | null }).founderStageLabel ?? null;
+
+  // ── Browser-side meta tag injection ────────────────────────────────────────
+  // Social crawlers are handled server-side; this covers real browser visits.
+  useEffect(() => {
+    const title = buildPageTitle(founderStageLabel);
+    const description = buildPageDescription(founderStageLabel);
+
+    const prevTitle = document.title;
+    document.title = title;
+
+    const cleanups = [
+      setMetaTag("description", description, true),
+      setMetaTag("og:type", "website"),
+      setMetaTag("og:title", title),
+      setMetaTag("og:description", description),
+      setMetaTag("twitter:card", "summary", true),
+      setMetaTag("twitter:title", title, true),
+      setMetaTag("twitter:description", description, true),
+    ];
+
+    return () => {
+      document.title = prevTitle;
+      cleanups.forEach((fn) => fn());
+    };
+  }, [founderStageLabel]);
 
   return (
     <div style={{ minHeight: "100vh", background: BG, color: TEXT, fontFamily: "Inter, system-ui, sans-serif" }}>

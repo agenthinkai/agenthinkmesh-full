@@ -2314,3 +2314,16 @@
 - [x] Tests: no private metadata leaks in getShare response
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: no regressions (619 passed / 1 skipped — 18 new tests from pitch.share.test.ts)
+
+## PitchMirror — Stage-Aware OG / Meta Tags for Shared Links
+
+- [x] Server: /api/pitch/share-meta/:token endpoint returns { title, description } — no private data
+- [x] Server: stage-aware description when founderStageLabel present; generic fallback for legacy
+- [x] Client: PitchMirrorShared.tsx sets document.title and injects og/twitter meta tags via useEffect
+- [x] Client: meta tags removed on component unmount (cleanup)
+- [x] Client: legacy links (no stage) use generic description
+- [x] Tests: stage-aware description produced when stage present
+- [x] Tests: legacy link produces generic description
+- [x] Tests: no private content (email, userId, pitchText) in metadata
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: no regressions (658 passed / 1 skipped — 39 new tests from pitch.meta.test.ts)
