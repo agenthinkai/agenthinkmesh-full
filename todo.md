@@ -2339,3 +2339,14 @@
 - [x] Tests: no private content in image URL or alt text
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: no regressions (681 passed / 1 skipped — 23 new tests from pitch.ogimage.test.ts)
+
+## PitchMirror — Canonical URL Tag for Shared Links
+
+- [x] Server: pitchMirrorMetaRoute.ts injects <link rel="canonical" href="[absolute URL]" />
+- [x] Server: canonical present for both new and legacy shared links
+- [x] Client: PitchMirrorShared.tsx useEffect sets canonical link element (cleanup on unmount)
+- [x] Tests: canonical tag present in injected HTML
+- [x] Tests: canonical href matches the absolute shared URL
+- [x] Tests: legacy links also receive canonical tag
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: no regressions (692 passed / 1 skipped — 11 new tests from pitch.canonical.test.ts)

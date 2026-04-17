@@ -31,6 +31,27 @@ function buildPageDescription(stageLabel: string | null): string {
   return "Shared PitchMirror result · Founder-facing pitch feedback";
 }
 
+/** Set or update the canonical <link> in document.head. Returns a cleanup function. */
+function setCanonicalLink(href: string): () => void {
+  let el = document.querySelector<HTMLLinkElement>('link[rel="canonical"]');
+  let created = false;
+  if (!el) {
+    el = document.createElement("link");
+    el.setAttribute("rel", "canonical");
+    document.head.appendChild(el);
+    created = true;
+  }
+  const prev = el.getAttribute("href") ?? "";
+  el.setAttribute("href", href);
+  return () => {
+    if (created) {
+      el?.parentNode?.removeChild(el);
+    } else {
+      el?.setAttribute("href", prev);
+    }
+  };
+}
+
 /** Inject or update a <meta> tag in document.head. Returns a cleanup function. */
 function setMetaTag(property: string, content: string, isName = false): () => void {
   const attr = isName ? "name" : "property";
@@ -131,11 +152,14 @@ export default function PitchMirrorShared() {
   useEffect(() => {
     const title = buildPageTitle(founderStageLabel);
     const description = buildPageDescription(founderStageLabel);
+    // Canonical URL: absolute, no user data, no stage, no query params
+    const canonicalHref = `${window.location.origin}/pitchmirror/r/${token}`;
 
     const prevTitle = document.title;
     document.title = title;
 
     const cleanups = [
+      setCanonicalLink(canonicalHref),
       setMetaTag("description", description, true),
       setMetaTag("og:type", "website"),
       setMetaTag("og:title", title),
@@ -153,7 +177,7 @@ export default function PitchMirrorShared() {
       document.title = prevTitle;
       cleanups.forEach((fn) => fn());
     };
-  }, [founderStageLabel]);
+  }, [founderStageLabel, token]);
 
   return (
     <div style={{ minHeight: "100vh", background: BG, color: TEXT, fontFamily: "Inter, system-ui, sans-serif" }}>

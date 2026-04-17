@@ -81,7 +81,7 @@ export function isSocialCrawler(userAgent: string): boolean {
   );
 }
 
-/** Inject OG meta tags (including og:image) into an HTML string's <head> section. */
+/** Inject OG meta tags (including og:image and canonical link) into an HTML string's <head> section. */
 export function injectOgMetaTags(
   html: string,
   title: string,
@@ -98,6 +98,8 @@ export function injectOgMetaTags(
 
   const metaTags = [
     `  <title>${escapedTitle}</title>`,
+    // Canonical URL — no user data, no stage, no query params
+    `  <link rel="canonical" href="${escapedUrl}" />`,
     `  <meta name="description" content="${escapedDesc}" />`,
     `  <meta property="og:type" content="website" />`,
     `  <meta property="og:title" content="${escapedTitle}" />`,
@@ -112,7 +114,7 @@ export function injectOgMetaTags(
     `  <meta name="twitter:image:alt" content="${escapedImageAlt}" />`,
   ].join("\n");
 
-  // Replace the existing <title> tag and inject OG tags before </head>
+  // Replace the existing <title> tag and inject all tags before </head>
   const withoutTitle = html.replace(/<title>[^<]*<\/title>/, "");
   return withoutTitle.replace("</head>", `${metaTags}\n</head>`);
 }
