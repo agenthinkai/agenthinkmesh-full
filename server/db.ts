@@ -149,13 +149,20 @@ export async function markPitchTriageEscalated(id: number, userId: string): Prom
 }
 
 // ── PitchMirror Share helpers ─────────────────────────────────────────────────────────────────
-export async function createPitchMirrorShare(mirrorResultJson: string): Promise<string | null> {
+export async function createPitchMirrorShare(
+  mirrorResultJson: string,
+  founderStage?: string | null
+): Promise<string | null> {
   const db = await getDb();
   if (!db) return null;
   try {
     const { randomBytes } = await import("crypto");
     const shareToken = randomBytes(24).toString("hex"); // 48-char hex token
-    await db.insert(pitchMirrorShares).values({ shareToken, mirrorResultJson });
+    await db.insert(pitchMirrorShares).values({
+      shareToken,
+      mirrorResultJson,
+      ...(founderStage ? { founderStage } : {}),
+    });
     return shareToken;
   } catch (error) {
     console.error("[Database] Failed to create pitch mirror share:", error);

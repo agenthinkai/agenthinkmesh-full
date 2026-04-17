@@ -532,10 +532,11 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         whatToFix: z.array(z.string()),
         whatsMissing: z.array(z.string()),
       }),
+      founderStage: z.enum(["idea", "building", "early_revenue", "scaling"]).optional(),
     }))
     .mutation(async ({ input }) => {
       const json = JSON.stringify(input.sections);
-      const shareToken = await createPitchMirrorShare(json);
+      const shareToken = await createPitchMirrorShare(json, input.founderStage ?? null);
       if (!shareToken) throw new Error("Failed to create share");
       return { shareToken };
     }),
@@ -550,7 +551,20 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
       if (!row) return null;
       try {
         const sections = JSON.parse(row.mirrorResultJson);
-        return { sections, createdAt: row.createdAt };
+        const STAGE_LABELS: Record<string, string> = {
+          idea: "Exploring idea",
+          building: "Building (no revenue)",
+          early_revenue: "Early revenue",
+          scaling: "Scaling",
+        };
+        const founderStage = row.founderStage ?? null;
+        const founderStageLabel = founderStage ? (STAGE_LABELS[founderStage] ?? null) : null;
+        return {
+          sections,
+          createdAt: row.createdAt,
+          founderStage,
+          founderStageLabel,
+        };
       } catch {
         return null;
       }

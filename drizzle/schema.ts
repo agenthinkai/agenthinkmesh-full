@@ -5,6 +5,7 @@ export const pitchMirrorShares = mysqlTable("pitch_mirror_shares", {
   id: int("id").autoincrement().primaryKey(),
   shareToken: varchar("shareToken", { length: 64 }).notNull().unique(), // random hex token
   mirrorResultJson: text("mirrorResultJson").notNull(), // JSON of MirrorResult.sections
+  founderStage: varchar("founderStage", { length: 32 }), // nullable — absent on legacy rows
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   pmsTokenIdx: index("pms_token_idx").on(table.shareToken),

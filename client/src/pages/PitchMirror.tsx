@@ -573,7 +573,7 @@ export default function PitchMirror() {
                 ← Analyze Another Pitch
               </button>
               <CopyButton result={result} />
-              {!isGuest && <ShareButton sections={result.sections} />}
+              {!isGuest && <ShareButton sections={result.sections} founderStage={result.founderStage} />}
             </div>
 
             {/* ── Post-result sign-in card (guest only, non-blocking) ─────────── */}
@@ -690,7 +690,7 @@ function SectionCard({
   );
 }
 
-function ShareButton({ sections }: { sections: MirrorResult["sections"] }) {
+function ShareButton({ sections, founderStage }: { sections: MirrorResult["sections"]; founderStage?: string }) {
   const [state, setState] = useState<"idle" | "loading" | "copied" | "error">("idle");
   const createShare = trpc.pitch.createShare.useMutation();
 
@@ -698,7 +698,12 @@ function ShareButton({ sections }: { sections: MirrorResult["sections"] }) {
     if (state === "loading") return;
     setState("loading");
     try {
-      const { shareToken } = await createShare.mutateAsync({ sections });
+      const validStages = ["idea", "building", "early_revenue", "scaling"] as const;
+      type ValidStage = typeof validStages[number];
+      const stage = validStages.includes(founderStage as ValidStage)
+        ? (founderStage as ValidStage)
+        : undefined;
+      const { shareToken } = await createShare.mutateAsync({ sections, founderStage: stage });
       const url = `${window.location.origin}/pitchmirror/r/${shareToken}`;
       await navigator.clipboard.writeText(url);
       setState("copied");

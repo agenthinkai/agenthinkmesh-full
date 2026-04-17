@@ -2299,3 +2299,18 @@
 - [x] Client: include selected stage in Copy Feedback and Copy as Markdown output
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: no regressions
+
+## PitchMirror — Founder Stage in Shared Result View
+
+- [x] Server: createShare input accepts optional founderStage field
+- [x] Server: founderStage persisted in pitch_mirror_shares table (new column, nullable, backward compatible)
+- [x] Server: getShare response includes founderStage and founderStageLabel
+- [x] Client: PitchMirror.tsx passes founderStage to createShare mutation
+- [x] Client: PitchMirrorShared.tsx shows "Evaluated at: [stage]" pill when founderStageLabel present
+- [x] Client: PitchMirrorShared.tsx copy output includes "Stage: [label]" when present
+- [x] Client: legacy shared links (no stage) render without error, no placeholder shown
+- [x] Tests: shared result shows stage when present
+- [x] Tests: legacy shared result without stage renders correctly
+- [x] Tests: no private metadata leaks in getShare response
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: no regressions (619 passed / 1 skipped — 18 new tests from pitch.share.test.ts)

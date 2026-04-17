@@ -1,0 +1,1 @@
+ALTER TABLE `pitch_mirror_shares` ADD `founderStage` varchar(32);
