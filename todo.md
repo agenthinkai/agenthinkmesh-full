@@ -2269,3 +2269,19 @@
 - [x] Route: /pitchmirror/r/:token wired in App.tsx
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: 601 passed / 1 skipped (602 total) — no regressions
+
+## PitchMirror — Founder Landing Page
+
+- [x] Static page: /pitchmirror/landing (no backend, no API calls)
+- [x] Section 1: Hero — "See your pitch the way investors do." + CTA "Evaluate my pitch" + "Free to try. No account required."
+- [x] Section 2: What You Get — 3 blocks (What investors see, What to fix, What's missing)
+- [x] Section 3: How It Works — 3 steps (Paste, Runs, Get feedback)
+- [x] Section 4: Sample Output — static fictional company NestPath (2 fixes, 1 missing item)
+- [x] Section 5: CTA Repeat — "Ready to see your pitch clearly?" + "Evaluate my pitch free"
+- [x] Minimal header: PitchMirror logo/text + CTA button only (no full site nav)
+- [x] SEO: title "PitchMirror — See your pitch the way investors do" + meta description
+- [x] Copy rules: no AI/agents/Mesh/Deal Screener/internal system language
+- [x] Mobile responsive (grid-cols-1 sm:grid-cols-3 throughout)
+- [x] Route: /pitchmirror/landing wired in App.tsx
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: 601 passed / 1 skipped (602 total) — no regressions
