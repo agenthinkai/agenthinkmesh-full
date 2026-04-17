@@ -6,9 +6,16 @@
  * Auth flow:
  *   - Unauthenticated: 1 free guest run (sessionStorage gate), no DB write
  *   - Authenticated: existing behavior (pitchMirrorRuns counter, gated flag)
+ *
+ * Founder Stage Selector:
+ *   - 4 options: idea | building | early_revenue | scaling
+ *   - Persisted to localStorage (auth) or sessionStorage (guest) under key "pitchMirrorStage"
+ *   - Passed to pitch.mirror mutation as founderStage
+ *   - Result header shows "Evaluated at: [founderStageLabel]"
+ *   - Copy output includes "Stage: [founderStageLabel]"
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -27,11 +34,23 @@ const AMBER = "#fbbf24";
 const RED = "#f87171";
 
 const GUEST_RUN_KEY = "pitchMirrorGuestRun";
+const STAGE_STORAGE_KEY = "pitchMirrorStage";
+
+type FounderStage = "idea" | "building" | "early_revenue" | "scaling";
+
+const STAGE_OPTIONS: { value: FounderStage; label: string }[] = [
+  { value: "idea", label: "Exploring idea" },
+  { value: "building", label: "Building (no revenue)" },
+  { value: "early_revenue", label: "Early revenue" },
+  { value: "scaling", label: "Scaling" },
+];
 
 type MirrorResult = {
   gated: boolean;
   runsUsed: number;
   freeRunsAllowed: number;
+  founderStage?: string;
+  founderStageLabel?: string;
   sections: {
     whatInvestorsSee: { strengths: string[]; concerns: string[] };
     whatToFix: string[];
@@ -47,6 +66,25 @@ export default function PitchMirror() {
   const [view, setView] = useState<ViewState>("INPUT");
   const [result, setResult] = useState<MirrorResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [founderStage, setFounderStage] = useState<FounderStage>("building");
+
+  const isGuest = !user;
+
+  // ── Restore persisted stage on mount ──────────────────────────────────────
+  useEffect(() => {
+    const storage = isGuest ? sessionStorage : localStorage;
+    const saved = storage.getItem(STAGE_STORAGE_KEY) as FounderStage | null;
+    if (saved && STAGE_OPTIONS.some((o) => o.value === saved)) {
+      setFounderStage(saved);
+    }
+  }, [isGuest]);
+
+  // ── Persist stage on change ────────────────────────────────────────────────
+  function handleStageChange(stage: FounderStage) {
+    setFounderStage(stage);
+    const storage = isGuest ? sessionStorage : localStorage;
+    storage.setItem(STAGE_STORAGE_KEY, stage);
+  }
 
   const mirrorMutation = trpc.pitch.mirror.useMutation({
     onSuccess: (data) => {
@@ -77,7 +115,7 @@ export default function PitchMirror() {
 
     setError(null);
     setView("LOADING");
-    mirrorMutation.mutate({ pitchText: pitchText.trim() });
+    mirrorMutation.mutate({ pitchText: pitchText.trim(), founderStage });
   }
 
   function handleReset() {
@@ -88,7 +126,6 @@ export default function PitchMirror() {
 
   const wordCount = pitchText.trim().split(/\s+/).filter(Boolean).length;
   const charCount = pitchText.length;
-  const isGuest = !user;
 
   return (
     <div
@@ -241,12 +278,52 @@ export default function PitchMirror() {
               onBlur={(e) => (e.currentTarget.style.borderColor = BORDER)}
             />
 
+            {/* ── Founder Stage Selector ─────────────────────────────────────── */}
+            <div style={{ marginTop: 16 }}>
+              <p
+                style={{
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: TEXT2,
+                  margin: "0 0 8px",
+                  letterSpacing: 0.2,
+                }}
+              >
+                My company is at…
+              </p>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                {STAGE_OPTIONS.map((opt) => {
+                  const isActive = founderStage === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      onClick={() => handleStageChange(opt.value)}
+                      style={{
+                        background: isActive ? ACCENT_LIGHT : "rgba(255,255,255,0.04)",
+                        border: `1px solid ${isActive ? "rgba(124,58,237,0.5)" : BORDER}`,
+                        borderRadius: 8,
+                        color: isActive ? "#c084fc" : TEXT2,
+                        fontSize: 12,
+                        fontWeight: isActive ? 700 : 500,
+                        padding: "7px 14px",
+                        cursor: "pointer",
+                        transition: "all 0.15s",
+                        letterSpacing: 0.1,
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginTop: 12,
+                marginTop: 16,
               }}
             >
               <span style={{ fontSize: 11, color: MUTED }}>
@@ -295,7 +372,7 @@ export default function PitchMirror() {
           </div>
         )}
 
-        {/* ── LOADING state ──────────────────────────────────────────────────── */}
+        {/* ── LOADING state ───────────────────────────────────────────────────── */}
         {view === "LOADING" && (
           <div
             style={{
@@ -371,6 +448,29 @@ export default function PitchMirror() {
                     is still shown. Upgrade to continue analyzing pitches.
                   </p>
                 </div>
+              </div>
+            )}
+
+            {/* ── Evaluated-at label ─────────────────────────────────────────── */}
+            {result.founderStageLabel && (
+              <div
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  background: ACCENT_LIGHT,
+                  border: `1px solid rgba(124,58,237,0.3)`,
+                  borderRadius: 20,
+                  padding: "4px 12px",
+                  marginBottom: 20,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: "#c084fc",
+                  letterSpacing: 0.2,
+                }}
+              >
+                <span style={{ opacity: 0.7 }}>Evaluated at:</span>
+                <span>{result.founderStageLabel}</span>
               </div>
             )}
 
@@ -641,7 +741,9 @@ function CopyButton({ result }: { result: MirrorResult }) {
 
   function buildText() {
     const s = result.sections;
+    const stageLabel = result.founderStageLabel ?? "Building (no revenue)";
     const lines: string[] = ["PITCHMIRROR FEEDBACK\n"];
+    lines.push(`Stage: ${stageLabel}\n`);
     lines.push("WHAT INVESTORS SEE");
     lines.push("Strengths:");
     s.whatInvestorsSee.strengths.forEach((x) => lines.push(`  ✓ ${x}`));

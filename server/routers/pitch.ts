@@ -560,9 +560,11 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
     .input(
       z.object({
         pitchText: z.string().min(30, "Pitch must be at least 30 characters").max(3000, "Pitch must be under 3000 characters"),
+        founderStage: z.enum(["idea", "building", "early_revenue", "scaling"]).optional().default("building"),
       })
     )
     .mutation(async ({ input, ctx }) => {
+      const stage = input.founderStage ?? "building";
       const PITCH_MIRROR_FREE_RUNS = 2;
       const isAuthenticated = !!(ctx as { user?: { id: number; pitchMirrorRuns?: number } }).user;
       const authedUser = isAuthenticated ? (ctx as { user: { id: number; pitchMirrorRuns?: number } }).user : null;
@@ -723,6 +725,68 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
       if (strengths.length === 0) strengths.push("The core idea is clear enough to evaluate.");
       if (concerns.length === 0) concerns.push("Investors may want more detail to make a confident assessment.");
 
+      // ── Stage-specific wording overrides ────────────────────────────────
+      // Traction concern overrides by stage
+      const TRACTION_CONCERN_BY_STAGE: Record<string, Record<string, string>> = {
+        idea: {
+          early: "Clarify who this is for, why they care, and what early signals suggest demand.",
+          none: "Clarify who this is for, why they care, and what early signals suggest demand.",
+        },
+        building: {
+          early: "Add early validation signals such as pilot interest, waitlist activity, user interviews, or early usage.",
+          none: "Add early validation signals such as pilot interest, waitlist activity, user interviews, or early usage.",
+        },
+        early_revenue: {
+          early: "Add revenue, growth, usage, and retention signals to show momentum.",
+          none: "Add revenue, growth, usage, and retention signals to show momentum.",
+        },
+        scaling: {
+          early: "Add ARR, growth rate, retention, and cohort evidence to support the case.",
+          none: "Add ARR, growth rate, retention, and cohort evidence to support the case.",
+        },
+      };
+
+      // Business model concern overrides by stage
+      const BM_CONCERN_BY_STAGE: Record<string, Record<string, string>> = {
+        idea: {
+          partial: "The revenue model is still unresolved — that's expected at this stage, but worth sketching out.",
+          missing: "The revenue model is unresolved — that's acceptable at the idea stage, but investors will ask about it.",
+        },
+        building: {
+          partial: "This could be clearer — investors will want to understand exactly how revenue is generated.",
+          missing: "Investors may question how the business makes money — the revenue model is not stated.",
+        },
+        early_revenue: {
+          partial: "At this stage, investors expect a clear and validated revenue model — clarify your primary stream.",
+          missing: "A missing revenue model is a major concern at the early revenue stage — add it explicitly.",
+        },
+        scaling: {
+          partial: "At scale, investors expect a fully defined model with unit economics — this needs to be explicit.",
+          missing: "A missing revenue model is a critical gap at the scaling stage — this must be addressed.",
+        },
+      };
+
+      // Fix prefix by stage
+      const FIX_PREFIX: Record<string, string> = {
+        idea: "To validate your idea, add",
+        building: "To show investor readiness, add",
+        early_revenue: "To demonstrate traction, add",
+        scaling: "To meet investor expectations, add",
+      };
+      const fixPrefix = FIX_PREFIX[stage] ?? FIX_PREFIX.building;
+
+      // Apply stage overrides to concern phrases
+      const tractionConcernOverride = TRACTION_CONCERN_BY_STAGE[stage];
+      const bmConcernOverride = BM_CONCERN_BY_STAGE[stage];
+      if (tractionConcernOverride) {
+        if (tractionConcernOverride.early) CONCERN_PHRASES["Traction"].early = tractionConcernOverride.early;
+        if (tractionConcernOverride.none) CONCERN_PHRASES["Traction"].none = tractionConcernOverride.none;
+      }
+      if (bmConcernOverride) {
+        if (bmConcernOverride.partial) CONCERN_PHRASES["Business Model"].partial = bmConcernOverride.partial;
+        if (bmConcernOverride.missing) CONCERN_PHRASES["Business Model"].missing = bmConcernOverride.missing;
+      }
+
       // SECTION 2: What to Fix Before Sending
       //   Map negative agents to specific, actionable improvements
       const FIX_MAP: Record<string, Record<string, string>> = {
@@ -757,7 +821,11 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         const r = byName[agent.name];
         if (NEGATIVE_LABELS.has(r.label)) {
           const fix = FIX_MAP[agent.name]?.[r.label];
-          if (fix && fixes.length < 5) fixes.push(fix);
+          if (fix && fixes.length < 5) {
+            // Prepend stage-specific prefix to fix items
+            const prefixed = fix.replace(/^(Add|Clarify|Include|Review|Address|Acknowledge|The pitch)/i, (m) => `${fixPrefix} ${m.charAt(0).toLowerCase()}${m.slice(1)}`);
+            fixes.push(prefixed !== fix ? prefixed : `${fixPrefix} ${fix.charAt(0).toLowerCase()}${fix.slice(1)}`);
+          }
         }
       }
       if (fixes.length === 0) fixes.push("Your pitch covers the key areas well. Consider tightening the language and adding a clear ask.");
@@ -790,10 +858,19 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         }
       }
 
+      const STAGE_LABELS: Record<string, string> = {
+        idea: "Exploring idea",
+        building: "Building (no revenue)",
+        early_revenue: "Early revenue",
+        scaling: "Scaling",
+      };
+
       return {
         gated: isGated,
         runsUsed: isAuthenticated ? currentRuns + 1 : 1,
         freeRunsAllowed: PITCH_MIRROR_FREE_RUNS,
+        founderStage: stage,
+        founderStageLabel: STAGE_LABELS[stage] ?? "Building (no revenue)",
         sections: {
           whatInvestorsSee: { strengths, concerns },
           whatToFix: fixes,

@@ -2285,3 +2285,17 @@
 - [x] Route: /pitchmirror/landing wired in App.tsx
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: 601 passed / 1 skipped (602 total) — no regressions
+
+## PitchMirror — Founder Stage Selector
+
+- [x] Server: pitch.mirror accepts optional founderStage input (enum: idea | building | early_revenue | scaling)
+- [x] Server: transformation layer applies stage-specific wording for traction gaps, business model gaps, fix prefixes
+- [x] Server: default stage = building (matches current behavior)
+- [x] Client: stage selector UI below textarea, above submit button — "My company is at…"
+- [x] Client: 4 options (Exploring idea / Building (no revenue) / Early revenue / Scaling), default = Building
+- [x] Client: persist selection — localStorage for authenticated, sessionStorage for guests
+- [x] Client: pass selected stage to pitch.mirror mutation
+- [x] Client: show "Evaluated at: [stage]" label in result header
+- [x] Client: include selected stage in Copy Feedback and Copy as Markdown output
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: no regressions
