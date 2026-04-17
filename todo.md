@@ -2214,3 +2214,12 @@
 - [x] UI: handleEscalate calls markEscalated mutation with savedTriageId (fire-and-forget)
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: 601 passed / 1 skipped (602 total) — no regressions
+
+## Pitch Triage History — Funnel Visibility
+
+- [x] UI: header summary line above date range toggle — "N triages · N escalated · N% conversion"
+- [x] UI: summary updates dynamically with date range filter
+- [x] UI: escalation badge "↑ Escalated" (green, subtle) on list rows where escalatedAt is set
+- [x] UI: contextual empty state when date range + filters = 0 rows (e.g. "No triages in the last 7 days")
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: 601 passed / 1 skipped (602 total) — no regressions

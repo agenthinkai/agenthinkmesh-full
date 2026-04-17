@@ -1578,9 +1578,21 @@ function HistoryTab({
   };
 
   const DATE_RANGE_LABELS: Record<DateRange, string> = { "7d": "Last 7 days", "30d": "Last 30 days", "all": "All time" };
+  const conversionRate = engageTotal > 0 ? Math.round((escalatedCount / engageTotal) * 100) : 0;
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* Header summary */}
+      <div style={{ color: MUTED, fontSize: 11, marginBottom: 2, letterSpacing: 0.2 }}>
+        <span style={{ color: TEXT2, fontWeight: 600 }}>{rows.length}</span> triages
+        {" · "}
+        <span style={{ color: "#4ade80", fontWeight: 600 }}>{escalatedCount}</span> escalated
+        {" · "}
+        <span style={{ color: escalatedCount > 0 ? "#fbbf24" : MUTED, fontWeight: 600 }}>
+          {conversionRate}% conversion
+        </span>
+      </div>
+
       {/* Date range toggle */}
       <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
         {(["7d", "30d", "all"] as DateRange[]).map((range) => {
@@ -1656,8 +1668,30 @@ function HistoryTab({
       </div>
 
       {filteredRows.length === 0 && (
-        <div style={{ textAlign: "center", padding: 32, color: MUTED, fontSize: 13 }}>
-          No results match the selected filters.
+        <div
+          style={{
+            background: BG2,
+            border: `1px solid ${BORDER}`,
+            borderRadius: 10,
+            padding: "32px 24px",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ fontSize: 24, marginBottom: 10 }}>🗓</div>
+          <p style={{ color: TEXT2, fontSize: 13, fontWeight: 600, marginBottom: 4 }}>
+            {rows.length === 0
+              ? dateRange === "7d"
+                ? "No triages in the last 7 days"
+                : dateRange === "30d"
+                ? "No triages in the last 30 days"
+                : "No triages yet"
+              : "No triages match the selected filters"}
+          </p>
+          <p style={{ color: MUTED, fontSize: 11 }}>
+            {rows.length === 0 && dateRange !== "all"
+              ? "Try switching to \"All time\" to see older results."
+              : "Adjust the classification filters above to see more results."}
+          </p>
         </div>
       )}
 
@@ -1749,6 +1783,22 @@ function HistoryTab({
                     }}
                   >
                     RE-RUN
+                  </span>
+                )}
+                {row.escalatedAt && (
+                  <span
+                    style={{
+                      fontSize: 9,
+                      color: "#4ade80",
+                      background: "rgba(34,197,94,0.10)",
+                      border: "1px solid rgba(34,197,94,0.22)",
+                      borderRadius: 4,
+                      padding: "1px 6px",
+                      letterSpacing: 0.3,
+                      fontWeight: 600,
+                    }}
+                  >
+                    ↑ Escalated
                   </span>
                 )}
               </div>
