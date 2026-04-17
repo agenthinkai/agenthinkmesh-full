@@ -272,37 +272,49 @@ export const pitchRouter = router({
           name: "Market Signal",
           labels: ["strong", "weak", "unclear"],
           fallback: "weak",
-          systemPrompt: `You are a market signal analyst. Evaluate the pitch and return ONLY valid JSON: {"label": "strong"|"weak"|"unclear", "reasoning": "<max 18 words>"}`,
+          systemPrompt: `You are a market signal analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) cite a specific fact from the pitch text, e.g. market size, named competitor, geography, or growth rate; (2) reasoning MUST be ≤18 words; (3) NEVER use generic phrases like "the pitch mentions" or "there is potential".
+Format: {"label": "strong"|"weak"|"unclear", "reasoning": "<concrete signal from pitch, ≤18 words>"}`,
         },
         {
           name: "Business Model",
           labels: ["clear", "weak", "missing"],
           fallback: "weak",
-          systemPrompt: `You are a business model analyst. Evaluate the pitch and return ONLY valid JSON: {"label": "clear"|"weak"|"missing", "reasoning": "<max 18 words>"}`,
+          systemPrompt: `You are a business model analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) cite the specific revenue mechanism stated (e.g. SaaS subscription, transaction fee, licensing); (2) reasoning MUST be ≤18 words; (3) if no model is stated, label="missing" and say what is absent.
+Format: {"label": "clear"|"weak"|"missing", "reasoning": "<concrete signal from pitch, ≤18 words>"}`,
         },
         {
           name: "Traction",
           labels: ["strong", "early", "none"],
           fallback: "early",
-          systemPrompt: `You are a traction analyst. Evaluate the pitch and return ONLY valid JSON: {"label": "strong"|"early"|"none", "reasoning": "<max 18 words>"}`,
+          systemPrompt: `You are a traction analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) quote or paraphrase a specific metric from the pitch (e.g. "$120k ARR", "3 pilots signed", "10k MAU"); (2) reasoning MUST be ≤18 words; (3) if no metrics are present, label="none" and state that.
+Format: {"label": "strong"|"early"|"none", "reasoning": "<concrete signal from pitch, ≤18 words>"}`,
         },
         {
           name: "Founder Signal",
           labels: ["strong", "neutral", "risk"],
           fallback: "neutral",
-          systemPrompt: `You are a founder signal analyst. Evaluate the pitch and return ONLY valid JSON: {"label": "strong"|"neutral"|"risk", "reasoning": "<max 18 words>"}`,
+          systemPrompt: `You are a founder signal analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) reference a specific credential, prior exit, domain tenure, or red flag mentioned in the pitch; (2) reasoning MUST be ≤18 words; (3) if no founder info is present, label="neutral" and note the absence.
+Format: {"label": "strong"|"neutral"|"risk", "reasoning": "<concrete signal from pitch, ≤18 words>"}`,
         },
         {
           name: "Risk",
           labels: ["low", "medium", "high"],
           fallback: "medium",
-          systemPrompt: `You are a risk analyst. Evaluate the pitch and return ONLY valid JSON: {"label": "low"|"medium"|"high", "reasoning": "<max 18 words>"}`,
+          systemPrompt: `You are a risk analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) name the single most significant risk factor visible in the pitch (regulatory, competitive, execution, market timing, or capital); (2) reasoning MUST be ≤18 words; (3) be specific — cite the actual risk, not a category.
+Format: {"label": "low"|"medium"|"high", "reasoning": "<concrete risk from pitch, ≤18 words>"}`,
         },
         {
           name: "Completeness",
           labels: ["complete", "partial", "insufficient"],
           fallback: "partial",
-          systemPrompt: `You are a pitch completeness analyst. Evaluate the pitch and return ONLY valid JSON: {"label": "complete"|"partial"|"insufficient", "reasoning": "<max 18 words>"}`,
+          systemPrompt: `You are a pitch completeness analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) list the specific missing elements by name (e.g. "no financials", "no team info", "no market size"); (2) reasoning MUST be ≤18 words; (3) "complete" requires market, model, traction, and team all present.
+Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific missing fields or confirmation, ≤18 words>"}`,
         },
       ];
 
@@ -392,23 +404,35 @@ export const pitchRouter = router({
       const riskLabel = byName["Risk"].label;
       const founderLabel = byName["Founder Signal"].label;
 
+      // Confidence guardrail: insufficient completeness always → LOW confidence
+      const confidence =
+        completenessLabel === "complete" ? "HIGH" :
+        completenessLabel === "partial" ? "MEDIUM" : "LOW";
+
       let classification: "ENGAGE" | "WATCH" | "IGNORE";
       if (completenessLabel === "insufficient" && score < 35) {
         classification = "IGNORE";
       } else if (score >= 62 && riskLabel !== "high" && founderLabel !== "risk") {
-        classification = "ENGAGE";
+        // Guardrail: insufficient completeness downgrades ENGAGE → WATCH
+        classification = confidence === "LOW" ? "WATCH" : "ENGAGE";
       } else if (score >= 38) {
         classification = "WATCH";
       } else {
         classification = "IGNORE";
       }
 
-      const confidence =
-        completenessLabel === "complete" ? "HIGH" :
-        completenessLabel === "partial" ? "MEDIUM" : "LOW";
       const nextStep =
         classification === "ENGAGE" ? "Run full evaluation" :
         classification === "WATCH" ? "Request more information" : "No action";
+
+      // ── Top 2 missing fields (for confidence guardrail warning) ──────────
+      // These are the highest-weight agents with red-tier labels
+      const redLabelsSet = new Set(["unclear", "missing", "none", "risk", "high", "insufficient"]);
+      const topMissingFields: string[] = agentOutputs
+        .filter((r) => redLabelsSet.has(r.label))
+        .sort((a, b) => (WEIGHTS[b.name] ?? 0) - (WEIGHTS[a.name] ?? 0))
+        .slice(0, 2)
+        .map((r) => r.name);
 
       // ── Key signals (top 3 positive agents) ──────────────────────────────
       const positiveLabels = new Set(["strong", "clear", "low", "complete"]);
@@ -438,6 +462,7 @@ export const pitchRouter = router({
         agentOutputs,
         keySignals,
         missingInfo,
+        topMissingFields,
       };
     }),
 });

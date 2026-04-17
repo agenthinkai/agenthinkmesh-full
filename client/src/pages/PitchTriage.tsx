@@ -6,6 +6,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useLocation } from "wouter";
+import { useHistoryState } from "wouter/use-browser-location";
 import { trpc } from "@/lib/trpc";
 import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ interface TriageResult {
   agentOutputs: AgentOutput[];
   keySignals: string[];
   missingInfo: string[];
+  topMissingFields: string[];
 }
 
 // ── Label chip colour logic ───────────────────────────────────────────────────
@@ -93,6 +95,7 @@ type PageState = "INPUT" | "LOADING" | "RESULTS";
 
 export default function PitchTriage() {
   const [, navigate] = useLocation();
+  const routerState = useHistoryState() as { pitchText?: string } | null;
   const [pageState, setPageState] = useState<PageState>("INPUT");
   const [pitchText, setPitchText] = useState("");
   const [result, setResult] = useState<TriageResult | null>(null);
@@ -116,13 +119,22 @@ export default function PitchTriage() {
     },
   });
 
-  // Pre-fill from sessionStorage escalation (from DealScreener "Fast Triage" link)
+  // Pre-fill from router state (primary) or sessionStorage (fallback)
+  // Router state is set by navigate("/pitch-triage", { state: { pitchText } })
+  // sessionStorage is set by the DealScreener "Fast Triage" link (href-based navigation)
   useEffect(() => {
+    // Primary: wouter history state (reliable across same-origin SPA navigation)
+    if (routerState?.pitchText) {
+      setPitchText(routerState.pitchText);
+      return;
+    }
+    // Fallback: sessionStorage (for href-based navigation or cross-tab scenarios)
     const saved = sessionStorage.getItem("pitchTriageEscalation");
     if (saved) {
       setPitchText(saved);
       sessionStorage.removeItem("pitchTriageEscalation");
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Staggered loading animation
@@ -166,8 +178,10 @@ export default function PitchTriage() {
 
   function handleEscalate() {
     if (!result) return;
+    // Primary: pass via wouter router state (no storage race conditions)
+    // Fallback: also write sessionStorage in case /deals does a hard reload
     sessionStorage.setItem("pitchTriageEscalation", pitchText);
-    navigate("/deals");
+    navigate("/deals", { state: { pitchTriageText: pitchText } });
   }
 
   // ── Classification banner config ─────────────────────────────────────────
@@ -588,6 +602,60 @@ export default function PitchTriage() {
                   </Button>
                 </div>
               </div>
+
+              {/* Confidence guardrail warning banner */}
+              {result.confidence === "LOW" && (
+                <div
+                  style={{
+                    background: "rgba(245,158,11,0.10)",
+                    border: "1px solid rgba(245,158,11,0.4)",
+                    borderRadius: 10,
+                    padding: "12px 16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 6,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 15 }}>⚠️</span>
+                    <span
+                      style={{
+                        color: AMBER,
+                        fontSize: 12,
+                        fontWeight: 700,
+                        letterSpacing: 0.5,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Low Confidence — Insufficient Pitch Data
+                    </span>
+                  </div>
+                  <p style={{ color: TEXT2, fontSize: 12, margin: 0, lineHeight: 1.5 }}>
+                    The pitch lacks enough information for a reliable triage. Provide more detail before
+                    committing to a full evaluation.
+                  </p>
+                  {result.topMissingFields.length > 0 && (
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 2 }}>
+                      <span style={{ color: MUTED, fontSize: 11 }}>Top missing fields:</span>
+                      {result.topMissingFields.map((field) => (
+                        <span
+                          key={field}
+                          style={{
+                            background: "rgba(245,158,11,0.15)",
+                            color: AMBER,
+                            borderRadius: 4,
+                            padding: "2px 8px",
+                            fontSize: 11,
+                            fontWeight: 600,
+                          }}
+                        >
+                          {field}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Agent grid */}
               <div

@@ -2157,3 +2157,15 @@
 - [x] DealScreener: sessionStorage pitchTriageEscalation read on mount, auto-fills dealText + switches to expert mode
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: 601 passed / 1 skipped (602 total) — no regressions
+
+## Pitch Triage Stability Refinements
+
+- [x] Escalation robustness: wouter router state (primary) + sessionStorage (fallback) in PitchTriage.tsx handleEscalate
+- [x] Escalation robustness: DealScreener reads window.history.state.pitchTriageText on mount, clears after consumption, falls back to sessionStorage
+- [x] Confidence guardrail: insufficient completeness always sets confidence=LOW before classification
+- [x] Confidence guardrail: ENGAGE→WATCH downgrade when confidence=LOW (score>=62 but insufficient data)
+- [x] Confidence guardrail: warning banner shown in RESULTS when confidence=LOW, with top 2 missing fields as amber chips
+- [x] Reasoning quality: all 6 agent system prompts updated to demand concrete signals from pitch text, forbid generic phrases, cite specific metrics/credentials/risks
+- [x] topMissingFields added to server response (top 2 highest-weight red-label agents)
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: 601 passed / 1 skipped (602 total) — no regressions

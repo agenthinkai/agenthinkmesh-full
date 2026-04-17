@@ -1756,12 +1756,25 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
     }
   }, [pendingPaymentSessionId]);
 
-  // Pre-fill from Pitch Triage escalation (sessionStorage key set by PitchTriage.tsx)
+  // Pre-fill from Pitch Triage escalation
+  // Primary source: wouter router state (set by navigate("/deals", { state: { pitchTriageText } }))
+  // Fallback source: sessionStorage (set by handleEscalate as belt-and-suspenders)
   useEffect(() => {
+    // Primary: router state (reliable, no race conditions)
+    const histState = window.history.state as { pitchTriageText?: string } | null;
+    if (histState?.pitchTriageText) {
+      setDealText(histState.pitchTriageText);
+      setGuidedMode(false);
+      // Clear from history state to prevent re-fill on back/forward navigation
+      const { pitchTriageText: _removed, ...rest } = histState;
+      window.history.replaceState(rest, "");
+      return;
+    }
+    // Fallback: sessionStorage
     const triageText = sessionStorage.getItem("pitchTriageEscalation");
     if (triageText) {
       setDealText(triageText);
-      setGuidedMode(false); // Switch to free-text mode so the text is visible
+      setGuidedMode(false);
       sessionStorage.removeItem("pitchTriageEscalation");
     }
   }, []);
