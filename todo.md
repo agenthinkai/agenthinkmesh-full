@@ -2367,3 +2367,11 @@
 - [x] Client: mobile responsive
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: no regressions (693 passed / 1 skipped — no new tests needed, frontend-only change)
+
+## Homepage — PitchMirror CTA Click Tracking
+
+- [x] Client: trackEvent helper added (gtag → analytics endpoint → no-op fallback)
+- [x] Client: pitchmirror_cta_click event fired on CTA click in Home.tsx (fire-and-forget, does not block navigation)
+- [x] Client: pitchmirror_landing_view event fired on mount in PitchMirrorLanding.tsx
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: no regressions (693 passed / 1 skipped — no new tests needed, frontend-only change)

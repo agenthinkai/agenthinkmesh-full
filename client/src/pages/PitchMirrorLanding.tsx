@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { Link } from "wouter";
+import { trackEvent } from "@/lib/analytics";
 
 // ─── SEO helper ──────────────────────────────────────────────────────────────
 function useSEO(title: string, description: string) {
@@ -55,6 +56,11 @@ export default function PitchMirrorLanding() {
     "PitchMirror — See your pitch the way investors do",
     "Get structured feedback on your startup pitch before you send it."
   );
+
+  // Fire landing view event once on mount (fire-and-forget)
+  useEffect(() => {
+    trackEvent("pitchmirror_landing_view", { source: "landing_page" });
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#0B1629] text-white font-sans">

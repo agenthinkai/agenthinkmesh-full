@@ -13,6 +13,7 @@ import {
   ChevronRight, Layers, Network, Cpu, Play, X, TrendingUp,
   Database, Activity, Menu
 } from "lucide-react";
+import { trackEvent } from "@/lib/analytics";
 
 // ── Demo Mode Context ────────────────────────────────────────────────────────
 // Demo mode is stored in sessionStorage so it persists across page navigations
@@ -404,7 +405,15 @@ export default function Home() {
               </div>
             </div>
             <Link href="/pitchmirror/landing" className="flex-shrink-0">
-              <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600/20 border border-violet-500/35 text-violet-300 text-sm font-semibold hover:bg-violet-600/30 hover:border-violet-400/55 hover:text-white transition-all duration-200 whitespace-nowrap">
+              <button
+                onClick={() =>
+                  trackEvent("pitchmirror_cta_click", {
+                    location: "homepage_strip",
+                    label: "Try PitchMirror",
+                  })
+                }
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600/20 border border-violet-500/35 text-violet-300 text-sm font-semibold hover:bg-violet-600/30 hover:border-violet-400/55 hover:text-white transition-all duration-200 whitespace-nowrap"
+              >
                 Try PitchMirror <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </Link>
