@@ -255,6 +255,7 @@ export const pitchRouter = router({
     .input(
       z.object({
         pitchText: z.string().min(10).max(20000),
+        parentTriageId: z.number().int().positive().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -467,6 +468,7 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         missingInfo: JSON.stringify(missingInfo),
         topMissingFields: JSON.stringify(topMissingFields),
         nextStep,
+        parentTriageId: input.parentTriageId ?? null,
       }).catch((err) => console.error("[PitchTriage] Failed to persist history:", err));
 
       return {

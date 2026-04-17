@@ -2183,3 +2183,20 @@
 - [x] UI: History detail — inline expand on row click, shows score/classification/confidence/keySignals/missingInfo/agentOutputs
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: 601 passed / 1 skipped (602 total) — no regressions
+
+## Pitch Triage History — Filters, Export, Re-Triage
+
+- [x] Schema: add parentTriageId (nullable int) to pitch_triages table
+- [x] DB: push migration (raw SQL via migrate-pitch-triages.mjs)
+- [x] Server: savePitchTriage accepts optional parentTriageId
+- [x] Server: pitch.triage mutation accepts optional parentTriageId input
+- [x] Server: pitch.history returns parentTriageId field
+- [x] UI: classification filter chips (ENGAGE / WATCH / IGNORE) with live counts above history list
+- [x] UI: multi-select filter chips, default = all selected, active = classification color, inactive = muted
+- [x] UI: "Copy Summary" button in detail view (score, classification, confidence, key signals, missing info)
+- [x] UI: "Copy as Markdown" button in detail view (structured markdown output with agent outputs)
+- [x] UI: "Re-run Triage" button in detail view — prefills Triage tab textarea, does NOT auto-run
+- [x] UI: Re-run passes parentTriageId to mutation so new record links to original
+- [x] UI: "RE-RUN" badge on history list rows that have a parentTriageId
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: 601 passed / 1 skipped (602 total) — no regressions

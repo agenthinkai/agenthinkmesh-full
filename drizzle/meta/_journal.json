@@ -428,6 +428,13 @@
       "when": 1776403890452,
       "tag": "0060_same_doctor_doom",
       "breakpoints": true
+    },
+    {
+      "idx": 61,
+      "version": "5",
+      "when": 1776406289823,
+      "tag": "0061_white_nightshade",
+      "breakpoints": true
     }
   ]
 }

@@ -115,6 +115,7 @@ export default function PitchTriage() {
   const [result, setResult] = useState<TriageResult | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedHistoryId, setSelectedHistoryId] = useState<number | null>(null);
+  const [pendingParentId, setPendingParentId] = useState<number | null>(null);
 
   // History queries
   const historyQuery = trpc.pitch.history.useQuery(undefined, {
@@ -191,7 +192,20 @@ export default function PitchTriage() {
     if (!pitchText.trim() || pitchText.trim().length < 10) return;
     setError(null);
     setPageState("LOADING");
-    triage.mutate({ pitchText: pitchText.trim() });
+    triage.mutate({ pitchText: pitchText.trim(), parentTriageId: pendingParentId ?? undefined });
+    setPendingParentId(null);
+  }
+
+  // Called from HistoryTab "Re-run Triage" button
+  function handleRetriage(previewText: string, parentId: number) {
+    setPitchText(previewText);
+    setPendingParentId(parentId);
+    setSelectedHistoryId(null);
+    setActiveTab("triage");
+    setPageState("INPUT");
+    setResult(null);
+    setError(null);
+    setCompletedAgents(new Set());
   }
 
   function handleReset() {
@@ -333,6 +347,7 @@ export default function PitchTriage() {
               historyItemQuery={historyItemQuery}
               classConfig={classConfig}
               scoreBadgeColor={scoreBadgeColor}
+              onRetriage={handleRetriage}
             />
           )}
 
@@ -970,6 +985,7 @@ interface HistoryTabProps {
   historyItemQuery: { data?: PitchTriageRow; isLoading: boolean };
   classConfig: Record<string, { bg: string; border: string; text: string; label: string; desc: string }>;
   scoreBadgeColor: (score: number) => { ring: string; text: string };
+  onRetriage: (previewText: string, parentId: number) => void;
 }
 
 function HistoryTab({
@@ -979,12 +995,49 @@ function HistoryTab({
   historyItemQuery,
   classConfig,
   scoreBadgeColor,
+  onRetriage,
 }: HistoryTabProps) {
   const BORDER = "rgba(255,255,255,0.08)";
   const MUTED = "rgba(255,255,255,0.45)";
   const TEXT2 = "rgba(255,255,255,0.7)";
   const BG2 = "rgba(255,255,255,0.04)";
   const ACCENT = "#7c3aed";
+
+  // Filter chip state — default all selected
+  const [activeFilters, setActiveFilters] = useState<Set<string>>(
+    () => new Set(["ENGAGE", "WATCH", "IGNORE"])
+  );
+  const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+
+  function toggleFilter(cls: string) {
+    setActiveFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(cls)) {
+        // Don't allow deselecting all
+        if (next.size > 1) next.delete(cls);
+      } else {
+        next.add(cls);
+      }
+      return next;
+    });
+  }
+
+  function copyToClipboard(text: string) {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopyState("copied");
+      setTimeout(() => setCopyState("idle"), 2000);
+    }).catch(() => {
+      // Fallback
+      const el = document.createElement("textarea");
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setCopyState("copied");
+      setTimeout(() => setCopyState("idle"), 2000);
+    });
+  }
 
   if (historyQuery.isLoading) {
     return (
@@ -1378,14 +1431,169 @@ function HistoryTab({
             <span style={{ color: TEXT2, fontSize: 12, fontWeight: 600 }}>{item.nextStep}</span>
           </div>
         )}
+
+        {/* Action bar: Copy + Re-run */}
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", paddingTop: 4 }}>
+          {/* Copy Summary */}
+          <button
+            onClick={() => {
+              const summary = [
+                `PITCH TRIAGE RESULT`,
+                `Date: ${fmtKuwait(item.createdAt)}`,
+                `Score: ${item.score}/100`,
+                `Classification: ${item.classification}`,
+                `Confidence: ${item.confidence}`,
+                ``,
+                `KEY SIGNALS`,
+                ...keySignals.map((s) => `  • ${s}`),
+                ``,
+                `MISSING / WEAK`,
+                ...missingInfo.map((s) => `  • ${s}`),
+                ``,
+                `NEXT STEP: ${item.nextStep ?? "N/A"}`,
+              ].join("\n");
+              copyToClipboard(summary);
+            }}
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: `1px solid ${BORDER}`,
+              borderRadius: 6,
+              color: copyState === "copied" ? "#4ade80" : TEXT2,
+              fontSize: 12,
+              fontWeight: 600,
+              padding: "7px 14px",
+              cursor: "pointer",
+              transition: "all 0.15s",
+            }}
+          >
+            {copyState === "copied" ? "✓ Copied!" : "📋 Copy Summary"}
+          </button>
+
+          {/* Copy as Markdown */}
+          <button
+            onClick={() => {
+              const md = [
+                `## Pitch Triage Result`,
+                ``,
+                `**Date:** ${fmtKuwait(item.createdAt)}  `,
+                `**Score:** ${item.score}/100  `,
+                `**Classification:** ${item.classification}  `,
+                `**Confidence:** ${item.confidence}  `,
+                ``,
+                `### Key Signals`,
+                ...keySignals.map((s) => `- ${s}`),
+                ``,
+                `### Missing / Weak`,
+                ...missingInfo.map((s) => `- ${s}`),
+                ``,
+                `### Agent Outputs`,
+                ...agentOutputs.map((a) => `- **${a.name}** \`${a.label}\` — ${a.reasoning}`),
+                ``,
+                `**Next Step:** ${item.nextStep ?? "N/A"}`,
+              ].join("\n");
+              copyToClipboard(md);
+            }}
+            style={{
+              background: "rgba(255,255,255,0.06)",
+              border: `1px solid ${BORDER}`,
+              borderRadius: 6,
+              color: copyState === "copied" ? "#4ade80" : TEXT2,
+              fontSize: 12,
+              fontWeight: 600,
+              padding: "7px 14px",
+              cursor: "pointer",
+              transition: "all 0.15s",
+            }}
+          >
+            {copyState === "copied" ? "✓ Copied!" : "✍️ Copy as Markdown"}
+          </button>
+
+          {/* Re-run Triage */}
+          <button
+            onClick={() => onRetriage(item.pitchPreview, item.id)}
+            style={{
+              background: "rgba(124,58,237,0.12)",
+              border: "1px solid rgba(124,58,237,0.35)",
+              borderRadius: 6,
+              color: "#a78bfa",
+              fontSize: 12,
+              fontWeight: 600,
+              padding: "7px 14px",
+              cursor: "pointer",
+              transition: "all 0.15s",
+              marginLeft: "auto",
+            }}
+          >
+            ⚡ Re-run Triage
+          </button>
+        </div>
       </div>
     );
   }
 
   // ── List view ────────────────────────────────────────────────────────────
+  // Counts per classification
+  const counts = { ENGAGE: 0, WATCH: 0, IGNORE: 0 };
+  for (const r of rows) {
+    if (r.classification in counts) counts[r.classification as keyof typeof counts]++;
+  }
+  const filteredRows = rows.filter((r) => activeFilters.has(r.classification));
+
+  const CHIP_COLORS: Record<string, { active: { bg: string; border: string; text: string }; inactive: { bg: string; border: string; text: string } }> = {
+    ENGAGE: {
+      active: { bg: "rgba(34,197,94,0.18)", border: "rgba(34,197,94,0.5)", text: "#4ade80" },
+      inactive: { bg: "rgba(255,255,255,0.04)", border: BORDER, text: MUTED },
+    },
+    WATCH: {
+      active: { bg: "rgba(245,158,11,0.18)", border: "rgba(245,158,11,0.5)", text: "#fbbf24" },
+      inactive: { bg: "rgba(255,255,255,0.04)", border: BORDER, text: MUTED },
+    },
+    IGNORE: {
+      active: { bg: "rgba(239,68,68,0.18)", border: "rgba(239,68,68,0.5)", text: "#f87171" },
+      inactive: { bg: "rgba(255,255,255,0.04)", border: BORDER, text: MUTED },
+    },
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {rows.map((row) => {
+      {/* Filter chips */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+        {(["ENGAGE", "WATCH", "IGNORE"] as const).map((cls) => {
+          const isActive = activeFilters.has(cls);
+          const colors = isActive ? CHIP_COLORS[cls].active : CHIP_COLORS[cls].inactive;
+          return (
+            <button
+              key={cls}
+              onClick={() => toggleFilter(cls)}
+              style={{
+                background: colors.bg,
+                border: `1px solid ${colors.border}`,
+                borderRadius: 20,
+                color: colors.text,
+                fontSize: 11,
+                fontWeight: 700,
+                padding: "4px 12px",
+                cursor: "pointer",
+                letterSpacing: 0.4,
+                transition: "all 0.15s",
+              }}
+            >
+              {cls} · {counts[cls]}
+            </button>
+          );
+        })}
+        <span style={{ color: MUTED, fontSize: 11, alignSelf: "center", marginLeft: 4 }}>
+          {filteredRows.length} of {rows.length} shown
+        </span>
+      </div>
+
+      {filteredRows.length === 0 && (
+        <div style={{ textAlign: "center", padding: 32, color: MUTED, fontSize: 13 }}>
+          No results match the selected filters.
+        </div>
+      )}
+
+      {filteredRows.map((row) => {
         const cfg = classConfig[row.classification];
         const scoreColors = scoreBadgeColor(row.score);
         return (
@@ -1459,6 +1667,22 @@ function HistoryTab({
                 >
                   {row.confidence}
                 </span>
+                {row.parentTriageId && (
+                  <span
+                    style={{
+                      fontSize: 9,
+                      color: "#a78bfa",
+                      background: "rgba(124,58,237,0.12)",
+                      border: "1px solid rgba(124,58,237,0.25)",
+                      borderRadius: 4,
+                      padding: "1px 6px",
+                      letterSpacing: 0.3,
+                      fontWeight: 600,
+                    }}
+                  >
+                    RE-RUN
+                  </span>
+                )}
               </div>
               <div
                 style={{
