@@ -2358,3 +2358,12 @@
 - [x] Tests: og:site_name present in injected HTML with value "PitchMirror"
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: no regressions (693 passed / 1 skipped — 1 new test in pitch.meta.test.ts)
+
+## Public Homepage — Founder CTA for PitchMirror
+
+- [x] Client: Home.tsx includes compact founder CTA strip below institutional hero
+- [x] Client: CTA links to /pitchmirror/landing
+- [x] Client: institutional messaging remains primary (CTA is secondary)
+- [x] Client: mobile responsive
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: no regressions (693 passed / 1 skipped — no new tests needed, frontend-only change)

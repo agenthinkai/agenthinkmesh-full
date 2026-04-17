@@ -386,6 +386,32 @@ export default function Home() {
         </section>
       )}
 
+      {/* ── FOUNDER CTA STRIP — PitchMirror ── */}
+      <section className="py-10 px-6 md:px-12 border-t border-white/5">
+        <div className="max-w-5xl mx-auto">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-6 px-6 py-5 rounded-2xl bg-white/[0.025] border border-white/8 hover:border-white/12 transition-colors">
+            <div className="flex items-start gap-4">
+              <div className="w-9 h-9 rounded-xl bg-violet-500/15 border border-violet-500/25 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <FileText className="w-4 h-4 text-violet-400" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-white/90 mb-1">
+                  Founder? Get feedback before you send your pitch.
+                </p>
+                <p className="text-xs text-white/45 leading-relaxed max-w-md">
+                  Try PitchMirror to see what investors will notice, what&apos;s missing, and what to fix before submitting.
+                </p>
+              </div>
+            </div>
+            <Link href="/pitchmirror/landing" className="flex-shrink-0">
+              <button className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-violet-600/20 border border-violet-500/35 text-violet-300 text-sm font-semibold hover:bg-violet-600/30 hover:border-violet-400/55 hover:text-white transition-all duration-200 whitespace-nowrap">
+                Try PitchMirror <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* ── FEATURES ── */}
       <section id="features" className="py-24 px-6 md:px-12 border-t border-white/5">
         <div className="max-w-6xl mx-auto">
