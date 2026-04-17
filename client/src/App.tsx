@@ -52,6 +52,7 @@ import NotFound from "./pages/NotFound";
 import DealScreener from "./pages/DealScreener";
 import PitchTriage from "./pages/PitchTriage";
 import PitchMirror from "./pages/PitchMirror";
+import PitchMirrorShared from "./pages/PitchMirrorShared";
 import ProcurementScreener from "./pages/ProcurementScreener";
 import Contacts from "./pages/Contacts";
 import DealComparison from "./pages/DealComparison";
@@ -195,6 +196,7 @@ function Router() {
       <Route path="/pitch-triage" component={PitchTriage} />
       {/* PitchMirror — Founder-facing feedback layer */}
       <Route path="/pitchmirror" component={PitchMirror} />
+      <Route path="/pitchmirror/r/:token" component={PitchMirrorShared} />
       {/* Deal Screener — Council of 10 */}
       <Route path="/deals" component={DealScreener} />
       {/* Procurement — Vendor Evaluation Engine */}

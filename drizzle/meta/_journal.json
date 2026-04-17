@@ -449,6 +449,13 @@
       "when": 1776421327243,
       "tag": "0063_cold_big_bertha",
       "breakpoints": true
+    },
+    {
+      "idx": 64,
+      "version": "5",
+      "when": 1776445962551,
+      "tag": "0064_mushy_talon",
+      "breakpoints": true
     }
   ]
 }

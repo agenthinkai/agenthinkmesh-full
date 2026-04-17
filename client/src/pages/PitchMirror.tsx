@@ -473,6 +473,7 @@ export default function PitchMirror() {
                 ← Analyze Another Pitch
               </button>
               <CopyButton result={result} />
+              {!isGuest && <ShareButton sections={result.sections} />}
             </div>
 
             {/* ── Post-result sign-in card (guest only, non-blocking) ─────────── */}
@@ -586,6 +587,52 @@ function SectionCard({
       <p style={{ fontSize: 11, color: MUTED, margin: "0 0 16px", paddingLeft: 28 }}>{subtitle}</p>
       <div style={{ paddingLeft: 0 }}>{children}</div>
     </div>
+  );
+}
+
+function ShareButton({ sections }: { sections: MirrorResult["sections"] }) {
+  const [state, setState] = useState<"idle" | "loading" | "copied" | "error">("idle");
+  const createShare = trpc.pitch.createShare.useMutation();
+
+  async function handleShare() {
+    if (state === "loading") return;
+    setState("loading");
+    try {
+      const { shareToken } = await createShare.mutateAsync({ sections });
+      const url = `${window.location.origin}/pitchmirror/r/${shareToken}`;
+      await navigator.clipboard.writeText(url);
+      setState("copied");
+      setTimeout(() => setState("idle"), 2500);
+    } catch {
+      setState("error");
+      setTimeout(() => setState("idle"), 2500);
+    }
+  }
+
+  const label = state === "loading" ? "Generating…" : state === "copied" ? "✓ Link copied!" : state === "error" ? "Failed — retry" : "Copy share link";
+  const bg = state === "copied" ? "rgba(34,197,94,0.12)" : state === "error" ? "rgba(248,113,113,0.12)" : "rgba(124,58,237,0.12)";
+  const border = state === "copied" ? "rgba(34,197,94,0.3)" : state === "error" ? "rgba(248,113,113,0.3)" : "rgba(124,58,237,0.3)";
+  const color = state === "copied" ? GREEN : state === "error" ? RED : "#c084fc";
+
+  return (
+    <button
+      onClick={handleShare}
+      disabled={state === "loading"}
+      style={{
+        background: bg,
+        border: `1px solid ${border}`,
+        borderRadius: 8,
+        color,
+        fontSize: 13,
+        fontWeight: 600,
+        padding: "10px 20px",
+        cursor: state === "loading" ? "not-allowed" : "pointer",
+        transition: "all 0.2s",
+        opacity: state === "loading" ? 0.7 : 1,
+      }}
+    >
+      🔗 {label}
+    </button>
   );
 }
 

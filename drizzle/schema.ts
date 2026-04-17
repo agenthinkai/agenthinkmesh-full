@@ -1,6 +1,18 @@
 import { bigint, boolean, decimal, index, int, longtext, mysqlEnum, mysqlTable, text, tinyint, timestamp, varchar } from "drizzle-orm/mysql-core";
 
-// ── Pitch Triage History ───────────────────────────────────────────────────────────────
+// ── PitchMirror Shares ────────────────────────────────────────────────────────────────────
+export const pitchMirrorShares = mysqlTable("pitch_mirror_shares", {
+  id: int("id").autoincrement().primaryKey(),
+  shareToken: varchar("shareToken", { length: 64 }).notNull().unique(), // random hex token
+  mirrorResultJson: text("mirrorResultJson").notNull(), // JSON of MirrorResult.sections
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  pmsTokenIdx: index("pms_token_idx").on(table.shareToken),
+}));
+export type PitchMirrorShare = typeof pitchMirrorShares.$inferSelect;
+export type InsertPitchMirrorShare = typeof pitchMirrorShares.$inferInsert;
+
+// ── Pitch Triage History ─────────────────────────────────────────────────────────────────
 export const pitchTriages = mysqlTable("pitch_triages", {
   id: int("id").autoincrement().primaryKey(),
   userId: varchar("userId", { length: 36 }).notNull(),

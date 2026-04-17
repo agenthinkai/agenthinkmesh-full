@@ -11,7 +11,7 @@
 
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated } from "../db";
+import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated, createPitchMirrorShare, getPitchMirrorShare } from "../db";
 import { sql } from "drizzle-orm";
 import { runCouncil } from "../councilEngine";
 import { invokeLLM } from "../_core/llm";
@@ -519,6 +519,43 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
    * Reuses the 6 triage agents, then transforms IC output into 3 plain-language sections.
    * Tracks usage (pitchMirrorRuns) and gates after PITCH_MIRROR_FREE_RUNS.
    */
+  /**
+   * pitch.createShare — Authenticated: saves mirror result JSON, returns shareToken.
+   */
+  createShare: protectedProcedure
+    .input(z.object({
+      sections: z.object({
+        whatInvestorsSee: z.object({
+          strengths: z.array(z.string()),
+          concerns: z.array(z.string()),
+        }),
+        whatToFix: z.array(z.string()),
+        whatsMissing: z.array(z.string()),
+      }),
+    }))
+    .mutation(async ({ input }) => {
+      const json = JSON.stringify(input.sections);
+      const shareToken = await createPitchMirrorShare(json);
+      if (!shareToken) throw new Error("Failed to create share");
+      return { shareToken };
+    }),
+
+  /**
+   * pitch.getShare — Public: returns mirror result by shareToken (no user data).
+   */
+  getShare: publicProcedure
+    .input(z.object({ shareToken: z.string().min(1).max(100) }))
+    .query(async ({ input }) => {
+      const row = await getPitchMirrorShare(input.shareToken);
+      if (!row) return null;
+      try {
+        const sections = JSON.parse(row.mirrorResultJson);
+        return { sections, createdAt: row.createdAt };
+      } catch {
+        return null;
+      }
+    }),
+
   mirror: publicProcedure
     .input(
       z.object({

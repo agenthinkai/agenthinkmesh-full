@@ -51,6 +51,16 @@ try {
 
   const [ptRows] = await conn.query("DESCRIBE pitch_triages");
   console.log("pitch_triages columns:", ptRows.map((r) => r.Field).join(", "));
+
+  // ── pitch_mirror_shares table ───────────────────────────────────────────
+  await conn.query(`CREATE TABLE IF NOT EXISTS pitch_mirror_shares (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    shareToken VARCHAR(64) NOT NULL UNIQUE,
+    mirrorResultJson TEXT NOT NULL,
+    createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
+    INDEX pms_token_idx (shareToken)
+  )`);
+  console.log("pitch_mirror_shares: table created or already exists");
 } finally {
   await conn.end();
 }

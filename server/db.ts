@@ -1,6 +1,6 @@
 import { and, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertPitchTriage, InsertUser, pitchTriages, users } from "../drizzle/schema";
+import { InsertPitchTriage, InsertUser, pitchTriages, pitchMirrorShares, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -146,4 +146,30 @@ export async function markPitchTriageEscalated(id: number, userId: string): Prom
     console.error("[Database] Failed to mark pitch triage escalated:", error);
     return false;
   }
+}
+
+// ── PitchMirror Share helpers ─────────────────────────────────────────────────────────────────
+export async function createPitchMirrorShare(mirrorResultJson: string): Promise<string | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const { randomBytes } = await import("crypto");
+    const shareToken = randomBytes(24).toString("hex"); // 48-char hex token
+    await db.insert(pitchMirrorShares).values({ shareToken, mirrorResultJson });
+    return shareToken;
+  } catch (error) {
+    console.error("[Database] Failed to create pitch mirror share:", error);
+    return null;
+  }
+}
+
+export async function getPitchMirrorShare(shareToken: string) {
+  const db = await getDb();
+  if (!db) return null;
+  const rows = await db
+    .select()
+    .from(pitchMirrorShares)
+    .where(eq(pitchMirrorShares.shareToken, shareToken))
+    .limit(1);
+  return rows[0] ?? null;
 }

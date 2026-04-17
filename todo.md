@@ -2252,3 +2252,20 @@
 - [x] Client: Copy Feedback button works for unauthenticated users (no restrictions)
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: 601 passed / 1 skipped (602 total) — no regressions
+
+## PitchMirror — Shareable Read-Only Result Links
+
+- [x] Schema: pitch_mirror_shares table (id, shareToken, mirrorResultJson TEXT, createdAt)
+- [x] DB: push migration for pitch_mirror_shares (via migrate-pitch-triages.mjs)
+- [x] Server: pitch.createShare mutation (protectedProcedure — saves result JSON, returns 48-char hex shareToken)
+- [x] Server: pitch.getShare query (publicProcedure — returns result JSON by token, no user data)
+- [x] Client: "🔗 Copy share link" button in PitchMirror RESULTS state (authenticated users only, hidden for guests)
+- [x] Client: ShareButton shows "✓ Link copied!" for 2s, error state if creation fails
+- [x] Client: /pitchmirror/r/:token route — public, read-only shared view (PitchMirrorShared.tsx)
+- [x] Client: shared view shows 3 sections (What Investors See, What to Fix, What's Missing)
+- [x] Client: shared view header with "SHARED RESULT" badge
+- [x] Client: shared view CTA "Try PitchMirror on your own pitch" → /pitchmirror
+- [x] Client: no account info, no IDs, no rerun, no editing in shared view
+- [x] Route: /pitchmirror/r/:token wired in App.tsx
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: 601 passed / 1 skipped (602 total) — no regressions
