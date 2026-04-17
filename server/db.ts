@@ -1,4 +1,4 @@
-import { desc, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertPitchTriage, InsertUser, pitchTriages, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -131,4 +131,19 @@ export async function getPitchTriageById(id: number, userId: string) {
   // Ownership check
   if (row && row.userId !== userId) return null;
   return row;
+}
+
+export async function markPitchTriageEscalated(id: number, userId: string): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  try {
+    await db
+      .update(pitchTriages)
+      .set({ escalatedAt: new Date() })
+      .where(and(eq(pitchTriages.id, id), eq(pitchTriages.userId, userId)));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to mark pitch triage escalated:", error);
+    return false;
+  }
 }

@@ -435,6 +435,13 @@
       "when": 1776406289823,
       "tag": "0061_white_nightshade",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "5",
+      "when": 1776407673078,
+      "tag": "0062_thankful_gabe_jones",
+      "breakpoints": true
     }
   ]
 }

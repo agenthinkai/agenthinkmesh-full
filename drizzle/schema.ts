@@ -14,6 +14,7 @@ export const pitchTriages = mysqlTable("pitch_triages", {
   topMissingFields: text("topMissingFields"), // JSON string array
   nextStep: varchar("nextStep", { length: 100 }),
   parentTriageId: int("parentTriageId"), // set when re-running from history
+  escalatedAt: timestamp("escalatedAt"),  // set when analyst escalates to Deal Screener
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   ptUserIdx: index("pt_user_idx").on(table.userId),

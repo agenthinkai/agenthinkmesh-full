@@ -2200,3 +2200,17 @@
 - [x] UI: "RE-RUN" badge on history list rows that have a parentTriageId
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: 601 passed / 1 skipped (602 total) — no regressions
+
+## Pitch Triage History — Date Range Filter + Escalation Visibility
+
+- [x] Schema: add escalatedAt (nullable timestamp) to pitch_triages table
+- [x] DB: push migration for escalatedAt column (via migrate-pitch-triages.mjs)
+- [x] Server: pitch.triage mutation now awaits savePitchTriage and returns id; pitch.history returns escalatedAt
+- [x] Server: pitch.markEscalated mutation marks escalatedAt on a record
+- [x] UI: date range toggle (Last 7 days / Last 30 days / All time) above filter chips, default = Last 30 days
+- [x] UI: date range toggle works client-side on already-loaded data
+- [x] UI: date range + classification filters compose correctly (both active simultaneously)
+- [x] UI: escalation indicator "↑ escalated X/N" shown in filter row when engageTotal > 0
+- [x] UI: handleEscalate calls markEscalated mutation with savedTriageId (fire-and-forget)
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: 601 passed / 1 skipped (602 total) — no regressions

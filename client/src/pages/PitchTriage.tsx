@@ -116,6 +116,7 @@ export default function PitchTriage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedHistoryId, setSelectedHistoryId] = useState<number | null>(null);
   const [pendingParentId, setPendingParentId] = useState<number | null>(null);
+  const [savedTriageId, setSavedTriageId] = useState<number | null>(null);
 
   // History queries
   const historyQuery = trpc.pitch.history.useQuery(undefined, {
@@ -132,10 +133,14 @@ export default function PitchTriage() {
   const [completedAgents, setCompletedAgents] = useState<Set<AgentName>>(new Set());
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  const markEscalated = trpc.pitch.markEscalated.useMutation();
+
   const triage = trpc.pitch.triage.useMutation({
     onSuccess: (data) => {
       if (loadingTimerRef.current) clearInterval(loadingTimerRef.current);
-      setResult(data as TriageResult);
+      const d = data as TriageResult & { id?: number };
+      setResult(d);
+      if (d.id) setSavedTriageId(d.id);
       setPageState("RESULTS");
     },
     onError: (err) => {
@@ -217,6 +222,10 @@ export default function PitchTriage() {
 
   function handleEscalate() {
     if (!result) return;
+    // Mark escalation in DB (fire-and-forget)
+    if (savedTriageId) {
+      markEscalated.mutate({ id: savedTriageId });
+    }
     // Primary: pass via wouter router state (no storage race conditions)
     // Fallback: also write sessionStorage in case /deals does a hard reload
     sessionStorage.setItem("pitchTriageEscalation", pitchText);
@@ -1008,6 +1017,9 @@ function HistoryTab({
     () => new Set(["ENGAGE", "WATCH", "IGNORE"])
   );
   const [copyState, setCopyState] = useState<"idle" | "copied">("idle");
+  // Date range filter — default 30 days
+  type DateRange = "7d" | "30d" | "all";
+  const [dateRange, setDateRange] = useState<DateRange>("30d");
 
   function toggleFilter(cls: string) {
     setActiveFilters((prev) => {
@@ -1064,9 +1076,17 @@ function HistoryTab({
     );
   }
 
-  const rows = historyQuery.data ?? [];
+  const allRows = historyQuery.data ?? [];
 
-  if (rows.length === 0) {
+  // Apply date range filter
+  const now = Date.now();
+  const rangeMs: Record<string, number> = { "7d": 7 * 86400000, "30d": 30 * 86400000, "all": Infinity };
+  const rows = allRows.filter((r) => {
+    const age = now - new Date(r.createdAt).getTime();
+    return age <= rangeMs[dateRange];
+  });
+
+  if (allRows.length === 0) {
     return (
       <div
         style={{
@@ -1532,11 +1552,14 @@ function HistoryTab({
   }
 
   // ── List view ────────────────────────────────────────────────────────────
-  // Counts per classification
+  // Counts per classification (from date-filtered rows)
   const counts = { ENGAGE: 0, WATCH: 0, IGNORE: 0 };
   for (const r of rows) {
     if (r.classification in counts) counts[r.classification as keyof typeof counts]++;
   }
+  // Escalation counts (ENGAGE rows that have escalatedAt set)
+  const engageTotal = rows.filter((r) => r.classification === "ENGAGE").length;
+  const escalatedCount = rows.filter((r) => r.classification === "ENGAGE" && r.escalatedAt).length;
   const filteredRows = rows.filter((r) => activeFilters.has(r.classification));
 
   const CHIP_COLORS: Record<string, { active: { bg: string; border: string; text: string }; inactive: { bg: string; border: string; text: string } }> = {
@@ -1554,10 +1577,38 @@ function HistoryTab({
     },
   };
 
+  const DATE_RANGE_LABELS: Record<DateRange, string> = { "7d": "Last 7 days", "30d": "Last 30 days", "all": "All time" };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {/* Filter chips */}
-      <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
+      {/* Date range toggle */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
+        {(["7d", "30d", "all"] as DateRange[]).map((range) => {
+          const isActive = dateRange === range;
+          return (
+            <button
+              key={range}
+              onClick={() => setDateRange(range)}
+              style={{
+                background: isActive ? "rgba(124,58,237,0.18)" : "rgba(255,255,255,0.04)",
+                border: `1px solid ${isActive ? "rgba(124,58,237,0.5)" : BORDER}`,
+                borderRadius: 16,
+                color: isActive ? "#a78bfa" : MUTED,
+                fontSize: 11,
+                fontWeight: isActive ? 700 : 500,
+                padding: "3px 10px",
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+            >
+              {DATE_RANGE_LABELS[range]}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Filter chips + escalation indicator */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap", alignItems: "center" }}>
         {(["ENGAGE", "WATCH", "IGNORE"] as const).map((cls) => {
           const isActive = activeFilters.has(cls);
           const colors = isActive ? CHIP_COLORS[cls].active : CHIP_COLORS[cls].inactive;
@@ -1585,6 +1636,23 @@ function HistoryTab({
         <span style={{ color: MUTED, fontSize: 11, alignSelf: "center", marginLeft: 4 }}>
           {filteredRows.length} of {rows.length} shown
         </span>
+        {engageTotal > 0 && (
+          <span
+            style={{
+              fontSize: 10,
+              color: "#4ade80",
+              background: "rgba(34,197,94,0.08)",
+              border: "1px solid rgba(34,197,94,0.2)",
+              borderRadius: 10,
+              padding: "2px 8px",
+              marginLeft: "auto",
+              whiteSpace: "nowrap",
+            }}
+            title="ENGAGE results escalated to Deal Screener"
+          >
+            ↑ escalated {escalatedCount}/{engageTotal}
+          </span>
+        )}
       </div>
 
       {filteredRows.length === 0 && (

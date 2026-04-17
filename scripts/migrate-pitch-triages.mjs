@@ -5,7 +5,7 @@ config();
 const conn = await mysql.createConnection(process.env.DATABASE_URL);
 
 try {
-  // Create table if not exists (with parentTriageId already included)
+  // Create table if not exists (with all columns)
   await conn.query(`CREATE TABLE IF NOT EXISTS pitch_triages (
     id INT AUTO_INCREMENT PRIMARY KEY,
     userId VARCHAR(36) NOT NULL,
@@ -19,20 +19,30 @@ try {
     topMissingFields TEXT,
     nextStep VARCHAR(100),
     parentTriageId INT,
+    escalatedAt TIMESTAMP NULL,
     createdAt TIMESTAMP NOT NULL DEFAULT NOW(),
     INDEX pt_user_idx (userId),
     INDEX pt_created_idx (createdAt)
   )`);
   console.log("Table created or already exists");
 
-  // Add parentTriageId if missing (for existing tables)
   const [cols] = await conn.query("DESCRIBE pitch_triages");
-  const hasParent = cols.some((c) => c.Field === "parentTriageId");
-  if (!hasParent) {
+  const colNames = cols.map((c) => c.Field);
+
+  // Add parentTriageId if missing
+  if (!colNames.includes("parentTriageId")) {
     await conn.query("ALTER TABLE pitch_triages ADD COLUMN parentTriageId INT");
     console.log("Added parentTriageId column");
   } else {
     console.log("parentTriageId already exists");
+  }
+
+  // Add escalatedAt if missing
+  if (!colNames.includes("escalatedAt")) {
+    await conn.query("ALTER TABLE pitch_triages ADD COLUMN escalatedAt TIMESTAMP NULL");
+    console.log("Added escalatedAt column");
+  } else {
+    console.log("escalatedAt already exists");
   }
 
   const [rows] = await conn.query("DESCRIBE pitch_triages");

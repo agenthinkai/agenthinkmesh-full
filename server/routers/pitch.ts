@@ -11,7 +11,7 @@
 
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById } from "../db";
+import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated } from "../db";
 import { sql } from "drizzle-orm";
 import { runCouncil } from "../councilEngine";
 import { invokeLLM } from "../_core/llm";
@@ -455,9 +455,9 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         .filter((r) => redLabels.has(r.label))
         .map((r) => `${r.name}: ${r.reasoning}`);
 
-      // ── Persist to history (fire-and-forget, never blocks response) ─────────────
+      // ── Persist to history (await so we can return the id for escalation tracking) ──
       const pitchPreview = input.pitchText.slice(0, 200).trim();
-      savePitchTriage({
+      const savedId = await savePitchTriage({
         userId: ctx.user.id.toString(),
         pitchPreview,
         score,
@@ -469,9 +469,10 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         topMissingFields: JSON.stringify(topMissingFields),
         nextStep,
         parentTriageId: input.parentTriageId ?? null,
-      }).catch((err) => console.error("[PitchTriage] Failed to persist history:", err));
+      }).catch((err) => { console.error("[PitchTriage] Failed to persist history:", err); return null; });
 
       return {
+        id: savedId ?? undefined,
         score,
         classification,
         confidence,
@@ -500,5 +501,16 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
       const row = await getPitchTriageById(input.id, ctx.user.id.toString());
       if (!row) throw new Error("Triage record not found");
       return row;
+    }),
+
+  /**
+   * pitch.markEscalated — Marks a triage record as escalated to Deal Screener.
+   * Called from PitchTriage.tsx handleEscalate when the analyst clicks "Escalate".
+   */
+  markEscalated: protectedProcedure
+    .input(z.object({ id: z.number().int().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const ok = await markPitchTriageEscalated(input.id, ctx.user.id.toString());
+      return { ok };
     }),
 });
