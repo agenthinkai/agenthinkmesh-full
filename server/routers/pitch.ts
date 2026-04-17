@@ -11,7 +11,7 @@
 
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import { getDb } from "../db";
+import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById } from "../db";
 import { sql } from "drizzle-orm";
 import { runCouncil } from "../councilEngine";
 import { invokeLLM } from "../_core/llm";
@@ -257,7 +257,7 @@ export const pitchRouter = router({
         pitchText: z.string().min(10).max(20000),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
       const truncated = input.pitchText.slice(0, 3000);
 
       // ── Agent definitions ─────────────────────────────────────────────────
@@ -454,6 +454,21 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         .filter((r) => redLabels.has(r.label))
         .map((r) => `${r.name}: ${r.reasoning}`);
 
+      // ── Persist to history (fire-and-forget, never blocks response) ─────────────
+      const pitchPreview = input.pitchText.slice(0, 200).trim();
+      savePitchTriage({
+        userId: ctx.user.id.toString(),
+        pitchPreview,
+        score,
+        classification,
+        confidence,
+        agentOutputs: JSON.stringify(agentOutputs),
+        keySignals: JSON.stringify(keySignals),
+        missingInfo: JSON.stringify(missingInfo),
+        topMissingFields: JSON.stringify(topMissingFields),
+        nextStep,
+      }).catch((err) => console.error("[PitchTriage] Failed to persist history:", err));
+
       return {
         score,
         classification,
@@ -464,5 +479,24 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         missingInfo,
         topMissingFields,
       };
+    }),
+
+  /**
+   * pitch.history — Returns the last 50 triage runs for the current user.
+   */
+  history: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await getPitchTriageHistory(ctx.user.id.toString(), 50);
+    return rows;
+  }),
+
+  /**
+   * pitch.historyItem — Returns a single triage record by id (ownership-checked).
+   */
+  historyItem: protectedProcedure
+    .input(z.object({ id: z.number().int().positive() }))
+    .query(async ({ input, ctx }) => {
+      const row = await getPitchTriageById(input.id, ctx.user.id.toString());
+      if (!row) throw new Error("Triage record not found");
+      return row;
     }),
 });

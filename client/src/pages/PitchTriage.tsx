@@ -90,16 +90,41 @@ const LOADING_STEPS = [
   "Computing triage score…",
 ];
 
-// ── Main component ────────────────────────────────────────────────────────────
-type PageState = "INPUT" | "LOADING" | "RESULTS";
+// ── Kuwait timezone formatter───────────────────────────────────────────────────────────────
+function fmtKuwait(date: Date | string | null | undefined): string {
+  if (!date) return "—";
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleString("en-GB", {
+    timeZone: "Asia/Kuwait",
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
 
+// ── Main component ───────────────────────────────────────────────────────────────
+type PageState = "INPUT" | "LOADING" | "RESULTS";
 export default function PitchTriage() {
   const [, navigate] = useLocation();
   const routerState = useHistoryState() as { pitchText?: string } | null;
+  const [activeTab, setActiveTab] = useState<"triage" | "history">("triage");
   const [pageState, setPageState] = useState<PageState>("INPUT");
   const [pitchText, setPitchText] = useState("");
   const [result, setResult] = useState<TriageResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [selectedHistoryId, setSelectedHistoryId] = useState<number | null>(null);
+
+  // History queries
+  const historyQuery = trpc.pitch.history.useQuery(undefined, {
+    enabled: activeTab === "history",
+    refetchOnWindowFocus: false,
+  });
+  const historyItemQuery = trpc.pitch.historyItem.useQuery(
+    { id: selectedHistoryId ?? 0 },
+    { enabled: selectedHistoryId !== null, refetchOnWindowFocus: false }
+  );
 
   // Loading animation
   const [loadingStep, setLoadingStep] = useState(0);
@@ -262,12 +287,60 @@ export default function PitchTriage() {
               FAST MODE
             </Badge>
           </div>
-          <p style={{ color: MUTED, fontSize: 13, marginBottom: 32 }}>
+          <p style={{ color: MUTED, fontSize: 13, marginBottom: 20 }}>
             6 parallel micro-agents evaluate your pitch in ~5 seconds. Get an instant
             ENGAGE / WATCH / IGNORE signal before committing to a full evaluation.
           </p>
 
-          {/* ── INPUT STATE ──────────────────────────────────────────────── */}
+          {/* ── Tab bar ─────────────────────────────────────────────────────────────── */}
+          <div
+            style={{
+              display: "flex",
+              gap: 0,
+              borderBottom: `1px solid ${BORDER}`,
+              marginBottom: 24,
+            }}
+          >
+            {(["triage", "history"] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  background: "none",
+                  border: "none",
+                  borderBottom: activeTab === tab ? `2px solid ${ACCENT}` : "2px solid transparent",
+                  color: activeTab === tab ? "#fff" : MUTED,
+                  fontSize: 13,
+                  fontWeight: activeTab === tab ? 700 : 500,
+                  padding: "8px 18px",
+                  cursor: "pointer",
+                  letterSpacing: 0.3,
+                  transition: "color 0.15s",
+                  marginBottom: -1,
+                }}
+              >
+                {tab === "triage" ? "⚡ Triage" : "🗓 History"}
+              </button>
+            ))}
+          </div>
+
+          {/* ── HISTORY TAB ─────────────────────────────────────────────────────────────── */}
+          {activeTab === "history" && (
+            <HistoryTab
+              historyQuery={historyQuery}
+              selectedHistoryId={selectedHistoryId}
+              setSelectedHistoryId={setSelectedHistoryId}
+              historyItemQuery={historyItemQuery}
+              classConfig={classConfig}
+              scoreBadgeColor={scoreBadgeColor}
+            />
+          )}
+
+          {/* ── TRIAGE TAB ─────────────────────────────────────────────────────────────── */}
+          {activeTab === "triage" && (
+          <>
+
+          {/* ── INPUT STATE ──────────────────────────────────────────────────────── */}
           {pageState === "INPUT" && (
             <div
               style={{
@@ -879,8 +952,538 @@ export default function PitchTriage() {
               </div>
             </div>
           )}
+          </>
+          )}
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+// ── HistoryTab sub-component ───────────────────────────────────────────────────────────────
+import type { PitchTriage as PitchTriageRow } from "../../../drizzle/schema";
+
+interface HistoryTabProps {
+  historyQuery: { data?: PitchTriageRow[]; isLoading: boolean; error: { message: string } | null };
+  selectedHistoryId: number | null;
+  setSelectedHistoryId: (id: number | null) => void;
+  historyItemQuery: { data?: PitchTriageRow; isLoading: boolean };
+  classConfig: Record<string, { bg: string; border: string; text: string; label: string; desc: string }>;
+  scoreBadgeColor: (score: number) => { ring: string; text: string };
+}
+
+function HistoryTab({
+  historyQuery,
+  selectedHistoryId,
+  setSelectedHistoryId,
+  historyItemQuery,
+  classConfig,
+  scoreBadgeColor,
+}: HistoryTabProps) {
+  const BORDER = "rgba(255,255,255,0.08)";
+  const MUTED = "rgba(255,255,255,0.45)";
+  const TEXT2 = "rgba(255,255,255,0.7)";
+  const BG2 = "rgba(255,255,255,0.04)";
+  const ACCENT = "#7c3aed";
+
+  if (historyQuery.isLoading) {
+    return (
+      <div style={{ textAlign: "center", padding: 48, color: MUTED, fontSize: 13 }}>
+        Loading history…
+      </div>
+    );
+  }
+
+  if (historyQuery.error) {
+    return (
+      <div
+        style={{
+          background: "rgba(239,68,68,0.10)",
+          border: "1px solid rgba(239,68,68,0.25)",
+          borderRadius: 8,
+          padding: "12px 16px",
+          color: "#f87171",
+          fontSize: 13,
+        }}
+      >
+        Failed to load history: {historyQuery.error.message}
+      </div>
+    );
+  }
+
+  const rows = historyQuery.data ?? [];
+
+  if (rows.length === 0) {
+    return (
+      <div
+        style={{
+          background: BG2,
+          border: `1px solid ${BORDER}`,
+          borderRadius: 12,
+          padding: 40,
+          textAlign: "center",
+        }}
+      >
+        <div style={{ fontSize: 32, marginBottom: 12 }}>🗓</div>
+        <p style={{ color: TEXT2, fontSize: 14, fontWeight: 600, marginBottom: 6 }}>
+          No triage history yet
+        </p>
+        <p style={{ color: MUTED, fontSize: 12 }}>
+          Run your first triage to see results here.
+        </p>
+      </div>
+    );
+  }
+
+  // ── Detail view ──────────────────────────────────────────────────────────
+  if (selectedHistoryId !== null) {
+    if (historyItemQuery.isLoading) {
+      return (
+        <div style={{ textAlign: "center", padding: 48, color: MUTED, fontSize: 13 }}>
+          Loading…
+        </div>
+      );
+    }
+
+    const item = historyItemQuery.data;
+    if (!item) {
+      return (
+        <div style={{ color: "#f87171", fontSize: 13, padding: 16 }}>
+          Record not found.{" "}
+          <button
+            onClick={() => setSelectedHistoryId(null)}
+            style={{ color: "#a78bfa", background: "none", border: "none", cursor: "pointer", fontSize: 13 }}
+          >
+            ← Back
+          </button>
+        </div>
+      );
+    }
+
+    // Parse stored JSON fields
+    let agentOutputs: AgentOutput[] = [];
+    let keySignals: string[] = [];
+    let missingInfo: string[] = [];
+    let topMissingFields: string[] = [];
+    try { agentOutputs = JSON.parse(item.agentOutputs ?? "[]"); } catch { /* ignore */ }
+    try { keySignals = JSON.parse(item.keySignals ?? "[]"); } catch { /* ignore */ }
+    try { missingInfo = JSON.parse(item.missingInfo ?? "[]"); } catch { /* ignore */ }
+    try { topMissingFields = JSON.parse(item.topMissingFields ?? "[]"); } catch { /* ignore */ }
+
+    const cfg = classConfig[item.classification];
+    const scoreColors = scoreBadgeColor(item.score);
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        {/* Back button */}
+        <button
+          onClick={() => setSelectedHistoryId(null)}
+          style={{
+            background: "none",
+            border: "none",
+            color: "#a78bfa",
+            fontSize: 13,
+            cursor: "pointer",
+            alignSelf: "flex-start",
+            padding: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 4,
+          }}
+        >
+          ← Back to History
+        </button>
+
+        {/* Date + preview */}
+        <div
+          style={{
+            background: BG2,
+            border: `1px solid ${BORDER}`,
+            borderRadius: 8,
+            padding: "10px 16px",
+          }}
+        >
+          <div style={{ color: MUTED, fontSize: 11, marginBottom: 4 }}>
+            {fmtKuwait(item.createdAt)}
+          </div>
+          <div style={{ color: TEXT2, fontSize: 13, fontStyle: "italic" }}>
+            "{item.pitchPreview}{item.pitchPreview.length >= 200 ? "…" : ""}"
+          </div>
+        </div>
+
+        {/* Classification banner + score */}
+        <div
+          style={{
+            background: cfg.bg,
+            border: `1px solid ${cfg.border}`,
+            borderRadius: 12,
+            padding: "20px 24px",
+            display: "flex",
+            alignItems: "center",
+            gap: 16,
+            flexWrap: "wrap",
+          }}
+        >
+          <div
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: "50%",
+              border: `3px solid ${scoreColors.ring}`,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <span style={{ fontSize: 26, fontWeight: 800, color: scoreColors.text, lineHeight: 1 }}>
+              {item.score}
+            </span>
+            <span style={{ fontSize: 10, color: MUTED, marginTop: 2 }}>/100</span>
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 800, color: cfg.text, letterSpacing: 1 }}>
+              {item.classification}
+            </div>
+            <div style={{ fontSize: 13, color: TEXT2, marginTop: 2 }}>{cfg.desc}</div>
+            <div style={{ marginTop: 6 }}>
+              <span
+                style={{
+                  fontSize: 10,
+                  color: MUTED,
+                  background: "rgba(255,255,255,0.06)",
+                  borderRadius: 4,
+                  padding: "2px 7px",
+                  fontWeight: 600,
+                  letterSpacing: 0.5,
+                }}
+              >
+                CONFIDENCE: {item.confidence}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Low confidence warning */}
+        {item.confidence === "LOW" && topMissingFields.length > 0 && (
+          <div
+            style={{
+              background: "rgba(245,158,11,0.10)",
+              border: "1px solid rgba(245,158,11,0.30)",
+              borderRadius: 8,
+              padding: "10px 16px",
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 10,
+            }}
+          >
+            <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
+            <div>
+              <div style={{ color: "#fbbf24", fontSize: 12, fontWeight: 700, marginBottom: 4 }}>
+                Low Confidence — Insufficient Pitch Data
+              </div>
+              <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                {topMissingFields.map((f) => (
+                  <span
+                    key={f}
+                    style={{
+                      background: "rgba(245,158,11,0.15)",
+                      color: "#fbbf24",
+                      borderRadius: 4,
+                      padding: "2px 8px",
+                      fontSize: 11,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {f}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Agent grid */}
+        {agentOutputs.length > 0 && (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+              gap: 12,
+            }}
+          >
+            {AGENT_ORDER.map((name) => {
+              const agent = agentOutputs.find((a) => a.name === name);
+              if (!agent) return null;
+              const { bg, text } = labelColor(agent.label);
+              return (
+                <div
+                  key={name}
+                  style={{
+                    background: BG2,
+                    border: `1px solid ${BORDER}`,
+                    borderRadius: 10,
+                    padding: "14px 16px",
+                  }}
+                >
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      marginBottom: 8,
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        fontSize: 13,
+                        fontWeight: 600,
+                        color: "#fff",
+                      }}
+                    >
+                      <span>{AGENT_META[name].icon}</span>
+                      <span>{name}</span>
+                    </div>
+                    <span
+                      style={{
+                        background: bg,
+                        color: text,
+                        borderRadius: 4,
+                        padding: "2px 8px",
+                        fontSize: 11,
+                        fontWeight: 700,
+                        letterSpacing: 0.5,
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      {agent.label}
+                    </span>
+                  </div>
+                  <p style={{ color: TEXT2, fontSize: 12, lineHeight: 1.5, margin: 0 }}>
+                    {agent.reasoning}
+                  </p>
+                  <div style={{ marginTop: 8, fontSize: 10, color: MUTED }}>
+                    weight: {AGENT_META[name].weight}%
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Key signals + missing info */}
+        {(keySignals.length > 0 || missingInfo.length > 0) && (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            {keySignals.length > 0 && (
+              <div
+                style={{
+                  background: "rgba(34,197,94,0.06)",
+                  border: "1px solid rgba(34,197,94,0.2)",
+                  borderRadius: 10,
+                  padding: "14px 16px",
+                }}
+              >
+                <p
+                  style={{
+                    color: "#4ade80",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: 0.8,
+                    marginBottom: 10,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  ✓ Key Signals
+                </p>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                  {keySignals.map((sig, i) => (
+                    <li
+                      key={i}
+                      style={{
+                        color: TEXT2,
+                        fontSize: 12,
+                        lineHeight: 1.5,
+                        paddingBottom: 6,
+                        borderBottom: i < keySignals.length - 1 ? "1px solid rgba(34,197,94,0.1)" : "none",
+                        marginBottom: i < keySignals.length - 1 ? 6 : 0,
+                      }}
+                    >
+                      {sig}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {missingInfo.length > 0 && (
+              <div
+                style={{
+                  background: "rgba(239,68,68,0.06)",
+                  border: "1px solid rgba(239,68,68,0.2)",
+                  borderRadius: 10,
+                  padding: "14px 16px",
+                }}
+              >
+                <p
+                  style={{
+                    color: "#f87171",
+                    fontSize: 11,
+                    fontWeight: 700,
+                    letterSpacing: 0.8,
+                    marginBottom: 10,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  ✗ Missing / Weak
+                </p>
+                <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
+                  {missingInfo.map((info, i) => (
+                    <li
+                      key={i}
+                      style={{
+                        color: TEXT2,
+                        fontSize: 12,
+                        lineHeight: 1.5,
+                        paddingBottom: 6,
+                        borderBottom: i < missingInfo.length - 1 ? "1px solid rgba(239,68,68,0.1)" : "none",
+                        marginBottom: i < missingInfo.length - 1 ? 6 : 0,
+                      }}
+                    >
+                      {info}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Next step */}
+        {item.nextStep && (
+          <div
+            style={{
+              background: "rgba(255,255,255,0.03)",
+              border: `1px solid ${BORDER}`,
+              borderRadius: 8,
+              padding: "10px 16px",
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+            }}
+          >
+            <span style={{ color: MUTED, fontSize: 12 }}>Recommended next step:</span>
+            <span style={{ color: TEXT2, fontSize: 12, fontWeight: 600 }}>{item.nextStep}</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── List view ────────────────────────────────────────────────────────────
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {rows.map((row) => {
+        const cfg = classConfig[row.classification];
+        const scoreColors = scoreBadgeColor(row.score);
+        return (
+          <button
+            key={row.id}
+            onClick={() => setSelectedHistoryId(row.id)}
+            style={{
+              background: BG2,
+              border: `1px solid ${BORDER}`,
+              borderRadius: 10,
+              padding: "14px 18px",
+              cursor: "pointer",
+              textAlign: "left",
+              display: "flex",
+              alignItems: "center",
+              gap: 16,
+              transition: "border-color 0.15s",
+              width: "100%",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.borderColor = `rgba(124,58,237,0.4)`)
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.borderColor = BORDER)
+            }
+          >
+            {/* Score badge */}
+            <div
+              style={{
+                width: 48,
+                height: 48,
+                borderRadius: "50%",
+                border: `2px solid ${scoreColors.ring}`,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <span style={{ fontSize: 16, fontWeight: 800, color: scoreColors.text, lineHeight: 1 }}>
+                {row.score}
+              </span>
+            </div>
+
+            {/* Main content */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                <span
+                  style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: cfg.text,
+                    background: cfg.bg,
+                    border: `1px solid ${cfg.border}`,
+                    borderRadius: 4,
+                    padding: "1px 7px",
+                    letterSpacing: 0.5,
+                  }}
+                >
+                  {row.classification}
+                </span>
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: MUTED,
+                    background: "rgba(255,255,255,0.05)",
+                    borderRadius: 4,
+                    padding: "1px 6px",
+                  }}
+                >
+                  {row.confidence}
+                </span>
+              </div>
+              <div
+                style={{
+                  color: TEXT2,
+                  fontSize: 12,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  fontStyle: "italic",
+                }}
+              >
+                "{row.pitchPreview}"
+              </div>
+            </div>
+
+            {/* Date */}
+            <div style={{ color: MUTED, fontSize: 11, flexShrink: 0, textAlign: "right" }}>
+              {fmtKuwait(row.createdAt)}
+            </div>
+
+            {/* Arrow */}
+            <span style={{ color: MUTED, fontSize: 14, flexShrink: 0 }}>›</span>
+          </button>
+        );
+      })}
+    </div>
   );
 }

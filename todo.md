@@ -2169,3 +2169,17 @@
 - [x] topMissingFields added to server response (top 2 highest-weight red-label agents)
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: 601 passed / 1 skipped (602 total) — no regressions
+
+## Pitch Triage History
+
+- [x] DB: pitch_triages table (id, userId, pitchPreview, score, classification, confidence, agentOutputs JSON, createdAt)
+- [x] DB: push migration with pnpm db:push
+- [x] Server: DB helper getPitchTriageHistory(userId) + savePitchTriage(...)
+- [x] Server: pitch.triage mutation persists row after successful run
+- [x] Server: pitch.history query procedure (protectedProcedure, returns list)
+- [x] Server: pitch.historyItem query procedure (returns single row by id)
+- [x] UI: History tab added to /pitch-triage (alongside INPUT/RESULTS states)
+- [x] UI: History list — date (Kuwait TZ), preview snippet, score, classification badge, confidence
+- [x] UI: History detail — inline expand on row click, shows score/classification/confidence/keySignals/missingInfo/agentOutputs
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: 601 passed / 1 skipped (602 total) — no regressions

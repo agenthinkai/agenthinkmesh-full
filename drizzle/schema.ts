@@ -1,5 +1,26 @@
 import { bigint, boolean, decimal, index, int, longtext, mysqlEnum, mysqlTable, text, tinyint, timestamp, varchar } from "drizzle-orm/mysql-core";
 
+// ── Pitch Triage History ───────────────────────────────────────────────────────────────
+export const pitchTriages = mysqlTable("pitch_triages", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: varchar("userId", { length: 36 }).notNull(),
+  pitchPreview: varchar("pitchPreview", { length: 220 }).notNull(), // first ~200 chars
+  score: int("score").notNull(),
+  classification: mysqlEnum("classification", ["ENGAGE", "WATCH", "IGNORE"]).notNull(),
+  confidence: mysqlEnum("confidence", ["HIGH", "MEDIUM", "LOW"]).notNull(),
+  agentOutputs: text("agentOutputs"), // JSON string — nullable for forward-compat
+  keySignals: text("keySignals"),     // JSON string array
+  missingInfo: text("missingInfo"),   // JSON string array
+  topMissingFields: text("topMissingFields"), // JSON string array
+  nextStep: varchar("nextStep", { length: 100 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  ptUserIdx: index("pt_user_idx").on(table.userId),
+  ptCreatedIdx: index("pt_created_idx").on(table.createdAt),
+}));
+export type PitchTriage = typeof pitchTriages.$inferSelect;
+export type InsertPitchTriage = typeof pitchTriages.$inferInsert;
+
 // ── Tier 0 University Signals ─────────────────────────────────────────────────
 export const tier0Signals = mysqlTable("tier0_signals", {
   id: varchar("id", { length: 64 }).primaryKey(), // e.g. "nsf-2024-001"
