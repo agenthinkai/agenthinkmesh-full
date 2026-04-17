@@ -15,6 +15,11 @@ import { useState, useEffect } from "react";
 import { useParams, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 
+// ── Static branded preview image (mirrors server/pitchMirrorMetaRoute.ts) ────────
+const PITCHMIRROR_OG_IMAGE_URL =
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663268376562/7EnctkaNppkKLbjFfnH6YY/pitchmirror-og-card-KFUdoyQzYGtghnEhMxtrKY.png";
+const PITCHMIRROR_OG_IMAGE_ALT = "PitchMirror shared result preview";
+
 // ── Safe meta tag helpers (mirrors server/pitchMirrorMetaRoute.ts) ─────────────
 function buildPageTitle(stageLabel: string | null): string {
   if (stageLabel) return `PitchMirror Result — ${stageLabel}`;
@@ -135,9 +140,13 @@ export default function PitchMirrorShared() {
       setMetaTag("og:type", "website"),
       setMetaTag("og:title", title),
       setMetaTag("og:description", description),
-      setMetaTag("twitter:card", "summary", true),
+      setMetaTag("og:image", PITCHMIRROR_OG_IMAGE_URL),
+      setMetaTag("og:image:alt", PITCHMIRROR_OG_IMAGE_ALT),
+      setMetaTag("twitter:card", "summary_large_image", true),
       setMetaTag("twitter:title", title, true),
       setMetaTag("twitter:description", description, true),
+      setMetaTag("twitter:image", PITCHMIRROR_OG_IMAGE_URL, true),
+      setMetaTag("twitter:image:alt", PITCHMIRROR_OG_IMAGE_ALT, true),
     ];
 
     return () => {

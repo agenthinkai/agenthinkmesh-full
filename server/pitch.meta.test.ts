@@ -135,10 +135,10 @@ describe("injectOgMetaTags", () => {
     expect(result).toContain("Evaluated at: Early revenue");
   });
 
-  it("injects twitter:card meta tag", () => {
+  it("injects twitter:card meta tag (summary_large_image when image is present)", () => {
     const result = injectOgMetaTags(baseHtml, "title", "desc", "https://example.com/r/abc");
     expect(result).toContain('name="twitter:card"');
-    expect(result).toContain('content="summary"');
+    expect(result).toContain('content="summary_large_image"');
   });
 
   it("injects og:url meta tag", () => {

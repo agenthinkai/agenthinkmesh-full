@@ -13,6 +13,7 @@
  *   - Title: "PitchMirror Result" or "PitchMirror Result — [Stage]"
  *   - Description: "Evaluated at: [Stage] · Founder-facing pitch feedback"
  *     or generic fallback for legacy links.
+ *   - Image: static branded card — no user data, no stage text, no result details.
  *   - No strengths, concerns, fix items, missing items, user IDs, emails, or
  *     raw pitch text are ever included.
  */
@@ -20,6 +21,14 @@
 import { type Express } from "express";
 import fs from "fs";
 import path from "path";
+
+// ── Static branded preview image ─────────────────────────────────────────────
+// Permanent CDN URL tied to the webdev project lifecycle — never expires.
+// Image: dark background, "PitchMirror" title, subtitle, no private data.
+export const PITCHMIRROR_OG_IMAGE_URL =
+  "https://d2xsxph8kpxj0f.cloudfront.net/310519663268376562/7EnctkaNppkKLbjFfnH6YY/pitchmirror-og-card-KFUdoyQzYGtghnEhMxtrKY.png";
+
+export const PITCHMIRROR_OG_IMAGE_ALT = "PitchMirror shared result preview";
 
 // ── Stage label map (mirrors server/routers/pitch.ts) ────────────────────────
 const STAGE_LABELS: Record<string, string> = {
@@ -72,16 +81,20 @@ export function isSocialCrawler(userAgent: string): boolean {
   );
 }
 
-/** Inject OG meta tags into an HTML string's <head> section. */
+/** Inject OG meta tags (including og:image) into an HTML string's <head> section. */
 export function injectOgMetaTags(
   html: string,
   title: string,
   description: string,
-  url: string
+  url: string,
+  imageUrl: string = PITCHMIRROR_OG_IMAGE_URL,
+  imageAlt: string = PITCHMIRROR_OG_IMAGE_ALT
 ): string {
   const escapedTitle = escapeHtml(title);
   const escapedDesc = escapeHtml(description);
   const escapedUrl = escapeHtml(url);
+  const escapedImageUrl = escapeHtml(imageUrl);
+  const escapedImageAlt = escapeHtml(imageAlt);
 
   const metaTags = [
     `  <title>${escapedTitle}</title>`,
@@ -90,9 +103,13 @@ export function injectOgMetaTags(
     `  <meta property="og:title" content="${escapedTitle}" />`,
     `  <meta property="og:description" content="${escapedDesc}" />`,
     `  <meta property="og:url" content="${escapedUrl}" />`,
-    `  <meta name="twitter:card" content="summary" />`,
+    `  <meta property="og:image" content="${escapedImageUrl}" />`,
+    `  <meta property="og:image:alt" content="${escapedImageAlt}" />`,
+    `  <meta name="twitter:card" content="summary_large_image" />`,
     `  <meta name="twitter:title" content="${escapedTitle}" />`,
     `  <meta name="twitter:description" content="${escapedDesc}" />`,
+    `  <meta name="twitter:image" content="${escapedImageUrl}" />`,
+    `  <meta name="twitter:image:alt" content="${escapedImageAlt}" />`,
   ].join("\n");
 
   // Replace the existing <title> tag and inject OG tags before </head>

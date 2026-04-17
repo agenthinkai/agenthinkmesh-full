@@ -2327,3 +2327,15 @@
 - [x] Tests: no private content (email, userId, pitchText) in metadata
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: no regressions (658 passed / 1 skipped — 39 new tests from pitch.meta.test.ts)
+
+## PitchMirror — Static og:image for Shared Links
+
+- [x] Image: branded PitchMirror preview card generated (dark bg, PitchMirror text, subtitle, no private data)
+- [x] Image: uploaded as permanent webdev static asset with public URL
+- [x] Server: pitchMirrorMetaRoute.ts injects og:image, twitter:image, og:image:alt
+- [x] Client: PitchMirrorShared.tsx useEffect includes og:image and twitter:image meta tags
+- [x] Tests: og:image tag injected in HTML for new shared links
+- [x] Tests: legacy links also receive og:image tag
+- [x] Tests: no private content in image URL or alt text
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: no regressions (681 passed / 1 skipped — 23 new tests from pitch.ogimage.test.ts)
