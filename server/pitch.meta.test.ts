@@ -141,6 +141,12 @@ describe("injectOgMetaTags", () => {
     expect(result).toContain('content="summary_large_image"');
   });
 
+  it("injects og:site_name meta tag with value PitchMirror", () => {
+    const result = injectOgMetaTags(baseHtml, "title", "desc", "https://example.com/r/abc");
+    expect(result).toContain('property="og:site_name"');
+    expect(result).toContain('content="PitchMirror"');
+  });
+
   it("injects og:url meta tag", () => {
     const result = injectOgMetaTags(baseHtml, "title", "desc", "https://example.com/r/abc123");
     expect(result).toContain('property="og:url"');

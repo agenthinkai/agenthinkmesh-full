@@ -2350,3 +2350,11 @@
 - [x] Tests: legacy links also receive canonical tag
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: no regressions (692 passed / 1 skipped — 11 new tests from pitch.canonical.test.ts)
+
+## PitchMirror — og:site_name for Shared Links
+
+- [x] Server: pitchMirrorMetaRoute.ts injects <meta property="og:site_name" content="PitchMirror" />
+- [x] Client: PitchMirrorShared.tsx useEffect includes og:site_name meta tag
+- [x] Tests: og:site_name present in injected HTML with value "PitchMirror"
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: no regressions (693 passed / 1 skipped — 1 new test in pitch.meta.test.ts)

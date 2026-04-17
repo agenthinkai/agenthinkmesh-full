@@ -161,6 +161,7 @@ export default function PitchMirrorShared() {
     const cleanups = [
       setCanonicalLink(canonicalHref),
       setMetaTag("description", description, true),
+      setMetaTag("og:site_name", "PitchMirror"),
       setMetaTag("og:type", "website"),
       setMetaTag("og:title", title),
       setMetaTag("og:description", description),

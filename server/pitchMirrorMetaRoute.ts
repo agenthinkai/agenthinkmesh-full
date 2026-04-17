@@ -101,6 +101,7 @@ export function injectOgMetaTags(
     // Canonical URL — no user data, no stage, no query params
     `  <link rel="canonical" href="${escapedUrl}" />`,
     `  <meta name="description" content="${escapedDesc}" />`,
+    `  <meta property="og:site_name" content="PitchMirror" />`,
     `  <meta property="og:type" content="website" />`,
     `  <meta property="og:title" content="${escapedTitle}" />`,
     `  <meta property="og:description" content="${escapedDesc}" />`,
