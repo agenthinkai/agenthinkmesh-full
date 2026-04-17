@@ -2,6 +2,10 @@
  * PitchMirror — Founder-facing pitch feedback interface.
  * Reuses the existing evaluation pipeline via pitch.mirror mutation.
  * Output: 3 plain-language sections (What Investors See, What to Fix, What's Missing).
+ *
+ * Auth flow:
+ *   - Unauthenticated: 1 free guest run (sessionStorage gate), no DB write
+ *   - Authenticated: existing behavior (pitchMirrorRuns counter, gated flag)
  */
 
 import { useState } from "react";
@@ -22,6 +26,8 @@ const GREEN = "#4ade80";
 const AMBER = "#fbbf24";
 const RED = "#f87171";
 
+const GUEST_RUN_KEY = "pitchMirrorGuestRun";
+
 type MirrorResult = {
   gated: boolean;
   runsUsed: number;
@@ -33,7 +39,7 @@ type MirrorResult = {
   };
 };
 
-type ViewState = "INPUT" | "LOADING" | "RESULTS";
+type ViewState = "INPUT" | "LOADING" | "RESULTS" | "GUEST_BLOCKED";
 
 export default function PitchMirror() {
   const { user } = useAuth();
@@ -44,6 +50,10 @@ export default function PitchMirror() {
 
   const mirrorMutation = trpc.pitch.mirror.useMutation({
     onSuccess: (data) => {
+      // Mark guest run consumed
+      if (!user) {
+        sessionStorage.setItem(GUEST_RUN_KEY, "true");
+      }
       setResult(data);
       setView("RESULTS");
     },
@@ -58,6 +68,13 @@ export default function PitchMirror() {
       setError("Please paste a pitch of at least 30 characters.");
       return;
     }
+
+    // Guest gate: block second run
+    if (!user && sessionStorage.getItem(GUEST_RUN_KEY) === "true") {
+      setView("GUEST_BLOCKED");
+      return;
+    }
+
     setError(null);
     setView("LOADING");
     mirrorMutation.mutate({ pitchText: pitchText.trim() });
@@ -71,6 +88,7 @@ export default function PitchMirror() {
 
   const wordCount = pitchText.trim().split(/\s+/).filter(Boolean).length;
   const charCount = pitchText.length;
+  const isGuest = !user;
 
   return (
     <div
@@ -123,41 +141,65 @@ export default function PitchMirror() {
       </div>
 
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "0 24px" }}>
-        {/* ── Not logged in ──────────────────────────────────────────────────── */}
-        {!user && (
+
+        {/* ── GUEST BLOCKED state ────────────────────────────────────────────── */}
+        {view === "GUEST_BLOCKED" && (
           <div
             style={{
               marginTop: 32,
               background: BG2,
               border: `1px solid ${BORDER}`,
               borderRadius: 12,
-              padding: "28px 24px",
+              padding: "32px 28px",
               textAlign: "center",
             }}
           >
-            <p style={{ fontSize: 15, color: TEXT2, marginBottom: 16 }}>
-              Sign in to analyze your pitch.
+            <div style={{ fontSize: 32, marginBottom: 12 }}>🔒</div>
+            <p style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 8 }}>
+              You've used your free guest analysis
             </p>
-            <a
-              href={getLoginUrl()}
-              style={{
-                display: "inline-block",
-                background: ACCENT,
-                color: "#fff",
-                borderRadius: 8,
-                padding: "10px 24px",
-                fontSize: 14,
-                fontWeight: 700,
-                textDecoration: "none",
-              }}
-            >
-              Sign In
-            </a>
+            <p style={{ fontSize: 13, color: TEXT2, marginBottom: 24, maxWidth: 380, margin: "0 auto 24px" }}>
+              Create a free account to run another evaluation and save your results.
+            </p>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+              <a
+                href={getLoginUrl()}
+                style={{
+                  display: "inline-block",
+                  background: ACCENT,
+                  color: "#fff",
+                  borderRadius: 8,
+                  padding: "11px 28px",
+                  fontSize: 14,
+                  fontWeight: 700,
+                  textDecoration: "none",
+                }}
+              >
+                Create free account
+              </a>
+              <a
+                href={getLoginUrl()}
+                style={{
+                  display: "inline-block",
+                  background: "rgba(255,255,255,0.06)",
+                  border: `1px solid ${BORDER}`,
+                  color: TEXT2,
+                  borderRadius: 8,
+                  padding: "11px 24px",
+                  fontSize: 14,
+                  fontWeight: 600,
+                  textDecoration: "none",
+                }}
+              >
+                Sign in
+              </a>
+            </div>
+            <p style={{ fontSize: 11, color: MUTED, marginTop: 16 }}>No credit card required.</p>
           </div>
         )}
 
         {/* ── INPUT state ────────────────────────────────────────────────────── */}
-        {user && view === "INPUT" && (
+        {view === "INPUT" && (
           <div style={{ marginTop: 32 }}>
             {error && (
               <div
@@ -246,13 +288,15 @@ export default function PitchMirror() {
               }}
             >
               <span style={{ color: GREEN }}>●</span>
-              Free tier: 2 analyses included. No credit card required.
+              {isGuest
+                ? "Free guest analysis — no account required. Create a free account to save results and run more."
+                : "Free tier: 2 analyses included. No credit card required."}
             </div>
           </div>
         )}
 
         {/* ── LOADING state ──────────────────────────────────────────────────── */}
-        {user && view === "LOADING" && (
+        {view === "LOADING" && (
           <div
             style={{
               marginTop: 48,
@@ -301,9 +345,9 @@ export default function PitchMirror() {
         )}
 
         {/* ── RESULTS state ──────────────────────────────────────────────────── */}
-        {user && view === "RESULTS" && result && (
+        {view === "RESULTS" && result && (
           <div style={{ marginTop: 32 }}>
-            {/* Usage gate banner */}
+            {/* Usage gate banner (authenticated users who've hit limit) */}
             {result.gated && (
               <div
                 style={{
@@ -430,6 +474,81 @@ export default function PitchMirror() {
               </button>
               <CopyButton result={result} />
             </div>
+
+            {/* ── Post-result sign-in card (guest only, non-blocking) ─────────── */}
+            {isGuest && (
+              <div
+                style={{
+                  marginTop: 32,
+                  background: "linear-gradient(135deg, rgba(124,58,237,0.08) 0%, rgba(192,132,252,0.06) 100%)",
+                  border: `1px solid rgba(124,58,237,0.25)`,
+                  borderRadius: 14,
+                  padding: "28px 28px 24px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+                  <div
+                    style={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 10,
+                      background: ACCENT_LIGHT,
+                      border: `1px solid rgba(124,58,237,0.3)`,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 20,
+                      flexShrink: 0,
+                    }}
+                  >
+                    🪞
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <h3 style={{ fontSize: 15, fontWeight: 800, color: TEXT, margin: "0 0 6px" }}>
+                      Save your results and run again
+                    </h3>
+                    <p style={{ fontSize: 13, color: TEXT2, margin: "0 0 20px", lineHeight: 1.6 }}>
+                      Create a free account to save this evaluation and run more pitches.
+                    </p>
+                    <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                      <a
+                        href={getLoginUrl()}
+                        style={{
+                          display: "inline-block",
+                          background: ACCENT,
+                          color: "#fff",
+                          borderRadius: 8,
+                          padding: "10px 24px",
+                          fontSize: 13,
+                          fontWeight: 700,
+                          textDecoration: "none",
+                          transition: "opacity 0.15s",
+                        }}
+                      >
+                        Create free account
+                      </a>
+                      <a
+                        href={getLoginUrl()}
+                        style={{
+                          display: "inline-block",
+                          background: "rgba(255,255,255,0.06)",
+                          border: `1px solid ${BORDER}`,
+                          color: TEXT2,
+                          borderRadius: 8,
+                          padding: "10px 20px",
+                          fontSize: 13,
+                          fontWeight: 600,
+                          textDecoration: "none",
+                        }}
+                      >
+                        Sign in
+                      </a>
+                      <span style={{ fontSize: 11, color: MUTED }}>No credit card required.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -2239,3 +2239,16 @@
 - [x] Route: /pitchmirror wired in App.tsx
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: 601 passed / 1 skipped (602 total) — no regressions
+
+## PitchMirror — Unauthenticated First Run
+
+- [x] Server: pitch.mirror changed to publicProcedure; ctx.user optional
+- [x] Server: if unauthenticated — run evaluation in memory only, skip DB write, skip pitchMirrorRuns increment
+- [x] Server: if authenticated — existing behavior unchanged (DB write, run counter, gated flag)
+- [x] Client: /pitchmirror route publicly accessible (remove auth redirect)
+- [x] Client: sessionStorage key pitchMirrorGuestRun — first run allowed, second blocked
+- [x] Client: GUEST_BLOCKED view state with "Create a free account to run another evaluation and save your results."
+- [x] Client: post-result sign-in card (non-blocking, below results, guest only) — Save your results and run again
+- [x] Client: Copy Feedback button works for unauthenticated users (no restrictions)
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: 601 passed / 1 skipped (602 total) — no regressions

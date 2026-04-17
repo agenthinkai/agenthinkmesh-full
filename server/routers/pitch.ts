@@ -519,7 +519,7 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
    * Reuses the 6 triage agents, then transforms IC output into 3 plain-language sections.
    * Tracks usage (pitchMirrorRuns) and gates after PITCH_MIRROR_FREE_RUNS.
    */
-  mirror: protectedProcedure
+  mirror: publicProcedure
     .input(
       z.object({
         pitchText: z.string().min(30, "Pitch must be at least 30 characters").max(3000, "Pitch must be under 3000 characters"),
@@ -527,12 +527,12 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
     )
     .mutation(async ({ input, ctx }) => {
       const PITCH_MIRROR_FREE_RUNS = 2;
-      const db = await getDb();
-      if (!db) throw new Error("Database unavailable");
+      const isAuthenticated = !!(ctx as { user?: { id: number; pitchMirrorRuns?: number } }).user;
+      const authedUser = isAuthenticated ? (ctx as { user: { id: number; pitchMirrorRuns?: number } }).user : null;
 
-      // ── Usage gate ────────────────────────────────────────────────────────
-      const currentRuns: number = (ctx.user as { pitchMirrorRuns?: number }).pitchMirrorRuns ?? 0;
-      const isGated = currentRuns >= PITCH_MIRROR_FREE_RUNS;
+      // ── Usage gate (authenticated users only) ─────────────────────────────
+      const currentRuns: number = authedUser?.pitchMirrorRuns ?? 0;
+      const isGated = isAuthenticated && currentRuns >= PITCH_MIRROR_FREE_RUNS;
 
       // ── Run the 6 triage agents (same as pitch.triage) ────────────────────
       const truncated = input.pitchText.slice(0, 1500);
@@ -744,13 +744,18 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
 
       if (missingItems.length === 0) missingItems.push("No critical gaps detected — the pitch covers the main areas.");
 
-      // ── Increment pitchMirrorRuns (fire-and-forget) ───────────────────────
-      db.execute(sql`UPDATE users SET pitchMirrorRuns = pitchMirrorRuns + 1 WHERE id = ${ctx.user.id}`)
-        .catch((err: unknown) => console.error("[PitchMirror] Failed to increment runs:", err));
+      // ── Increment pitchMirrorRuns (authenticated users only, fire-and-forget) ─
+      if (isAuthenticated && authedUser) {
+        const db = await getDb();
+        if (db) {
+          db.execute(sql`UPDATE users SET pitchMirrorRuns = pitchMirrorRuns + 1 WHERE id = ${authedUser.id}`)
+            .catch((err: unknown) => console.error("[PitchMirror] Failed to increment runs:", err));
+        }
+      }
 
       return {
         gated: isGated,
-        runsUsed: currentRuns + 1,
+        runsUsed: isAuthenticated ? currentRuns + 1 : 1,
         freeRunsAllowed: PITCH_MIRROR_FREE_RUNS,
         sections: {
           whatInvestorsSee: { strengths, concerns },
