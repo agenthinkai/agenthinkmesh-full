@@ -60,6 +60,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Deal Screener",   icon: "⚖️", href: "/deals",           color: "#4ADE80", bg: "rgba(74,222,128,0.08)"   },
   { label: "Procurement Eval", icon: "🏗️", href: "/procurement",     color: "#4ADE80", bg: "rgba(74,222,128,0.08)"   },
   { label: "Pitch Triage",    icon: "⚡",  href: "/pitch-triage",  color: "#a78bfa", bg: "rgba(167,139,250,0.08)"  },
+  { label: "PitchMirror",      icon: "🪞",  href: "/pitchmirror",   color: "#c084fc", bg: "rgba(192,132,252,0.08)"  },
   { label: "Contacts",        icon: "👥", href: "/contacts",        color: "#F59E0B", bg: "rgba(245,158,11,0.08)"   },
   { label: "Compare Deals",   icon: "🔷", href: "/deals/compare",   color: "#818CF8", bg: "rgba(129,140,248,0.08)"  },
   { label: "Pitch",           icon: "💡", href: "/pitch",           color: "#FF6B35", bg: "rgba(255,107,53,0.08)"   },
@@ -189,6 +190,7 @@ function MobileDrawer({ open, onClose, currentPath, isAuthenticated, user, logou
             { label: "Deal Screener", href: "/deals" },
             { label: "Procurement Eval", href: "/procurement" },
             { label: "Pitch Triage", href: "/pitch-triage" },
+            { label: "PitchMirror", href: "/pitchmirror" },
             { label: "PortfolioMesh", href: "/portfolio-mesh" },
             { label: "PortfolioMesh Demo", href: "/portfolio-mesh/demo" },
             { label: "Contact", href: "/contact" },
@@ -504,6 +506,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
                       { label: "Deal Screener", icon: "⚖️", href: "/deals", color: "#4ADE80", badge: unreadSignalCount > 0 ? unreadSignalCount : null },
                       { label: "Procurement Eval", icon: "🏗️", href: "/procurement", color: "#00ff87", badge: null },
                       { label: "Pitch Triage", icon: "⚡", href: "/pitch-triage", color: "#a78bfa", badge: null },
+                      { label: "PitchMirror", icon: "🪞", href: "/pitchmirror", color: "#c084fc", badge: null },
                     ].map(tool => {
                       const isActive = currentPath.startsWith(tool.href);
                       return (

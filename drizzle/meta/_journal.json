@@ -442,6 +442,13 @@
       "when": 1776407673078,
       "tag": "0062_thankful_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 63,
+      "version": "5",
+      "when": 1776421327243,
+      "tag": "0063_cold_big_bertha",
+      "breakpoints": true
     }
   ]
 }

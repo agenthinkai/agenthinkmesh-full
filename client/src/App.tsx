@@ -51,6 +51,7 @@ import Upgrade from "./pages/Upgrade";
 import NotFound from "./pages/NotFound";
 import DealScreener from "./pages/DealScreener";
 import PitchTriage from "./pages/PitchTriage";
+import PitchMirror from "./pages/PitchMirror";
 import ProcurementScreener from "./pages/ProcurementScreener";
 import Contacts from "./pages/Contacts";
 import DealComparison from "./pages/DealComparison";
@@ -192,6 +193,8 @@ function Router() {
 
       {/* Pitch Triage — Fast 6-agent pre-filter */}
       <Route path="/pitch-triage" component={PitchTriage} />
+      {/* PitchMirror — Founder-facing feedback layer */}
+      <Route path="/pitchmirror" component={PitchMirror} />
       {/* Deal Screener — Council of 10 */}
       <Route path="/deals" component={DealScreener} />
       {/* Procurement — Vendor Evaluation Engine */}

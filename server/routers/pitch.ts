@@ -513,4 +513,250 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
       const ok = await markPitchTriageEscalated(input.id, ctx.user.id.toString());
       return { ok };
     }),
+
+  /**
+   * pitch.mirror — PitchMirror founder-facing feedback.
+   * Reuses the 6 triage agents, then transforms IC output into 3 plain-language sections.
+   * Tracks usage (pitchMirrorRuns) and gates after PITCH_MIRROR_FREE_RUNS.
+   */
+  mirror: protectedProcedure
+    .input(
+      z.object({
+        pitchText: z.string().min(30, "Pitch must be at least 30 characters").max(3000, "Pitch must be under 3000 characters"),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const PITCH_MIRROR_FREE_RUNS = 2;
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+
+      // ── Usage gate ────────────────────────────────────────────────────────
+      const currentRuns: number = (ctx.user as { pitchMirrorRuns?: number }).pitchMirrorRuns ?? 0;
+      const isGated = currentRuns >= PITCH_MIRROR_FREE_RUNS;
+
+      // ── Run the 6 triage agents (same as pitch.triage) ────────────────────
+      const truncated = input.pitchText.slice(0, 1500);
+
+      type AgentName = "Market Signal" | "Business Model" | "Traction" | "Founder Signal" | "Risk" | "Completeness";
+      const AGENTS: Array<{ name: AgentName; labels: string[]; fallback: string; systemPrompt: string }> = [
+        {
+          name: "Market Signal",
+          labels: ["strong", "weak", "unclear"],
+          fallback: "unclear",
+          systemPrompt: `You are a market analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) cite the specific market size, geography, or sector mentioned in the pitch; (2) reasoning MUST be ≤18 words; (3) if no market data is present, label="unclear" and note the absence.
+Format: {"label": "strong"|"weak"|"unclear", "reasoning": "<concrete market signal from pitch, ≤18 words>"}`,
+        },
+        {
+          name: "Business Model",
+          labels: ["clear", "partial", "missing"],
+          fallback: "partial",
+          systemPrompt: `You are a business model analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) name the specific revenue mechanism stated in the pitch (subscription, transaction fee, licensing, etc.); (2) reasoning MUST be ≤18 words; (3) if no revenue model is described, label="missing".
+Format: {"label": "clear"|"partial"|"missing", "reasoning": "<specific revenue model or absence, ≤18 words>"}`,
+        },
+        {
+          name: "Traction",
+          labels: ["strong", "early", "none"],
+          fallback: "none",
+          systemPrompt: `You are a traction analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) cite the specific metric, customer count, or revenue figure stated in the pitch; (2) reasoning MUST be ≤18 words; (3) if no traction data is present, label="none" and state that explicitly.
+Format: {"label": "strong"|"early"|"none", "reasoning": "<specific traction metric or absence, ≤18 words>"}`,
+        },
+        {
+          name: "Founder Signal",
+          labels: ["strong", "neutral", "risk"],
+          fallback: "neutral",
+          systemPrompt: `You are a founder due-diligence analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) reference a specific credential, prior exit, domain tenure, or red flag mentioned in the pitch; (2) reasoning MUST be ≤18 words; (3) if no founder info is present, label="neutral" and note the absence.
+Format: {"label": "strong"|"neutral"|"risk", "reasoning": "<concrete signal from pitch, ≤18 words>"}`,
+        },
+        {
+          name: "Risk",
+          labels: ["low", "medium", "high"],
+          fallback: "medium",
+          systemPrompt: `You are a risk analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) name the single most significant risk factor visible in the pitch (regulatory, competitive, execution, market timing, or capital); (2) reasoning MUST be ≤18 words; (3) be specific — cite the actual risk, not a category.
+Format: {"label": "low"|"medium"|"high", "reasoning": "<concrete risk from pitch, ≤18 words>"}`,
+        },
+        {
+          name: "Completeness",
+          labels: ["complete", "partial", "insufficient"],
+          fallback: "partial",
+          systemPrompt: `You are a pitch completeness analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) list the specific missing elements by name (e.g. "no financials", "no team info", "no market size"); (2) reasoning MUST be ≤18 words; (3) "complete" requires market, model, traction, and team all present.
+Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific missing fields or confirmation, ≤18 words>"}`,
+        },
+      ];
+
+      type AgentResult = { name: AgentName; label: string; reasoning: string; fallback: boolean };
+      const agentOutputs: AgentResult[] = await Promise.all(
+        AGENTS.map(async (agent) => {
+          try {
+            const res = await invokeLLM({
+              messages: [
+                { role: "system", content: agent.systemPrompt },
+                { role: "user", content: `Pitch:\n${truncated}` },
+              ],
+              max_tokens: 120,
+            });
+            const contentRaw = res?.choices?.[0]?.message?.content;
+            const raw = (typeof contentRaw === "string" ? contentRaw : "").trim();
+            const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+            const parsed = JSON.parse(cleaned) as { label?: unknown; reasoning?: unknown };
+            const label = typeof parsed.label === "string" && agent.labels.includes(parsed.label) ? parsed.label : agent.fallback;
+            const reasoning = typeof parsed.reasoning === "string" && parsed.reasoning.length > 0 ? parsed.reasoning.slice(0, 120) : "Unable to determine from available information.";
+            return { name: agent.name, label, reasoning, fallback: label === agent.fallback && parsed.label !== agent.fallback };
+          } catch {
+            return { name: agent.name, label: agent.fallback, reasoning: "Unable to determine from available information.", fallback: true };
+          }
+        })
+      );
+
+      const byName = Object.fromEntries(agentOutputs.map((r) => [r.name, r])) as Record<AgentName, AgentResult>;
+
+      // ── Transformation layer: IC output → PitchMirror 3 sections ─────────
+      //
+      // SECTION 1: What Investors See
+      //   Strengths = agents with positive labels (strong/clear/low/complete)
+      //   Concerns  = agents with negative labels (weak/unclear/missing/none/risk/high/insufficient)
+      //
+      const POSITIVE_LABELS = new Set(["strong", "clear", "low", "complete"]);
+      const NEGATIVE_LABELS = new Set(["weak", "unclear", "missing", "none", "risk", "high", "insufficient"]);
+
+      const FRIENDLY_NAMES: Record<AgentName, string> = {
+        "Market Signal": "market opportunity",
+        "Business Model": "business model",
+        "Traction": "traction",
+        "Founder Signal": "founding team",
+        "Risk": "risk profile",
+        "Completeness": "pitch completeness",
+      };
+
+      const STRENGTH_PHRASES: Record<string, Record<string, string>> = {
+        "Market Signal": { strong: "The market opportunity comes across as credible and well-defined." },
+        "Business Model": { clear: "The revenue model is clearly articulated and easy to follow." },
+        "Traction": { strong: "The traction data is compelling and shows real momentum.", early: "Early traction signals suggest the idea is being validated." },
+        "Founder Signal": { strong: "The founding team’s background is relevant and credible." },
+        "Risk": { low: "The risk profile appears manageable at this stage." },
+        "Completeness": { complete: "The pitch covers all key areas investors typically look for." },
+      };
+
+      const CONCERN_PHRASES: Record<string, Record<string, string>> = {
+        "Market Signal": {
+          weak: "Investors may question the size or defensibility of the market.",
+          unclear: "The market opportunity is not fully visible yet — more specifics would help.",
+        },
+        "Business Model": {
+          partial: "This could be clearer — investors will want to understand exactly how revenue is generated.",
+          missing: "Investors may question how the business makes money — the revenue model is not stated.",
+        },
+        "Traction": {
+          early: "Investors may want to see more concrete traction before committing.",
+          none: "The absence of traction data is likely to raise questions about validation.",
+        },
+        "Founder Signal": {
+          neutral: "Investors may question whether the team has the right background for this problem.",
+          risk: "There are signals in the pitch that investors may flag as founder-related concerns.",
+        },
+        "Risk": {
+          medium: "Investors may question how key risks will be managed as the business scales.",
+          high: "There is a significant risk factor that investors are likely to probe in detail.",
+        },
+        "Completeness": {
+          partial: "Some important areas are not fully addressed — investors will likely ask follow-up questions.",
+          insufficient: "The pitch is missing several key elements that investors typically require.",
+        },
+      };
+
+      const strengths: string[] = [];
+      const concerns: string[] = [];
+
+      for (const agent of AGENTS) {
+        const r = byName[agent.name];
+        if (POSITIVE_LABELS.has(r.label)) {
+          const phrase = STRENGTH_PHRASES[agent.name]?.[r.label];
+          if (phrase && strengths.length < 3) strengths.push(phrase);
+        } else if (NEGATIVE_LABELS.has(r.label)) {
+          const phrase = CONCERN_PHRASES[agent.name]?.[r.label];
+          if (phrase && concerns.length < 3) concerns.push(phrase);
+        }
+      }
+      // Ensure at least 1 strength and 1 concern
+      if (strengths.length === 0) strengths.push("The core idea is clear enough to evaluate.");
+      if (concerns.length === 0) concerns.push("Investors may want more detail to make a confident assessment.");
+
+      // SECTION 2: What to Fix Before Sending
+      //   Map negative agents to specific, actionable improvements
+      const FIX_MAP: Record<string, Record<string, string>> = {
+        "Market Signal": {
+          weak: "Add a specific market size figure (e.g. \"$2B GCC fintech market\") and name 1–2 direct competitors to show you understand the landscape.",
+          unclear: "State the total addressable market with a number, the geography you’re targeting, and why now is the right time.",
+        },
+        "Business Model": {
+          partial: "Clarify your primary revenue stream: is it subscription, transaction fee, or licensing? Add a rough price point or unit economics.",
+          missing: "Add a dedicated revenue model section: how do you charge, who pays, and what does a single customer relationship look like financially?",
+        },
+        "Traction": {
+          early: "Quantify your traction: number of users, revenue, pilots, or letters of intent. Even small numbers are better than none.",
+          none: "Include at least one proof point — a pilot customer, an LOI, waitlist signups, or a completed prototype with user feedback.",
+        },
+        "Founder Signal": {
+          neutral: "Add a 2–3 line team section: name each founder, their relevant background, and why this team is uniquely positioned to solve this problem.",
+          risk: "Address the concern directly: if there is a gap in the team, explain how you plan to fill it or who your advisors are.",
+        },
+        "Risk": {
+          medium: "Acknowledge the main risk and explain your mitigation plan in 1–2 sentences. Investors respect founders who have thought this through.",
+          high: "The pitch needs a clear risk section: name the primary risk, why it exists, and what you are doing to reduce it.",
+        },
+        "Completeness": {
+          partial: "Review your pitch against this checklist: market size, revenue model, traction, team, and ask (how much are you raising and for what).",
+          insufficient: "The pitch is missing too many key sections. Use a standard structure: problem, solution, market, model, traction, team, ask.",
+        },
+      };
+
+      const fixes: string[] = [];
+      for (const agent of AGENTS) {
+        const r = byName[agent.name];
+        if (NEGATIVE_LABELS.has(r.label)) {
+          const fix = FIX_MAP[agent.name]?.[r.label];
+          if (fix && fixes.length < 5) fixes.push(fix);
+        }
+      }
+      if (fixes.length === 0) fixes.push("Your pitch covers the key areas well. Consider tightening the language and adding a clear ask.");
+
+      // SECTION 3: What’s Missing
+      //   Derived from INSUFFICIENT DATA or low-confidence agents
+      const MISSING_MAP: Record<AgentName, string> = {
+        "Market Signal": "Market size and competitive landscape",
+        "Business Model": "Revenue model and unit economics",
+        "Traction": "Traction data (users, revenue, pilots)",
+        "Founder Signal": "Team background and credentials",
+        "Risk": "Risk acknowledgement and mitigation plan",
+        "Completeness": "Key pitch sections (problem, solution, ask)",
+      };
+
+      const missingItems: string[] = agentOutputs
+        .filter((r) => NEGATIVE_LABELS.has(r.label))
+        .map((r) => MISSING_MAP[r.name])
+        .filter(Boolean)
+        .slice(0, 5);
+
+      if (missingItems.length === 0) missingItems.push("No critical gaps detected — the pitch covers the main areas.");
+
+      // ── Increment pitchMirrorRuns (fire-and-forget) ───────────────────────
+      db.execute(sql`UPDATE users SET pitchMirrorRuns = pitchMirrorRuns + 1 WHERE id = ${ctx.user.id}`)
+        .catch((err: unknown) => console.error("[PitchMirror] Failed to increment runs:", err));
+
+      return {
+        gated: isGated,
+        runsUsed: currentRuns + 1,
+        freeRunsAllowed: PITCH_MIRROR_FREE_RUNS,
+        sections: {
+          whatInvestorsSee: { strengths, concerns },
+          whatToFix: fixes,
+          whatsMissing: missingItems,
+        },
+      };
+    }),
 });

@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `pitchMirrorRuns` int DEFAULT 0 NOT NULL;

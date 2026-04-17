@@ -133,6 +133,9 @@ export const users = mysqlTable("users", {
   totalCompletedRuns: int("totalCompletedRuns").notNull().default(0),
   totalAgentsFired: int("totalAgentsFired").notNull().default(0),
 
+  // ── PitchMirror usage ────────────────────────────────────────────────────────
+  pitchMirrorRuns: int("pitchMirrorRuns").notNull().default(0),
+
   // ── Admin provisioning ────────────────────────────────────────────────────────
   /** bcrypt hash of the provisioned temporary password. Null for OAuth users. */
   passwordHash: varchar("passwordHash", { length: 255 }),

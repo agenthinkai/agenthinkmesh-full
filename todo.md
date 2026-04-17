@@ -2223,3 +2223,19 @@
 - [x] UI: contextual empty state when date range + filters = 0 rows (e.g. "No triages in the last 7 days")
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: 601 passed / 1 skipped (602 total) — no regressions
+
+## PitchMirror
+
+- [x] Server: pitch.mirror mutation — runs existing 6 triage agents, maps output to 3 founder-friendly sections
+- [x] Server: transformation layer — What Investors See (2-3 strengths, 2-3 concerns), What to Fix Before Sending (3-5 actionable), What's Missing (gaps from low-confidence agents)
+- [x] Server: usage gate — pitchMirrorRuns counter on users table, flag after 2 free runs (gated=true returned, result still shown)
+- [x] DB: add pitchMirrorRuns column to users table and push migration (via migrate-pitch-triages.mjs)
+- [x] UI: /pitchmirror route — single-page minimal interface (INPUT / LOADING / RESULTS states)
+- [x] UI: input box + "Analyze My Pitch" button (disabled until 30 chars, word/char counter)
+- [x] UI: 3-section output (What Investors See, What to Fix, What's Missing)
+- [x] UI: usage gate banner (amber warning when gated=true, result still displayed)
+- [x] UI: Copy Feedback button (plain text format)
+- [x] UI: SiteNav entry for PitchMirror (🪞, all 3 locations: TOOLS_ITEMS, dropdown, mobile drawer)
+- [x] Route: /pitchmirror wired in App.tsx
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: 601 passed / 1 skipped (602 total) — no regressions
