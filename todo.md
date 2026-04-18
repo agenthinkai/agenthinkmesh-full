@@ -2383,3 +2383,11 @@
 - [x] Client: pitchmirror_result success:false event fired on evaluation error
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: no regressions (693 passed / 1 skipped — no new tests needed, frontend-only change)
+
+## PitchMirror — Behavior Tracking (guest blocked + share click + stage on submit)
+
+- [x] Client: pitchmirror_guest_blocked fired when guest hits second-run gate (prior_runs: 1)
+- [x] Client: pitchmirror_share_click fired on ShareButton click (has_result: true)
+- [x] Client: pitchmirror_submit extended with founderStage field
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: no regressions (693 passed / 1 skipped — no new tests needed, frontend-only change)

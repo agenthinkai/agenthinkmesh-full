@@ -117,6 +117,7 @@ export default function PitchMirror() {
 
     // Guest gate: block second run
     if (!user && sessionStorage.getItem(GUEST_RUN_KEY) === "true") {
+      trackEvent("pitchmirror_guest_blocked", { prior_runs: 1 });
       setView("GUEST_BLOCKED");
       return;
     }
@@ -127,6 +128,7 @@ export default function PitchMirror() {
     trackEvent("pitchmirror_submit", {
       input_length: pitchText.trim().length,
       has_input: pitchText.trim().length > 0,
+      founderStage,
     });
     mirrorMutation.mutate({ pitchText: pitchText.trim(), founderStage });
   }
@@ -709,6 +711,7 @@ function ShareButton({ sections, founderStage }: { sections: MirrorResult["secti
 
   async function handleShare() {
     if (state === "loading") return;
+    trackEvent("pitchmirror_share_click", { has_result: true });
     setState("loading");
     try {
       const validStages = ["idea", "building", "early_revenue", "scaling"] as const;
