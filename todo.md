@@ -2375,3 +2375,11 @@
 - [x] Client: pitchmirror_landing_view event fired on mount in PitchMirrorLanding.tsx
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: no regressions (693 passed / 1 skipped — no new tests needed, frontend-only change)
+
+## PitchMirror — Funnel Tracking (submit + result)
+
+- [x] Client: pitchmirror_submit event fired before API call in PitchMirror.tsx (input_length, has_input)
+- [x] Client: pitchmirror_result success:true event fired after successful evaluation
+- [x] Client: pitchmirror_result success:false event fired on evaluation error
+- [x] TypeScript: tsc --noEmit exits 0
+- [x] Tests: no regressions (693 passed / 1 skipped — no new tests needed, frontend-only change)

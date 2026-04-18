@@ -19,6 +19,7 @@ import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
+import { trackEvent } from "@/lib/analytics";
 
 // ── Design tokens (dark, consistent with rest of app) ─────────────────────────
 const BG = "#0d0d14";
@@ -94,10 +95,17 @@ export default function PitchMirror() {
       }
       setResult(data);
       setView("RESULTS");
+      // Fire result success event after evaluation completes
+      trackEvent("pitchmirror_result", {
+        success: true,
+        input_length: pitchText.trim().length,
+      });
     },
     onError: (err) => {
       setError(err.message || "Something went wrong. Please try again.");
       setView("INPUT");
+      // Fire result failure event
+      trackEvent("pitchmirror_result", { success: false });
     },
   });
 
@@ -115,6 +123,11 @@ export default function PitchMirror() {
 
     setError(null);
     setView("LOADING");
+    // Fire submit event BEFORE the API call so failed runs are still captured
+    trackEvent("pitchmirror_submit", {
+      input_length: pitchText.trim().length,
+      has_input: pitchText.trim().length > 0,
+    });
     mirrorMutation.mutate({ pitchText: pitchText.trim(), founderStage });
   }
 
