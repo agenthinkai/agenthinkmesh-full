@@ -117,6 +117,9 @@ export default function Home() {
           <a href="#domains" className="text-sm text-white/50 hover:text-white transition-colors">Domains</a>
           <a href="#platform-scope" onClick={(e) => { e.preventDefault(); document.getElementById('platform-scope')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-sm text-white/50 hover:text-white transition-colors cursor-pointer">Platform</a>
           <a href="#contact" className="text-sm text-white/50 hover:text-white transition-colors">Contact</a>
+          <Link href="/pitchmirror" className="text-sm font-semibold text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1">
+            <span>🪞</span> PitchMirror
+          </Link>
         </div>
         <button
           className="md:hidden p-2 text-white/50 hover:text-white transition-colors"
@@ -185,6 +188,13 @@ export default function Home() {
                 {label}
               </a>
             ))}
+            <Link
+              href="/pitchmirror"
+              className="text-sm font-semibold text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1.5"
+              onClick={() => setMobileNavOpen(false)}
+            >
+              <span>🪞</span> PitchMirror — free
+            </Link>
           </div>
         )}
       </nav>
@@ -223,6 +233,28 @@ export default function Home() {
             <Link href="/domains" className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2">Education</Link>
             {" "}domain.
           </p>
+
+          {/* ── PRIMARY FREE-RUN CTA ── */}
+          {!isAuthenticated && (
+            <div className="mb-10">
+              <Link href="/pitchmirror">
+                <button
+                  className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-white font-bold text-base shadow-2xl shadow-violet-500/30 transition-all duration-200 hover:scale-[1.03] hover:shadow-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 focus:ring-offset-[#080B14]"
+                  style={{
+                    background: "linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)",
+                  }}
+                  onClick={() => trackEvent("home_pitchmirror_cta_click", { location: "hero" })}
+                >
+                  <span className="text-xl">🪞</span>
+                  <span>Try it now — no login required</span>
+                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </button>
+              </Link>
+              <p className="mt-3 text-xs text-white/40 text-center">
+                Paste your pitch → get investor-style feedback in seconds
+              </p>
+            </div>
+          )}
 
           {/* ── LIVE WORKFLOW CTAs ── */}
           <div className="flex items-center justify-center gap-4 flex-wrap mb-6">

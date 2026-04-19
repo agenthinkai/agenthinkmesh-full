@@ -2391,3 +2391,13 @@
 - [x] Client: pitchmirror_submit extended with founderStage field
 - [x] TypeScript: tsc --noEmit exits 0
 - [x] Tests: no regressions (693 passed / 1 skipped — no new tests needed, frontend-only change)
+
+## UX Friction Removal — Free Guest Run + Soft Gate
+
+- [x] Homepage: add "Try it now — no login required" primary CTA above fold, linking to /pitchmirror
+- [x] Homepage: move PitchMirror CTA above existing workflow CTAs in hero section
+- [x] PitchMirror: confirm 1 free guest run already works (sessionStorage gate exists)
+- [x] PitchMirror: improve RESULTS view with inline soft gate after guest run (no redirect, no blocker before evaluation)
+- [x] PitchMirror: show soft gate banner at bottom of RESULTS when guest has used their free run
+- [x] PitchMirror: remove GUEST_BLOCKED full-screen state — replace with inline banner in INPUT view
+- [x] PitchMirror: INPUT view shows "Run again? Save results →" soft nudge after guest run consumed

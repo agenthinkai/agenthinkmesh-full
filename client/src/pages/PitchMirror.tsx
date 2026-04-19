@@ -59,7 +59,7 @@ type MirrorResult = {
   };
 };
 
-type ViewState = "INPUT" | "LOADING" | "RESULTS" | "GUEST_BLOCKED";
+type ViewState = "INPUT" | "LOADING" | "RESULTS";
 
 export default function PitchMirror() {
   const { user } = useAuth();
@@ -115,10 +115,11 @@ export default function PitchMirror() {
       return;
     }
 
-    // Guest gate: block second run
+    // Guest gate: soft-block second run — stay in INPUT, show inline nudge
     if (!user && sessionStorage.getItem(GUEST_RUN_KEY) === "true") {
-      trackEvent("pitchmirror_guest_blocked", { prior_runs: 1 });
-      setView("GUEST_BLOCKED");
+      trackEvent("pitchmirror_guest_soft_gate", { prior_runs: 1 });
+      // Don't block — scroll to the soft gate banner instead
+      document.getElementById("guest-soft-gate")?.scrollIntoView({ behavior: "smooth", block: "center" });
       return;
     }
 
@@ -194,61 +195,7 @@ export default function PitchMirror() {
 
       <div style={{ maxWidth: 760, margin: "0 auto", padding: "0 24px" }}>
 
-        {/* ── GUEST BLOCKED state ────────────────────────────────────────────── */}
-        {view === "GUEST_BLOCKED" && (
-          <div
-            style={{
-              marginTop: 32,
-              background: BG2,
-              border: `1px solid ${BORDER}`,
-              borderRadius: 12,
-              padding: "32px 28px",
-              textAlign: "center",
-            }}
-          >
-            <div style={{ fontSize: 32, marginBottom: 12 }}>🔒</div>
-            <p style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 8 }}>
-              You've used your free guest analysis
-            </p>
-            <p style={{ fontSize: 13, color: TEXT2, marginBottom: 24, maxWidth: 380, margin: "0 auto 24px" }}>
-              Create a free account to run another evaluation and save your results.
-            </p>
-            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
-              <a
-                href={getLoginUrl()}
-                style={{
-                  display: "inline-block",
-                  background: ACCENT,
-                  color: "#fff",
-                  borderRadius: 8,
-                  padding: "11px 28px",
-                  fontSize: 14,
-                  fontWeight: 700,
-                  textDecoration: "none",
-                }}
-              >
-                Create free account
-              </a>
-              <a
-                href={getLoginUrl()}
-                style={{
-                  display: "inline-block",
-                  background: "rgba(255,255,255,0.06)",
-                  border: `1px solid ${BORDER}`,
-                  color: TEXT2,
-                  borderRadius: 8,
-                  padding: "11px 24px",
-                  fontSize: 14,
-                  fontWeight: 600,
-                  textDecoration: "none",
-                }}
-              >
-                Sign in
-              </a>
-            </div>
-            <p style={{ fontSize: 11, color: MUTED, marginTop: 16 }}>No credit card required.</p>
-          </div>
-        )}
+
 
         {/* ── INPUT state ────────────────────────────────────────────────────── */}
         {view === "INPUT" && (
@@ -384,6 +331,84 @@ export default function PitchMirror() {
                 ? "Free guest analysis — no account required. Create a free account to save results and run more."
                 : "Free tier: 2 analyses included. No credit card required."}
             </div>
+
+            {/* ── Soft gate: shown inline when guest tries to run again ─────── */}
+            {isGuest && sessionStorage.getItem(GUEST_RUN_KEY) === "true" && (
+              <div
+                id="guest-soft-gate"
+                style={{
+                  marginTop: 20,
+                  background: "linear-gradient(135deg, rgba(124,58,237,0.10) 0%, rgba(192,132,252,0.07) 100%)",
+                  border: `1px solid rgba(124,58,237,0.35)`,
+                  borderRadius: 12,
+                  padding: "20px 22px",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 14,
+                }}
+              >
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 9,
+                    background: ACCENT_LIGHT,
+                    border: `1px solid rgba(124,58,237,0.3)`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 18,
+                    flexShrink: 0,
+                  }}
+                >
+                  🪞
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: TEXT, margin: "0 0 4px" }}>
+                    Save your results and run more evaluations
+                  </p>
+                  <p style={{ fontSize: 12, color: TEXT2, margin: "0 0 14px", lineHeight: 1.55 }}>
+                    You've used your free guest analysis. Create a free account to run unlimited evaluations and save your results.
+                  </p>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                    <a
+                      href={getLoginUrl()}
+                      style={{
+                        display: "inline-block",
+                        background: ACCENT,
+                        color: "#fff",
+                        borderRadius: 8,
+                        padding: "9px 22px",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        textDecoration: "none",
+                      }}
+                      onClick={() => trackEvent("pitchmirror_softgate_signup_click", {})}
+                    >
+                      Create free account
+                    </a>
+                    <a
+                      href={getLoginUrl()}
+                      style={{
+                        display: "inline-block",
+                        background: "rgba(255,255,255,0.06)",
+                        border: `1px solid ${BORDER}`,
+                        color: TEXT2,
+                        borderRadius: 8,
+                        padding: "9px 18px",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        textDecoration: "none",
+                      }}
+                      onClick={() => trackEvent("pitchmirror_softgate_signin_click", {})}
+                    >
+                      Sign in
+                    </a>
+                    <span style={{ fontSize: 11, color: MUTED }}>No credit card required.</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
