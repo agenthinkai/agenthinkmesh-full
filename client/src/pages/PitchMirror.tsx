@@ -685,41 +685,43 @@ export default function PitchMirror() {
                       Save this evaluation and keep going
                     </h3>
                     <p style={{ fontSize: 13, color: TEXT2, margin: "0 0 20px", lineHeight: 1.6 }}>
-                      Compare ideas, track progress, and run unlimited analyses.
+                      Create an account to save results, compare pitches, and run unlimited evaluations.
                     </p>
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                       <a
                         href={getLoginUrl()}
                         style={{
-                          display: "inline-block",
-                          background: ACCENT,
-                          color: "#fff",
-                          borderRadius: 8,
-                          padding: "10px 24px",
-                          fontSize: 13,
-                          fontWeight: 700,
-                          textDecoration: "none",
-                          transition: "opacity 0.15s",
-                        }}
-                      >
-                        Create free account
-                      </a>
-                      <a
-                        href={getLoginUrl()}
-                        style={{
-                          display: "inline-block",
-                          background: "rgba(255,255,255,0.06)",
-                          border: `1px solid ${BORDER}`,
-                          color: TEXT2,
-                          borderRadius: 8,
-                          padding: "10px 20px",
-                          fontSize: 13,
-                          fontWeight: 600,
-                          textDecoration: "none",
-                        }}
-                      >
-                        Sign in
-                      </a>
+                        display: "inline-block",
+                        background: ACCENT,
+                        color: "#fff",
+                        borderRadius: 8,
+                        padding: "10px 24px",
+                        fontSize: 13,
+                        fontWeight: 700,
+                        textDecoration: "none",
+                        transition: "opacity 0.15s",
+                      }}
+                      onClick={() => trackEvent("pitchmirror_softgate_signup_click", {})}
+                    >
+                      Create free account
+                    </a>
+                    <a
+                      href={getLoginUrl()}
+                      style={{
+                        display: "inline-block",
+                        background: "rgba(255,255,255,0.06)",
+                        border: `1px solid ${BORDER}`,
+                        color: TEXT2,
+                        borderRadius: 8,
+                        padding: "10px 20px",
+                        fontSize: 13,
+                        fontWeight: 600,
+                        textDecoration: "none",
+                      }}
+                      onClick={() => trackEvent("pitchmirror_softgate_signin_click", {})}
+                    >
+                      Sign in
+                    </a>
                       <span style={{ fontSize: 11, color: MUTED }}>No credit card required.</span>
                     </div>
                   </div>

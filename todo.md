@@ -2426,3 +2426,10 @@
 - [x] PitchMirror RESULTS: update soft gate body to "Compare ideas, track progress, and run unlimited analyses"
 - [x] PitchMirror LOADING: verify "Analyzing your pitch…" loading state is visible and clear
 - [x] Tests: confirm 693 tests still pass after frontend-only changes
+
+## Conversion Refinements — Round 2
+
+- [x] PitchMirror RESULTS: update post-results soft gate body to "Create an account to save results, compare pitches, and run unlimited evaluations."
+- [x] PitchMirror RESULTS: add analytics events (pitchmirror_softgate_signup_click, pitchmirror_softgate_signin_click) to RESULTS card CTAs
+- [x] PitchMirrorLanding: confirmed already aligned — "1 free evaluation · No login required" badge + "Try it now — no login required" CTA
+- [x] Tests: 693/693 passing after frontend-only changes
