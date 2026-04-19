@@ -298,9 +298,29 @@ export default function PitchMirror() {
                 marginTop: 16,
               }}
             >
-              <span style={{ fontSize: 11, color: MUTED }}>
-                {wordCount} words · {charCount}/3000 chars
-              </span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                <span style={{ fontSize: 11, color: MUTED }}>
+                  {wordCount} words · {charCount}/3000 chars
+                </span>
+                {/* Word-count progress bar — target 30 words */}
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <div style={{ width: 80, height: 3, borderRadius: 2, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+                    <div style={{
+                      height: "100%",
+                      borderRadius: 2,
+                      width: `${Math.min(100, (wordCount / 30) * 100)}%`,
+                      background: wordCount >= 30 ? GREEN : "rgba(124,58,237,0.7)",
+                      transition: "width 0.2s, background 0.2s",
+                    }} />
+                  </div>
+                  {wordCount < 30 && (
+                    <span style={{ fontSize: 10, color: MUTED }}>{30 - wordCount} more word{30 - wordCount !== 1 ? "s" : ""} to unlock</span>
+                  )}
+                  {wordCount >= 30 && (
+                    <span style={{ fontSize: 10, color: GREEN }}>Ready ✓</span>
+                  )}
+                </div>
+              </div>
               <button
                 onClick={handleAnalyze}
                 disabled={pitchText.trim().length < 30}
@@ -771,6 +791,7 @@ function SectionCard({
 function ShareButton({ sections, founderStage, isGuest }: { sections: MirrorResult["sections"]; founderStage?: string; isGuest?: boolean }) {
   const [state, setState] = useState<"idle" | "loading" | "copied" | "error">("idle");
   const createShare = trpc.pitch.createShare.useMutation();
+  const createGuestShare = trpc.pitch.createGuestShare.useMutation();
   const userType = isGuest ? "guest" : "authenticated";
 
   async function handleShare() {
@@ -778,21 +799,22 @@ function ShareButton({ sections, founderStage, isGuest }: { sections: MirrorResu
     trackEvent("pitchmirror_share_click", { location: "results", userType, resultShared: true });
     setState("loading");
     try {
-      let url: string;
+      const validStages = ["idea", "building", "early_revenue", "scaling"] as const;
+      type ValidStage = typeof validStages[number];
+      const stage = validStages.includes(founderStage as ValidStage)
+        ? (founderStage as ValidStage)
+        : undefined;
+      let shareToken: string;
       if (isGuest) {
-        // Guests: share a link back to /pitchmirror (results are not persisted)
-        url = `${window.location.origin}/pitchmirror`;
+        // Guests: persist result anonymously via publicProcedure, get a real /pitchmirror/r/{token} URL
+        ({ shareToken } = await createGuestShare.mutateAsync({ sections, founderStage: stage }));
+        trackEvent("pitchmirror_share_complete", { location: "results", userType: "guest", method: "copy_link", shareType: "anonymous_persisted_result" });
       } else {
-        const validStages = ["idea", "building", "early_revenue", "scaling"] as const;
-        type ValidStage = typeof validStages[number];
-        const stage = validStages.includes(founderStage as ValidStage)
-          ? (founderStage as ValidStage)
-          : undefined;
-        const { shareToken } = await createShare.mutateAsync({ sections, founderStage: stage });
-        url = `${window.location.origin}/pitchmirror/r/${shareToken}`;
+        ({ shareToken } = await createShare.mutateAsync({ sections, founderStage: stage }));
+        trackEvent("pitchmirror_share_complete", { location: "results", userType: "authenticated", method: "copy_link" });
       }
+      const url = `${window.location.origin}/pitchmirror/r/${shareToken}`;
       await navigator.clipboard.writeText(url);
-      trackEvent("pitchmirror_share_complete", { location: "results", userType, method: "copy_link" });
       setState("copied");
       setTimeout(() => setState("idle"), 2500);
     } catch {

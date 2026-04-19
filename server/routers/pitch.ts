@@ -542,6 +542,30 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
     }),
 
   /**
+   * pitch.createGuestShare — Public (no auth): persists mirror result anonymously, returns shareToken.
+   * Identical payload to createShare but uses publicProcedure so guests can share without signing up.
+   * The pitch_mirror_shares table has no userId column, so all shares are inherently anonymous.
+   */
+  createGuestShare: publicProcedure
+    .input(z.object({
+      sections: z.object({
+        whatInvestorsSee: z.object({
+          strengths: z.array(z.string()),
+          concerns: z.array(z.string()),
+        }),
+        whatToFix: z.array(z.string()),
+        whatsMissing: z.array(z.string()),
+      }),
+      founderStage: z.enum(["idea", "building", "early_revenue", "scaling"]).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const json = JSON.stringify(input.sections);
+      const shareToken = await createPitchMirrorShare(json, input.founderStage ?? null);
+      if (!shareToken) throw new Error("Failed to create guest share");
+      return { shareToken };
+    }),
+
+  /**
    * pitch.getShare — Public: returns mirror result by shareToken (no user data).
    */
   getShare: publicProcedure

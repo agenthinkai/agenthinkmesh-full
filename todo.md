@@ -2444,3 +2444,12 @@
 - [x] PitchMirror: authenticated share continues to use createShare tRPC mutation (no change)
 - [x] Tests: 693/693 passing after changes
 - [x] TypeScript: zero errors
+
+## Anonymous Guest Share + Word-Count Indicator
+
+- [x] Server: add pitch.createGuestShare publicProcedure (same input schema as createShare, no userId, calls createPitchMirrorShare)
+- [x] Client: update ShareButton — guest path calls trpc.pitch.createGuestShare instead of copying /pitchmirror
+- [x] Client: guest share analytics — pitchmirror_share_complete payload updated: shareType: "anonymous_persisted_result"
+- [x] Client: PitchMirror INPUT — add word-count progress bar below textarea (target: 30 words, turns green at threshold)
+- [x] Tests: 693/693 passing
+- [x] TypeScript: zero errors
