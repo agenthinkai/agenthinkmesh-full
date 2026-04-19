@@ -2411,3 +2411,18 @@
 - [x] PitchMirrorLanding: update CTAButton label to "Try it now — no login required" to match homepage CTA
 - [x] Preserve all analytics events (pitchmirror_softgate_signup_click, pitchmirror_softgate_signin_click)
 - [x] Tests: confirm 693 tests still pass after frontend-only changes
+
+## Activation Optimization — PitchMirror First-Run UX
+
+- [x] Home hero: update headline to "Get investor-style feedback on your pitch in 60 seconds"
+- [x] Home hero: update subtext to "Paste your idea and see how a decision council would evaluate it"
+- [x] Home hero: update CTA small text to "Free first analysis • takes ~30 seconds"
+- [x] PitchMirror INPUT: add title "Paste your startup pitch" and helper text "Don't overthink it — even a rough idea works"
+- [x] PitchMirror INPUT: update textarea placeholder with more realistic sample pitch
+- [x] PitchMirror INPUT: add "Try with a sample pitch" button that auto-fills textarea
+- [x] PitchMirror INPUT: rename main CTA button from "Analyze My Pitch →" to "Get Feedback →"
+- [x] PitchMirror RESULTS: add header "Investor-style breakdown of your pitch" with subtext
+- [x] PitchMirror RESULTS: add pre-gate nudge "Want to save this and run more analyses?" above soft gate card
+- [x] PitchMirror RESULTS: update soft gate body to "Compare ideas, track progress, and run unlimited analyses"
+- [x] PitchMirror LOADING: verify "Analyzing your pitch…" loading state is visible and clear
+- [x] Tests: confirm 693 tests still pass after frontend-only changes

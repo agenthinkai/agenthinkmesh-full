@@ -214,16 +214,15 @@ export default function Home() {
           </div>
 
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.02] mb-6">
-            A structured{" "}
+            Get investor-style feedback{" "}
             <span className="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
-              decision layer
+              on your pitch
             </span>
-            <br />for institutional workflows.
+            <br />in 60 seconds.
           </h1>
 
           <p className="text-lg text-white/60 max-w-2xl mx-auto mb-4 leading-relaxed">
-            AgenThinkMesh transforms unstructured inputs into consistent, auditable outputs
-            across multiple institutional domains.
+            Paste your idea and see how a decision council would evaluate it.
           </p>
 
           <p className="text-sm text-white/40 max-w-xl mx-auto mb-10 leading-relaxed">
@@ -251,7 +250,7 @@ export default function Home() {
                 </button>
               </Link>
               <p className="mt-3 text-xs text-white/40 text-center">
-                Paste your pitch → get investor-style feedback in seconds
+                Free first analysis • takes ~30 seconds
               </p>
             </div>
           )}

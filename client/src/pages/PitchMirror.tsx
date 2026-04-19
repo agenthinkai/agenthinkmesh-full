@@ -197,9 +197,19 @@ export default function PitchMirror() {
 
 
 
-        {/* ── INPUT state ────────────────────────────────────────────────────── */}
+        {/* ── INPUT state ──────────────────────────────────────────────────────────────────── */}
         {view === "INPUT" && (
           <div style={{ marginTop: 32 }}>
+            {/* Input section title + helper */}
+            <div style={{ marginBottom: 16 }}>
+              <h2 style={{ fontSize: 17, fontWeight: 800, color: TEXT, margin: "0 0 4px", letterSpacing: -0.3 }}>
+                Paste your startup pitch
+              </h2>
+              <p style={{ fontSize: 13, color: TEXT2, margin: 0 }}>
+                Don’t overthink it — even a rough idea works.
+              </p>
+            </div>
+
             {error && (
               <div
                 style={{
@@ -219,7 +229,7 @@ export default function PitchMirror() {
             <textarea
               value={pitchText}
               onChange={(e) => setPitchText(e.target.value)}
-              placeholder={`Paste your pitch here — e.g.:\n\n"We are building a B2B SaaS platform for SMEs in the GCC to automate accounts payable. The market is $1.2B and growing at 18% annually. We have 3 paying customers generating $8K MRR. The founding team has 12 years of combined fintech experience..."`}
+              placeholder={`e.g. "We're building a B2B SaaS platform for SMEs in the GCC to automate accounts payable. The market is $1.2B and growing at 18% annually. We have 3 paying customers generating $8K MRR. The founding team has 12 years of combined fintech experience. We're raising $500K to expand our sales team and reach 50 customers by end of year."`}
               style={{
                 width: "100%",
                 minHeight: 240,
@@ -307,26 +317,39 @@ export default function PitchMirror() {
                   letterSpacing: 0.2,
                 }}
               >
-                Analyze My Pitch →
+                Get Feedback →
               </button>
             </div>
 
-            {/* Trust line — subtle, always visible */}
-            <p
-              style={{
-                marginTop: 14,
-                fontSize: 12,
-                color: MUTED,
-                display: "flex",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              <span style={{ color: GREEN, fontSize: 10 }}>●</span>
-              {isGuest
-                ? "1 free evaluation — no login required."
-                : "Free tier: 2 analyses included. No credit card required."}
-            </p>
+            {/* Sample pitch button + trust line */}
+            <div style={{ marginTop: 14, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+              <p style={{ fontSize: 12, color: MUTED, display: "flex", alignItems: "center", gap: 6, margin: 0 }}>
+                <span style={{ color: GREEN, fontSize: 10 }}>●</span>
+                {isGuest ? "1 free evaluation — no login required." : "Free tier: 2 analyses included. No credit card required."}
+              </p>
+              <button
+                onClick={() => {
+                  setPitchText("We're building a B2B SaaS platform for SMEs in the GCC to automate accounts payable. The market is $1.2B and growing at 18% annually. We have 3 paying customers generating $8K MRR. The founding team has 12 years of combined fintech experience. We're raising $500K to expand our sales team and reach 50 customers by end of year.");
+                  trackEvent("pitchmirror_sample_pitch_click", {});
+                }}
+                style={{
+                  background: "rgba(255,255,255,0.05)",
+                  border: `1px solid ${BORDER}`,
+                  borderRadius: 7,
+                  color: TEXT2,
+                  fontSize: 11,
+                  fontWeight: 600,
+                  padding: "6px 14px",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  whiteSpace: "nowrap",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(124,58,237,0.4)"; e.currentTarget.style.color = TEXT; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = BORDER; e.currentTarget.style.color = TEXT2; }}
+              >
+                Try with a sample pitch
+              </button>
+            </div>
 
             {/* ── Soft gate: shown inline when guest tries to run again ─────── */}
             {isGuest && sessionStorage.getItem(GUEST_RUN_KEY) === "true" && (
@@ -457,9 +480,19 @@ export default function PitchMirror() {
           </div>
         )}
 
-        {/* ── RESULTS state ──────────────────────────────────────────────────── */}
+        {/* ── RESULTS state ────────────────────────────────────────────────────────────────── */}
         {view === "RESULTS" && result && (
           <div style={{ marginTop: 32 }}>
+            {/* Results header */}
+            <div style={{ marginBottom: 24 }}>
+              <h2 style={{ fontSize: 18, fontWeight: 800, color: TEXT, margin: "0 0 6px", letterSpacing: -0.4 }}>
+                Investor-style breakdown of your pitch
+              </h2>
+              <p style={{ fontSize: 13, color: TEXT2, margin: 0, lineHeight: 1.6 }}>
+                Evaluated by a decision council of 6 specialist agents across market, traction, business model, founder signal, risk, and completeness.
+              </p>
+            </div>
+
             {/* Usage gate banner (authenticated users who've hit limit) */}
             {result.gated && (
               <div
@@ -612,6 +645,13 @@ export default function PitchMirror() {
               {!isGuest && <ShareButton sections={result.sections} founderStage={result.founderStage} />}
             </div>
 
+            {/* Pre-gate nudge — shown to guests before the sign-up card */}
+            {isGuest && (
+              <p style={{ fontSize: 13, color: TEXT2, marginTop: 28, marginBottom: 0, textAlign: "center" }}>
+                Want to save this and run more analyses?
+              </p>
+            )}
+
             {/* ── Post-result sign-in card (guest only, non-blocking) ─────────── */}
             {isGuest && (
               <div
@@ -645,7 +685,7 @@ export default function PitchMirror() {
                       Save this evaluation and keep going
                     </h3>
                     <p style={{ fontSize: 13, color: TEXT2, margin: "0 0 20px", lineHeight: 1.6 }}>
-                      Create an account to save results, compare pitches, and run unlimited evaluations.
+                      Compare ideas, track progress, and run unlimited analyses.
                     </p>
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                       <a
