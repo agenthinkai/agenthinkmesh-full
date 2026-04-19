@@ -642,7 +642,7 @@ export default function PitchMirror() {
                 ← Analyze Another Pitch
               </button>
               <CopyButton result={result} />
-              {!isGuest && <ShareButton sections={result.sections} founderStage={result.founderStage} />}
+              <ShareButton sections={result.sections} founderStage={result.founderStage} isGuest={isGuest} />
             </div>
 
             {/* Pre-gate nudge — shown to guests before the sign-up card */}
@@ -768,23 +768,31 @@ function SectionCard({
   );
 }
 
-function ShareButton({ sections, founderStage }: { sections: MirrorResult["sections"]; founderStage?: string }) {
+function ShareButton({ sections, founderStage, isGuest }: { sections: MirrorResult["sections"]; founderStage?: string; isGuest?: boolean }) {
   const [state, setState] = useState<"idle" | "loading" | "copied" | "error">("idle");
   const createShare = trpc.pitch.createShare.useMutation();
+  const userType = isGuest ? "guest" : "authenticated";
 
   async function handleShare() {
     if (state === "loading") return;
-    trackEvent("pitchmirror_share_click", { has_result: true });
+    trackEvent("pitchmirror_share_click", { location: "results", userType, resultShared: true });
     setState("loading");
     try {
-      const validStages = ["idea", "building", "early_revenue", "scaling"] as const;
-      type ValidStage = typeof validStages[number];
-      const stage = validStages.includes(founderStage as ValidStage)
-        ? (founderStage as ValidStage)
-        : undefined;
-      const { shareToken } = await createShare.mutateAsync({ sections, founderStage: stage });
-      const url = `${window.location.origin}/pitchmirror/r/${shareToken}`;
+      let url: string;
+      if (isGuest) {
+        // Guests: share a link back to /pitchmirror (results are not persisted)
+        url = `${window.location.origin}/pitchmirror`;
+      } else {
+        const validStages = ["idea", "building", "early_revenue", "scaling"] as const;
+        type ValidStage = typeof validStages[number];
+        const stage = validStages.includes(founderStage as ValidStage)
+          ? (founderStage as ValidStage)
+          : undefined;
+        const { shareToken } = await createShare.mutateAsync({ sections, founderStage: stage });
+        url = `${window.location.origin}/pitchmirror/r/${shareToken}`;
+      }
       await navigator.clipboard.writeText(url);
+      trackEvent("pitchmirror_share_complete", { location: "results", userType, method: "copy_link" });
       setState("copied");
       setTimeout(() => setState("idle"), 2500);
     } catch {

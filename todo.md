@@ -2433,3 +2433,14 @@
 - [x] PitchMirror RESULTS: add analytics events (pitchmirror_softgate_signup_click, pitchmirror_softgate_signin_click) to RESULTS card CTAs
 - [x] PitchMirrorLanding: confirmed already aligned — "1 free evaluation · No login required" badge + "Try it now — no login required" CTA
 - [x] Tests: 693/693 passing after frontend-only changes
+
+## Guest Share — PitchMirror Growth
+
+- [x] PitchMirror: unhide ShareButton for guests (remove !isGuest guard on line 645)
+- [x] PitchMirror: add isGuest prop to ShareButton; guests use client-side share (link to /pitchmirror, no server call)
+- [x] PitchMirror: update pitchmirror_share_click payload to include location, userType, resultShared fields
+- [x] PitchMirror: add pitchmirror_share_complete event with location, userType, method fields
+- [x] PitchMirror: guest share copies /pitchmirror URL (not a persisted result link)
+- [x] PitchMirror: authenticated share continues to use createShare tRPC mutation (no change)
+- [x] Tests: 693/693 passing after changes
+- [x] TypeScript: zero errors
