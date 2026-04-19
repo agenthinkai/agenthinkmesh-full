@@ -44,7 +44,7 @@ function CTAButton({ className = "" }: { className?: string }) {
       <button
         className={`inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-6 py-3 rounded-lg transition-colors text-base shadow-lg ${className}`}
       >
-        Evaluate my pitch
+        Try it now — no login required
       </button>
     </Link>
   );
@@ -82,7 +82,7 @@ export default function PitchMirrorLanding() {
       {/* ── Section 1: Hero ── */}
       <section className="max-w-5xl mx-auto px-4 sm:px-6 pt-20 pb-24 text-center">
         <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-semibold uppercase tracking-widest px-3 py-1 rounded-full mb-8">
-          Free to try · No account required
+          1 free evaluation · No login required
         </div>
         <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold leading-tight mb-6 text-white">
           See your pitch the way<br className="hidden sm:block" />{" "}
@@ -92,7 +92,7 @@ export default function PitchMirrorLanding() {
           Paste your pitch. Get clear feedback in under 60 seconds.
         </p>
         <CTAButton />
-        <p className="mt-4 text-sm text-slate-500">Free to try. No account required.</p>
+        <p className="mt-4 text-sm text-slate-500">1 free evaluation — no login required.</p>
       </section>
 
       {/* ── Section 2: What You Get ── */}
@@ -247,10 +247,10 @@ export default function PitchMirrorLanding() {
           </p>
           <Link href="/pitchmirror">
             <button className="inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-8 py-4 rounded-lg transition-colors text-lg shadow-lg">
-              Evaluate my pitch free
+              Try it now — no login required
             </button>
           </Link>
-          <p className="mt-4 text-sm text-slate-500">Free to try. No account required.</p>
+          <p className="mt-4 text-sm text-slate-500">1 free evaluation — no account needed.</p>
         </div>
       </section>
 

@@ -311,26 +311,22 @@ export default function PitchMirror() {
               </button>
             </div>
 
-            {/* Usage indicator */}
-            <div
+            {/* Trust line — subtle, always visible */}
+            <p
               style={{
-                marginTop: 20,
-                padding: "10px 14px",
-                background: "rgba(255,255,255,0.03)",
-                border: `1px solid ${BORDER}`,
-                borderRadius: 8,
-                fontSize: 11,
+                marginTop: 14,
+                fontSize: 12,
                 color: MUTED,
                 display: "flex",
                 alignItems: "center",
-                gap: 8,
+                gap: 6,
               }}
             >
-              <span style={{ color: GREEN }}>●</span>
+              <span style={{ color: GREEN, fontSize: 10 }}>●</span>
               {isGuest
-                ? "Free guest analysis — no account required. Create a free account to save results and run more."
+                ? "1 free evaluation — no login required."
                 : "Free tier: 2 analyses included. No credit card required."}
-            </div>
+            </p>
 
             {/* ── Soft gate: shown inline when guest tries to run again ─────── */}
             {isGuest && sessionStorage.getItem(GUEST_RUN_KEY) === "true" && (
@@ -365,10 +361,10 @@ export default function PitchMirror() {
                 </div>
                 <div style={{ flex: 1 }}>
                   <p style={{ fontSize: 14, fontWeight: 700, color: TEXT, margin: "0 0 4px" }}>
-                    Save your results and run more evaluations
+                    Save this evaluation and keep going
                   </p>
                   <p style={{ fontSize: 12, color: TEXT2, margin: "0 0 14px", lineHeight: 1.55 }}>
-                    You've used your free guest analysis. Create a free account to run unlimited evaluations and save your results.
+                    Create an account to save results, compare pitches, and run unlimited evaluations.
                   </p>
                   <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                     <a
@@ -646,10 +642,10 @@ export default function PitchMirror() {
                   </div>
                   <div style={{ flex: 1 }}>
                     <h3 style={{ fontSize: 15, fontWeight: 800, color: TEXT, margin: "0 0 6px" }}>
-                      Save your results and run again
+                      Save this evaluation and keep going
                     </h3>
                     <p style={{ fontSize: 13, color: TEXT2, margin: "0 0 20px", lineHeight: 1.6 }}>
-                      Create a free account to save this evaluation and run more pitches.
+                      Create an account to save results, compare pitches, and run unlimited evaluations.
                     </p>
                     <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
                       <a

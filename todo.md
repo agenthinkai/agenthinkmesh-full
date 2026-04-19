@@ -2401,3 +2401,13 @@
 - [x] PitchMirror: show soft gate banner at bottom of RESULTS when guest has used their free run
 - [x] PitchMirror: remove GUEST_BLOCKED full-screen state — replace with inline banner in INPUT view
 - [x] PitchMirror: INPUT view shows "Run again? Save results →" soft nudge after guest run consumed
+
+## Conversion Refinements — PitchMirror Trust Line + Soft Gate Copy
+
+- [x] PitchMirror INPUT: replace usage indicator with "1 free evaluation — no login required." trust line (subtle, readable)
+- [x] PitchMirror RESULTS: update post-results guest soft gate title to "Save this evaluation and keep going"
+- [x] PitchMirror RESULTS: update soft gate body to "Create an account to save results, compare pitches, and run unlimited evaluations."
+- [x] PitchMirrorLanding: update hero badge and CTA copy to match "1 free evaluation — no login required" messaging
+- [x] PitchMirrorLanding: update CTAButton label to "Try it now — no login required" to match homepage CTA
+- [x] Preserve all analytics events (pitchmirror_softgate_signup_click, pitchmirror_softgate_signin_click)
+- [x] Tests: confirm 693 tests still pass after frontend-only changes
