@@ -967,6 +967,24 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
           { width: metaCellW - 22, lineBreak: false });
     });
 
+    // ── Pattern context badge (shown only when patternContext is set) ─────────
+    if (input.patternContext === "invested_match" || input.patternContext === "passed_match") {
+      const patternBadgeY = metaY + 58;
+      const patternBadgeW = BODY_W - 80;
+      const patternBadgeX = ML + 40;
+      const patternBg    = input.patternContext === "invested_match" ? "#DCFCE7" : "#FEF9C3";
+      const patternBorder = input.patternContext === "invested_match" ? "#16a34a" : "#d97706";
+      const patternText  = input.patternContext === "invested_match"
+        ? "Historical Pattern: Invested Match"
+        : "Historical Pattern: Passed Match";
+      doc.rect(patternBadgeX, patternBadgeY, patternBadgeW, 22).fill(patternBg);
+      doc.rect(patternBadgeX, patternBadgeY, patternBadgeW, 22).stroke(patternBorder);
+      doc.rect(patternBadgeX, patternBadgeY, 3, 22).fill(patternBorder);
+      doc.fontSize(8).fillColor(patternBorder).font("Helvetica-Bold")
+        .text(patternText, patternBadgeX + 10, patternBadgeY + 7,
+          { width: patternBadgeW - 14, align: "center", lineBreak: false });
+    }
+
     // ── Bottom confidentiality footer ────────────────────────────────────────
     doc.rect(0, A4_H - 52, A4_W, 1).fill(BORDER_C);
     doc.fontSize(7.5).fillColor(MUTED).font("Helvetica-Bold")

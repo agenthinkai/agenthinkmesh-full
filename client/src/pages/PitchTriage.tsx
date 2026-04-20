@@ -1628,6 +1628,24 @@ function HistoryTab({
   // Pattern signal expansion state
   const [patternExpanded, setPatternExpanded] = useState(false);
 
+  // Stale deal nudge — dismissed state persisted in localStorage
+  const [dismissedNudges, setDismissedNudges] = useState<Set<number>>(() => {
+    try {
+      const raw = localStorage.getItem("atm_dismissed_stale_nudges");
+      if (raw) return new Set(JSON.parse(raw) as number[]);
+    } catch { /* ignore */ }
+    return new Set<number>();
+  });
+
+  function dismissNudge(id: number) {
+    setDismissedNudges((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      try { localStorage.setItem("atm_dismissed_stale_nudges", JSON.stringify(Array.from(next))); } catch { /* ignore */ }
+      return next;
+    });
+  }
+
   // Outcome recording
   const recordOutcomeMutation = trpc.pitch.recordOutcome.useMutation();
   const [outcomeState, setOutcomeState] = useState<Record<number, "invested" | "passed" | "recording" | null>>({});
@@ -2469,6 +2487,68 @@ function HistoryTab({
           </span>
         </div>
       )}
+
+      {/* Stale deal outcome nudge — max 3, derived from allRows, no new queries */}
+      {(() => {
+        const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+        const staleDeals = allRows
+          .filter((r) =>
+            (r.stage === "diligence" || r.stage === "ic_ready") &&
+            !r.decisionOutcome &&
+            (Date.now() - new Date(r.createdAt).getTime()) >= THIRTY_DAYS_MS &&
+            !dismissedNudges.has(r.id)
+          )
+          .slice(0, 3);
+        if (staleDeals.length === 0) return null;
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+            {staleDeals.map((r) => {
+              const stageLabel = r.stage === "ic_ready" ? "IC Ready" : "Diligence";
+              const dealName = r.pitchPreview ? r.pitchPreview.slice(0, 40).trim() + (r.pitchPreview.length > 40 ? "…" : "") : `Deal #${r.id}`;
+              return (
+                <div
+                  key={r.id}
+                  style={{
+                    background: "rgba(245,158,11,0.06)",
+                    border: "1px solid rgba(245,158,11,0.22)",
+                    borderRadius: 8,
+                    padding: "7px 12px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <span style={{ fontSize: 12, flexShrink: 0 }}>⏳</span>
+                  <span style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.4, flex: 1 }}>
+                    <span style={{ color: "rgba(255,255,255,0.75)", fontWeight: 600 }}>{dealName}</span>
+                    {" "}has been in{" "}
+                    <span style={{ color: "#f59e0b", fontWeight: 600 }}>{stageLabel}</span>
+                    {" "}for 30+ days — record an outcome to improve pattern accuracy.
+                  </span>
+                  <button
+                    onClick={() => dismissNudge(r.id)}
+                    title="Dismiss"
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "rgba(255,255,255,0.25)",
+                      cursor: "pointer",
+                      fontSize: 14,
+                      lineHeight: 1,
+                      padding: "0 2px",
+                      flexShrink: 0,
+                    }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.6)"; }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.color = "rgba(255,255,255,0.25)"; }}
+                  >
+                    ×
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {/* System Signals summary */}
       <div

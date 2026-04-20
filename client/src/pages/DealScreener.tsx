@@ -600,7 +600,7 @@ function VCSummaryBlock({ vc, decisionColor }: { vc: NonNullable<ICReportData["v
   );
 }
 
-function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData; result: CouncilResult; onCopy: (text: string) => void; onNewDeal: () => void }) {
+function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext }: { ic: ICReportData; result: CouncilResult; onCopy: (text: string) => void; onNewDeal: () => void; patternContext?: "invested_match" | "passed_match" }) {
   // Color derived from council verdict (not IC executive verdict) for consistency
   const verdictColor = result.verdict === "APPROVED" ? GREEN
     : result.verdict === "APPROVED_WITH_CONDITIONS" ? ACCENT
@@ -741,6 +741,19 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
           <span style={{ fontFamily: MONO, fontSize: 18, fontWeight: 800, color: verdictColor }}>{ic.executiveVerdict.decision}</span>
           <span style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, background: `${verdictColor}18`, padding: "4px 10px", borderRadius: 4 }}>{ic.executiveVerdict.recommendedAction}</span>
         </div>
+        {/* Pattern context sentence — injected as first line of executive summary when present */}
+        {patternContext === "invested_match" && (
+          <p style={{ margin: "0 0 10px 0", fontSize: 12, color: GREEN, lineHeight: 1.5, display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 9, flexShrink: 0 }}>●</span>
+            Historical pattern context: this deal matches prior invested opportunities with similar strengths.
+          </p>
+        )}
+        {patternContext === "passed_match" && (
+          <p style={{ margin: "0 0 10px 0", fontSize: 12, color: AMBER, lineHeight: 1.5, display: "flex", alignItems: "center", gap: 6 }}>
+            <span style={{ fontSize: 9, flexShrink: 0 }}>●</span>
+            Historical pattern context: similar opportunities with this pattern were previously passed.
+          </p>
+        )}
         <p style={{ margin: 0, fontSize: 13, color: TEXT, lineHeight: 1.6 }}>{ic.executiveVerdict.rationale}</p>
       </div>
 
@@ -1410,7 +1423,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
 
       {/* Boardroom IC Report tab */}
       {activeTab === "boardroom" && result.icReport && (
-        <BoardroomICReport ic={result.icReport} result={result} onCopy={handleCopyICReport} onNewDeal={onNewDeal} />
+        <BoardroomICReport ic={result.icReport} result={result} onCopy={handleCopyICReport} onNewDeal={onNewDeal} patternContext={patternContext} />
       )}
 
       {/* Raw Council tab */}

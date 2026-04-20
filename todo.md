@@ -2677,3 +2677,33 @@
 - [x] No new schema, no new APIs
 - [x] TypeScript: zero errors (full npx tsc --noEmit EXIT:0)
 - [x] Tests: 693/693 passing
+
+## Three-Task Sprint (e25493d1 base)
+
+### Task 1 — Stale Deal Outcome Nudge
+- [x] Client: derive stale deals from existing allRows in HistoryTab (stage diligence/ic_ready, decisionOutcome null, createdAt 30+ days ago)
+- [x] Client: show max 3 nudge lines above deal list, format "⏳ [name] has been in [stage] for 30+ days — record an outcome to improve pattern accuracy."
+- [x] Client: each nudge has dismiss (X) button — dismissed state in localStorage keyed by triage ID
+- [x] Client: dismissed nudges hidden immediately and do not reappear
+- [x] Client: no nudges rendered when no qualifying deals
+- [x] No new DB queries, no schema changes
+
+### Task 2 — Pattern Context in Boardroom IC Report Tab
+- [x] Client: pass patternContext prop through to Boardroom tab rendering in ICReport
+- [x] Client: inject pattern context sentence as first line of executive summary section
+- [x] Client: invested_match → green dot + sentence; passed_match → amber dot + sentence
+- [x] Client: no change when patternContext absent
+- [x] No new API calls
+
+### Task 3 — Pattern Context Badge in IC Memo PDF Header
+- [x] Server: in icMemoPdf.ts, add pattern context badge to PDF cover page metadata row
+- [x] Server: "Historical Pattern: Invested Match" in green when invested_match
+- [x] Server: "Historical Pattern: Passed Match" in amber when passed_match
+- [x] Server: badge only rendered when patternContext is present
+- [x] Server: pill-shaped badge below metadata grid, centered, no layout changes
+- [x] No schema changes
+
+### Shared Constraints
+- [x] tsc --noEmit EXIT:0 after each task
+- [x] Tests: 693/693 passing throughout
+- [x] No regressions to History tab, result screen, conflict block, calibration signal, outcome chips
