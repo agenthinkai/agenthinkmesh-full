@@ -965,9 +965,15 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
     )
     .query(async ({ ctx, input }) => {
       // Fetch last 20 triage records that have a real outcome
-      const rows = await getOutcomeHistory(ctx.user.id.toString(), 20) as PitchTriage[];
-      if (!rows) return { type: "none" as const, signals: [] as string[], phrase: "" };
+      const allOutcomeRows = await getOutcomeHistory(ctx.user.id.toString(), 20) as PitchTriage[];
+      if (!allOutcomeRows) return { type: "none" as const, signals: [] as string[], phrase: "" };
 
+      // 90-day recency filter — only include records from the last 90 days
+      const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+      const cutoff = Date.now() - NINETY_DAYS_MS;
+      const rows = allOutcomeRows.filter(r => new Date(r.createdAt).getTime() >= cutoff);
+
+      // MIN_GROUP threshold applies after the 90-day filter
       if (rows.length < 3) return { type: "none" as const, signals: [] as string[], phrase: "" };
 
       const POSITIVE_LABELS = new Set(["strong", "clear", "low", "complete"]);
@@ -1089,7 +1095,12 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
     }),
 
   agentCalibration: protectedProcedure.query(async ({ ctx }) => {
-    const rows = await getPitchTriageHistory(ctx.user.id.toString(), 50) as PitchTriage[];
+    const allRows = await getPitchTriageHistory(ctx.user.id.toString(), 50) as PitchTriage[];
+
+    // 90-day recency filter — only include records from the last 90 days
+    const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+    const cutoff = Date.now() - NINETY_DAYS_MS;
+    const rows = allRows.filter(r => new Date(r.createdAt).getTime() >= cutoff);
 
     const POSITIVE_LABELS = new Set(["strong", "clear", "low", "complete"]);
     const PROGRESSED_STAGES = new Set(["diligence", "ic_ready", "decision_made"]);
