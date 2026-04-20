@@ -138,6 +138,20 @@ export default function PitchTriage() {
   const updateStage = trpc.pitch.updateStage.useMutation();
   const [movedToDiligence, setMovedToDiligence] = useState(false);
 
+  // Pattern insight — derived from historical invested/passed outcomes vs current deal
+  const currentAgentOutputsStr = useMemo(
+    () => (result?.agentOutputs ? JSON.stringify(result.agentOutputs) : ""),
+    [result?.agentOutputs]
+  );
+  const patternInsightQuery = trpc.pitch.patternInsight.useQuery(
+    { currentAgentOutputs: currentAgentOutputsStr },
+    {
+      enabled: pageState === "RESULTS" && currentAgentOutputsStr.length > 0,
+      refetchOnWindowFocus: false,
+      staleTime: 2 * 60 * 1000,
+    }
+  );
+
   // Calibration signal — loaded once per session, non-blocking
   const calibrationQuery = trpc.pitch.agentCalibration.useQuery(undefined, {
     refetchOnWindowFocus: false,
@@ -1235,7 +1249,37 @@ export default function PitchTriage() {
                 );
               })()}
 
-              {/* ── Next Actions block ─────────────────────────────────── */}
+              {/* ── Pattern Insight block ──────────────────────────────────────────── */}
+              {(() => {
+                const insight = patternInsightQuery.data;
+                if (!insight || insight.type === "none") return null;
+                const isPositive = insight.type === "invested_match";
+                const borderColor = isPositive ? "rgba(16,185,129,0.35)" : "rgba(245,158,11,0.35)";
+                const bgColor = isPositive ? "rgba(16,185,129,0.06)" : "rgba(245,158,11,0.06)";
+                const textColor = isPositive ? "#10b981" : "#f59e0b";
+                const icon = isPositive ? "✓" : "⚠";
+                return (
+                  <div
+                    style={{
+                      background: bgColor,
+                      border: `1px solid ${borderColor}`,
+                      borderRadius: 10,
+                      padding: "10px 16px",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 10,
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span style={{ fontSize: 14, color: textColor, fontWeight: 700, flexShrink: 0 }}>{icon}</span>
+                    <span style={{ fontSize: 13, color: textColor, fontWeight: 500, lineHeight: 1.4 }}>
+                      {insight.phrase}
+                    </span>
+                  </div>
+                );
+              })()}
+
+              {/* ── Next Actions block ─────────────────────────────────────────────── */}
               <div
                 style={{
                   background: "rgba(124,58,237,0.06)",

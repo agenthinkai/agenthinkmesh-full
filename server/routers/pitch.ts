@@ -11,7 +11,8 @@
 
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated, updateTriageStage, recordOutcome, createPitchMirrorShare, getPitchMirrorShare } from "../db";
+import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated, updateTriageStage, recordOutcome, getOutcomeHistory, createPitchMirrorShare, getPitchMirrorShare } from "../db";
+import { PitchTriage } from "../../drizzle/schema";
 import { sql } from "drizzle-orm";
 import { runCouncil } from "../councilEngine";
 import { invokeLLM } from "../_core/llm";
@@ -955,8 +956,124 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
    * Fallback: uses stage progression (diligence/ic_ready/decision_made) when outcome is null.
    * Returns: { agentName, signal: 'high' | 'moderate' | 'low' | 'insufficient', sampleSize, outcomeGrounded }
    */
+  patternInsight: protectedProcedure
+    .input(
+      z.object({
+        // Current deal's agent outputs as JSON string
+        currentAgentOutputs: z.string(),
+      })
+    )
+    .query(async ({ ctx, input }) => {
+      // Fetch last 20 triage records that have a real outcome
+      const rows = await getOutcomeHistory(ctx.user.id.toString(), 20) as PitchTriage[];
+      if (!rows) return { type: "none" as const, signals: [] as string[], phrase: "" };
+
+      if (rows.length < 3) return { type: "none" as const, signals: [] as string[], phrase: "" };
+
+      const POSITIVE_LABELS = new Set(["strong", "clear", "low", "complete"]);
+      const AGENT_NAMES = ["Traction", "Market Signal", "Founder Signal", "Business Model", "Risk"] as const;
+      type AgentName = typeof AGENT_NAMES[number];
+
+      // Signal → readable phrase mapping
+      const SIGNAL_PHRASES: Record<AgentName, { positive: string; negative: string }> = {
+        "Traction": { positive: "strong traction", negative: "weak traction" },
+        "Market Signal": { positive: "strong market signal", negative: "weak market signal" },
+        "Founder Signal": { positive: "strong founder signal", negative: "weak founder signal" },
+        "Business Model": { positive: "clear revenue model", negative: "unclear revenue model" },
+        "Risk": { positive: "manageable risk", negative: "high risk" },
+      };
+
+      // Compute dominant positive signals per outcome group
+      const investedSignalCounts: Record<AgentName, number> = {} as Record<AgentName, number>;
+      const passedSignalCounts: Record<AgentName, number> = {} as Record<AgentName, number>;
+      let investedCount = 0;
+      let passedCount = 0;
+
+      for (const row of rows) {
+        if (!row.agentOutputs) continue;
+        let agents: Array<{ name: string; label: string }> = [];
+        try { agents = JSON.parse(row.agentOutputs); } catch { continue; }
+
+        const isInvested = row.decisionOutcome === "invested";
+        const isPassed = row.decisionOutcome === "passed";
+        if (isInvested) investedCount++;
+        if (isPassed) passedCount++;
+
+        for (const agent of agents) {
+          const name = agent.name as AgentName;
+          if (!AGENT_NAMES.includes(name)) continue;
+          if (POSITIVE_LABELS.has(agent.label)) {
+            if (isInvested) investedSignalCounts[name] = (investedSignalCounts[name] ?? 0) + 1;
+          } else {
+            // Negative label on a passed deal = dominant passed signal
+            if (isPassed) passedSignalCounts[name] = (passedSignalCounts[name] ?? 0) + 1;
+          }
+        }
+      }
+
+      // Require at least 3 records in the matched group
+      const MIN_GROUP = 3;
+
+      // Parse current deal's agent outputs
+      let currentAgents: Array<{ name: string; label: string }> = [];
+      try { currentAgents = JSON.parse(input.currentAgentOutputs); } catch { /* ignore */ }
+
+      const currentPositive = new Set(
+        currentAgents
+          .filter(a => POSITIVE_LABELS.has(a.label) && AGENT_NAMES.includes(a.name as AgentName))
+          .map(a => a.name as AgentName)
+      );
+      const currentNegative = new Set(
+        currentAgents
+          .filter(a => !POSITIVE_LABELS.has(a.label) && AGENT_NAMES.includes(a.name as AgentName))
+          .map(a => a.name as AgentName)
+      );
+
+      // Find top 2 dominant signals for each group (must appear in ≥50% of that group)
+      const topInvestedSignals = (Object.entries(investedSignalCounts) as [AgentName, number][])
+        .filter(([, count]) => investedCount >= MIN_GROUP && count / investedCount >= 0.5)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 2)
+        .map(([name]) => name);
+
+      const topPassedSignals = (Object.entries(passedSignalCounts) as [AgentName, number][])
+        .filter(([, count]) => passedCount >= MIN_GROUP && count / passedCount >= 0.5)
+        .sort(([, a], [, b]) => b - a)
+        .slice(0, 2)
+        .map(([name]) => name);
+
+      // Match current deal against patterns
+      // Invested match: current deal has positive votes on the top invested signals
+      const investedMatchCount = topInvestedSignals.filter(name => currentPositive.has(name)).length;
+      // Passed match: current deal has negative votes on the top passed signals
+      const passedMatchCount = topPassedSignals.filter(name => currentNegative.has(name)).length;
+
+      const investedMatch = topInvestedSignals.length > 0 && investedMatchCount === topInvestedSignals.length;
+      const passedMatch = topPassedSignals.length > 0 && passedMatchCount === topPassedSignals.length;
+
+      if (investedMatch && !passedMatch) {
+        const phrases = topInvestedSignals.map(n => SIGNAL_PHRASES[n].positive);
+        return {
+          type: "invested_match" as const,
+          signals: topInvestedSignals,
+          phrase: `This deal matches your past invested pattern (${phrases.join(" + ")})`,
+        };
+      }
+
+      if (passedMatch && !investedMatch) {
+        const phrases = topPassedSignals.map(n => SIGNAL_PHRASES[n].negative);
+        return {
+          type: "passed_match" as const,
+          signals: topPassedSignals,
+          phrase: `Caution: similar deals with ${phrases.join(" + ")} were passed`,
+        };
+      }
+
+      return { type: "none" as const, signals: [] as string[], phrase: "" };
+    }),
+
   agentCalibration: protectedProcedure.query(async ({ ctx }) => {
-    const rows = await getPitchTriageHistory(ctx.user.id.toString(), 50);
+    const rows = await getPitchTriageHistory(ctx.user.id.toString(), 50) as PitchTriage[];
 
     const POSITIVE_LABELS = new Set(["strong", "clear", "low", "complete"]);
     const PROGRESSED_STAGES = new Set(["diligence", "ic_ready", "decision_made"]);

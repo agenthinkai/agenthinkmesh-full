@@ -2567,3 +2567,17 @@
 - [x] No new schema, no new APIs, no new UI elements beyond inline text + chip
 - [x] TypeScript: zero errors (full npx tsc --noEmit EXIT:0; watch-mode shows stale cache artifacts)
 - [x] Tests: 693/693 passing
+
+## Cross-Deal Pattern Insight (Triage Result Screen)
+
+- [x] Server: add pitch.patternInsight query — reads last 20 triage records with decisionOutcome, computes dominant signals per outcome group, matches current deal's agent outputs
+- [x] Server: return { type: "invested_match" | "passed_match" | "none", signals: string[], phrase: string }
+- [x] Server: only return a result when ≥3 outcome records exist for the matched group (avoid noise)
+- [x] Client: consume patternInsight query on triage result screen (non-blocking, stale-while-revalidate)
+- [x] Client: render single insight line below Primary Driver / above Next Actions
+- [x] Client: invested_match → green/teal tint, positive phrasing
+- [x] Client: passed_match → amber tint, caution phrasing
+- [x] Client: hide completely when type = "none" or insufficient data
+- [x] No new schema, no new APIs, no charts, no percentages
+- [x] TypeScript: zero errors (full npx tsc --noEmit EXIT:0; watch-mode stale cache)
+- [x] Tests: 693/693 passing

@@ -1,6 +1,6 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertPitchTriage, InsertUser, pitchTriages, pitchMirrorShares, users } from "../drizzle/schema";
+import { InsertPitchTriage, InsertUser, PitchTriage, pitchTriages, pitchMirrorShares, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -108,7 +108,7 @@ export async function savePitchTriage(data: InsertPitchTriage): Promise<number |
   }
 }
 
-export async function getPitchTriageHistory(userId: string, limit = 50) {
+export async function getPitchTriageHistory(userId: string, limit = 50): Promise<PitchTriage[]> {
   const db = await getDb();
   if (!db) return [];
   return db
@@ -192,6 +192,34 @@ export async function recordOutcome(
   } catch (error) {
     console.error("[Database] Failed to record outcome:", error);
     return false;
+  }
+}
+
+/**
+ * getOutcomeHistory — Fetch last N triage records with a real decision outcome.
+ * Used by pitch.patternInsight to compute cross-deal pattern matching.
+ */
+export async function getOutcomeHistory(
+  userId: string,
+  limit = 20
+): Promise<PitchTriage[]> {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db
+      .select()
+      .from(pitchTriages)
+      .where(
+        and(
+          eq(pitchTriages.userId, userId),
+          sql`${pitchTriages.decisionOutcome} IN ('invested', 'passed')`
+        )
+      )
+      .orderBy(desc(pitchTriages.createdAt))
+      .limit(limit);
+  } catch (error) {
+    console.error("[Database] Failed to fetch outcome history:", error);
+    return [];
   }
 }
 
