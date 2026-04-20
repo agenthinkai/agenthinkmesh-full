@@ -1704,6 +1704,13 @@ function HistoryTab({
   const [signalText, setSignalText] = useState<Record<number, string>>({});
   const [signalState, setSignalState] = useState<Record<number, "idle" | "submitting" | "success" | "error">>({});
   const logSignalMutation = trpc.pitch.logSignal.useMutation();
+  // Recent signals query — keyed to selected deal
+  const signalsQuery = trpc.pitch.getSignals.useQuery(
+    { dealId: String(selectedHistoryId ?? 0) },
+    { enabled: selectedHistoryId != null }
+  );
+  // Auto re-triage count (last 30 days)
+  const autoTriggerCountQuery = trpc.pitch.autoTriggerCount.useQuery();
 
   function handleRecordOutcome(id: number, outcome: "invested" | "passed") {
     setOutcomeState((prev) => ({ ...prev, [id]: "recording" }));
@@ -2483,6 +2490,69 @@ function HistoryTab({
             );
           })()}
 
+          {/* Recent signals panel */}
+          {(() => {
+            const recentSignals = (signalsQuery.data ?? []).slice(0, 3);
+            if (recentSignals.length === 0) return null;
+            const SIGNAL_LABELS: Record<string, string> = {
+              founder_update: "Founder update",
+              competitor_news: "Competitor news",
+              market_event: "Market event",
+              negative_press: "Negative press",
+              positive_press: "Positive press",
+              other: "Other",
+            };
+            function relativeTime(ts: Date | string | number): string {
+              const diffMs = Date.now() - new Date(ts).getTime();
+              const mins = Math.floor(diffMs / 60000);
+              if (mins < 60) return `${mins}m ago`;
+              const hrs = Math.floor(mins / 60);
+              if (hrs < 24) return `${hrs}h ago`;
+              const days = Math.floor(hrs / 24);
+              return `${days} day${days === 1 ? "" : "s"} ago`;
+            }
+            return (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <span style={{ color: "rgba(255,255,255,0.35)", fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" }}>Recent signals</span>
+                {recentSignals.map((sig) => (
+                  <div
+                    key={(sig as unknown as { id: number }).id}
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      gap: 8,
+                      padding: "6px 0",
+                      borderBottom: "1px solid rgba(255,255,255,0.05)",
+                    }}
+                  >
+                    <span
+                      style={{
+                        background: "rgba(99,102,241,0.15)",
+                        border: "1px solid rgba(99,102,241,0.30)",
+                        borderRadius: 4,
+                        color: "rgba(165,180,252,0.85)",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: "2px 6px",
+                        whiteSpace: "nowrap",
+                        flexShrink: 0,
+                      }}
+                    >
+                      {SIGNAL_LABELS[(sig as unknown as { signalType: string }).signalType] ?? (sig as unknown as { signalType: string }).signalType}
+                    </span>
+                    <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, flex: 1, lineHeight: 1.4 }}>
+                      {((sig as unknown as { signalText: string }).signalText ?? "").slice(0, 60)}
+                      {((sig as unknown as { signalText: string }).signalText ?? "").length > 60 ? "…" : ""}
+                    </span>
+                    <span style={{ color: "rgba(255,255,255,0.25)", fontSize: 10, whiteSpace: "nowrap", flexShrink: 0 }}>
+                      {relativeTime((sig as unknown as { createdAt: Date | string }).createdAt)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
+
           {/* Outcome prompt — shown only when decisionOutcome is null AND stage is diligence/ic_ready */}
         {!item.decisionOutcome && (item.stage === "diligence" || item.stage === "ic_ready") && (() => {
           const os = outcomeState[item.id];
@@ -2934,6 +3004,17 @@ function HistoryTab({
             <span style={{ fontWeight: 700 }}>{escalatedCount}</span> escalated · <span style={{ fontWeight: 700 }}>{conversionRate}%</span> conversion
           </span>
         )}
+        {/* Auto re-triage count — last 30 days */}
+        {autoTriggerCountQuery.data !== undefined && (() => {
+          const atCount = autoTriggerCountQuery.data.count;
+          return (
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)" }}>
+              {atCount === 0
+                ? "No auto re-triages yet"
+                : <><span style={{ fontWeight: 700, color: TEXT2 }}>{atCount}</span> auto re-triage{atCount !== 1 ? "s" : ""} in last 30 days</>}
+            </span>
+          );
+        })()}
       </div>
 
       {/* Stage (pipeline) filter tabs */}
@@ -3202,22 +3283,40 @@ function HistoryTab({
                     RE-RUN
                   </span>
                 )}
-                {(row as unknown as { source?: string }).source === "auto" && (
-                  <span
-                    style={{
-                      fontSize: 9,
-                      color: "#fbbf24",
-                      background: "rgba(251,191,36,0.12)",
-                      border: "1px solid rgba(251,191,36,0.30)",
-                      borderRadius: 4,
-                      padding: "1px 6px",
-                      letterSpacing: 0.3,
-                      fontWeight: 700,
-                    }}
-                  >
-                    ⚡ Auto
-                  </span>
-                )}
+                {(row as unknown as { source?: string; triggerType?: string }).source === "auto" && (() => {
+                  const isSignal = (row as unknown as { triggerType?: string }).triggerType === "signal_triggered";
+                  return isSignal ? (
+                    <span
+                      style={{
+                        fontSize: 9,
+                        color: "#60a5fa",
+                        background: "rgba(96,165,250,0.12)",
+                        border: "1px solid rgba(96,165,250,0.30)",
+                        borderRadius: 4,
+                        padding: "1px 6px",
+                        letterSpacing: 0.3,
+                        fontWeight: 700,
+                      }}
+                    >
+                      📡 Signal
+                    </span>
+                  ) : (
+                    <span
+                      style={{
+                        fontSize: 9,
+                        color: "#fbbf24",
+                        background: "rgba(251,191,36,0.12)",
+                        border: "1px solid rgba(251,191,36,0.30)",
+                        borderRadius: 4,
+                        padding: "1px 6px",
+                        letterSpacing: 0.3,
+                        fontWeight: 700,
+                      }}
+                    >
+                      ⚡ Auto
+                    </span>
+                  );
+                })()}
                 {row.escalatedAt && (
                   <span
                     style={{
@@ -3313,14 +3412,16 @@ function HistoryTab({
               </div>
               {(row as unknown as { source?: string; triggerType?: string }).source === "auto" && (() => {
                 const tt = (row as unknown as { triggerType?: string }).triggerType;
+                const isSignal = tt === "signal_triggered";
                 const triggerLabel =
+                  tt === "signal_triggered" ? "Re-triaged: external signal logged" :
                   tt === "stale_diligence" ? `Re-triaged: stale in diligence ${Math.floor((Date.now() - new Date(row.createdAt).getTime()) / 86400000)} days` :
                   tt === "stale_ic_ready" ? `Re-triaged: stale in IC Ready ${Math.floor((Date.now() - new Date(row.createdAt).getTime()) / 86400000)} days` :
                   tt === "score_drop" ? "Re-triaged: score dropped" :
                   tt === "pattern_shift" ? "Re-triaged: similar deal outcome conflict" :
                   "Re-triaged automatically";
                 return (
-                  <div style={{ color: "#fbbf24", fontSize: 10, marginTop: 2, opacity: 0.85 }}>
+                  <div style={{ color: isSignal ? "#60a5fa" : "#fbbf24", fontSize: 10, marginTop: 2, opacity: 0.85 }}>
                     {triggerLabel}
                   </div>
                 );

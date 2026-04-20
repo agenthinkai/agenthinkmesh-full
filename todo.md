@@ -2840,3 +2840,30 @@
 - [x] tsc --noEmit EXIT:0 (empty output) after each task
 - [x] Tests: 693 passed | 1 skipped (694 total)
 - [x] No regressions
+
+## Three-Task UI Sprint (d0e7748a base)
+
+### Task 1 — Recent signals panel
+- [x] pitch.getSignals query added to HistoryTab hooks (keyed to selectedHistoryId)
+- [x] Recent signals panel rendered below Log a signal form (last 3 signals)
+- [x] Each row: indigo type badge + truncated signalText (60 chars) + relative time
+- [x] Hidden when no signals exist (no empty state)
+- [x] Section title: "RECENT SIGNALS" in muted uppercase style
+
+### Task 2 — Pipeline Summary auto re-triage count
+- [x] pitch.autoTriggerCount query added to HistoryTab hooks
+- [x] Stat line added to System Signals summary block: "N auto re-triages in last 30 days"
+- [x] Shows "No auto re-triages yet" when count is 0
+- [x] Uses .data.count (correct shape from { count } return)
+
+### Task 3 — Signal-driven badge in History list
+- [x] source="auto" + triggerType="signal_triggered" → blue 📡 Signal badge
+- [x] source="auto" + other triggerType → amber ⚡ Auto badge (unchanged)
+- [x] Trigger subtitle for signal rows: "Re-triaged: external signal logged" (blue)
+- [x] Trigger subtitle for other auto rows: unchanged (amber)
+
+### Shared Constraints
+- [x] tsc --noEmit EXIT:0 (empty output) after each task
+- [x] Tests: 693 passed | 1 skipped (694 total)
+- [x] No schema changes, no new procedures
+- [x] No regressions
