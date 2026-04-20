@@ -703,6 +703,7 @@ export const dealScreenerRouter = router({
         conditionsToProceed: z.array(z.string()),
         blockingIssues:      z.array(z.string()),
         councilMode:         z.enum(["gcc", "global_vc", "india_pe"]).optional(),
+        patternContext:       z.enum(["invested_match", "passed_match"]).optional(),
         votes: z.array(z.object({
           personaId:   z.string(),
           personaName: z.string(),
@@ -726,6 +727,7 @@ export const dealScreenerRouter = router({
         conditionsToProceed: input.conditionsToProceed,
         blockingIssues:      input.blockingIssues,
         councilMode:         input.councilMode,
+        patternContext:      input.patternContext,
         votes:               input.votes,
       };
       const pdfBuffer = await generateICMemoPdf(memoInput);

@@ -47,6 +47,7 @@ export interface ICMemoInput {
   blockingIssues:      string[];
   votes:               PersonaVoteInput[];
   councilMode?:        "gcc" | "global_vc" | "india_pe";
+  patternContext?:     "invested_match" | "passed_match";
 }
 
 interface FinancialRow {
@@ -204,6 +205,7 @@ ${input.blockingIssues.join("\n")}
 
 COUNCIL OF 10 — FULL VOTE ANALYSIS:
 ${votesSummary}
+${input.patternContext === "invested_match" ? "\nHISTORICAL PATTERN CONTEXT: This deal matches prior invested opportunities with similar strengths. Incorporate this context into the executive summary." : input.patternContext === "passed_match" ? "\nHISTORICAL PATTERN CONTEXT: Similar opportunities with this pattern were previously passed. Incorporate this context into the executive summary." : ""}
 
 TASK: Convert the above council analysis into a FULL institutional IC memo (equivalent to 30–40 pages). This is NOT a summary — it is a complete, standalone investment committee document that a senior partner would present to an investment committee.
 
@@ -223,7 +225,7 @@ Return ONLY a valid JSON object with this EXACT structure (no markdown, no expla
   "executiveSummary": {
     "theBet": "single sentence — the one thing that must be true for this to be a great investment",
     "verdict": "Approve | Conditional Approve | Reject",
-    "consensusSummary": "2–3 sentence narrative of the council consensus and key debate",
+    "consensusSummary": "${input.patternContext === 'invested_match' ? 'Begin with: Historical pattern context: this deal matches prior invested opportunities with similar strengths. Then add ' : input.patternContext === 'passed_match' ? 'Begin with: Historical pattern context: similar opportunities with this pattern were previously passed. Then add ' : ''}2–3 sentence narrative of the council consensus and key debate",
     "keyStrengths": ["strength 1 — specific and data-referenced", "strength 2", "strength 3", "strength 4", "strength 5"],
     "keyRisks": ["risk 1 — specific", "risk 2", "risk 3", "risk 4"],
     "recommendation": "2–3 sentence recommendation with specific conditions",

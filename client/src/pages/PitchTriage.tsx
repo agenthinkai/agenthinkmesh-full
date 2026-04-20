@@ -290,7 +290,14 @@ export default function PitchTriage() {
     if (savedTriageId) {
       sessionStorage.setItem("pitchTriageEscalationId", String(savedTriageId));
     }
-    navigate("/deals", { state: { pitchTriageText: pitchText, pitchTriageId: savedTriageId ?? undefined } });
+    // Pass patternContext so DealScreener can inject it into the IC Memo prompt
+    const patternType = patternInsightQuery.data?.type;
+    if (patternType === "invested_match" || patternType === "passed_match") {
+      sessionStorage.setItem("pitchTriagePatternContext", patternType);
+    } else {
+      sessionStorage.removeItem("pitchTriagePatternContext");
+    }
+    navigate("/deals", { state: { pitchTriageText: pitchText, pitchTriageId: savedTriageId ?? undefined, patternContext: (patternType === "invested_match" || patternType === "passed_match") ? patternType : undefined } });
   }
 
   // ── Classification banner config ─────────────────────────────────────────

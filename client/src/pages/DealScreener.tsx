@@ -943,7 +943,7 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal }: { ic: ICReportData
 }
 
 // ── IC Report (raw Council output + boardroom IC Report tabs) ─────────────────
-function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, isHistoryView }: { result: CouncilResult; onNewDeal: () => void; councilMode?: CouncilModeType; onRerun?: (dealName: string, dealText: string, mode: CouncilModeType) => void; isHistoryView?: boolean }) {
+function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, isHistoryView, patternContext }: { result: CouncilResult; onNewDeal: () => void; councilMode?: CouncilModeType; onRerun?: (dealName: string, dealText: string, mode: CouncilModeType) => void; isHistoryView?: boolean; patternContext?: "invested_match" | "passed_match" }) {
   const [activeTab, setActiveTab] = useState<"raw" | "boardroom">(result.icReport ? "boardroom" : "raw");
   // ── Re-run modal state ────────────────────────────────────────────────────
   const [rerunOpen, setRerunOpen] = useState(false);
@@ -983,6 +983,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
         conditionsToProceed: result.conditionsToProceed,
         blockingIssues:      result.blockingIssues,
         councilMode:         councilModeProp ?? result.councilMode,
+        patternContext:      patternContext,
         votes: result.votes.map(v => ({
           personaId:   v.personaId,
           personaName: v.personaId,
@@ -2962,6 +2963,21 @@ export default function DealScreener() {
   const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
   const [screenError, setScreenError] = useState<string | null>(null);
   const [councilMode, setCouncilMode] = useState<CouncilModeType>("global_vc");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [escalationPatternContext, _setEscalationPatternContext] = useState<"invested_match" | "passed_match" | undefined>(() => {
+    // Read patternContext set by PitchTriage handleEscalate — consumed once then cleared
+    const stored = sessionStorage.getItem("pitchTriagePatternContext");
+    if (stored === "invested_match" || stored === "passed_match") {
+      sessionStorage.removeItem("pitchTriagePatternContext");
+      return stored;
+    }
+    // Also check router history state (belt-and-suspenders)
+    const histState = window.history.state as { patternContext?: string } | null;
+    if (histState?.patternContext === "invested_match" || histState?.patternContext === "passed_match") {
+      return histState.patternContext as "invested_match" | "passed_match";
+    }
+    return undefined;
+  });
 
   // Parse Stripe return params from URL
   const urlParams = new URLSearchParams(window.location.search);
@@ -3343,7 +3359,7 @@ export default function DealScreener() {
                 </button>
               </div>
             )}
-            <ICReport key={result.dealId ?? result.dealName} result={result} onNewDeal={handleNewDeal} councilMode={councilMode} isHistoryView={previousView === "history"} onRerun={handleRerun} />
+            <ICReport key={result.dealId ?? result.dealName} result={result} onNewDeal={handleNewDeal} councilMode={councilMode} isHistoryView={previousView === "history"} onRerun={handleRerun} patternContext={escalationPatternContext} />
           </div>
         )}
         {view === "history" && (

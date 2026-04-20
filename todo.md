@@ -2662,3 +2662,18 @@
 - [x] No new schema, no new APIs, uses existing patternInsight result only
 - [x] TypeScript: zero errors (full npx tsc --noEmit EXIT:0)
 - [x] Tests: 693/693 passing
+
+## IC Memo Pattern Context Injection
+
+- [x] Server: add patternContext optional field to ICMemoInput interface (type: "invested_match" | "passed_match" | undefined)
+- [x] Server: add patternContext optional z.enum to icMemoPdf procedure input schema
+- [x] Server: pass patternContext from procedure input to ICMemoInput
+- [x] Server: in synthesiseFullICMemo, prepend pattern context sentence to consensusSummary prompt instruction when patternContext is set
+- [x] Server: invested_match sentence: "Historical pattern context: this deal matches prior invested opportunities with similar strengths."
+- [x] Server: passed_match sentence: "Historical pattern context: similar opportunities with this pattern were previously passed."
+- [x] Client (DealScreener): add patternContext prop to ICReport component and escalationPatternContext state to main DealScreener
+- [x] Client (PitchTriage): pass patternInsightQuery.data?.type as patternContext when triggering IC Memo from result screen
+- [x] Client (PitchTriage): handleEscalate writes patternContext to sessionStorage + navigation state; DealScreener reads on mount
+- [x] No new schema, no new APIs
+- [x] TypeScript: zero errors (full npx tsc --noEmit EXIT:0)
+- [x] Tests: 693/693 passing
