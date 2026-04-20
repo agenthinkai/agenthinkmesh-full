@@ -1510,6 +1510,9 @@ function HistoryTab({
   type StageFilter = "all" | "triaged" | "diligence" | "ic_ready";
   const [stageFilter, setStageFilter] = useState<StageFilter>("all");
 
+  // Pattern signal expansion state
+  const [patternExpanded, setPatternExpanded] = useState(false);
+
   // Outcome recording
   const recordOutcomeMutation = trpc.pitch.recordOutcome.useMutation();
   const [outcomeState, setOutcomeState] = useState<Record<number, "invested" | "passed" | "recording" | null>>({});
@@ -2185,19 +2188,40 @@ function HistoryTab({
   const outcomeCount = allRows.filter((r) => r.decisionOutcome === "invested" || r.decisionOutcome === "passed").length;
 
   // Count rows that match the "invested pattern" — majority of CONFLICT_AGENT outputs are positive
+  // Also accumulate per-agent positive-vote counts across matched deals for top-factor explanation
   const POSITIVE_LABELS_SET = new Set(["strong", "clear", "low", "complete"]);
   const PATTERN_AGENTS = new Set(["Traction", "Market Signal", "Founder Signal", "Business Model", "Risk"]);
+  // Human-readable factor phrases — mirrors server-side SIGNAL_PHRASES in patternInsight
+  const FACTOR_PHRASES: Record<string, string> = {
+    "Traction": "strong traction",
+    "Market Signal": "strong market signal",
+    "Founder Signal": "strong founder signal",
+    "Business Model": "clear revenue model",
+    "Risk": "manageable risk",
+  };
   let patternMatchCount = 0;
+  const agentPositiveVotes: Record<string, number> = {};
   for (const r of allRows) {
     if (!r.agentOutputs) continue;
     let agents: Array<{ name: string; label: string }> = [];
     try { agents = JSON.parse(r.agentOutputs); } catch { continue; }
     const relevant = agents.filter((a) => PATTERN_AGENTS.has(a.name));
     if (relevant.length === 0) continue;
-    const positiveCount = relevant.filter((a) => POSITIVE_LABELS_SET.has(a.label)).length;
+    const positiveAgents = relevant.filter((a) => POSITIVE_LABELS_SET.has(a.label));
     // "Matches success pattern" = majority positive (≥3 of 5 agents positive)
-    if (positiveCount >= 3) patternMatchCount++;
+    if (positiveAgents.length >= 3) {
+      patternMatchCount++;
+      // Accumulate which agents voted positive in matched deals
+      for (const a of positiveAgents) {
+        agentPositiveVotes[a.name] = (agentPositiveVotes[a.name] ?? 0) + 1;
+      }
+    }
   }
+  // Derive top 1–2 factors by vote frequency across matched deals
+  const topSuccessFactors: string[] = Object.entries(agentPositiveVotes)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(([name]) => FACTOR_PHRASES[name] ?? name.toLowerCase());
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
@@ -2254,17 +2278,61 @@ function HistoryTab({
             background: "rgba(16,185,129,0.06)",
             border: "1px solid rgba(16,185,129,0.28)",
             borderRadius: 8,
-            padding: "8px 14px",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
+            overflow: "hidden",
           }}
         >
-          <span style={{ fontSize: 11, color: "#10b981", fontWeight: 700, flexShrink: 0 }}>◆</span>
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.4 }}>
-            <span style={{ color: "#10b981", fontWeight: 700 }}>{patternMatchCount} deal{patternMatchCount !== 1 ? "s" : ""}</span>
-            {" "}match your past success pattern
-          </span>
+          {/* Summary line — clickable toggle */}
+          <button
+            onClick={() => setPatternExpanded((v) => !v)}
+            style={{
+              width: "100%",
+              background: "none",
+              border: "none",
+              padding: "8px 14px",
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              cursor: "pointer",
+              textAlign: "left" as const,
+            }}
+          >
+            <span style={{ fontSize: 11, color: "#10b981", fontWeight: 700, flexShrink: 0 }}>◆</span>
+            <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.4, flex: 1 }}>
+              <span style={{ color: "#10b981", fontWeight: 700 }}>{patternMatchCount} deal{patternMatchCount !== 1 ? "s" : ""}</span>
+              {" "}match your past success pattern
+            </span>
+            <span
+              style={{
+                fontSize: 10,
+                color: "rgba(16,185,129,0.6)",
+                flexShrink: 0,
+                transition: "transform 0.15s",
+                display: "inline-block",
+                transform: patternExpanded ? "rotate(0deg)" : "rotate(-90deg)",
+                userSelect: "none" as const,
+              }}
+            >
+              ▾
+            </span>
+          </button>
+
+          {/* Explanation line — revealed on expand, hidden when no factors */}
+          {patternExpanded && topSuccessFactors.length > 0 && (
+            <div
+              style={{
+                padding: "0 14px 9px 33px",
+                borderTop: "1px solid rgba(16,185,129,0.12)",
+                paddingTop: 7,
+              }}
+            >
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.4 }}>
+                Most common success signals:{" "}
+                <span style={{ color: "rgba(255,255,255,0.65)", fontWeight: 600 }}>
+                  {topSuccessFactors.join(", ")}
+                </span>
+              </span>
+            </div>
+          )}
         </div>
       )}
 

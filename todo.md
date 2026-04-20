@@ -2592,3 +2592,16 @@
 - [x] No schema changes, no new APIs
 - [x] TypeScript: zero errors (full npx tsc --noEmit EXIT:0)
 - [x] Tests: 693/693 passing
+
+## Pattern Signal "Why" Expansion (History Tab)
+
+- [x] Client: compute topSuccessFactors from pattern-matching rows — top 1–2 agents by positive-vote frequency across matched deals
+- [x] Client: add patternExpanded boolean state to HistoryTab
+- [x] Client: make aggregate pattern signal line clickable (toggle expansion)
+- [x] Client: render explanation line inline below summary when expanded — "Most common success signals: strong traction, clear revenue model"
+- [x] Client: add chevron indicator (▾ / ▸) on signal line to hint interactivity
+- [x] Client: hide explanation when insufficient data (< 2 matched deals)
+- [x] No modal, no chart, no table, no percentages, single explanation line only
+- [x] No schema changes, no new APIs
+- [x] TypeScript: zero errors (full npx tsc --noEmit EXIT:0)
+- [x] Tests: 693/693 passing
