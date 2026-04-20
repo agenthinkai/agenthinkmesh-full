@@ -4,7 +4,7 @@
  * 6 parallel micro-agents → deterministic score → ENGAGE / WATCH / IGNORE
  */
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useHistoryState } from "wouter/use-browser-location";
 import { trpc } from "@/lib/trpc";
@@ -137,6 +137,19 @@ export default function PitchTriage() {
   const markEscalated = trpc.pitch.markEscalated.useMutation();
   const updateStage = trpc.pitch.updateStage.useMutation();
   const [movedToDiligence, setMovedToDiligence] = useState(false);
+
+  // Calibration signal — loaded once per session, non-blocking
+  const calibrationQuery = trpc.pitch.agentCalibration.useQuery(undefined, {
+    refetchOnWindowFocus: false,
+    staleTime: 5 * 60 * 1000, // 5 min cache
+  });
+  const calibrationMap = useMemo(() => {
+    const map: Record<string, "high" | "moderate" | "low" | "insufficient"> = {};
+    for (const entry of calibrationQuery.data ?? []) {
+      map[entry.agentName] = entry.signal;
+    }
+    return map;
+  }, [calibrationQuery.data]);
 
   const triage = trpc.pitch.triage.useMutation({
     onSuccess: (data) => {
@@ -1013,6 +1026,26 @@ export default function PitchTriage() {
                 const POSITIVE_LABELS = new Set(["strong", "clear", "low", "complete"]);
                 const NEGATIVE_LABELS = new Set(["weak", "high", "incomplete", "absent", "unclear", "partial", "early", "neutral"]);
 
+                // Signal dot helper — renders a subtle calibration indicator
+                const SIGNAL_DOT: Record<string, { dot: string; color: string; label: string; tooltip: string }> = {
+                  high:   { dot: "●", color: "#4ade80", label: "high signal",     tooltip: "This agent's past recommendations have aligned with deal progression in similar cases" },
+                  moderate: { dot: "◐", color: "#facc15", label: "moderate signal", tooltip: "This agent has shown partial alignment with deal progression" },
+                  low:    { dot: "○", color: "#f87171", label: "low signal",      tooltip: "This agent's votes have had limited correlation with deal progression so far" },
+                };
+                const SignalDot = ({ agentName }: { agentName: string }) => {
+                  const sig = calibrationMap[agentName];
+                  const cfg = sig ? SIGNAL_DOT[sig] : null;
+                  if (!cfg) return null;
+                  return (
+                    <span
+                      title={cfg.tooltip}
+                      style={{ fontSize: 9, color: cfg.color, cursor: "default", userSelect: "none" as const, marginLeft: 2, flexShrink: 0 }}
+                    >
+                      {cfg.dot} {cfg.label}
+                    </span>
+                  );
+                };
+
                 // Only consider the top-weighted agents (exclude Completeness which is noise)
                 const CONFLICT_AGENTS: AgentName[] = ["Traction", "Market Signal", "Founder Signal", "Business Model", "Risk"];
 
@@ -1070,6 +1103,7 @@ export default function PitchTriage() {
                       <span style={{ fontSize: 11, fontWeight: 700, color: primaryColor, whiteSpace: "nowrap" as const }}>
                         {AGENT_META[primaryAgent.name as AgentName]?.icon ?? ""} {primaryAgent.name}
                       </span>
+                      <SignalDot agentName={primaryAgent.name} />
                       <span style={{ fontSize: 11, color: TEXT2 }}>— {firstSentence(primaryAgent.reasoning)}</span>
                     </div>
                   );
@@ -1135,6 +1169,7 @@ export default function PitchTriage() {
                         <span style={{ fontSize: 11, fontWeight: 700, color: primaryColor, whiteSpace: "nowrap" as const }}>
                           {AGENT_META[primaryAgent.name as AgentName]?.icon ?? ""} {primaryAgent.name}
                         </span>
+                        <SignalDot agentName={primaryAgent.name} />
                         <span style={{ fontSize: 11, color: TEXT2 }}>— {firstSentence(primaryAgent.reasoning)}</span>
                       </div>
                     )}
@@ -1159,6 +1194,7 @@ export default function PitchTriage() {
                               <span style={{ fontSize: 12, fontWeight: 700, color: "#fff", whiteSpace: "nowrap" as const }}>
                                 {agent.name}
                               </span>
+                              <SignalDot agentName={agent.name} />
                               <span
                                 style={{
                                   fontSize: 10,

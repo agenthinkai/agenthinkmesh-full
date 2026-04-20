@@ -2532,3 +2532,16 @@
 - [x] No schema changes, no new APIs, no backend changes
 - [x] TypeScript: zero errors
 - [x] Tests: 693/693 passing
+
+## Agent Calibration Signal (Lightweight)
+
+- [x] Server: add pitch.agentCalibration query — compute per-agent alignment rate from last 50 triage records with stage progression
+- [x] Server: classify each agent as high/moderate/low signal based on alignment rate thresholds
+- [x] Server: return { agentName, signal: "high" | "moderate" | "low", sampleSize } for each of the 5 top agents
+- [x] Client: consume calibration query in PitchTriage result screen
+- [x] Client: show subtle dot indicator next to agent name in Conflict block rows (● high / ◐ moderate / ○ low)
+- [x] Client: show same indicator next to agent name in Primary Driver / Primary Concern line
+- [x] Client: tooltip on indicator explaining signal meaning
+- [x] No percentages in UI, no charts, no new schema
+- [x] TypeScript: zero errors
+- [x] Tests pass

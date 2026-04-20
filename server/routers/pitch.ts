@@ -932,4 +932,63 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         },
       };
     }),
+
+  /**
+   * pitch.agentCalibration — Lightweight calibration signal for each triage agent.
+   * Uses the last 50 triage records to compute how often each agent's positive vote
+   * aligned with deals that progressed to diligence or ic_ready.
+   * Returns: { agentName, signal: 'high' | 'moderate' | 'low' | 'insufficient', sampleSize }
+   * No schema changes — reads agentOutputs JSON and stage field from existing rows.
+   */
+  agentCalibration: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await getPitchTriageHistory(ctx.user.id.toString(), 50);
+
+    const POSITIVE_LABELS = new Set(["strong", "clear", "low", "complete"]);
+    const PROGRESSED_STAGES = new Set(["diligence", "ic_ready", "decision_made"]);
+    const AGENT_NAMES = ["Traction", "Market Signal", "Founder Signal", "Business Model", "Risk"] as const;
+
+    type AgentName = typeof AGENT_NAMES[number];
+    type SignalLevel = "high" | "moderate" | "low" | "insufficient";
+
+    const stats: Record<AgentName, { positiveVotes: number; alignedWithProgress: number }> = {
+      "Traction": { positiveVotes: 0, alignedWithProgress: 0 },
+      "Market Signal": { positiveVotes: 0, alignedWithProgress: 0 },
+      "Founder Signal": { positiveVotes: 0, alignedWithProgress: 0 },
+      "Business Model": { positiveVotes: 0, alignedWithProgress: 0 },
+      "Risk": { positiveVotes: 0, alignedWithProgress: 0 },
+    };
+
+    for (const row of rows) {
+      if (!row.agentOutputs) continue;
+      let agents: Array<{ name: string; label: string }> = [];
+      try { agents = JSON.parse(row.agentOutputs); } catch { continue; }
+
+      const progressed = PROGRESSED_STAGES.has(row.stage ?? "");
+
+      for (const agent of agents) {
+        const name = agent.name as AgentName;
+        if (!AGENT_NAMES.includes(name)) continue;
+        if (POSITIVE_LABELS.has(agent.label)) {
+          stats[name].positiveVotes++;
+          if (progressed) stats[name].alignedWithProgress++;
+        }
+      }
+    }
+
+    const MIN_SAMPLES = 5;
+    const HIGH_THRESHOLD = 0.60;
+    const MODERATE_THRESHOLD = 0.35;
+
+    return AGENT_NAMES.map((name) => {
+      const { positiveVotes, alignedWithProgress } = stats[name];
+      let signal: SignalLevel = "insufficient";
+      if (positiveVotes >= MIN_SAMPLES) {
+        const rate = alignedWithProgress / positiveVotes;
+        if (rate >= HIGH_THRESHOLD) signal = "high";
+        else if (rate >= MODERATE_THRESHOLD) signal = "moderate";
+        else signal = "low";
+      }
+      return { agentName: name, signal, sampleSize: positiveVotes };
+    });
+  }),
 });
