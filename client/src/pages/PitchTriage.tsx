@@ -253,10 +253,15 @@ export default function PitchTriage() {
       classification: result.classification,
       score: result.score,
     });
-    // Write prefill text to sessionStorage so /pitch can read it on mount
-    // (sessionStorage survives SPA navigation and is cleared after reading)
-    sessionStorage.setItem("pitchIcPrefill", pitchText);
-    navigate("/pitch", { state: { prefillText: pitchText } });
+    // Pass pitch text AND triage ID to DealScreener so it can:
+    //   1. Pre-populate the deal textarea (pitchTriageText)
+    //   2. Auto-advance stage to ic_ready after IC Memo PDF is generated (pitchTriageId)
+    // Belt-and-suspenders: also write to sessionStorage for href-based navigation
+    sessionStorage.setItem("pitchTriageEscalation", pitchText);
+    if (savedTriageId) {
+      sessionStorage.setItem("pitchTriageEscalationId", String(savedTriageId));
+    }
+    navigate("/deals", { state: { pitchTriageText: pitchText, pitchTriageId: savedTriageId ?? undefined } });
   }
 
   // ── Classification banner config ─────────────────────────────────────────

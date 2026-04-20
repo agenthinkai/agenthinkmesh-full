@@ -2490,3 +2490,14 @@
 - [x] PitchTriage History: filter list by selected stage tab
 - [x] Tests: 693/693 passing after changes
 - [x] TypeScript: zero errors
+
+## IC Memo Stage Auto-Advance (ENGAGE → IC Ready)
+
+- [x] PitchTriage: fix handleEscalate — restore /deals navigation (was incorrectly changed to /pitch), pass pitchTriageId alongside pitchTriageText in state
+- [x] PitchTriage: also store pitchTriageId in sessionStorage (pitchTriageEscalationId) as fallback
+- [x] Pitch.tsx: remove erroneous prefill useEffect (Pitch.tsx is the public Council of 10 page, not the IC Memo tool)
+- [x] DealScreener: read pitchTriageId from history state on mount; store in ref
+- [x] DealScreener: after handleICMemoPdf succeeds, call pitch.updateStage(id, ic_ready) if triageId is present (idempotent — only fires once)
+- [x] DealScreener: show inline "Moved to IC Ready ✓" confirmation badge after stage update (non-intrusive, no modal)
+- [x] TypeScript: zero errors
+- [x] Tests: 693/693 passing

@@ -959,9 +959,13 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
   const [icMemoLoading, setIcMemoLoading] = useState(false);
   const [icMemoError, setIcMemoError] = useState<string | null>(null);
   const [icMemoStatus, setIcMemoStatus] = useState<"idle" | "synthesising" | "rendering" | "done">("idle");
+  // Stage auto-advance: set to true once pitch.updateStage(ic_ready) fires after IC Memo generation
+  const [movedToIcReady, setMovedToIcReady] = useState(false);
+  const stageAdvancedRef = React.useRef(false); // idempotency guard — only fires once per mount
 
   const icMemoPdfMutation = trpc.dealScreener.icMemoPdf.useMutation();
   const createShare = trpc.shareReport.create.useMutation();
+  const updateTriageStage = trpc.pitch.updateStage.useMutation();
 
   const handleICMemoPdf = async () => {
     setIcMemoLoading(true);
@@ -1004,6 +1008,25 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
       document.body.removeChild(a);
       URL.revokeObjectURL(url);
       setTimeout(() => setIcMemoStatus("idle"), 2000);
+
+      // ── Stage auto-advance: ENGAGE → IC Ready ─────────────────────────────
+      // Only fires when the IC Memo was initiated from a Pitch Triage escalation.
+      // Idempotency: stageAdvancedRef prevents duplicate calls if the user clicks
+      // the IC Memo button again in the same session.
+      if (!stageAdvancedRef.current && !isHistoryView) {
+        const rawId = sessionStorage.getItem("pitchTriageEscalationId");
+        if (rawId) {
+          const triageId = parseInt(rawId, 10);
+          if (!isNaN(triageId)) {
+            stageAdvancedRef.current = true;
+            sessionStorage.removeItem("pitchTriageEscalationId");
+            updateTriageStage.mutate(
+              { id: triageId, stage: "ic_ready" },
+              { onSuccess: () => setMovedToIcReady(true) }
+            );
+          }
+        }
+      }
     } catch (err) {
       setIcMemoStatus("idle");
       setIcMemoError(err instanceof Error ? err.message.slice(0, 80) : "Failed to generate IC memo");
@@ -1267,6 +1290,16 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
                 onClick={handleICMemoPdf}
                 style={{ fontSize: 9, color: RED, fontFamily: MONO, background: "none", border: `1px solid ${RED}`, borderRadius: 3, padding: "2px 7px", cursor: "pointer" }}
               >RETRY</button>
+            </div>
+          )}
+          {movedToIcReady && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 5,
+              background: "rgba(0,255,135,0.07)", border: "1px solid rgba(0,255,135,0.25)",
+              borderRadius: 4, padding: "4px 10px",
+              fontFamily: MONO, fontSize: 9, color: GREEN, letterSpacing: "0.06em",
+            }}>
+              ✓ MOVED TO IC READY
             </div>
           )}
           {isHistoryView && onRerun && (
@@ -1757,16 +1790,21 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
   }, [pendingPaymentSessionId]);
 
   // Pre-fill from Pitch Triage escalation
-  // Primary source: wouter router state (set by navigate("/deals", { state: { pitchTriageText } }))
+  // Primary source: wouter router state (set by navigate("/deals", { state: { pitchTriageText, pitchTriageId } }))
   // Fallback source: sessionStorage (set by handleEscalate as belt-and-suspenders)
   useEffect(() => {
     // Primary: router state (reliable, no race conditions)
-    const histState = window.history.state as { pitchTriageText?: string } | null;
+    const histState = window.history.state as { pitchTriageText?: string; pitchTriageId?: number } | null;
     if (histState?.pitchTriageText) {
       setDealText(histState.pitchTriageText);
       setGuidedMode(false);
-      // Clear from history state to prevent re-fill on back/forward navigation
-      const { pitchTriageText: _removed, ...rest } = histState;
+      // Capture triage ID for stage auto-advance after IC Memo generation
+      if (histState.pitchTriageId) {
+        sessionStorage.setItem("pitchTriageEscalationId", String(histState.pitchTriageId));
+      }
+      // Clear text from history state to prevent re-fill on back/forward navigation
+      // Keep pitchTriageId in sessionStorage (cleared after IC Memo generation)
+      const { pitchTriageText: _removed, pitchTriageId: _removedId, ...rest } = histState;
       window.history.replaceState(rest, "");
       return;
     }
@@ -1776,6 +1814,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
       setDealText(triageText);
       setGuidedMode(false);
       sessionStorage.removeItem("pitchTriageEscalation");
+      // pitchTriageEscalationId stays in sessionStorage until IC Memo is generated
     }
   }, []);
 
