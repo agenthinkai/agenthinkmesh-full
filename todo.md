@@ -2581,3 +2581,14 @@
 - [x] No new schema, no new APIs, no charts, no percentages
 - [x] TypeScript: zero errors (full npx tsc --noEmit EXIT:0; watch-mode stale cache)
 - [x] Tests: 693/693 passing
+
+## Aggregate Pattern Signal + Sample Size Nudge (History Tab)
+
+- [x] Client: compute outcomeCount (records with decisionOutcome set) from allRows in HistoryTab
+- [x] Client: compute patternMatchCount (invested_match records) — client-side from allRows agent outputs
+- [x] Client: add aggregate pattern signal line in History tab (above System Signals row) — show "N deals match your past success pattern" when patternMatchCount ≥ 2
+- [x] Client: add sample size nudge — show "Record 1 more outcome to unlock pattern insights" when outcomeCount is 1 or 2; hide when ≥ 3
+- [x] Client: both signals single-line only, subtle visual style, no charts, no breakdown
+- [x] No schema changes, no new APIs
+- [x] TypeScript: zero errors (full npx tsc --noEmit EXIT:0)
+- [x] Tests: 693/693 passing
