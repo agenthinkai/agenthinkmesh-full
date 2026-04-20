@@ -2507,29 +2507,6 @@ function HistoryTab({
           );
         })}
       </div>
-      {/* Outcome completion rate — shown when totalCount > 0, derived from allRows */}
-      {allRows.length > 0 && (
-        <div
-          style={{
-            background: "rgba(255,255,255,0.02)",
-            border: `1px solid ${BORDER}`,
-            borderRadius: 8,
-            padding: "7px 14px",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-          }}
-        >
-          <span style={{ fontSize: 10, color: MUTED, fontWeight: 700, letterSpacing: 0.6, textTransform: "uppercase" as const, flexShrink: 0 }}>Outcomes</span>
-          <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", lineHeight: 1.4 }}>
-            <span style={{ color: outcomeCount > 0 ? "rgba(255,255,255,0.8)" : "rgba(255,255,255,0.35)", fontWeight: 700 }}>{outcomeCount}</span>
-            <span style={{ color: "rgba(255,255,255,0.35)" }}>{" of "}</span>
-            <span style={{ color: "rgba(255,255,255,0.6)", fontWeight: 600 }}>{allRows.length}</span>
-            <span style={{ color: "rgba(255,255,255,0.35)" }}>{" deals have outcomes recorded"}</span>
-          </span>
-        </div>
-      )}
-
       {/* Aggregate pattern signal — shown when ≥2 deals match success pattern */}
       {patternMatchCount >= 2 && (
         <div
@@ -2618,39 +2595,15 @@ function HistoryTab({
       {/* Stale deal outcome nudge — max 3, derived from allRows, no new queries */}
       {(() => {
         const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
-        const allStaleDeals = allRows.filter((r) =>
-          (r.stage === "diligence" || r.stage === "ic_ready") &&
-          !r.decisionOutcome &&
-          (Date.now() - new Date(r.createdAt).getTime()) >= THIRTY_DAYS_MS
-        );
-        const staleDeals = allStaleDeals
-          .filter((r) => !dismissedNudges.has(r.id))
+        const staleDeals = allRows
+          .filter((r) =>
+            (r.stage === "diligence" || r.stage === "ic_ready") &&
+            !r.decisionOutcome &&
+            (Date.now() - new Date(r.createdAt).getTime()) >= THIRTY_DAYS_MS &&
+            !dismissedNudges.has(r.id)
+          )
           .slice(0, 3);
-        if (allStaleDeals.length === 0) return null;
-
-        function exportStaleDealsCSV() {
-          const today = new Date().toISOString().slice(0, 10);
-          const header = ["Deal Name", "Stage", "Days in Stage", "Triage Score", "Classification", "Created At"];
-          const csvRows = allStaleDeals.map((r) => {
-            const dealName = r.pitchPreview ? r.pitchPreview.slice(0, 80).trim() : `Deal #${r.id}`;
-            const stage = r.stage === "ic_ready" ? "IC Ready" : r.stage === "diligence" ? "Diligence" : r.stage ?? "";
-            const daysInStage = Math.floor((Date.now() - new Date(r.createdAt).getTime()) / 86400000);
-            const score = r.score ?? "";
-            const classification = r.classification ?? "";
-            const createdAt = new Date(r.createdAt).toISOString().slice(0, 10);
-            return [dealName, stage, daysInStage, score, classification, createdAt]
-              .map((v) => `"${String(v).replace(/"/g, '""')}"`);
-          });
-          const csv = [header, ...csvRows].map((row) => row.join(",")).join("\n");
-          const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement("a");
-          a.href = url;
-          a.download = `stale-deals-${today}.csv`;
-          a.click();
-          URL.revokeObjectURL(url);
-        }
-
+        if (staleDeals.length === 0) return null;
         return (
           <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
             {staleDeals.map((r) => {
@@ -2697,36 +2650,6 @@ function HistoryTab({
                 </div>
               );
             })}
-            {/* Export stale deals as CSV — visible whenever there is ≥1 stale deal */}
-            <div style={{ display: "flex", justifyContent: "flex-end" }}>
-              <button
-                onClick={exportStaleDealsCSV}
-                title={`Export all ${allStaleDeals.length} stale deal${allStaleDeals.length !== 1 ? "s" : ""} to CSV`}
-                style={{
-                  background: "none",
-                  border: "1px solid rgba(245,158,11,0.35)",
-                  borderRadius: 6,
-                  color: "rgba(245,158,11,0.75)",
-                  cursor: "pointer",
-                  fontSize: 11,
-                  padding: "4px 10px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 5,
-                  transition: "border-color 0.15s, color 0.15s",
-                }}
-                onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(245,158,11,0.65)";
-                  (e.currentTarget as HTMLButtonElement).style.color = "#f59e0b";
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(245,158,11,0.35)";
-                  (e.currentTarget as HTMLButtonElement).style.color = "rgba(245,158,11,0.75)";
-                }}
-              >
-                ↓ Export stale deals ({allStaleDeals.length})
-              </button>
-            </div>
           </div>
         );
       })()}
