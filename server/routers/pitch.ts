@@ -1154,4 +1154,288 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
       return { agentName: name, signal, sampleSize, outcomeGrounded: useOutcome };
     });
   }),
+
+  /**
+   * pitch.checkAndTrigger — Auto re-triage engine.
+   * Scans the user's deals for trigger conditions and creates new triage records
+   * for each triggered deal (max 1 auto re-triage per deal per 24 hours).
+   *
+   * Trigger types:
+   *   stale_diligence  — deal in diligence 30+ days, no outcome
+   *   stale_ic_ready   — deal in ic_ready 30+ days, no outcome
+   *   score_drop       — a newer triage of same deal scored 10+ points lower
+   *   pattern_shift    — a similar deal's outcome conflicts with current signal
+   *
+   * Optional input: dealId (number) — if provided, only check that specific deal.
+   */
+  checkAndTrigger: protectedProcedure
+    .input(
+      z.object({
+        dealId: z.number().int().positive().optional(),
+      }).optional()
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.user.id.toString();
+
+      // Fetch all triage records for the user (up to 200 for pattern analysis)
+      const allRows = await getPitchTriageHistory(userId, 200) as PitchTriage[];
+      if (!allRows || allRows.length === 0) {
+        return { triggered: 0, skipped: 0, deals: [] as string[] };
+      }
+
+      // If a specific dealId is provided, restrict to that deal only
+      const targetRows = input?.dealId
+        ? allRows.filter((r) => r.id === input.dealId)
+        : allRows;
+
+      const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+      const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000;
+      const SCORE_DROP_THRESHOLD = 10;
+      const now = Date.now();
+
+      // Build a map of parentTriageId → latest child (for score_drop detection)
+      // and a map of id → latest auto re-triage createdAt (for 24h cooldown)
+      const latestAutoByParent = new Map<number, Date>();
+      for (const r of allRows) {
+        if (r.source === "auto" && r.parentTriageId) {
+          const existing = latestAutoByParent.get(r.parentTriageId);
+          if (!existing || new Date(r.createdAt) > existing) {
+            latestAutoByParent.set(r.parentTriageId, new Date(r.createdAt));
+          }
+        }
+      }
+
+      // Build outcome history for pattern_shift detection
+      // A pattern_shift occurs when: current deal matches invested pattern but a
+      // similar-stage deal was recently marked as passed (or vice versa).
+      const recentOutcomes = allRows.filter(
+        (r) => (r.decisionOutcome === "invested" || r.decisionOutcome === "passed") &&
+          now - new Date(r.createdAt).getTime() <= 30 * THIRTY_DAYS_MS // 90 days
+      );
+      const recentPassedCount = recentOutcomes.filter((r) => r.decisionOutcome === "passed").length;
+      const recentInvestedCount = recentOutcomes.filter((r) => r.decisionOutcome === "invested").length;
+
+      type TriggerType = "stale_diligence" | "stale_ic_ready" | "score_drop" | "pattern_shift";
+
+      const triggered: string[] = [];
+      let skipped = 0;
+
+      // Agent pipeline helper — reuses the same 6-agent logic as pitch.triage
+      type AgentName = "Market Signal" | "Business Model" | "Traction" | "Founder Signal" | "Risk" | "Completeness";
+      const AGENTS: Array<{ name: AgentName; labels: string[]; fallback: string; systemPrompt: string }> = [
+        {
+          name: "Market Signal",
+          labels: ["strong", "weak", "unclear"],
+          fallback: "weak",
+          systemPrompt: `You are a market signal analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) cite a specific fact from the pitch text; (2) reasoning MUST be ≤18 words; (3) NEVER use generic phrases.
+Format: {"label": "strong"|"weak"|"unclear", "reasoning": "<concrete signal, ≤18 words>"}`,
+        },
+        {
+          name: "Business Model",
+          labels: ["clear", "weak", "missing"],
+          fallback: "weak",
+          systemPrompt: `You are a business model analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) cite the specific revenue mechanism; (2) reasoning MUST be ≤18 words.
+Format: {"label": "clear"|"weak"|"missing", "reasoning": "<concrete signal, ≤18 words>"}`,
+        },
+        {
+          name: "Traction",
+          labels: ["strong", "early", "none"],
+          fallback: "early",
+          systemPrompt: `You are a traction analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) quote a specific metric; (2) reasoning MUST be ≤18 words.
+Format: {"label": "strong"|"early"|"none", "reasoning": "<concrete signal, ≤18 words>"}`,
+        },
+        {
+          name: "Founder Signal",
+          labels: ["strong", "neutral", "risk"],
+          fallback: "neutral",
+          systemPrompt: `You are a founder signal analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) reference a specific credential or red flag; (2) reasoning MUST be ≤18 words.
+Format: {"label": "strong"|"neutral"|"risk", "reasoning": "<concrete signal, ≤18 words>"}`,
+        },
+        {
+          name: "Risk",
+          labels: ["low", "medium", "high"],
+          fallback: "medium",
+          systemPrompt: `You are a risk analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) name the single most significant risk; (2) reasoning MUST be ≤18 words.
+Format: {"label": "low"|"medium"|"high", "reasoning": "<concrete risk, ≤18 words>"}`,
+        },
+        {
+          name: "Completeness",
+          labels: ["complete", "partial", "insufficient"],
+          fallback: "partial",
+          systemPrompt: `You are a pitch completeness analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) list specific missing elements; (2) reasoning MUST be ≤18 words.
+Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific missing fields, ≤18 words>"}`,
+        },
+      ];
+
+      const WEIGHTS: Record<AgentName, number> = {
+        "Market Signal": 20, "Business Model": 18, "Traction": 22,
+        "Founder Signal": 20, "Risk": 15, "Completeness": 5,
+      };
+      const LABEL_SCORES: Record<string, number> = {
+        strong: 100, weak: 40, unclear: 20,
+        clear: 100, missing: 0,
+        early: 50, none: 0,
+        neutral: 50, risk: 0,
+        low: 100, medium: 50, high: 0,
+        complete: 100, partial: 50, insufficient: 0,
+      };
+
+      async function runTriagePipeline(pitchText: string): Promise<{
+        score: number;
+        classification: "ENGAGE" | "WATCH" | "IGNORE";
+        confidence: "HIGH" | "MEDIUM" | "LOW";
+        nextStep: string;
+        agentOutputs: Array<{ name: AgentName; label: string; reasoning: string; fallback: boolean }>;
+        keySignals: string[];
+        missingInfo: string[];
+        topMissingFields: string[];
+      }> {
+        const truncated = pitchText.slice(0, 3000);
+        type AgentResult = { name: AgentName; label: string; reasoning: string; fallback: boolean };
+        const agentOutputs: AgentResult[] = await Promise.all(
+          AGENTS.map(async (agent) => {
+            try {
+              const res = await invokeLLM({
+                messages: [
+                  { role: "system", content: agent.systemPrompt },
+                  { role: "user", content: `Pitch:\n${truncated}` },
+                ],
+                max_tokens: 120,
+              });
+              const contentRaw = res?.choices?.[0]?.message?.content;
+              const raw = (typeof contentRaw === "string" ? contentRaw : "").trim();
+              const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+              const parsed = JSON.parse(cleaned) as { label?: unknown; reasoning?: unknown };
+              const label = typeof parsed.label === "string" && agent.labels.includes(parsed.label)
+                ? parsed.label : agent.fallback;
+              const reasoning = typeof parsed.reasoning === "string" && parsed.reasoning.length > 0
+                ? parsed.reasoning.slice(0, 120) : "Unable to determine from available information.";
+              return { name: agent.name, label, reasoning, fallback: label === agent.fallback && parsed.label !== agent.fallback };
+            } catch {
+              return { name: agent.name, label: agent.fallback, reasoning: "Unable to determine.", fallback: true };
+            }
+          })
+        );
+        const byName = Object.fromEntries(agentOutputs.map((r) => [r.name, r])) as Record<AgentName, AgentResult>;
+        let rawScore = 0;
+        for (const agent of AGENTS) {
+          rawScore += ((LABEL_SCORES[byName[agent.name].label] ?? 50) * WEIGHTS[agent.name]) / 100;
+        }
+        const score = Math.round(rawScore);
+        const completenessLabel = byName["Completeness"].label;
+        const riskLabel = byName["Risk"].label;
+        const founderLabel = byName["Founder Signal"].label;
+        const confidence: "HIGH" | "MEDIUM" | "LOW" = completenessLabel === "complete" ? "HIGH" : completenessLabel === "partial" ? "MEDIUM" : "LOW";
+        let classification: "ENGAGE" | "WATCH" | "IGNORE";
+        if (completenessLabel === "insufficient" && score < 35) classification = "IGNORE";
+        else if (score >= 62 && riskLabel !== "high" && founderLabel !== "risk") classification = confidence === "LOW" ? "WATCH" : "ENGAGE";
+        else if (score >= 38) classification = "WATCH";
+        else classification = "IGNORE";
+        const nextStep = classification === "ENGAGE" ? "Run full evaluation" : classification === "WATCH" ? "Request more information" : "No action";
+        const redLabels = new Set(["unclear", "missing", "none", "risk", "high", "insufficient"]);
+        const positiveLabels = new Set(["strong", "clear", "low", "complete"]);
+        const topMissingFields = agentOutputs.filter((r) => redLabels.has(r.label)).sort((a, b) => (WEIGHTS[b.name] ?? 0) - (WEIGHTS[a.name] ?? 0)).slice(0, 2).map((r) => r.name);
+        const keySignals = agentOutputs.filter((r) => positiveLabels.has(r.label)).slice(0, 3).map((r) => `${r.name}: ${r.reasoning}`);
+        if (keySignals.length < 3) {
+          for (const r of agentOutputs) {
+            if (keySignals.length >= 3) break;
+            const sig = `${r.name}: ${r.reasoning}`;
+            if (!keySignals.includes(sig)) keySignals.push(sig);
+          }
+        }
+        const missingInfo = agentOutputs.filter((r) => redLabels.has(r.label)).map((r) => `${r.name}: ${r.reasoning}`);
+        return { score, classification, confidence, nextStep, agentOutputs, keySignals, missingInfo, topMissingFields };
+      }
+
+      // Process each candidate deal
+      for (const row of targetRows) {
+        // Only consider deals that are in diligence or ic_ready with no outcome,
+        // or any deal that might have a score_drop or pattern_shift trigger.
+        // Skip auto-generated records as trigger sources (only manual triages trigger).
+        if (row.source === "auto") continue;
+
+        const ageMs = now - new Date(row.createdAt).getTime();
+
+        // 24-hour cooldown: skip if this deal was auto re-triaged in the last 24h
+        const lastAutoAt = latestAutoByParent.get(row.id);
+        if (lastAutoAt && now - lastAutoAt.getTime() < TWENTY_FOUR_HOURS_MS) {
+          skipped++;
+          continue;
+        }
+
+        // Determine trigger type
+        let triggerType: TriggerType | null = null;
+
+        // stale_diligence / stale_ic_ready
+        if (!row.decisionOutcome && ageMs >= THIRTY_DAYS_MS) {
+          if (row.stage === "diligence") triggerType = "stale_diligence";
+          else if (row.stage === "ic_ready") triggerType = "stale_ic_ready";
+        }
+
+        // score_drop: find the most recent child triage for this deal
+        if (!triggerType) {
+          const children = allRows.filter((r) => r.parentTriageId === row.id && r.source !== "auto");
+          if (children.length > 0) {
+            const latestChild = children.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0];
+            if (row.score - latestChild.score >= SCORE_DROP_THRESHOLD) {
+              triggerType = "score_drop";
+            }
+          }
+        }
+
+        // pattern_shift: deal is in diligence/ic_ready with no outcome, and recent
+        // outcomes show a shift (e.g. majority of recent outcomes are "passed" but
+        // deal has ENGAGE classification, or vice versa)
+        if (!triggerType && (row.stage === "diligence" || row.stage === "ic_ready") && !row.decisionOutcome) {
+          const totalOutcomes = recentPassedCount + recentInvestedCount;
+          if (totalOutcomes >= 3) {
+            const passedRate = recentPassedCount / totalOutcomes;
+            const investedRate = recentInvestedCount / totalOutcomes;
+            // Pattern shift: deal is ENGAGE but recent outcomes are mostly passed
+            if (row.classification === "ENGAGE" && passedRate >= 0.7) triggerType = "pattern_shift";
+            // Pattern shift: deal is IGNORE but recent outcomes are mostly invested
+            if (row.classification === "IGNORE" && investedRate >= 0.7) triggerType = "pattern_shift";
+          }
+        }
+
+        if (!triggerType) {
+          skipped++;
+          continue;
+        }
+
+        // Re-run the full triage pipeline on the original pitch text
+        const pitchText = row.pitchPreview; // use stored preview as input
+        try {
+          const result = await runTriagePipeline(pitchText);
+          const dealName = row.pitchPreview.slice(0, 40).trim();
+          await savePitchTriage({
+            userId,
+            pitchPreview: row.pitchPreview,
+            score: result.score,
+            classification: result.classification,
+            confidence: result.confidence,
+            agentOutputs: JSON.stringify(result.agentOutputs),
+            keySignals: JSON.stringify(result.keySignals),
+            missingInfo: JSON.stringify(result.missingInfo),
+            topMissingFields: JSON.stringify(result.topMissingFields),
+            nextStep: result.nextStep,
+            parentTriageId: row.id,
+            triggerType,
+            source: "auto",
+          });
+          triggered.push(dealName);
+        } catch (err) {
+          console.error(`[checkAndTrigger] Failed to re-triage deal ${row.id}:`, err);
+          skipped++;
+        }
+      }
+
+      return { triggered: triggered.length, skipped, deals: triggered };
+    }),
 });

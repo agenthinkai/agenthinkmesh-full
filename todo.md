@@ -2736,3 +2736,38 @@
 - [x] tsc --noEmit EXIT:0 after each task
 - [x] Tests: 693/693 passing throughout
 - [x] No regressions to History list, nudge rows, Boardroom view, PDF badge, triage result screen
+
+## Auto Re-Triage Sprint (e22ccdb9 base)
+
+### Task 1 — Trigger type fields in schema
+- [x] Schema: add nullable triggerType varchar(32) to pitch_triages
+- [x] Schema: add nullable source varchar(16) to pitch_triages
+- [x] DB: ALTER TABLE applied directly (triggerType, source columns live)
+- [x] No changes to existing triage flow — both fields null for manual triages
+
+### Task 2 — pitch.checkAndTrigger procedure
+- [x] Server: new protectedProcedure pitch.checkAndTrigger added
+- [x] Server: scans all user deals for stale_diligence, stale_ic_ready, score_drop, pattern_shift triggers
+- [x] Server: max 1 auto re-triage per deal per 24 hours (cooldown enforced)
+- [x] Server: re-runs full 6-agent pipeline on stored pitchPreview text
+- [x] Server: saves new triage record with triggerType and source="auto"
+- [x] Server: optional dealId input — if provided, checks only that deal
+- [x] Server: returns { triggered, skipped, deals }
+
+### Task 3 — Trigger visibility in History tab
+- [x] Client: ⚡ Auto amber badge on list rows where source="auto"
+- [x] Client: trigger subtitle below pitchPreview (stale/score-drop/pattern-shift label)
+- [x] Client: "This analysis was triggered automatically by the system." notice in detail panel
+- [x] Client: existing RE-RUN badge hidden for auto records (only shown for manual re-runs)
+
+### Task 4 — Manual Re-evaluate button
+- [x] Client: ⚡ Re-evaluate this deal button in detail panel (secondary style)
+- [x] Client: calls pitch.checkAndTrigger with dealId
+- [x] Client: disabled/replaced with "Re-evaluated today" when auto re-triage ran in last 24h
+- [x] Client: on success, invalidates history + historyItem queries
+- [x] Client: button states: idle / running / done / error with visual feedback
+
+### Shared Constraints
+- [x] tsc --noEmit EXIT:0 after each task
+- [x] Tests: 693 passed | 1 skipped (694 total)
+- [x] No regressions to existing features

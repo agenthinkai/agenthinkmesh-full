@@ -1693,6 +1693,11 @@ function HistoryTab({
   const recordOutcomeMutation = trpc.pitch.recordOutcome.useMutation();
   const [outcomeState, setOutcomeState] = useState<Record<number, "invested" | "passed" | "recording" | null>>({});
 
+  // Auto re-evaluate
+  const checkAndTriggerMutation = trpc.pitch.checkAndTrigger.useMutation();
+  const [reEvalState, setReEvalState] = useState<Record<number, "idle" | "running" | "done" | "error">>({}); 
+  const utils = trpc.useUtils();
+
   function handleRecordOutcome(id: number, outcome: "invested" | "passed") {
     setOutcomeState((prev) => ({ ...prev, [id]: "recording" }));
     recordOutcomeMutation.mutate(
@@ -1870,6 +1875,26 @@ function HistoryTab({
             "{item.pitchPreview}{item.pitchPreview.length >= 200 ? "…" : ""}"
           </div>
         </div>
+
+        {/* Auto-trigger notice */}
+        {(item as unknown as { source?: string }).source === "auto" && (
+          <div
+            style={{
+              background: "rgba(251,191,36,0.08)",
+              border: "1px solid rgba(251,191,36,0.25)",
+              borderRadius: 8,
+              padding: "8px 14px",
+              color: "#fbbf24",
+              fontSize: 12,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}
+          >
+            <span style={{ fontSize: 14 }}>⚡</span>
+            <span>This analysis was triggered automatically by the system.</span>
+          </div>
+        )}
 
         {/* Classification banner + score */}
         <div
@@ -2233,6 +2258,71 @@ function HistoryTab({
           >
             ⚡ Re-run Triage
           </button>
+
+          {/* Re-evaluate this deal (auto trigger) */}
+          {(() => {
+            const evalStatus = reEvalState[item.id] ?? "idle";
+            // Check if an auto re-triage already ran today for this deal
+            const lastAutoAt = (historyQuery.data ?? []).find(
+              (r) => (r as unknown as { source?: string; parentTriageId?: number }).source === "auto" &&
+                (r as unknown as { parentTriageId?: number }).parentTriageId === item.id
+            );
+            const ranToday = lastAutoAt
+              ? Date.now() - new Date(lastAutoAt.createdAt).getTime() < 24 * 60 * 60 * 1000
+              : false;
+            if (ranToday) {
+              return (
+                <span style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", alignSelf: "center" }}>
+                  Re-evaluated today
+                </span>
+              );
+            }
+            return (
+              <button
+                disabled={evalStatus === "running"}
+                onClick={() => {
+                  setReEvalState((prev) => ({ ...prev, [item.id]: "running" }));
+                  checkAndTriggerMutation.mutate(
+                    { dealId: item.id },
+                    {
+                      onSuccess: (data) => {
+                        setReEvalState((prev) => ({ ...prev, [item.id]: "done" }));
+                        void utils.pitch.history.invalidate();
+                        void utils.pitch.historyItem.invalidate({ id: item.id });
+                        if (data.triggered > 0) {
+                          // Show a brief toast-like state
+                          setTimeout(() => setReEvalState((prev) => ({ ...prev, [item.id]: "idle" })), 4000);
+                        } else {
+                          setTimeout(() => setReEvalState((prev) => ({ ...prev, [item.id]: "idle" })), 2000);
+                        }
+                      },
+                      onError: () => {
+                        setReEvalState((prev) => ({ ...prev, [item.id]: "error" }));
+                        setTimeout(() => setReEvalState((prev) => ({ ...prev, [item.id]: "idle" })), 3000);
+                      },
+                    }
+                  );
+                }}
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: `1px solid ${evalStatus === "done" ? "rgba(74,222,128,0.35)" : evalStatus === "error" ? "rgba(239,68,68,0.35)" : "rgba(255,255,255,0.12)"}`,
+                  borderRadius: 6,
+                  color: evalStatus === "done" ? "#4ade80" : evalStatus === "error" ? "#f87171" : "rgba(255,255,255,0.5)",
+                  fontSize: 11,
+                  fontWeight: 600,
+                  padding: "7px 12px",
+                  cursor: evalStatus === "running" ? "not-allowed" : "pointer",
+                  opacity: evalStatus === "running" ? 0.6 : 1,
+                  transition: "all 0.15s",
+                }}
+              >
+                {evalStatus === "running" ? "⚡ Evaluating…" :
+                 evalStatus === "done" ? "✓ Deal re-evaluated — new analysis added" :
+                 evalStatus === "error" ? "⚠ Re-evaluation failed" :
+                 "⚡ Re-evaluate this deal"}
+              </button>
+            );
+          })()}
         </div>
 
         {/* Outcome prompt — shown only when decisionOutcome is null AND stage is diligence/ic_ready */}
@@ -2938,7 +3028,7 @@ function HistoryTab({
                 >
                   {row.confidence}
                 </span>
-                {row.parentTriageId && (
+                {row.parentTriageId && !(row as unknown as { source?: string }).source && (
                   <span
                     style={{
                       fontSize: 9,
@@ -2952,6 +3042,22 @@ function HistoryTab({
                     }}
                   >
                     RE-RUN
+                  </span>
+                )}
+                {(row as unknown as { source?: string }).source === "auto" && (
+                  <span
+                    style={{
+                      fontSize: 9,
+                      color: "#fbbf24",
+                      background: "rgba(251,191,36,0.12)",
+                      border: "1px solid rgba(251,191,36,0.30)",
+                      borderRadius: 4,
+                      padding: "1px 6px",
+                      letterSpacing: 0.3,
+                      fontWeight: 700,
+                    }}
+                  >
+                    ⚡ Auto
                   </span>
                 )}
                 {row.escalatedAt && (
@@ -3047,6 +3153,20 @@ function HistoryTab({
               >
                 "{row.pitchPreview}"
               </div>
+              {(row as unknown as { source?: string; triggerType?: string }).source === "auto" && (() => {
+                const tt = (row as unknown as { triggerType?: string }).triggerType;
+                const triggerLabel =
+                  tt === "stale_diligence" ? `Re-triaged: stale in diligence ${Math.floor((Date.now() - new Date(row.createdAt).getTime()) / 86400000)} days` :
+                  tt === "stale_ic_ready" ? `Re-triaged: stale in IC Ready ${Math.floor((Date.now() - new Date(row.createdAt).getTime()) / 86400000)} days` :
+                  tt === "score_drop" ? "Re-triaged: score dropped" :
+                  tt === "pattern_shift" ? "Re-triaged: similar deal outcome conflict" :
+                  "Re-triaged automatically";
+                return (
+                  <div style={{ color: "#fbbf24", fontSize: 10, marginTop: 2, opacity: 0.85 }}>
+                    {triggerLabel}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Date */}
