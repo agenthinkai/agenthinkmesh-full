@@ -1356,6 +1356,37 @@ export default function PitchTriage() {
               })()
               }
 
+              {/* ── Decision Guidance line (pattern-grounded) ───────────────────────────────── */}
+              {(() => {
+                const insight = patternInsightQuery.data;
+                if (!insight || insight.type === "none") return null;
+                const guidanceMap: Record<string, string> = {
+                  invested_match: "Based on your historical pattern, this deal warrants a first call.",
+                  passed_match: "Based on your historical pattern, consider documenting your pass rationale.",
+                  mixed_signal: "Mixed historical signals — gather more information before deciding.",
+                };
+                const guidanceText = guidanceMap[insight.type];
+                if (!guidanceText) return null;
+                const isMixed = insight.type === "mixed_signal";
+                const isPositive = insight.type === "invested_match";
+                const guidanceColor = isMixed
+                  ? "rgba(148,163,184,0.60)"
+                  : isPositive ? "rgba(16,185,129,0.75)" : "rgba(245,158,11,0.75)";
+                return (
+                  <div
+                    style={{
+                      fontSize: 12,
+                      color: guidanceColor,
+                      lineHeight: 1.5,
+                      padding: "6px 4px 2px 4px",
+                      letterSpacing: 0.1,
+                    }}
+                  >
+                    {guidanceText}
+                  </div>
+                );
+              })()}
+
               {/* ── Next Actions block ───────────────────────────────────────────────────────── */}
               <div
                 style={{

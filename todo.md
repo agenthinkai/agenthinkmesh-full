@@ -2649,3 +2649,16 @@
 - [x] TypeScript: zero errors (full npx tsc --noEmit EXIT:0)
 - [x] Tests: 693/693 passing
 
+
+## Decision Guidance Line (Pattern-Grounded)
+
+- [x] Client: add guidance line directly below pattern insight block on result screen
+- [x] Client: invested_match → "Based on your historical pattern, this deal warrants a first call."
+- [x] Client: passed_match → "Based on your historical pattern, consider documenting your pass rationale."
+- [x] Client: mixed_signal → "Mixed historical signals — gather more information before deciding."
+- [x] Client: hidden when insight.type === "none" or no patternInsightQuery.data
+- [x] Client: green-tinted text for invested_match, amber-tinted for passed_match, muted neutral for mixed_signal
+- [x] Client: no buttons, no icons, single line only, text-only
+- [x] No new schema, no new APIs, uses existing patternInsight result only
+- [x] TypeScript: zero errors (full npx tsc --noEmit EXIT:0)
+- [x] Tests: 693/693 passing
