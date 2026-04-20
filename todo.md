@@ -2522,3 +2522,13 @@
 - [x] No schema changes, no new APIs, no backend changes
 - [x] TypeScript: zero errors
 - [x] Tests: 693/693 passing
+
+## Primary Driver Signal (Triage Result Screen)
+
+- [x] When conflict exists: add "Primary concern: [Agent] — [rationale]" line above conflict rows
+- [x] When no conflict (all agents agree): add standalone "Primary driver: [Agent] — [rationale]" line above Next Actions block
+- [x] Logic: pick highest-weight agent from dominant side (negative side if conflict, positive side if unanimous)
+- [x] Reuse existing firstSentence truncation and AGENT_META weights
+- [x] No schema changes, no new APIs, no backend changes
+- [x] TypeScript: zero errors
+- [x] Tests: 693/693 passing

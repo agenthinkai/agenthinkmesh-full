@@ -1025,14 +1025,15 @@ export default function PitchTriage() {
 
                 // Meaningful conflict: at least 1 positive AND at least 1 negative among top agents
                 const hasConflict = positiveAgents.length >= 1 && negativeAgents.length >= 1;
-                if (!hasConflict) return null;
 
                 // Pick the strongest positive (highest weight) and strongest negative (highest weight)
                 const sortByWeight = (arr: AgentOutput[]) =>
                   [...arr].sort((a, b) => (AGENT_META[b.name as AgentName]?.weight ?? 0) - (AGENT_META[a.name as AgentName]?.weight ?? 0));
 
-                const topPositive = sortByWeight(positiveAgents)[0];
-                const topNegative = sortByWeight(negativeAgents)[0];
+                const topPositive = positiveAgents.length > 0 ? sortByWeight(positiveAgents)[0] : null;
+                const topNegative = negativeAgents.length > 0 ? sortByWeight(negativeAgents)[0] : null;
+
+                if (!hasConflict && !topPositive && !topNegative) return null;
 
                 // Truncate reasoning to first sentence (≤ 90 chars)
                 const firstSentence = (text: string, maxLen = 90) => {
@@ -1041,7 +1042,40 @@ export default function PitchTriage() {
                   return raw;
                 };
 
-                const conflictPairs = [topPositive, topNegative];
+                // Primary driver: negative side if conflict exists, otherwise positive side
+                const primaryAgent = hasConflict ? topNegative : (topNegative ?? topPositive);
+                const primaryIsNegative = primaryAgent ? NEGATIVE_LABELS.has(primaryAgent.label) : false;
+                const primaryLabel = primaryIsNegative ? "Primary concern" : "Primary driver";
+                const primaryColor = primaryIsNegative ? "#f87171" : "#4ade80";
+
+                if (!hasConflict) {
+                  // No conflict — show standalone Primary Driver line above Next Actions
+                  if (!primaryAgent) return null;
+                  return (
+                    <div
+                      style={{
+                        background: "rgba(255,255,255,0.03)",
+                        border: `1px solid ${BORDER}`,
+                        borderRadius: 8,
+                        padding: "10px 14px",
+                        display: "flex",
+                        alignItems: "baseline",
+                        gap: 8,
+                        flexWrap: "wrap" as const,
+                      }}
+                    >
+                      <span style={{ fontSize: 11, color: MUTED, fontWeight: 600, letterSpacing: 0.5, whiteSpace: "nowrap" as const }}>
+                        {primaryLabel}:
+                      </span>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: primaryColor, whiteSpace: "nowrap" as const }}>
+                        {AGENT_META[primaryAgent.name as AgentName]?.icon ?? ""} {primaryAgent.name}
+                      </span>
+                      <span style={{ fontSize: 11, color: TEXT2 }}>— {firstSentence(primaryAgent.reasoning)}</span>
+                    </div>
+                  );
+                }
+
+                const conflictPairs = [topPositive!, topNegative!];
 
                 return (
                   <div
@@ -1057,7 +1091,7 @@ export default function PitchTriage() {
                         display: "flex",
                         alignItems: "center",
                         gap: 8,
-                        marginBottom: 10,
+                        marginBottom: 8,
                       }}
                     >
                       <span style={{ fontSize: 14 }}>⚡</span>
@@ -1082,6 +1116,28 @@ export default function PitchTriage() {
                         agents disagree — review before deciding
                       </span>
                     </div>
+                    {/* Primary concern line — inside conflict block, above rows */}
+                    {primaryAgent && (
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "baseline",
+                          gap: 8,
+                          flexWrap: "wrap" as const,
+                          marginBottom: 10,
+                          paddingBottom: 10,
+                          borderBottom: "1px solid rgba(245,158,11,0.15)",
+                        }}
+                      >
+                        <span style={{ fontSize: 11, color: MUTED, fontWeight: 600, letterSpacing: 0.5, whiteSpace: "nowrap" as const }}>
+                          {primaryLabel}:
+                        </span>
+                        <span style={{ fontSize: 11, fontWeight: 700, color: primaryColor, whiteSpace: "nowrap" as const }}>
+                          {AGENT_META[primaryAgent.name as AgentName]?.icon ?? ""} {primaryAgent.name}
+                        </span>
+                        <span style={{ fontSize: 11, color: TEXT2 }}>— {firstSentence(primaryAgent.reasoning)}</span>
+                      </div>
+                    )}
                     <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
                       {conflictPairs.map((agent) => {
                         const isPositive = POSITIVE_LABELS.has(agent.label);
