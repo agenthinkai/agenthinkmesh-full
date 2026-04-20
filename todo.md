@@ -2545,3 +2545,17 @@
 - [x] No percentages in UI, no charts, no new schema
 - [x] TypeScript: zero errors
 - [x] Tests pass
+
+## Outcome-Grounded Calibration
+
+- [x] Schema: add decision_outcome varchar(16) nullable to pitch_triages (values: invested | passed | null)
+- [x] DB migration: ALTER TABLE (direct SQL — pnpm db:push blocked by existing tables)
+- [x] DB helper: recordOutcome(id, userId, outcome) in server/db.ts
+- [x] Server: pitch.recordOutcome protectedProcedure mutation (id, outcome: "invested" | "passed")
+- [x] Server: update pitch.agentCalibration — use decision_outcome when available, fallback to stage progression when null; returns outcomeGrounded flag
+- [x] Client: add "Mark as Invested" / "Mark as Passed" buttons to History detail view
+- [x] Client: inline confirmation after marking — "Outcome recorded — future decisions will improve"
+- [x] Client: buttons disabled while recording; replaced by confirmation state after success
+- [x] No percentages, no charts, preserve existing flows
+- [x] TypeScript: zero errors
+- [x] Tests: 693/693 passing

@@ -1452,6 +1452,25 @@ function HistoryTab({
   type StageFilter = "all" | "triaged" | "diligence" | "ic_ready";
   const [stageFilter, setStageFilter] = useState<StageFilter>("all");
 
+  // Outcome recording
+  const recordOutcomeMutation = trpc.pitch.recordOutcome.useMutation();
+  const [outcomeState, setOutcomeState] = useState<Record<number, "invested" | "passed" | "recording" | null>>({});
+
+  function handleRecordOutcome(id: number, outcome: "invested" | "passed") {
+    setOutcomeState((prev) => ({ ...prev, [id]: "recording" }));
+    recordOutcomeMutation.mutate(
+      { id, outcome },
+      {
+        onSuccess: () => {
+          setOutcomeState((prev) => ({ ...prev, [id]: outcome }));
+        },
+        onError: () => {
+          setOutcomeState((prev) => ({ ...prev, [id]: null }));
+        },
+      }
+    );
+  }
+
   function toggleFilter(cls: string) {
     setActiveFilters((prev) => {
       const next = new Set(prev);
@@ -1978,6 +1997,68 @@ function HistoryTab({
             ⚡ Re-run Triage
           </button>
         </div>
+
+        {/* Outcome recording */}
+        {(() => {
+          const os = outcomeState[item.id];
+          if (os === "invested") {
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: "rgba(34,197,94,0.08)", border: "1px solid rgba(34,197,94,0.25)", borderRadius: 8 }}>
+                <span style={{ color: "#4ade80", fontSize: 13, fontWeight: 700 }}>✓ Invested recorded</span>
+                <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>— future decisions will improve</span>
+              </div>
+            );
+          }
+          if (os === "passed") {
+            return (
+              <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "10px 14px", background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 8 }}>
+                <span style={{ color: "#f87171", fontSize: 13, fontWeight: 700 }}>✓ Passed recorded</span>
+                <span style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>— future decisions will improve</span>
+              </div>
+            );
+          }
+          return (
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <span style={{ color: "rgba(255,255,255,0.4)", fontSize: 11, fontWeight: 600, letterSpacing: 0.5, textTransform: "uppercase" }}>Record outcome:</span>
+              <button
+                disabled={os === "recording"}
+                onClick={() => handleRecordOutcome(item.id, "invested")}
+                style={{
+                  background: "rgba(34,197,94,0.10)",
+                  border: "1px solid rgba(34,197,94,0.35)",
+                  borderRadius: 6,
+                  color: "#4ade80",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: "6px 14px",
+                  cursor: os === "recording" ? "not-allowed" : "pointer",
+                  opacity: os === "recording" ? 0.6 : 1,
+                  transition: "all 0.15s",
+                }}
+              >
+                ✓ Mark as Invested
+              </button>
+              <button
+                disabled={os === "recording"}
+                onClick={() => handleRecordOutcome(item.id, "passed")}
+                style={{
+                  background: "rgba(239,68,68,0.10)",
+                  border: "1px solid rgba(239,68,68,0.35)",
+                  borderRadius: 6,
+                  color: "#f87171",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: "6px 14px",
+                  cursor: os === "recording" ? "not-allowed" : "pointer",
+                  opacity: os === "recording" ? 0.6 : 1,
+                  transition: "all 0.15s",
+                }}
+              >
+                ✗ Mark as Passed
+              </button>
+            </div>
+          );
+        })()}
       </div>
     );
   }

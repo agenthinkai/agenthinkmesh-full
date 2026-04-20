@@ -11,7 +11,7 @@
 
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated, updateTriageStage, createPitchMirrorShare, getPitchMirrorShare } from "../db";
+import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated, updateTriageStage, recordOutcome, createPitchMirrorShare, getPitchMirrorShare } from "../db";
 import { sql } from "drizzle-orm";
 import { runCouncil } from "../councilEngine";
 import { invokeLLM } from "../_core/llm";
@@ -934,11 +934,26 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
     }),
 
   /**
-   * pitch.agentCalibration — Lightweight calibration signal for each triage agent.
-   * Uses the last 50 triage records to compute how often each agent's positive vote
-   * aligned with deals that progressed to diligence or ic_ready.
-   * Returns: { agentName, signal: 'high' | 'moderate' | 'low' | 'insufficient', sampleSize }
-   * No schema changes — reads agentOutputs JSON and stage field from existing rows.
+   * pitch.recordOutcome — Record the real investment decision outcome for a triage record.
+   * Ownership-checked. Valid outcomes: 'invested' | 'passed'.
+   * This feeds into agentCalibration as the ground-truth signal.
+   */
+  recordOutcome: protectedProcedure
+    .input(z.object({
+      id: z.number().int().positive(),
+      outcome: z.enum(["invested", "passed"]),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const ok = await recordOutcome(input.id, ctx.user.id.toString(), input.outcome);
+      if (!ok) throw new Error("Failed to record outcome");
+      return { success: true, outcome: input.outcome };
+    }),
+
+  /**
+   * pitch.agentCalibration — Outcome-grounded calibration signal for each triage agent.
+   * Priority: uses decision_outcome (invested/passed) when available.
+   * Fallback: uses stage progression (diligence/ic_ready/decision_made) when outcome is null.
+   * Returns: { agentName, signal: 'high' | 'moderate' | 'low' | 'insufficient', sampleSize, outcomeGrounded }
    */
   agentCalibration: protectedProcedure.query(async ({ ctx }) => {
     const rows = await getPitchTriageHistory(ctx.user.id.toString(), 50);
@@ -950,12 +965,12 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
     type AgentName = typeof AGENT_NAMES[number];
     type SignalLevel = "high" | "moderate" | "low" | "insufficient";
 
-    const stats: Record<AgentName, { positiveVotes: number; alignedWithProgress: number }> = {
-      "Traction": { positiveVotes: 0, alignedWithProgress: 0 },
-      "Market Signal": { positiveVotes: 0, alignedWithProgress: 0 },
-      "Founder Signal": { positiveVotes: 0, alignedWithProgress: 0 },
-      "Business Model": { positiveVotes: 0, alignedWithProgress: 0 },
-      "Risk": { positiveVotes: 0, alignedWithProgress: 0 },
+    const stats: Record<AgentName, { positiveVotes: number; alignedWithProgress: number; outcomeVotes: number; outcomeAligned: number }> = {
+      "Traction": { positiveVotes: 0, alignedWithProgress: 0, outcomeVotes: 0, outcomeAligned: 0 },
+      "Market Signal": { positiveVotes: 0, alignedWithProgress: 0, outcomeVotes: 0, outcomeAligned: 0 },
+      "Founder Signal": { positiveVotes: 0, alignedWithProgress: 0, outcomeVotes: 0, outcomeAligned: 0 },
+      "Business Model": { positiveVotes: 0, alignedWithProgress: 0, outcomeVotes: 0, outcomeAligned: 0 },
+      "Risk": { positiveVotes: 0, alignedWithProgress: 0, outcomeVotes: 0, outcomeAligned: 0 },
     };
 
     for (const row of rows) {
@@ -963,14 +978,23 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
       let agents: Array<{ name: string; label: string }> = [];
       try { agents = JSON.parse(row.agentOutputs); } catch { continue; }
 
-      const progressed = PROGRESSED_STAGES.has(row.stage ?? "");
+      const hasRealOutcome = row.decisionOutcome === "invested" || row.decisionOutcome === "passed";
+      const investedByOutcome = row.decisionOutcome === "invested";
+      const progressedByStage = PROGRESSED_STAGES.has(row.stage ?? "");
 
       for (const agent of agents) {
         const name = agent.name as AgentName;
         if (!AGENT_NAMES.includes(name)) continue;
         if (POSITIVE_LABELS.has(agent.label)) {
-          stats[name].positiveVotes++;
-          if (progressed) stats[name].alignedWithProgress++;
+          if (hasRealOutcome) {
+            // Ground truth path: use real outcome
+            stats[name].outcomeVotes++;
+            if (investedByOutcome) stats[name].outcomeAligned++;
+          } else {
+            // Fallback path: use stage progression
+            stats[name].positiveVotes++;
+            if (progressedByStage) stats[name].alignedWithProgress++;
+          }
         }
       }
     }
@@ -980,15 +1004,21 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
     const MODERATE_THRESHOLD = 0.35;
 
     return AGENT_NAMES.map((name) => {
-      const { positiveVotes, alignedWithProgress } = stats[name];
+      const s = stats[name];
+      // Prefer outcome-grounded calibration when enough real outcomes exist
+      const useOutcome = s.outcomeVotes >= MIN_SAMPLES;
+      const votes = useOutcome ? s.outcomeVotes : s.positiveVotes;
+      const aligned = useOutcome ? s.outcomeAligned : s.alignedWithProgress;
+      const sampleSize = votes;
+
       let signal: SignalLevel = "insufficient";
-      if (positiveVotes >= MIN_SAMPLES) {
-        const rate = alignedWithProgress / positiveVotes;
+      if (sampleSize >= MIN_SAMPLES) {
+        const rate = aligned / sampleSize;
         if (rate >= HIGH_THRESHOLD) signal = "high";
         else if (rate >= MODERATE_THRESHOLD) signal = "moderate";
         else signal = "low";
       }
-      return { agentName: name, signal, sampleSize: positiveVotes };
+      return { agentName: name, signal, sampleSize, outcomeGrounded: useOutcome };
     });
   }),
 });

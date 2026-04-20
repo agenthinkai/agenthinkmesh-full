@@ -172,6 +172,29 @@ export async function updateTriageStage(
   }
 }
 
+/**
+ * recordOutcome — Record the real investment decision outcome for a triage record.
+ * Ownership-checked. Valid outcomes: 'invested' | 'passed'
+ */
+export async function recordOutcome(
+  id: number,
+  userId: string,
+  outcome: "invested" | "passed"
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  try {
+    await db
+      .update(pitchTriages)
+      .set({ decisionOutcome: outcome })
+      .where(and(eq(pitchTriages.id, id), eq(pitchTriages.userId, userId)));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to record outcome:", error);
+    return false;
+  }
+}
+
 // ── PitchMirror Share helpers ─────────────────────────────────────────────────────────────────
 export async function createPitchMirrorShare(
   mirrorResultJson: string,
