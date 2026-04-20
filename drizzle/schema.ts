@@ -28,6 +28,7 @@ export const pitchTriages = mysqlTable("pitch_triages", {
   nextStep: varchar("nextStep", { length: 100 }),
   parentTriageId: int("parentTriageId"), // set when re-running from history
   escalatedAt: timestamp("escalatedAt"),  // set when analyst escalates to Deal Screener
+  stage: varchar("stage", { length: 32 }).default("triaged").notNull(), // Phase 2 lifecycle seed: triaged | under_diligence | ic_ready | decided | archived
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   ptUserIdx: index("pt_user_idx").on(table.userId),

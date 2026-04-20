@@ -80,14 +80,14 @@ const AGENT_ORDER: AgentName[] = [
 
 // ── Loading agent names (staggered reveal) ────────────────────────────────────
 const LOADING_STEPS = [
-  "Initialising agents…",
+  "Initialising decision agents…",
   "Analysing traction signals…",
   "Scanning market landscape…",
   "Evaluating founder profile…",
   "Reviewing business model…",
   "Assessing risk factors…",
   "Checking pitch completeness…",
-  "Computing triage score…",
+  "Computing decision score…",
 ];
 
 // ── Kuwait timezone formatter───────────────────────────────────────────────────────────────
@@ -239,21 +239,21 @@ export default function PitchTriage() {
       border: "rgba(34,197,94,0.35)",
       text: "#4ade80",
       label: "ENGAGE",
-      desc: "Strong signals — proceed to full evaluation",
+      desc: "Strong signals — decision ready: proceed to full IC analysis",
     },
     WATCH: {
       bg: "rgba(245,158,11,0.12)",
       border: "rgba(245,158,11,0.35)",
       text: "#fbbf24",
       label: "WATCH",
-      desc: "Mixed signals — request more information before committing",
+      desc: "Mixed signals — hold and gather more information before committing",
     },
     IGNORE: {
       bg: "rgba(239,68,68,0.12)",
       border: "rgba(239,68,68,0.35)",
       text: "#f87171",
       label: "IGNORE",
-      desc: "Insufficient signals — not ready for evaluation",
+      desc: "Insufficient signals — pass for now, re-triage if the founder provides more detail",
     },
   };
 
@@ -453,7 +453,7 @@ export default function PitchTriage() {
                     transition: "opacity 0.2s",
                   }}
                 >
-                  ⚡ Run Triage
+                  ⚡ Get Decision
                 </Button>
               </div>
 
@@ -695,7 +695,7 @@ export default function PitchTriage() {
                       cursor: "pointer",
                     }}
                   >
-                    New Triage
+                    Triage Another →
                   </Button>
                 </div>
               </div>
@@ -957,7 +957,7 @@ export default function PitchTriage() {
                 </div>
               )}
 
-              {/* Next step hint */}
+              {/* Decision guidance */}
               <div
                 style={{
                   background: "rgba(255,255,255,0.03)",
@@ -969,11 +969,151 @@ export default function PitchTriage() {
                   gap: 10,
                 }}
               >
-                <span style={{ color: MUTED, fontSize: 12 }}>Recommended next step:</span>
+                <span style={{ color: MUTED, fontSize: 12 }}>Decision guidance:</span>
                 <span style={{ color: TEXT2, fontSize: 12, fontWeight: 600 }}>
                   {result.nextStep}
                 </span>
               </div>
+
+              {/* ── Next Actions block ─────────────────────────────────── */}
+              <div
+                style={{
+                  background: "rgba(124,58,237,0.06)",
+                  border: `1px solid rgba(124,58,237,0.25)`,
+                  borderRadius: 12,
+                  padding: "18px 20px",
+                }}
+              >
+                <div style={{ fontSize: 12, color: MUTED, fontWeight: 600, letterSpacing: 0.8, marginBottom: 12, textTransform: "uppercase" as const }}>
+                  Next Actions
+                </div>
+                {result.classification === "ENGAGE" && (
+                  <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
+                    <button
+                      onClick={handleEscalate}
+                      style={{
+                        background: `linear-gradient(135deg, ${ACCENT}, #a855f7)`,
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 8,
+                        padding: "11px 18px",
+                        fontWeight: 700,
+                        fontSize: 13,
+                        cursor: "pointer",
+                        textAlign: "left" as const,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <span>🚀</span>
+                      <span>Run Full IC Analysis →</span>
+                    </button>
+                    <div style={{ fontSize: 11, color: MUTED, paddingLeft: 4 }}>
+                      High potential detected — escalate to full evaluation with 10 specialist agents.
+                    </div>
+                  </div>
+                )}
+                {result.classification === "WATCH" && (
+                  <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
+                    <button
+                      onClick={() => {
+                        // Copy pitch to clipboard for follow-up tracking
+                        navigator.clipboard?.writeText(pitchText).catch(() => {});
+                      }}
+                      style={{
+                        background: "rgba(245,158,11,0.12)",
+                        color: "#fbbf24",
+                        border: "1px solid rgba(245,158,11,0.35)",
+                        borderRadius: 8,
+                        padding: "11px 18px",
+                        fontWeight: 700,
+                        fontSize: 13,
+                        cursor: "pointer",
+                        textAlign: "left" as const,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <span>📋</span>
+                      <span>Copy pitch for follow-up tracking</span>
+                    </button>
+                    <div style={{ fontSize: 11, color: MUTED, paddingLeft: 4 }}>
+                      Mixed signals — request more information before committing. Re-triage when ready.
+                    </div>
+                  </div>
+                )}
+                {result.classification === "IGNORE" && (
+                  <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
+                    <div
+                      style={{
+                        background: "rgba(239,68,68,0.08)",
+                        color: "#f87171",
+                        border: "1px solid rgba(239,68,68,0.25)",
+                        borderRadius: 8,
+                        padding: "11px 18px",
+                        fontWeight: 600,
+                        fontSize: 13,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                      }}
+                    >
+                      <span>🗂</span>
+                      <span>Archived — low priority</span>
+                    </div>
+                    <div style={{ fontSize: 11, color: MUTED, paddingLeft: 4 }}>
+                      Insufficient signals. Saved to history. Re-triage if the founder provides more information.
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ── Triage routing CTA (ENGAGE only) ──────────────────── */}
+              {result.classification === "ENGAGE" && (
+                <div
+                  style={{
+                    background: "rgba(34,197,94,0.06)",
+                    border: "1px solid rgba(34,197,94,0.25)",
+                    borderRadius: 10,
+                    padding: "14px 18px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 12,
+                    flexWrap: "wrap" as const,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <span style={{ fontSize: 18 }}>⚡</span>
+                    <div>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: "#4ade80" }}>
+                        High potential detected
+                      </div>
+                      <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>
+                        Run full IC analysis to get a 35-page institutional-grade memo in under 4 minutes.
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={handleEscalate}
+                    style={{
+                      background: `linear-gradient(135deg, #22c55e, #16a34a)`,
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 8,
+                      padding: "9px 18px",
+                      fontWeight: 700,
+                      fontSize: 12,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap" as const,
+                    }}
+                  >
+                    Run Full IC Analysis →
+                  </button>
+                </div>
+              )}
             </div>
           )}
           </>
@@ -1020,6 +1160,8 @@ function HistoryTab({
   // Date range filter — default 30 days
   type DateRange = "7d" | "30d" | "all";
   const [dateRange, setDateRange] = useState<DateRange>("30d");
+  type SortBy = "newest" | "highest_score";
+  const [sortBy, setSortBy] = useState<SortBy>("newest");
 
   function toggleFilter(cls: string) {
     setActiveFilters((prev) => {
@@ -1560,7 +1702,11 @@ function HistoryTab({
   // Escalation counts (ENGAGE rows that have escalatedAt set)
   const engageTotal = rows.filter((r) => r.classification === "ENGAGE").length;
   const escalatedCount = rows.filter((r) => r.classification === "ENGAGE" && r.escalatedAt).length;
-  const filteredRows = rows.filter((r) => activeFilters.has(r.classification));
+  const filteredRowsUnsorted = rows.filter((r) => activeFilters.has(r.classification));
+  const filteredRows = [...filteredRowsUnsorted].sort((a, b) => {
+    if (sortBy === "highest_score") return (b.score ?? 0) - (a.score ?? 0);
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
 
   const CHIP_COLORS: Record<string, { active: { bg: string; border: string; text: string }; inactive: { bg: string; border: string; text: string } }> = {
     ENGAGE: {
@@ -1582,19 +1728,42 @@ function HistoryTab({
 
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-      {/* Header summary */}
-      <div style={{ color: MUTED, fontSize: 11, marginBottom: 2, letterSpacing: 0.2 }}>
-        <span style={{ color: TEXT2, fontWeight: 600 }}>{rows.length}</span> triages
-        {" · "}
-        <span style={{ color: "#4ade80", fontWeight: 600 }}>{escalatedCount}</span> escalated
-        {" · "}
-        <span style={{ color: escalatedCount > 0 ? "#fbbf24" : MUTED, fontWeight: 600 }}>
-          {conversionRate}% conversion
+      {/* System Signals summary */}
+      <div
+        style={{
+          background: "rgba(124,58,237,0.06)",
+          border: "1px solid rgba(124,58,237,0.18)",
+          borderRadius: 8,
+          padding: "10px 14px",
+          marginBottom: 4,
+          display: "flex",
+          alignItems: "center",
+          gap: 16,
+          flexWrap: "wrap" as const,
+        }}
+      >
+        <span style={{ fontSize: 11, color: MUTED, fontWeight: 600, letterSpacing: 0.6, textTransform: "uppercase" as const }}>System Signals</span>
+        <span style={{ fontSize: 11, color: TEXT2 }}>
+          <span style={{ color: TEXT2, fontWeight: 700 }}>{rows.length}</span> decision{rows.length !== 1 ? "s" : ""} made
         </span>
+        <span style={{ fontSize: 11, color: "#4ade80" }}>
+          <span style={{ fontWeight: 700 }}>{counts.ENGAGE}</span> ENGAGE
+        </span>
+        <span style={{ fontSize: 11, color: "#fbbf24" }}>
+          <span style={{ fontWeight: 700 }}>{counts.WATCH}</span> WATCH
+        </span>
+        <span style={{ fontSize: 11, color: "#f87171" }}>
+          <span style={{ fontWeight: 700 }}>{counts.IGNORE}</span> IGNORE
+        </span>
+        {escalatedCount > 0 && (
+          <span style={{ fontSize: 11, color: "#a78bfa" }}>
+            <span style={{ fontWeight: 700 }}>{escalatedCount}</span> escalated · <span style={{ fontWeight: 700 }}>{conversionRate}%</span> conversion
+          </span>
+        )}
       </div>
 
-      {/* Date range toggle */}
-      <div style={{ display: "flex", gap: 6, marginBottom: 4 }}>
+      {/* Date range + Sort toggles */}
+      <div style={{ display: "flex", gap: 6, marginBottom: 4, flexWrap: "wrap" as const, alignItems: "center" }}>
         {(["7d", "30d", "all"] as DateRange[]).map((range) => {
           const isActive = dateRange === range;
           return (
@@ -1614,6 +1783,29 @@ function HistoryTab({
               }}
             >
               {DATE_RANGE_LABELS[range]}
+            </button>
+          );
+         })}
+        <span style={{ color: BORDER, fontSize: 11, alignSelf: "center", userSelect: "none" as const }}>|</span>
+        {(["newest", "highest_score"] as SortBy[]).map((s) => {
+          const isActive = sortBy === s;
+          return (
+            <button
+              key={s}
+              onClick={() => setSortBy(s)}
+              style={{
+                background: isActive ? "rgba(124,58,237,0.18)" : "rgba(255,255,255,0.04)",
+                border: `1px solid ${isActive ? "rgba(124,58,237,0.5)" : BORDER}`,
+                borderRadius: 16,
+                color: isActive ? "#a78bfa" : MUTED,
+                fontSize: 11,
+                fontWeight: isActive ? 700 : 500,
+                padding: "3px 10px",
+                cursor: "pointer",
+                transition: "all 0.15s",
+              }}
+            >
+              {s === "newest" ? "Newest first" : "Highest score"}
             </button>
           );
         })}

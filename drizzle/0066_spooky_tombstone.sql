@@ -1,0 +1,1 @@
+ALTER TABLE `pitch_triages` ADD `stage` varchar(32) DEFAULT 'triaged' NOT NULL;

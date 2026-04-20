@@ -463,6 +463,13 @@
       "when": 1776447536147,
       "tag": "0065_nice_dazzler",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "5",
+      "when": 1776659872592,
+      "tag": "0066_spooky_tombstone",
+      "breakpoints": true
     }
   ]
 }

@@ -2434,6 +2434,7 @@
 - [x] PitchMirrorLanding: confirmed already aligned — "1 free evaluation · No login required" badge + "Try it now — no login required" CTA
 - [x] Tests: 693/693 passing after frontend-only changes
 
+<<<<<<< Updated upstream
 ## Guest Share — PitchMirror Growth
 
 - [x] PitchMirror: unhide ShareButton for guests (remove !isGuest guard on line 645)
@@ -2453,3 +2454,18 @@
 - [x] Client: PitchMirror INPUT — add word-count progress bar below textarea (target: 30 words, turns green at threshold)
 - [x] Tests: 693/693 passing
 - [x] TypeScript: zero errors
+=======
+## Phase 1 — Decision System Upgrade
+
+- [x] Schema: add `stage` varchar(32) default "triaged" to pitchTriages table
+- [x] Schema: stage column added via ALTER TABLE (db:push blocked by migration journal conflict)
+- [x] PitchTriage RESULTS: add Next Actions block below verdict (ENGAGE/WATCH/IGNORE branching)
+- [x] PitchTriage RESULTS: add Triage routing CTA banner (ENGAGE → "High potential detected — run full IC analysis?", WATCH → "Add to tracking list", IGNORE → "Archived — low priority")
+- [x] PitchTriage History: add System Signals summary line above list ("X new pitches triaged today", "X moved to ENGAGE", "X require review")
+- [x] PitchTriage History: add Sort toggle (Newest first / Highest score first)
+- [x] Microcopy: replace "⚡ Run Triage" → "⚡ Get Decision" in submit button
+- [x] Microcopy: replace "New Triage" → "Triage Another →" in reset button
+- [x] Microcopy: classConfig descriptions updated to decision-first language; LOADING_STEPS updated to "Computing decision score…"
+- [x] Tests: 693/693 passing after changes
+- [x] TypeScript: zero errors
+>>>>>>> Stashed changes
