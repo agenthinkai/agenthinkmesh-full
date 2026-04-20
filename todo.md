@@ -2559,3 +2559,11 @@
 - [x] No percentages, no charts, preserve existing flows
 - [x] TypeScript: zero errors
 - [x] Tests: 693/693 passing
+
+## Calibration Language + Outcome Badges
+
+- [x] Primary Driver/Concern: inline signal level text e.g. "(high-signal agent)" after agent name
+- [x] History list rows: INVESTED (green) / PASSED (red) chip when decisionOutcome is set
+- [x] No new schema, no new APIs, no new UI elements beyond inline text + chip
+- [x] TypeScript: zero errors (full npx tsc --noEmit EXIT:0; watch-mode shows stale cache artifacts)
+- [x] Tests: 693/693 passing

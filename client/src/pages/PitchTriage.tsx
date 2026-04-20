@@ -1102,8 +1102,15 @@ export default function PitchTriage() {
                       </span>
                       <span style={{ fontSize: 11, fontWeight: 700, color: primaryColor, whiteSpace: "nowrap" as const }}>
                         {AGENT_META[primaryAgent.name as AgentName]?.icon ?? ""} {primaryAgent.name}
+                        {(() => {
+                          const sig = calibrationMap[primaryAgent.name];
+                          const cfg = sig ? SIGNAL_DOT[sig] : null;
+                          if (!cfg) return null;
+                          return (
+                            <span style={{ fontSize: 10, fontWeight: 400, color: cfg.color, marginLeft: 4 }}>({cfg.label} agent)</span>
+                          );
+                        })()}
                       </span>
-                      <SignalDot agentName={primaryAgent.name} />
                       <span style={{ fontSize: 11, color: TEXT2 }}>— {firstSentence(primaryAgent.reasoning)}</span>
                     </div>
                   );
@@ -1168,8 +1175,15 @@ export default function PitchTriage() {
                         </span>
                         <span style={{ fontSize: 11, fontWeight: 700, color: primaryColor, whiteSpace: "nowrap" as const }}>
                           {AGENT_META[primaryAgent.name as AgentName]?.icon ?? ""} {primaryAgent.name}
+                          {(() => {
+                            const sig = calibrationMap[primaryAgent.name];
+                            const cfg = sig ? SIGNAL_DOT[sig] : null;
+                            if (!cfg) return null;
+                            return (
+                              <span style={{ fontSize: 10, fontWeight: 400, color: cfg.color, marginLeft: 4 }}>({cfg.label} agent)</span>
+                            );
+                          })()}
                         </span>
-                        <SignalDot agentName={primaryAgent.name} />
                         <span style={{ fontSize: 11, color: TEXT2 }}>— {firstSentence(primaryAgent.reasoning)}</span>
                       </div>
                     )}
@@ -2516,6 +2530,38 @@ function HistoryTab({
                     }}
                   >
                     ★ IC Ready
+                  </span>
+                )}
+                {row.decisionOutcome === "invested" && (
+                  <span
+                    style={{
+                      fontSize: 9,
+                      color: "#4ade80",
+                      background: "rgba(34,197,94,0.10)",
+                      border: "1px solid rgba(34,197,94,0.30)",
+                      borderRadius: 4,
+                      padding: "1px 6px",
+                      letterSpacing: 0.3,
+                      fontWeight: 700,
+                    }}
+                  >
+                    ✓ INVESTED
+                  </span>
+                )}
+                {row.decisionOutcome === "passed" && (
+                  <span
+                    style={{
+                      fontSize: 9,
+                      color: "#f87171",
+                      background: "rgba(239,68,68,0.10)",
+                      border: "1px solid rgba(239,68,68,0.30)",
+                      borderRadius: 4,
+                      padding: "1px 6px",
+                      letterSpacing: 0.3,
+                      fontWeight: 700,
+                    }}
+                  >
+                    ✗ PASSED
                   </span>
                 )}
               </div>
