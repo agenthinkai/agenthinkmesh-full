@@ -2605,3 +2605,32 @@
 - [x] No schema changes, no new APIs
 - [x] TypeScript: zero errors (full npx tsc --noEmit EXIT:0)
 - [x] Tests: 693/693 passing
+
+## True Invested-Pattern Matching + Result Screen "Why" Expansion
+
+- [ ] Client (HistoryTab): replace majority-positive proxy with invested-outcome grounded logic — only count rows where decisionOutcome = "invested", accumulate positive-vote counts for those rows only
+- [ ] Client (HistoryTab): hide aggregate signal and explanation when investedRows < 2 (insufficient sample, no proxy fallback)
+- [ ] Client (HistoryTab): topSuccessFactors derived from invested rows only
+- [ ] Client (result screen): add resultPatternExpanded boolean state near result screen rendering
+- [ ] Client (result screen): convert per-deal pattern insight block to clickable toggle with chevron
+- [ ] Client (result screen): reveal inline explanation using insight.signals mapped to FACTOR_PHRASES on expand
+- [ ] Same phrasing/style as History tab expansion
+- [ ] No modal, no table, no chart, no percentages
+- [ ] No schema changes, no new APIs
+- [x] TypeScript: zero errors (full npx tsc --noEmit EXIT:0)
+- [x] Tests: 693/693 passing
+
+## Nav Responsiveness Fix
+
+- [ ] Add useIsTablet hook (768–1279px breakpoint) alongside existing useIsMobile
+- [ ] Add useOverflowItems hook: measure available tab-row width, compute how many NAV_ITEMS fit, return visible + overflow arrays
+- [ ] On large screens (≥1280px): show full scrollable tab row (existing behaviour, no overflow)
+- [ ] On medium screens (768–1279px): show as many tab items as fit, collapse remainder into a "More ▾" overflow dropdown
+- [ ] On small screens (<768px): show hamburger → existing MobileDrawer (no change)
+- [ ] "More" dropdown: same visual style as Tools dropdown, lists overflow items with icon + label
+- [ ] No horizontal overflow at any breakpoint — overflow:hidden on tab row container
+- [ ] All items reachable within 1 click at any breakpoint
+- [ ] Keyboard accessible (focus ring on More button, Escape closes dropdown)
+- [ ] No layout shift, no visual style change for visible items
+- [x] TypeScript: zero errors (full npx tsc --noEmit EXIT:0)
+- [x] Tests: 693/693 passing

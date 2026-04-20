@@ -1,26 +1,15 @@
 /**
  * SiteNav — responsive top navigation.
  *
- * Desktop (≥768 px): Logo | Domains | Contact | scrollable neon tab row | PlanBadge | Avatar
+ * Large  (≥1280 px): Logo | static links | Tools ▾ | [tab items that fit] | More ▾ | PlanBadge | Avatar
+ * Medium (768–1279): Logo | static links | Tools ▾ | [fewer tab items]   | More ▾ | PlanBadge | Avatar
  * Mobile  (<768 px): Logo | PlanBadge | Avatar | ☰ hamburger → full-height slide-in drawer
  *
- * Route mapping:
- *  OpenClaw        → /openclaw
- *  AdMesh          → /admesh
- *  Social AI       → /social
- *  Insurance       → /insurance
- *  Rosie Protocol  → /rosie
- *  Agent Registry  → /registry
- *  Intel Agent     → /intelligence
- *  MVNO Intel      → /telco
- *  ForecastMesh    → /forecast
- *  Knowledge Vault → /knowledge-vault
- *  Deal Screener   → /deals
- *  Compare Deals   → /deals/compare
- *  Pitch           → /pitch
+ * The tab row never overflows — items that don't fit collapse into a "More ▾" dropdown.
+ * Each NAV_ITEM tab is ~94px wide (minWidth 80 + 14px padding each side).
  */
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import Logo from "@/components/Logo";
@@ -58,15 +47,22 @@ const NAV_ITEMS: NavItem[] = [
   { label: "ForecastMesh",    icon: "📊", href: "/forecast",        color: "#FBBF24", bg: "rgba(251,191,36,0.08)"   },
   { label: "Knowledge Vault", icon: "🗄️", href: "/knowledge-vault", color: "#F59E0B", bg: "rgba(245,158,11,0.08)"   },
   { label: "Deal Screener",   icon: "⚖️", href: "/deals",           color: "#4ADE80", bg: "rgba(74,222,128,0.08)"   },
-  { label: "Procurement Eval", icon: "🏗️", href: "/procurement",     color: "#4ADE80", bg: "rgba(74,222,128,0.08)"   },
-  { label: "Pitch Triage",    icon: "⚡",  href: "/pitch-triage",  color: "#a78bfa", bg: "rgba(167,139,250,0.08)"  },
-  { label: "PitchMirror",      icon: "🪞",  href: "/pitchmirror",   color: "#c084fc", bg: "rgba(192,132,252,0.08)"  },
+  { label: "Procurement Eval", icon: "🏗️", href: "/procurement",    color: "#4ADE80", bg: "rgba(74,222,128,0.08)"   },
+  { label: "Pitch Triage",    icon: "⚡",  href: "/pitch-triage",   color: "#a78bfa", bg: "rgba(167,139,250,0.08)"  },
+  { label: "PitchMirror",     icon: "🪞",  href: "/pitchmirror",    color: "#c084fc", bg: "rgba(192,132,252,0.08)"  },
   { label: "Contacts",        icon: "👥", href: "/contacts",        color: "#F59E0B", bg: "rgba(245,158,11,0.08)"   },
   { label: "Compare Deals",   icon: "🔷", href: "/deals/compare",   color: "#818CF8", bg: "rgba(129,140,248,0.08)"  },
   { label: "Pitch",           icon: "💡", href: "/pitch",           color: "#FF6B35", bg: "rgba(255,107,53,0.08)"   },
   { label: "Reply Tracker",   icon: "📬", href: "/tracker",         color: "#34D399", bg: "rgba(52,211,153,0.08)"   },
   { label: "PortfolioMesh",   icon: "🏦", href: "/portfolio-mesh",  color: "#7BA3D4", bg: "rgba(123,163,212,0.08)"  },
 ];
+
+/* ─── Tab item width constant ───────────────────────────────────────── */
+// Each tab: minWidth 80 + 14px left padding + 14px right padding = 108px worst case.
+// We use 100px as a conservative estimate per item for overflow calculation.
+const TAB_ITEM_WIDTH = 100;
+// "More" button width (approx)
+const MORE_BTN_WIDTH = 72;
 
 /* ─── Helpers ───────────────────────────────────────────────────────── */
 function useIsMobile() {
@@ -119,7 +115,6 @@ interface DrawerProps {
 }
 
 function MobileDrawer({ open, onClose, currentPath, isAuthenticated, user, logout }: DrawerProps) {
-  // Prevent body scroll when drawer is open
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };
@@ -250,7 +245,6 @@ function MobileDrawer({ open, onClose, currentPath, isAuthenticated, user, logou
                   }
                 }}
               >
-                {/* Icon circle */}
                 <span style={{
                   width: 34, height: 34, borderRadius: 8,
                   background: `${item.color}18`,
@@ -261,7 +255,6 @@ function MobileDrawer({ open, onClose, currentPath, isAuthenticated, user, logou
                 }}>
                   {item.icon}
                 </span>
-                {/* Label */}
                 <span style={{
                   fontSize: 13, fontWeight: 700,
                   color: item.color,
@@ -368,6 +361,230 @@ function MobileDrawer({ open, onClose, currentPath, isAuthenticated, user, logou
   );
 }
 
+/* ─── Overflow "More" dropdown ──────────────────────────────────────── */
+interface MoreDropdownProps {
+  items: NavItem[];
+  currentPath: string;
+}
+
+function MoreDropdown({ items, currentPath }: MoreDropdownProps) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  // Close on Escape
+  useEffect(() => {
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setOpen(false);
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, []);
+
+  const hasActive = items.some(item => isActivePath(item.href, currentPath));
+
+  return (
+    <div
+      ref={ref}
+      style={{ position: "relative", height: "100%", display: "flex", alignItems: "stretch", flexShrink: 0 }}
+    >
+      <button
+        onClick={() => setOpen(o => !o)}
+        aria-haspopup="true"
+        aria-expanded={open}
+        style={{
+          height: "100%",
+          padding: "0 14px",
+          background: open || hasActive ? "rgba(255,255,255,0.06)" : "transparent",
+          border: "none",
+          borderRight: `1px solid ${BORDER}`,
+          borderBottom: open || hasActive ? `3px solid ${CYAN}` : "3px solid transparent",
+          cursor: "pointer",
+          display: "flex", alignItems: "center", gap: 5,
+          color: open || hasActive ? WHITE : MUTED,
+          fontSize: 12, fontWeight: 700,
+          letterSpacing: "0.02em",
+          transition: "background 0.15s, color 0.15s, border-bottom-color 0.15s",
+          whiteSpace: "nowrap",
+          outline: "none",
+        }}
+        onFocus={e => { (e.currentTarget as HTMLButtonElement).style.outline = `2px solid ${CYAN}44`; }}
+        onBlur={e => { (e.currentTarget as HTMLButtonElement).style.outline = "none"; }}
+      >
+        More
+        <span style={{
+          fontSize: 9, opacity: 0.7,
+          display: "inline-block",
+          transform: open ? "rotate(180deg)" : "none",
+          transition: "transform 0.15s",
+        }}>▾</span>
+      </button>
+
+      {open && (
+        <div style={{
+          position: "absolute", top: "calc(100% + 1px)", right: 0,
+          background: "#0d1525",
+          border: `1px solid ${BORDER}`,
+          borderRadius: 10, padding: "6px 0",
+          minWidth: 200, maxWidth: 240,
+          maxHeight: "calc(100vh - 80px)",
+          overflowY: "auto",
+          zIndex: 200,
+          boxShadow: "0 12px 32px rgba(0,0,0,0.55), 0 0 0 1px rgba(255,255,255,0.04)",
+        }}>
+          {items.map(item => {
+            const active = isActivePath(item.href, currentPath);
+            return (
+              <a
+                key={item.label}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10,
+                  padding: "9px 14px",
+                  textDecoration: "none",
+                  color: active ? item.color : MUTED,
+                  fontSize: 13, fontWeight: active ? 600 : 500,
+                  background: active ? item.bg : "transparent",
+                  borderLeft: active ? `2px solid ${item.color}` : "2px solid transparent",
+                  transition: "background 0.12s, color 0.12s",
+                }}
+                onMouseEnter={e => {
+                  if (!active) {
+                    (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.04)";
+                    (e.currentTarget as HTMLAnchorElement).style.color = item.color;
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (!active) {
+                    (e.currentTarget as HTMLAnchorElement).style.background = "transparent";
+                    (e.currentTarget as HTMLAnchorElement).style.color = MUTED;
+                  }
+                }}
+              >
+                <span style={{ fontSize: 14, flexShrink: 0 }}>{item.icon}</span>
+                <span style={{ flex: 1 }}>{item.label}</span>
+              </a>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── Desktop tab row with overflow detection ───────────────────────── */
+interface TabRowProps {
+  currentPath: string;
+  activeHover: string | null;
+  setActiveHover: (v: string | null) => void;
+}
+
+function DesktopTabRow({ currentPath, activeHover, setActiveHover }: TabRowProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [visibleCount, setVisibleCount] = useState(NAV_ITEMS.length);
+
+  const measure = useCallback(() => {
+    if (!containerRef.current) return;
+    const available = containerRef.current.offsetWidth;
+    // Reserve space for "More" button only if we'll need it
+    const totalItemsWidth = NAV_ITEMS.length * TAB_ITEM_WIDTH;
+    if (totalItemsWidth <= available) {
+      setVisibleCount(NAV_ITEMS.length);
+      return;
+    }
+    // Need "More" button — reserve its width
+    const spaceForItems = available - MORE_BTN_WIDTH;
+    const count = Math.max(0, Math.floor(spaceForItems / TAB_ITEM_WIDTH));
+    setVisibleCount(count);
+  }, []);
+
+  useEffect(() => {
+    measure();
+    const observer = new ResizeObserver(measure);
+    if (containerRef.current) observer.observe(containerRef.current);
+    return () => observer.disconnect();
+  }, [measure]);
+
+  const visibleItems = NAV_ITEMS.slice(0, visibleCount);
+  const overflowItems = NAV_ITEMS.slice(visibleCount);
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        display: "flex", alignItems: "stretch",
+        flex: 1,
+        overflow: "hidden", // prevent any horizontal overflow
+        minWidth: 0,
+      }}
+    >
+      {visibleItems.map(item => {
+        const active = isActivePath(item.href, currentPath);
+        const hovered = activeHover === item.label;
+        const highlight = active || hovered;
+
+        const words = item.label.split(" ");
+        const mid = Math.ceil(words.length / 2);
+        const line1 = words.slice(0, mid).join(" ");
+        const line2 = words.length > 1 ? words.slice(mid).join(" ") : null;
+
+        return (
+          <a
+            key={item.label}
+            href={item.href}
+            onMouseEnter={() => setActiveHover(item.label)}
+            onMouseLeave={() => setActiveHover(null)}
+            style={{
+              position: "relative",
+              display: "flex", flexDirection: "column",
+              justifyContent: "center", alignItems: "flex-start",
+              gap: 1, padding: "0 14px",
+              minWidth: 80, maxWidth: 110,
+              textDecoration: "none", cursor: "pointer",
+              background: highlight ? item.bg : "transparent",
+              borderRight: `1px solid ${BORDER}`,
+              borderBottom: highlight ? `3px solid ${item.color}` : "3px solid transparent",
+              transition: "background 0.18s, border-bottom-color 0.18s",
+              flexShrink: 0,
+            }}
+          >
+            <span style={{
+              fontSize: 13, lineHeight: 1,
+              filter: `drop-shadow(0 0 4px ${item.color}${highlight ? "cc" : "77"})`,
+              transition: "filter 0.18s", marginBottom: 2,
+            }}>
+              {item.icon}
+            </span>
+            <span style={{
+              fontSize: 11, fontWeight: 700, letterSpacing: "0.01em",
+              color: item.color,
+              opacity: highlight ? 1 : 0.85,
+              transition: "opacity 0.18s", lineHeight: 1.25,
+              textShadow: `0 0 8px ${item.color}${highlight ? "88" : "44"}`,
+            }}>
+              {line1}
+              {line2 && <><br />{line2}</>}
+            </span>
+          </a>
+        );
+      })}
+
+      {/* "More" overflow dropdown — only shown when items overflow */}
+      {overflowItems.length > 0 && (
+        <MoreDropdown items={overflowItems} currentPath={currentPath} />
+      )}
+    </div>
+  );
+}
+
 /* ─── Main SiteNav component ────────────────────────────────────────── */
 interface SiteNavProps {
   isLandingPage?: boolean;
@@ -384,8 +601,8 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
 
   // Unread signals count for Tools dropdown badge
   const { data: signalsData } = trpc.dealScreener.listSignals.useQuery(undefined, {
-    refetchInterval: 60_000, // refresh every minute
-    enabled: !!user,         // only when logged in
+    refetchInterval: 60_000,
+    enabled: !!user,
   });
   const unreadSignalCount = signalsData?.unreadCount ?? 0;
 
@@ -402,7 +619,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
-  // Close drawer on route change (navigation)
+  // Close drawer on route change
   useEffect(() => {
     setDrawerOpen(false);
   }, [currentPath]);
@@ -424,9 +641,10 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
           backdropFilter: "blur(18px)",
           WebkitBackdropFilter: "blur(18px)",
           borderBottom: `1px solid ${BORDER}`,
+          overflow: "hidden", // ensure the bar itself never overflows
         }}
       >
-        <div style={{ display: "flex", alignItems: "stretch", height: 52 }}>
+        <div style={{ display: "flex", alignItems: "stretch", height: 52, minWidth: 0 }}>
 
           {/* Logo + static links (always visible) */}
           <div style={{
@@ -597,64 +815,13 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
             )}
           </div>
 
-          {/* Desktop scrollable tab row */}
+          {/* Desktop tab row with overflow detection */}
           {!isMobile && (
-            <div style={{
-              display: "flex", alignItems: "stretch",
-              flex: 1, overflowX: "auto",
-              scrollbarWidth: "none", msOverflowStyle: "none",
-            }}>
-              {NAV_ITEMS.map(item => {
-                const active = isActivePath(item.href, currentPath);
-                const hovered = activeHover === item.label;
-                const highlight = active || hovered;
-
-                const words = item.label.split(" ");
-                const mid = Math.ceil(words.length / 2);
-                const line1 = words.slice(0, mid).join(" ");
-                const line2 = words.length > 1 ? words.slice(mid).join(" ") : null;
-
-                return (
-                  <a
-                    key={item.label}
-                    href={item.href}
-                    onMouseEnter={() => setActiveHover(item.label)}
-                    onMouseLeave={() => setActiveHover(null)}
-                    style={{
-                      position: "relative",
-                      display: "flex", flexDirection: "column",
-                      justifyContent: "center", alignItems: "flex-start",
-                      gap: 1, padding: "0 14px",
-                      minWidth: 80, maxWidth: 110,
-                      textDecoration: "none", cursor: "pointer",
-                      background: highlight ? item.bg : "transparent",
-                      borderRight: `1px solid ${BORDER}`,
-                      borderBottom: highlight ? `3px solid ${item.color}` : "3px solid transparent",
-                      transition: "background 0.18s, border-bottom-color 0.18s",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <span style={{
-                      fontSize: 13, lineHeight: 1,
-                      filter: `drop-shadow(0 0 4px ${item.color}${highlight ? "cc" : "77"})`,
-                      transition: "filter 0.18s", marginBottom: 2,
-                    }}>
-                      {item.icon}
-                    </span>
-                    <span style={{
-                      fontSize: 11, fontWeight: 700, letterSpacing: "0.01em",
-                      color: item.color,
-                      opacity: highlight ? 1 : 0.85,
-                      transition: "opacity 0.18s", lineHeight: 1.25,
-                      textShadow: `0 0 8px ${item.color}${highlight ? "88" : "44"}`,
-                    }}>
-                      {line1}
-                      {line2 && <><br />{line2}</>}
-                    </span>
-                  </a>
-                );
-              })}
-            </div>
+            <DesktopTabRow
+              currentPath={currentPath}
+              activeHover={activeHover}
+              setActiveHover={setActiveHover}
+            />
           )}
 
           {/* Mobile: spacer */}

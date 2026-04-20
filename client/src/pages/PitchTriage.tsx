@@ -137,6 +137,8 @@ export default function PitchTriage() {
   const markEscalated = trpc.pitch.markEscalated.useMutation();
   const updateStage = trpc.pitch.updateStage.useMutation();
   const [movedToDiligence, setMovedToDiligence] = useState(false);
+  // Expansion state for per-deal pattern insight on result screen
+  const [resultPatternExpanded, setResultPatternExpanded] = useState(false);
 
   // Pattern insight — derived from historical invested/passed outcomes vs current deal
   const currentAgentOutputsStr = useMemo(
@@ -1247,9 +1249,10 @@ export default function PitchTriage() {
                     </div>
                   </div>
                 );
-              })()}
+              })()
+              }
 
-              {/* ── Pattern Insight block ──────────────────────────────────────────── */}
+              {/* ── Pattern Insight block (clickable expand) ─────────────────────────────────────── */}
               {(() => {
                 const insight = patternInsightQuery.data;
                 if (!insight || insight.type === "none") return null;
@@ -1257,29 +1260,91 @@ export default function PitchTriage() {
                 const borderColor = isPositive ? "rgba(16,185,129,0.35)" : "rgba(245,158,11,0.35)";
                 const bgColor = isPositive ? "rgba(16,185,129,0.06)" : "rgba(245,158,11,0.06)";
                 const textColor = isPositive ? "#10b981" : "#f59e0b";
+                const chevronColor = isPositive ? "rgba(16,185,129,0.6)" : "rgba(245,158,11,0.6)";
+                const borderTopColor = isPositive ? "rgba(16,185,129,0.12)" : "rgba(245,158,11,0.12)";
                 const icon = isPositive ? "✓" : "⚠";
+
+                // Build explanation phrase from insight.signals using FACTOR_PHRASES
+                const RESULT_FACTOR_PHRASES: Record<string, string> = {
+                  "Traction": "strong traction",
+                  "Market Signal": "strong market signal",
+                  "Founder Signal": "strong founder signal",
+                  "Business Model": "clear revenue model",
+                  "Risk": isPositive ? "manageable risk" : "high risk",
+                };
+                const explanationFactors = (insight.signals ?? []).map(
+                  (s: string) => RESULT_FACTOR_PHRASES[s] ?? s.toLowerCase()
+                );
+
                 return (
                   <div
                     style={{
                       background: bgColor,
                       border: `1px solid ${borderColor}`,
                       borderRadius: 10,
-                      padding: "10px 16px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 10,
+                      overflow: "hidden",
                       marginBottom: 4,
                     }}
                   >
-                    <span style={{ fontSize: 14, color: textColor, fontWeight: 700, flexShrink: 0 }}>{icon}</span>
-                    <span style={{ fontSize: 13, color: textColor, fontWeight: 500, lineHeight: 1.4 }}>
-                      {insight.phrase}
-                    </span>
+                    {/* Summary line — clickable toggle */}
+                    <button
+                      onClick={() => setResultPatternExpanded((v) => !v)}
+                      style={{
+                        width: "100%",
+                        background: "none",
+                        border: "none",
+                        padding: "10px 16px",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                        cursor: "pointer",
+                        textAlign: "left" as const,
+                      }}
+                    >
+                      <span style={{ fontSize: 14, color: textColor, fontWeight: 700, flexShrink: 0 }}>{icon}</span>
+                      <span style={{ fontSize: 13, color: textColor, fontWeight: 500, lineHeight: 1.4, flex: 1 }}>
+                        {insight.phrase}
+                      </span>
+                      {explanationFactors.length > 0 && (
+                        <span
+                          style={{
+                            fontSize: 10,
+                            color: chevronColor,
+                            flexShrink: 0,
+                            transition: "transform 0.15s",
+                            display: "inline-block",
+                            transform: resultPatternExpanded ? "rotate(0deg)" : "rotate(-90deg)",
+                            userSelect: "none" as const,
+                          }}
+                        >
+                          ▾
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Explanation line — revealed on expand */}
+                    {resultPatternExpanded && explanationFactors.length > 0 && (
+                      <div
+                        style={{
+                          padding: "0 16px 10px 38px",
+                          borderTop: `1px solid ${borderTopColor}`,
+                          paddingTop: 7,
+                        }}
+                      >
+                        <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)", lineHeight: 1.4 }}>
+                          Most common success signals:{" "}
+                          <span style={{ color: "rgba(255,255,255,0.65)", fontWeight: 600 }}>
+                            {explanationFactors.join(", ")}
+                          </span>
+                        </span>
+                      </div>
+                    )}
                   </div>
                 );
-              })()}
+              })()
+              }
 
-              {/* ── Next Actions block ─────────────────────────────────────────────── */}
+              {/* ── Next Actions block ───────────────────────────────────────────────────────── */}
               <div
                 style={{
                   background: "rgba(124,58,237,0.06)",
@@ -2187,8 +2252,8 @@ function HistoryTab({
   // Count outcome-recorded rows
   const outcomeCount = allRows.filter((r) => r.decisionOutcome === "invested" || r.decisionOutcome === "passed").length;
 
-  // Count rows that match the "invested pattern" — majority of CONFLICT_AGENT outputs are positive
-  // Also accumulate per-agent positive-vote counts across matched deals for top-factor explanation
+  // ── True invested-outcome grounded pattern signal ─────────────────────────────
+  // Only use rows where decisionOutcome = "invested" (no proxy fallback)
   const POSITIVE_LABELS_SET = new Set(["strong", "clear", "low", "complete"]);
   const PATTERN_AGENTS = new Set(["Traction", "Market Signal", "Founder Signal", "Business Model", "Risk"]);
   // Human-readable factor phrases — mirrors server-side SIGNAL_PHRASES in patternInsight
@@ -2199,26 +2264,25 @@ function HistoryTab({
     "Business Model": "clear revenue model",
     "Risk": "manageable risk",
   };
-  let patternMatchCount = 0;
+  // Restrict to invested-outcome rows only
+  const investedRows = allRows.filter((r) => r.decisionOutcome === "invested");
   const agentPositiveVotes: Record<string, number> = {};
-  for (const r of allRows) {
+  for (const r of investedRows) {
     if (!r.agentOutputs) continue;
     let agents: Array<{ name: string; label: string }> = [];
     try { agents = JSON.parse(r.agentOutputs); } catch { continue; }
     const relevant = agents.filter((a) => PATTERN_AGENTS.has(a.name));
     if (relevant.length === 0) continue;
-    const positiveAgents = relevant.filter((a) => POSITIVE_LABELS_SET.has(a.label));
-    // "Matches success pattern" = majority positive (≥3 of 5 agents positive)
-    if (positiveAgents.length >= 3) {
-      patternMatchCount++;
-      // Accumulate which agents voted positive in matched deals
-      for (const a of positiveAgents) {
-        agentPositiveVotes[a.name] = (agentPositiveVotes[a.name] ?? 0) + 1;
-      }
+    for (const a of relevant.filter((a) => POSITIVE_LABELS_SET.has(a.label))) {
+      agentPositiveVotes[a.name] = (agentPositiveVotes[a.name] ?? 0) + 1;
     }
   }
-  // Derive top 1–2 factors by vote frequency across matched deals
+  // patternMatchCount = number of invested deals (the signal is grounded in all of them)
+  const patternMatchCount = investedRows.length;
+  // Derive top 1–2 factors by positive-vote frequency across invested deals
+  // Only include factors that appeared in ≥50% of invested deals (meaningful signal)
   const topSuccessFactors: string[] = Object.entries(agentPositiveVotes)
+    .filter(([, count]) => investedRows.length > 0 && count / investedRows.length >= 0.5)
     .sort((a, b) => b[1] - a[1])
     .slice(0, 2)
     .map(([name]) => FACTOR_PHRASES[name] ?? name.toLowerCase());
@@ -2298,8 +2362,8 @@ function HistoryTab({
           >
             <span style={{ fontSize: 11, color: "#10b981", fontWeight: 700, flexShrink: 0 }}>◆</span>
             <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", lineHeight: 1.4, flex: 1 }}>
-              <span style={{ color: "#10b981", fontWeight: 700 }}>{patternMatchCount} deal{patternMatchCount !== 1 ? "s" : ""}</span>
-              {" "}match your past success pattern
+              <span style={{ color: "#10b981", fontWeight: 700 }}>{patternMatchCount} invested deal{patternMatchCount !== 1 ? "s" : ""}</span>
+              {" "}in your history
             </span>
             <span
               style={{
