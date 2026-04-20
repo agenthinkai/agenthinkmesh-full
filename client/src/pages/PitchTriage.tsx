@@ -1820,8 +1820,61 @@ function HistoryTab({
   const DATE_RANGE_LABELS: Record<DateRange, string> = { "7d": "Last 7 days", "30d": "Last 30 days", "all": "All time" };
   const conversionRate = engageTotal > 0 ? Math.round((escalatedCount / engageTotal) * 100) : 0;
 
+  // All-time pipeline counts (not affected by date range filter — always shows full funnel)
+  const pipelineCounts = {
+    triaged: allRows.filter((r) => !r.stage || r.stage === "triaged").length,
+    diligence: allRows.filter((r) => r.stage === "diligence").length,
+    ic_ready: allRows.filter((r) => r.stage === "ic_ready").length,
+  };
+
   return (
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* Pipeline Summary — single row, clickable stage counts */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 0,
+          background: "rgba(255,255,255,0.03)",
+          border: `1px solid ${BORDER}`,
+          borderRadius: 8,
+          overflow: "hidden",
+          marginBottom: 2,
+        }}
+      >
+        <span style={{ fontSize: 10, color: MUTED, fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" as const, padding: "8px 12px", borderRight: `1px solid ${BORDER}`, whiteSpace: "nowrap" as const }}>Pipeline</span>
+        {([
+          { key: "triaged" as StageFilter, label: "Triaged", count: pipelineCounts.triaged, color: TEXT2, activeBg: "rgba(255,255,255,0.10)", activeBorder: "rgba(255,255,255,0.3)" },
+          { key: "diligence" as StageFilter, label: "Diligence", count: pipelineCounts.diligence, color: "#60a5fa", activeBg: "rgba(96,165,250,0.14)", activeBorder: "rgba(96,165,250,0.45)" },
+          { key: "ic_ready" as StageFilter, label: "IC Ready", count: pipelineCounts.ic_ready, color: "#a78bfa", activeBg: "rgba(167,139,250,0.14)", activeBorder: "rgba(167,139,250,0.45)" },
+        ]).map(({ key, label, count, color, activeBg, activeBorder }, i, arr) => {
+          const isActive = stageFilter === key;
+          return (
+            <button
+              key={key}
+              onClick={() => setStageFilter(isActive ? "all" : key)}
+              title={isActive ? `Clear ${label} filter` : `Show ${label} deals only`}
+              style={{
+                flex: 1,
+                background: isActive ? activeBg : "transparent",
+                border: "none",
+                borderRight: i < arr.length - 1 ? `1px solid ${BORDER}` : "none",
+                borderLeft: isActive ? `2px solid ${activeBorder}` : "2px solid transparent",
+                padding: "8px 10px",
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 6,
+                transition: "background 0.15s",
+              }}
+            >
+              <span style={{ fontSize: 18, fontWeight: 700, color: isActive ? color : TEXT2, lineHeight: 1 }}>{count}</span>
+              <span style={{ fontSize: 10, color: isActive ? color : MUTED, fontWeight: isActive ? 700 : 500, letterSpacing: 0.4, textTransform: "uppercase" as const }}>{label}</span>
+            </button>
+          );
+        })}
+      </div>
       {/* System Signals summary */}
       <div
         style={{

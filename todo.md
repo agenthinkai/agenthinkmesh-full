@@ -2501,3 +2501,13 @@
 - [x] DealScreener: show inline "Moved to IC Ready ✓" confirmation badge after stage update (non-intrusive, no modal)
 - [x] TypeScript: zero errors
 - [x] Tests: 693/693 passing
+
+## Pipeline Summary Widget (History Tab)
+
+- [x] Add pipeline summary bar above System Signals in HistoryTab: single row showing Triaged / Diligence / IC Ready counts
+- [x] Each stage count is clickable and sets stageFilter (reuses existing setStageFilter)
+- [x] Active stage visually highlighted (matches STAGE_TAB_CONFIG colors)
+- [x] Counts derived from allRows (all-time, not date-filtered) so widget is always stable
+- [x] No backend changes — use existing stage field from historyQuery.data
+- [x] TypeScript: zero errors
+- [x] Tests: 693/693 passing
