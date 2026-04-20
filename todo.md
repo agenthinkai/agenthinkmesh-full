@@ -2771,3 +2771,15 @@
 - [x] tsc --noEmit EXIT:0 after each task
 - [x] Tests: 693 passed | 1 skipped (694 total)
 - [x] No regressions to existing features
+
+## Scheduled Background Sweep Sprint
+
+### Task — Daily Pitch Sweep Cron Job
+- [x] Server: add `getActiveUsersWithDeals()` helper to `server/db.ts` — queries distinct userIds with at least one deal in 'diligence' or 'ic_ready' with no outcome (raw SQL, no schema changes)
+- [x] Server: create `server/jobs/pitchSweep.ts` with `runCheckAndTriggerForUser(userId)` standalone function (mirrors checkAndTrigger: stale_diligence, stale_ic_ready, score_drop, pattern_shift; 24-hour per-deal cooldown)
+- [x] Server: `startPitchSweepJob()` exported from pitchSweep.ts — cron at 08:00 Asia/Kuwait; NODE_ENV === "test" gate prevents test runs
+- [x] Server: import and mount `startPitchSweepJob()` in `server/_core/index.ts` inside `server.listen` callback
+- [x] Server: per-user errors caught and logged; sweep continues to next user on failure
+- [x] No new tRPC procedures, no schema changes, no new DB tables
+- [x] tsc --noEmit EXIT:0
+- [x] Tests: 693 passed | 1 skipped (694 total)

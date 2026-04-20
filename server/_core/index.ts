@@ -14,6 +14,7 @@ import etfRouter from "../etfRoute";
 import { startHealthCheckJob } from "../jobs/healthCheck";
 import { startOutcomeCollectorJob } from "../jobs/outcomeCollector";
 import { startCriticAgentJob } from "../jobs/criticAgent";
+import { startPitchSweepJob } from "../jobs/pitchSweep";
 import workflowStreamRouter from "../workflowStreamRoute";
 import portfolioStreamRouter from "../portfolioStreamRoute";
 import insuranceStreamRouter from "../insuranceStreamRoute";
@@ -165,6 +166,8 @@ async function startServer() {
     // Self-Learning Loop: Phase 4 (outcome collection) + Phase 5 (critic agent)
     startOutcomeCollectorJob();
     startCriticAgentJob();
+    // Daily pitch re-triage sweep: 08:00 Kuwait time
+    startPitchSweepJob();
     // Email Reply Tracker: poll Gmail every 30 minutes
     startGmailPolling();
     // Tier 0 University Signal ingestion — run once at startup, then daily at 02:00 KWT (23:00 UTC)

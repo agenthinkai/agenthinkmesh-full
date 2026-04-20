@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertPitchTriage, InsertUser, PitchTriage, pitchTriages, pitchMirrorShares, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -254,4 +254,30 @@ export async function getPitchMirrorShare(shareToken: string) {
     .where(eq(pitchMirrorShares.shareToken, shareToken))
     .limit(1);
   return rows[0] ?? null;
+}
+
+/**
+ * getActiveUsersWithDeals — Returns distinct userIds that have at least one
+ * pitch_triage record in 'diligence' or 'ic_ready' stage with no outcome.
+ *
+ * Used by the daily pitch sweep cron job to find users who need re-evaluation.
+ */
+export async function getActiveUsersWithDeals(): Promise<string[]> {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    // Raw SQL: SELECT DISTINCT userId FROM pitch_triages WHERE stage IN (...) AND decisionOutcome IS NULL
+    const rows = await db.execute(
+      sql`SELECT DISTINCT userId FROM pitch_triages WHERE stage IN ('diligence', 'ic_ready') AND decisionOutcome IS NULL`
+    );
+    // drizzle mysql2 execute returns [rows, fields]; rows is an array of row objects
+    const rawRows = Array.isArray(rows) ? rows[0] : rows;
+    if (!Array.isArray(rawRows)) return [];
+    return (rawRows as Array<{ userId: string }>)
+      .map((r) => r.userId)
+      .filter((id): id is string => typeof id === "string" && id.length > 0);
+  } catch (error) {
+    console.error("[Database] getActiveUsersWithDeals failed:", error);
+    return [];
+  }
 }
