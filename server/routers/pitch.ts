@@ -11,7 +11,7 @@
 
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated, updateTriageStage, recordOutcome, getOutcomeHistory, createPitchMirrorShare, getPitchMirrorShare } from "../db";
+import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated, updateTriageStage, recordOutcome, getOutcomeHistory, createPitchMirrorShare, getPitchMirrorShare, insertDealSignal, markDealSignalProcessed, getDealSignals, getAutoTriggerLogCount } from "../db";
 import { PitchTriage } from "../../drizzle/schema";
 import { sql } from "drizzle-orm";
 import { runCouncil } from "../councilEngine";
@@ -33,6 +33,144 @@ function isKuwaitMobile(phone: string): boolean {
   const clean = sanitisePhone(phone);
   // Kuwait mobiles: 965 + 8 digits starting with 5,6,9
   return /^(965)?[569]\d{7}$/.test(clean);
+}
+
+// ── Module-scope agent pipeline (shared by triage, checkAndTrigger, logSignal) ──
+
+export type AgentName = "Market Signal" | "Business Model" | "Traction" | "Founder Signal" | "Risk" | "Completeness";
+
+const MODULE_AGENTS: Array<{ name: AgentName; labels: string[]; fallback: string; systemPrompt: string }> = [
+  {
+    name: "Market Signal",
+    labels: ["strong", "weak", "unclear"],
+    fallback: "weak",
+    systemPrompt: `You are a market signal analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) cite a specific fact from the pitch text, e.g. market size, named competitor, geography, or growth rate; (2) reasoning MUST be ≤18 words; (3) NEVER use generic phrases like "the pitch mentions" or "there is potential".
+Format: {"label": "strong"|"weak"|"unclear", "reasoning": "<concrete signal from pitch, ≤18 words>"}`,
+  },
+  {
+    name: "Business Model",
+    labels: ["clear", "weak", "missing"],
+    fallback: "weak",
+    systemPrompt: `You are a business model analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) cite the specific revenue mechanism stated (e.g. SaaS subscription, transaction fee, licensing); (2) reasoning MUST be ≤18 words; (3) if no model is stated, label="missing" and say what is absent.
+Format: {"label": "clear"|"weak"|"missing", "reasoning": "<concrete signal from pitch, ≤18 words>"}`,
+  },
+  {
+    name: "Traction",
+    labels: ["strong", "early", "none"],
+    fallback: "early",
+    systemPrompt: `You are a traction analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) quote or paraphrase a specific metric from the pitch (e.g. "$120k ARR", "3 pilots signed", "10k MAU"); (2) reasoning MUST be ≤18 words; (3) if no metrics are present, label="none" and state that.
+Format: {"label": "strong"|"early"|"none", "reasoning": "<concrete signal from pitch, ≤18 words>"}`,
+  },
+  {
+    name: "Founder Signal",
+    labels: ["strong", "neutral", "risk"],
+    fallback: "neutral",
+    systemPrompt: `You are a founder signal analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) reference a specific credential, prior exit, domain tenure, or red flag mentioned in the pitch; (2) reasoning MUST be ≤18 words; (3) if no founder info is present, label="neutral" and note the absence.
+Format: {"label": "strong"|"neutral"|"risk", "reasoning": "<concrete signal from pitch, ≤18 words>"}`,
+  },
+  {
+    name: "Risk",
+    labels: ["low", "medium", "high"],
+    fallback: "medium",
+    systemPrompt: `You are a risk analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) name the single most significant risk factor visible in the pitch (regulatory, competitive, execution, market timing, or capital); (2) reasoning MUST be ≤18 words; (3) be specific — cite the actual risk, not a category.
+Format: {"label": "low"|"medium"|"high", "reasoning": "<concrete risk from pitch, ≤18 words>"}`,
+  },
+  {
+    name: "Completeness",
+    labels: ["complete", "partial", "insufficient"],
+    fallback: "partial",
+    systemPrompt: `You are a pitch completeness analyst. Evaluate the pitch and return ONLY valid JSON.
+Rules: (1) list the specific missing elements by name (e.g. "no financials", "no team info", "no market size"); (2) reasoning MUST be ≤18 words; (3) "complete" requires market, model, traction, and team all present.
+Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific missing fields or confirmation, ≤18 words>"}`,
+  },
+];
+
+const MODULE_WEIGHTS: Record<AgentName, number> = {
+  "Market Signal": 20, "Business Model": 18, "Traction": 22,
+  "Founder Signal": 20, "Risk": 15, "Completeness": 5,
+};
+
+const MODULE_LABEL_SCORES: Record<string, number> = {
+  strong: 100, weak: 40, unclear: 20,
+  clear: 100, missing: 0,
+  early: 50, none: 0,
+  neutral: 50, risk: 0,
+  low: 100, medium: 50, high: 0,
+  complete: 100, partial: 50, insufficient: 0,
+};
+
+export type TriagePipelineResult = {
+  score: number;
+  classification: "ENGAGE" | "WATCH" | "IGNORE";
+  confidence: "HIGH" | "MEDIUM" | "LOW";
+  nextStep: string;
+  agentOutputs: Array<{ name: AgentName; label: string; reasoning: string; fallback: boolean }>;
+  keySignals: string[];
+  missingInfo: string[];
+  topMissingFields: string[];
+};
+
+export async function runTriagePipeline(pitchText: string): Promise<TriagePipelineResult> {
+  const truncated = pitchText.slice(0, 3000);
+  type AgentResult = { name: AgentName; label: string; reasoning: string; fallback: boolean };
+  const agentOutputs: AgentResult[] = await Promise.all(
+    MODULE_AGENTS.map(async (agent) => {
+      try {
+        const res = await invokeLLM({
+          messages: [
+            { role: "system", content: agent.systemPrompt },
+            { role: "user", content: `Pitch:\n${truncated}` },
+          ],
+          max_tokens: 120,
+        });
+        const contentRaw = res?.choices?.[0]?.message?.content;
+        const raw = (typeof contentRaw === "string" ? contentRaw : "").trim();
+        const cleaned = raw.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
+        const parsed = JSON.parse(cleaned) as { label?: unknown; reasoning?: unknown };
+        const label = typeof parsed.label === "string" && agent.labels.includes(parsed.label)
+          ? parsed.label : agent.fallback;
+        const reasoning = typeof parsed.reasoning === "string" && parsed.reasoning.length > 0
+          ? parsed.reasoning.slice(0, 120) : "Unable to determine from available information.";
+        return { name: agent.name, label, reasoning, fallback: label === agent.fallback && parsed.label !== agent.fallback };
+      } catch {
+        return { name: agent.name, label: agent.fallback, reasoning: "Unable to determine.", fallback: true };
+      }
+    })
+  );
+  const byName = Object.fromEntries(agentOutputs.map((r) => [r.name, r])) as Record<AgentName, AgentResult>;
+  let rawScore = 0;
+  for (const agent of MODULE_AGENTS) {
+    rawScore += ((MODULE_LABEL_SCORES[byName[agent.name].label] ?? 50) * MODULE_WEIGHTS[agent.name]) / 100;
+  }
+  const score = Math.round(rawScore);
+  const completenessLabel = byName["Completeness"].label;
+  const riskLabel = byName["Risk"].label;
+  const founderLabel = byName["Founder Signal"].label;
+  const confidence: "HIGH" | "MEDIUM" | "LOW" = completenessLabel === "complete" ? "HIGH" : completenessLabel === "partial" ? "MEDIUM" : "LOW";
+  let classification: "ENGAGE" | "WATCH" | "IGNORE";
+  if (completenessLabel === "insufficient" && score < 35) classification = "IGNORE";
+  else if (score >= 62 && riskLabel !== "high" && founderLabel !== "risk") classification = confidence === "LOW" ? "WATCH" : "ENGAGE";
+  else if (score >= 38) classification = "WATCH";
+  else classification = "IGNORE";
+  const nextStep = classification === "ENGAGE" ? "Run full evaluation" : classification === "WATCH" ? "Request more information" : "No action";
+  const redLabels = new Set(["unclear", "missing", "none", "risk", "high", "insufficient"]);
+  const positiveLabels = new Set(["strong", "clear", "low", "complete"]);
+  const topMissingFields = agentOutputs.filter((r) => redLabels.has(r.label)).sort((a, b) => (MODULE_WEIGHTS[b.name] ?? 0) - (MODULE_WEIGHTS[a.name] ?? 0)).slice(0, 2).map((r) => r.name);
+  const keySignals = agentOutputs.filter((r) => positiveLabels.has(r.label)).slice(0, 3).map((r) => `${r.name}: ${r.reasoning}`);
+  if (keySignals.length < 3) {
+    for (const r of agentOutputs) {
+      if (keySignals.length >= 3) break;
+      const sig = `${r.name}: ${r.reasoning}`;
+      if (!keySignals.includes(sig)) keySignals.push(sig);
+    }
+  }
+  const missingInfo = agentOutputs.filter((r) => redLabels.has(r.label)).map((r) => `${r.name}: ${r.reasoning}`);
+  return { score, classification, confidence, nextStep, agentOutputs, keySignals, missingInfo, topMissingFields };
 }
 
 // ── Router ────────────────────────────────────────────────────────────────────
@@ -1437,5 +1575,84 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
       }
 
       return { triggered: triggered.length, skipped, deals: triggered };
+    }),
+
+  // ── Phase 2 Sprint 1: Signal intake ──────────────────────────────────────────
+
+  /**
+   * pitch.logSignal — Log a manual external signal for a deal and immediately
+   * trigger a re-triage for that deal.
+   */
+  logSignal: protectedProcedure
+    .input(z.object({
+      dealId: z.string(),
+      signalType: z.enum(["founder_update", "competitor_news", "market_event", "negative_press", "positive_press", "other"]),
+      signalText: z.string().max(500),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.user.id.toString();
+      const dealIdNum = parseInt(input.dealId, 10);
+      if (isNaN(dealIdNum)) throw new Error("Invalid dealId");
+      const deal = await getPitchTriageById(dealIdNum, userId);
+      if (!deal) throw new Error("Deal not found or access denied");
+
+      // Insert signal row
+      const signalId = await insertDealSignal({
+        userId,
+        dealId: input.dealId,
+        signalType: input.signalType,
+        signalText: input.signalText,
+        source: "manual",
+        processed: false,
+      });
+
+      // Immediately re-triage the deal using the stored pitch preview
+      let triggered = false;
+      try {
+        const result = await runTriagePipeline(deal.pitchPreview);
+        await savePitchTriage({
+          userId,
+          pitchPreview: deal.pitchPreview,
+          score: result.score,
+          classification: result.classification,
+          confidence: result.confidence,
+          agentOutputs: JSON.stringify(result.agentOutputs),
+          keySignals: JSON.stringify(result.keySignals),
+          missingInfo: JSON.stringify(result.missingInfo),
+          topMissingFields: JSON.stringify(result.topMissingFields),
+          nextStep: result.nextStep,
+          parentTriageId: deal.id,
+          triggerType: "signal_triggered",
+          source: "auto",
+        });
+        triggered = true;
+      } catch (err) {
+        console.error("[logSignal] Re-triage failed:", err);
+      }
+
+      // Mark signal as processed
+      if (signalId) await markDealSignalProcessed(signalId);
+
+      return { signalId, triggered };
+    }),
+
+  /**
+   * pitch.getSignals — Fetch last 10 signals for a deal (ownership-checked).
+   */
+  getSignals: protectedProcedure
+    .input(z.object({ dealId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const userId = ctx.user.id.toString();
+      return getDealSignals(input.dealId, userId, 10);
+    }),
+
+  /**
+   * pitch.autoTriggerCount — Returns count of auto_trigger_log rows in last 30 days.
+   */
+  autoTriggerCount: protectedProcedure
+    .query(async ({ ctx }) => {
+      const userId = ctx.user.id.toString();
+      const count = await getAutoTriggerLogCount(userId);
+      return { count };
     }),
 });

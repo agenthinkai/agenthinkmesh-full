@@ -2783,3 +2783,60 @@
 - [x] No new tRPC procedures, no schema changes, no new DB tables
 - [x] tsc --noEmit EXIT:0
 - [x] Tests: 693 passed | 1 skipped (694 total)
+
+## Three-Task Sprint (e9015136 base)
+
+### Task 1 — Trigger Audit Log
+- [ ] Schema: add auto_trigger_log table (id, userId, dealId, triggerType, firedAt, resultTriageId)
+- [ ] DB migration: pnpm db:push
+- [ ] Server: add insertAutoTriggerLog() helper to db.ts
+- [ ] Server: write log row in runCheckAndTriggerForUser() for every fired deal (success + failure)
+- [ ] Server: write log row in checkAndTrigger mutation (single-deal path)
+- [ ] Server: add getAutoTriggerLogCount() helper for 30-day count
+- [ ] Server: expose 30-day count via pitch.autoTriggerCount tRPC query
+- [ ] Client: add "N auto re-triages this month" stat line to Pipeline Summary widget
+- [ ] Client: show "No auto re-triages yet" when count is 0
+
+### Task 2 — Sweep Result Notification
+- [ ] Server: call notifyOwner() at end of pitchSweep.ts sweep when triggered > 0
+- [ ] Server: catch notifyOwner() errors, log, do not crash sweep
+
+### Task 3 — Stale Deal Age Precision
+- [ ] Schema: add stageChangedAt nullable timestamp column to pitch_triages
+- [ ] DB migration: pnpm db:push
+- [ ] Server: set stageChangedAt = now() in updateTriageStage() on stage change
+- [ ] Server: set stageChangedAt = createdAt on insert in savePitchTriage()
+- [ ] Server: update stale detection in runCheckAndTriggerForUser() to use stageChangedAt ?? createdAt
+- [ ] Server: update stale detection in checkAndTrigger mutation to use stageChangedAt ?? createdAt
+- [ ] Client: update CSV export "Days in Stage" to use stageChangedAt where available
+
+### Shared Constraints
+- [ ] tsc --noEmit EXIT:0 after each task
+- [ ] Tests: 693/693 passing throughout
+- [ ] Migrations additive only
+- [ ] No regressions to sweep, trigger visibility, manual re-evaluate, History tab
+
+## Phase 2 Sprint 1 — External Signal Input (e9015136 base)
+
+### Task 1 — deal_signals schema
+- [x] Schema: add deal_signals table (id, userId, dealId, signalType, signalText, source, createdAt, processed)
+- [x] DB: CREATE TABLE deal_signals via raw SQL
+- [x] db.ts: insertDealSignal, markDealSignalProcessed, getDealSignals, getAutoTriggerLogCount helpers added
+
+### Task 2 — Signal intake tRPC procedures
+- [x] pitch.logSignal: validates ownership, inserts signal, re-triages deal, marks processed, returns { signalId, triggered }
+- [x] pitch.getSignals: returns last 10 signals for a deal (ownership-checked)
+- [x] pitch.autoTriggerCount: returns count of auto_trigger_log rows in last 30 days
+- [x] runTriagePipeline extracted to module scope (shared by triage, checkAndTrigger, logSignal)
+- [x] triggerType "signal_triggered" used for logSignal-triggered re-triages
+
+### Task 3 — Log a signal UI
+- [x] Collapsible "+ Log external signal" link in History detail panel (below Re-evaluate button)
+- [x] Expanded: signal type dropdown (6 options), textarea (max 500 chars), submit + cancel
+- [x] Submit calls pitch.logSignal, shows green/red inline feedback, collapses on success
+- [x] Invalidates pitch.history and pitch.historyItem on success
+
+### Shared Constraints
+- [x] tsc --noEmit EXIT:0 (empty output) after each task
+- [x] Tests: 693 passed | 1 skipped (694 total)
+- [x] No regressions

@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertPitchTriage, InsertUser, PitchTriage, pitchTriages, pitchMirrorShares, users } from "../drizzle/schema";
+import { InsertPitchTriage, InsertUser, PitchTriage, pitchTriages, pitchMirrorShares, users, autoTriggerLog, InsertAutoTriggerLog, dealSignals, InsertDealSignal, DealSignal } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -257,6 +257,42 @@ export async function getPitchMirrorShare(shareToken: string) {
 }
 
 /**
+ * insertAutoTriggerLog — Write one row to auto_trigger_log.
+ * Called after every deal that fires in the sweep or manual re-evaluate.
+ */
+export async function insertAutoTriggerLog(data: InsertAutoTriggerLog): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.insert(autoTriggerLog).values(data);
+  } catch (error) {
+    console.error("[Database] insertAutoTriggerLog failed:", error);
+  }
+}
+
+/**
+ * getAutoTriggerLogCount — Returns count of auto_trigger_log rows
+ * where firedAt >= 30 days ago for a given userId.
+ */
+export async function getAutoTriggerLogCount(userId: string): Promise<number> {
+  const db = await getDb();
+  if (!db) return 0;
+  try {
+    const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const rows = await db.execute(
+      sql`SELECT COUNT(*) as cnt FROM auto_trigger_log WHERE userId = ${userId} AND firedAt >= ${cutoff}`
+    );
+    const rawRows = Array.isArray(rows) ? rows[0] : rows;
+    if (!Array.isArray(rawRows) || rawRows.length === 0) return 0;
+    const first = rawRows[0] as { cnt: number | string };
+    return typeof first.cnt === "number" ? first.cnt : parseInt(String(first.cnt), 10) || 0;
+  } catch (error) {
+    console.error("[Database] getAutoTriggerLogCount failed:", error);
+    return 0;
+  }
+}
+
+/**
  * getActiveUsersWithDeals — Returns distinct userIds that have at least one
  * pitch_triage record in 'diligence' or 'ic_ready' stage with no outcome.
  *
@@ -278,6 +314,57 @@ export async function getActiveUsersWithDeals(): Promise<string[]> {
       .filter((id): id is string => typeof id === "string" && id.length > 0);
   } catch (error) {
     console.error("[Database] getActiveUsersWithDeals failed:", error);
+    return [];
+  }
+}
+
+// ── Deal Signals helpers ───────────────────────────────────────────────────────
+
+/**
+ * insertDealSignal — Insert a new signal row into deal_signals.
+ * Returns the inserted row's id, or null on failure.
+ */
+export async function insertDealSignal(data: InsertDealSignal): Promise<number | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const result = await db.insert(dealSignals).values(data);
+    return (result as unknown as { insertId: number }[])[0]?.insertId ?? null;
+  } catch (error) {
+    console.error("[Database] insertDealSignal failed:", error);
+    return null;
+  }
+}
+
+/**
+ * markDealSignalProcessed — Set processed=true for a signal row.
+ */
+export async function markDealSignalProcessed(id: number): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+  try {
+    await db.update(dealSignals).set({ processed: true }).where(eq(dealSignals.id, id));
+  } catch (error) {
+    console.error("[Database] markDealSignalProcessed failed:", error);
+  }
+}
+
+/**
+ * getDealSignals — Fetch last N signals for a deal, ordered by createdAt DESC.
+ * Ownership-checked: only returns signals where userId matches.
+ */
+export async function getDealSignals(dealId: string, userId: string, limit = 10): Promise<DealSignal[]> {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    return await db
+      .select()
+      .from(dealSignals)
+      .where(and(eq(dealSignals.dealId, dealId), eq(dealSignals.userId, userId)))
+      .orderBy(desc(dealSignals.createdAt))
+      .limit(limit);
+  } catch (error) {
+    console.error("[Database] getDealSignals failed:", error);
     return [];
   }
 }

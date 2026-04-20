@@ -40,6 +40,39 @@ export const pitchTriages = mysqlTable("pitch_triages", {
 export type PitchTriage = typeof pitchTriages.$inferSelect;
 export type InsertPitchTriage = typeof pitchTriages.$inferInsert;
 
+// ── Auto Trigger Log ─────────────────────────────────────────────────────────
+export const autoTriggerLog = mysqlTable("auto_trigger_log", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: varchar("userId", { length: 36 }).notNull(),
+  dealId: varchar("dealId", { length: 36 }).notNull(),
+  triggerType: varchar("triggerType", { length: 32 }).notNull(),
+  firedAt: timestamp("firedAt").defaultNow().notNull(),
+  resultTriageId: varchar("resultTriageId", { length: 36 }), // null if re-triage failed
+}, (table) => ({
+  atlUserIdx: index("atl_user_idx").on(table.userId),
+  atlFiredAtIdx: index("atl_fired_at_idx").on(table.firedAt),
+}));
+export type AutoTriggerLog = typeof autoTriggerLog.$inferSelect;
+export type InsertAutoTriggerLog = typeof autoTriggerLog.$inferInsert;
+
+// ── Deal Signals ──────────────────────────────────────────────────────────────
+export const dealSignals = mysqlTable("deal_signals", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: varchar("userId", { length: 36 }).notNull(),
+  dealId: varchar("dealId", { length: 36 }).notNull(),
+  signalType: varchar("signalType", { length: 32 }).notNull(),
+  signalText: text("signalText").notNull(),
+  source: varchar("source", { length: 16 }).notNull().default("manual"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  processed: boolean("processed").notNull().default(false),
+}, (table) => ({
+  dsUserIdx: index("ds_user_idx").on(table.userId),
+  dsDealIdx: index("ds_deal_idx").on(table.dealId),
+  dsCreatedIdx: index("ds_created_idx").on(table.createdAt),
+}));
+export type DealSignal = typeof dealSignals.$inferSelect;
+export type InsertDealSignal = typeof dealSignals.$inferInsert;
+
 // ── Tier 0 University Signals ─────────────────────────────────────────────────
 export const tier0Signals = mysqlTable("tier0_signals", {
   id: varchar("id", { length: 64 }).primaryKey(), // e.g. "nsf-2024-001"

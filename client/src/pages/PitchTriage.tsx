@@ -1695,8 +1695,15 @@ function HistoryTab({
 
   // Auto re-evaluate
   const checkAndTriggerMutation = trpc.pitch.checkAndTrigger.useMutation();
-  const [reEvalState, setReEvalState] = useState<Record<number, "idle" | "running" | "done" | "error">>({}); 
+  const [reEvalState, setReEvalState] = useState<Record<number, "idle" | "running" | "done" | "error">>({});
   const utils = trpc.useUtils();
+
+  // Signal panel state
+  const [signalPanelOpen, setSignalPanelOpen] = useState<Record<number, boolean>>({});
+  const [signalType, setSignalType] = useState<Record<number, string>>({});
+  const [signalText, setSignalText] = useState<Record<number, string>>({});
+  const [signalState, setSignalState] = useState<Record<number, "idle" | "submitting" | "success" | "error">>({});
+  const logSignalMutation = trpc.pitch.logSignal.useMutation();
 
   function handleRecordOutcome(id: number, outcome: "invested" | "passed") {
     setOutcomeState((prev) => ({ ...prev, [id]: "recording" }));
@@ -2325,7 +2332,158 @@ function HistoryTab({
           })()}
         </div>
 
-        {/* Outcome prompt — shown only when decisionOutcome is null AND stage is diligence/ic_ready */}
+          {/* Log a signal — collapsible */}
+          {(() => {
+            const isOpen = signalPanelOpen[item.id] ?? false;
+            const sState = signalState[item.id] ?? "idle";
+            const sType = signalType[item.id] ?? "";
+            const sText = signalText[item.id] ?? "";
+            const SIGNAL_LABELS: Record<string, string> = {
+              founder_update: "Founder update",
+              competitor_news: "Competitor news",
+              market_event: "Market event",
+              negative_press: "Negative press",
+              positive_press: "Positive press",
+              other: "Other",
+            };
+            if (!isOpen) {
+              return (
+                <button
+                  onClick={() => setSignalPanelOpen((prev) => ({ ...prev, [item.id]: true }))}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "rgba(255,255,255,0.35)",
+                    fontSize: 11,
+                    cursor: "pointer",
+                    padding: "2px 0",
+                    textAlign: "left",
+                    textDecoration: "underline dotted",
+                  }}
+                >
+                  + Log external signal
+                </button>
+              );
+            }
+            return (
+              <div
+                style={{
+                  background: "rgba(255,255,255,0.03)",
+                  border: "1px solid rgba(255,255,255,0.10)",
+                  borderRadius: 8,
+                  padding: "12px 14px",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: 10,
+                }}
+              >
+                <span style={{ color: "rgba(255,255,255,0.55)", fontSize: 11, fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase" }}>Log external signal</span>
+                <select
+                  value={sType}
+                  onChange={(e) => setSignalType((prev) => ({ ...prev, [item.id]: e.target.value }))}
+                  style={{
+                    background: "rgba(255,255,255,0.06)",
+                    border: "1px solid rgba(255,255,255,0.14)",
+                    borderRadius: 5,
+                    color: sType ? "rgba(255,255,255,0.85)" : "rgba(255,255,255,0.35)",
+                    fontSize: 12,
+                    padding: "6px 10px",
+                    outline: "none",
+                  }}
+                >
+                  <option value="" disabled>Signal type…</option>
+                  {Object.entries(SIGNAL_LABELS).map(([val, label]) => (
+                    <option key={val} value={val}>{label}</option>
+                  ))}
+                </select>
+                <textarea
+                  value={sText}
+                  onChange={(e) => setSignalText((prev) => ({ ...prev, [item.id]: e.target.value.slice(0, 500) }))}
+                  placeholder="What happened? (max 500 chars)"
+                  rows={3}
+                  style={{
+                    background: "rgba(255,255,255,0.05)",
+                    border: "1px solid rgba(255,255,255,0.12)",
+                    borderRadius: 5,
+                    color: "rgba(255,255,255,0.85)",
+                    fontSize: 12,
+                    padding: "7px 10px",
+                    resize: "vertical",
+                    outline: "none",
+                    fontFamily: "inherit",
+                  }}
+                />
+                {sState === "success" && (
+                  <span style={{ color: "#4ade80", fontSize: 11, fontWeight: 600 }}>Signal logged — re-evaluation triggered</span>
+                )}
+                {sState === "error" && (
+                  <span style={{ color: "#f87171", fontSize: 11, fontWeight: 600 }}>Failed to log signal</span>
+                )}
+                <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                  <button
+                    disabled={sState === "submitting" || !sType || !sText.trim()}
+                    onClick={() => {
+                      if (!sType || !sText.trim()) return;
+                      setSignalState((prev) => ({ ...prev, [item.id]: "submitting" }));
+                      logSignalMutation.mutate(
+                        { dealId: String(item.id), signalType: sType as "founder_update" | "competitor_news" | "market_event" | "negative_press" | "positive_press" | "other", signalText: sText.trim() },
+                        {
+                          onSuccess: () => {
+                            setSignalState((prev) => ({ ...prev, [item.id]: "success" }));
+                            setSignalText((prev) => ({ ...prev, [item.id]: "" }));
+                            setSignalType((prev) => ({ ...prev, [item.id]: "" }));
+                            void utils.pitch.history.invalidate();
+                            void utils.pitch.historyItem.invalidate({ id: item.id });
+                            setTimeout(() => {
+                              setSignalState((prev) => ({ ...prev, [item.id]: "idle" }));
+                              setSignalPanelOpen((prev) => ({ ...prev, [item.id]: false }));
+                            }, 2500);
+                          },
+                          onError: () => {
+                            setSignalState((prev) => ({ ...prev, [item.id]: "error" }));
+                            setTimeout(() => setSignalState((prev) => ({ ...prev, [item.id]: "idle" })), 3000);
+                          },
+                        }
+                      );
+                    }}
+                    style={{
+                      background: sState === "submitting" ? "rgba(255,255,255,0.06)" : "rgba(99,102,241,0.18)",
+                      border: "1px solid rgba(99,102,241,0.35)",
+                      borderRadius: 6,
+                      color: "rgba(165,180,252,0.9)",
+                      fontSize: 11,
+                      fontWeight: 700,
+                      padding: "7px 14px",
+                      cursor: (sState === "submitting" || !sType || !sText.trim()) ? "not-allowed" : "pointer",
+                      opacity: (sState === "submitting" || !sType || !sText.trim()) ? 0.5 : 1,
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {sState === "submitting" ? "Logging…" : "Log signal + re-evaluate"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSignalPanelOpen((prev) => ({ ...prev, [item.id]: false }));
+                      setSignalState((prev) => ({ ...prev, [item.id]: "idle" }));
+                    }}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "rgba(255,255,255,0.30)",
+                      fontSize: 11,
+                      cursor: "pointer",
+                      padding: "4px 6px",
+                      textDecoration: "underline dotted",
+                    }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            );
+          })()}
+
+          {/* Outcome prompt — shown only when decisionOutcome is null AND stage is diligence/ic_ready */}
         {!item.decisionOutcome && (item.stage === "diligence" || item.stage === "ic_ready") && (() => {
           const os = outcomeState[item.id];
           if (os === "invested" || os === "passed") return null; // already recorded in this session
