@@ -2469,3 +2469,24 @@
 - [x] Tests: 693/693 passing after changes
 - [x] TypeScript: zero errors
 >>>>>>> Stashed changes
+
+## ENGAGE → IC Memo Pre-population
+
+- [x] PitchTriage: update handleEscalate to navigate to /pitch with prefill state (sessionStorage key: pitchIcPrefill)
+- [x] PitchTriage: update "Run Full IC Analysis →" Next Actions button to call handleEscalate (already wired)
+- [x] PitchTriage: update Triage routing CTA "Run Full IC Analysis →" button to call handleEscalate (already wired)
+- [x] Pitch.tsx: on mount, read sessionStorage key pitchIcPrefill and pre-populate pitchText state; clear key after reading
+- [x] Pitch.tsx: preserve standalone /pitch behavior when no prefill state present
+- [x] Analytics: fire pitchtriage_escalate_to_ic event (triageId, classification, score) on escalation
+- [x] Tests: 693/693 passing after changes
+- [x] TypeScript: zero errors
+
+## Phase 2 — Pipeline View (stage-based)
+
+- [x] Server: add pitch.updateStage protectedProcedure (input: id, stage; updates pitch_triages.stage)
+- [x] Server: add updateTriageStage helper to server/db.ts
+- [x] PitchTriage: add "Move to Diligence" button to ENGAGE Next Actions block (calls pitch.updateStage)
+- [x] PitchTriage History: add stage filter tabs (All / Triaged / Diligence / IC Ready)
+- [x] PitchTriage History: filter list by selected stage tab
+- [x] Tests: 693/693 passing after changes
+- [x] TypeScript: zero errors

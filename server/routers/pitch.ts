@@ -11,7 +11,7 @@
 
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated, createPitchMirrorShare, getPitchMirrorShare } from "../db";
+import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated, updateTriageStage, createPitchMirrorShare, getPitchMirrorShare } from "../db";
 import { sql } from "drizzle-orm";
 import { runCouncil } from "../councilEngine";
 import { invokeLLM } from "../_core/llm";
@@ -511,6 +511,22 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
     .input(z.object({ id: z.number().int().positive() }))
     .mutation(async ({ input, ctx }) => {
       const ok = await markPitchTriageEscalated(input.id, ctx.user.id.toString());
+      return { ok };
+    }),
+
+  /**
+   * pitch.updateStage — Updates the pipeline stage of a triage record.
+   * Ownership-checked. Valid stages: triaged | diligence | ic_ready | decision_made | archived.
+   */
+  updateStage: protectedProcedure
+    .input(
+      z.object({
+        id: z.number().int().positive(),
+        stage: z.enum(["triaged", "diligence", "ic_ready", "decision_made", "archived"]),
+      })
+    )
+    .mutation(async ({ input, ctx }) => {
+      const ok = await updateTriageStage(input.id, ctx.user.id.toString(), input.stage);
       return { ok };
     }),
 

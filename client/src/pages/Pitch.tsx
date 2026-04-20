@@ -66,6 +66,25 @@ export default function Pitch() {
   const [votingStep, setVotingStep]   = useState(0); // 0-10 personas loaded
   const pollRef                       = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Pre-populate from Pitch Triage ENGAGE escalation
+  // Reads sessionStorage key set by PitchTriage.handleEscalate; clears it after reading
+  // so refreshing /pitch directly never shows stale prefill text.
+  useEffect(() => {
+    // Primary: wouter navigation state (reliable for same-origin SPA navigation)
+    const navState = window.history.state as { prefillText?: string } | null;
+    if (navState?.prefillText) {
+      setPitchText(navState.prefillText);
+      return;
+    }
+    // Fallback: sessionStorage (covers edge cases like hard reload after navigation)
+    const saved = sessionStorage.getItem("pitchIcPrefill");
+    if (saved) {
+      setPitchText(saved);
+      sessionStorage.removeItem("pitchIcPrefill");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // tRPC hooks
   const submitMutation = trpc.pitch.submit.useMutation();
   const resultQuery    = trpc.pitch.getResult.useQuery(

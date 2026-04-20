@@ -148,6 +148,30 @@ export async function markPitchTriageEscalated(id: number, userId: string): Prom
   }
 }
 
+/**
+ * updateTriageStage — Update the stage field of a pitch triage record.
+ * Ownership-checked: only the record owner can update.
+ * Valid stages: 'triaged' | 'diligence' | 'ic_ready' | 'decision_made' | 'archived'
+ */
+export async function updateTriageStage(
+  id: number,
+  userId: string,
+  stage: string
+): Promise<boolean> {
+  const db = await getDb();
+  if (!db) return false;
+  try {
+    await db
+      .update(pitchTriages)
+      .set({ stage })
+      .where(and(eq(pitchTriages.id, id), eq(pitchTriages.userId, userId)));
+    return true;
+  } catch (error) {
+    console.error("[Database] Failed to update triage stage:", error);
+    return false;
+  }
+}
+
 // ── PitchMirror Share helpers ─────────────────────────────────────────────────────────────────
 export async function createPitchMirrorShare(
   mirrorResultJson: string,

@@ -12,6 +12,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { trackEvent } from "@/lib/analytics";
 
 // ── Design tokens (mirrors DealScreener.tsx) ─────────────────────────────────
 const ACCENT = "#7c3aed";
@@ -134,6 +135,8 @@ export default function PitchTriage() {
   const loadingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const markEscalated = trpc.pitch.markEscalated.useMutation();
+  const updateStage = trpc.pitch.updateStage.useMutation();
+  const [movedToDiligence, setMovedToDiligence] = useState(false);
 
   const triage = trpc.pitch.triage.useMutation({
     onSuccess: (data) => {
@@ -218,6 +221,24 @@ export default function PitchTriage() {
     setResult(null);
     setError(null);
     setCompletedAgents(new Set());
+    setMovedToDiligence(false);
+  }
+
+  function handleMoveToDiligence() {
+    if (!savedTriageId) return;
+    updateStage.mutate(
+      { id: savedTriageId, stage: "diligence" },
+      {
+        onSuccess: () => {
+          setMovedToDiligence(true);
+          trackEvent("pitchtriage_move_to_diligence", {
+            triageId: savedTriageId,
+            classification: result?.classification,
+            score: result?.score,
+          });
+        },
+      }
+    );
   }
 
   function handleEscalate() {
@@ -226,10 +247,16 @@ export default function PitchTriage() {
     if (savedTriageId) {
       markEscalated.mutate({ id: savedTriageId });
     }
-    // Primary: pass via wouter router state (no storage race conditions)
-    // Fallback: also write sessionStorage in case /deals does a hard reload
-    sessionStorage.setItem("pitchTriageEscalation", pitchText);
-    navigate("/deals", { state: { pitchTriageText: pitchText } });
+    // Analytics: track escalation to IC Memo
+    trackEvent("pitchtriage_escalate_to_ic", {
+      triageId: savedTriageId,
+      classification: result.classification,
+      score: result.score,
+    });
+    // Write prefill text to sessionStorage so /pitch can read it on mount
+    // (sessionStorage survives SPA navigation and is cleared after reading)
+    sessionStorage.setItem("pitchIcPrefill", pitchText);
+    navigate("/pitch", { state: { prefillText: pitchText } });
   }
 
   // ── Classification banner config ─────────────────────────────────────────
@@ -988,7 +1015,8 @@ export default function PitchTriage() {
                   Next Actions
                 </div>
                 {result.classification === "ENGAGE" && (
-                  <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
+                  <div style={{ display: "flex", flexDirection: "column" as const, gap: 10 }}>
+                    {/* Primary CTA: escalate to IC Memo */}
                     <button
                       onClick={handleEscalate}
                       style={{
@@ -1012,6 +1040,45 @@ export default function PitchTriage() {
                     <div style={{ fontSize: 11, color: MUTED, paddingLeft: 4 }}>
                       High potential detected — escalate to full evaluation with 10 specialist agents.
                     </div>
+
+                    {/* Secondary CTA: move to diligence stage */}
+                    {savedTriageId && (
+                      <button
+                        onClick={handleMoveToDiligence}
+                        disabled={movedToDiligence || updateStage.isPending}
+                        style={{
+                          background: movedToDiligence
+                            ? "rgba(34,197,94,0.12)"
+                            : "rgba(255,255,255,0.05)",
+                          color: movedToDiligence ? "#4ade80" : TEXT2,
+                          border: `1px solid ${
+                            movedToDiligence
+                              ? "rgba(34,197,94,0.35)"
+                              : BORDER
+                          }`,
+                          borderRadius: 8,
+                          padding: "10px 18px",
+                          fontWeight: 600,
+                          fontSize: 13,
+                          cursor: movedToDiligence ? "default" : "pointer",
+                          textAlign: "left" as const,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 8,
+                          opacity: updateStage.isPending ? 0.6 : 1,
+                          transition: "all 0.2s ease",
+                        }}
+                      >
+                        <span>{movedToDiligence ? "✓" : "📂"}</span>
+                        <span>
+                          {movedToDiligence
+                            ? "Moved to Diligence"
+                            : updateStage.isPending
+                            ? "Moving…"
+                            : "Move to Diligence"}
+                        </span>
+                      </button>
+                    )}
                   </div>
                 )}
                 {result.classification === "WATCH" && (
@@ -1162,6 +1229,9 @@ function HistoryTab({
   const [dateRange, setDateRange] = useState<DateRange>("30d");
   type SortBy = "newest" | "highest_score";
   const [sortBy, setSortBy] = useState<SortBy>("newest");
+  // Stage (pipeline) filter — default "all"
+  type StageFilter = "all" | "triaged" | "diligence" | "ic_ready";
+  const [stageFilter, setStageFilter] = useState<StageFilter>("all");
 
   function toggleFilter(cls: string) {
     setActiveFilters((prev) => {
@@ -1702,11 +1772,30 @@ function HistoryTab({
   // Escalation counts (ENGAGE rows that have escalatedAt set)
   const engageTotal = rows.filter((r) => r.classification === "ENGAGE").length;
   const escalatedCount = rows.filter((r) => r.classification === "ENGAGE" && r.escalatedAt).length;
-  const filteredRowsUnsorted = rows.filter((r) => activeFilters.has(r.classification));
+  // Stage filter: 'all' shows everything; specific stage shows only that stage
+  const stageFilteredRows = stageFilter === "all"
+    ? rows
+    : rows.filter((r) => (r.stage ?? "triaged") === stageFilter);
+  const filteredRowsUnsorted = stageFilteredRows.filter((r) => activeFilters.has(r.classification));
   const filteredRows = [...filteredRowsUnsorted].sort((a, b) => {
     if (sortBy === "highest_score") return (b.score ?? 0) - (a.score ?? 0);
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
   });
+
+  // Stage counts for tabs
+  const stageCounts = {
+    all: rows.length,
+    triaged: rows.filter((r) => !r.stage || r.stage === "triaged").length,
+    diligence: rows.filter((r) => r.stage === "diligence").length,
+    ic_ready: rows.filter((r) => r.stage === "ic_ready").length,
+  };
+
+  const STAGE_TAB_CONFIG: Record<string, { label: string; color: string; activeBg: string; activeBorder: string }> = {
+    all: { label: "All", color: MUTED, activeBg: "rgba(124,58,237,0.18)", activeBorder: "rgba(124,58,237,0.5)" },
+    triaged: { label: "Triaged", color: TEXT2, activeBg: "rgba(255,255,255,0.10)", activeBorder: "rgba(255,255,255,0.3)" },
+    diligence: { label: "Diligence", color: "#60a5fa", activeBg: "rgba(96,165,250,0.14)", activeBorder: "rgba(96,165,250,0.45)" },
+    ic_ready: { label: "IC Ready", color: "#a78bfa", activeBg: "rgba(167,139,250,0.14)", activeBorder: "rgba(167,139,250,0.45)" },
+  };
 
   const CHIP_COLORS: Record<string, { active: { bg: string; border: string; text: string }; inactive: { bg: string; border: string; text: string } }> = {
     ENGAGE: {
@@ -1760,6 +1849,57 @@ function HistoryTab({
             <span style={{ fontWeight: 700 }}>{escalatedCount}</span> escalated · <span style={{ fontWeight: 700 }}>{conversionRate}%</span> conversion
           </span>
         )}
+      </div>
+
+      {/* Stage (pipeline) filter tabs */}
+      <div
+        style={{
+          display: "flex",
+          gap: 4,
+          marginBottom: 8,
+          borderBottom: `1px solid ${BORDER}`,
+          paddingBottom: 8,
+        }}
+      >
+        {(["all", "triaged", "diligence", "ic_ready"] as StageFilter[]).map((s) => {
+          const cfg = STAGE_TAB_CONFIG[s];
+          const isActive = stageFilter === s;
+          const count = stageCounts[s];
+          return (
+            <button
+              key={s}
+              onClick={() => setStageFilter(s)}
+              style={{
+                background: isActive ? cfg.activeBg : "transparent",
+                border: `1px solid ${isActive ? cfg.activeBorder : "transparent"}`,
+                borderRadius: 6,
+                color: isActive ? cfg.color : MUTED,
+                fontSize: 12,
+                fontWeight: isActive ? 700 : 500,
+                padding: "5px 12px",
+                cursor: "pointer",
+                transition: "all 0.15s",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+              }}
+            >
+              {cfg.label}
+              <span
+                style={{
+                  fontSize: 10,
+                  background: isActive ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.06)",
+                  borderRadius: 10,
+                  padding: "1px 6px",
+                  fontWeight: 600,
+                  color: isActive ? cfg.color : MUTED,
+                }}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       {/* Date range + Sort toggles */}
@@ -1991,6 +2131,38 @@ function HistoryTab({
                     }}
                   >
                     ↑ Escalated
+                  </span>
+                )}
+                {row.stage === "diligence" && (
+                  <span
+                    style={{
+                      fontSize: 9,
+                      color: "#60a5fa",
+                      background: "rgba(96,165,250,0.10)",
+                      border: "1px solid rgba(96,165,250,0.25)",
+                      borderRadius: 4,
+                      padding: "1px 6px",
+                      letterSpacing: 0.3,
+                      fontWeight: 600,
+                    }}
+                  >
+                    📂 Diligence
+                  </span>
+                )}
+                {row.stage === "ic_ready" && (
+                  <span
+                    style={{
+                      fontSize: 9,
+                      color: "#a78bfa",
+                      background: "rgba(167,139,250,0.10)",
+                      border: "1px solid rgba(167,139,250,0.25)",
+                      borderRadius: 4,
+                      padding: "1px 6px",
+                      letterSpacing: 0.3,
+                      fontWeight: 600,
+                    }}
+                  >
+                    ★ IC Ready
                   </span>
                 )}
               </div>
