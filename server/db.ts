@@ -477,3 +477,38 @@ export async function getScoreHistory(
     return [];
   }
 }
+
+// ---------------------------------------------------------------------------
+// Full score history — all triages for a deal (by id) ordered by createdAt ASC
+// ---------------------------------------------------------------------------
+export interface ScoreHistoryRow {
+  id: number;
+  score: number;
+  createdAt: Date;
+  triggerType: string | null;
+  source: string | null;
+}
+
+export async function getFullScoreHistory(
+  dealId: number
+): Promise<ScoreHistoryRow[]> {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const rows = await db
+      .select({
+        id: pitchTriages.id,
+        score: pitchTriages.score,
+        createdAt: pitchTriages.createdAt,
+        triggerType: pitchTriages.triggerType,
+        source: pitchTriages.source,
+      })
+      .from(pitchTriages)
+      .where(eq(pitchTriages.id, dealId))
+      .orderBy(pitchTriages.createdAt);
+    return rows as ScoreHistoryRow[];
+  } catch (error) {
+    console.error("[Database] getFullScoreHistory failed:", error);
+    return [];
+  }
+}

@@ -2956,3 +2956,27 @@
 - [x] tsc --noEmit EXIT:0 after each task
 - [x] Tests: 699 passed | 1 skipped (700 total) — 7 new tests from pitch.logSignal.test.ts
 - [x] No regressions to any existing feature
+
+## Signal Density + Sparkline Click-Through + signalTypeSummary Tests (2e05f9e5 base)
+
+### Task 1 — 📡 N Signal Count Indicator on History List Rows
+- [x] Client: render muted blue "📡 N" indicator between date and arrow when signalCount > 0
+- [x] Client: hidden when signalCount is 0 or undefined
+- [x] No new tRPC procedures (signalCount already in pitch.history return shape)
+
+### Task 2 — Sparkline Click-Through to Score History Modal
+- [x] Server: getFullScoreHistory(dealId) helper added to db.ts — returns all triages ordered ASC with id, score, createdAt, source, triggerType
+- [x] Server: pitch.scoreHistory procedure added — validates ownership, returns full history
+- [x] Client: sparkline div is now clickable (cursor pointer, stopPropagation)
+- [x] Client: score history modal added — full-width sparkline with dot markers, per-row score + date + trigger badge, closes on backdrop click or ✕
+- [x] Client: scoreModalDealId state and scoreHistoryQuery wired to HistoryTab hooks
+
+### Task 3 — Vitest Unit Tests for getSignalTypeSummary
+- [x] server/db.signalTypeSummary.test.ts created with 8 test cases across 2 describe blocks
+- [x] Tests: correct counts per signalType, empty when no signals, excludes unprocessed, no zero-count keys, DB failure returns {}
+- [x] topNByCount tests: top-2 in descending order, single entry, empty array
+
+### Shared Constraints
+- [x] tsc --noEmit EXIT:0 after each task
+- [x] Tests: 707 passed | 1 skipped (708 total) — 8 new tests from signalTypeSummary suite
+- [x] No schema changes, no regressions

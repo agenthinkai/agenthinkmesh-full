@@ -11,7 +11,7 @@
 
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated, updateTriageStage, recordOutcome, getOutcomeHistory, createPitchMirrorShare, getPitchMirrorShare, insertDealSignal, markDealSignalProcessed, getDealSignals, getAutoTriggerLogCount, getSignalCountsForUser, getPreviousTriageForDeal, getSignalTypeSummary, getScoreHistory } from "../db";
+import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated, updateTriageStage, recordOutcome, getOutcomeHistory, createPitchMirrorShare, getPitchMirrorShare, insertDealSignal, markDealSignalProcessed, getDealSignals, getAutoTriggerLogCount, getSignalCountsForUser, getPreviousTriageForDeal, getSignalTypeSummary, getScoreHistory, getFullScoreHistory } from "../db";
 import { PitchTriage } from "../../drizzle/schema";
 import { sql } from "drizzle-orm";
 import { runCouncil } from "../councilEngine";
@@ -1698,5 +1698,20 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
     .query(async ({ ctx }) => {
       const userId = ctx.user.id.toString();
       return getSignalTypeSummary(userId);
+    }),
+
+  /**
+   * pitch.scoreHistory — Returns full score history for a deal (all triages ordered ASC).
+   * Used by the score history modal on sparkline click-through.
+   */
+  scoreHistory: protectedProcedure
+    .input(z.object({ dealId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const dealIdNum = parseInt(input.dealId, 10);
+      if (isNaN(dealIdNum)) throw new Error("Invalid dealId");
+      const userId = ctx.user.id.toString();
+      const deal = await getPitchTriageById(dealIdNum, userId);
+      if (!deal) throw new Error("Deal not found or access denied");
+      return getFullScoreHistory(dealIdNum);
     }),
 });

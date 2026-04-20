@@ -1715,6 +1715,12 @@ function HistoryTab({
   const autoTriggerCountQuery = trpc.pitch.autoTriggerCount.useQuery();
   // Signal type summary for Pipeline Summary
   const signalTypeSummaryQuery = trpc.pitch.signalTypeSummary.useQuery();
+  // Score history modal state
+  const [scoreModalDealId, setScoreModalDealId] = useState<number | null>(null);
+  const scoreHistoryQuery = trpc.pitch.scoreHistory.useQuery(
+    { dealId: String(scoreModalDealId ?? 0) },
+    { enabled: scoreModalDealId != null }
+  );
 
   function handleRecordOutcome(id: number, outcome: "invested" | "passed") {
     setOutcomeState((prev) => ({ ...prev, [id]: "recording" }));
@@ -2820,7 +2826,17 @@ function HistoryTab({
     .slice(0, 2)
     .map(([name]) => FACTOR_PHRASES[name] ?? name.toLowerCase());
 
+  // ── Score history modal labels ──────────────────────────────────────────────
+  const TRIGGER_LABELS: Record<string, string> = {
+    stale_diligence: "Stale in diligence",
+    stale_ic_ready: "Stale at IC ready",
+    score_drop: "Score drop",
+    pattern_shift: "Pattern shift",
+    signal_triggered: "External signal",
+  };
+
   return (
+    <>
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
       {/* Pipeline Summary — single row, clickable stage counts */}
       <div
@@ -3326,7 +3342,11 @@ function HistoryTab({
                 const lineColor = diff > 3 ? "#22c55e" : diff < -3 ? "#ef4444" : "#6b7280";
                 const tooltip = `Scores: ${sh.join(" → ")}`;
                 return (
-                  <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }} title={tooltip}>
+                  <div
+                    style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer" }}
+                    title={tooltip}
+                    onClick={(e) => { e.stopPropagation(); setScoreModalDealId(row.id); }}
+                  >
                     <svg width={W} height={H} style={{ display: "block" }}>
                       <polyline points={pts} fill="none" stroke={lineColor} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
                     </svg>
@@ -3569,5 +3589,93 @@ function HistoryTab({
         );
       })}
     </div>
+
+    {/* Score history modal */}
+    {scoreModalDealId != null && (
+      <div
+        style={{
+          position: "fixed", inset: 0, zIndex: 9999,
+          background: "rgba(0,0,0,0.72)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+        onClick={() => setScoreModalDealId(null)}
+      >
+        <div
+          style={{
+            background: "#1a1a2e", border: `1px solid ${BORDER}`, borderRadius: 12,
+            padding: "24px 28px", minWidth: 340, maxWidth: 480, width: "90vw",
+            boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+            <span style={{ fontSize: 13, fontWeight: 700, color: TEXT2, letterSpacing: 0.5 }}>Score History</span>
+            <button
+              onClick={() => setScoreModalDealId(null)}
+              style={{ background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 18, lineHeight: 1 }}
+            >✕</button>
+          </div>
+          {scoreHistoryQuery.isLoading && (
+            <div style={{ color: MUTED, fontSize: 12, textAlign: "center", padding: "12px 0" }}>Loading…</div>
+          )}
+          {!scoreHistoryQuery.isLoading && (!scoreHistoryQuery.data || scoreHistoryQuery.data.length === 0) && (
+            <div style={{ color: MUTED, fontSize: 12, textAlign: "center", padding: "12px 0" }}>No history available.</div>
+          )}
+          {scoreHistoryQuery.data && scoreHistoryQuery.data.length > 0 && (() => {
+            const rows2 = scoreHistoryQuery.data;
+            const scores = rows2.map((r) => r.score);
+            const W = 320, H = 60;
+            const minS = Math.min(...scores), maxS = Math.max(...scores);
+            const range2 = maxS - minS || 1;
+            const pts2 = scores.map((s, i) => {
+              const x = (i / (scores.length - 1)) * (W - 8) + 4;
+              const y = H - 4 - ((s - minS) / range2) * (H - 8);
+              return `${x.toFixed(1)},${y.toFixed(1)}`;
+            }).join(" ");
+            const first2 = scores[0], last2 = scores[scores.length - 1];
+            const diff2 = last2 - first2;
+            const lineColor2 = diff2 > 3 ? "#22c55e" : diff2 < -3 ? "#ef4444" : "#6b7280";
+            return (
+              <>
+                <svg width={W} height={H} style={{ display: "block", marginBottom: 16 }}>
+                  <polyline points={pts2} fill="none" stroke={lineColor2} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+                  {scores.map((s, i) => {
+                    const x = (i / (scores.length - 1)) * (W - 8) + 4;
+                    const y = H - 4 - ((s - minS) / range2) * (H - 8);
+                    return <circle key={i} cx={x} cy={y} r={3} fill={lineColor2} />;
+                  })}
+                </svg>
+                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                  {rows2.map((r, i) => (
+                    <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
+                      <span style={{ color: MUTED, minWidth: 80, flexShrink: 0 }}>{new Date(r.createdAt).toLocaleDateString()}</span>
+                      <span
+                        style={{
+                          fontWeight: 800,
+                          color: r.score >= 62 ? "#22c55e" : r.score >= 38 ? "#f59e0b" : "#ef4444",
+                          minWidth: 28,
+                        }}
+                      >{r.score}</span>
+                      {r.source === "auto" && (
+                        <span
+                          style={{
+                            fontSize: 10, fontWeight: 600,
+                            color: r.triggerType === "signal_triggered" ? "#60a5fa" : "#f59e0b",
+                            background: r.triggerType === "signal_triggered" ? "rgba(96,165,250,0.12)" : "rgba(245,158,11,0.12)",
+                            borderRadius: 4, padding: "1px 6px",
+                          }}
+                        >{r.triggerType === "signal_triggered" ? "📡 Signal" : `⚡ ${TRIGGER_LABELS[r.triggerType ?? ""] ?? "Auto"}`}</span>
+                      )}
+                      {i === rows2.length - 1 && <span style={{ fontSize: 10, color: MUTED, marginLeft: "auto" }}>latest</span>}
+                    </div>
+                  ))}
+                </div>
+              </>
+            );
+          })()}
+        </div>
+      </div>
+    )}
+    </>
   );
 }
