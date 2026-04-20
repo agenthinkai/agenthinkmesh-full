@@ -1011,8 +1011,8 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         }
       }
 
-      // Require at least 3 records in the matched group
-      const MIN_GROUP = 3;
+      // Require at least 5 records in the matched group (confidence gating)
+      const MIN_GROUP = 5;
 
       // Parse current deal's agent outputs
       let currentAgents: Array<{ name: string; label: string }> = [];
@@ -1043,15 +1043,31 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         .map(([name]) => name);
 
       // Match current deal against patterns
+      // Confidence gating: require ≥2 dominant signals to match (not just 1)
+      const MIN_MATCH_SIGNALS = 2;
+
       // Invested match: current deal has positive votes on the top invested signals
       const investedMatchCount = topInvestedSignals.filter(name => currentPositive.has(name)).length;
       // Passed match: current deal has negative votes on the top passed signals
       const passedMatchCount = topPassedSignals.filter(name => currentNegative.has(name)).length;
 
-      const investedMatch = topInvestedSignals.length > 0 && investedMatchCount === topInvestedSignals.length;
-      const passedMatch = topPassedSignals.length > 0 && passedMatchCount === topPassedSignals.length;
+      const investedMatch = topInvestedSignals.length >= MIN_MATCH_SIGNALS &&
+        investedMatchCount >= MIN_MATCH_SIGNALS;
+      const passedMatch = topPassedSignals.length >= MIN_MATCH_SIGNALS &&
+        passedMatchCount >= MIN_MATCH_SIGNALS;
 
-      if (investedMatch && !passedMatch) {
+      // Mixed signal: current deal matches both patterns simultaneously
+      if (investedMatch && passedMatch) {
+        // Combine signals from both groups for the explanation
+        const allSignals = Array.from(new Set([...topInvestedSignals, ...topPassedSignals]));
+        return {
+          type: "mixed_signal" as const,
+          signals: allSignals,
+          phrase: "Mixed signals — this deal shares traits with both invested and passed deals",
+        };
+      }
+
+      if (investedMatch) {
         const phrases = topInvestedSignals.map(n => SIGNAL_PHRASES[n].positive);
         return {
           type: "invested_match" as const,
@@ -1060,7 +1076,7 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         };
       }
 
-      if (passedMatch && !investedMatch) {
+      if (passedMatch) {
         const phrases = topPassedSignals.map(n => SIGNAL_PHRASES[n].negative);
         return {
           type: "passed_match" as const,

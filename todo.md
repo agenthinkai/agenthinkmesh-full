@@ -2634,3 +2634,18 @@
 - [ ] No layout shift, no visual style change for visible items
 - [x] TypeScript: zero errors (full npx tsc --noEmit EXIT:0)
 - [x] Tests: 693/693 passing
+
+## Pattern Insight Confidence Gating + Mixed Signal
+
+- [x] Server: raise MIN_GROUP from 3 to 5 (outcome group must have ≥5 records)
+- [x] Server: require ≥2 dominant signal matches (not just 1) for invested_match or passed_match
+- [x] Server: add mixed_signal return type — when current deal matches both invested AND passed patterns
+- [x] Server: mixed_signal phrase: "Mixed signals — this deal shares traits with both invested and passed deals"
+- [x] Client: handle mixed_signal type on result screen with neutral/muted styling (no green, no amber)
+- [x] Client: mixed_signal still shows expand chevron with neutral explanation
+- [x] Keep existing green/amber styling for clear invested_match / passed_match cases
+- [x] Keep expandable "why" line and placement unchanged
+- [x] No new UI components, no schema changes, no percentages
+- [x] TypeScript: zero errors (full npx tsc --noEmit EXIT:0)
+- [x] Tests: 693/693 passing
+

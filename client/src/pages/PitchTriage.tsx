@@ -1256,13 +1256,25 @@ export default function PitchTriage() {
               {(() => {
                 const insight = patternInsightQuery.data;
                 if (!insight || insight.type === "none") return null;
+                const isMixed = insight.type === "mixed_signal";
                 const isPositive = insight.type === "invested_match";
-                const borderColor = isPositive ? "rgba(16,185,129,0.35)" : "rgba(245,158,11,0.35)";
-                const bgColor = isPositive ? "rgba(16,185,129,0.06)" : "rgba(245,158,11,0.06)";
-                const textColor = isPositive ? "#10b981" : "#f59e0b";
-                const chevronColor = isPositive ? "rgba(16,185,129,0.6)" : "rgba(245,158,11,0.6)";
-                const borderTopColor = isPositive ? "rgba(16,185,129,0.12)" : "rgba(245,158,11,0.12)";
-                const icon = isPositive ? "✓" : "⚠";
+                // Neutral (muted slate) for mixed, green for invested, amber for passed
+                const borderColor = isMixed
+                  ? "rgba(148,163,184,0.30)"
+                  : isPositive ? "rgba(16,185,129,0.35)" : "rgba(245,158,11,0.35)";
+                const bgColor = isMixed
+                  ? "rgba(148,163,184,0.05)"
+                  : isPositive ? "rgba(16,185,129,0.06)" : "rgba(245,158,11,0.06)";
+                const textColor = isMixed
+                  ? "rgba(148,163,184,0.85)"
+                  : isPositive ? "#10b981" : "#f59e0b";
+                const chevronColor = isMixed
+                  ? "rgba(148,163,184,0.45)"
+                  : isPositive ? "rgba(16,185,129,0.6)" : "rgba(245,158,11,0.6)";
+                const borderTopColor = isMixed
+                  ? "rgba(148,163,184,0.10)"
+                  : isPositive ? "rgba(16,185,129,0.12)" : "rgba(245,158,11,0.12)";
+                const icon = isMixed ? "○" : isPositive ? "✓" : "⚠";
 
                 // Build explanation phrase from insight.signals using FACTOR_PHRASES
                 const RESULT_FACTOR_PHRASES: Record<string, string> = {
