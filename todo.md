@@ -2707,3 +2707,32 @@
 - [x] tsc --noEmit EXIT:0 after each task
 - [x] Tests: 693/693 passing throughout
 - [x] No regressions to History tab, result screen, conflict block, calibration signal, outcome chips
+
+## Three-Task Sprint (7c2c6645 base)
+
+### Task 1 — Outcome Prompt in History Detail Panel
+- [x] Client: in expanded detail panel, if decisionOutcome is null AND stage is diligence/ic_ready, show "Record an outcome for this deal." prompt
+- [x] Client: show ✓ INVESTED (green) and ✗ PASSED (red) chips immediately below the prompt
+- [x] Client: clicking a chip calls existing setOutcome mutation and dismisses the prompt
+- [x] Client: prompt hidden when decisionOutcome is already set
+- [x] No new tRPC procedures, no schema changes
+
+### Task 2 — Pattern Context in IC Memo Email Subject Line
+- [x] Server/Client: PDF metadata Subject field updated to include pattern match type
+- [x] invested_match → "IC Memo: [Deal Name] — Invested Match Pattern"
+- [x] passed_match → "IC Memo: [Deal Name] — Caution Match Pattern"
+- [x] no pattern → "IC Memo: [Deal Name]" (unchanged)
+- [x] Filename updated: "-Invested-Match" or "-Caution-Match" suffix added
+- [x] No new API calls, no schema changes
+
+### Task 3 — Stale Deal Count Badge on History Tab Label
+- [x] Client: compute staleHistoryCount in main PitchTriage component from historyQuery.data
+- [x] Client: show amber pill badge on History tab label when staleHistoryCount > 0
+- [x] Client: badge disappears immediately when all stale deals dismissed or outcomes recorded
+- [x] Client: derived from data already in memory — no new queries
+- [x] No schema changes
+
+### Shared Constraints
+- [x] tsc --noEmit EXIT:0 after each task
+- [x] Tests: 693/693 passing throughout
+- [x] No regressions to History list, nudge rows, Boardroom view, PDF badge, triage result screen

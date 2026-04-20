@@ -731,9 +731,14 @@ export const dealScreenerRouter = router({
         votes:               input.votes,
       };
       const pdfBuffer = await generateICMemoPdf(memoInput);
+      const patternSuffix = input.patternContext === "invested_match"
+        ? "-Invested-Match"
+        : input.patternContext === "passed_match"
+        ? "-Caution-Match"
+        : "";
       return {
         base64: pdfBuffer.toString("base64"),
-        filename: `IC-Memo-${input.dealName.replace(/[^a-zA-Z0-9]/g, "-").slice(0, 40)}.pdf`,
+        filename: `IC-Memo-${input.dealName.replace(/[^a-zA-Z0-9]/g, "-").slice(0, 40)}${patternSuffix}.pdf`,
       };
     }),
 

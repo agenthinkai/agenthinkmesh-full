@@ -154,6 +154,27 @@ export default function PitchTriage() {
     }
   );
 
+  // Stale deal count for History tab badge — derived from historyQuery.data, no new query
+  const staleHistoryCount = useMemo(() => {
+    const rows = historyQuery.data ?? [];
+    const dismissed = (() => {
+      try {
+        const raw = localStorage.getItem("atm_dismissed_stale_nudges");
+        return new Set<number>(raw ? JSON.parse(raw) : []);
+      } catch { return new Set<number>(); }
+    })();
+    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
+    const now = Date.now();
+    return rows.filter(r => {
+      const row = r as { id: number; stage?: string; decisionOutcome?: string | null; createdAt?: Date | string | number };
+      if (row.decisionOutcome) return false;
+      if (!row.stage || (row.stage !== "diligence" && row.stage !== "ic_ready")) return false;
+      if (dismissed.has(row.id)) return false;
+      const ts = row.createdAt ? new Date(row.createdAt as string).getTime() : 0;
+      return now - ts >= THIRTY_DAYS_MS;
+    }).length;
+  }, [historyQuery.data]);
+
   // Calibration signal — loaded once per session, non-blocking
   const calibrationQuery = trpc.pitch.agentCalibration.useQuery(undefined, {
     refetchOnWindowFocus: false,
@@ -410,7 +431,29 @@ export default function PitchTriage() {
                   marginBottom: -1,
                 }}
               >
-                {tab === "triage" ? "⚡ Triage" : "🗓 History"}
+                {tab === "triage" ? "⚡ Triage" : (
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    📅 History
+                    {staleHistoryCount > 0 && (
+                      <span style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        background: "#d97706",
+                        color: "#fff",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        borderRadius: 9999,
+                        minWidth: 16,
+                        height: 16,
+                        padding: "0 4px",
+                        lineHeight: 1,
+                      }}>
+                        {staleHistoryCount}
+                      </span>
+                    )}
+                  </span>
+                )}
               </button>
             ))}
           </div>
@@ -2191,6 +2234,67 @@ function HistoryTab({
             ⚡ Re-run Triage
           </button>
         </div>
+
+        {/* Outcome prompt — shown only when decisionOutcome is null AND stage is diligence/ic_ready */}
+        {!item.decisionOutcome && (item.stage === "diligence" || item.stage === "ic_ready") && (() => {
+          const os = outcomeState[item.id];
+          if (os === "invested" || os === "passed") return null; // already recorded in this session
+          return (
+            <div
+              style={{
+                background: "rgba(245,158,11,0.07)",
+                border: "1px solid rgba(245,158,11,0.28)",
+                borderRadius: 8,
+                padding: "12px 16px",
+                display: "flex",
+                flexDirection: "column",
+                gap: 10,
+              }}
+            >
+              <span style={{ color: "#fbbf24", fontSize: 12, fontWeight: 600 }}>
+                Record an outcome for this deal.
+              </span>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  disabled={os === "recording"}
+                  onClick={() => handleRecordOutcome(item.id, "invested")}
+                  style={{
+                    background: "rgba(34,197,94,0.10)",
+                    border: "1px solid rgba(34,197,94,0.35)",
+                    borderRadius: 6,
+                    color: "#4ade80",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    padding: "6px 14px",
+                    cursor: os === "recording" ? "not-allowed" : "pointer",
+                    opacity: os === "recording" ? 0.6 : 1,
+                    transition: "all 0.15s",
+                  }}
+                >
+                  ✓ INVESTED
+                </button>
+                <button
+                  disabled={os === "recording"}
+                  onClick={() => handleRecordOutcome(item.id, "passed")}
+                  style={{
+                    background: "rgba(239,68,68,0.10)",
+                    border: "1px solid rgba(239,68,68,0.35)",
+                    borderRadius: 6,
+                    color: "#f87171",
+                    fontSize: 12,
+                    fontWeight: 700,
+                    padding: "6px 14px",
+                    cursor: os === "recording" ? "not-allowed" : "pointer",
+                    opacity: os === "recording" ? 0.6 : 1,
+                    transition: "all 0.15s",
+                  }}
+                >
+                  ✗ PASSED
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Outcome recording */}
         {(() => {

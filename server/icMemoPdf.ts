@@ -566,7 +566,11 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       info: {
         Title: `IC Memo — ${input.dealName}`,
         Author: "AgenThinkMesh · Council of 10",
-        Subject: "Investment Committee Memo",
+        Subject: input.patternContext === "invested_match"
+          ? `IC Memo: ${input.dealName} — Invested Match Pattern`
+          : input.patternContext === "passed_match"
+          ? `IC Memo: ${input.dealName} — Caution Match Pattern`
+          : `IC Memo: ${input.dealName}`,
         Keywords: "IC Memo, Investment Committee, Private Equity",
       },
     });
