@@ -2867,3 +2867,29 @@
 - [x] Tests: 693 passed | 1 skipped (694 total)
 - [x] No schema changes, no new procedures
 - [x] No regressions
+
+## Signal Density & Score Diff Sprint (44d35266 base)
+
+### Task 1 — Signal count indicator on History list rows
+- [x] Server: add count import to drizzle-orm in db.ts
+- [x] Server: add getSignalCountsForUser helper (GROUP BY dealId, returns Record<string, number>)
+- [x] Server: extend pitch.history to include signalCount per row via signalCounts map
+- [x] Client: render 📡 N indicator between Date and Arrow when signalCount > 0
+
+### Task 2 — Score diff on signal-triggered detail panel
+- [x] Server: add getPreviousTriageForDeal helper (most recent triage before current, same user + pitchPreview prefix)
+- [x] Server: extend pitch.historyItem to compute prevScore for signal_triggered / external_signal rows
+- [x] Client: auto-trigger notice bar now shows 📡 Signal (blue) for signal rows, ⚡ Auto (amber) for others
+- [x] Client: score diff bar (↑ N pts / ↓ N pts / → unchanged) shown below notice when prevScore is available
+
+### Task 3 — 📡 Signals filter chip in History list
+- [x] Client: add showSignalsOnly boolean state to HistoryTab
+- [x] Client: apply signals-only filter to filteredRowsUnsorted when active
+- [x] Client: render 📡 Signals · N chip in filter row (hidden when no signal rows exist)
+- [x] Chip toggles on/off; blue active state consistent with existing chip style
+
+### Shared Constraints
+- [x] tsc --noEmit EXIT:0 (empty output) after each task
+- [x] Tests: 693 passed | 1 skipped (694 total)
+- [x] No schema changes, no new tRPC procedures
+- [x] No regressions

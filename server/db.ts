@@ -1,4 +1,4 @@
-import { and, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertPitchTriage, InsertUser, PitchTriage, pitchTriages, pitchMirrorShares, users, autoTriggerLog, InsertAutoTriggerLog, dealSignals, InsertDealSignal, DealSignal } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -366,5 +366,61 @@ export async function getDealSignals(dealId: string, userId: string, limit = 10)
   } catch (error) {
     console.error("[Database] getDealSignals failed:", error);
     return [];
+  }
+}
+
+/**
+ * getSignalCountsForUser — Returns a map of dealId → signal count for all deals
+ * belonging to the given user that have at least one signal.
+ */
+export async function getSignalCountsForUser(userId: string): Promise<Record<string, number>> {
+  const db = await getDb();
+  if (!db) return {};
+  try {
+    const rows = await db
+      .select({ dealId: dealSignals.dealId, cnt: count(dealSignals.id) })
+      .from(dealSignals)
+      .where(eq(dealSignals.userId, userId))
+      .groupBy(dealSignals.dealId);
+    const result: Record<string, number> = {};
+    for (const row of rows) {
+      result[row.dealId] = row.cnt;
+    }
+    return result;
+  } catch (error) {
+    console.error("[Database] getSignalCountsForUser failed:", error);
+    return {};
+  }
+}
+
+/**
+ * getPreviousTriageForDeal — Returns the most recent triage for the same deal
+ * (same pitchPreview prefix, same userId) that was created BEFORE the given timestamp.
+ * Used to compute score diff on signal-triggered re-triages.
+ */
+export async function getPreviousTriageForDeal(
+  userId: string,
+  pitchPreviewPrefix: string,
+  beforeCreatedAt: Date
+): Promise<PitchTriage | null> {
+  const db = await getDb();
+  if (!db) return null;
+  try {
+    const rows = await db
+      .select()
+      .from(pitchTriages)
+      .where(
+        and(
+          eq(pitchTriages.userId, userId),
+          sql`${pitchTriages.pitchPreview} LIKE ${pitchPreviewPrefix + "%"}`,
+          sql`${pitchTriages.createdAt} < ${beforeCreatedAt}`
+        )
+      )
+      .orderBy(desc(pitchTriages.createdAt))
+      .limit(1);
+    return rows[0] ?? null;
+  } catch (error) {
+    console.error("[Database] getPreviousTriageForDeal failed:", error);
+    return null;
   }
 }

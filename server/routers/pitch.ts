@@ -11,7 +11,7 @@
 
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated, updateTriageStage, recordOutcome, getOutcomeHistory, createPitchMirrorShare, getPitchMirrorShare, insertDealSignal, markDealSignalProcessed, getDealSignals, getAutoTriggerLogCount } from "../db";
+import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated, updateTriageStage, recordOutcome, getOutcomeHistory, createPitchMirrorShare, getPitchMirrorShare, insertDealSignal, markDealSignalProcessed, getDealSignals, getAutoTriggerLogCount, getSignalCountsForUser, getPreviousTriageForDeal } from "../db";
 import { PitchTriage } from "../../drizzle/schema";
 import { sql } from "drizzle-orm";
 import { runCouncil } from "../councilEngine";
@@ -627,8 +627,10 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
    * pitch.history — Returns the last 50 triage runs for the current user.
    */
   history: protectedProcedure.query(async ({ ctx }) => {
-    const rows = await getPitchTriageHistory(ctx.user.id.toString(), 50);
-    return rows;
+    const userId = ctx.user.id.toString();
+    const rows = await getPitchTriageHistory(userId, 50);
+    const signalCounts = await getSignalCountsForUser(userId);
+    return rows.map((r) => ({ ...r, signalCount: signalCounts[String(r.id)] ?? 0 }));
   }),
 
   /**
@@ -637,9 +639,18 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
   historyItem: protectedProcedure
     .input(z.object({ id: z.number().int().positive() }))
     .query(async ({ input, ctx }) => {
-      const row = await getPitchTriageById(input.id, ctx.user.id.toString());
+      const userId = ctx.user.id.toString();
+      const row = await getPitchTriageById(input.id, userId);
       if (!row) throw new Error("Triage record not found");
-      return row;
+      // Compute prevScore for score-diff display on signal-triggered rows
+      let prevScore: number | null = null;
+      const tt = (row as unknown as { triggerType?: string }).triggerType;
+      if (tt === "signal_triggered" || tt === "external_signal") {
+        const prefix = row.pitchPreview ? row.pitchPreview.slice(0, 40) : "";
+        const prev = await getPreviousTriageForDeal(userId, prefix, row.createdAt);
+        prevScore = prev?.score ?? null;
+      }
+      return { ...row, prevScore };
     }),
 
   /**

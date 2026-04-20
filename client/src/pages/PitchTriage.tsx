@@ -1667,6 +1667,8 @@ function HistoryTab({
   // Stage (pipeline) filter — default "all"
   type StageFilter = "all" | "triaged" | "diligence" | "ic_ready";
   const [stageFilter, setStageFilter] = useState<StageFilter>("all");
+  // Signals-only filter — show only deals with at least one logged signal
+  const [showSignalsOnly, setShowSignalsOnly] = useState(false);
 
   // Pattern signal expansion state
   const [patternExpanded, setPatternExpanded] = useState(false);
@@ -1891,24 +1893,61 @@ function HistoryTab({
         </div>
 
         {/* Auto-trigger notice */}
-        {(item as unknown as { source?: string }).source === "auto" && (
-          <div
-            style={{
-              background: "rgba(251,191,36,0.08)",
-              border: "1px solid rgba(251,191,36,0.25)",
-              borderRadius: 8,
-              padding: "8px 14px",
-              color: "#fbbf24",
-              fontSize: 12,
-              display: "flex",
-              alignItems: "center",
-              gap: 8,
-            }}
-          >
-            <span style={{ fontSize: 14 }}>⚡</span>
-            <span>This analysis was triggered automatically by the system.</span>
-          </div>
-        )}
+        {(item as unknown as { source?: string }).source === "auto" && (() => {
+          const tt = (item as unknown as { triggerType?: string }).triggerType;
+          const isSignal = tt === "signal_triggered" || tt === "external_signal";
+          const prevScore = (item as unknown as { prevScore?: number | null }).prevScore ?? null;
+          const scoreDiff = prevScore !== null ? item.score - prevScore : null;
+          return (
+            <>
+              <div
+                style={{
+                  background: isSignal ? "rgba(96,165,250,0.08)" : "rgba(251,191,36,0.08)",
+                  border: `1px solid ${isSignal ? "rgba(96,165,250,0.25)" : "rgba(251,191,36,0.25)"}`,
+                  borderRadius: 8,
+                  padding: "8px 14px",
+                  color: isSignal ? "#60a5fa" : "#fbbf24",
+                  fontSize: 12,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}
+              >
+                <span style={{ fontSize: 14 }}>{isSignal ? "📡" : "⚡"}</span>
+                <span>{isSignal ? "This analysis was triggered by an external signal." : "This analysis was triggered automatically by the system."}</span>
+              </div>
+              {/* Score diff — only for signal-triggered rows with a previous triage */}
+              {isSignal && scoreDiff !== null && (
+                <div
+                  style={{
+                    background: "rgba(255,255,255,0.03)",
+                    border: `1px solid ${scoreDiff > 0 ? "rgba(74,222,128,0.22)" : scoreDiff < 0 ? "rgba(248,113,113,0.22)" : "rgba(255,255,255,0.12)"}`,
+                    borderRadius: 8,
+                    padding: "7px 14px",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 10,
+                    fontSize: 12,
+                  }}
+                >
+                  {scoreDiff > 0 ? (
+                    <>
+                      <span style={{ color: "#4ade80", fontWeight: 700 }}>↑ {scoreDiff} pts</span>
+                      <span style={{ color: "rgba(255,255,255,0.45)" }}>{prevScore} → {item.score}</span>
+                    </>
+                  ) : scoreDiff < 0 ? (
+                    <>
+                      <span style={{ color: "#f87171", fontWeight: 700 }}>↓ {Math.abs(scoreDiff)} pts</span>
+                      <span style={{ color: "rgba(255,255,255,0.45)" }}>{prevScore} → {item.score}</span>
+                    </>
+                  ) : (
+                    <span style={{ color: "rgba(255,255,255,0.35)" }}>→ unchanged</span>
+                  )}
+                </div>
+              )}
+            </>
+          );
+        })()}
 
         {/* Classification banner + score */}
         <div
@@ -2692,7 +2731,9 @@ function HistoryTab({
   const stageFilteredRows = stageFilter === "all"
     ? rows
     : rows.filter((r) => (r.stage ?? "triaged") === stageFilter);
-  const filteredRowsUnsorted = stageFilteredRows.filter((r) => activeFilters.has(r.classification));
+  const filteredRowsUnsorted = stageFilteredRows
+    .filter((r) => activeFilters.has(r.classification))
+    .filter((r) => !showSignalsOnly || ((r as unknown as { signalCount?: number }).signalCount ?? 0) > 0);
   const filteredRows = [...filteredRowsUnsorted].sort((a, b) => {
     if (sortBy === "highest_score") return (b.score ?? 0) - (a.score ?? 0);
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -3119,7 +3160,7 @@ function HistoryTab({
 
       {/* Filter chips + escalation indicator */}
       <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap", alignItems: "center" }}>
-        {(["ENGAGE", "WATCH", "IGNORE"] as const).map((cls) => {
+          {(["ENGAGE", "WATCH", "IGNORE"] as const).map((cls) => {
           const isActive = activeFilters.has(cls);
           const colors = isActive ? CHIP_COLORS[cls].active : CHIP_COLORS[cls].inactive;
           return (
@@ -3143,6 +3184,30 @@ function HistoryTab({
             </button>
           );
         })}
+        {/* 📡 Signals filter chip */}
+        {(() => {
+          const signalRows = rows.filter((r) => ((r as unknown as { signalCount?: number }).signalCount ?? 0) > 0);
+          if (signalRows.length === 0) return null;
+          return (
+            <button
+              onClick={() => setShowSignalsOnly((v) => !v)}
+              style={{
+                background: showSignalsOnly ? "rgba(96,165,250,0.18)" : "rgba(255,255,255,0.04)",
+                border: `1px solid ${showSignalsOnly ? "rgba(96,165,250,0.5)" : BORDER}`,
+                borderRadius: 20,
+                color: showSignalsOnly ? "#60a5fa" : MUTED,
+                fontSize: 11,
+                fontWeight: showSignalsOnly ? 700 : 500,
+                padding: "4px 12px",
+                cursor: "pointer",
+                letterSpacing: 0.4,
+                transition: "all 0.15s",
+              }}
+            >
+              📡 Signals · {signalRows.length}
+            </button>
+          );
+        })()}
         <span style={{ color: MUTED, fontSize: 11, alignSelf: "center", marginLeft: 4 }}>
           {filteredRows.length} of {rows.length} shown
         </span>
@@ -3432,6 +3497,20 @@ function HistoryTab({
             <div style={{ color: MUTED, fontSize: 11, flexShrink: 0, textAlign: "right" }}>
               {fmtKuwait(row.createdAt)}
             </div>
+
+            {/* Signal count indicator — only when > 0 */}
+            {(row as unknown as { signalCount?: number }).signalCount! > 0 && (
+              <span
+                style={{
+                  fontSize: 10,
+                  color: "rgba(96,165,250,0.55)",
+                  flexShrink: 0,
+                  whiteSpace: "nowrap" as const,
+                }}
+              >
+                📡 {(row as unknown as { signalCount?: number }).signalCount}
+              </span>
+            )}
 
             {/* Arrow */}
             <span style={{ color: MUTED, fontSize: 14, flexShrink: 0 }}>›</span>
