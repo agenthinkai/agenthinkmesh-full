@@ -424,3 +424,56 @@ export async function getPreviousTriageForDeal(
     return null;
   }
 }
+
+// ---------------------------------------------------------------------------
+// Signal type summary — count per signalType for processed signals
+// ---------------------------------------------------------------------------
+export async function getSignalTypeSummary(userId: string): Promise<Record<string, number>> {
+  const db = await getDb();
+  if (!db) return {};
+  try {
+    const rows = await db
+      .select({ signalType: dealSignals.signalType, cnt: count(dealSignals.id) })
+      .from(dealSignals)
+      .where(and(eq(dealSignals.userId, userId), eq(dealSignals.processed, true)))
+      .groupBy(dealSignals.signalType);
+    const result: Record<string, number> = {};
+    for (const row of rows) {
+      result[row.signalType] = Number(row.cnt);
+    }
+    return result;
+  } catch (error) {
+    console.error("[Database] getSignalTypeSummary failed:", error);
+    return {};
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Score history — last N scores for a deal (pitchPreview prefix match)
+// ---------------------------------------------------------------------------
+export async function getScoreHistory(
+  userId: string,
+  pitchPreviewPrefix: string,
+  limit: number = 5
+): Promise<number[]> {
+  const db = await getDb();
+  if (!db) return [];
+  try {
+    const rows = await db
+      .select({ score: pitchTriages.score, createdAt: pitchTriages.createdAt })
+      .from(pitchTriages)
+      .where(
+        and(
+          eq(pitchTriages.userId, userId),
+          sql`${pitchTriages.pitchPreview} LIKE ${pitchPreviewPrefix + "%"}`
+        )
+      )
+      .orderBy(desc(pitchTriages.createdAt))
+      .limit(limit);
+    // Return in ascending order (oldest first, newest last)
+    return rows.reverse().map((r) => r.score);
+  } catch (error) {
+    console.error("[Database] getScoreHistory failed:", error);
+    return [];
+  }
+}

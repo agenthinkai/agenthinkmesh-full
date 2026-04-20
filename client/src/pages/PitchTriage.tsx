@@ -1713,6 +1713,8 @@ function HistoryTab({
   );
   // Auto re-triage count (last 30 days)
   const autoTriggerCountQuery = trpc.pitch.autoTriggerCount.useQuery();
+  // Signal type summary for Pipeline Summary
+  const signalTypeSummaryQuery = trpc.pitch.signalTypeSummary.useQuery();
 
   function handleRecordOutcome(id: number, outcome: "invested" | "passed") {
     setOutcomeState((prev) => ({ ...prev, [id]: "recording" }));
@@ -3056,6 +3058,28 @@ function HistoryTab({
             </span>
           );
         })()}
+        {/* Signal type breakdown — top 2 types */}
+        {signalTypeSummaryQuery.data !== undefined && (() => {
+          const SIGNAL_LABELS: Record<string, string> = {
+            founder_update: "founder update",
+            competitor_news: "competitor news",
+            market_event: "market event",
+            negative_press: "negative press",
+            positive_milestone: "positive milestone",
+            team_change: "team change",
+          };
+          const entries = Object.entries(signalTypeSummaryQuery.data)
+            .filter(([, v]) => v > 0)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 2);
+          if (entries.length === 0) return null;
+          const parts = entries.map(([k, v]) => `${v} ${SIGNAL_LABELS[k] ?? k}${v !== 1 ? "s" : ""}`);
+          return (
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.45)" }}>
+              {parts.join(" · ")}
+            </span>
+          );
+        })()}
       </div>
 
       {/* Stage (pipeline) filter tabs */}
@@ -3285,24 +3309,51 @@ function HistoryTab({
               (e.currentTarget.style.borderColor = BORDER)
             }
           >
-            {/* Score badge */}
-            <div
-              style={{
-                width: 48,
-                height: 48,
-                borderRadius: "50%",
-                border: `2px solid ${scoreColors.ring}`,
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                flexShrink: 0,
-              }}
-            >
-              <span style={{ fontSize: 16, fontWeight: 800, color: scoreColors.text, lineHeight: 1 }}>
-                {row.score}
-              </span>
-            </div>
+            {/* Score badge or sparkline */}
+            {(() => {
+              const sh: number[] = (row as unknown as { scoreHistory?: number[] }).scoreHistory ?? [];
+              if (sh.length >= 3) {
+                const W = 48, H = 20;
+                const min = Math.min(...sh), max = Math.max(...sh);
+                const range = max - min || 1;
+                const pts = sh.map((s, i) => {
+                  const x = (i / (sh.length - 1)) * (W - 4) + 2;
+                  const y = H - 2 - ((s - min) / range) * (H - 4);
+                  return `${x.toFixed(1)},${y.toFixed(1)}`;
+                }).join(" ");
+                const first = sh[0], last = sh[sh.length - 1];
+                const diff = last - first;
+                const lineColor = diff > 3 ? "#22c55e" : diff < -3 ? "#ef4444" : "#6b7280";
+                const tooltip = `Scores: ${sh.join(" → ")}`;
+                return (
+                  <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }} title={tooltip}>
+                    <svg width={W} height={H} style={{ display: "block" }}>
+                      <polyline points={pts} fill="none" stroke={lineColor} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />
+                    </svg>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: scoreColors.text, lineHeight: 1 }}>{row.score}</span>
+                  </div>
+                );
+              }
+              return (
+                <div
+                  style={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: "50%",
+                    border: `2px solid ${scoreColors.ring}`,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                  }}
+                >
+                  <span style={{ fontSize: 16, fontWeight: 800, color: scoreColors.text, lineHeight: 1 }}>
+                    {row.score}
+                  </span>
+                </div>
+              );
+            })()}
 
             {/* Main content */}
             <div style={{ flex: 1, minWidth: 0 }}>

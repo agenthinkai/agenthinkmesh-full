@@ -2893,3 +2893,66 @@
 - [x] Tests: 693 passed | 1 skipped (694 total)
 - [x] No schema changes, no new tRPC procedures
 - [x] No regressions
+
+## Signal Breakdown + Sparkline + Test Sprint (3695de5b base)
+
+### Task 1 — Signal type breakdown in Pipeline Summary
+- [ ] Server: add getSignalTypeSummary(userId) helper to db.ts
+- [ ] Server: add pitch.signalTypeSummary protected query procedure
+- [ ] Client: add signalTypeSummary query to HistoryTab hooks
+- [ ] Client: render top-2 signal type token in System Signals bar
+- [ ] No schema changes
+
+### Task 2 — Score trajectory sparkline on History list rows
+- [ ] Server: add getScoreHistory(dealId, limit) helper to db.ts
+- [ ] Server: extend pitch.history to inject scoreHistory (max 5) for rows with 3+ triages
+- [ ] Client: render inline SVG sparkline (48×20px) replacing static score badge when scoreHistory present
+- [ ] Client: green/red/muted colour based on first vs last score in window
+- [ ] Client: tooltip on hover: "Scores: 64 → 71 → 76"
+- [ ] No schema changes
+
+### Task 3 — Integration test for pitch.logSignal
+- [ ] Create server/routers/pitch.logSignal.test.ts
+- [ ] Test 1: happy path — signal inserted, checkAndTrigger fires, processed=true, returns { signalId, triggered }
+- [ ] Test 2: ownership guard — FORBIDDEN error, no signal row inserted
+- [ ] Test 3: invalid signalType — BAD_REQUEST error, no signal row inserted
+- [ ] All 3 test cases pass
+
+### Shared Constraints
+- [ ] tsc --noEmit EXIT:0 after each task
+- [ ] Tests: 693+ passing throughout
+- [ ] No schema changes
+- [ ] No regressions
+
+## Signal Breakdown + Sparkline + logSignal Test Sprint (3695de5b base)
+
+### Task 1 — Signal type breakdown in Pipeline Summary
+- [x] Server: add getSignalTypeSummary(userId) helper to db.ts — counts per signalType WHERE processed=true
+- [x] Server: add pitch.signalTypeSummary protected query procedure
+- [x] Client: add signalTypeSummaryQuery hook to HistoryTab
+- [x] Client: render top-2 signal types by count as compact token in System Signals bar
+- [x] Client: hidden when no signals exist; shows single type if only one exists
+- [x] No schema changes
+
+### Task 2 — Score trajectory sparkline on History list rows
+- [x] Server: add getScoreHistory(userId, pitchPreviewPrefix, limit) helper to db.ts
+- [x] Server: inject scoreHistory: number[] (max 5) into pitch.history return shape for rows with 3+ triages
+- [x] Server: rows with fewer than 3 triages get scoreHistory: [] (static badge unchanged)
+- [x] Client: render inline SVG sparkline (48x20px) when scoreHistory.length >= 3
+- [x] Client: green line if last > first + 3pts, red if lower, muted if flat
+- [x] Client: tooltip on hover: "Scores: 64 -> 71 -> 76"
+- [x] No schema changes
+
+### Task 3 — Integration test for pitch.logSignal
+- [x] Test file: server/routers/pitch.logSignal.test.ts
+- [x] Happy path: signal inserted processed=false, re-triage fires, marked processed=true, returns { signalId, triggered }
+- [x] Ownership guard: throws "Deal not found or access denied", no signal inserted
+- [x] Invalid signalType: Zod enum validation rejects unknown values
+- [x] Invalid signalText length: rejects text > 500 chars
+- [x] Non-numeric dealId: throws "Invalid dealId"
+- [x] Re-triage failure is non-fatal: returns triggered=false, still marks processed
+
+### Shared Constraints
+- [x] tsc --noEmit EXIT:0 after each task
+- [x] Tests: 699 passed | 1 skipped (700 total) — 7 new tests from pitch.logSignal.test.ts
+- [x] No regressions to any existing feature

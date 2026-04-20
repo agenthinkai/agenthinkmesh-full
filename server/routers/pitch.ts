@@ -11,7 +11,7 @@
 
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated, updateTriageStage, recordOutcome, getOutcomeHistory, createPitchMirrorShare, getPitchMirrorShare, insertDealSignal, markDealSignalProcessed, getDealSignals, getAutoTriggerLogCount, getSignalCountsForUser, getPreviousTriageForDeal } from "../db";
+import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated, updateTriageStage, recordOutcome, getOutcomeHistory, createPitchMirrorShare, getPitchMirrorShare, insertDealSignal, markDealSignalProcessed, getDealSignals, getAutoTriggerLogCount, getSignalCountsForUser, getPreviousTriageForDeal, getSignalTypeSummary, getScoreHistory } from "../db";
 import { PitchTriage } from "../../drizzle/schema";
 import { sql } from "drizzle-orm";
 import { runCouncil } from "../councilEngine";
@@ -630,7 +630,30 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
     const userId = ctx.user.id.toString();
     const rows = await getPitchTriageHistory(userId, 50);
     const signalCounts = await getSignalCountsForUser(userId);
-    return rows.map((r) => ({ ...r, signalCount: signalCounts[String(r.id)] ?? 0 }));
+    // Inject scoreHistory for rows with 3+ triages (same pitchPreview prefix)
+    // Group rows by 40-char pitchPreview prefix to count triages per deal
+    const prefixCounts: Record<string, number> = {};
+    for (const r of rows) {
+      const prefix = r.pitchPreview ? r.pitchPreview.slice(0, 40) : "";
+      prefixCounts[prefix] = (prefixCounts[prefix] ?? 0) + 1;
+    }
+    // Fetch score history only for prefixes with 3+ triages (deduplicated)
+    const prefixesNeedingHistory = Array.from(new Set(
+      rows
+        .filter((r) => (prefixCounts[r.pitchPreview ? r.pitchPreview.slice(0, 40) : ""] ?? 0) >= 3)
+        .map((r) => r.pitchPreview ? r.pitchPreview.slice(0, 40) : "")
+    ));
+    const scoreHistoryMap: Record<string, number[]> = {};
+    await Promise.all(
+      prefixesNeedingHistory.map(async (prefix) => {
+        scoreHistoryMap[prefix] = await getScoreHistory(userId, prefix, 5);
+      })
+    );
+    return rows.map((r) => {
+      const prefix = r.pitchPreview ? r.pitchPreview.slice(0, 40) : "";
+      const scoreHistory = scoreHistoryMap[prefix] ?? [];
+      return { ...r, signalCount: signalCounts[String(r.id)] ?? 0, scoreHistory };
+    });
   }),
 
   /**
@@ -1665,5 +1688,15 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
       const userId = ctx.user.id.toString();
       const count = await getAutoTriggerLogCount(userId);
       return { count };
+    }),
+
+  /**
+   * pitch.signalTypeSummary — Returns count per signalType for processed signals.
+   * Used by Pipeline Summary to show top signal types.
+   */
+  signalTypeSummary: protectedProcedure
+    .query(async ({ ctx }) => {
+      const userId = ctx.user.id.toString();
+      return getSignalTypeSummary(userId);
     }),
 });
