@@ -2511,3 +2511,14 @@
 - [x] No backend changes — use existing stage field from historyQuery.data
 - [x] TypeScript: zero errors
 - [x] Tests: 693/693 passing
+
+## Agent Conflict Detection (Triage Result Screen)
+
+- [x] Derive conflict detection from existing agentOutputs: positive labels (strong/clear/low/complete) vs negative labels (weak/high/incomplete/absent/unclear)
+- [x] Only show conflict block when there is meaningful disagreement (at least 1 positive + 1 negative among the top-weighted agents)
+- [x] Insert "Conflict detected" block between Decision guidance row and Next Actions block
+- [x] Show top 1-2 conflicting agents: agent name, vote (YES/NO), 1-line rationale (first sentence of reasoning)
+- [x] Amber/orange styling to signal tension without alarming
+- [x] No schema changes, no new APIs, no backend changes
+- [x] TypeScript: zero errors
+- [x] Tests: 693/693 passing

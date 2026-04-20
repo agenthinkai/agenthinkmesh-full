@@ -1007,6 +1007,128 @@ export default function PitchTriage() {
                 </span>
               </div>
 
+              {/* ── Agent Conflict block ──────────────────────────────── */}
+              {(() => {
+                // Classify each agent output as positive or negative based on its label
+                const POSITIVE_LABELS = new Set(["strong", "clear", "low", "complete"]);
+                const NEGATIVE_LABELS = new Set(["weak", "high", "incomplete", "absent", "unclear", "partial", "early", "neutral"]);
+
+                // Only consider the top-weighted agents (exclude Completeness which is noise)
+                const CONFLICT_AGENTS: AgentName[] = ["Traction", "Market Signal", "Founder Signal", "Business Model", "Risk"];
+
+                const positiveAgents = result.agentOutputs.filter(
+                  (a) => CONFLICT_AGENTS.includes(a.name as AgentName) && POSITIVE_LABELS.has(a.label)
+                );
+                const negativeAgents = result.agentOutputs.filter(
+                  (a) => CONFLICT_AGENTS.includes(a.name as AgentName) && NEGATIVE_LABELS.has(a.label)
+                );
+
+                // Meaningful conflict: at least 1 positive AND at least 1 negative among top agents
+                const hasConflict = positiveAgents.length >= 1 && negativeAgents.length >= 1;
+                if (!hasConflict) return null;
+
+                // Pick the strongest positive (highest weight) and strongest negative (highest weight)
+                const sortByWeight = (arr: AgentOutput[]) =>
+                  [...arr].sort((a, b) => (AGENT_META[b.name as AgentName]?.weight ?? 0) - (AGENT_META[a.name as AgentName]?.weight ?? 0));
+
+                const topPositive = sortByWeight(positiveAgents)[0];
+                const topNegative = sortByWeight(negativeAgents)[0];
+
+                // Truncate reasoning to first sentence (≤ 90 chars)
+                const firstSentence = (text: string, maxLen = 90) => {
+                  const dot = text.indexOf(".");
+                  const raw = dot !== -1 && dot < maxLen ? text.slice(0, dot + 1) : text.slice(0, maxLen) + (text.length > maxLen ? "…" : "");
+                  return raw;
+                };
+
+                const conflictPairs = [topPositive, topNegative];
+
+                return (
+                  <div
+                    style={{
+                      background: "rgba(245,158,11,0.07)",
+                      border: "1px solid rgba(245,158,11,0.30)",
+                      borderRadius: 10,
+                      padding: "14px 16px",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 8,
+                        marginBottom: 10,
+                      }}
+                    >
+                      <span style={{ fontSize: 14 }}>⚡</span>
+                      <span
+                        style={{
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: AMBER,
+                          letterSpacing: 0.8,
+                          textTransform: "uppercase" as const,
+                        }}
+                      >
+                        Conflict detected
+                      </span>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          color: MUTED,
+                          marginLeft: 4,
+                        }}
+                      >
+                        agents disagree — review before deciding
+                      </span>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column" as const, gap: 8 }}>
+                      {conflictPairs.map((agent) => {
+                        const isPositive = POSITIVE_LABELS.has(agent.label);
+                        const voteColor = isPositive ? "#4ade80" : "#f87171";
+                        const voteBg = isPositive ? "rgba(34,197,94,0.15)" : "rgba(239,68,68,0.15)";
+                        const voteLabel = isPositive ? "YES" : "NO";
+                        const meta = AGENT_META[agent.name as AgentName];
+                        return (
+                          <div
+                            key={agent.name}
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: 10,
+                            }}
+                          >
+                            <span style={{ fontSize: 14, flexShrink: 0, marginTop: 1 }}>{meta?.icon ?? "🤖"}</span>
+                            <div style={{ display: "flex", alignItems: "baseline", gap: 8, flexWrap: "wrap" as const, flex: 1 }}>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: "#fff", whiteSpace: "nowrap" as const }}>
+                                {agent.name}
+                              </span>
+                              <span
+                                style={{
+                                  fontSize: 10,
+                                  fontWeight: 700,
+                                  color: voteColor,
+                                  background: voteBg,
+                                  borderRadius: 4,
+                                  padding: "1px 7px",
+                                  letterSpacing: 0.5,
+                                  flexShrink: 0,
+                                }}
+                              >
+                                {voteLabel}
+                              </span>
+                              <span style={{ fontSize: 12, color: TEXT2, lineHeight: 1.4 }}>
+                                {firstSentence(agent.reasoning)}
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* ── Next Actions block ─────────────────────────────────── */}
               <div
                 style={{
