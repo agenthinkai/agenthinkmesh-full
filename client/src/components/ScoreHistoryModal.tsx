@@ -202,6 +202,9 @@ export function ScoreHistoryModal({
     /* Backdrop */
     <div
       data-testid="score-history-backdrop"
+      role="button"
+      tabIndex={0}
+      aria-label="Close score history"
       style={{
         position: "fixed",
         inset: 0,
@@ -212,6 +215,12 @@ export function ScoreHistoryModal({
         justifyContent: "center",
       }}
       onClick={onClose}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onClose();
+        }
+      }}
     >
       {/* Modal panel */}
       <div

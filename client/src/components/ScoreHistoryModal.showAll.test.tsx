@@ -12,6 +12,7 @@
  *   5. No toggle button when total <= 10
  *   6. Pressing Escape calls onClose exactly once
  *   7. Tab from last focusable element wraps focus to first
+ *   8. Shift+Tab from first focusable element wraps focus to last
  */
 import "@testing-library/jest-dom/vitest";
 import { describe, it, expect, vi } from "vitest";
@@ -128,5 +129,33 @@ describe("ScoreHistoryModal — focus trap", () => {
 
     // The focus trap should have called first.focus()
     expect(document.activeElement).toBe(first);
+  });
+
+  it("8. Shift+Tab from first focusable element wraps focus to last", () => {
+    render(<Wrapper rows={makeRows(5)} />);
+
+    const modal = screen.getByTestId("score-history-modal");
+
+    // Collect all focusable elements inside the modal (same selector as the component)
+    const focusable = Array.from(
+      modal.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((el) => !el.hasAttribute("disabled"));
+
+    expect(focusable.length).toBeGreaterThan(1);
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    // Move focus to the first element (✕ close button)
+    first.focus();
+    expect(document.activeElement).toBe(first);
+
+    // Dispatch Shift+Tab while first element has focus
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: true });
+
+    // The focus trap should have called last.focus()
+    expect(document.activeElement).toBe(last);
   });
 });

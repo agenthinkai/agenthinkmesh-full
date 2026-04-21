@@ -3014,3 +3014,8 @@
 
 - [x] Task 1: Add 2 RTL focus trap tests (test 6: Esc closes modal; test 7: Tab wraps from last to first focusable element) — 725 passed | 1 skipped
 - [ ] Task 2: Storybook story for ScoreHistoryModal — SKIPPED: Storybook not present in package.json. Suggest adding as a separate setup sprint.
+
+## Sprint: Shift+Tab test + backdrop a11y (checkpoint d146e7b1 → new)
+
+- [x] Task 1: Test case 8 — Shift+Tab from first focusable wraps to last. Also added ResizeObserver stub to test-setup.ts and wired setupFiles in vitest.config.ts.
+- [x] Task 2: Backdrop accessibility — role="button", tabIndex={0}, aria-label="Close score history", onKeyDown (Enter/Space → onClose). No visual changes.

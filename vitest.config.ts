@@ -30,7 +30,8 @@ export default defineConfig({
     },
     testTimeout: 30000,
     // Use jsdom for any .tsx test files (React component tests)
-    // setupFiles is NOT used globally — jest-dom is imported per-file in .tsx tests
+    // test-setup.ts stubs ResizeObserver (required by Radix UI Tooltip in jsdom)
+    setupFiles: ["client/src/test-setup.ts"],
     environmentMatchGlobs: [
       ["client/src/**/*.test.tsx", "jsdom"],
       ["client/src/**/*.spec.tsx", "jsdom"],
