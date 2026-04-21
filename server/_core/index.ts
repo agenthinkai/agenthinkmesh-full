@@ -33,6 +33,8 @@ import dealScreenRouter from "../dealScreenRoute";
 import { dataRoomUploadRouter } from "../dataRoomUploadRoute";
 import { registerPitchMirrorMetaRoute } from "../pitchMirrorMetaRoute";
 import inboundEmailWebhookRouter from "../inboundEmailWebhookRoute";
+import graphEmailWebhookRouter from "../graphEmailWebhookRoute";
+import { startGraphSubscriptionJob } from "../jobs/graphSubscription";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -134,8 +136,10 @@ async function startServer() {
     }
   });
 
-  // Inbound email webhook — receives parsed email from Resend inbound parser
+  // Inbound email webhook — legacy route kept for backward compatibility
   app.use("/api/webhooks/inbound-email", inboundEmailWebhookRouter);
+  // Microsoft Graph API inbound email webhook (new primary route)
+  app.use("/api/webhooks/graph-email", graphEmailWebhookRouter);
 
   // PitchMirror shared-link OG meta injection (must be before Vite/static catch-all)
   registerPitchMirrorMetaRoute(app);
@@ -174,6 +178,11 @@ async function startServer() {
     startPitchSweepJob();
     // Email Reply Tracker: poll Gmail every 30 minutes
     startGmailPolling();
+    // Microsoft Graph subscription — creates inbox subscription and renews every 23 hours
+    const appBaseUrl = process.env.VITE_FRONTEND_FORGE_API_URL
+      ? "https://agenthink-7enctkan.manus.space"
+      : `http://localhost:${port}`;
+    startGraphSubscriptionJob(appBaseUrl);
     // Tier 0 University Signal ingestion — run once at startup, then daily at 02:00 KWT (23:00 UTC)
     runTier0Ingestion().catch(err => console.warn("[Tier0] Initial ingestion failed:", err?.message));
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;

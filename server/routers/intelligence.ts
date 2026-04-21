@@ -8,6 +8,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { intelAnalyses, intelTracked, intelHistory, intelBriefs, users } from "../../drizzle/schema";
 import { eq, desc, and } from "drizzle-orm";
+import { sendGraphEmail } from "../graphEmail";
 import { invokeLLM } from "../_core/llm";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -367,11 +368,10 @@ export const intelligenceRouter = router({
       weekOf: new Date(),
     });
 
-    // Send email via Resend if configured
-    const resendKey = process.env.RESEND_API_KEY;
+    // Send weekly brief via Microsoft Graph API
     const userRows = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
     const userEmail = userRows[0]?.email;
-    if (resendKey && userEmail) {
+    if (userEmail) {
       try {
         const briefData = JSON.parse(content) as { headline?: string; trend_analysis?: string; institution_summaries?: Array<{ institution: string; headline: string; key_signal: string }>; recommended_actions?: string[] };
         const html = `
@@ -395,15 +395,10 @@ export const intelligenceRouter = router({
               ${(briefData.recommended_actions ?? []).map((a) => `<div style="font-size: 13px; color: #CBD5E1; margin-bottom: 8px; padding-left: 12px; border-left: 2px solid rgba(123,163,212,0.3);">${a}</div>`).join("")}
             </div>
           </div>`;
-        await fetch("https://api.resend.com/emails", {
-          method: "POST",
-          headers: { "Authorization": `Bearer ${resendKey}`, "Content-Type": "application/json" },
-          body: JSON.stringify({
-            from: "AgenThinkMesh Intelligence <onboarding@resend.dev>",
-            to: [userEmail],
-            subject: `Weekly Intelligence Brief — ${new Date().toISOString().slice(0, 10)}`,
-            html,
-          }),
+        await sendGraphEmail({
+          to: userEmail,
+          subject: `Weekly Intelligence Brief — ${new Date().toISOString().slice(0, 10)}`,
+          html,
         });
       } catch { /* email failure is non-fatal */ }
     }

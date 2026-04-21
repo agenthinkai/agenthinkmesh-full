@@ -5,14 +5,12 @@
  *
  * POST /api/webhooks/inbound-email
  *
- * Receives parsed inbound email data from Resend (or any compatible inbound
- * mail parser). Validates the payload, returns 200 immediately, and hands off
- * to processInboundEmail() asynchronously so the webhook caller is never blocked.
+ * Legacy inbound email webhook — kept for backward compatibility.
+ * New inbound email notifications are handled by graphEmailWebhookRoute.ts
+ * via Microsoft Graph API subscriptions.
  *
- * Resend inbound signature verification:
- *   Resend signs inbound webhooks with the same svix-based mechanism as event
- *   webhooks. If RESEND_WEBHOOK_SECRET is set, the signature is verified.
- *   If the env var is absent the check is skipped (useful for local dev / testing).
+ * This route accepts a generic JSON payload matching the InboundEmail interface
+ * and hands off to processInboundEmail() asynchronously.
  */
 import { Router, type Request, type Response } from "express";
 import { processInboundEmail, type InboundEmail } from "./emailSignal";

@@ -1,8 +1,8 @@
 /**
  * emailDrip.ts — AgenThinkMesh Trial Email Drip System
  *
- * Provider abstraction: Resend-compatible. Set RESEND_API_KEY to activate.
- * Without a key, emails are logged to console (stub mode).
+ * Provider: Microsoft Graph API (replaces Resend).
+ * Sends via farouq@agenthink.ai using client-credentials OAuth.
  *
  * 5-email sequence:
  *  Day 1  — Welcome + first workflow guide
@@ -16,6 +16,7 @@ import { getDb } from "./db";
 import { users, emailEvents } from "../drizzle/schema";
 import { eq, isNull, lte, and, sql } from "drizzle-orm";
 import { claimDripSend, type Drip } from "./billing";
+import { sendGraphEmail } from "./graphEmail";
 
 // ── Email provider abstraction ────────────────────────────────────────────────
 
@@ -26,39 +27,7 @@ interface EmailPayload {
 }
 
 async function sendEmail(payload: EmailPayload): Promise<boolean> {
-  const apiKey = process.env.RESEND_API_KEY;
-
-  if (!apiKey) {
-    // Stub mode — log to console
-    console.log(`[EmailDrip] STUB — To: ${payload.to} | Subject: ${payload.subject}`);
-    return true;
-  }
-
-  try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from: "AgenThink Mesh <noreply@agenthink.ai>",
-        to: [payload.to],
-        subject: payload.subject,
-        html: payload.html,
-      }),
-    });
-
-    if (!response.ok) {
-      const err = await response.text();
-      console.error(`[EmailDrip] Failed to send to ${payload.to}:`, err);
-      return false;
-    }
-    return true;
-  } catch (err) {
-    console.error(`[EmailDrip] Network error sending to ${payload.to}:`, err);
-    return false;
-  }
+  return sendGraphEmail({ to: payload.to, subject: payload.subject, html: payload.html });
 }
 
 // ── Email templates ───────────────────────────────────────────────────────────

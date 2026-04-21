@@ -3103,3 +3103,11 @@
 - [x] tsc: EXIT:0, Tests: 728 passed | 1 skipped
 ## Bug fix: Pitch Triage unreachable from Command Center (Apr 21 2026)
 - [x] All navigate("/triage") calls in CommandCenter.tsx corrected to navigate("/pitch-triage") — the registered route
+## Task: Replace Resend with Microsoft Graph API
+- [x] Create server/graphEmail.ts — shared sendGraphEmail() helper using client-credentials OAuth flow
+- [x] Replace sendEmail() in emailDrip.ts with sendGraphEmail()
+- [x] Replace Resend fetch in intelligence.ts with sendGraphEmail()
+- [x] Add /api/webhooks/graph-email route for Graph subscription notifications
+- [x] Add Graph subscription creation + daily renewal cron job
+- [x] Update index.ts to register graph-email webhook and renewal cron
+- [x] Remove all RESEND_API_KEY references
