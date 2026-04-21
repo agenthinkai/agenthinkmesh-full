@@ -2998,3 +2998,8 @@
 - [x] Task 1: Keyboard accessibility for delta tooltips — button wrapper with display:contents around each ↑/↓/→ badge; aria-label on each; tooltip fires on focus and hover; first row unchanged
 - [x] Task 2: CSV filename sanitisation fallback — leading/trailing dash trim + slug fallback to deal-{id} when rawName is empty (all-non-ASCII names)
 - [x] Task 3: Cross-platform postdb:push hook — replaced rm -f with node -e "try{require('fs').unlinkSync('.tsbuildinfo')}catch{}"; verified idempotent on Linux
+
+## Sprint: Accessibility, sanitisation, and row-cap polish (base 1928c7b7)
+- [x] Task 1: Extract sanitiseSlug helper to client/src/lib/csvFilename.ts; update modal import; 6 Vitest tests (718 total)
+- [x] Task 2: Focus-visible ring on delta badge buttons via onFocus/onBlur + focusedBadgeKey state
+- [x] Task 3: Score history modal row count cap (10 most-recent) with showAll toggle; sparkline uses full history

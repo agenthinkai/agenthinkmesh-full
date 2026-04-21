@@ -1629,6 +1629,7 @@ export default function PitchTriage() {
 // ── HistoryTab sub-component ───────────────────────────────────────────────────────────────
 import type { PitchTriage as PitchTriageRow } from "../../../drizzle/schema";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { sanitiseSlug } from "@/lib/csvFilename";
 
 interface HistoryTabProps {
   historyQuery: { data?: PitchTriageRow[]; isLoading: boolean; error: { message: string } | null };
@@ -1718,6 +1719,10 @@ function HistoryTab({
   const signalTypeSummaryQuery = trpc.pitch.signalTypeSummary.useQuery();
   // Score history modal state
   const [scoreModalDealId, setScoreModalDealId] = useState<number | null>(null);
+  // Task 2: tracks which delta badge button is keyboard-focused (for focus-visible ring)
+  const [focusedBadgeKey, setFocusedBadgeKey] = useState<string | null>(null);
+  // Task 3: show all rows vs. 10-row cap in score history modal
+  const [scoreHistoryShowAll, setScoreHistoryShowAll] = useState(false);
   const scoreHistoryQuery = trpc.pitch.scoreHistory.useQuery(
     { dealId: String(scoreModalDealId ?? 0) },
     { enabled: scoreModalDealId != null }
@@ -3599,7 +3604,7 @@ function HistoryTab({
           background: "rgba(0,0,0,0.72)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}
-        onClick={() => setScoreModalDealId(null)}
+        onClick={() => { setScoreModalDealId(null); setScoreHistoryShowAll(false); setFocusedBadgeKey(null); }}
       >
         <div
           style={{
@@ -3616,10 +3621,10 @@ function HistoryTab({
               {scoreHistoryQuery.data && scoreHistoryQuery.data.length > 0 && (() => {
                 const modalDeal = allRows.find((r) => r.id === scoreModalDealId);
                 const rawName = modalDeal?.pitchPreview
-                  ? modalDeal.pitchPreview.slice(0, 40).trim().replace(/[^a-zA-Z0-9 _-]/g, "").trim().replace(/^-+|-+$/g, "")
+                  ? modalDeal.pitchPreview.slice(0, 40).trim()
                   : "";
-                // Task 2: fallback to deal-{id} when rawName is empty (e.g. all-non-ASCII company name)
-                const slug = rawName.replace(/\s+/g, "-") || `deal-${scoreModalDealId}`;
+                // Task 1: use extracted sanitiseSlug helper (cross-platform, tested)
+                const slug = sanitiseSlug(rawName, scoreModalDealId ?? "unknown");
                 const today = new Date().toISOString().slice(0, 10);
                 const filename = `score-history-${slug}-${today}.csv`;
                 const TRIGGER_LABELS_CSV: Record<string, string> = {
@@ -3662,7 +3667,7 @@ function HistoryTab({
                 );
               })()}
               <button
-                onClick={() => setScoreModalDealId(null)}
+                onClick={() => { setScoreModalDealId(null); setScoreHistoryShowAll(false); setFocusedBadgeKey(null); }}
                 style={{ background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 18, lineHeight: 1 }}
               >✕</button>
             </div>
@@ -3674,24 +3679,33 @@ function HistoryTab({
             <div style={{ color: MUTED, fontSize: 12, textAlign: "center", padding: "12px 0" }}>No history available.</div>
           )}
           {scoreHistoryQuery.data && scoreHistoryQuery.data.length > 0 && (() => {
-            const rows2 = scoreHistoryQuery.data;
+            // Task 3: all rows (ASC) used for sparkline + CSV; visible rows capped at 10 unless showAll
+            const allRows2 = scoreHistoryQuery.data;
+            const totalRows = allRows2.length;
+            const VISIBLE_CAP = 10;
+            // When collapsed: show the 10 most-recent rows (last 10 of ASC array)
+            const rows2 = scoreHistoryShowAll || totalRows <= VISIBLE_CAP
+              ? allRows2
+              : allRows2.slice(totalRows - VISIBLE_CAP);
             const scores = rows2.map((r) => r.score);
+            // Sparkline always uses full history for accurate trend line
+            const allScores = allRows2.map((r) => r.score);
             const W = 320, H = 60;
-            const minS = Math.min(...scores), maxS = Math.max(...scores);
+            const minS = Math.min(...allScores), maxS = Math.max(...allScores);
             const range2 = maxS - minS || 1;
-            const pts2 = scores.map((s, i) => {
-              const x = (i / (scores.length - 1)) * (W - 8) + 4;
+            const pts2 = allScores.map((s, i) => {
+              const x = (i / (allScores.length - 1)) * (W - 8) + 4;
               const y = H - 4 - ((s - minS) / range2) * (H - 8);
               return `${x.toFixed(1)},${y.toFixed(1)}`;
             }).join(" ");
-            const first2 = scores[0], last2 = scores[scores.length - 1];
+            const first2 = allScores[0], last2 = allScores[allScores.length - 1];
             const diff2 = last2 - first2;
             const lineColor2 = diff2 > 3 ? "#22c55e" : diff2 < -3 ? "#ef4444" : "#6b7280";
-            // Compute per-row deltas (first row has no delta)
+            // Compute per-row deltas over visible rows only (first visible row has no delta)
             const deltas: (number | null)[] = scores.map((s, i) =>
               i === 0 ? null : s - scores[i - 1]
             );
-            // Find the row index with the largest absolute delta for highlight tint
+            // Find the row index with the largest absolute delta within visible rows
             let maxDeltaIdx = -1;
             let maxDeltaAbs = 0;
             deltas.forEach((d, i) => {
@@ -3742,6 +3756,7 @@ function HistoryTab({
                           <span style={{ fontSize: 10, color: MUTED, minWidth: 60 }}>—</span>
                         )}
                         {/* Task 1: button wrapper makes badge keyboard-focusable; display:contents preserves layout */}
+                        {/* Task 2: onFocus/onBlur drive focusedBadgeKey for focus-visible ring on inner span */}
                         {isFlat && (
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -3749,8 +3764,10 @@ function HistoryTab({
                                 type="button"
                                 style={{ display: "contents", background: "none", border: "none", padding: 0, cursor: "default" }}
                                 aria-label={`Score change: flat. Previous score ${rows2[i - 1].score}`}
+                                onFocus={() => setFocusedBadgeKey(`${r.id}-flat`)}
+                                onBlur={() => setFocusedBadgeKey(null)}
                               >
-                                <span style={{ fontSize: 10, color: MUTED, minWidth: 60 }}>→ flat</span>
+                                <span style={{ fontSize: 10, color: MUTED, minWidth: 60, borderRadius: 3, ...(focusedBadgeKey === `${r.id}-flat` ? { outline: "2px solid rgba(124,58,237,0.6)", outlineOffset: 2 } : {}) }}>→ flat</span>
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="top" sideOffset={4}>
@@ -3765,8 +3782,10 @@ function HistoryTab({
                                 type="button"
                                 style={{ display: "contents", background: "none", border: "none", padding: 0, cursor: "default" }}
                                 aria-label={`Score change: +${delta} points. Previous score ${rows2[i - 1].score}`}
+                                onFocus={() => setFocusedBadgeKey(`${r.id}-up`)}
+                                onBlur={() => setFocusedBadgeKey(null)}
                               >
-                                <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 600, minWidth: 60 }}>↑ +{delta} pts</span>
+                                <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 600, minWidth: 60, borderRadius: 3, ...(focusedBadgeKey === `${r.id}-up` ? { outline: "2px solid rgba(124,58,237,0.6)", outlineOffset: 2 } : {}) }}>↑ +{delta} pts</span>
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="top" sideOffset={4}>
@@ -3781,8 +3800,10 @@ function HistoryTab({
                                 type="button"
                                 style={{ display: "contents", background: "none", border: "none", padding: 0, cursor: "default" }}
                                 aria-label={`Score change: ${delta} points. Previous score ${rows2[i - 1].score}`}
+                                onFocus={() => setFocusedBadgeKey(`${r.id}-down`)}
+                                onBlur={() => setFocusedBadgeKey(null)}
                               >
-                                <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 600, minWidth: 60 }}>↓ {delta} pts</span>
+                                <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 600, minWidth: 60, borderRadius: 3, ...(focusedBadgeKey === `${r.id}-down` ? { outline: "2px solid rgba(124,58,237,0.6)", outlineOffset: 2 } : {}) }}>↓ {delta} pts</span>
                               </button>
                             </TooltipTrigger>
                             <TooltipContent side="top" sideOffset={4}>
@@ -3805,6 +3826,22 @@ function HistoryTab({
                     );
                   })}
                 </div>
+                {/* Task 3: Show all / Show fewer toggle — only rendered when total > cap */}
+                {totalRows > VISIBLE_CAP && (
+                  <button
+                    type="button"
+                    onClick={() => setScoreHistoryShowAll((v) => !v)}
+                    style={{
+                      marginTop: 6, background: "none", border: "none",
+                      color: MUTED, fontSize: 11, cursor: "pointer",
+                      textDecoration: "underline", padding: 0, alignSelf: "flex-start",
+                    }}
+                  >
+                    {scoreHistoryShowAll
+                      ? "Show fewer"
+                      : `Show all ${totalRows} entries`}
+                  </button>
+                )}
               </>
             );
           })()}
