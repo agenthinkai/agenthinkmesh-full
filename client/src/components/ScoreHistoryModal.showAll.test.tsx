@@ -10,6 +10,8 @@
  *   3. Clicking "Show all" renders all rows
  *   4. Clicking "Show fewer" collapses back to 10 rows
  *   5. No toggle button when total <= 10
+ *   6. Pressing Escape calls onClose exactly once
+ *   7. Tab from last focusable element wraps focus to first
  */
 import "@testing-library/jest-dom/vitest";
 import { describe, it, expect, vi } from "vitest";
@@ -86,5 +88,45 @@ describe("ScoreHistoryModal — showAll toggle", () => {
   it("5. no toggle button when total <= 10", () => {
     render(<Wrapper rows={makeRows(10)} />);
     expect(screen.queryByTestId("score-history-toggle")).toBeNull();
+  });
+});
+
+describe("ScoreHistoryModal — focus trap", () => {
+  it("6. pressing Escape calls onClose exactly once", () => {
+    const onClose = vi.fn();
+    render(<Wrapper rows={makeRows(5)} onClose={onClose} />);
+
+    // Dispatch Escape on the document — the modal's keydown listener is on document
+    fireEvent.keyDown(document, { key: "Escape" });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("7. Tab from last focusable element wraps focus to first", () => {
+    render(<Wrapper rows={makeRows(5)} />);
+
+    const modal = screen.getByTestId("score-history-modal");
+
+    // Collect all focusable elements inside the modal (same selector as the component)
+    const focusable = Array.from(
+      modal.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+      )
+    ).filter((el) => !el.hasAttribute("disabled"));
+
+    expect(focusable.length).toBeGreaterThan(1);
+
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+
+    // Move focus to the last element
+    last.focus();
+    expect(document.activeElement).toBe(last);
+
+    // Dispatch Tab (not Shift+Tab) while last element has focus
+    fireEvent.keyDown(document, { key: "Tab", shiftKey: false });
+
+    // The focus trap should have called first.focus()
+    expect(document.activeElement).toBe(first);
   });
 });

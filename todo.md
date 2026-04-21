@@ -3009,3 +3009,8 @@
 - [x] Task 1: Extract ScoreHistoryModal to standalone component; write 5 RTL tests (showAll toggle); extend vitest to jsdom for client tests
 - [x] Task 2: useEffect focus trap in ScoreHistoryModal (Tab/Shift+Tab cycle, Esc closes, auto-focus on open)
 - [x] Task 3: Replace scoreHistoryShowAll boolean with showAllMap Record<number,boolean> keyed by dealId; preference persists across open/close
+
+## Sprint: Focus trap RTL tests + Storybook (checkpoint c06e71e5 → new)
+
+- [x] Task 1: Add 2 RTL focus trap tests (test 6: Esc closes modal; test 7: Tab wraps from last to first focusable element) — 725 passed | 1 skipped
+- [ ] Task 2: Storybook story for ScoreHistoryModal — SKIPPED: Storybook not present in package.json. Suggest adding as a separate setup sprint.
