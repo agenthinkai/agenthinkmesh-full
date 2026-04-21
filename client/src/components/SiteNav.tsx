@@ -867,6 +867,24 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
                         <div style={{ fontSize: 13, fontWeight: 600, color: WHITE }}>{user?.name ?? "User"}</div>
                         {user?.email && <div style={{ fontSize: 11, color: MUTED, marginTop: 2 }}>{user.email}</div>}
                       </div>
+                      {/* Command Center quick links for authenticated users */}
+                      <div style={{ padding: "4px 0", borderBottom: "1px solid rgba(255,255,255,0.06)" }}>
+                        {[
+                          { label: "⚡ Command Center", href: "/command-center", color: "#a78bfa" },
+                          { label: "📊 Intelligence",    href: "/mesh-intelligence", color: "#38BDF8" },
+                        ].map(item => (
+                          <a
+                            key={item.href}
+                            href={item.href}
+                            onClick={() => setDropOpen(false)}
+                            style={{ display: "block", padding: "9px 16px", fontSize: 13, color: item.color, textDecoration: "none", transition: "background 0.15s", fontWeight: 600 }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.05)"; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
+                          >
+                            {item.label}
+                          </a>
+                        ))}
+                      </div>
                       {[
                         { label: "My Workspace →",   href: "/persona-setup" },
                         { label: "Billing →",         href: "/account/billing" },

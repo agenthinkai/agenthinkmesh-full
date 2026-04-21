@@ -3083,3 +3083,16 @@
 - [x] Backend: pitch.commandCenter tRPC procedure + getCommandCenterData helper in db.ts
 - [x] Routes: /command-center and /mesh-intelligence wired in App.tsx
 - [x] MeshSidebar nav paths corrected to match actual routes
+
+## Sprint: Redesign completion (checkpoint dc8378d5 → new)
+
+- [ ] Task 1: Wire Command Center into SiteNav for authenticated users
+- [ ] Task 2: Pipeline view redesign (header, pill filters, enhanced deal rows)
+- [ ] Task 3: Triage result screen redesign (decision memo layout)
+
+## Sprint: Sidebar nav fix (checkpoint pending)
+
+- [x] Replace DashboardLayout with MeshSidebar in PitchTriage.tsx
+- [x] Wrap DealScreener, CommandCenter, MeshIntelligence routes in MeshSidebar in App.tsx
+- [x] All 5 sidebar nav items now show MeshSidebar on their routes
+- [x] tsc: EXIT:0, Tests: 728 passed | 1 skipped

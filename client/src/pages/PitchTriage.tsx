@@ -8,7 +8,7 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { useLocation } from "wouter";
 import { useHistoryState } from "wouter/use-browser-location";
 import { trpc } from "@/lib/trpc";
-import DashboardLayout from "@/components/DashboardLayout";
+import MeshSidebar from "@/components/MeshSidebar";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
@@ -354,7 +354,7 @@ export default function PitchTriage() {
   }
 
   return (
-    <DashboardLayout>
+    <MeshSidebar>
       <div
         style={{
           minHeight: "100vh",
@@ -1622,7 +1622,7 @@ export default function PitchTriage() {
           )}
         </div>
       </div>
-    </DashboardLayout>
+    </MeshSidebar>
   );
 }
 

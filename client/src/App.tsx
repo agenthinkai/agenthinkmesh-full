@@ -43,6 +43,7 @@ import PartnerCRM from "./pages/PartnerCRM";
 import AdminUsageDashboard from "./pages/AdminUsageDashboard";
 import CommandCenter from "./pages/CommandCenter";
 import MeshIntelligence from "./pages/Intelligence";
+import MeshSidebar from "./components/MeshSidebar";
 import AdminTreasury from "./pages/AdminTreasury";
 import DomainAgents from "./pages/DomainAgents";
 import DomainsPage from "./pages/DomainsPage";
@@ -202,7 +203,7 @@ function Router() {
       <Route path="/pitchmirror/r/:token" component={PitchMirrorShared} />
       <Route path="/pitchmirror/landing" component={PitchMirrorLanding} />
       {/* Deal Screener — Council of 10 */}
-      <Route path="/deals" component={DealScreener} />
+      <Route path="/deals">{() => <MeshSidebar><DealScreener /></MeshSidebar>}</Route>
       {/* Procurement — Vendor Evaluation Engine */}
       <Route path="/procurement" component={ProcurementScreener} />
       <Route path="/contacts" component={Contacts} />
@@ -255,8 +256,8 @@ function Router() {
       <Route path="/tracker" component={Tracker} />
 
       {/* AgenThink Mesh — Command Center + Intelligence */}
-      <Route path="/command-center" component={CommandCenter} />
-      <Route path="/mesh-intelligence" component={MeshIntelligence} />
+      <Route path="/command-center">{() => <MeshSidebar><CommandCenter /></MeshSidebar>}</Route>
+      <Route path="/mesh-intelligence">{() => <MeshSidebar><MeshIntelligence /></MeshSidebar>}</Route>
 
       {/* Admin provisioning (admin-only, not in public nav) */}
       <Route path="/admin/users/create" component={AdminUserCreate} />
