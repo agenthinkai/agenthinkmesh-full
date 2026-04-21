@@ -31,6 +31,7 @@ interface NavItem {
   icon: string;
   label: string;
   exact?: boolean;
+  adminOnly?: boolean;
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -38,7 +39,7 @@ const NAV_ITEMS: NavItem[] = [
   { path: "/pitch-triage", icon: "📋", label: "Evaluate" },
   { path: "/deals", icon: "📁", label: "Pipeline" },
   { path: "/mesh-intelligence", icon: "📊", label: "Intelligence" },
-  { path: "/admin/usage", icon: "⚙️", label: "Admin" },
+  { path: "/admin/usage", icon: "⚙️", label: "Admin", adminOnly: true },
 ];
 
 function useIsMobile() {
@@ -102,7 +103,7 @@ export default function MeshSidebar({ children }: MeshSidebarProps) {
             zIndex: 50,
           }}
         >
-          {NAV_ITEMS.map((item) => {
+          {NAV_ITEMS.filter((item) => !item.adminOnly || user?.role === "admin").map((item) => {
             const active = isActive(item.path, location, item.exact);
             return (
               <Link key={item.path} href={item.path}>
@@ -205,7 +206,7 @@ export default function MeshSidebar({ children }: MeshSidebarProps) {
 
         {/* Nav items */}
         <nav style={{ flex: 1, padding: "8px 0", overflowY: "auto" }}>
-          {NAV_ITEMS.map((item) => {
+          {NAV_ITEMS.filter((item) => !item.adminOnly || user?.role === "admin").map((item) => {
             const active = isActive(item.path, location, item.exact);
             return (
               <Link key={item.path} href={item.path}>

@@ -3096,3 +3096,8 @@
 - [x] Wrap DealScreener, CommandCenter, MeshIntelligence routes in MeshSidebar in App.tsx
 - [x] All 5 sidebar nav items now show MeshSidebar on their routes
 - [x] tsc: EXIT:0, Tests: 728 passed | 1 skipped
+## Sprint: Three UI/UX tasks (Apr 21 2026)
+- [x] Task 1: Pipeline view — institutional header (deal count, outcomes, auto-retriage count), pill-shaped stage tabs with Decision Made filter, stage dot + days-in-stage on deal rows
+- [x] Task 2: Triage result screen — Decision Memo header with Kuwait timestamp + Copy Memo button, verdict block (decision-first), Agent Breakdown section label, Evidence section label, Recommended Next Step block with left accent border
+- [x] Task 3: /admin/usage wrapped in MeshSidebar (SiteNav removed); Admin nav item marked adminOnly so it only shows for admin users in both sidebar and mobile nav
+- [x] tsc: EXIT:0, Tests: 728 passed | 1 skipped

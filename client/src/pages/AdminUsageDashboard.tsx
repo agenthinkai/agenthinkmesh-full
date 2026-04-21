@@ -2,7 +2,7 @@ import { useState, useMemo } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
-import SiteNav from "@/components/SiteNav";
+import MeshSidebar from "@/components/MeshSidebar";
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
 function fmtNumber(n: number) {
@@ -162,9 +162,8 @@ export default function AdminUsageDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0e1a] text-slate-100">
-      <SiteNav />
-
+    <MeshSidebar>
+      <div className="min-h-screen bg-[#0a0e1a] text-slate-100">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10">
         {/* Header */}
         <div className="mb-8">
@@ -569,7 +568,8 @@ export default function AdminUsageDashboard() {
         </div>
 
       </div>
-    </div>
+      </div>
+    </MeshSidebar>
   );
 }
 

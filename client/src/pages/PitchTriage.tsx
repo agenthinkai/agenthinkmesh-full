@@ -139,6 +139,7 @@ export default function PitchTriage() {
   const [movedToDiligence, setMovedToDiligence] = useState(false);
   // Expansion state for per-deal pattern insight on result screen
   const [resultPatternExpanded, setResultPatternExpanded] = useState(false);
+  const [resultCopyState, setResultCopyState] = useState<"idle" | "copied">("idle");
 
   // Pattern insight — derived from historical invested/passed outcomes vs current deal
   const currentAgentOutputsStr = useMemo(
@@ -699,7 +700,90 @@ export default function PitchTriage() {
           {/* ── RESULTS STATE ─────────────────────────────────────────────── */}
           {pageState === "RESULTS" && result && (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-              {/* Classification banner + score */}
+
+              {/* ── Decision Memo header ───────────────────────────────────── */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  flexWrap: "wrap" as const,
+                  paddingBottom: 12,
+                  borderBottom: `1px solid ${BORDER}`,
+                }}
+              >
+                <div>
+                  <div style={{ fontSize: 11, color: MUTED, fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase" as const, marginBottom: 4 }}>
+                    Decision Memo
+                  </div>
+                  <div style={{ fontSize: 11, color: MUTED }}>
+                    {fmtKuwait(new Date())}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" as const }}>
+                  {/* Copy as Memo */}
+                  <button
+                    onClick={() => {
+                      const agentLines = result.agentOutputs
+                        .map((a) => `  ${a.name} [${a.label.toUpperCase()}]: ${a.reasoning}`)
+                        .join("\n");
+                      const signals = result.keySignals.length > 0 ? `\n\nKey Signals:\n${result.keySignals.map((s) => `  + ${s}`).join("\n")}` : "";
+                      const missing = result.missingInfo.length > 0 ? `\n\nMissing / Weak:\n${result.missingInfo.map((s) => `  - ${s}`).join("\n")}` : "";
+                      const memo = [
+                        `TRIAGE MEMO — ${fmtKuwait(new Date())}`,
+                        `Decision: ${result.classification}  |  Score: ${result.score}/100  |  Confidence: ${result.confidence}`,
+                        ``,
+                        `Guidance: ${result.nextStep}`,
+                        ``,
+                        `Agent Breakdown:`,
+                        agentLines,
+                        signals,
+                        missing,
+                      ].join("\n");
+                      navigator.clipboard?.writeText(memo).then(() => {
+                        setResultCopyState("copied");
+                        setTimeout(() => setResultCopyState("idle"), 2000);
+                      }).catch(() => {});
+                    }}
+                    style={{
+                      background: resultCopyState === "copied" ? "rgba(34,197,94,0.12)" : "rgba(255,255,255,0.05)",
+                      border: `1px solid ${resultCopyState === "copied" ? "rgba(34,197,94,0.35)" : BORDER}`,
+                      borderRadius: 8,
+                      color: resultCopyState === "copied" ? "#4ade80" : TEXT2,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      padding: "7px 14px",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      transition: "all 0.15s",
+                      whiteSpace: "nowrap" as const,
+                    }}
+                  >
+                    {resultCopyState === "copied" ? "✓ Copied!" : "📋 Copy Memo"}
+                  </button>
+                  <Button
+                    onClick={handleReset}
+                    style={{
+                      background: "rgba(255,255,255,0.05)",
+                      color: TEXT2,
+                      border: `1px solid ${BORDER}`,
+                      borderRadius: 8,
+                      padding: "7px 14px",
+                      fontWeight: 600,
+                      fontSize: 12,
+                      cursor: "pointer",
+                      whiteSpace: "nowrap" as const,
+                    }}
+                  >
+                    Triage Another →
+                  </Button>
+                </div>
+              </div>
+
+              {/* ── Verdict block (decision-first) ─────────────────────────────── */}
               <div
                 style={{
                   background: classConfig[result.classification].bg,
@@ -709,7 +793,7 @@ export default function PitchTriage() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  flexWrap: "wrap",
+                  flexWrap: "wrap" as const,
                   gap: 16,
                 }}
               >
@@ -774,7 +858,7 @@ export default function PitchTriage() {
                 </div>
 
                 {/* CTA */}
-                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" as const }}>
                   {result.classification === "ENGAGE" && (
                     <Button
                       onClick={handleEscalate}
@@ -787,27 +871,12 @@ export default function PitchTriage() {
                         fontWeight: 700,
                         fontSize: 13,
                         cursor: "pointer",
-                        whiteSpace: "nowrap",
+                        whiteSpace: "nowrap" as const,
                       }}
                     >
                       Run Full Evaluation →
                     </Button>
                   )}
-                  <Button
-                    onClick={handleReset}
-                    style={{
-                      background: "rgba(255,255,255,0.06)",
-                      color: TEXT2,
-                      border: `1px solid ${BORDER}`,
-                      borderRadius: 8,
-                      padding: "10px 16px",
-                      fontWeight: 600,
-                      fontSize: 13,
-                      cursor: "pointer",
-                    }}
-                  >
-                    Triage Another →
-                  </Button>
                 </div>
               </div>
 
@@ -865,6 +934,10 @@ export default function PitchTriage() {
                 </div>
               )}
 
+              {/* ── Agent Breakdown section label ──────────────────────────────────── */}
+              <div style={{ fontSize: 11, color: MUTED, fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase" as const, marginBottom: -4 }}>
+                Agent Breakdown
+              </div>
               {/* Agent grid */}
               <div
                 style={{
@@ -969,6 +1042,12 @@ export default function PitchTriage() {
                 })}
               </div>
 
+              {/* ── Evidence section label ─────────────────────────────────────────── */}
+              {(result.keySignals.length > 0 || result.missingInfo.length > 0) && (
+                <div style={{ fontSize: 11, color: MUTED, fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase" as const, marginBottom: -4 }}>
+                  Evidence
+                </div>
+              )}
               {/* Key signals + missing info */}
               {(result.keySignals.length > 0 || result.missingInfo.length > 0) && (
                 <div
@@ -1068,22 +1147,20 @@ export default function PitchTriage() {
                 </div>
               )}
 
-              {/* Decision guidance */}
+              {/* Decision guidance — memo-style */}
               <div
                 style={{
                   background: "rgba(255,255,255,0.03)",
                   border: `1px solid ${BORDER}`,
+                  borderLeft: `3px solid ${classConfig[result.classification].border}`,
                   borderRadius: 8,
-                  padding: "10px 16px",
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 10,
+                  padding: "12px 16px",
                 }}
               >
-                <span style={{ color: MUTED, fontSize: 12 }}>Decision guidance:</span>
-                <span style={{ color: TEXT2, fontSize: 12, fontWeight: 600 }}>
+                <div style={{ fontSize: 10, color: MUTED, fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase" as const, marginBottom: 4 }}>Recommended Next Step</div>
+                <div style={{ color: TEXT2, fontSize: 13, fontWeight: 600, lineHeight: 1.5 }}>
                   {result.nextStep}
-                </span>
+                </div>
               </div>
 
               {/* ── Agent Conflict block ──────────────────────────────── */}
@@ -1668,7 +1745,7 @@ function HistoryTab({
   type SortBy = "newest" | "highest_score";
   const [sortBy, setSortBy] = useState<SortBy>("newest");
   // Stage (pipeline) filter — default "all"
-  type StageFilter = "all" | "triaged" | "diligence" | "ic_ready";
+  type StageFilter = "all" | "triaged" | "diligence" | "ic_ready" | "decision_made";
   const [stageFilter, setStageFilter] = useState<StageFilter>("all");
   // Signals-only filter — show only deals with at least one logged signal
   const [showSignalsOnly, setShowSignalsOnly] = useState(false);
@@ -2745,6 +2822,8 @@ function HistoryTab({
   // Stage filter: 'all' shows everything; specific stage shows only that stage
   const stageFilteredRows = stageFilter === "all"
     ? rows
+    : stageFilter === "decision_made"
+    ? rows.filter((r) => !!r.decisionOutcome)
     : rows.filter((r) => (r.stage ?? "triaged") === stageFilter);
   const filteredRowsUnsorted = stageFilteredRows
     .filter((r) => activeFilters.has(r.classification))
@@ -2760,14 +2839,53 @@ function HistoryTab({
     triaged: rows.filter((r) => !r.stage || r.stage === "triaged").length,
     diligence: rows.filter((r) => r.stage === "diligence").length,
     ic_ready: rows.filter((r) => r.stage === "ic_ready").length,
+    decision_made: rows.filter((r) => !!r.decisionOutcome).length,
   };
 
-  const STAGE_TAB_CONFIG: Record<string, { label: string; color: string; activeBg: string; activeBorder: string }> = {
-    all: { label: "All", color: MUTED, activeBg: "rgba(124,58,237,0.18)", activeBorder: "rgba(124,58,237,0.5)" },
-    triaged: { label: "Triaged", color: TEXT2, activeBg: "rgba(255,255,255,0.10)", activeBorder: "rgba(255,255,255,0.3)" },
-    diligence: { label: "Diligence", color: "#60a5fa", activeBg: "rgba(96,165,250,0.14)", activeBorder: "rgba(96,165,250,0.45)" },
-    ic_ready: { label: "IC Ready", color: "#a78bfa", activeBg: "rgba(167,139,250,0.14)", activeBorder: "rgba(167,139,250,0.45)" },
+  const STAGE_TAB_CONFIG: Record<string, { label: string; color: string; activeBg: string; activeBorder: string; dot: string }> = {
+    all: { label: "All", color: MUTED, activeBg: "rgba(124,58,237,0.18)", activeBorder: "rgba(124,58,237,0.5)", dot: "" },
+    triaged: { label: "Triaged", color: TEXT2, activeBg: "rgba(255,255,255,0.10)", activeBorder: "rgba(255,255,255,0.3)", dot: "#6b6b80" },
+    diligence: { label: "Diligence", color: "#58a6ff", activeBg: "rgba(88,166,255,0.14)", activeBorder: "rgba(88,166,255,0.45)", dot: "#58a6ff" },
+    ic_ready: { label: "IC Ready", color: "#7c6fff", activeBg: "rgba(124,111,255,0.14)", activeBorder: "rgba(124,111,255,0.45)", dot: "#7c6fff" },
+    decision_made: { label: "Decision Made", color: "#3ecf8e", activeBg: "rgba(62,207,142,0.14)", activeBorder: "rgba(62,207,142,0.45)", dot: "#3ecf8e" },
   };
+
+  // Stage dot color helper
+  function stageDotColor(row: PitchTriageRow): string {
+    if (row.decisionOutcome) return "#3ecf8e";
+    if (row.stage === "ic_ready") return "#7c6fff";
+    if (row.stage === "diligence") return "#58a6ff";
+    return "#6b6b80";
+  }
+
+  // Days in stage helper (uses createdAt as proxy since stageChangedAt not in schema)
+  function daysInStage(row: PitchTriageRow): number {
+    return Math.max(0, Math.floor((Date.now() - new Date(row.createdAt).getTime()) / 86400000));
+  }
+
+  // CSV export for pipeline list
+  function exportPipelineCSV() {
+    const today = new Date().toISOString().slice(0, 10);
+    const header = ["ID", "Date", "Classification", "Score", "Stage", "Outcome", "Days", "Preview"];
+    const csvRows = filteredRows.map((r) => [
+      r.id,
+      fmtKuwait(r.createdAt),
+      r.classification,
+      r.score,
+      r.stage ?? "triaged",
+      r.decisionOutcome ?? "",
+      daysInStage(r),
+      `"${(r.pitchPreview ?? "").replace(/"/g, "'")}"`,
+    ].join(","));
+    const csv = [header.join(","), ...csvRows].join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `pipeline-${today}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   const CHIP_COLORS: Record<string, { active: { bg: string; border: string; text: string }; inactive: { bg: string; border: string; text: string } }> = {
     ENGAGE: {
@@ -2845,6 +2963,67 @@ function HistoryTab({
   return (
     <>
     <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+      {/* ── Institutional Pipeline header ─────────────────────────────────── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          marginBottom: 4,
+          gap: 12,
+          flexWrap: "wrap" as const,
+        }}
+      >
+        <div>
+          <h2
+            style={{
+              fontSize: 22,
+              fontWeight: 800,
+              color: "#fff",
+              letterSpacing: "-0.4px",
+              margin: 0,
+              lineHeight: 1.2,
+            }}
+          >
+            Pipeline
+          </h2>
+          <p style={{ color: MUTED, fontSize: 12, margin: "4px 0 0", lineHeight: 1.5 }}>
+            <span style={{ color: TEXT2, fontWeight: 600 }}>{allRows.length}</span> deal{allRows.length !== 1 ? "s" : ""}
+            {" · "}
+            <span style={{ color: TEXT2, fontWeight: 600 }}>{outcomeCount}</span> outcome{outcomeCount !== 1 ? "s" : ""} recorded
+            {autoTriggerCountQuery.data !== undefined && (
+              <>
+                {" · "}
+                <span style={{ color: TEXT2, fontWeight: 600 }}>{autoTriggerCountQuery.data.count}</span> auto re-triage{autoTriggerCountQuery.data.count !== 1 ? "s" : ""} this month
+              </>
+            )}
+          </p>
+        </div>
+        <button
+          onClick={exportPipelineCSV}
+          style={{
+            background: "rgba(255,255,255,0.05)",
+            border: `1px solid ${BORDER}`,
+            borderRadius: 8,
+            color: TEXT2,
+            fontSize: 12,
+            fontWeight: 600,
+            padding: "7px 14px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            whiteSpace: "nowrap" as const,
+            transition: "all 0.15s",
+            flexShrink: 0,
+          }}
+          onMouseEnter={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = "rgba(255,255,255,0.25)"; }}
+          onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.borderColor = BORDER; }}
+        >
+          ↓ Export CSV
+        </button>
+      </div>
+
       {/* Pipeline Summary — single row, clickable stage counts */}
       <div
         style={{
@@ -3105,32 +3284,31 @@ function HistoryTab({
         })()}
       </div>
 
-      {/* Stage (pipeline) filter tabs */}
+      {/* Stage (pipeline) filter tabs — pill-shaped */}
       <div
         style={{
           display: "flex",
-          gap: 4,
+          gap: 6,
           marginBottom: 8,
-          borderBottom: `1px solid ${BORDER}`,
-          paddingBottom: 8,
+          flexWrap: "wrap" as const,
         }}
       >
-        {(["all", "triaged", "diligence", "ic_ready"] as StageFilter[]).map((s) => {
+        {(["all", "triaged", "diligence", "ic_ready", "decision_made"] as StageFilter[]).map((s) => {
           const cfg = STAGE_TAB_CONFIG[s];
           const isActive = stageFilter === s;
-          const count = stageCounts[s];
+          const count = stageCounts[s as keyof typeof stageCounts];
           return (
             <button
               key={s}
               onClick={() => setStageFilter(s)}
               style={{
-                background: isActive ? cfg.activeBg : "transparent",
-                border: `1px solid ${isActive ? cfg.activeBorder : "transparent"}`,
-                borderRadius: 6,
+                background: isActive ? cfg.activeBg : "rgba(255,255,255,0.04)",
+                border: `1px solid ${isActive ? cfg.activeBorder : BORDER}`,
+                borderRadius: 9999,
                 color: isActive ? cfg.color : MUTED,
                 fontSize: 12,
                 fontWeight: isActive ? 700 : 500,
-                padding: "5px 12px",
+                padding: "5px 14px",
                 cursor: "pointer",
                 transition: "all 0.15s",
                 display: "flex",
@@ -3138,6 +3316,16 @@ function HistoryTab({
                 gap: 5,
               }}
             >
+              {cfg.dot && (
+                <span
+                  style={{
+                    width: 7, height: 7, borderRadius: "50%",
+                    background: isActive ? cfg.dot : MUTED,
+                    flexShrink: 0,
+                    display: "inline-block",
+                  }}
+                />
+              )}
               {cfg.label}
               <span
                 style={{
@@ -3205,7 +3393,7 @@ function HistoryTab({
         })}
       </div>
 
-      {/* Filter chips + escalation indicator */}
+      {/* Filter chips + escalation indicator — pill-shaped */}
       <div style={{ display: "flex", gap: 8, marginBottom: 8, flexWrap: "wrap", alignItems: "center" }}>
           {(["ENGAGE", "WATCH", "IGNORE"] as const).map((cls) => {
           const isActive = activeFilters.has(cls);
@@ -3215,12 +3403,12 @@ function HistoryTab({
               key={cls}
               onClick={() => toggleFilter(cls)}
               style={{
-                background: colors.bg,
-                border: `1px solid ${colors.border}`,
-                borderRadius: 20,
-                color: colors.text,
+                background: isActive ? colors.bg : "rgba(255,255,255,0.04)",
+                border: `1px solid ${isActive ? colors.border : BORDER}`,
+                borderRadius: 9999,
+                color: isActive ? colors.text : MUTED,
                 fontSize: 11,
-                fontWeight: 700,
+                fontWeight: isActive ? 700 : 500,
                 padding: "4px 12px",
                 cursor: "pointer",
                 letterSpacing: 0.4,
@@ -3295,12 +3483,12 @@ function HistoryTab({
                 : dateRange === "30d"
                 ? "No triages in the last 30 days"
                 : "No triages yet"
-              : "No triages match the selected filters"}
+              : "No deals match these filters"}
           </p>
           <p style={{ color: MUTED, fontSize: 11 }}>
             {rows.length === 0 && dateRange !== "all"
               ? "Try switching to \"All time\" to see older results."
-              : "Adjust the classification filters above to see more results."}
+              : "Adjust the filters above to see more results."}
           </p>
         </div>
       )}
@@ -3390,6 +3578,15 @@ function HistoryTab({
             {/* Main content */}
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                {/* Stage indicator dot */}
+                <span
+                  style={{
+                    width: 8, height: 8, borderRadius: "50%",
+                    background: stageDotColor(row),
+                    flexShrink: 0,
+                    display: "inline-block",
+                  }}
+                />
                 <span
                   style={{
                     fontSize: 11,
@@ -3576,9 +3773,10 @@ function HistoryTab({
               })()}
             </div>
 
-            {/* Date */}
-            <div style={{ color: MUTED, fontSize: 11, flexShrink: 0, textAlign: "right" }}>
-              {fmtKuwait(row.createdAt)}
+            {/* Date + days in stage */}
+            <div style={{ color: MUTED, fontSize: 11, flexShrink: 0, textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
+              <span>{fmtKuwait(row.createdAt)}</span>
+              <span style={{ fontSize: 10, color: MUTED, whiteSpace: "nowrap" as const }}>{daysInStage(row)}d in stage</span>
             </div>
 
             {/* Signal count indicator — only when > 0 */}
