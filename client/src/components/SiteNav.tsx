@@ -641,7 +641,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
           backdropFilter: "blur(18px)",
           WebkitBackdropFilter: "blur(18px)",
           borderBottom: `1px solid ${BORDER}`,
-          overflow: "hidden", // ensure the bar itself never overflows
+          // overflow: "hidden" removed — it clipped the absolutely-positioned avatar dropdown below the bar
         }}
       >
         <div style={{ display: "flex", alignItems: "stretch", height: 52, minWidth: 0 }}>

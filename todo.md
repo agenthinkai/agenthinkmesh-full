@@ -3024,3 +3024,7 @@
 
 - [x] Task 1: Test case 9 — Enter key on backdrop calls onClose exactly once (fireEvent.keyDown on backdrop element)
 - [x] Task 2: Sparkline trigger div in PitchTriage.tsx gets role=button, tabIndex=0, aria-haspopup=dialog, aria-label, onKeyDown (Enter/Space opens modal). tsc fix: aria-label uses row.pitchPreview not row.name.
+
+## Bugfix: Profile dropdown not visible (checkpoint 4d571d2d → new)
+
+- [x] Root cause: overflow:hidden on SiteNav outer bar clipped the absolutely-positioned avatar dropdown. Removed the overflow property.
