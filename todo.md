@@ -3043,3 +3043,11 @@
 - [x] Task 2: User Activity table in AdminUsageDashboard — User, IP, Country (flag + name), Last Login (relative), Login Count
 - [x] Task 3: adminUsage.getUserLoginHistory tRPC procedure — last 5 events per userId
 - [x] Task 3: LoginHistoryRow inline expand — IP · Country · Date/time in Kuwait timezone (Asia/Kuwait)
+
+## Maintenance: Fix pnpm db:push migration state (checkpoint 7dd09f27 → new)
+
+- [x] Root cause: DB had only 20 of 72 migrations recorded in __drizzle_migrations (0020–0071 missing). drizzle-kit migrate tried to re-run 0020 (CREATE TABLE beta_access_requests) which already existed.
+- [x] Fix: inserted SHA-256 hashes for migrations 0020–0071 into __drizzle_migrations via reconcile-migrations.mjs (52 rows inserted).
+- [x] Verified: pnpm db:push → "No schema changes, nothing to migrate" + "[✓] migrations applied successfully!"
+- [x] Verified: tsc --noEmit EXIT:0, 728 passed | 1 skipped
+- [x] Cleanup: removed temporary scripts (reconcile-migrations.mjs, create-login-events.mjs)
