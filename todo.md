@@ -3124,3 +3124,11 @@
 - [x] Rewrite CTA button to "Run your first task free"
 - [x] Rewrite trust line to peer-level copy
 - [x] Add friction reducer line near input box
+
+## Landing page enhancements sprint 3 (Apr 22 2026)
+- [x] Rewrite H1 to "Your team's structured analysis, on demand"
+- [x] Elevate Pitch Triage as hero card (larger, first position, Start Here badge, standout one-liner)
+- [x] Pre-fill task input with Pitch Triage example text
+- [x] Add role-switcher tabs (Investment / Procurement / Insurance) above workflow cards
+- [x] Add "What do you need to decide today?" chips (Triage a pitch · Screen a deal · Evaluate a vendor)
+- [x] Remove Education workflow card entirely
