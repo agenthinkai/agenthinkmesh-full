@@ -3033,3 +3033,13 @@
 
 - [x] Task 1: Test case 10 — Space key on backdrop calls onClose exactly once (symmetric to test 9)
 - [x] Task 2: Replace overflow:hidden with overflowX:clip on SiteNav sticky bar — prevents horizontal bleed without clipping absolutely-positioned children
+
+## Sprint: Login event capture + Admin User Activity (checkpoint b147443f → new)
+
+- [x] Task 1: login_events table (userId, email, ipAddress, country, loginAt) — schema + direct SQL migration (pnpm db:push blocked by pre-existing beta_access_requests conflict)
+- [x] Task 1: server/loginEvents.ts — fire-and-forget IP capture + ip-api.com country lookup (2s timeout, localhost → "Local", never blocks login)
+- [x] Task 1: OAuth callback wired to recordLoginEvent (x-forwarded-for → x-real-ip → socket.remoteAddress)
+- [x] Task 2: adminUsage.getUserActivity tRPC procedure — one row per user, most recent login first, login count
+- [x] Task 2: User Activity table in AdminUsageDashboard — User, IP, Country (flag + name), Last Login (relative), Login Count
+- [x] Task 3: adminUsage.getUserLoginHistory tRPC procedure — last 5 events per userId
+- [x] Task 3: LoginHistoryRow inline expand — IP · Country · Date/time in Kuwait timezone (Asia/Kuwait)

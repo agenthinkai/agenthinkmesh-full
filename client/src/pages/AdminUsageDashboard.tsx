@@ -43,9 +43,39 @@ function endpointLabel(ep: string) {
 }
 
 // ── Main component ─────────────────────────────────────────────────────────────
+// ── Country flag helper ───────────────────────────────────────────────────────
+function countryFlag(country: string | null): string {
+  if (!country || country === "Local") return "";
+  const codeMap: Record<string, string> = {
+    "Kuwait": "🇰🇼", "UAE": "🇦🇪", "United Arab Emirates": "🇦🇪",
+    "Saudi Arabia": "🇸🇦", "Qatar": "🇶🇦", "Bahrain": "🇧🇭",
+    "Oman": "🇴🇲", "Jordan": "🇯🇴", "Egypt": "🇪🇬",
+    "United States": "🇺🇸", "United Kingdom": "🇬🇧", "Germany": "🇩🇪",
+    "France": "🇫🇷", "India": "🇮🇳", "Pakistan": "🇵🇰",
+    "Canada": "🇨🇦", "Australia": "🇦🇺", "Singapore": "🇸🇬",
+    "Turkey": "🇹🇷", "Netherlands": "🇳🇱", "Switzerland": "🇨🇭",
+  };
+  return codeMap[country] ?? "";
+}
+
+function fmtRelative(date: Date | string | null): string {
+  if (!date) return "—";
+  const d = typeof date === "string" ? new Date(date) : date;
+  const diff = Date.now() - d.getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h ago`;
+  const days2 = Math.floor(hrs / 24);
+  if (days2 < 30) return `${days2}d ago`;
+  return d.toLocaleDateString();
+}
+
 export default function AdminUsageDashboard() {
   const { user, loading: authLoading } = useAuth();
   const [days, setDays] = useState(30);
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
 
   const { data: today, isLoading: todayLoading } = trpc.adminUsage.todaySummary.useQuery(undefined, {
     enabled: user?.role === "admin",
@@ -84,6 +114,10 @@ export default function AdminUsageDashboard() {
   });
 
   const assignEnterprise = trpc.billing.assignEnterprise.useMutation();
+
+  const { data: activityRows, isLoading: activityLoading } = trpc.adminUsage.getUserActivity.useQuery(undefined, {
+    enabled: user?.role === "admin",
+  });
 
   // Aggregate daily rows into per-date totals for the chart
   const chartData = useMemo(() => {
@@ -466,7 +500,96 @@ export default function AdminUsageDashboard() {
           )}
         </div>
 
+        {/* User Activity Table */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6 mt-8">
+          <h2 className="text-base font-semibold text-white mb-4">User Activity</h2>
+          {activityLoading ? (
+            <div className="text-slate-500 text-sm">Loading…</div>
+          ) : activityRows && activityRows.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 text-slate-500 text-left">
+                    <th className="pb-2 pr-4">User</th>
+                    <th className="pb-2 pr-4">IP Address</th>
+                    <th className="pb-2 pr-4">Country</th>
+                    <th className="pb-2 pr-4">Last Login</th>
+                    <th className="pb-2">Login Count</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {activityRows.map((row) => (
+                    <>
+                      <tr
+                        key={row.userId}
+                        className="border-b border-white/5 hover:bg-white/5 cursor-pointer"
+                        onClick={() => setExpandedUser(expandedUser === row.userId ? null : row.userId)}
+                      >
+                        <td className="py-2 pr-4">
+                          <div className="text-slate-200">{row.name ?? row.email ?? `#${row.userId}`}</div>
+                          {row.name && <div className="text-slate-500 text-xs">{row.email}</div>}
+                        </td>
+                        <td className="py-2 pr-4 font-mono text-slate-400 text-xs">{row.lastIp ?? "—"}</td>
+                        <td className="py-2 pr-4 text-slate-300">
+                          {row.lastCountry
+                            ? `${countryFlag(row.lastCountry)} ${row.lastCountry}`.trim()
+                            : "—"}
+                        </td>
+                        <td className="py-2 pr-4 text-slate-400">{fmtRelative(row.lastLoginAt)}</td>
+                        <td className="py-2 text-slate-400">
+                          <span className="flex items-center gap-2">
+                            {row.loginCount}
+                            {row.loginCount > 0 && (
+                              <span className="text-slate-600 text-xs">
+                                {expandedUser === row.userId ? "▲" : "▼"}
+                              </span>
+                            )}
+                          </span>
+                        </td>
+                      </tr>
+                      {expandedUser === row.userId && (
+                        <LoginHistoryRow userId={row.userId} isAdmin={user?.role === "admin"} />
+                      )}
+                    </>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-slate-500 text-sm">No users found.</div>
+          )}
+        </div>
+
       </div>
     </div>
+  );
+}
+
+// ── Inline login history expand row ───────────────────────────────────────────
+function LoginHistoryRow({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
+  const { data, isLoading } = trpc.adminUsage.getUserLoginHistory.useQuery(
+    { userId },
+    { enabled: isAdmin }
+  );
+  return (
+    <tr className="bg-white/[0.03]">
+      <td colSpan={5} className="px-4 py-3">
+        {isLoading ? (
+          <div className="text-slate-500 text-xs">Loading history…</div>
+        ) : data && data.length > 0 ? (
+          <div className="space-y-1">
+            {data.map((ev) => (
+              <div key={ev.id} className="flex items-center gap-4 text-xs text-slate-400">
+                <span className="font-mono">{ev.ipAddress}</span>
+                <span>{ev.country ? `${countryFlag(ev.country)} ${ev.country}`.trim() : "—"}</span>
+                <span>{new Date(ev.loginAt).toLocaleString("en-KW", { timeZone: "Asia/Kuwait" })}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="text-slate-600 text-xs">No login history.</div>
+        )}
+      </td>
+    </tr>
   );
 }

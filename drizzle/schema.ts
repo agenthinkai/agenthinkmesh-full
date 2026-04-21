@@ -1605,3 +1605,18 @@ export const decisionUpgradeRuns = mysqlTable("decision_upgrade_runs", {
 }));
 export type DecisionUpgradeRun = typeof decisionUpgradeRuns.$inferSelect;
 export type InsertDecisionUpgradeRun = typeof decisionUpgradeRuns.$inferInsert;
+
+// ── Login Events ──────────────────────────────────────────────────────────────
+export const loginEvents = mysqlTable("login_events", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: varchar("userId", { length: 36 }).notNull(),
+  email: varchar("email", { length: 255 }).notNull(),
+  ipAddress: varchar("ipAddress", { length: 45 }).notNull(),
+  country: varchar("country", { length: 100 }),
+  loginAt: timestamp("loginAt").defaultNow().notNull(),
+}, (table) => ({
+  leUserIdx: index("le_user_idx").on(table.userId),
+  leLoginAtIdx: index("le_login_at_idx").on(table.loginAt),
+}));
+export type LoginEvent = typeof loginEvents.$inferSelect;
+export type InsertLoginEvent = typeof loginEvents.$inferInsert;

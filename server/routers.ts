@@ -5,7 +5,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
-import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews, turnaroundSessions, roles, partnerInstitutions, partnershipRequests, llmUsage, highDemandLog } from "../drizzle/schema";
+import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews, turnaroundSessions, roles, partnerInstitutions, partnershipRequests, llmUsage, highDemandLog, loginEvents } from "../drizzle/schema";
 import { recordLlmUsage } from "./llmRateLimit";
 import { turnaroundRouter } from "./routers/turnaround";
 import { identityRouter } from "./routers/identity";
@@ -3543,6 +3543,80 @@ If a section is not applicable (e.g. no financial data provided), set it to null
         .from(users)
         .orderBy(desc(users.createdAt));
     }),
+
+    // User Activity — one row per user, most recent login first
+    getUserActivity: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      // Get all users
+      const allUsers = await db
+        .select({ id: users.id, name: users.name, email: users.email })
+        .from(users);
+
+      // Get latest login event per user + total count
+      const loginStats = await db
+        .select({
+          userId: loginEvents.userId,
+          lastIp: sql<string>`MAX(CASE WHEN ${loginEvents.loginAt} = (
+            SELECT MAX(le2.loginAt) FROM login_events le2 WHERE le2.userId = ${loginEvents.userId}
+          ) THEN ${loginEvents.ipAddress} END)`,
+          lastCountry: sql<string | null>`MAX(CASE WHEN ${loginEvents.loginAt} = (
+            SELECT MAX(le2.loginAt) FROM login_events le2 WHERE le2.userId = ${loginEvents.userId}
+          ) THEN ${loginEvents.country} END)`,
+          lastLoginAt: sql<Date>`MAX(${loginEvents.loginAt})`,
+          loginCount: sql<number>`COUNT(*)`,
+        })
+        .from(loginEvents)
+        .groupBy(loginEvents.userId);
+
+      const statsMap = new Map(loginStats.map((s) => [s.userId, s]));
+
+      const rows = allUsers.map((u) => {
+        const stats = statsMap.get(String(u.id));
+        return {
+          userId: String(u.id),
+          name: u.name,
+          email: u.email,
+          lastIp: stats?.lastIp ?? null,
+          lastCountry: stats?.lastCountry ?? null,
+          lastLoginAt: stats?.lastLoginAt ?? null,
+          loginCount: stats ? Number(stats.loginCount) : 0,
+        };
+      });
+
+      // Sort: users with logins first (most recent), then users without
+      rows.sort((a, b) => {
+        if (!a.lastLoginAt && !b.lastLoginAt) return 0;
+        if (!a.lastLoginAt) return 1;
+        if (!b.lastLoginAt) return -1;
+        return new Date(b.lastLoginAt).getTime() - new Date(a.lastLoginAt).getTime();
+      });
+
+      return rows;
+    }),
+
+    // Per-user login history — last 5 events
+    getUserLoginHistory: protectedProcedure
+      .input(z.object({ userId: z.string() }))
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+        return db
+          .select({
+            id: loginEvents.id,
+            ipAddress: loginEvents.ipAddress,
+            country: loginEvents.country,
+            loginAt: loginEvents.loginAt,
+          })
+          .from(loginEvents)
+          .where(eq(loginEvents.userId, input.userId))
+          .orderBy(desc(loginEvents.loginAt))
+          .limit(5);
+      }),
   }),
 });
 export type AppRouter = typeof appRouter;

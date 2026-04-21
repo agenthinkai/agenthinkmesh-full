@@ -4,6 +4,7 @@ import * as db from "../db";
 import { assignTrialOnFirstLogin } from "../billing";
 import { getSessionCookieOptions } from "./cookies";
 import { sdk } from "./sdk";
+import { recordLoginEvent } from "../loginEvents";
 
 function getQueryParam(req: Request, key: string): string | undefined {
   const value = req.query[key];
@@ -64,6 +65,16 @@ export function registerOAuthRoutes(app: Express) {
 
       const cookieOptions = getSessionCookieOptions(req);
       res.cookie(COOKIE_NAME, sessionToken, { ...cookieOptions, maxAge: ONE_YEAR_MS });
+
+      // Fire-and-forget: capture IP + country — never blocks the login redirect
+      if (freshUser) {
+        const rawIp =
+          (req.headers["x-forwarded-for"] as string | undefined)?.split(",")[0]?.trim() ??
+          (req.headers["x-real-ip"] as string | undefined) ??
+          req.socket.remoteAddress ??
+          "unknown";
+        recordLoginEvent(String(freshUser.id), freshUser.email ?? "", rawIp).catch(() => {});
+      }
 
       res.redirect(302, returnPath);
     } catch (error) {
