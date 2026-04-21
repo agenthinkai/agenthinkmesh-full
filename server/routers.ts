@@ -5,7 +5,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
-import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews, turnaroundSessions, roles, partnerInstitutions, partnershipRequests, llmUsage, highDemandLog, loginEvents } from "../drizzle/schema";
+import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews, turnaroundSessions, roles, partnerInstitutions, partnershipRequests, llmUsage, highDemandLog, loginEvents, dealSignals } from "../drizzle/schema";
 import { recordLlmUsage } from "./llmRateLimit";
 import { turnaroundRouter } from "./routers/turnaround";
 import { identityRouter } from "./routers/identity";
@@ -3594,7 +3594,20 @@ If a section is not applicable (e.g. no financial data provided), set it to null
         return new Date(b.lastLoginAt).getTime() - new Date(a.lastLoginAt).getTime();
       });
 
-      return rows;
+      // Count email-sourced signals in the last 30 days
+      const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+      const emailSignalRows = await db
+        .select({ count: sql<number>`COUNT(*)` })
+        .from(dealSignals)
+        .where(
+          and(
+            eq(dealSignals.source, "email"),
+            sql`${dealSignals.createdAt} >= ${thirtyDaysAgo}`
+          )
+        );
+      const emailSignalCount = Number(emailSignalRows[0]?.count ?? 0);
+
+      return { rows, emailSignalCount };
     }),
 
     // Per-user login history — last 5 events

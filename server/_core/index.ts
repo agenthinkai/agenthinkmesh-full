@@ -32,6 +32,7 @@ import signalsIngestRouter from "../signalsIngestRoute";
 import dealScreenRouter from "../dealScreenRoute";
 import { dataRoomUploadRouter } from "../dataRoomUploadRoute";
 import { registerPitchMirrorMetaRoute } from "../pitchMirrorMetaRoute";
+import inboundEmailWebhookRouter from "../inboundEmailWebhookRoute";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -132,6 +133,9 @@ async function startServer() {
       res.status(500).json({ success: false, error: err.message ?? "Internal error" });
     }
   });
+
+  // Inbound email webhook — receives parsed email from Resend inbound parser
+  app.use("/api/webhooks/inbound-email", inboundEmailWebhookRouter);
 
   // PitchMirror shared-link OG meta injection (must be before Vite/static catch-all)
   registerPitchMirrorMetaRoute(app);

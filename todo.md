@@ -3060,3 +3060,9 @@
 - [x] Fire-and-forget void IIFE wrapping notifyOwner() — login path never blocked
 - [x] notifyOwner errors caught and logged, never re-thrown
 - [x] tsc --noEmit EXIT:0, 728 passed | 1 skipped
+
+## Phase 2 Sprint 2: Inbound email signal pipeline (checkpoint f3907921 → new)
+
+- [x] Task 1: POST /api/webhooks/inbound-email endpoint (inboundEmailWebhookRoute.ts)
+- [x] Task 2: server/emailSignal.ts — matchEmailToDeal() + auto logSignal pipeline
+- [x] Task 3: emailSignalCount in getUserActivity + Admin Dashboard summary line

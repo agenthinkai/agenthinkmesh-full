@@ -115,9 +115,11 @@ export default function AdminUsageDashboard() {
 
   const assignEnterprise = trpc.billing.assignEnterprise.useMutation();
 
-  const { data: activityRows, isLoading: activityLoading } = trpc.adminUsage.getUserActivity.useQuery(undefined, {
+  const { data: activityData, isLoading: activityLoading } = trpc.adminUsage.getUserActivity.useQuery(undefined, {
     enabled: user?.role === "admin",
   });
+  const activityRows = activityData?.rows;
+  const emailSignalCount = activityData?.emailSignalCount ?? 0;
 
   // Aggregate daily rows into per-date totals for the chart
   const chartData = useMemo(() => {
@@ -503,6 +505,12 @@ export default function AdminUsageDashboard() {
         {/* User Activity Table */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-6 mt-8">
           <h2 className="text-base font-semibold text-white mb-4">User Activity</h2>
+          {/* Email signal summary line */}
+          <div className="text-xs text-slate-500 mb-4">
+            {activityLoading ? null : emailSignalCount > 0
+              ? `${emailSignalCount} email signal${emailSignalCount !== 1 ? "s" : ""} auto-logged this month`
+              : "No email signals yet"}
+          </div>
           {activityLoading ? (
             <div className="text-slate-500 text-sm">Loading…</div>
           ) : activityRows && activityRows.length > 0 ? (
