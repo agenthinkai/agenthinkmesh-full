@@ -3066,3 +3066,20 @@
 - [x] Task 1: POST /api/webhooks/inbound-email endpoint (inboundEmailWebhookRoute.ts)
 - [x] Task 2: server/emailSignal.ts — matchEmailToDeal() + auto logSignal pipeline
 - [x] Task 3: emailSignalCount in getUserActivity + Admin Dashboard summary line
+
+## Sprint: Institutional UI/UX Redesign (checkpoint ae91e840 → new)
+
+- [ ] Screen 2: Left sidebar navigation (replaces top nav, collapsible, mobile bottom nav)
+- [ ] Screen 1: Command Center homepage (Needs Attention, Pipeline Pulse, Evaluate zones)
+- [ ] Screen 3: Pipeline view redesign (header, pill filters, enhanced rows)
+- [ ] Screen 4: Intelligence tab (Agent Reliability, Pattern Signals, Trigger Activity, Signal Log)
+- [ ] Screen 5: Triage result screen redesign (decision memo layout)
+
+## Sprint: Institutional UI/UX Redesign (checkpoint ae91e840 → new)
+
+- [x] Screen 1: CommandCenter.tsx homepage (Needs Attention, Pipeline Pulse, Evaluate zones)
+- [x] Screen 2: MeshSidebar component (220px expanded / 48px collapsed / bottom nav mobile)
+- [x] Screen 4: Intelligence.tsx (Agent Reliability, Trigger Activity, Signal Type Breakdown)
+- [x] Backend: pitch.commandCenter tRPC procedure + getCommandCenterData helper in db.ts
+- [x] Routes: /command-center and /mesh-intelligence wired in App.tsx
+- [x] MeshSidebar nav paths corrected to match actual routes

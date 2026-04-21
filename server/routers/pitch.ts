@@ -11,7 +11,7 @@
 
 import { z } from "zod";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
-import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated, updateTriageStage, recordOutcome, getOutcomeHistory, createPitchMirrorShare, getPitchMirrorShare, insertDealSignal, markDealSignalProcessed, getDealSignals, getAutoTriggerLogCount, getSignalCountsForUser, getPreviousTriageForDeal, getSignalTypeSummary, getScoreHistory, getFullScoreHistory } from "../db";
+import { getDb, savePitchTriage, getPitchTriageHistory, getPitchTriageById, markPitchTriageEscalated, updateTriageStage, recordOutcome, getOutcomeHistory, createPitchMirrorShare, getPitchMirrorShare, insertDealSignal, markDealSignalProcessed, getDealSignals, getAutoTriggerLogCount, getSignalCountsForUser, getPreviousTriageForDeal, getSignalTypeSummary, getScoreHistory, getFullScoreHistory, getCommandCenterData } from "../db";
 import { PitchTriage } from "../../drizzle/schema";
 import { sql } from "drizzle-orm";
 import { runCouncil } from "../councilEngine";
@@ -1714,4 +1714,12 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
       if (!deal) throw new Error("Deal not found or access denied");
       return getFullScoreHistory(dealIdNum);
     }),
+
+  /**
+   * pitch.commandCenter — Aggregated summary for the Command Center homepage.
+   * Returns needsAttention deals, pipeline counts, recent signals, and auto-trigger count.
+   */
+  commandCenter: protectedProcedure.query(async ({ ctx }) => {
+    return getCommandCenterData(ctx.user.id.toString());
+  }),
 });

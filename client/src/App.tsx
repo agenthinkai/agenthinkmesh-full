@@ -41,6 +41,8 @@ import GameTheoryAgent from "./pages/GameTheoryAgent";
 import ETFStudio from "./pages/ETFStudio";
 import PartnerCRM from "./pages/PartnerCRM";
 import AdminUsageDashboard from "./pages/AdminUsageDashboard";
+import CommandCenter from "./pages/CommandCenter";
+import MeshIntelligence from "./pages/Intelligence";
 import AdminTreasury from "./pages/AdminTreasury";
 import DomainAgents from "./pages/DomainAgents";
 import DomainsPage from "./pages/DomainsPage";
@@ -251,6 +253,10 @@ function Router() {
 
       {/* Email Reply Tracker */}
       <Route path="/tracker" component={Tracker} />
+
+      {/* AgenThink Mesh — Command Center + Intelligence */}
+      <Route path="/command-center" component={CommandCenter} />
+      <Route path="/mesh-intelligence" component={MeshIntelligence} />
 
       {/* Admin provisioning (admin-only, not in public nav) */}
       <Route path="/admin/users/create" component={AdminUserCreate} />

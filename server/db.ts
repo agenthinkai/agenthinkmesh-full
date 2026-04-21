@@ -1,4 +1,4 @@
-import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertPitchTriage, InsertUser, PitchTriage, pitchTriages, pitchMirrorShares, users, autoTriggerLog, InsertAutoTriggerLog, dealSignals, InsertDealSignal, DealSignal } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -475,6 +475,106 @@ export async function getScoreHistory(
   } catch (error) {
     console.error("[Database] getScoreHistory failed:", error);
     return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Command Center data — aggregated summary for the /command homepage
+// ---------------------------------------------------------------------------
+export interface CommandCenterData {
+  needsAttention: Array<{
+    id: number;
+    pitchPreview: string;
+    score: number;
+    stage: string;
+    triggerType: string | null;
+    createdAt: Date;
+  }>;
+  pipelineCounts: { triaged: number; diligence: number; ic_ready: number; decision_made: number };
+  recentSignals: Array<{ id: number; dealId: string; signalType: string; signalText: string; source: string; createdAt: Date }>;
+  autoTriggerCount30d: number;
+}
+
+export async function getCommandCenterData(userId: string): Promise<CommandCenterData> {
+  const db = await getDb();
+  const empty: CommandCenterData = {
+    needsAttention: [],
+    pipelineCounts: { triaged: 0, diligence: 0, ic_ready: 0, decision_made: 0 },
+    recentSignals: [],
+    autoTriggerCount30d: 0,
+  };
+  if (!db) return empty;
+  try {
+    const cutoff7d = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const stale30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    // Fetch recent deals for pipeline counts + needs-attention detection
+    const allDeals = await db
+      .select({
+        id: pitchTriages.id,
+        pitchPreview: pitchTriages.pitchPreview,
+        score: pitchTriages.score,
+        stage: pitchTriages.stage,
+        triggerType: pitchTriages.triggerType,
+        createdAt: pitchTriages.createdAt,
+        decisionOutcome: pitchTriages.decisionOutcome,
+      })
+      .from(pitchTriages)
+      .where(eq(pitchTriages.userId, userId))
+      .orderBy(desc(pitchTriages.createdAt))
+      .limit(200);
+
+    // Needs attention: auto-triggered rows in last 7 days OR stale active deals
+    const needsAttention = allDeals
+      .filter((r) => {
+        const isAutoTriggered = r.triggerType != null && r.createdAt >= cutoff7d;
+        const isStale =
+          (r.stage === "diligence" || r.stage === "ic_ready") &&
+          r.decisionOutcome == null &&
+          r.createdAt <= stale30d;
+        return isAutoTriggered || isStale;
+      })
+      .slice(0, 5)
+      .map((r) => ({
+        id: r.id,
+        pitchPreview: r.pitchPreview,
+        score: r.score,
+        stage: r.stage,
+        triggerType: r.triggerType,
+        createdAt: r.createdAt,
+      }));
+
+    // Pipeline counts
+    const pipelineCounts = { triaged: 0, diligence: 0, ic_ready: 0, decision_made: 0 };
+    for (const r of allDeals) {
+      if (r.stage === "triaged") pipelineCounts.triaged++;
+      else if (r.stage === "diligence") pipelineCounts.diligence++;
+      else if (r.stage === "ic_ready") pipelineCounts.ic_ready++;
+      else if (r.stage === "decision_made") pipelineCounts.decision_made++;
+    }
+
+    // Recent signals (last 10)
+    const recentSignals = await db
+      .select({
+        id: dealSignals.id,
+        dealId: dealSignals.dealId,
+        signalType: dealSignals.signalType,
+        signalText: dealSignals.signalText,
+        source: dealSignals.source,
+        createdAt: dealSignals.createdAt,
+      })
+      .from(dealSignals)
+      .where(eq(dealSignals.userId, userId))
+      .orderBy(desc(dealSignals.createdAt))
+      .limit(10);
+
+    // Auto-trigger count 30d (reuse existing helper)
+    const autoTriggerCount30d = await getAutoTriggerLogCount(userId);
+
+    return { needsAttention, pipelineCounts, recentSignals, autoTriggerCount30d };
+  } catch (error) {
+    console.error("[Database] getCommandCenterData failed:", error);
+    return empty;
   }
 }
 
