@@ -98,7 +98,7 @@ export default function CommandCenter() {
           variant="outline"
           size="sm"
           className="border-slate-700 text-slate-300 hover:bg-slate-800"
-          onClick={() => navigate("/triage")}
+          onClick={() => navigate("/pitch-triage")}
         >
           <Zap className="w-3.5 h-3.5 mr-1.5" />
           New Triage
@@ -131,7 +131,7 @@ export default function CommandCenter() {
               return (
                 <button
                   key={deal.id}
-                  onClick={() => navigate("/triage")}
+                  onClick={() => navigate("/pitch-triage")}
                   className="w-full text-left rounded-xl border border-slate-800 bg-slate-900/60 hover:bg-slate-800/80 transition-colors p-4 flex items-center justify-between group"
                 >
                   <div className="flex items-center gap-3 min-w-0">
@@ -230,7 +230,7 @@ export default function CommandCenter() {
         </div>
 
         <button
-          onClick={() => navigate("/triage")}
+          onClick={() => navigate("/pitch-triage")}
           className="mt-3 w-full rounded-xl border border-slate-800 bg-slate-900/40 hover:bg-slate-800/60 transition-colors p-3 flex items-center justify-between text-sm text-slate-400 group"
         >
           <span>View full pipeline</span>
@@ -255,7 +255,7 @@ export default function CommandCenter() {
             <div className="flex gap-3">
               <Button
                 className="bg-violet-600 hover:bg-violet-500 text-white flex-1"
-                onClick={() => navigate("/triage")}
+                onClick={() => navigate("/pitch-triage")}
               >
                 <Zap className="w-3.5 h-3.5 mr-1.5" />
                 New Triage
