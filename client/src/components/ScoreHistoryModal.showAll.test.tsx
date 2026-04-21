@@ -13,6 +13,7 @@
  *   6. Pressing Escape calls onClose exactly once
  *   7. Tab from last focusable element wraps focus to first
  *   8. Shift+Tab from first focusable element wraps focus to last
+ *   9. Enter key on backdrop calls onClose exactly once
  */
 import "@testing-library/jest-dom/vitest";
 import { describe, it, expect, vi } from "vitest";
@@ -157,5 +158,20 @@ describe("ScoreHistoryModal — focus trap", () => {
 
     // The focus trap should have called last.focus()
     expect(document.activeElement).toBe(last);
+  });
+});
+
+describe("ScoreHistoryModal — backdrop keyboard", () => {
+  it("9. Enter key on backdrop calls onClose exactly once", () => {
+    const onClose = vi.fn();
+    render(<Wrapper rows={makeRows(5)} onClose={onClose} />);
+
+    const backdrop = screen.getByTestId("score-history-backdrop");
+
+    // Dispatch Enter directly on the backdrop element (not document)
+    // This exercises the onKeyDown handler added in Task 2 of the prior sprint
+    fireEvent.keyDown(backdrop, { key: "Enter" });
+
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

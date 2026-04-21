@@ -3350,9 +3350,14 @@ function HistoryTab({
                 const tooltip = `Scores: ${sh.join(" → ")}`;
                 return (
                   <div
+                    role="button"
+                    tabIndex={0}
+                    aria-haspopup="dialog"
+                    aria-label={`View score history for ${row.pitchPreview ? row.pitchPreview.slice(0, 40).trim() : `deal #${row.id}`}`}
                     style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 2, cursor: "pointer" }}
                     title={tooltip}
                     onClick={(e) => { e.stopPropagation(); setScoreModalDealId(row.id); }}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopPropagation(); setScoreModalDealId(row.id); } }}
                   >
                     <svg width={W} height={H} style={{ display: "block" }}>
                       <polyline points={pts} fill="none" stroke={lineColor} strokeWidth="1.8" strokeLinejoin="round" strokeLinecap="round" />

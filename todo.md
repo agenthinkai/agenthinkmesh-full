@@ -3019,3 +3019,8 @@
 
 - [x] Task 1: Test case 8 — Shift+Tab from first focusable wraps to last. Also added ResizeObserver stub to test-setup.ts and wired setupFiles in vitest.config.ts.
 - [x] Task 2: Backdrop accessibility — role="button", tabIndex={0}, aria-label="Close score history", onKeyDown (Enter/Space → onClose). No visual changes.
+
+## Sprint: Backdrop RTL test + aria-haspopup (checkpoint ccfae49b → new)
+
+- [x] Task 1: Test case 9 — Enter key on backdrop calls onClose exactly once (fireEvent.keyDown on backdrop element)
+- [x] Task 2: Sparkline trigger div in PitchTriage.tsx gets role=button, tabIndex=0, aria-haspopup=dialog, aria-label, onKeyDown (Enter/Space opens modal). tsc fix: aria-label uses row.pitchPreview not row.name.
