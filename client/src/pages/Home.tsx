@@ -200,7 +200,7 @@ export default function Home() {
       </nav>
 
       {/* ── HERO ── */}
-      <section className="relative pt-32 pb-24 px-6 md:px-12 text-center overflow-hidden">
+      <section className="relative pt-28 pb-12 md:pb-20 px-4 md:px-12 text-center overflow-hidden">
         {/* Background glow */}
         <div className="absolute inset-0 pointer-events-none">
           <div className="absolute top-20 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-violet-600/15 rounded-full blur-[120px]" />
@@ -213,25 +213,50 @@ export default function Home() {
             115 verified specialist agents · Live
           </div>
 
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight leading-[1.02] mb-6">
-            Get investor-style feedback{" "}
+          <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.08] mb-5">
+            AI agents that turn messy inputs{" "}
             <span className="bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">
-              on your pitch
+              into structured decisions
             </span>
-            <br />in 60 seconds.
           </h1>
 
-          <p className="text-lg text-white/60 max-w-2xl mx-auto mb-4 leading-relaxed">
-            Paste your idea and see how a decision council would evaluate it.
+          <p className="text-lg text-white/65 max-w-2xl mx-auto mb-3 leading-relaxed">
+            Describe any investment, procurement, or portfolio decision — and get a clear, structured output in seconds.
           </p>
 
-          <p className="text-sm text-white/40 max-w-xl mx-auto mb-10 leading-relaxed">
-            Now extended with{" "}
+          <p className="text-sm text-white/40 max-w-xl mx-auto mb-8 leading-relaxed">
+            Now covering{" "}
             <Link href="/portfolio-mesh" className="text-violet-400 hover:text-violet-300 underline underline-offset-2">PortfolioMesh</Link>
-            {" "}(institutional asset allocation) and the{" "}
+            {" "}(asset allocation),{" "}
+            <Link href="/pitch-triage" className="text-emerald-400 hover:text-emerald-300 underline underline-offset-2">Pitch Triage</Link>
+            {" "}(deal evaluation), and the{" "}
             <Link href="/domains" className="text-cyan-400 hover:text-cyan-300 underline underline-offset-2">Education</Link>
             {" "}domain.
           </p>
+
+          {/* ── 3-STEP EXPLAINER ── */}
+          <div className="flex items-center justify-center gap-0 mb-8 flex-wrap">
+            {[
+              { num: "1", label: "Describe your task", icon: "✏️" },
+              { num: "2", label: "Agents process it", icon: "⚡" },
+              { num: "3", label: "Get a structured output", icon: "📄" },
+            ].map((step, i) => (
+              <div key={step.num} className="flex items-center gap-0">
+                <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/[0.04] border border-white/8">
+                  <span className="text-base">{step.icon}</span>
+                  <div className="text-left">
+                    <div className="text-[9px] font-mono text-white/30 uppercase tracking-widest leading-none mb-0.5">Step {step.num}</div>
+                    <div className="text-xs font-medium text-white/75">{step.label}</div>
+                  </div>
+                </div>
+                {i < 2 && (
+                  <div className="flex items-center px-1.5">
+                    <ArrowRight className="w-3.5 h-3.5 text-white/20" />
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
 
           {/* ── PRIMARY FREE-RUN CTA ── */}
           {!isAuthenticated && (
@@ -255,34 +280,121 @@ export default function Home() {
             </div>
           )}
 
-          {/* ── LIVE WORKFLOW CTAs ── */}
-          <div className="flex items-center justify-center gap-4 flex-wrap mb-6">
-            <Link href="/deals">
-              <button className="group flex items-center gap-3 px-6 py-3.5 rounded-xl bg-gradient-to-r from-violet-600/20 to-violet-600/10 border border-violet-500/40 hover:border-violet-400/70 hover:from-violet-600/30 hover:to-violet-600/20 transition-all duration-200 shadow-lg shadow-violet-900/20">
-                <div className="w-8 h-8 rounded-lg bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0">
-                  <BarChart3 className="w-4 h-4 text-violet-400" />
-                </div>
-                <div className="text-left">
-                  <div className="text-[10px] font-mono text-violet-400/70 uppercase tracking-widest leading-none mb-0.5">Investment Workflow</div>
-                  <div className="text-sm font-semibold text-white group-hover:text-violet-100 flex items-center gap-1.5">
-                    Run Deal Screening <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+          {/* ── LIVE WORKFLOWS SECTION ── */}
+          <div className="mt-4 mb-6">
+            <div className="flex items-center justify-center gap-3 mb-5">
+              <div className="h-px flex-1 max-w-[80px] bg-gradient-to-r from-transparent to-white/15" />
+              <p className="text-xs font-bold text-white/70 uppercase tracking-[0.18em] font-mono">Live Workflows</p>
+              <div className="h-px flex-1 max-w-[80px] bg-gradient-to-l from-transparent to-white/15" />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-3xl mx-auto">
+              {/* Deal Screening */}
+              <Link href="/deals">
+                <button className="group w-full text-left flex flex-col gap-3 p-5 rounded-2xl bg-gradient-to-br from-violet-600/15 to-violet-600/5 border border-violet-500/35 hover:border-violet-400/65 hover:from-violet-600/25 hover:to-violet-600/10 transition-all duration-200 shadow-lg shadow-violet-900/20 hover:-translate-y-0.5">
+                  <div className="flex items-center justify-between">
+                    <div className="w-9 h-9 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0">
+                      <BarChart3 className="w-4.5 h-4.5 text-violet-400" />
+                    </div>
+                    <span className="text-[9px] font-mono text-violet-400/70 uppercase tracking-widest px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20">Investment</span>
                   </div>
-                </div>
-              </button>
-            </Link>
-            <Link href="/procurement">
-              <button className="group flex items-center gap-3 px-6 py-3.5 rounded-xl bg-gradient-to-r from-cyan-600/20 to-cyan-600/10 border border-cyan-500/40 hover:border-cyan-400/70 hover:from-cyan-600/30 hover:to-cyan-600/20 transition-all duration-200 shadow-lg shadow-cyan-900/20">
-                <div className="w-8 h-8 rounded-lg bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center flex-shrink-0">
-                  <Building2 className="w-4 h-4 text-cyan-400" />
-                </div>
-                <div className="text-left">
-                  <div className="text-[10px] font-mono text-cyan-400/70 uppercase tracking-widest leading-none mb-0.5">Procurement Workflow</div>
-                  <div className="text-sm font-semibold text-white group-hover:text-cyan-100 flex items-center gap-1.5">
-                    Run Procurement Evaluation <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                  <div>
+                    <div className="text-sm font-semibold text-white mb-1">Deal Screening</div>
+                    <div className="text-xs text-white/45 leading-relaxed">10-role council evaluates any deal and outputs a structured IC memo.</div>
                   </div>
+                  <div className="text-xs font-medium text-violet-400 flex items-center gap-1 group-hover:gap-2 transition-all">
+                    Run Deal Screening <ArrowRight className="w-3 h-3" />
+                  </div>
+                </button>
+              </Link>
+              {/* Procurement */}
+              <Link href="/procurement">
+                <button className="group w-full text-left flex flex-col gap-3 p-5 rounded-2xl bg-gradient-to-br from-cyan-600/15 to-cyan-600/5 border border-cyan-500/35 hover:border-cyan-400/65 hover:from-cyan-600/25 hover:to-cyan-600/10 transition-all duration-200 shadow-lg shadow-cyan-900/20 hover:-translate-y-0.5">
+                  <div className="flex items-center justify-between">
+                    <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/30 flex items-center justify-center flex-shrink-0">
+                      <Building2 className="w-4.5 h-4.5 text-cyan-400" />
+                    </div>
+                    <span className="text-[9px] font-mono text-cyan-400/70 uppercase tracking-widest px-2 py-0.5 rounded-full bg-cyan-500/10 border border-cyan-500/20">Procurement</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-white mb-1">Procurement Evaluation</div>
+                    <div className="text-xs text-white/45 leading-relaxed">Score vendors and RFPs against your criteria with structured agent review.</div>
+                  </div>
+                  <div className="text-xs font-medium text-cyan-400 flex items-center gap-1 group-hover:gap-2 transition-all">
+                    Run Procurement Evaluation <ArrowRight className="w-3 h-3" />
+                  </div>
+                </button>
+              </Link>
+              {/* Pitch Triage */}
+              <Link href="/pitch-triage">
+                <button className="group w-full text-left flex flex-col gap-3 p-5 rounded-2xl bg-gradient-to-br from-emerald-600/15 to-emerald-600/5 border border-emerald-500/35 hover:border-emerald-400/65 hover:from-emerald-600/25 hover:to-emerald-600/10 transition-all duration-200 shadow-lg shadow-emerald-900/20 hover:-translate-y-0.5">
+                  <div className="flex items-center justify-between">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center flex-shrink-0">
+                      <FileText className="w-4.5 h-4.5 text-emerald-400" />
+                    </div>
+                    <span className="text-[9px] font-mono text-emerald-400/70 uppercase tracking-widest px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">VC / PE</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-white mb-1">Pitch Triage</div>
+                    <div className="text-xs text-white/45 leading-relaxed">Multi-agent triage of startup pitches — engage, watch, or pass in seconds.</div>
+                  </div>
+                  <div className="text-xs font-medium text-emerald-400 flex items-center gap-1 group-hover:gap-2 transition-all">
+                    Run Pitch Triage <ArrowRight className="w-3 h-3" />
+                  </div>
+                </button>
+              </Link>
+              {/* PortfolioMesh */}
+              <Link href="/portfolio-mesh">
+                <button className="group w-full text-left flex flex-col gap-3 p-5 rounded-2xl bg-gradient-to-br from-amber-600/15 to-amber-600/5 border border-amber-500/35 hover:border-amber-400/65 hover:from-amber-600/25 hover:to-amber-600/10 transition-all duration-200 shadow-lg shadow-amber-900/20 hover:-translate-y-0.5">
+                  <div className="flex items-center justify-between">
+                    <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
+                      <TrendingUp className="w-4.5 h-4.5 text-amber-400" />
+                    </div>
+                    <span className="text-[9px] font-mono text-amber-400/70 uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">Portfolio</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-white mb-1">PortfolioMesh</div>
+                    <div className="text-xs text-white/45 leading-relaxed">Institutional asset allocation analysis across equities, fixed income, and alternatives.</div>
+                  </div>
+                  <div className="text-xs font-medium text-amber-400 flex items-center gap-1 group-hover:gap-2 transition-all">
+                    Run PortfolioMesh <ArrowRight className="w-3 h-3" />
+                  </div>
+                </button>
+              </Link>
+              {/* Education — Coming Soon */}
+              <div className="group w-full text-left flex flex-col gap-3 p-5 rounded-2xl bg-gradient-to-br from-pink-600/10 to-pink-600/5 border border-pink-500/25 opacity-75 cursor-default">
+                <div className="flex items-center justify-between">
+                  <div className="w-9 h-9 rounded-xl bg-pink-500/20 border border-pink-500/30 flex items-center justify-center flex-shrink-0">
+                    <Brain className="w-4.5 h-4.5 text-pink-400" />
+                  </div>
+                  <span className="text-[9px] font-mono text-pink-400/70 uppercase tracking-widest px-2 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/20">Education</span>
                 </div>
-              </button>
-            </Link>
+                <div>
+                  <div className="text-sm font-semibold text-white mb-1">Education Workflow</div>
+                  <div className="text-xs text-white/45 leading-relaxed">Curriculum design, assessment review, and institutional learning analytics.</div>
+                </div>
+                <div className="text-xs font-medium text-pink-400/60 flex items-center gap-1.5">
+                  <span className="px-2 py-0.5 rounded-full bg-pink-500/15 border border-pink-500/25 text-[9px] uppercase tracking-widest">Coming Soon</span>
+                </div>
+              </div>
+              {/* Insurance / Reinsurance */}
+              <Link href="/insurance">
+                <button className="group w-full text-left flex flex-col gap-3 p-5 rounded-2xl bg-gradient-to-br from-sky-600/15 to-sky-600/5 border border-sky-500/35 hover:border-sky-400/65 hover:from-sky-600/25 hover:to-sky-600/10 transition-all duration-200 shadow-lg shadow-sky-900/20 hover:-translate-y-0.5">
+                  <div className="flex items-center justify-between">
+                    <div className="w-9 h-9 rounded-xl bg-sky-500/20 border border-sky-500/30 flex items-center justify-center flex-shrink-0">
+                      <Shield className="w-4.5 h-4.5 text-sky-400" />
+                    </div>
+                    <span className="text-[9px] font-mono text-sky-400/70 uppercase tracking-widest px-2 py-0.5 rounded-full bg-sky-500/10 border border-sky-500/20">Insurance</span>
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-white mb-1">Insurance Intelligence</div>
+                    <div className="text-xs text-white/45 leading-relaxed">Risk assessment and reinsurance analysis powered by specialist agents.</div>
+                  </div>
+                  <div className="text-xs font-medium text-sky-400 flex items-center gap-1 group-hover:gap-2 transition-all">
+                    Run Insurance Workflow <ArrowRight className="w-3 h-3" />
+                  </div>
+                </button>
+              </Link>
+            </div>
           </div>
 
           <div className="flex items-center justify-center gap-4 flex-wrap">
@@ -654,7 +766,7 @@ export default function Home() {
                 {[
                   { icon: <Mail className="w-4 h-4 text-violet-400" />, label: "Email", value: "kishore@agenthink.ai" },
                   { icon: <Globe className="w-4 h-4 text-cyan-400" />, label: "Website", value: "agenthink.ai" },
-                  { icon: <Users className="w-4 h-4 text-emerald-400" />, label: "Team", value: "Based in the GCC" },
+                  { icon: <Users className="w-4 h-4 text-emerald-400" />, label: "Trust", value: "Trusted by institutional decision-makers globally" },
                 ].map((c) => (
                   <div key={c.label} className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">{c.icon}</div>
