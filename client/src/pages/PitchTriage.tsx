@@ -1630,6 +1630,7 @@ export default function PitchTriage() {
 import type { PitchTriage as PitchTriageRow } from "../../../drizzle/schema";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { sanitiseSlug } from "@/lib/csvFilename";
+import { ScoreHistoryModal } from "@/components/ScoreHistoryModal";
 
 interface HistoryTabProps {
   historyQuery: { data?: PitchTriageRow[]; isLoading: boolean; error: { message: string } | null };
@@ -1721,8 +1722,8 @@ function HistoryTab({
   const [scoreModalDealId, setScoreModalDealId] = useState<number | null>(null);
   // Task 2: tracks which delta badge button is keyboard-focused (for focus-visible ring)
   const [focusedBadgeKey, setFocusedBadgeKey] = useState<string | null>(null);
-  // Task 3: show all rows vs. 10-row cap in score history modal
-  const [scoreHistoryShowAll, setScoreHistoryShowAll] = useState(false);
+  // Task 3: per-deal showAll map — persists showAll preference across open/close per dealId
+  const [scoreHistoryShowAllMap, setScoreHistoryShowAllMap] = useState<Record<number, boolean>>({});
   const scoreHistoryQuery = trpc.pitch.scoreHistory.useQuery(
     { dealId: String(scoreModalDealId ?? 0) },
     { enabled: scoreModalDealId != null }
@@ -3596,256 +3597,31 @@ function HistoryTab({
       })}
     </div>
 
-    {/* Score history modal */}
-    {scoreModalDealId != null && (
+    {/* Score history modal — extracted to ScoreHistoryModal component for testability */}
+    {scoreModalDealId != null && scoreHistoryQuery.data !== undefined && (
+      <ScoreHistoryModal
+        rows={scoreHistoryQuery.data}
+        dealName={(() => {
+          const modalDeal = allRows.find((r) => r.id === scoreModalDealId);
+          return modalDeal?.pitchPreview ? modalDeal.pitchPreview.slice(0, 40).trim() : "";
+        })()}
+        dealId={scoreModalDealId}
+        onClose={() => { setScoreModalDealId(null); setFocusedBadgeKey(null); }}
+        showAllMap={scoreHistoryShowAllMap}
+        setShowAllMap={setScoreHistoryShowAllMap}
+      />
+    )}
+    {/* Loading overlay while scoreHistory query is in flight */}
+    {scoreModalDealId != null && scoreHistoryQuery.isLoading && (
       <div
         style={{
           position: "fixed", inset: 0, zIndex: 9999,
           background: "rgba(0,0,0,0.72)",
           display: "flex", alignItems: "center", justifyContent: "center",
         }}
-        onClick={() => { setScoreModalDealId(null); setScoreHistoryShowAll(false); setFocusedBadgeKey(null); }}
+        onClick={() => setScoreModalDealId(null)}
       >
-        <div
-          style={{
-            background: "#1a1a2e", border: `1px solid ${BORDER}`, borderRadius: 12,
-            padding: "24px 28px", minWidth: 340, maxWidth: 480, width: "90vw",
-            boxShadow: "0 8px 40px rgba(0,0,0,0.6)",
-          }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
-            <span style={{ fontSize: 13, fontWeight: 700, color: TEXT2, letterSpacing: 0.5 }}>Score History</span>
-            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-              {/* CSV export — only shown when data is loaded */}
-              {scoreHistoryQuery.data && scoreHistoryQuery.data.length > 0 && (() => {
-                const modalDeal = allRows.find((r) => r.id === scoreModalDealId);
-                const rawName = modalDeal?.pitchPreview
-                  ? modalDeal.pitchPreview.slice(0, 40).trim()
-                  : "";
-                // Task 1: use extracted sanitiseSlug helper (cross-platform, tested)
-                const slug = sanitiseSlug(rawName, scoreModalDealId ?? "unknown");
-                const today = new Date().toISOString().slice(0, 10);
-                const filename = `score-history-${slug}-${today}.csv`;
-                const TRIGGER_LABELS_CSV: Record<string, string> = {
-                  stale_diligence: "Stale in diligence",
-                  stale_ic_ready: "Stale at IC ready",
-                  score_drop: "Score drop",
-                  pattern_shift: "Pattern shift",
-                  signal_triggered: "External signal",
-                };
-                function handleExportCsv() {
-                  const rows3 = scoreHistoryQuery.data!;
-                  const scores3 = rows3.map((r) => r.score);
-                  const lines = ["Date,Score,Delta,Trigger,Source"];
-                  rows3.forEach((r, i) => {
-                    const d = i === 0 ? null : scores3[i] - scores3[i - 1];
-                    const deltaStr = d === null ? "" : Math.abs(d) <= 3 ? "flat" : d > 0 ? `+${d}` : `\u2212${Math.abs(d)}`;
-                    const dateStr = new Date(r.createdAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kuwait", day: "2-digit", month: "short", year: "numeric" });
-                    const trigger = r.triggerType ? (TRIGGER_LABELS_CSV[r.triggerType] ?? r.triggerType) : "Manual";
-                    const source = r.source === "auto" ? "Auto" : "Manual";
-                    lines.push(`${dateStr},${r.score},${deltaStr},${trigger},${source}`);
-                  });
-                  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url; a.download = filename; a.click();
-                  URL.revokeObjectURL(url);
-                }
-                return (
-                  <button
-                    onClick={handleExportCsv}
-                    style={{
-                      background: "rgba(255,255,255,0.06)",
-                      border: `1px solid ${BORDER}`,
-                      color: MUTED, cursor: "pointer", fontSize: 10,
-                      borderRadius: 5, padding: "2px 8px",
-                      lineHeight: 1.6, letterSpacing: 0.3,
-                    }}
-                    title={`Export CSV: ${filename}`}
-                  >↓ CSV</button>
-                );
-              })()}
-              <button
-                onClick={() => { setScoreModalDealId(null); setScoreHistoryShowAll(false); setFocusedBadgeKey(null); }}
-                style={{ background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 18, lineHeight: 1 }}
-              >✕</button>
-            </div>
-          </div>
-          {scoreHistoryQuery.isLoading && (
-            <div style={{ color: MUTED, fontSize: 12, textAlign: "center", padding: "12px 0" }}>Loading…</div>
-          )}
-          {!scoreHistoryQuery.isLoading && (!scoreHistoryQuery.data || scoreHistoryQuery.data.length === 0) && (
-            <div style={{ color: MUTED, fontSize: 12, textAlign: "center", padding: "12px 0" }}>No history available.</div>
-          )}
-          {scoreHistoryQuery.data && scoreHistoryQuery.data.length > 0 && (() => {
-            // Task 3: all rows (ASC) used for sparkline + CSV; visible rows capped at 10 unless showAll
-            const allRows2 = scoreHistoryQuery.data;
-            const totalRows = allRows2.length;
-            const VISIBLE_CAP = 10;
-            // When collapsed: show the 10 most-recent rows (last 10 of ASC array)
-            const rows2 = scoreHistoryShowAll || totalRows <= VISIBLE_CAP
-              ? allRows2
-              : allRows2.slice(totalRows - VISIBLE_CAP);
-            const scores = rows2.map((r) => r.score);
-            // Sparkline always uses full history for accurate trend line
-            const allScores = allRows2.map((r) => r.score);
-            const W = 320, H = 60;
-            const minS = Math.min(...allScores), maxS = Math.max(...allScores);
-            const range2 = maxS - minS || 1;
-            const pts2 = allScores.map((s, i) => {
-              const x = (i / (allScores.length - 1)) * (W - 8) + 4;
-              const y = H - 4 - ((s - minS) / range2) * (H - 8);
-              return `${x.toFixed(1)},${y.toFixed(1)}`;
-            }).join(" ");
-            const first2 = allScores[0], last2 = allScores[allScores.length - 1];
-            const diff2 = last2 - first2;
-            const lineColor2 = diff2 > 3 ? "#22c55e" : diff2 < -3 ? "#ef4444" : "#6b7280";
-            // Compute per-row deltas over visible rows only (first visible row has no delta)
-            const deltas: (number | null)[] = scores.map((s, i) =>
-              i === 0 ? null : s - scores[i - 1]
-            );
-            // Find the row index with the largest absolute delta within visible rows
-            let maxDeltaIdx = -1;
-            let maxDeltaAbs = 0;
-            deltas.forEach((d, i) => {
-              if (d !== null && Math.abs(d) > maxDeltaAbs) {
-                maxDeltaAbs = Math.abs(d);
-                maxDeltaIdx = i;
-              }
-            });
-            return (
-              <>
-                <svg width={W} height={H} style={{ display: "block", marginBottom: 16 }}>
-                  <polyline points={pts2} fill="none" stroke={lineColor2} strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
-                  {scores.map((s, i) => {
-                    const x = (i / (scores.length - 1)) * (W - 8) + 4;
-                    const y = H - 4 - ((s - minS) / range2) * (H - 8);
-                    return <circle key={i} cx={x} cy={y} r={3} fill={lineColor2} />;
-                  })}
-                </svg>
-                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {rows2.map((r, i) => {
-                    const delta = deltas[i];
-                    const isFlat = delta !== null && Math.abs(delta) <= 3;
-                    const isUp = delta !== null && delta > 3;
-                    const isDown = delta !== null && delta < -3;
-                    const isHighlight = i === maxDeltaIdx && maxDeltaAbs > 3;
-                    const rowBg = isHighlight
-                      ? (isUp ? "rgba(34,197,94,0.05)" : "rgba(239,68,68,0.05)")
-                      : "transparent";
-                    return (
-                      <div
-                        key={r.id}
-                        style={{
-                          display: "flex", alignItems: "center", gap: 10, fontSize: 12,
-                          background: rowBg, borderRadius: 6, padding: "2px 4px",
-                          marginLeft: -4, marginRight: -4,
-                        }}
-                      >
-                        <span style={{ color: MUTED, minWidth: 80, flexShrink: 0 }}>{new Date(r.createdAt).toLocaleDateString()}</span>
-                        <span
-                          style={{
-                            fontWeight: 800,
-                            color: r.score >= 62 ? "#22c55e" : r.score >= 38 ? "#f59e0b" : "#ef4444",
-                            minWidth: 28,
-                          }}
-                        >{r.score}</span>
-                        {/* Delta annotation with tooltip showing previous score + date */}
-                        {delta === null && (
-                          <span style={{ fontSize: 10, color: MUTED, minWidth: 60 }}>—</span>
-                        )}
-                        {/* Task 1: button wrapper makes badge keyboard-focusable; display:contents preserves layout */}
-                        {/* Task 2: onFocus/onBlur drive focusedBadgeKey for focus-visible ring on inner span */}
-                        {isFlat && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                style={{ display: "contents", background: "none", border: "none", padding: 0, cursor: "default" }}
-                                aria-label={`Score change: flat. Previous score ${rows2[i - 1].score}`}
-                                onFocus={() => setFocusedBadgeKey(`${r.id}-flat`)}
-                                onBlur={() => setFocusedBadgeKey(null)}
-                              >
-                                <span style={{ fontSize: 10, color: MUTED, minWidth: 60, borderRadius: 3, ...(focusedBadgeKey === `${r.id}-flat` ? { outline: "2px solid rgba(124,58,237,0.6)", outlineOffset: 2 } : {}) }}>→ flat</span>
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" sideOffset={4}>
-                              Previous score: {rows2[i - 1].score}  (date: {new Date(rows2[i - 1].createdAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kuwait", day: "2-digit", month: "short", year: "numeric" })})
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                        {isUp && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                style={{ display: "contents", background: "none", border: "none", padding: 0, cursor: "default" }}
-                                aria-label={`Score change: +${delta} points. Previous score ${rows2[i - 1].score}`}
-                                onFocus={() => setFocusedBadgeKey(`${r.id}-up`)}
-                                onBlur={() => setFocusedBadgeKey(null)}
-                              >
-                                <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 600, minWidth: 60, borderRadius: 3, ...(focusedBadgeKey === `${r.id}-up` ? { outline: "2px solid rgba(124,58,237,0.6)", outlineOffset: 2 } : {}) }}>↑ +{delta} pts</span>
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" sideOffset={4}>
-                              Previous score: {rows2[i - 1].score}  (date: {new Date(rows2[i - 1].createdAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kuwait", day: "2-digit", month: "short", year: "numeric" })})
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                        {isDown && (
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <button
-                                type="button"
-                                style={{ display: "contents", background: "none", border: "none", padding: 0, cursor: "default" }}
-                                aria-label={`Score change: ${delta} points. Previous score ${rows2[i - 1].score}`}
-                                onFocus={() => setFocusedBadgeKey(`${r.id}-down`)}
-                                onBlur={() => setFocusedBadgeKey(null)}
-                              >
-                                <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 600, minWidth: 60, borderRadius: 3, ...(focusedBadgeKey === `${r.id}-down` ? { outline: "2px solid rgba(124,58,237,0.6)", outlineOffset: 2 } : {}) }}>↓ {delta} pts</span>
-                              </button>
-                            </TooltipTrigger>
-                            <TooltipContent side="top" sideOffset={4}>
-                              Previous score: {rows2[i - 1].score}  (date: {new Date(rows2[i - 1].createdAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kuwait", day: "2-digit", month: "short", year: "numeric" })})
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                        {r.source === "auto" && (
-                          <span
-                            style={{
-                              fontSize: 10, fontWeight: 600,
-                              color: r.triggerType === "signal_triggered" ? "#60a5fa" : "#f59e0b",
-                              background: r.triggerType === "signal_triggered" ? "rgba(96,165,250,0.12)" : "rgba(245,158,11,0.12)",
-                              borderRadius: 4, padding: "1px 6px",
-                            }}
-                          >{r.triggerType === "signal_triggered" ? "📡 Signal" : `⚡ ${TRIGGER_LABELS[r.triggerType ?? ""] ?? "Auto"}`}</span>
-                        )}
-                        {i === rows2.length - 1 && <span style={{ fontSize: 10, color: MUTED, marginLeft: "auto" }}>latest</span>}
-                      </div>
-                    );
-                  })}
-                </div>
-                {/* Task 3: Show all / Show fewer toggle — only rendered when total > cap */}
-                {totalRows > VISIBLE_CAP && (
-                  <button
-                    type="button"
-                    onClick={() => setScoreHistoryShowAll((v) => !v)}
-                    style={{
-                      marginTop: 6, background: "none", border: "none",
-                      color: MUTED, fontSize: 11, cursor: "pointer",
-                      textDecoration: "underline", padding: 0, alignSelf: "flex-start",
-                    }}
-                  >
-                    {scoreHistoryShowAll
-                      ? "Show fewer"
-                      : `Show all ${totalRows} entries`}
-                  </button>
-                )}
-              </>
-            );
-          })()}
-        </div>
+        <div style={{ color: "rgba(255,255,255,0.45)", fontSize: 12 }}>Loading…</div>
       </div>
     )}
     </>

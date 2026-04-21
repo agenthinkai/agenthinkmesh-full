@@ -3003,3 +3003,9 @@
 - [x] Task 1: Extract sanitiseSlug helper to client/src/lib/csvFilename.ts; update modal import; 6 Vitest tests (718 total)
 - [x] Task 2: Focus-visible ring on delta badge buttons via onFocus/onBlur + focusedBadgeKey state
 - [x] Task 3: Score history modal row count cap (10 most-recent) with showAll toggle; sparkline uses full history
+
+## Sprint: showAll RTL tests, focus trap, showAllMap (checkpoint 1928c7b7 → new)
+
+- [x] Task 1: Extract ScoreHistoryModal to standalone component; write 5 RTL tests (showAll toggle); extend vitest to jsdom for client tests
+- [x] Task 2: useEffect focus trap in ScoreHistoryModal (Tab/Shift+Tab cycle, Esc closes, auto-focus on open)
+- [x] Task 3: Replace scoreHistoryShowAll boolean with showAllMap Record<number,boolean> keyed by dealId; preference persists across open/close
