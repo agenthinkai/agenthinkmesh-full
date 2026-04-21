@@ -11,8 +11,8 @@
     "format": "prettier --write .",
     "test": "vitest run",
     "db:push": "drizzle-kit generate && drizzle-kit migrate",
-    "// postdb:push": "clears incremental TS cache after schema migrations to prevent stale watcher errors",
-    "postdb:push": "rm -f .tsbuildinfo"
+    "// postdb:push": "clears incremental TS cache after schema migrations; cross-platform (Linux, macOS, Windows)",
+    "postdb:push": "node -e \"try{require('fs').unlinkSync('.tsbuildinfo')}catch{}\""
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

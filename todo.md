@@ -2992,3 +2992,9 @@
 - [x] Task 1: Delta tooltip on hover — Tooltip wraps ↑/↓/→ badges; shows "Previous score: N  (date: DD Mon YYYY)" on hover; first row has no badge/tooltip; dismisses on mouse leave
 - [x] Task 2: postdb:push cache invalidation hook — "postdb:push": "rm -f .tsbuildinfo" added to package.json; verified it fires and deletes .tsbuildinfo correctly
 - [x] Task 3: Score history CSV export — "↓ CSV" button in modal header (right-aligned, subtle secondary style); client-side generation; filename: score-history-[dealName]-[YYYY-MM-DD].csv; columns: Date, Score, Delta, Trigger, Source
+
+## Sprint: Accessibility, sanitisation, cross-platform (8f37c266 → new)
+
+- [x] Task 1: Keyboard accessibility for delta tooltips — button wrapper with display:contents around each ↑/↓/→ badge; aria-label on each; tooltip fires on focus and hover; first row unchanged
+- [x] Task 2: CSV filename sanitisation fallback — leading/trailing dash trim + slug fallback to deal-{id} when rawName is empty (all-non-ASCII names)
+- [x] Task 3: Cross-platform postdb:push hook — replaced rm -f with node -e "try{require('fs').unlinkSync('.tsbuildinfo')}catch{}"; verified idempotent on Linux

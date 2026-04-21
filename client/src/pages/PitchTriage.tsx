@@ -3616,10 +3616,12 @@ function HistoryTab({
               {scoreHistoryQuery.data && scoreHistoryQuery.data.length > 0 && (() => {
                 const modalDeal = allRows.find((r) => r.id === scoreModalDealId);
                 const rawName = modalDeal?.pitchPreview
-                  ? modalDeal.pitchPreview.slice(0, 40).trim().replace(/[^a-zA-Z0-9 _-]/g, "").trim()
-                  : `deal-${scoreModalDealId}`;
+                  ? modalDeal.pitchPreview.slice(0, 40).trim().replace(/[^a-zA-Z0-9 _-]/g, "").trim().replace(/^-+|-+$/g, "")
+                  : "";
+                // Task 2: fallback to deal-{id} when rawName is empty (e.g. all-non-ASCII company name)
+                const slug = rawName.replace(/\s+/g, "-") || `deal-${scoreModalDealId}`;
                 const today = new Date().toISOString().slice(0, 10);
-                const filename = `score-history-${rawName.replace(/\s+/g, "-")}-${today}.csv`;
+                const filename = `score-history-${slug}-${today}.csv`;
                 const TRIGGER_LABELS_CSV: Record<string, string> = {
                   stale_diligence: "Stale in diligence",
                   stale_ic_ready: "Stale at IC ready",
@@ -3739,10 +3741,17 @@ function HistoryTab({
                         {delta === null && (
                           <span style={{ fontSize: 10, color: MUTED, minWidth: 60 }}>—</span>
                         )}
+                        {/* Task 1: button wrapper makes badge keyboard-focusable; display:contents preserves layout */}
                         {isFlat && (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span style={{ fontSize: 10, color: MUTED, minWidth: 60, cursor: "default" }}>→ flat</span>
+                              <button
+                                type="button"
+                                style={{ display: "contents", background: "none", border: "none", padding: 0, cursor: "default" }}
+                                aria-label={`Score change: flat. Previous score ${rows2[i - 1].score}`}
+                              >
+                                <span style={{ fontSize: 10, color: MUTED, minWidth: 60 }}>→ flat</span>
+                              </button>
                             </TooltipTrigger>
                             <TooltipContent side="top" sideOffset={4}>
                               Previous score: {rows2[i - 1].score}  (date: {new Date(rows2[i - 1].createdAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kuwait", day: "2-digit", month: "short", year: "numeric" })})
@@ -3752,7 +3761,13 @@ function HistoryTab({
                         {isUp && (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 600, minWidth: 60, cursor: "default" }}>↑ +{delta} pts</span>
+                              <button
+                                type="button"
+                                style={{ display: "contents", background: "none", border: "none", padding: 0, cursor: "default" }}
+                                aria-label={`Score change: +${delta} points. Previous score ${rows2[i - 1].score}`}
+                              >
+                                <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 600, minWidth: 60 }}>↑ +{delta} pts</span>
+                              </button>
                             </TooltipTrigger>
                             <TooltipContent side="top" sideOffset={4}>
                               Previous score: {rows2[i - 1].score}  (date: {new Date(rows2[i - 1].createdAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kuwait", day: "2-digit", month: "short", year: "numeric" })})
@@ -3762,7 +3777,13 @@ function HistoryTab({
                         {isDown && (
                           <Tooltip>
                             <TooltipTrigger asChild>
-                              <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 600, minWidth: 60, cursor: "default" }}>↓ {delta} pts</span>
+                              <button
+                                type="button"
+                                style={{ display: "contents", background: "none", border: "none", padding: 0, cursor: "default" }}
+                                aria-label={`Score change: ${delta} points. Previous score ${rows2[i - 1].score}`}
+                              >
+                                <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 600, minWidth: 60 }}>↓ {delta} pts</span>
+                              </button>
                             </TooltipTrigger>
                             <TooltipContent side="top" sideOffset={4}>
                               Previous score: {rows2[i - 1].score}  (date: {new Date(rows2[i - 1].createdAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kuwait", day: "2-digit", month: "short", year: "numeric" })})
