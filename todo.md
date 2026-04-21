@@ -3116,3 +3116,11 @@
 - [x] Add metrics bar below workflow cards grid (6,200+ decisions · 115 agents · <2s response)
 - [x] Replace Education Coming Soon card with waitlist CTA (email input + Join the waitlist)
 - [x] Add "Most Popular" badge to Deal Screening card (top-corner badge)
+
+## Landing page copy reframe for staff adoption (Apr 22 2026)
+- [x] Rewrite subheading to speak to daily pain (stop spending hours on structured analysis)
+- [x] Rewrite metrics bar: 115 agents → 14 industries; <2s → under 2 minutes
+- [x] Rewrite all 6 workflow card descriptions in outcome-focused staff language
+- [x] Rewrite CTA button to "Run your first task free"
+- [x] Rewrite trust line to peer-level copy
+- [x] Add friction reducer line near input box

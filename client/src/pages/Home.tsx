@@ -79,7 +79,7 @@ function EducationWaitlistCard() {
           <div className="text-sm font-semibold text-white">Education Workflow</div>
           <span className="px-2 py-0.5 rounded-full bg-pink-500/15 border border-pink-500/25 text-[9px] font-mono uppercase tracking-widest text-pink-400/70">Coming Soon</span>
         </div>
-        <div className="text-xs text-white/45 leading-relaxed">Curriculum design, assessment review, and institutional learning analytics.</div>
+        <div className="text-xs text-white/45 leading-relaxed">Structure course content and assessments at scale.</div>
       </div>
       {done ? (
         <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
@@ -266,7 +266,7 @@ export default function Home() {
         <div className="relative max-w-4xl mx-auto">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-500/10 border border-violet-500/20 text-violet-400 text-xs font-mono mb-8">
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            115 verified specialist agents · Live
+            Used by analysts and managers at leading institutions · Live
           </div>
 
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.08] mb-5">
@@ -277,7 +277,7 @@ export default function Home() {
           </h1>
 
           <p className="text-lg text-white/65 max-w-2xl mx-auto mb-3 leading-relaxed">
-            Describe any investment, procurement, or portfolio decision — and get a clear, structured output in seconds.
+            Stop spending hours on structured analysis. Describe your task, get a decision-ready output in seconds.
           </p>
 
           <p className="text-sm text-white/40 max-w-xl mx-auto mb-8 leading-relaxed">
@@ -326,12 +326,12 @@ export default function Home() {
                   onClick={() => trackEvent("home_pitchmirror_cta_click", { location: "hero" })}
                 >
                   <span className="text-xl">🪞</span>
-                  <span>Try it now — no login required</span>
+                  <span>Run your first task free</span>
                   <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </button>
               </Link>
               <p className="mt-3 text-xs text-white/40 text-center">
-                Free first analysis • takes ~30 seconds
+                No setup. No training. Just describe what you need.
               </p>
             </div>
           )}
@@ -360,7 +360,7 @@ export default function Home() {
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-white mb-1">Deal Screening</div>
-                    <div className="text-xs text-white/45 leading-relaxed">10-role council evaluates any deal and outputs a structured IC memo.</div>
+                    <div className="text-xs text-white/45 leading-relaxed">Upload pitches. Get ranked, structured summaries ready for committee.</div>
                   </div>
                   <div className="text-xs font-medium text-violet-400 flex items-center gap-1 group-hover:gap-2 transition-all">
                     Run Deal Screening <ArrowRight className="w-3 h-3" />
@@ -378,7 +378,7 @@ export default function Home() {
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-white mb-1">Procurement Evaluation</div>
-                    <div className="text-xs text-white/45 leading-relaxed">Score vendors and RFPs against your criteria with structured agent review.</div>
+                    <div className="text-xs text-white/45 leading-relaxed">Evaluate vendors against your criteria automatically.</div>
                   </div>
                   <div className="text-xs font-medium text-cyan-400 flex items-center gap-1 group-hover:gap-2 transition-all">
                     Run Procurement Evaluation <ArrowRight className="w-3 h-3" />
@@ -396,7 +396,7 @@ export default function Home() {
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-white mb-1">Pitch Triage</div>
-                    <div className="text-xs text-white/45 leading-relaxed">Multi-agent triage of startup pitches — engage, watch, or pass in seconds.</div>
+                    <div className="text-xs text-white/45 leading-relaxed">Sort your inbound deal flow in minutes, not days.</div>
                   </div>
                   <div className="text-xs font-medium text-emerald-400 flex items-center gap-1 group-hover:gap-2 transition-all">
                     Run Pitch Triage <ArrowRight className="w-3 h-3" />
@@ -414,7 +414,7 @@ export default function Home() {
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-white mb-1">PortfolioMesh</div>
-                    <div className="text-xs text-white/45 leading-relaxed">Institutional asset allocation analysis across equities, fixed income, and alternatives.</div>
+                    <div className="text-xs text-white/45 leading-relaxed">Track and report on portfolio companies without manual data wrangling.</div>
                   </div>
                   <div className="text-xs font-medium text-amber-400 flex items-center gap-1 group-hover:gap-2 transition-all">
                     Run PortfolioMesh <ArrowRight className="w-3 h-3" />
@@ -434,7 +434,7 @@ export default function Home() {
                   </div>
                   <div>
                     <div className="text-sm font-semibold text-white mb-1">Insurance Intelligence</div>
-                    <div className="text-xs text-white/45 leading-relaxed">Risk assessment and reinsurance analysis powered by specialist agents.</div>
+                    <div className="text-xs text-white/45 leading-relaxed">Process and triage claims or risk inputs consistently.</div>
                   </div>
                   <div className="text-xs font-medium text-sky-400 flex items-center gap-1 group-hover:gap-2 transition-all">
                     Run Insurance Workflow <ArrowRight className="w-3 h-3" />
@@ -446,8 +446,8 @@ export default function Home() {
             <div className="mt-5 flex items-center justify-center gap-0 flex-wrap max-w-2xl mx-auto">
               {[
                 { value: "6,200+", label: "decisions processed" },
-                { value: "115", label: "specialist agents" },
-                { value: "<2s", label: "average response" },
+                { value: "14", label: "industries served" },
+                { value: "<2 min", label: "task to output" },
                 { value: "6", label: "institutional domains" },
               ].map((stat, i) => (
                 <div key={stat.value} className="flex items-center gap-0">
@@ -830,7 +830,7 @@ export default function Home() {
                 {[
                   { icon: <Mail className="w-4 h-4 text-violet-400" />, label: "Email", value: "kishore@agenthink.ai" },
                   { icon: <Globe className="w-4 h-4 text-cyan-400" />, label: "Website", value: "agenthink.ai" },
-                  { icon: <Users className="w-4 h-4 text-emerald-400" />, label: "Trust", value: "Trusted by institutional decision-makers globally" },
+                  { icon: <Users className="w-4 h-4 text-emerald-400" />, label: "Trust", value: "Used by investment and procurement teams at leading institutions globally" },
                 ].map((c) => (
                   <div key={c.label} className="flex items-center gap-3">
                     <div className="w-9 h-9 rounded-xl bg-white/5 flex items-center justify-center flex-shrink-0">{c.icon}</div>
