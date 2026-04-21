@@ -1628,6 +1628,7 @@ export default function PitchTriage() {
 
 // ── HistoryTab sub-component ───────────────────────────────────────────────────────────────
 import type { PitchTriage as PitchTriageRow } from "../../../drizzle/schema";
+import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 
 interface HistoryTabProps {
   historyQuery: { data?: PitchTriageRow[]; isLoading: boolean; error: { message: string } | null };
@@ -3610,10 +3611,59 @@ function HistoryTab({
         >
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
             <span style={{ fontSize: 13, fontWeight: 700, color: TEXT2, letterSpacing: 0.5 }}>Score History</span>
-            <button
-              onClick={() => setScoreModalDealId(null)}
-              style={{ background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 18, lineHeight: 1 }}
-            >✕</button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              {/* CSV export — only shown when data is loaded */}
+              {scoreHistoryQuery.data && scoreHistoryQuery.data.length > 0 && (() => {
+                const modalDeal = allRows.find((r) => r.id === scoreModalDealId);
+                const rawName = modalDeal?.pitchPreview
+                  ? modalDeal.pitchPreview.slice(0, 40).trim().replace(/[^a-zA-Z0-9 _-]/g, "").trim()
+                  : `deal-${scoreModalDealId}`;
+                const today = new Date().toISOString().slice(0, 10);
+                const filename = `score-history-${rawName.replace(/\s+/g, "-")}-${today}.csv`;
+                const TRIGGER_LABELS_CSV: Record<string, string> = {
+                  stale_diligence: "Stale in diligence",
+                  stale_ic_ready: "Stale at IC ready",
+                  score_drop: "Score drop",
+                  pattern_shift: "Pattern shift",
+                  signal_triggered: "External signal",
+                };
+                function handleExportCsv() {
+                  const rows3 = scoreHistoryQuery.data!;
+                  const scores3 = rows3.map((r) => r.score);
+                  const lines = ["Date,Score,Delta,Trigger,Source"];
+                  rows3.forEach((r, i) => {
+                    const d = i === 0 ? null : scores3[i] - scores3[i - 1];
+                    const deltaStr = d === null ? "" : Math.abs(d) <= 3 ? "flat" : d > 0 ? `+${d}` : `\u2212${Math.abs(d)}`;
+                    const dateStr = new Date(r.createdAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kuwait", day: "2-digit", month: "short", year: "numeric" });
+                    const trigger = r.triggerType ? (TRIGGER_LABELS_CSV[r.triggerType] ?? r.triggerType) : "Manual";
+                    const source = r.source === "auto" ? "Auto" : "Manual";
+                    lines.push(`${dateStr},${r.score},${deltaStr},${trigger},${source}`);
+                  });
+                  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url; a.download = filename; a.click();
+                  URL.revokeObjectURL(url);
+                }
+                return (
+                  <button
+                    onClick={handleExportCsv}
+                    style={{
+                      background: "rgba(255,255,255,0.06)",
+                      border: `1px solid ${BORDER}`,
+                      color: MUTED, cursor: "pointer", fontSize: 10,
+                      borderRadius: 5, padding: "2px 8px",
+                      lineHeight: 1.6, letterSpacing: 0.3,
+                    }}
+                    title={`Export CSV: ${filename}`}
+                  >↓ CSV</button>
+                );
+              })()}
+              <button
+                onClick={() => setScoreModalDealId(null)}
+                style={{ background: "none", border: "none", color: MUTED, cursor: "pointer", fontSize: 18, lineHeight: 1 }}
+              >✕</button>
+            </div>
           </div>
           {scoreHistoryQuery.isLoading && (
             <div style={{ color: MUTED, fontSize: 12, textAlign: "center", padding: "12px 0" }}>Loading…</div>
@@ -3685,18 +3735,39 @@ function HistoryTab({
                             minWidth: 28,
                           }}
                         >{r.score}</span>
-                        {/* Delta annotation */}
+                        {/* Delta annotation with tooltip showing previous score + date */}
                         {delta === null && (
                           <span style={{ fontSize: 10, color: MUTED, minWidth: 60 }}>—</span>
                         )}
                         {isFlat && (
-                          <span style={{ fontSize: 10, color: MUTED, minWidth: 60 }}>→ flat</span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span style={{ fontSize: 10, color: MUTED, minWidth: 60, cursor: "default" }}>→ flat</span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" sideOffset={4}>
+                              Previous score: {rows2[i - 1].score}  (date: {new Date(rows2[i - 1].createdAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kuwait", day: "2-digit", month: "short", year: "numeric" })})
+                            </TooltipContent>
+                          </Tooltip>
                         )}
                         {isUp && (
-                          <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 600, minWidth: 60 }}>↑ +{delta} pts</span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 600, minWidth: 60, cursor: "default" }}>↑ +{delta} pts</span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" sideOffset={4}>
+                              Previous score: {rows2[i - 1].score}  (date: {new Date(rows2[i - 1].createdAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kuwait", day: "2-digit", month: "short", year: "numeric" })})
+                            </TooltipContent>
+                          </Tooltip>
                         )}
                         {isDown && (
-                          <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 600, minWidth: 60 }}>↓ {delta} pts</span>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 600, minWidth: 60, cursor: "default" }}>↓ {delta} pts</span>
+                            </TooltipTrigger>
+                            <TooltipContent side="top" sideOffset={4}>
+                              Previous score: {rows2[i - 1].score}  (date: {new Date(rows2[i - 1].createdAt).toLocaleDateString("en-GB", { timeZone: "Asia/Kuwait", day: "2-digit", month: "short", year: "numeric" })})
+                            </TooltipContent>
+                          </Tooltip>
                         )}
                         {r.source === "auto" && (
                           <span

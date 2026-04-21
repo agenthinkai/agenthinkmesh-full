@@ -2986,3 +2986,9 @@
 - [x] Task 1: Score history modal delta annotations — ↑/↓/→ column between rows, green/red/muted, largest-delta row gets 5%-opacity background tint
 - [x] Task 2: pitch.scoreHistory Vitest test file (server/routers/pitch.scoreHistory.test.ts) — 5 cases: ownership guard, empty return, ASC ordering, field shape, no artificial cap
 - [x] Task 3: Stale LSP watcher fix — root cause: tsBuildInfoFile stored in node_modules/typescript/tsbuildinfo was not invalidated after schema migrations. Fixed by moving tsBuildInfoFile to .tsbuildinfo at project root in tsconfig.json; deleted stale node_modules copy.
+
+## Sprint: Three-task sprint (ea9312e4 → new)
+
+- [x] Task 1: Delta tooltip on hover — Tooltip wraps ↑/↓/→ badges; shows "Previous score: N  (date: DD Mon YYYY)" on hover; first row has no badge/tooltip; dismisses on mouse leave
+- [x] Task 2: postdb:push cache invalidation hook — "postdb:push": "rm -f .tsbuildinfo" added to package.json; verified it fires and deletes .tsbuildinfo correctly
+- [x] Task 3: Score history CSV export — "↓ CSV" button in modal header (right-aligned, subtle secondary style); client-side generation; filename: score-history-[dealName]-[YYYY-MM-DD].csv; columns: Date, Score, Delta, Trigger, Source
