@@ -2980,3 +2980,9 @@
 - [x] tsc --noEmit EXIT:0 after each task
 - [x] Tests: 707 passed | 1 skipped (708 total) — 8 new tests from signalTypeSummary suite
 - [x] No schema changes, no regressions
+
+## Sprint: Three-task sprint on e03e1c10 base (Apr 21 2026)
+
+- [x] Task 1: Score history modal delta annotations — ↑/↓/→ column between rows, green/red/muted, largest-delta row gets 5%-opacity background tint
+- [x] Task 2: pitch.scoreHistory Vitest test file (server/routers/pitch.scoreHistory.test.ts) — 5 cases: ownership guard, empty return, ASC ordering, field shape, no artificial cap
+- [x] Task 3: Stale LSP watcher fix — root cause: tsBuildInfoFile stored in node_modules/typescript/tsbuildinfo was not invalidated after schema migrations. Fixed by moving tsBuildInfoFile to .tsbuildinfo at project root in tsconfig.json; deleted stale node_modules copy.

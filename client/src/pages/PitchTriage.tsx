@@ -3635,6 +3635,19 @@ function HistoryTab({
             const first2 = scores[0], last2 = scores[scores.length - 1];
             const diff2 = last2 - first2;
             const lineColor2 = diff2 > 3 ? "#22c55e" : diff2 < -3 ? "#ef4444" : "#6b7280";
+            // Compute per-row deltas (first row has no delta)
+            const deltas: (number | null)[] = scores.map((s, i) =>
+              i === 0 ? null : s - scores[i - 1]
+            );
+            // Find the row index with the largest absolute delta for highlight tint
+            let maxDeltaIdx = -1;
+            let maxDeltaAbs = 0;
+            deltas.forEach((d, i) => {
+              if (d !== null && Math.abs(d) > maxDeltaAbs) {
+                maxDeltaAbs = Math.abs(d);
+                maxDeltaIdx = i;
+              }
+            });
             return (
               <>
                 <svg width={W} height={H} style={{ display: "block", marginBottom: 16 }}>
@@ -3646,29 +3659,59 @@ function HistoryTab({
                   })}
                 </svg>
                 <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                  {rows2.map((r, i) => (
-                    <div key={r.id} style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 12 }}>
-                      <span style={{ color: MUTED, minWidth: 80, flexShrink: 0 }}>{new Date(r.createdAt).toLocaleDateString()}</span>
-                      <span
+                  {rows2.map((r, i) => {
+                    const delta = deltas[i];
+                    const isFlat = delta !== null && Math.abs(delta) <= 3;
+                    const isUp = delta !== null && delta > 3;
+                    const isDown = delta !== null && delta < -3;
+                    const isHighlight = i === maxDeltaIdx && maxDeltaAbs > 3;
+                    const rowBg = isHighlight
+                      ? (isUp ? "rgba(34,197,94,0.05)" : "rgba(239,68,68,0.05)")
+                      : "transparent";
+                    return (
+                      <div
+                        key={r.id}
                         style={{
-                          fontWeight: 800,
-                          color: r.score >= 62 ? "#22c55e" : r.score >= 38 ? "#f59e0b" : "#ef4444",
-                          minWidth: 28,
+                          display: "flex", alignItems: "center", gap: 10, fontSize: 12,
+                          background: rowBg, borderRadius: 6, padding: "2px 4px",
+                          marginLeft: -4, marginRight: -4,
                         }}
-                      >{r.score}</span>
-                      {r.source === "auto" && (
+                      >
+                        <span style={{ color: MUTED, minWidth: 80, flexShrink: 0 }}>{new Date(r.createdAt).toLocaleDateString()}</span>
                         <span
                           style={{
-                            fontSize: 10, fontWeight: 600,
-                            color: r.triggerType === "signal_triggered" ? "#60a5fa" : "#f59e0b",
-                            background: r.triggerType === "signal_triggered" ? "rgba(96,165,250,0.12)" : "rgba(245,158,11,0.12)",
-                            borderRadius: 4, padding: "1px 6px",
+                            fontWeight: 800,
+                            color: r.score >= 62 ? "#22c55e" : r.score >= 38 ? "#f59e0b" : "#ef4444",
+                            minWidth: 28,
                           }}
-                        >{r.triggerType === "signal_triggered" ? "📡 Signal" : `⚡ ${TRIGGER_LABELS[r.triggerType ?? ""] ?? "Auto"}`}</span>
-                      )}
-                      {i === rows2.length - 1 && <span style={{ fontSize: 10, color: MUTED, marginLeft: "auto" }}>latest</span>}
-                    </div>
-                  ))}
+                        >{r.score}</span>
+                        {/* Delta annotation */}
+                        {delta === null && (
+                          <span style={{ fontSize: 10, color: MUTED, minWidth: 60 }}>—</span>
+                        )}
+                        {isFlat && (
+                          <span style={{ fontSize: 10, color: MUTED, minWidth: 60 }}>→ flat</span>
+                        )}
+                        {isUp && (
+                          <span style={{ fontSize: 10, color: "#22c55e", fontWeight: 600, minWidth: 60 }}>↑ +{delta} pts</span>
+                        )}
+                        {isDown && (
+                          <span style={{ fontSize: 10, color: "#ef4444", fontWeight: 600, minWidth: 60 }}>↓ {delta} pts</span>
+                        )}
+                        {r.source === "auto" && (
+                          <span
+                            style={{
+                              fontSize: 10, fontWeight: 600,
+                              color: r.triggerType === "signal_triggered" ? "#60a5fa" : "#f59e0b",
+                              background: r.triggerType === "signal_triggered" ? "rgba(96,165,250,0.12)" : "rgba(245,158,11,0.12)",
+                              borderRadius: 4, padding: "1px 6px",
+                            }}
+                          >{r.triggerType === "signal_triggered" ? "📡 Signal" : `⚡ ${TRIGGER_LABELS[r.triggerType ?? ""] ?? "Auto"}`}</span>
+                        )}
+                        {i === rows2.length - 1 && <span style={{ fontSize: 10, color: MUTED, marginLeft: "auto" }}>latest</span>}
+                      </div>
+                    );
+                  })}
                 </div>
               </>
             );
