@@ -3051,3 +3051,12 @@
 - [x] Verified: pnpm db:push → "No schema changes, nothing to migrate" + "[✓] migrations applied successfully!"
 - [x] Verified: tsc --noEmit EXIT:0, 728 passed | 1 skipped
 - [x] Cleanup: removed temporary scripts (reconcile-migrations.mjs, create-login-events.mjs)
+
+## Sprint: Login anomaly alert (checkpoint 9e149f2d → new)
+
+- [x] Added new-country detection to recordLoginEvent() in server/loginEvents.ts
+- [x] Queries prior login_events for userId before inserting — detects first-time country
+- [x] Skips alert on null country (lookup failed) and on first-ever login
+- [x] Fire-and-forget void IIFE wrapping notifyOwner() — login path never blocked
+- [x] notifyOwner errors caught and logged, never re-thrown
+- [x] tsc --noEmit EXIT:0, 728 passed | 1 skipped
