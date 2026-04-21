@@ -3045,7 +3045,26 @@ If a section is not applicable (e.g. no financial data provided), set it to null
       }),
   }),
 
-  // ── Portfolio Intelligence ───────────────────────────────────────────────────
+  // ── Waitlist ──────────────────────────────────────────────────────────────
+  waitlist: router({
+    join: publicProcedure
+      .input(
+        z.object({
+          email: z.string().email("Invalid email address").max(320),
+          workflow: z.string().max(64).default("education"),
+        })
+      )
+      .mutation(async ({ input }) => {
+        // Notify owner via Manus notification service
+        await notifyOwner({
+          title: `📝 Waitlist signup: ${input.workflow} — ${input.email}`,
+          content: `New waitlist signup for the ${input.workflow} workflow.\n\nEmail: ${input.email}\nSubmitted at: ${new Date().toUTCString()}`,
+        }).catch(() => false);
+        return { success: true };
+      }),
+  }),
+
+  // ── Portfolio Intelligence ───────────────────────────────────────────────────────────────────
   portfolio: router({
 
     // Upload a document and create a new portfolio review record

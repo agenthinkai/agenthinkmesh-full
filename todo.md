@@ -3111,3 +3111,8 @@
 - [x] Add Graph subscription creation + daily renewal cron job
 - [x] Update index.ts to register graph-email webhook and renewal cron
 - [x] Remove all RESEND_API_KEY references
+
+## Landing page enhancements (Apr 22 2026)
+- [x] Add metrics bar below workflow cards grid (6,200+ decisions · 115 agents · <2s response)
+- [x] Replace Education Coming Soon card with waitlist CTA (email input + Join the waitlist)
+- [x] Add "Most Popular" badge to Deal Screening card (top-corner badge)

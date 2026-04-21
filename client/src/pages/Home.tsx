@@ -58,6 +58,62 @@ export function DemoBanner() {
   );
 }
 
+// ── Education Waitlist Card ─────────────────────────────────────────────────
+function EducationWaitlistCard() {
+  const [email, setEmail] = useState("");
+  const [done, setDone] = useState(false);
+  const joinWaitlist = trpc.waitlist.join.useMutation({
+    onSuccess: () => setDone(true),
+    onError: () => setDone(true), // still show success to avoid leaking errors
+  });
+  return (
+    <div className="w-full text-left flex flex-col gap-3 p-5 rounded-2xl bg-gradient-to-br from-pink-600/10 to-pink-600/5 border border-pink-500/25">
+      <div className="flex items-center justify-between">
+        <div className="w-9 h-9 rounded-xl bg-pink-500/20 border border-pink-500/30 flex items-center justify-center flex-shrink-0">
+          <Brain className="w-4.5 h-4.5 text-pink-400" />
+        </div>
+        <span className="text-[9px] font-mono text-pink-400/70 uppercase tracking-widest px-2 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/20">Education</span>
+      </div>
+      <div>
+        <div className="flex items-center gap-2 mb-1">
+          <div className="text-sm font-semibold text-white">Education Workflow</div>
+          <span className="px-2 py-0.5 rounded-full bg-pink-500/15 border border-pink-500/25 text-[9px] font-mono uppercase tracking-widest text-pink-400/70">Coming Soon</span>
+        </div>
+        <div className="text-xs text-white/45 leading-relaxed">Curriculum design, assessment review, and institutional learning analytics.</div>
+      </div>
+      {done ? (
+        <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-medium">
+          <CheckCircle2 className="w-3.5 h-3.5" /> You're on the list!
+        </div>
+      ) : (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (email) joinWaitlist.mutate({ email, workflow: "education" });
+          }}
+          className="flex gap-1.5"
+        >
+          <input
+            type="email"
+            required
+            placeholder="your@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="flex-1 min-w-0 px-2.5 py-1.5 rounded-lg bg-white/5 border border-white/10 text-xs text-white placeholder:text-white/25 focus:outline-none focus:border-pink-500/50 focus:ring-1 focus:ring-pink-500/20"
+          />
+          <button
+            type="submit"
+            disabled={joinWaitlist.isPending}
+            className="px-3 py-1.5 rounded-lg bg-pink-500/20 border border-pink-500/30 text-xs font-medium text-pink-300 hover:bg-pink-500/30 hover:text-pink-200 transition-colors disabled:opacity-50 whitespace-nowrap"
+          >
+            {joinWaitlist.isPending ? "…" : "Join waitlist"}
+          </button>
+        </form>
+      )}
+    </div>
+  );
+}
+
 export default function Home() {
   const { user, isAuthenticated } = useAuth();
   const [, navigate] = useLocation();
@@ -288,9 +344,14 @@ export default function Home() {
               <div className="h-px flex-1 max-w-[80px] bg-gradient-to-l from-transparent to-white/15" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-3xl mx-auto">
-              {/* Deal Screening */}
+              {/* Deal Screening — Most Popular */}
               <Link href="/deals">
-                <button className="group w-full text-left flex flex-col gap-3 p-5 rounded-2xl bg-gradient-to-br from-violet-600/15 to-violet-600/5 border border-violet-500/35 hover:border-violet-400/65 hover:from-violet-600/25 hover:to-violet-600/10 transition-all duration-200 shadow-lg shadow-violet-900/20 hover:-translate-y-0.5">
+                <button className="group relative w-full text-left flex flex-col gap-3 p-5 rounded-2xl bg-gradient-to-br from-violet-600/15 to-violet-600/5 border border-violet-500/35 hover:border-violet-400/65 hover:from-violet-600/25 hover:to-violet-600/10 transition-all duration-200 shadow-lg shadow-violet-900/20 hover:-translate-y-0.5">
+                  {/* Most Popular badge */}
+                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[9px] font-bold uppercase tracking-widest shadow-md shadow-emerald-900/40 whitespace-nowrap">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white/80 animate-pulse" />
+                    Most Popular
+                  </div>
                   <div className="flex items-center justify-between">
                     <div className="w-9 h-9 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0">
                       <BarChart3 className="w-4.5 h-4.5 text-violet-400" />
@@ -360,22 +421,8 @@ export default function Home() {
                   </div>
                 </button>
               </Link>
-              {/* Education — Coming Soon */}
-              <div className="group w-full text-left flex flex-col gap-3 p-5 rounded-2xl bg-gradient-to-br from-pink-600/10 to-pink-600/5 border border-pink-500/25 opacity-75 cursor-default">
-                <div className="flex items-center justify-between">
-                  <div className="w-9 h-9 rounded-xl bg-pink-500/20 border border-pink-500/30 flex items-center justify-center flex-shrink-0">
-                    <Brain className="w-4.5 h-4.5 text-pink-400" />
-                  </div>
-                  <span className="text-[9px] font-mono text-pink-400/70 uppercase tracking-widest px-2 py-0.5 rounded-full bg-pink-500/10 border border-pink-500/20">Education</span>
-                </div>
-                <div>
-                  <div className="text-sm font-semibold text-white mb-1">Education Workflow</div>
-                  <div className="text-xs text-white/45 leading-relaxed">Curriculum design, assessment review, and institutional learning analytics.</div>
-                </div>
-                <div className="text-xs font-medium text-pink-400/60 flex items-center gap-1.5">
-                  <span className="px-2 py-0.5 rounded-full bg-pink-500/15 border border-pink-500/25 text-[9px] uppercase tracking-widest">Coming Soon</span>
-                </div>
-              </div>
+              {/* Education — Waitlist */}
+              <EducationWaitlistCard />
               {/* Insurance / Reinsurance */}
               <Link href="/insurance">
                 <button className="group w-full text-left flex flex-col gap-3 p-5 rounded-2xl bg-gradient-to-br from-sky-600/15 to-sky-600/5 border border-sky-500/35 hover:border-sky-400/65 hover:from-sky-600/25 hover:to-sky-600/10 transition-all duration-200 shadow-lg shadow-sky-900/20 hover:-translate-y-0.5">
@@ -394,6 +441,23 @@ export default function Home() {
                   </div>
                 </button>
               </Link>
+            </div>
+            {/* ── METRICS BAR ── */}
+            <div className="mt-5 flex items-center justify-center gap-0 flex-wrap max-w-2xl mx-auto">
+              {[
+                { value: "6,200+", label: "decisions processed" },
+                { value: "115", label: "specialist agents" },
+                { value: "<2s", label: "average response" },
+                { value: "6", label: "institutional domains" },
+              ].map((stat, i) => (
+                <div key={stat.value} className="flex items-center gap-0">
+                  <div className="flex flex-col items-center px-5 py-2">
+                    <span className="text-base font-bold text-emerald-400 leading-none">{stat.value}</span>
+                    <span className="text-[10px] text-white/40 font-mono mt-0.5">{stat.label}</span>
+                  </div>
+                  {i < 3 && <div className="w-px h-6 bg-white/10" />}
+                </div>
+              ))}
             </div>
           </div>
 
