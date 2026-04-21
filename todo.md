@@ -3028,3 +3028,8 @@
 ## Bugfix: Profile dropdown not visible (checkpoint 4d571d2d → new)
 
 - [x] Root cause: overflow:hidden on SiteNav outer bar clipped the absolutely-positioned avatar dropdown. Removed the overflow property.
+
+## Sprint: Space key test + overflowX:clip nav refactor (checkpoint 86ca7021 → new)
+
+- [x] Task 1: Test case 10 — Space key on backdrop calls onClose exactly once (symmetric to test 9)
+- [x] Task 2: Replace overflow:hidden with overflowX:clip on SiteNav sticky bar — prevents horizontal bleed without clipping absolutely-positioned children
