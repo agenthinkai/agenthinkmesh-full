@@ -3207,3 +3207,4 @@
 ## Email bugs (Apr 22 2026)
 - [x] Fix trial-progress email frequency — emails being sent more than once daily; correct schedule to exactly once per day
 - [x] Fix unsubscribe link in trial-progress email — link is not working; repair token generation, URL construction, and /unsubscribe page flow
+- [x] Fix root cause of repeated emails: cold-start send on every server restart — added 5-minute startup delay so tsx watch file-save restarts do not trigger immediate re-sends; unique constraint remains the hard dedup guard

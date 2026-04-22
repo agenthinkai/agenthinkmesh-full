@@ -252,19 +252,35 @@ export async function runDripJob(): Promise<void> {
   }
 }
 
-// ── Start drip scheduler ──────────────────────────────────────────────────────
-
+/// ── Start drip scheduler ──────────────────────────────────────────────────────
 let dripInterval: NodeJS.Timeout | null = null;
+
+/**
+ * Startup delay before the first drip run.
+ * This prevents emails being sent on every server restart (tsx watch, deployments,
+ * sandbox hibernation/resume). The unique constraint on email_events is the primary
+ * dedup guard; this delay is a second layer of defence that avoids unnecessary DB
+ * round-trips on rapid restarts.
+ *
+ * 5 minutes is long enough to survive a tsx watch file-save restart cycle but short
+ * enough that a genuinely new deployment still sends within the same day.
+ */
+const STARTUP_DELAY_MS = 5 * 60 * 1000; // 5 minutes
+const INTERVAL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export function startDripScheduler(): void {
   if (dripInterval) return; // already running
 
-  // Run immediately on start, then every 24 hours — one send window per day
-  runDripJob().catch(err => console.error("[EmailDrip] Job error:", err));
+  // Delay the first run to avoid re-sending on every server restart.
+  // The unique constraint on email_events is the hard dedup guard;
+  // this delay prevents unnecessary DB hits on rapid restarts.
+  console.log(`[EmailDrip] Drip scheduler registered — first run in ${STARTUP_DELAY_MS / 60000} minutes, then every 24 hours`);
 
-  dripInterval = setInterval(() => {
-    runDripJob().catch(err => console.error("[EmailDrip] Job error:", err));
-  }, 24 * 60 * 60 * 1000); // every 24 hours
-
-  console.log("[EmailDrip] Drip scheduler started (runs every 24 hours)");
+  setTimeout(() => {
+    runDripJob().catch(err => console.error("[EmailDrip] Job error (startup):", err));
+    dripInterval = setInterval(() => {
+      runDripJob().catch(err => console.error("[EmailDrip] Job error:", err));
+    }, INTERVAL_MS);
+    console.log("[EmailDrip] Drip scheduler active (running every 24 hours)");
+  }, STARTUP_DELAY_MS);
 }
