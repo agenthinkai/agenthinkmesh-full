@@ -3157,3 +3157,8 @@
 - [x] Portfolio-specific system prompt override in mirror mutation when stage=portfolio
 - [x] Add waitlist_signups DB table, persist signups, add admin dashboard view
 - [x] Build /sg-ic institutional demo page (Singapore sovereign wealth fund, neutral URL convention)
+
+## Enhancements sprint 9 (Apr 22 2026)
+- [x] Add waitlist email capture to /sg-ic (sourcePage: sg-ic, workflow: institutional)
+- [x] Build /jp-ic Japan deeptech demo page (Seiwa Robotics, METI/FEFTA context, 4 agents)
+- [x] Build /us-ic US SaaS demo page (Fluxion Inc., Rule of 40, CAC payback, 4 agents)

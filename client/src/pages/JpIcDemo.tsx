@@ -4,73 +4,80 @@ import { trpc } from "@/lib/trpc";
 
 // ── Static deal data ──────────────────────────────────────────────────────────
 const DEAL = {
-  company: "PayFlow Technologies",
+  company: "Seiwa Robotics",
   stage: "Series B",
-  sector: "Payments Infrastructure",
-  geography: "Singapore → Malaysia → Thailand",
-  arr: "$4.2M ARR",
-  nrr: "180% NRR",
-  raise: "$18M",
+  sector: "Industrial AI / Robotics",
+  geography: "Tokyo → Osaka manufacturing corridor",
+  arr: "¥820M ARR (~$5.4M)",
+  nrr: "162% NRR",
+  raise: "$22M",
   description:
-    "B2B payments infrastructure for SME cross-border disbursements across Southeast Asia. Core product: embedded treasury rails enabling real-time FX settlement between SGD, MYR, and THB. Primary customers are logistics operators, staffing agencies, and digital-first distributors.",
+    "Vision-guided robotic assembly systems for automotive and precision electronics manufacturers along the Tokai–Kinki corridor. Core product: AI-driven quality inspection and adaptive pick-and-place modules deployed on existing factory floors without line stoppage. Primary customers are Tier 1 and Tier 2 automotive suppliers. METI-designated as a strategic deep-tech company under the Green Innovation Fund.",
 };
 
 // ── Simulated IC memo output ──────────────────────────────────────────────────
-const MEMO_DATE = "22 April 2026 — 09:14 SGT";
-const MEMO_REF = "IC-SG-2026-0422-001";
+const MEMO_DATE = "22 April 2026 — 10:30 JST";
+const MEMO_REF = "IC-JP-2026-0422-001";
 
 const AGENT_OUTPUTS = [
   {
-    id: "Agent 1 — Market & Competitive",
-    verdict: "CONDITIONAL ENGAGE",
-    confidence: 71,
+    id: "Agent 1 — Market & IP",
+    verdict: "ENGAGE",
+    confidence: 74,
     summary:
-      "Southeast Asia cross-border SME payments is a structurally underserved segment. Incumbent rails (SWIFT, local ACH) carry 3–5 day settlement cycles; PayFlow claims T+0 for SGD/MYR/THB corridors. Competitive moat is narrow — GrabPay, Rapyd, and Nium operate adjacent corridors with larger balance sheets. Differentiation depends on corridor-specific licensing depth, not product alone.",
+      "Japan's industrial robotics market is structurally underpenetrated at the SME tier. Seiwa holds four registered patents on adaptive torque-feedback algorithms and two pending patents on vision-model compression for edge inference. METI Green Innovation Fund designation provides non-dilutive co-investment of ¥300M and signals regulatory alignment. IP moat is credible for a 3–5 year window; longer-term defensibility depends on continuous R&D velocity relative to Fanuc and Yaskawa.",
     flags: [],
   },
   {
     id: "Agent 2 — Financial & Unit Economics",
     verdict: "INSUFFICIENT DATA",
-    confidence: 44,
+    confidence: 46,
     summary:
-      "Top-line metrics ($4.2M ARR, 180% NRR) are consistent with a healthy expansion-revenue profile. However, unit economics below Series B threshold were not provided: CAC, payback period, gross margin per corridor, and FX spread capture rate are absent. At 180% NRR, cohort retention appears strong, but without LTV/CAC the capital efficiency of the $18M raise cannot be assessed.",
-    flags: ["Unit economics not provided", "Gross margin by corridor absent", "FX spread model not disclosed"],
-  },
-  {
-    id: "Agent 3 — Execution & Regulatory Risk",
-    verdict: "WATCH",
-    confidence: 58,
-    summary:
-      "Regulatory exposure is the primary execution risk. Operating across three jurisdictions (MAS Singapore, BNM Malaysia, BOT Thailand) requires concurrent licensing maintenance. MAS PSA Major Payment Institution licence is held; BNM MSB licence is pending renewal (Q3 2026); BOT PSPA licence application is in progress. Any single licence lapse suspends corridor operations. Agent 3 rates execution risk materially higher than the consensus — the team's regulatory track record in Malaysia and Thailand has not been independently verified.",
+      "¥820M ARR and 162% NRR are consistent with a sticky enterprise expansion model. However, gross margin by segment (hardware vs. software subscription vs. maintenance) has not been provided. Hardware-heavy robotics businesses typically carry 35–45% blended gross margins; software-only layers can reach 75–80%. Without segment-level margin disclosure, the capital efficiency of the $22M raise and the path to profitability cannot be assessed.",
     flags: [
-      "BNM MSB licence renewal pending Q3 2026",
-      "BOT PSPA licence not yet granted",
-      "Regulatory track record in MY/TH unverified",
+      "Gross margin by segment not disclosed",
+      "Hardware vs. software revenue split absent",
+      "Path to profitability timeline not provided",
     ],
   },
   {
-    id: "Agent 4 — Team & Governance",
-    verdict: "ENGAGE",
-    confidence: 76,
+    id: "Agent 3 — Market Sizing & Timeline",
+    verdict: "WATCH",
+    confidence: 60,
     summary:
-      "Founding team carries relevant prior experience: CEO previously led treasury operations at DBS Institutional, COO built SME lending at Funding Societies. Board includes one independent director with MAS advisory background. Cap table is clean at Series B — no participating preferred, standard 1x non-participating liquidation preference. No governance concerns identified.",
-    flags: [],
+      "The addressable market thesis (¥4.2T TAM in Japan industrial automation by 2030) is directionally credible based on METI white paper projections. However, the company's 5-year revenue model implies 38% CAGR, which requires simultaneous expansion into three new manufacturing verticals (aerospace, medical devices, food processing) by 2028. Each vertical carries distinct certification timelines (JIS, ISO 13485, HACCP). The timeline is aggressive relative to observed certification cycles in comparable Japanese deep-tech companies.",
+    flags: [
+      "Multi-vertical expansion timeline aggressive",
+      "Certification cycles for aerospace/medical not modelled",
+    ],
+  },
+  {
+    id: "Agent 4 — Regulatory & Export Control",
+    verdict: "WATCH",
+    confidence: 52,
+    summary:
+      "Export control exposure is the primary risk flag. Seiwa's vision-model compression technology may fall within dual-use classification under Japan's Foreign Exchange and Foreign Trade Act (FEFTA) and adjacent US EAR controls if the company pursues US or EU deployment. METI export classification review is pending; outcome expected Q4 2026. Until classification is confirmed, any non-Japan customer engagement carries regulatory uncertainty. Agent 4 rates this risk above consensus — the founding team has not previously navigated FEFTA dual-use review, and external trade counsel has not been retained.",
+    flags: [
+      "METI FEFTA dual-use classification pending Q4 2026",
+      "US EAR adjacency not assessed by external counsel",
+      "No prior FEFTA experience in founding team",
+    ],
   },
 ];
 
 const CONSENSUS_VERDICT = "CONDITIONAL ENGAGE — PENDING DATA";
 const CONSENSUS_RATIONALE =
-  "Three of four agents rate the opportunity as conditionally investable. The financial agent cannot complete its assessment without unit economics. Agent 3 rates execution risk above consensus due to concurrent multi-jurisdiction licensing exposure. The IC should not proceed to term sheet without (a) verified unit economics and (b) confirmation of BNM renewal status.";
+  "Two of four agents rate the opportunity as conditionally investable. The financial agent cannot complete its assessment without segment-level gross margin data. Agent 4 rates regulatory risk above consensus due to unresolved FEFTA dual-use classification. The IC should not proceed to term sheet without (a) gross margin by segment, (b) METI export classification outcome or external trade counsel opinion, and (c) confirmation of single-customer revenue concentration.";
 
 const RECOMMENDED_NEXT_STEP =
-  "Request data room access for: (1) cohort-level LTV/CAC by corridor, (2) gross margin by product line, (3) BNM MSB renewal documentation, (4) BOT PSPA application timeline. Schedule follow-up IC session within 21 days of data receipt.";
+  "Request data room access for: (1) gross margin by revenue segment (hardware / software / maintenance), (2) METI FEFTA classification correspondence or external trade counsel memo, (3) customer revenue concentration table (top 5 customers as % of ARR), (4) certification roadmap for aerospace and medical verticals. Schedule follow-up IC session within 21 days of data receipt.";
 
 const AGENT_DISAGREEMENT_NOTE =
-  "Agent 3 (Execution & Regulatory Risk) rates execution risk at 58% confidence — materially below the 71–76% confidence range of Agents 1 and 4. The divergence is driven by unresolved licensing status in Malaysia and Thailand. This disagreement is flagged for IC attention.";
+  "Agent 4 (Regulatory & Export Control) rates execution risk at 52% confidence — materially below the 60–74% confidence range of Agents 1, 2, and 3. The divergence is driven by unresolved FEFTA dual-use classification and the absence of external trade counsel. This disagreement is flagged for IC attention.";
 
 // ── Pre-filled deal text for /pitch-triage navigation ─────────────────────────
 const PREFILL_TASK = encodeURIComponent(
-  "PayFlow Technologies — Series B, $18M raise. Singapore-based B2B payments infrastructure for SME cross-border disbursements (SGD/MYR/THB corridors). $4.2M ARR, 180% NRR. Expanding SG→MY→TH. Evaluate for institutional investment."
+  "Seiwa Robotics — Series B, $22M raise. Tokyo-based industrial AI/robotics company. Vision-guided assembly and quality inspection for automotive Tier 1/2 suppliers. ¥820M ARR (~$5.4M), 162% NRR. METI Green Innovation Fund designee. Export control classification pending. Evaluate for institutional investment."
 );
 
 // ── Verdict badge ─────────────────────────────────────────────────────────────
@@ -168,7 +175,7 @@ function WaitlistCapture({ sourcePage }: { sourcePage: string }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
-export default function SgIcDemo() {
+export default function JpIcDemo() {
   const [, navigate] = useLocation();
 
   return (
@@ -176,7 +183,7 @@ export default function SgIcDemo() {
       {/* Context strip */}
       <div className="bg-slate-800/60 border-b border-white/10 px-4 py-2 text-center">
         <span className="text-xs text-slate-400">
-          Simulated IC memo using Southeast Asia deal patterns — not a real company or transaction
+          Simulated IC memo using Japan deeptech deal patterns — not a real company or transaction
         </span>
       </div>
 
@@ -284,7 +291,7 @@ export default function SgIcDemo() {
         </div>
 
         {/* Recommended next step */}
-        <div className="border-l-4 border-emerald-400 bg-emerald-400/5 rounded-r-xl p-5 mb-10">
+        <div className="border-l-4 border-emerald-400 bg-emerald-400/5 rounded-r-xl p-5 mb-8">
           <div className="text-xs text-emerald-400 uppercase tracking-wider font-medium mb-2">
             Recommended Next Step
           </div>
@@ -312,7 +319,7 @@ export default function SgIcDemo() {
         </div>
 
         {/* Waitlist capture */}
-        <WaitlistCapture sourcePage="sg-ic" />
+        <WaitlistCapture sourcePage="jp-ic" />
 
         {/* Footer */}
         <div className="mt-10 pt-6 border-t border-white/10 flex items-center justify-between text-xs text-slate-600">

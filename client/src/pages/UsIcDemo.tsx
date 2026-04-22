@@ -4,73 +4,80 @@ import { trpc } from "@/lib/trpc";
 
 // ── Static deal data ──────────────────────────────────────────────────────────
 const DEAL = {
-  company: "PayFlow Technologies",
+  company: "Fluxion Inc.",
   stage: "Series B",
-  sector: "Payments Infrastructure",
-  geography: "Singapore → Malaysia → Thailand",
-  arr: "$4.2M ARR",
-  nrr: "180% NRR",
-  raise: "$18M",
+  sector: "Enterprise Workflow Automation",
+  geography: "San Francisco · New York · Chicago",
+  arr: "$9.1M ARR",
+  nrr: "124% NRR",
+  raise: "$35M",
   description:
-    "B2B payments infrastructure for SME cross-border disbursements across Southeast Asia. Core product: embedded treasury rails enabling real-time FX settlement between SGD, MYR, and THB. Primary customers are logistics operators, staffing agencies, and digital-first distributors.",
+    "AI-native workflow automation platform targeting enterprise operations teams in financial services and insurance. Core product: no-code process orchestration layer that integrates with Salesforce, ServiceNow, and legacy BPMS systems without rip-and-replace. Primary customers are F500 operations and compliance teams. Land-and-expand motion: initial seat-based contracts expand into department-wide deployments within 12–18 months.",
 };
 
 // ── Simulated IC memo output ──────────────────────────────────────────────────
-const MEMO_DATE = "22 April 2026 — 09:14 SGT";
-const MEMO_REF = "IC-SG-2026-0422-001";
+const MEMO_DATE = "22 April 2026 — 09:45 EDT";
+const MEMO_REF = "IC-US-2026-0422-001";
 
 const AGENT_OUTPUTS = [
   {
-    id: "Agent 1 — Market & Competitive",
-    verdict: "CONDITIONAL ENGAGE",
-    confidence: 71,
+    id: "Agent 1 — Revenue Quality & Expansion",
+    verdict: "ENGAGE",
+    confidence: 78,
     summary:
-      "Southeast Asia cross-border SME payments is a structurally underserved segment. Incumbent rails (SWIFT, local ACH) carry 3–5 day settlement cycles; PayFlow claims T+0 for SGD/MYR/THB corridors. Competitive moat is narrow — GrabPay, Rapyd, and Nium operate adjacent corridors with larger balance sheets. Differentiation depends on corridor-specific licensing depth, not product alone.",
+      "124% NRR with F500 anchor logos (three named financial services clients, two insurance carriers) is a strong signal of product-market fit in a compliance-sensitive buyer segment. Land-and-expand motion is validated: average contract value at expansion is 3.4x the initial deal. Logo quality reduces churn risk materially — enterprise compliance buyers face high switching costs once workflow logic is embedded. The revenue quality case is the strongest element of this opportunity.",
     flags: [],
   },
   {
-    id: "Agent 2 — Financial & Unit Economics",
-    verdict: "INSUFFICIENT DATA",
-    confidence: 44,
-    summary:
-      "Top-line metrics ($4.2M ARR, 180% NRR) are consistent with a healthy expansion-revenue profile. However, unit economics below Series B threshold were not provided: CAC, payback period, gross margin per corridor, and FX spread capture rate are absent. At 180% NRR, cohort retention appears strong, but without LTV/CAC the capital efficiency of the $18M raise cannot be assessed.",
-    flags: ["Unit economics not provided", "Gross margin by corridor absent", "FX spread model not disclosed"],
-  },
-  {
-    id: "Agent 3 — Execution & Regulatory Risk",
+    id: "Agent 2 — Unit Economics & CAC",
     verdict: "WATCH",
-    confidence: 58,
+    confidence: 57,
     summary:
-      "Regulatory exposure is the primary execution risk. Operating across three jurisdictions (MAS Singapore, BNM Malaysia, BOT Thailand) requires concurrent licensing maintenance. MAS PSA Major Payment Institution licence is held; BNM MSB licence is pending renewal (Q3 2026); BOT PSPA licence application is in progress. Any single licence lapse suspends corridor operations. Agent 3 rates execution risk materially higher than the consensus — the team's regulatory track record in Malaysia and Thailand has not been independently verified.",
+      "CAC payback of 28 months is above the 18–24 month threshold typically expected at Series B for enterprise SaaS. At $9.1M ARR with 124% NRR, the long-term LTV is defensible, but the payback period creates near-term cash consumption pressure. The $35M raise implies approximately 24 months of runway at current burn — sufficient if expansion velocity holds, but leaves limited buffer for sales cycle elongation. Agent 2 notes that the payback period may compress as ACV increases with F500 expansion, but this is not yet reflected in reported metrics.",
     flags: [
-      "BNM MSB licence renewal pending Q3 2026",
-      "BOT PSPA licence not yet granted",
-      "Regulatory track record in MY/TH unverified",
+      "CAC payback 28 months — above Series B benchmark",
+      "Runway sensitivity to sales cycle elongation",
     ],
   },
   {
-    id: "Agent 4 — Team & Governance",
-    verdict: "ENGAGE",
-    confidence: 76,
+    id: "Agent 3 — Competitive Positioning",
+    verdict: "WATCH",
+    confidence: 62,
     summary:
-      "Founding team carries relevant prior experience: CEO previously led treasury operations at DBS Institutional, COO built SME lending at Funding Societies. Board includes one independent director with MAS advisory background. Cap table is clean at Series B — no participating preferred, standard 1x non-participating liquidation preference. No governance concerns identified.",
-    flags: [],
+      "The workflow automation market is crowded at the enterprise tier. Salesforce Flow, ServiceNow App Engine, and Microsoft Power Automate are embedded in existing enterprise contracts and carry zero incremental budget friction for buyers. Fluxion's differentiation — cross-platform orchestration without rip-and-replace — is credible but replicable. The 12–18 month window before hyperscaler feature parity narrows is the primary competitive risk. Agent 3 rates competitive moat as moderate: strong enough to close current pipeline, insufficient to sustain pricing power at scale without a defensible data network effect.",
+    flags: [
+      "Salesforce/ServiceNow/Microsoft adjacency — zero-budget-friction alternatives",
+      "No defensible data network effect identified",
+    ],
+  },
+  {
+    id: "Agent 4 — Rule of 40 & Capital Efficiency",
+    verdict: "INSUFFICIENT DATA",
+    confidence: 41,
+    summary:
+      "Rule of 40 score cannot be computed. ARR growth rate (YoY) and EBITDA margin have not been provided. At $9.1M ARR and a $35M raise, the implied post-money valuation is likely in the $100–140M range (11–15x ARR), which is reasonable for 2026 Series B multiples if growth rate exceeds 60% YoY. However, without confirmed growth rate and margin data, the valuation cannot be benchmarked against comparable transactions. Agent 4 flags this as a critical gap — the IC cannot assess whether the $35M raise is priced efficiently without Rule of 40 data.",
+    flags: [
+      "YoY ARR growth rate not provided",
+      "EBITDA margin not disclosed",
+      "Rule of 40 score cannot be computed",
+      "Valuation multiple cannot be benchmarked",
+    ],
   },
 ];
 
 const CONSENSUS_VERDICT = "CONDITIONAL ENGAGE — PENDING DATA";
 const CONSENSUS_RATIONALE =
-  "Three of four agents rate the opportunity as conditionally investable. The financial agent cannot complete its assessment without unit economics. Agent 3 rates execution risk above consensus due to concurrent multi-jurisdiction licensing exposure. The IC should not proceed to term sheet without (a) verified unit economics and (b) confirmation of BNM renewal status.";
+  "Two of four agents rate the opportunity as conditionally investable. Agent 4 cannot complete its assessment without ARR growth rate and margin data. Agent 2 flags CAC payback above Series B benchmark. The IC should not proceed to term sheet without (a) YoY ARR growth rate, (b) EBITDA margin or burn multiple, and (c) CAC payback trajectory by cohort year.";
 
 const RECOMMENDED_NEXT_STEP =
-  "Request data room access for: (1) cohort-level LTV/CAC by corridor, (2) gross margin by product line, (3) BNM MSB renewal documentation, (4) BOT PSPA application timeline. Schedule follow-up IC session within 21 days of data receipt.";
+  "Request data room access for: (1) YoY ARR growth rate (trailing 12 months), (2) EBITDA margin or net burn multiple, (3) CAC payback by cohort year (2022–2025), (4) competitive win/loss analysis against Salesforce Flow and ServiceNow App Engine. Schedule follow-up IC session within 14 days of data receipt.";
 
 const AGENT_DISAGREEMENT_NOTE =
-  "Agent 3 (Execution & Regulatory Risk) rates execution risk at 58% confidence — materially below the 71–76% confidence range of Agents 1 and 4. The divergence is driven by unresolved licensing status in Malaysia and Thailand. This disagreement is flagged for IC attention.";
+  "Agent 4 (Rule of 40 & Capital Efficiency) rates confidence at 41% — materially below the 57–78% range of Agents 1, 2, and 3. The divergence is driven by missing ARR growth rate and margin data, which are required to benchmark the $35M raise valuation. This disagreement is flagged for IC attention.";
 
 // ── Pre-filled deal text for /pitch-triage navigation ─────────────────────────
 const PREFILL_TASK = encodeURIComponent(
-  "PayFlow Technologies — Series B, $18M raise. Singapore-based B2B payments infrastructure for SME cross-border disbursements (SGD/MYR/THB corridors). $4.2M ARR, 180% NRR. Expanding SG→MY→TH. Evaluate for institutional investment."
+  "Fluxion Inc. — Series B, $35M raise. San Francisco-based enterprise workflow automation SaaS. $9.1M ARR, 124% NRR, CAC payback 28 months. F500 financial services and insurance clients. Competes adjacent to Salesforce Flow and ServiceNow. Evaluate for institutional investment."
 );
 
 // ── Verdict badge ─────────────────────────────────────────────────────────────
@@ -168,7 +175,7 @@ function WaitlistCapture({ sourcePage }: { sourcePage: string }) {
 }
 
 // ── Main page ─────────────────────────────────────────────────────────────────
-export default function SgIcDemo() {
+export default function UsIcDemo() {
   const [, navigate] = useLocation();
 
   return (
@@ -176,7 +183,7 @@ export default function SgIcDemo() {
       {/* Context strip */}
       <div className="bg-slate-800/60 border-b border-white/10 px-4 py-2 text-center">
         <span className="text-xs text-slate-400">
-          Simulated IC memo using Southeast Asia deal patterns — not a real company or transaction
+          Simulated IC memo using US enterprise SaaS deal patterns — not a real company or transaction
         </span>
       </div>
 
@@ -284,7 +291,7 @@ export default function SgIcDemo() {
         </div>
 
         {/* Recommended next step */}
-        <div className="border-l-4 border-emerald-400 bg-emerald-400/5 rounded-r-xl p-5 mb-10">
+        <div className="border-l-4 border-emerald-400 bg-emerald-400/5 rounded-r-xl p-5 mb-8">
           <div className="text-xs text-emerald-400 uppercase tracking-wider font-medium mb-2">
             Recommended Next Step
           </div>
@@ -312,7 +319,7 @@ export default function SgIcDemo() {
         </div>
 
         {/* Waitlist capture */}
-        <WaitlistCapture sourcePage="sg-ic" />
+        <WaitlistCapture sourcePage="us-ic" />
 
         {/* Footer */}
         <div className="mt-10 pt-6 border-t border-white/10 flex items-center justify-between text-xs text-slate-600">

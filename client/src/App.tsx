@@ -91,6 +91,8 @@ import AdminUserList from "./pages/AdminUserList";
 import PasswordLogin from "./pages/PasswordLogin";
 import ChangePassword from "./pages/ChangePassword";
 import SgIcDemo from "./pages/SgIcDemo";
+import JpIcDemo from "./pages/JpIcDemo";
+import UsIcDemo from "./pages/UsIcDemo";
 
 function Router() {
   const { isAuthenticated, loading } = useAuth();
@@ -270,6 +272,8 @@ function Router() {
 
       {/* Institutional demo pages — standalone cold-send URLs */}
       <Route path="/sg-ic" component={SgIcDemo} />
+      <Route path="/jp-ic" component={JpIcDemo} />
+      <Route path="/us-ic" component={UsIcDemo} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />
