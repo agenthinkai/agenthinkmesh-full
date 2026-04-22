@@ -37,13 +37,13 @@ const RED = "#f87171";
 const GUEST_RUN_KEY = "pitchMirrorGuestRun";
 const STAGE_STORAGE_KEY = "pitchMirrorStage";
 
-type FounderStage = "idea" | "building" | "early_revenue" | "scaling";
-
+type FounderStage = "idea" | "building" | "early_revenue" | "scaling" | "portfolio";
 const STAGE_OPTIONS: { value: FounderStage; label: string }[] = [
   { value: "idea", label: "Exploring idea" },
   { value: "building", label: "Building (no revenue)" },
   { value: "early_revenue", label: "Early revenue" },
   { value: "scaling", label: "Scaling" },
+  { value: "portfolio", label: "Portfolio company review" },
 ];
 
 type MirrorResult = {

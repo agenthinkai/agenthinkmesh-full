@@ -249,7 +249,7 @@ export default function Home() {
                 { label: "Triage a pitch", value: "Screen these 5 pitches against our early-stage B2B SaaS thesis", stage: "early_revenue" },
                 { label: "Screen a deal", value: "Evaluate this Series A deal against our investment criteria", stage: "scaling" },
                 { label: "Evaluate a vendor", value: "Compare these 3 vendors against our procurement criteria for cloud infrastructure", stage: "building" },
-                { label: "Assess a portfolio company", value: "Summarise the current performance of our 3 portfolio companies against Q2 targets", stage: "scaling" },
+                { label: "Assess a portfolio company", value: "Summarise the current performance of our 3 portfolio companies against Q2 targets", stage: "portfolio" },
               ].map((chip) => (
                 <button
                   key={chip.label}

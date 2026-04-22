@@ -721,7 +721,7 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         whatToFix: z.array(z.string()),
         whatsMissing: z.array(z.string()),
       }),
-      founderStage: z.enum(["idea", "building", "early_revenue", "scaling"]).optional(),
+      founderStage: z.enum(["idea", "building", "early_revenue", "scaling", "portfolio"]).optional(),
     }))
     .mutation(async ({ input }) => {
       const json = JSON.stringify(input.sections);
@@ -745,7 +745,7 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         whatToFix: z.array(z.string()),
         whatsMissing: z.array(z.string()),
       }),
-      founderStage: z.enum(["idea", "building", "early_revenue", "scaling"]).optional(),
+      founderStage: z.enum(["idea", "building", "early_revenue", "scaling", "portfolio"]).optional(),
     }))
     .mutation(async ({ input }) => {
       const json = JSON.stringify(input.sections);
@@ -769,6 +769,7 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
           building: "Building (no revenue)",
           early_revenue: "Early revenue",
           scaling: "Scaling",
+          portfolio: "Portfolio company review",
         };
         const founderStage = row.founderStage ?? null;
         const founderStageLabel = founderStage ? (STAGE_LABELS[founderStage] ?? null) : null;
@@ -787,7 +788,7 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
     .input(
       z.object({
         pitchText: z.string().min(30, "Pitch must be at least 30 characters").max(3000, "Pitch must be under 3000 characters"),
-        founderStage: z.enum(["idea", "building", "early_revenue", "scaling"]).optional().default("building"),
+        founderStage: z.enum(["idea", "building", "early_revenue", "scaling", "portfolio"]).optional().default("building"),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -971,6 +972,10 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
           early: "Add ARR, growth rate, retention, and cohort evidence to support the case.",
           none: "Add ARR, growth rate, retention, and cohort evidence to support the case.",
         },
+        portfolio: {
+          early: "Summarise performance against targets: revenue, growth, and key KPIs since last review.",
+          none: "Include current performance data: revenue, headcount, key milestones, and any risks flagged since last review.",
+        },
       };
 
       // Business model concern overrides by stage
@@ -991,6 +996,10 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
           partial: "At scale, investors expect a fully defined model with unit economics — this needs to be explicit.",
           missing: "A missing revenue model is a critical gap at the scaling stage — this must be addressed.",
         },
+        portfolio: {
+          partial: "Clarify the current revenue model and whether it has evolved since the original investment thesis.",
+          missing: "Include a clear description of how the company currently generates revenue and its unit economics.",
+        },
       };
 
       // Fix prefix by stage
@@ -999,6 +1008,7 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         building: "To show investor readiness, add",
         early_revenue: "To demonstrate traction, add",
         scaling: "To meet investor expectations, add",
+        portfolio: "To strengthen your portfolio review, add",
       };
       const fixPrefix = FIX_PREFIX[stage] ?? FIX_PREFIX.building;
 
@@ -1090,6 +1100,7 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         building: "Building (no revenue)",
         early_revenue: "Early revenue",
         scaling: "Scaling",
+        portfolio: "Portfolio company review",
       };
 
       return {

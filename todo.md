@@ -3147,3 +3147,7 @@
 - [x] Add ?stage= param to chip clicks and read it in PitchMirror to pre-select Founder Stage
 - [x] Add chip click analytics tracking (trackEvent home_chip_click with chip label)
 - [x] Confirm/clean up video tag for one-line activation (src="" + SWAP comment + REMOVE comment)
+
+## Landing page enhancements sprint 7 (Apr 22 2026)
+- [x] Add "portfolio" stage to PitchMirror with portfolio-specific guidance copy; map chip to stage=portfolio
+- [x] Wire home_chip_click analytics to existing trackEvent/analytics library (Umami already wired via VITE_ANALYTICS_ENDPOINT)

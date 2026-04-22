@@ -36,6 +36,7 @@ const STAGE_LABELS: Record<string, string> = {
   building: "Building (no revenue)",
   early_revenue: "Early revenue",
   scaling: "Scaling",
+  portfolio: "Portfolio company review",
 };
 
 /** Resolve a human-readable label from a raw stage key. Returns null for unknown/absent. */
