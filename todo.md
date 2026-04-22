@@ -3137,3 +3137,8 @@
 - [x] Wire decision chips to hero input box (scroll + focus on click)
 - [x] Add 4th chip "Assess a portfolio company" with PortfolioMesh example
 - [x] Add animated demo placeholder inside Pitch Triage hero card
+
+## Landing page enhancements sprint 5 (Apr 22 2026)
+- [x] Read ?task= param in PitchMirror to pre-fill input on load (close the pre-fill loop)
+- [x] Replace static demo placeholder with video tag + SWAP comment + static fallback overlay
+- [x] Add ↵ Enter keyboard shortcut indicator inside hero input box

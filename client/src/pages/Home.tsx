@@ -303,6 +303,11 @@ export default function Home() {
                     }
                   }}
                 />
+                {/* ↵ Enter keyboard shortcut indicator */}
+                <span className="flex-shrink-0 hidden sm:flex items-center gap-0.5 text-[10px] text-white/20 font-mono select-none pointer-events-none mr-1">
+                  <kbd className="px-1 py-0.5 rounded border border-white/10 bg-white/5 text-white/20 text-[9px] leading-none">↵</kbd>
+                  <span>Enter</span>
+                </span>
                 <a
                   href={`/pitchmirror?task=${encodeURIComponent(taskInput)}`}
                   onClick={() => trackEvent("home_pitchmirror_cta_click", { location: "hero" })}
@@ -367,9 +372,25 @@ export default function Home() {
                         <div className="text-base font-bold text-white mb-1">Pitch Triage</div>
                         <div className="text-sm text-white/55 leading-relaxed mb-1">Sort your inbound deal flow in minutes, not days.</div>
                       </div>
-                      {/* ── DEMO PLACEHOLDER ── */}
-                      <div className="w-full rounded-xl overflow-hidden border border-emerald-500/20 bg-[#0a1a12]">
-                        {/* Simulated triage output terminal */}
+                      {/* ── DEMO: video with static fallback ──
+                           SWAP: replace the src below with the real screen recording URL once available.
+                           The static terminal overlay is shown as a fallback when no video src is set.
+                      ── */}
+                      <div className="w-full rounded-xl overflow-hidden border border-emerald-500/20 bg-[#0a1a12] relative">
+                        {/*
+                          SWAP: To activate the demo video, set the src prop below to your screen recording URL
+                          and remove the style={{ display: "none" }} attribute.
+                          Example: src="https://cdn.example.com/pitch-triage-demo.mp4"
+                        */}
+                        <video
+                          autoPlay
+                          loop
+                          muted
+                          playsInline
+                          className="w-full block"
+                          style={{ display: "none" }}
+                        />
+                        {/* Static fallback terminal — shown until real video is swapped in */}
                         <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-900/30 border-b border-emerald-500/15">
                           <span className="w-2 h-2 rounded-full bg-red-500/70" />
                           <span className="w-2 h-2 rounded-full bg-yellow-500/70" />

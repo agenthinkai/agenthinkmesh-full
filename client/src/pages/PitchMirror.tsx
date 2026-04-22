@@ -71,6 +71,15 @@ export default function PitchMirror() {
 
   const isGuest = !user;
 
+  // ── Pre-fill from ?task= query param (from landing page chip clicks) ────────
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const taskParam = params.get("task");
+    if (taskParam && taskParam.trim().length > 0) {
+      setPitchText(taskParam.trim());
+    }
+  }, []);
+
   // ── Restore persisted stage on mount ──────────────────────────────────────
   useEffect(() => {
     const storage = isGuest ? sessionStorage : localStorage;
