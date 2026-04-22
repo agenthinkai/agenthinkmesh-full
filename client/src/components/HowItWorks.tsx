@@ -363,7 +363,7 @@ function Step3Output({ active, role, selectedAgents }: {
             ✦ Synthesised Output
           </div>
           <div style={{ fontSize: 13, color: SILVER_50, fontWeight: 600, lineHeight: 1.5, marginBottom: 10, minHeight: 20 }}>
-            <>{summaryText}<span style={{ opacity: 0.5, animation: "blink 1s infinite" }}>|</span></>
+            {summaryText}<span style={{ opacity: 0.5, animation: "blink 1s infinite" }}>|</span>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 4, marginBottom: 10 }}>
             {output.findings.map((f) => (
