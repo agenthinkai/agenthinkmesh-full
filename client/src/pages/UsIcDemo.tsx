@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useLocation } from "wouter";
+import { useLocation, Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 
 // ── Static deal data ──────────────────────────────────────────────────────────
@@ -194,7 +194,15 @@ export default function UsIcDemo() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-10">
-
+        {/* Back-link */}
+        <div className="mb-6">
+          <Link href="/demos" className="inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M12.25 8.75a.75.75 0 0 0 0-1.5H5.56l2.22-2.22a.75.75 0 1 0-1.06-1.06l-3.5 3.5a.75.75 0 0 0 0 1.06l3.5 3.5a.75.75 0 1 0 1.06-1.06L5.56 8.75h6.69z" />
+            </svg>
+            All examples
+          </Link>
+        </div>
         {/* Memo header */}
         <div className="mb-8 border-b border-white/10 pb-6">
           <div className="flex flex-wrap items-start justify-between gap-4">

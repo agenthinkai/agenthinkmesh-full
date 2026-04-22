@@ -127,6 +127,7 @@ export default function AdminUsageDashboard() {
   const { data: waitlistBySource } = trpc.adminUsage.waitlistBySource.useQuery(undefined, {
     enabled: user?.role === "admin",
   });
+  const [waitlistSourceFilter, setWaitlistSourceFilter] = useState<string>("all");
 
   // Aggregate daily rows into per-date totals for the chart
   const chartData = useMemo(() => {
@@ -581,9 +582,32 @@ export default function AdminUsageDashboard() {
               <h2 className="text-base font-semibold text-white">Waitlist Signups</h2>
               <p className="text-xs text-slate-400 mt-0.5">All users who joined the waitlist via the landing page.</p>
             </div>
-            <span className="text-xs font-mono text-teal-400 bg-teal-400/10 border border-teal-400/20 px-2 py-0.5 rounded">
-              {waitlistLoading ? "…" : (waitlistData?.length ?? 0)} total
-            </span>
+            <div className="flex items-center gap-3">
+              <select
+                value={waitlistSourceFilter}
+                onChange={(e) => setWaitlistSourceFilter(e.target.value)}
+                className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50"
+              >
+                <option value="all">All sources</option>
+                <option value="sg-ic">sg-ic</option>
+                <option value="jp-ic">jp-ic</option>
+                <option value="us-ic">us-ic</option>
+                <option value="demos">demos</option>
+                <option value="other">other</option>
+              </select>
+              <span className="text-xs font-mono text-teal-400 bg-teal-400/10 border border-teal-400/20 px-2 py-0.5 rounded">
+                {waitlistLoading ? "…" : (() => {
+                  const filtered = waitlistSourceFilter === "all"
+                    ? (waitlistData ?? [])
+                    : (waitlistData ?? []).filter(r => {
+                        const KNOWN = ["sg-ic", "jp-ic", "us-ic", "demos"];
+                        if (waitlistSourceFilter === "other") return !KNOWN.includes(r.sourcePage ?? "");
+                        return r.sourcePage === waitlistSourceFilter;
+                      });
+                  return `${filtered.length} signup${filtered.length !== 1 ? "s" : ""}`;
+                })()}
+              </span>
+            </div>
           </div>
           {/* Source breakdown summary */}
           {(() => {
@@ -625,7 +649,14 @@ export default function AdminUsageDashboard() {
           })()}
           {waitlistLoading ? (
             <div className="text-slate-500 text-sm">Loading…</div>
-          ) : waitlistData && waitlistData.length > 0 ? (
+          ) : (() => {
+            const KNOWN_SOURCES = ["sg-ic", "jp-ic", "us-ic", "demos"];
+            const filteredRows = (waitlistData ?? []).filter(r => {
+              if (waitlistSourceFilter === "all") return true;
+              if (waitlistSourceFilter === "other") return !KNOWN_SOURCES.includes(r.sourcePage ?? "");
+              return r.sourcePage === waitlistSourceFilter;
+            });
+            return filteredRows.length > 0 ? (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -637,7 +668,7 @@ export default function AdminUsageDashboard() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {waitlistData.map((row) => (
+                  {filteredRows.map((row) => (
                     <tr key={row.id} className="hover:bg-white/[0.03] transition-colors">
                       <td className="py-2 pr-4 text-slate-200 font-mono text-xs">{row.email}</td>
                       <td className="py-2 pr-4">
@@ -657,8 +688,11 @@ export default function AdminUsageDashboard() {
               </table>
             </div>
           ) : (
-            <div className="text-slate-500 text-sm">No waitlist signups yet.</div>
-          )}
+            <div className="text-slate-500 text-sm">
+              {waitlistSourceFilter === "all" ? "No waitlist signups yet." : `No signups from source “${waitlistSourceFilter}”.`}
+            </div>
+          );
+          })()}
         </div>
 
       </div>

@@ -3167,3 +3167,8 @@
 - [x] Create /demos index page (three cards: sg-ic, jp-ic, us-ic) + "See examples" nav link
 - [x] Personalise WaitlistCapture headings per region via props (heading + subheading)
 - [x] Add waitlist conversion by source summary above signups table in /admin/usage
+
+## Enhancements sprint 11 (Apr 22 2026)
+- [x] Add "← All examples" back-link to /sg-ic, /jp-ic, /us-ic (top-left, routes to /demos)
+- [x] Add waitlist capture to /demos index (sourcePage: demos, personalised heading)
+- [x] Add sourcePage filter dropdown to admin waitlist table (All · sg-ic · jp-ic · us-ic · demos · other)
