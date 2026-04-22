@@ -129,6 +129,10 @@ export default function AdminUsageDashboard() {
   });
   const [waitlistSourceFilter, setWaitlistSourceFilter] = useState<string>("all");
   const [waitlistSortOrder, setWaitlistSortOrder] = useState<"desc" | "asc">("desc");
+  const [copyEmailsLabel, setCopyEmailsLabel] = useState<string | null>(null);
+  const [lastExported, setLastExported] = useState<string | null>(() =>
+    typeof window !== "undefined" ? localStorage.getItem("mesh_waitlist_last_exported") : null
+  );
 
   // Aggregate daily rows into per-date totals for the chart
   const chartData = useMemo(() => {
@@ -638,13 +642,49 @@ export default function AdminUsageDashboard() {
                   a.download = `waitlist-signups-${today}.csv`;
                   a.click();
                   URL.revokeObjectURL(url);
+                  const kwt = new Date().toLocaleString("en-KW", {
+                    timeZone: "Asia/Kuwait",
+                    day: "2-digit",
+                    month: "short",
+                    year: "numeric",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    hour12: false,
+                  }).replace(",", "") + " KWT";
+                  localStorage.setItem("mesh_waitlist_last_exported", kwt);
+                  setLastExported(kwt);
                 }}
                 className="text-xs bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 text-slate-400 hover:text-slate-200 px-2.5 py-1 rounded transition-colors"
               >
                 Export CSV
               </button>
+              <button
+                onClick={() => {
+                  const KNOWN_SOURCES = ["sg-ic", "jp-ic", "us-ic", "demos"];
+                  const rows = (waitlistData ?? []).filter(r => {
+                    if (waitlistSourceFilter === "all") return true;
+                    if (waitlistSourceFilter === "other") return !KNOWN_SOURCES.includes(r.sourcePage ?? "");
+                    return r.sourcePage === waitlistSourceFilter;
+                  }).slice().sort((a, b) => {
+                    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    return waitlistSortOrder === "desc" ? tb - ta : ta - tb;
+                  });
+                  const emails = rows.map(r => r.email ?? "").filter(Boolean).join(", ");
+                  navigator.clipboard.writeText(emails).then(() => {
+                    setCopyEmailsLabel(`\u2713 Copied ${rows.length} email${rows.length !== 1 ? "s" : ""}`);
+                    setTimeout(() => setCopyEmailsLabel(null), 2000);
+                  });
+                }}
+                className="text-xs bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 text-slate-400 hover:text-slate-200 px-2.5 py-1 rounded transition-colors min-w-[96px] text-center"
+              >
+                {copyEmailsLabel ?? "Copy emails"}
+              </button>
             </div>
           </div>
+          {lastExported && (
+            <p className="text-[11px] text-slate-600 mt-1 mb-0">Last exported: {lastExported}</p>
+          )}
           {/* Source breakdown summary */}
           {(() => {
             if (!waitlistBySource || waitlistBySource.length === 0) return null;

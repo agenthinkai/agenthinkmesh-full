@@ -27,6 +27,14 @@ const DEMOS = [
     href: "/us-ic",
     tagColor: "bg-violet-400/15 text-violet-300 border-violet-400/30",
   },
+  {
+    tag: "GCC",
+    title: "Series B Fintech — SME Lending",
+    description:
+      "Embedded SME working-capital financing, Saudi Arabia → UAE → Kuwait. SAMA sandbox approved.",
+    href: "/gcc-ic",
+    tagColor: "bg-amber-400/15 text-amber-300 border-amber-400/30",
+  },
 ];
 
 // ── Waitlist capture ──────────────────────────────────────────────────────────
@@ -34,6 +42,7 @@ const MEMO_CHIPS = [
   { label: "\uD83C\uDDF8\uD83C\uDDEC SEA Fintech", href: "/sg-ic" },
   { label: "\uD83C\uDDEF\uD83C\uDDF5 Japan Deeptech", href: "/jp-ic" },
   { label: "\uD83C\uDDFA\uD83C\uDDF8 US SaaS", href: "/us-ic" },
+  { label: "\uD83C\uDDF8\uD83C\uDDE6 GCC Fintech", href: "/gcc-ic" },
 ];
 
 function WaitlistCapture({

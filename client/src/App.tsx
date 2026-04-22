@@ -93,6 +93,7 @@ import ChangePassword from "./pages/ChangePassword";
 import SgIcDemo from "./pages/SgIcDemo";
 import JpIcDemo from "./pages/JpIcDemo";
 import UsIcDemo from "./pages/UsIcDemo";
+import GccIcDemo from "./pages/GccIcDemo";
 import Demos from "./pages/Demos";
 
 function Router() {
@@ -276,6 +277,7 @@ function Router() {
       <Route path="/sg-ic" component={SgIcDemo} />
       <Route path="/jp-ic" component={JpIcDemo} />
       <Route path="/us-ic" component={UsIcDemo} />
+      <Route path="/gcc-ic" component={GccIcDemo} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

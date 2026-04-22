@@ -3177,3 +3177,8 @@
 - [x] Timestamp sort toggle on admin waitlist table (newest/oldest, applies after filter)
 - [x] Export CSV button for filtered+sorted waitlist rows (client-side, YYYY-MM-DD filename)
 - [x] Memo chips on /demos waitlist success message (SEA · Japan · US, opens in new tab)
+
+## Enhancements sprint 13 (Apr 22 2026)
+- [x] Copy emails button in admin waitlist (filtered+sorted, clipboard, 2s feedback)
+- [x] Last exported timestamp below Export CSV (localStorage key mesh_waitlist_last_exported, Kuwait time)
+- [x] /gcc-ic demo page (Tamweel Digital, Saudi fintech, SAMA sandbox, Vision 2030)
