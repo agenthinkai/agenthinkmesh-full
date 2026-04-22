@@ -526,6 +526,13 @@
       "when": 1776855398390,
       "tag": "0074_thick_speed",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "5",
+      "when": 1776858018456,
+      "tag": "0075_special_korath",
+      "breakpoints": true
     }
   ]
 }

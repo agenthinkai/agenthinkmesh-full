@@ -63,6 +63,24 @@ async function startServer() {
   registerStripeWebhookRoute(app);
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
+
+  // ── Security headers ────────────────────────────────────────────────────────
+  app.use((_req, res, next) => {
+    // HSTS — enforce HTTPS for 1 year (including subdomains)
+    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+    // Prevent MIME-type sniffing
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    // Deny framing (clickjacking protection)
+    res.setHeader("X-Frame-Options", "DENY");
+    // Disable legacy XSS filter (CSP is the modern replacement)
+    res.setHeader("X-XSS-Protection", "0");
+    // Referrer policy — no referrer on cross-origin requests
+    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
+    // Permissions policy — disable camera, microphone, geolocation
+    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
+    next();
+  });
+
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   // Force Majeure Contract Agent (must be before generic /api/agents catch-all)

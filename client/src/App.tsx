@@ -97,6 +97,7 @@ import GccIcDemo from "./pages/GccIcDemo";
 import Demos from "./pages/Demos";
 import Unsubscribe from "./pages/Unsubscribe";
 import SecurityPage from "./pages/SecurityPage";
+import SecurityKeysPage from "./pages/SecurityKeysPage";
 
 function Router() {
   const { isAuthenticated, loading } = useAuth();
@@ -278,6 +279,8 @@ function Router() {
       <Route path="/unsubscribe" component={Unsubscribe} />
       {/* Security & Data Policy — public */}
       <Route path="/security" component={SecurityPage} />
+      {/* CMK key management — authenticated */}
+      <Route path="/security-keys" component={SecurityKeysPage} />
       {/* Demo index + institutional demo pages */}
       <Route path="/demos" component={Demos} />
       <Route path="/sg-ic" component={SgIcDemo} />

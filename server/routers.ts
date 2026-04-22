@@ -25,6 +25,7 @@ import { forecastRouter } from "./routers/forecast";
 import { knowledgeVaultRouter } from "./routers/knowledgeVault";
 import { selfLearningRouter } from "./routers/selfLearning";
 import { pitchRouter } from "./routers/pitch";
+import { cmkRouter } from "./routers/cmk";
 import { treasuryRouter } from "./routers/treasury";
 import { shareReportRouter } from "./routers/shareReport";
 import { contactsRouter } from "./routers/contacts";
@@ -105,6 +106,7 @@ function capabilityMatchScore(agentCaps: string[], taskCaps: string[]): number {
 }
 
 export const appRouter = router({
+  cmk: cmkRouter,
   system: systemRouter,
   adminProvision: adminProvisionRouter,
   decisionUpgrade: decisionUpgradeRouter,

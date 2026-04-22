@@ -57,22 +57,89 @@ export default function SecurityPage() {
     {
       id: "infrastructure",
       label: "02",
-      title: "Infrastructure",
+      title: "Infrastructure & Encryption",
       content: (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <p style={{ margin: 0, color: SILVER_300, lineHeight: 1.75 }}>
             AgenThink Mesh is hosted on Manus-managed cloud infrastructure. The platform runs on
-            servers in Singapore (primary) with data transit over TLS 1.2 or higher for all
-            connections between clients, the application server, and the database.
+            servers in Singapore (primary). All connections between clients, the application
+            server, and the database are encrypted in transit using TLS 1.3. HTTP Strict Transport
+            Security (HSTS) is enforced on all endpoints with a one-year max-age.
           </p>
           <p style={{ margin: 0, color: SILVER_300, lineHeight: 1.75 }}>
             The database is a managed MySQL-compatible instance (TiDB Cloud). File storage uses
-            S3-compatible object storage. Both are encrypted at rest using AES-256.
+            S3-compatible object storage. Both are encrypted at rest using AES-256 at the
+            infrastructure layer.
           </p>
+
+          {/* CMK highlight box */}
           <div
             style={{
               background: "rgba(74,222,128,0.06)",
-              border: "1px solid rgba(74,222,128,0.2)",
+              border: "1px solid rgba(74,222,128,0.3)",
+              borderRadius: 8,
+              padding: "20px 24px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+          >
+            <span
+              style={{
+                fontFamily: MONO,
+                fontSize: 11,
+                fontWeight: 700,
+                letterSpacing: "0.1em",
+                color: GREEN_400,
+                textTransform: "uppercase" as const,
+                marginBottom: 4,
+              }}
+            >
+              Customer-Managed Keys (CMK)
+            </span>
+            <p style={{ margin: 0, color: SILVER_300, lineHeight: 1.75, fontSize: 14 }}>
+              Each account has a unique AES-256-GCM encryption key generated exclusively for that
+              account. Deal analysis outputs, pitch content, vault document text, and deal signals
+              are encrypted with this key before being written to the database. The key is stored
+              using envelope encryption: it is itself encrypted with a server-side master key
+              before storage, so the raw data key is never persisted in plaintext anywhere.
+            </p>
+            <p style={{ margin: 0, color: SILVER_300, lineHeight: 1.75, fontSize: 14 }}>
+              <strong style={{ color: GREEN_400 }}>You control the key lifecycle.</strong> From
+              your account settings, you can generate your key, rotate it (which transparently
+              re-encrypts all your stored data with the new key), or revoke it permanently.
+              Revoking your key destroys access to all your encrypted data — including ours.
+              Every key operation is logged to a tamper-evident audit log visible only to you.
+            </p>
+            <p style={{ margin: 0, color: SILVER_400, fontSize: 13, lineHeight: 1.65 }}>
+              <strong style={{ color: GREEN_400 }}>Honest scope:</strong> CMK encrypts the
+              content of your stored records. It does not encrypt data in transit (TLS handles
+              that), and it does not prevent the AI from reading your data during active analysis
+              — the key is decrypted in memory for the duration of each request and then
+              discarded. If you require a deployment where data never leaves your infrastructure,
+              contact us to discuss on-premise deployment options.
+            </p>
+            <a
+              href="/security-keys"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                color: GREEN_400,
+                fontFamily: MONO,
+                fontSize: 12,
+                textDecoration: "none",
+                marginTop: 4,
+              }}
+            >
+              Manage your encryption key →
+            </a>
+          </div>
+
+          <div
+            style={{
+              background: "rgba(74,222,128,0.04)",
+              border: "1px solid rgba(74,222,128,0.12)",
               borderRadius: 8,
               padding: "14px 18px",
             }}

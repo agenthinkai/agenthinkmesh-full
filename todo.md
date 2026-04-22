@@ -3208,3 +3208,13 @@
 - [x] Fix trial-progress email frequency — emails being sent more than once daily; correct schedule to exactly once per day
 - [x] Fix unsubscribe link in trial-progress email — link is not working; repair token generation, URL construction, and /unsubscribe page flow
 - [x] Fix root cause of repeated emails: cold-start send on every server restart — added 5-minute startup delay so tsx watch file-save restarts do not trigger immediate re-sends; unique constraint remains the hard dedup guard
+
+## Security Sprint — CMK Model A (Apr 22 2026)
+- [x] Add CMK schema tables (client_encryption_keys, cmk_audit_log) and push to DB
+- [x] Build AES-256-GCM encryption helpers with envelope encryption (server/cmk.ts)
+- [x] Apply field encryption to pitchTriages, sovereignVault, dealSignals, vaultDocuments (server/cmkFields.ts)
+- [x] Build CMK tRPC procedures: generateKey, rotateKey, revokeKey, getKeyStatus, getAuditLog (server/routers/cmk.ts)
+- [x] Build Security Keys UI page (/security-keys) with key lifecycle controls and audit log
+- [x] Add TLS/security headers middleware (HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy)
+- [x] Rewrite /security page section 02 with accurate CMK Model A claims and link to /security-keys
+- [x] Add ENCRYPTION_MASTER_KEY to env secrets (envelope encryption master key)

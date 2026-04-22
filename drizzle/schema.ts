@@ -1647,3 +1647,59 @@ export const waitlistSignups = mysqlTable("waitlist_signups", {
 }));
 export type WaitlistSignup = typeof waitlistSignups.$inferSelect;
 export type InsertWaitlistSignup = typeof waitlistSignups.$inferInsert;
+
+// ── Customer-Managed Keys (CMK) ───────────────────────────────────────────────
+// Model A: Platform generates a unique AES-256 data key per user.
+// The raw key is wrapped (encrypted) with the server-side ENCRYPTION_MASTER_KEY
+// before storage. The raw key is never persisted in plaintext anywhere.
+// Users control the key lifecycle: generate → rotate → revoke.
+// Revoking a key makes all encrypted data permanently inaccessible — including to us.
+
+export const clientEncryptionKeys = mysqlTable("client_encryption_keys", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().unique(), // one active key per user
+  /** AES-256 data key, wrapped with ENCRYPTION_MASTER_KEY. Stored as hex. */
+  wrappedKey: text("wrappedKey").notNull(),
+  /** Key version counter — incremented on every rotation. */
+  keyVersion: int("keyVersion").notNull().default(1),
+  /** Key lifecycle status. */
+  status: mysqlEnum("status", ["active", "revoked"]).notNull().default("active"),
+  /** When this key was first generated. */
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  /** When the key was last rotated (null if never rotated). */
+  rotatedAt: timestamp("rotatedAt"),
+  /** When the key was revoked (null if not revoked). */
+  revokedAt: timestamp("revokedAt"),
+});
+export type ClientEncryptionKey = typeof clientEncryptionKeys.$inferSelect;
+export type InsertClientEncryptionKey = typeof clientEncryptionKeys.$inferInsert;
+
+// ── CMK Audit Log ─────────────────────────────────────────────────────────────
+// Every key lifecycle event and every field-level decrypt is logged here.
+// No plaintext data is stored in this table.
+export const cmkAuditLog = mysqlTable("cmk_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  /** Operation performed. */
+  operation: mysqlEnum("operation", [
+    "key_generated",
+    "key_rotated",
+    "key_revoked",
+    "field_encrypted",
+    "field_decrypted",
+  ]).notNull(),
+  /** Which table/field was accessed (e.g. "pitchTriages.agentOutputs"). Null for key ops. */
+  fieldRef: varchar("fieldRef", { length: 128 }),
+  /** Key version at time of operation. */
+  keyVersion: int("keyVersion").notNull().default(1),
+  /** Server-side timestamp (UTC). */
+  performedAt: timestamp("performedAt").defaultNow().notNull(),
+  /** Optional IP address of the request. */
+  ipAddress: varchar("ipAddress", { length: 45 }),
+}, (table) => ({
+  calUserIdx: index("cal_user_idx").on(table.userId),
+  calOpIdx: index("cal_op_idx").on(table.operation),
+  calPerformedIdx: index("cal_performed_idx").on(table.performedAt),
+}));
+export type CmkAuditEntry = typeof cmkAuditLog.$inferSelect;
+export type InsertCmkAuditEntry = typeof cmkAuditLog.$inferInsert;
