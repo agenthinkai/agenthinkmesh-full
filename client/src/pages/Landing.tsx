@@ -1078,11 +1078,16 @@ export default function Landing() {
       <NeonDivider />
 
       {/* -- Footer -- */}
-      <footer style={{ padding: "20px 24px", background: NAVY_950 }}>
+      <footer style={{ padding: "20px 24px", background: NAVY_950, borderTop: "1px solid #1C3057" }}>
         <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
           <Logo size={28} />
           <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, textAlign: "center" }}>
             {s.verifiedAgents} agents · {s.domainContexts} contexts · 5 domains · Institutional AI orchestration
+          </div>
+          <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+            <a href="/security" style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, textDecoration: "none", letterSpacing: "0.04em" }}>Security</a>
+            <a href="/demos" style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, textDecoration: "none", letterSpacing: "0.04em" }}>Examples</a>
+            <a href="/contact" style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, textDecoration: "none", letterSpacing: "0.04em" }}>Contact</a>
           </div>
         </div>
       </footer>

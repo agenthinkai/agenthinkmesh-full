@@ -96,6 +96,7 @@ import UsIcDemo from "./pages/UsIcDemo";
 import GccIcDemo from "./pages/GccIcDemo";
 import Demos from "./pages/Demos";
 import Unsubscribe from "./pages/Unsubscribe";
+import SecurityPage from "./pages/SecurityPage";
 
 function Router() {
   const { isAuthenticated, loading } = useAuth();
@@ -275,6 +276,8 @@ function Router() {
 
       {/* Unsubscribe — public, no auth required */}
       <Route path="/unsubscribe" component={Unsubscribe} />
+      {/* Security & Data Policy — public */}
+      <Route path="/security" component={SecurityPage} />
       {/* Demo index + institutional demo pages */}
       <Route path="/demos" component={Demos} />
       <Route path="/sg-ic" component={SgIcDemo} />

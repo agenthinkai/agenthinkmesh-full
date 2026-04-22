@@ -3192,3 +3192,8 @@
 - [x] Added "Evaluate a deal →" hero card to Landing.tsx above the fold (routes to /pitch-triage)
 - [x] Confirmed nav (SiteNav NAV_ITEMS), CommandCenter zone 3, and sidebar all working
 - [x] Added unsubscribe tRPC router (checkToken, confirm, resubscribe) to fix tsc: 0
+
+## Security page (Apr 22 2026)
+- [x] Build /security page (5 sections: data handling, infrastructure, access controls, retention, security contact)
+- [x] Add /security to footer (Landing.tsx) and SiteNav (NAV_ITEMS)
+- [x] Register /security route in App.tsx

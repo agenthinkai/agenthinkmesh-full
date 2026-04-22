@@ -55,6 +55,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Pitch",           icon: "💡", href: "/pitch",           color: "#FF6B35", bg: "rgba(255,107,53,0.08)"   },
   { label: "Reply Tracker",   icon: "📬", href: "/tracker",         color: "#34D399", bg: "rgba(52,211,153,0.08)"   },
   { label: "PortfolioMesh",   icon: "🏦", href: "/portfolio-mesh",  color: "#7BA3D4", bg: "rgba(123,163,212,0.08)"  },
+  { label: "Security",        icon: "🔒", href: "/security",        color: "#94A3B8", bg: "rgba(148,163,184,0.08)"  },
 ];
 
 /* ─── Tab item width constant ───────────────────────────────────────── */
