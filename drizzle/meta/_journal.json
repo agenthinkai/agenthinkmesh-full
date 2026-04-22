@@ -519,6 +519,13 @@
       "when": 1776843721077,
       "tag": "0073_outgoing_blazing_skull",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "5",
+      "when": 1776855398390,
+      "tag": "0074_thick_speed",
+      "breakpoints": true
     }
   ]
 }

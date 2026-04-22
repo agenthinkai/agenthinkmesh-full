@@ -12,7 +12,7 @@
  *  Day 60 — Trial ended + upgrade CTA
  */
 
-import { getDb, generateUnsubscribeUrl } from "./db";
+import { getDb, generateUnsubscribeUrl, generateUnsubscribeToken } from "./db";
 import { users, emailEvents } from "../drizzle/schema";
 import { eq, isNull, lte, and, sql } from "drizzle-orm";
 import { claimDripSend, type Drip } from "./billing";
@@ -189,9 +189,14 @@ export async function runDripJob(): Promise<void> {
 
     const name = user.name ?? "";
     const email = user.email;
-    const unsubscribeUrl = user.unsubscribeToken
-      ? generateUnsubscribeUrl(user.unsubscribeToken)
-      : undefined;
+
+    // Backfill unsubscribeToken for users who were created before the column existed
+    let unsubscribeToken = user.unsubscribeToken;
+    if (!unsubscribeToken) {
+      unsubscribeToken = generateUnsubscribeToken();
+      await db.update(users).set({ unsubscribeToken }).where(eq(users.id, user.id));
+    }
+    const unsubscribeUrl = generateUnsubscribeUrl(unsubscribeToken);
     const startedAt = new Date(user.trialStartedAt);
     const daysSinceStart = Math.floor((now.getTime() - startedAt.getTime()) / (1000 * 60 * 60 * 24));
     const runsUsed = 50 - (user.trialRunsRemaining ?? 50);
@@ -254,12 +259,12 @@ let dripInterval: NodeJS.Timeout | null = null;
 export function startDripScheduler(): void {
   if (dripInterval) return; // already running
 
-  // Run immediately on start, then every 6 hours
+  // Run immediately on start, then every 24 hours — one send window per day
   runDripJob().catch(err => console.error("[EmailDrip] Job error:", err));
 
   dripInterval = setInterval(() => {
     runDripJob().catch(err => console.error("[EmailDrip] Job error:", err));
-  }, 6 * 60 * 60 * 1000); // every 6 hours
+  }, 24 * 60 * 60 * 1000); // every 24 hours
 
-  console.log("[EmailDrip] Drip scheduler started (runs every 6 hours)");
+  console.log("[EmailDrip] Drip scheduler started (runs every 24 hours)");
 }

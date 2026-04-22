@@ -1,0 +1,1 @@
+ALTER TABLE `email_events` ADD CONSTRAINT `uniq_user_email_type` UNIQUE(`userId`,`emailType`);

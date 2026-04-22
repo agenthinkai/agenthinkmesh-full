@@ -1,4 +1,4 @@
-import { bigint, boolean, decimal, index, int, longtext, mysqlEnum, mysqlTable, text, tinyint, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { bigint, boolean, decimal, index, int, longtext, mysqlEnum, mysqlTable, text, tinyint, timestamp, unique, varchar } from "drizzle-orm/mysql-core";
 
 // ── PitchMirror Shares ────────────────────────────────────────────────────────────────────
 export const pitchMirrorShares = mysqlTable("pitch_mirror_shares", {
@@ -723,7 +723,10 @@ export const emailEvents = mysqlTable("email_events", {
   emailType: varchar("emailType", { length: 64 }).notNull(), // day_1, day_15, day_45, day_55, day_60
   status: varchar("status", { length: 32 }).notNull().default("sent"), // sent, failed, skipped
   sentAt: timestamp("sentAt").defaultNow().notNull(),
-});
+}, (table) => ({
+  // Unique constraint prevents duplicate drip sends for the same user + email type
+  uniqUserEmailType: unique("uniq_user_email_type").on(table.userId, table.emailType),
+}));
 export type EmailEvent = typeof emailEvents.$inferSelect;
 export type InsertEmailEvent = typeof emailEvents.$inferInsert;
 

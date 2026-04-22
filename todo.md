@@ -3203,3 +3203,7 @@
 - [x] Update all emails from security@agenthinkmesh.com to security@agenthink.ai
 - [x] Add "Data & Security" footer link to /demos
 - [x] Add "Data & Security" footer link to /sg-ic, /jp-ic, /us-ic, /gcc-ic
+
+## Email bugs (Apr 22 2026)
+- [x] Fix trial-progress email frequency — emails being sent more than once daily; correct schedule to exactly once per day
+- [x] Fix unsubscribe link in trial-progress email — link is not working; repair token generation, URL construction, and /unsubscribe page flow
