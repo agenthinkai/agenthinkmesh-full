@@ -90,6 +90,7 @@ import AdminUserCreate from "./pages/AdminUserCreate";
 import AdminUserList from "./pages/AdminUserList";
 import PasswordLogin from "./pages/PasswordLogin";
 import ChangePassword from "./pages/ChangePassword";
+import SgIcDemo from "./pages/SgIcDemo";
 
 function Router() {
   const { isAuthenticated, loading } = useAuth();
@@ -266,6 +267,9 @@ function Router() {
       {/* Password-based auth for provisioned users */}
       <Route path="/login/password" component={PasswordLogin} />
       <Route path="/account/change-password" component={ChangePassword} />
+
+      {/* Institutional demo pages — standalone cold-send URLs */}
+      <Route path="/sg-ic" component={SgIcDemo} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

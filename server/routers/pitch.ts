@@ -789,6 +789,7 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
       z.object({
         pitchText: z.string().min(30, "Pitch must be at least 30 characters").max(3000, "Pitch must be under 3000 characters"),
         founderStage: z.enum(["idea", "building", "early_revenue", "scaling", "portfolio"]).optional().default("building"),
+        chipSource: z.string().max(80).optional(), // landing page chip label for conversion tracking
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -856,13 +857,18 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         },
       ];
 
+      // ── Portfolio stage: prepend a portfolio-context system prompt override ─
+      const PORTFOLIO_SYSTEM_PREFIX = stage === "portfolio"
+        ? "You are reviewing a portfolio company update, not evaluating a new pitch. Focus on performance against targets, operational trajectory, and capital efficiency. Do not apply new-deal evaluation criteria.\n\n"
+        : "";
+
       type AgentResult = { name: AgentName; label: string; reasoning: string; fallback: boolean };
       const agentOutputs: AgentResult[] = await Promise.all(
         AGENTS.map(async (agent) => {
           try {
             const res = await invokeLLM({
               messages: [
-                { role: "system", content: agent.systemPrompt },
+                { role: "system", content: PORTFOLIO_SYSTEM_PREFIX + agent.systemPrompt },
                 { role: "user", content: `Pitch:\n${truncated}` },
               ],
               max_tokens: 120,
@@ -1093,6 +1099,10 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
           db.execute(sql`UPDATE users SET pitchMirrorRuns = pitchMirrorRuns + 1 WHERE id = ${authedUser.id}`)
             .catch((err: unknown) => console.error("[PitchMirror] Failed to increment runs:", err));
         }
+      }
+      // Log chip-source conversion signal (all runs, including unauthenticated)
+      if (input.chipSource) {
+        console.log(`[PitchMirror] chip_conversion chip="${input.chipSource}" stage="${stage}" authed=${isAuthenticated}`);
       }
 
       const STAGE_LABELS: Record<string, string> = {

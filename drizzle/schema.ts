@@ -1620,3 +1620,17 @@ export const loginEvents = mysqlTable("login_events", {
 }));
 export type LoginEvent = typeof loginEvents.$inferSelect;
 export type InsertLoginEvent = typeof loginEvents.$inferInsert;
+
+// ── Waitlist Signups ──────────────────────────────────────────────────────────
+export const waitlistSignups = mysqlTable("waitlist_signups", {
+  id: int("id").autoincrement().primaryKey(),
+  email: varchar("email", { length: 255 }).notNull(),
+  sourcePage: varchar("sourcePage", { length: 100 }).default("home").notNull(), // e.g. "home", "sg-ic"
+  stageInterest: varchar("stageInterest", { length: 80 }), // e.g. "Education", "Insurance"
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({
+  wsEmailIdx: index("ws_email_idx").on(table.email),
+  wsCreatedIdx: index("ws_created_idx").on(table.createdAt),
+}));
+export type WaitlistSignup = typeof waitlistSignups.$inferSelect;
+export type InsertWaitlistSignup = typeof waitlistSignups.$inferInsert;

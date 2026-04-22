@@ -5,7 +5,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
-import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews, turnaroundSessions, roles, partnerInstitutions, partnershipRequests, llmUsage, highDemandLog, loginEvents, dealSignals } from "../drizzle/schema";
+import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews, turnaroundSessions, roles, partnerInstitutions, partnershipRequests, llmUsage, highDemandLog, loginEvents, dealSignals, waitlistSignups } from "../drizzle/schema";
 import { recordLlmUsage } from "./llmRateLimit";
 import { turnaroundRouter } from "./routers/turnaround";
 import { identityRouter } from "./routers/identity";
@@ -3044,27 +3044,42 @@ If a section is not applicable (e.g. no financial data provided), set it to null
          return { success: true, id: row?.id };
       }),
   }),
-
-  // ── Waitlist ──────────────────────────────────────────────────────────────
   waitlist: router({
     join: publicProcedure
       .input(
         z.object({
           email: z.string().email("Invalid email address").max(320),
           workflow: z.string().max(64).default("education"),
+          sourcePage: z.string().max(100).default("home"),
         })
       )
       .mutation(async ({ input }) => {
+        const db = await getDb();
+        // Persist to DB
+        if (db) {
+          await db.insert(waitlistSignups).values({
+            email: input.email,
+            sourcePage: input.sourcePage,
+            stageInterest: input.workflow,
+          }).catch(() => null);
+        }
         // Notify owner via Manus notification service
         await notifyOwner({
           title: `📝 Waitlist signup: ${input.workflow} — ${input.email}`,
-          content: `New waitlist signup for the ${input.workflow} workflow.\n\nEmail: ${input.email}\nSubmitted at: ${new Date().toUTCString()}`,
+          content: `New waitlist signup for the ${input.workflow} workflow.\n\nEmail: ${input.email}\nSource: ${input.sourcePage}\nSubmitted at: ${new Date().toUTCString()}`,
         }).catch(() => false);
         return { success: true };
       }),
+    // Admin: list all waitlist signups
+    list: protectedProcedure
+      .query(async ({ ctx }) => {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        const db = await getDb();
+        if (!db) return [];
+        return db.select().from(waitlistSignups).orderBy(waitlistSignups.createdAt);
+      }),
   }),
-
-  // ── Portfolio Intelligence ───────────────────────────────────────────────────────────────────
+  // ── Portfolio Intelligence ───────────────────────────────────────────────────────────────────────────────────────────
   portfolio: router({
 
     // Upload a document and create a new portfolio review record

@@ -69,11 +69,14 @@ export default function Home() {
   const [taskInput, setTaskInput] = useState("Screen these 5 pitches against our early-stage B2B SaaS thesis");
   // stage tracks the ?stage= param to pass to PitchMirror; defaults to early_revenue (Pitch Triage default chip)
   const [chipStage, setChipStage] = useState("early_revenue");
+  // chipLabel tracks the chip label for ?chip= conversion tracking in pitchMirrorRuns
+  const [chipLabel, setChipLabel] = useState("Triage a pitch");
   const inputRef = useRef<HTMLInputElement>(null);
   const handleChipClick = useCallback((label: string, value: string, stage: string) => {
     setTaskInput(value);
     setChipStage(stage);
-    /* ANALYTICS: replace with your tracking call if trackEvent is not yet wired */
+    setChipLabel(label);
+    /* ANALYTICS: Umami wired via trackEvent → window.umami.track */
     trackEvent("home_chip_click", { chip: label });
     setTimeout(() => {
       inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
@@ -304,7 +307,7 @@ export default function Home() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && taskInput.trim()) {
                       trackEvent("home_pitchmirror_cta_click", { location: "hero", chip: "enter" });
-                      window.location.href = `/pitchmirror?task=${encodeURIComponent(taskInput)}&stage=${encodeURIComponent(chipStage)}`;
+                      window.location.href = `/pitchmirror?task=${encodeURIComponent(taskInput)}&stage=${encodeURIComponent(chipStage)}&chip=${encodeURIComponent(chipLabel)}`;
                     }
                   }}
                 />
@@ -314,7 +317,7 @@ export default function Home() {
                   <span>Enter</span>
                 </span>
                 <a
-                  href={`/pitchmirror?task=${encodeURIComponent(taskInput)}&stage=${encodeURIComponent(chipStage)}`}
+                  href={`/pitchmirror?task=${encodeURIComponent(taskInput)}&stage=${encodeURIComponent(chipStage)}&chip=${encodeURIComponent(chipLabel)}`}
                   onClick={() => trackEvent("home_pitchmirror_cta_click", { location: "hero" })}
                   className="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white font-semibold text-sm shadow-lg shadow-emerald-900/30 transition-all duration-150 hover:scale-[1.03] focus:outline-none"
                   style={{ background: "linear-gradient(135deg, #10b981 0%, #06b6d4 100%)" }}

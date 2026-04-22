@@ -121,6 +121,10 @@ export default function AdminUsageDashboard() {
   const activityRows = activityData?.rows;
   const emailSignalCount = activityData?.emailSignalCount ?? 0;
 
+  const { data: waitlistData, isLoading: waitlistLoading } = trpc.waitlist.list.useQuery(undefined, {
+    enabled: user?.role === "admin",
+  });
+
   // Aggregate daily rows into per-date totals for the chart
   const chartData = useMemo(() => {
     if (!dailyRows) return [];
@@ -564,6 +568,55 @@ export default function AdminUsageDashboard() {
             </div>
           ) : (
             <div className="text-slate-500 text-sm">No users found.</div>
+          )}
+        </div>
+
+        {/* Waitlist Signups */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6 mt-8">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="text-base font-semibold text-white">Waitlist Signups</h2>
+              <p className="text-xs text-slate-400 mt-0.5">All users who joined the waitlist via the landing page.</p>
+            </div>
+            <span className="text-xs font-mono text-teal-400 bg-teal-400/10 border border-teal-400/20 px-2 py-0.5 rounded">
+              {waitlistLoading ? "…" : (waitlistData?.length ?? 0)} total
+            </span>
+          </div>
+          {waitlistLoading ? (
+            <div className="text-slate-500 text-sm">Loading…</div>
+          ) : waitlistData && waitlistData.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-slate-500 border-b border-white/10">
+                    <th className="pb-2 pr-4 font-medium">Email</th>
+                    <th className="pb-2 pr-4 font-medium">Workflow Interest</th>
+                    <th className="pb-2 pr-4 font-medium">Source Page</th>
+                    <th className="pb-2 font-medium">Signed Up</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {waitlistData.map((row) => (
+                    <tr key={row.id} className="hover:bg-white/[0.03] transition-colors">
+                      <td className="py-2 pr-4 text-slate-200 font-mono text-xs">{row.email}</td>
+                      <td className="py-2 pr-4">
+                        <span className="text-xs bg-teal-400/10 text-teal-300 border border-teal-400/20 px-2 py-0.5 rounded">
+                          {row.stageInterest ?? "—"}
+                        </span>
+                      </td>
+                      <td className="py-2 pr-4 text-slate-400 text-xs">{row.sourcePage ?? "—"}</td>
+                      <td className="py-2 text-slate-400 text-xs">
+                        {row.createdAt
+                          ? new Date(row.createdAt).toLocaleString("en-KW", { timeZone: "Asia/Kuwait" })
+                          : "—"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="text-slate-500 text-sm">No waitlist signups yet.</div>
           )}
         </div>
 

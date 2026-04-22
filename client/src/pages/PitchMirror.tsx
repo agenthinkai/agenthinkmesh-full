@@ -15,7 +15,7 @@
  *   - Copy output includes "Stage: [founderStageLabel]"
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
@@ -71,16 +71,21 @@ export default function PitchMirror() {
 
   const isGuest = !user;
 
-  // ── Pre-fill from ?task= and ?stage= query params (from landing page chip clicks) ───
+  // ── Pre-fill from ?task=, ?stage=, ?chip= query params (from landing page chip clicks) ───
+  const chipSourceRef = useRef<string | undefined>(undefined);
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const taskParam = params.get("task");
     const stageParam = params.get("stage") as FounderStage | null;
+    const chipParam = params.get("chip");
     if (taskParam && taskParam.trim().length > 0) {
       setPitchText(taskParam.trim());
     }
     if (stageParam && STAGE_OPTIONS.some((o) => o.value === stageParam)) {
       setFounderStage(stageParam);
+    }
+    if (chipParam && chipParam.trim().length > 0) {
+      chipSourceRef.current = chipParam.trim();
     }
   }, []);
 
@@ -144,7 +149,7 @@ export default function PitchMirror() {
       has_input: pitchText.trim().length > 0,
       founderStage,
     });
-    mirrorMutation.mutate({ pitchText: pitchText.trim(), founderStage });
+    mirrorMutation.mutate({ pitchText: pitchText.trim(), founderStage, chipSource: chipSourceRef.current });
   }
 
   function handleReset() {

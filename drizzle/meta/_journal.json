@@ -505,6 +505,13 @@
       "when": 1776762545083,
       "tag": "0071_tearful_lake",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "5",
+      "when": 1776832743204,
+      "tag": "0072_spotty_chimera",
+      "breakpoints": true
     }
   ]
 }

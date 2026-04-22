@@ -3151,3 +3151,9 @@
 ## Landing page enhancements sprint 7 (Apr 22 2026)
 - [x] Add "portfolio" stage to PitchMirror with portfolio-specific guidance copy; map chip to stage=portfolio
 - [x] Wire home_chip_click analytics to existing trackEvent/analytics library (Umami already wired via VITE_ANALYTICS_ENDPOINT)
+
+## Enhancements sprint 8 (Apr 22 2026)
+- [x] Track ?chip= param in pitchMirrorRuns increment (chip-to-completion conversion signal)
+- [x] Portfolio-specific system prompt override in mirror mutation when stage=portfolio
+- [x] Add waitlist_signups DB table, persist signups, add admin dashboard view
+- [x] Build /sg-ic institutional demo page (Singapore sovereign wealth fund, neutral URL convention)
