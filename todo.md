@@ -3142,3 +3142,8 @@
 - [x] Read ?task= param in PitchMirror to pre-fill input on load (close the pre-fill loop)
 - [x] Replace static demo placeholder with video tag + SWAP comment + static fallback overlay
 - [x] Add ↵ Enter keyboard shortcut indicator inside hero input box
+
+## Landing page enhancements sprint 6 (Apr 22 2026)
+- [x] Add ?stage= param to chip clicks and read it in PitchMirror to pre-select Founder Stage
+- [x] Add chip click analytics tracking (trackEvent home_chip_click with chip label)
+- [x] Confirm/clean up video tag for one-line activation (src="" + SWAP comment + REMOVE comment)

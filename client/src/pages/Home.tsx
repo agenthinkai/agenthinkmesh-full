@@ -67,9 +67,14 @@ export default function Home() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [activeRole, setActiveRole] = useState<"investment" | "procurement" | "insurance">("investment");
   const [taskInput, setTaskInput] = useState("Screen these 5 pitches against our early-stage B2B SaaS thesis");
+  // stage tracks the ?stage= param to pass to PitchMirror; defaults to early_revenue (Pitch Triage default chip)
+  const [chipStage, setChipStage] = useState("early_revenue");
   const inputRef = useRef<HTMLInputElement>(null);
-  const handleChipClick = useCallback((value: string) => {
+  const handleChipClick = useCallback((label: string, value: string, stage: string) => {
     setTaskInput(value);
+    setChipStage(stage);
+    /* ANALYTICS: replace with your tracking call if trackEvent is not yet wired */
+    trackEvent("home_chip_click", { chip: label });
     setTimeout(() => {
       inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
       inputRef.current?.focus();
@@ -241,14 +246,14 @@ export default function Home() {
             <p className="text-xs text-white/40 font-mono uppercase tracking-widest mb-3">What do you need to decide today?</p>
             <div className="flex items-center justify-center gap-2 flex-wrap">
               {[
-                { label: "Triage a pitch", value: "Screen these 5 pitches against our early-stage B2B SaaS thesis" },
-                { label: "Screen a deal", value: "Evaluate this Series A deal against our investment criteria" },
-                { label: "Evaluate a vendor", value: "Compare these 3 vendors against our procurement criteria for cloud infrastructure" },
-                { label: "Assess a portfolio company", value: "Summarise the current performance of our 3 portfolio companies against Q2 targets" },
+                { label: "Triage a pitch", value: "Screen these 5 pitches against our early-stage B2B SaaS thesis", stage: "early_revenue" },
+                { label: "Screen a deal", value: "Evaluate this Series A deal against our investment criteria", stage: "scaling" },
+                { label: "Evaluate a vendor", value: "Compare these 3 vendors against our procurement criteria for cloud infrastructure", stage: "building" },
+                { label: "Assess a portfolio company", value: "Summarise the current performance of our 3 portfolio companies against Q2 targets", stage: "scaling" },
               ].map((chip) => (
                 <button
                   key={chip.label}
-                  onClick={() => handleChipClick(chip.value)}
+                  onClick={() => handleChipClick(chip.label, chip.value, chip.stage)}
                   className={`px-4 py-1.5 rounded-full text-xs font-medium border transition-all duration-150 ${
                     taskInput === chip.value
                       ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
@@ -299,7 +304,7 @@ export default function Home() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter" && taskInput.trim()) {
                       trackEvent("home_pitchmirror_cta_click", { location: "hero", chip: "enter" });
-                      window.location.href = `/pitchmirror?task=${encodeURIComponent(taskInput)}`;
+                      window.location.href = `/pitchmirror?task=${encodeURIComponent(taskInput)}&stage=${encodeURIComponent(chipStage)}`;
                     }
                   }}
                 />
@@ -309,7 +314,7 @@ export default function Home() {
                   <span>Enter</span>
                 </span>
                 <a
-                  href={`/pitchmirror?task=${encodeURIComponent(taskInput)}`}
+                  href={`/pitchmirror?task=${encodeURIComponent(taskInput)}&stage=${encodeURIComponent(chipStage)}`}
                   onClick={() => trackEvent("home_pitchmirror_cta_click", { location: "hero" })}
                   className="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white font-semibold text-sm shadow-lg shadow-emerald-900/30 transition-all duration-150 hover:scale-[1.03] focus:outline-none"
                   style={{ background: "linear-gradient(135deg, #10b981 0%, #06b6d4 100%)" }}
@@ -378,9 +383,10 @@ export default function Home() {
                       ── */}
                       <div className="w-full rounded-xl overflow-hidden border border-emerald-500/20 bg-[#0a1a12] relative">
                         {/*
-                          SWAP: To activate the demo video, set the src prop below to your screen recording URL
-                          and remove the style={{ display: "none" }} attribute.
-                          Example: src="https://cdn.example.com/pitch-triage-demo.mp4"
+                          SWAP: To activate the demo video:
+                          1. Set src="YOUR_RECORDING_URL" (e.g. "https://cdn.example.com/pitch-triage-demo.mp4")
+                          2. REMOVE the style={{ display: "none" }} prop from the video tag below
+                          The static terminal fallback will then be hidden automatically.
                         */}
                         <video
                           autoPlay
@@ -388,6 +394,7 @@ export default function Home() {
                           muted
                           playsInline
                           className="w-full block"
+                          src=""
                           style={{ display: "none" }}
                         />
                         {/* Static fallback terminal — shown until real video is swapped in */}

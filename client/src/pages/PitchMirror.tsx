@@ -71,12 +71,16 @@ export default function PitchMirror() {
 
   const isGuest = !user;
 
-  // ── Pre-fill from ?task= query param (from landing page chip clicks) ────────
+  // ── Pre-fill from ?task= and ?stage= query params (from landing page chip clicks) ───
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const taskParam = params.get("task");
+    const stageParam = params.get("stage") as FounderStage | null;
     if (taskParam && taskParam.trim().length > 0) {
       setPitchText(taskParam.trim());
+    }
+    if (stageParam && STAGE_OPTIONS.some((o) => o.value === stageParam)) {
+      setFounderStage(stageParam);
     }
   }, []);
 
