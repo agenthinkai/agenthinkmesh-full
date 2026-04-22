@@ -128,6 +128,7 @@ export default function AdminUsageDashboard() {
     enabled: user?.role === "admin",
   });
   const [waitlistSourceFilter, setWaitlistSourceFilter] = useState<string>("all");
+  const [waitlistSortOrder, setWaitlistSortOrder] = useState<"desc" | "asc">("desc");
 
   // Aggregate daily rows into per-date totals for the chart
   const chartData = useMemo(() => {
@@ -607,6 +608,41 @@ export default function AdminUsageDashboard() {
                   return `${filtered.length} signup${filtered.length !== 1 ? "s" : ""}`;
                 })()}
               </span>
+              <button
+                onClick={() => {
+                  const KNOWN_SOURCES = ["sg-ic", "jp-ic", "us-ic", "demos"];
+                  const rows = (waitlistData ?? []).filter(r => {
+                    if (waitlistSourceFilter === "all") return true;
+                    if (waitlistSourceFilter === "other") return !KNOWN_SOURCES.includes(r.sourcePage ?? "");
+                    return r.sourcePage === waitlistSourceFilter;
+                  }).slice().sort((a, b) => {
+                    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+                    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+                    return waitlistSortOrder === "desc" ? tb - ta : ta - tb;
+                  });
+                  const header = ["Email", "Source", "Interest", "Signed Up"];
+                  const csvRows = rows.map(r => [
+                    r.email ?? "",
+                    r.sourcePage ?? "",
+                    r.stageInterest ?? "",
+                    r.createdAt
+                      ? new Date(r.createdAt).toLocaleString("en-KW", { timeZone: "Asia/Kuwait", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZoneName: "short" })
+                      : "",
+                  ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+                  const csv = [header.join(","), ...csvRows].join("\n");
+                  const today = new Date().toISOString().slice(0, 10);
+                  const blob = new Blob([csv], { type: "text/csv" });
+                  const url = URL.createObjectURL(blob);
+                  const a = document.createElement("a");
+                  a.href = url;
+                  a.download = `waitlist-signups-${today}.csv`;
+                  a.click();
+                  URL.revokeObjectURL(url);
+                }}
+                className="text-xs bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 text-slate-400 hover:text-slate-200 px-2.5 py-1 rounded transition-colors"
+              >
+                Export CSV
+              </button>
             </div>
           </div>
           {/* Source breakdown summary */}
@@ -655,6 +691,10 @@ export default function AdminUsageDashboard() {
               if (waitlistSourceFilter === "all") return true;
               if (waitlistSourceFilter === "other") return !KNOWN_SOURCES.includes(r.sourcePage ?? "");
               return r.sourcePage === waitlistSourceFilter;
+            }).slice().sort((a, b) => {
+              const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+              const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+              return waitlistSortOrder === "desc" ? tb - ta : ta - tb;
             });
             return filteredRows.length > 0 ? (
             <div className="overflow-x-auto">
@@ -664,7 +704,15 @@ export default function AdminUsageDashboard() {
                     <th className="pb-2 pr-4 font-medium">Email</th>
                     <th className="pb-2 pr-4 font-medium">Workflow Interest</th>
                     <th className="pb-2 pr-4 font-medium">Source Page</th>
-                    <th className="pb-2 font-medium">Signed Up</th>
+                    <th className="pb-2 font-medium">
+                      <button
+                        onClick={() => setWaitlistSortOrder(o => o === "desc" ? "asc" : "desc")}
+                        className="inline-flex items-center gap-1 hover:text-slate-300 transition-colors cursor-pointer"
+                      >
+                        Signed Up
+                        <span className="text-[10px]">{waitlistSortOrder === "desc" ? "↓" : "↑"}</span>
+                      </button>
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">

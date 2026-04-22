@@ -3172,3 +3172,8 @@
 - [x] Add "← All examples" back-link to /sg-ic, /jp-ic, /us-ic (top-left, routes to /demos)
 - [x] Add waitlist capture to /demos index (sourcePage: demos, personalised heading)
 - [x] Add sourcePage filter dropdown to admin waitlist table (All · sg-ic · jp-ic · us-ic · demos · other)
+
+## Enhancements sprint 12 (Apr 22 2026)
+- [x] Timestamp sort toggle on admin waitlist table (newest/oldest, applies after filter)
+- [x] Export CSV button for filtered+sorted waitlist rows (client-side, YYYY-MM-DD filename)
+- [x] Memo chips on /demos waitlist success message (SEA · Japan · US, opens in new tab)

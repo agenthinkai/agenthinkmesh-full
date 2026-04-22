@@ -30,14 +30,22 @@ const DEMOS = [
 ];
 
 // ── Waitlist capture ──────────────────────────────────────────────────────────
+const MEMO_CHIPS = [
+  { label: "\uD83C\uDDF8\uD83C\uDDEC SEA Fintech", href: "/sg-ic" },
+  { label: "\uD83C\uDDEF\uD83C\uDDF5 Japan Deeptech", href: "/jp-ic" },
+  { label: "\uD83C\uDDFA\uD83C\uDDF8 US SaaS", href: "/us-ic" },
+];
+
 function WaitlistCapture({
   sourcePage,
   heading = "Get early access",
   subheading = "Join institutional investors already using AgenThink Mesh",
+  showMemoChips = false,
 }: {
   sourcePage: string;
   heading?: string;
   subheading?: string;
+  showMemoChips?: boolean;
 }) {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
@@ -64,11 +72,34 @@ function WaitlistCapture({
       <h2 className="text-base font-semibold text-white mb-1">{heading}</h2>
       <p className="text-sm text-slate-400 mb-5">{subheading}</p>
       {submitted ? (
-        <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
-            <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z" />
-          </svg>
-          Request received — we'll be in touch.
+        <div>
+          <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.75.75 0 1 1 1.06-1.06L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0z" />
+            </svg>
+            Request received — we'll be in touch.
+          </div>
+          {showMemoChips && (
+            <div className="mt-4">
+              <p className="text-xs text-slate-500 mb-2.5">Explore our live deal memos while you wait:</p>
+              <div className="flex flex-wrap gap-2">
+                {MEMO_CHIPS.map((chip) => (
+                  <a
+                    key={chip.href}
+                    href={chip.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs font-medium bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 text-slate-300 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
+                  >
+                    {chip.label}
+                    <svg width="10" height="10" viewBox="0 0 16 16" fill="currentColor">
+                      <path d="M3.75 7.25a.75.75 0 0 0 0 1.5h6.69l-2.22 2.22a.75.75 0 1 0 1.06 1.06l3.5-3.5a.75.75 0 0 0 0-1.06l-3.5-3.5a.75.75 0 1 0-1.06 1.06l2.22 2.22H3.75z" />
+                    </svg>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-3">
@@ -157,6 +188,7 @@ export default function Demos() {
           sourcePage="demos"
           heading="Ready to evaluate your own deals?"
           subheading="Join institutional investors already on the early access list."
+          showMemoChips
         />
 
         {/* Footer */}
