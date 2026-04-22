@@ -342,7 +342,12 @@ export default function GccIcDemo() {
         {/* Footer */}
         <div className="mt-10 pt-6 border-t border-white/10 flex items-center justify-between text-xs text-slate-600">
           <span>AgenThinkMesh · Institutional Decision Intelligence</span>
-          <span className="font-mono">{MEMO_REF}</span>
+          <div className="flex items-center gap-4">
+            <Link href="/security" className="text-slate-500 hover:text-emerald-400 transition-colors">
+              Data &amp; Security
+            </Link>
+            <span className="font-mono">{MEMO_REF}</span>
+          </div>
         </div>
 
       </div>

@@ -110,7 +110,8 @@ export default function SecurityPage() {
           </p>
           <p style={{ margin: 0, color: SILVER_300, lineHeight: 1.75 }}>
             Administrative functions (user management, usage metrics, waitlist data) are
-            restricted to accounts with the <code style={{ color: GREEN_400, fontFamily: MONO, fontSize: 12 }}>admin</code> role.
+            restricted to accounts with the{" "}
+            <code style={{ color: GREEN_400, fontFamily: MONO, fontSize: 12 }}>admin</code> role.
             Role assignment is performed directly in the database by the platform owner and
             cannot be self-escalated.
           </p>
@@ -137,7 +138,7 @@ export default function SecurityPage() {
               { label: "Task history", value: "Retained while your account is active. Deleted within 30 days of account deletion." },
               { label: "Vault documents", value: "Retained until you delete them or your account is deleted. Deletion removes both the database record and the S3 object." },
               { label: "Authentication logs", value: "90 days, then automatically purged." },
-              { label: "Waitlist submissions", value: "Retained until you request removal. Email security@agenthinkmesh.com to be removed." },
+              { label: "Waitlist submissions", value: "Retained until you request removal. Email security@agenthink.ai to be removed." },
               { label: "Anonymous session data", value: "Not retained. Unauthenticated analysis runs are not logged to a persistent store." },
             ].map(({ label, value }) => (
               <div
@@ -159,8 +160,8 @@ export default function SecurityPage() {
           </div>
           <p style={{ margin: 0, color: SILVER_300, lineHeight: 1.75 }}>
             To request deletion of your data, email{" "}
-            <a href="mailto:security@agenthinkmesh.com" style={{ color: GREEN_400 }}>
-              security@agenthinkmesh.com
+            <a href="mailto:security@agenthink.ai" style={{ color: GREEN_400 }}>
+              security@agenthink.ai
             </a>{" "}
             with the subject line "Data deletion request". We will confirm deletion within 10
             business days.
@@ -169,14 +170,82 @@ export default function SecurityPage() {
       ),
     },
     {
-      id: "security-contact",
+      id: "responsible-disclosure",
       label: "05",
+      title: "Responsible Disclosure",
+      content: (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <p style={{ margin: 0, color: SILVER_300, lineHeight: 1.75 }}>
+            We welcome reports from security researchers who identify vulnerabilities in
+            AgenThink Mesh. If you discover a potential security issue — including authentication
+            bypasses, data exposure, injection vulnerabilities, or privilege escalation — please
+            report it to us before public disclosure so we can investigate and remediate.
+          </p>
+          <div
+            style={{
+              background: "rgba(74,222,128,0.06)",
+              border: "1px solid rgba(74,222,128,0.2)",
+              borderRadius: 8,
+              padding: "20px 24px",
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+              <span style={{ color: SILVER_500, fontFamily: MONO, fontSize: 11, minWidth: 100, paddingTop: 2 }}>REPORT TO</span>
+              <a
+                href="mailto:security@agenthink.ai"
+                style={{ color: GREEN_400, fontFamily: MONO, fontSize: 14, textDecoration: "none" }}
+              >
+                security@agenthink.ai
+              </a>
+            </div>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+              <span style={{ color: SILVER_500, fontFamily: MONO, fontSize: 11, minWidth: 100, paddingTop: 2 }}>WINDOW</span>
+              <span style={{ color: SILVER_300, fontSize: 14, lineHeight: 1.65 }}>
+                90-day coordinated disclosure. We ask that you allow us 90 days from the date of
+                your report to investigate and deploy a fix before any public disclosure.
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+              <span style={{ color: SILVER_500, fontFamily: MONO, fontSize: 11, minWidth: 100, paddingTop: 2 }}>RESPONSE</span>
+              <span style={{ color: SILVER_300, fontSize: 14, lineHeight: 1.65 }}>
+                We commit to acknowledging receipt within 24 hours and providing a remediation
+                timeline within 5 business days.
+              </span>
+            </div>
+            <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+              <span style={{ color: SILVER_500, fontFamily: MONO, fontSize: 11, minWidth: 100, paddingTop: 2 }}>ENCRYPT</span>
+              <span style={{ color: SILVER_400, fontSize: 13, lineHeight: 1.65 }}>
+                PGP key available on request for sensitive disclosures.
+              </span>
+            </div>
+          </div>
+          <p style={{ margin: 0, color: SILVER_300, lineHeight: 1.75 }}>
+            We do not currently operate a bug bounty programme. We will acknowledge your
+            contribution in our security changelog (with your permission) once the issue is
+            resolved. Reports that are clearly out-of-scope, spam, or automated scanner output
+            will not receive a response.
+          </p>
+          <p style={{ margin: 0, color: SILVER_400, lineHeight: 1.75, fontSize: 13 }}>
+            Out-of-scope items include: social engineering attacks against our team,
+            denial-of-service attacks, issues in third-party services we depend on (report those
+            to the respective vendor), and theoretical vulnerabilities without a working proof of
+            concept.
+          </p>
+        </div>
+      ),
+    },
+    {
+      id: "security-contact",
+      label: "06",
       title: "Security Contact",
       content: (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <p style={{ margin: 0, color: SILVER_300, lineHeight: 1.75 }}>
-            For institutional compliance enquiries, vulnerability disclosures, or data processing
-            questions, contact us directly:
+            For institutional compliance enquiries, data processing questions, or vendor security
+            questionnaires, contact us directly:
           </p>
           <div
             style={{
@@ -192,10 +261,10 @@ export default function SecurityPage() {
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <span style={{ color: SILVER_500, fontFamily: MONO, fontSize: 11, minWidth: 80 }}>EMAIL</span>
               <a
-                href="mailto:security@agenthinkmesh.com"
+                href="mailto:security@agenthink.ai"
                 style={{ color: GREEN_400, fontFamily: MONO, fontSize: 14, textDecoration: "none" }}
               >
-                security@agenthinkmesh.com
+                security@agenthink.ai
               </a>
             </div>
             <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -213,11 +282,6 @@ export default function SecurityPage() {
             If you are a compliance officer at a regulated institution conducting due diligence,
             we will provide a completed vendor security questionnaire on request. Email the
             address above with your organisation name and questionnaire format.
-          </p>
-          <p style={{ margin: 0, color: SILVER_400, lineHeight: 1.75, fontSize: 13 }}>
-            Responsible disclosure: if you discover a security vulnerability, please report it
-            to the email above before public disclosure. We commit to acknowledging receipt
-            within 24 hours and providing a remediation timeline within 5 business days.
           </p>
         </div>
       ),
@@ -237,7 +301,7 @@ export default function SecurityPage() {
         }}
       >
         <Link href="/" style={{ color: SILVER_500, fontSize: 12, fontFamily: MONO, textDecoration: "none" }}>
-          ← AgenThinkMesh
+          ← Home
         </Link>
         <span style={{ color: NAVY_700 }}>·</span>
         <span style={{ color: SILVER_500, fontSize: 12, fontFamily: MONO }}>Security &amp; Data Policy</span>
@@ -267,7 +331,7 @@ export default function SecurityPage() {
         </div>
         <h1
           style={{
-            margin: "0 0 16px",
+            margin: "0 0 12px",
             fontSize: 32,
             fontWeight: 700,
             color: "#F1F5F9",
@@ -276,17 +340,18 @@ export default function SecurityPage() {
         >
           How we handle your data
         </h1>
-        <p style={{ margin: "0 0 8px", color: SILVER_400, lineHeight: 1.75, maxWidth: 640 }}>
+        {/* Last reviewed — placed directly below the page title */}
+        <p style={{ margin: "0 0 20px", color: SILVER_500, fontSize: 12, fontFamily: MONO }}>
+          This page was last reviewed: April 2026
+        </p>
+        <p style={{ margin: 0, color: SILVER_400, lineHeight: 1.75, maxWidth: 640 }}>
           This page is written for compliance officers, institutional investors, and anyone
           conducting security due diligence on AgenThink Mesh. It is intentionally plain and
           specific. If something is unclear or missing, email{" "}
-          <a href="mailto:security@agenthinkmesh.com" style={{ color: GREEN_400 }}>
-            security@agenthinkmesh.com
+          <a href="mailto:security@agenthink.ai" style={{ color: GREEN_400 }}>
+            security@agenthink.ai
           </a>
           .
-        </p>
-        <p style={{ margin: 0, color: SILVER_500, fontSize: 12, fontFamily: MONO }}>
-          Last updated: April 2026
         </p>
       </div>
 
@@ -384,8 +449,8 @@ export default function SecurityPage() {
           </p>
           <p style={{ margin: 0, color: SILVER_500, fontSize: 12 }}>
             Questions?{" "}
-            <a href="mailto:security@agenthinkmesh.com" style={{ color: GREEN_400 }}>
-              security@agenthinkmesh.com
+            <a href="mailto:security@agenthink.ai" style={{ color: GREEN_400 }}>
+              security@agenthink.ai
             </a>
           </p>
         </div>

@@ -201,8 +201,11 @@ export default function Demos() {
         />
 
         {/* Footer */}
-        <div className="mt-10 pt-6 border-t border-white/10 text-center text-xs text-slate-600">
-          AgenThinkMesh · Institutional Decision Intelligence
+        <div className="mt-10 pt-6 border-t border-white/10 text-center text-xs text-slate-600 flex flex-col items-center gap-2">
+          <span>AgenThinkMesh · Institutional Decision Intelligence</span>
+          <Link href="/security" className="text-slate-500 hover:text-emerald-400 transition-colors">
+            Data &amp; Security
+          </Link>
         </div>
       </div>
     </div>

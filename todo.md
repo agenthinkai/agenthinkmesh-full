@@ -3197,3 +3197,9 @@
 - [x] Build /security page (5 sections: data handling, infrastructure, access controls, retention, security contact)
 - [x] Add /security to footer (Landing.tsx) and SiteNav (NAV_ITEMS)
 - [x] Register /security route in App.tsx
+- [x] Add "This page was last reviewed: April 2026" line directly below /security h1 title
+- [x] Add responsible disclosure section (section 05, 90-day window, security@agenthink.ai) to /security
+- [x] Renumber security-contact to section 06
+- [x] Update all emails from security@agenthinkmesh.com to security@agenthink.ai
+- [x] Add "Data & Security" footer link to /demos
+- [x] Add "Data & Security" footer link to /sg-ic, /jp-ic, /us-ic, /gcc-ic
