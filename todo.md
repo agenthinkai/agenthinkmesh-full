@@ -3162,3 +3162,8 @@
 - [x] Add waitlist email capture to /sg-ic (sourcePage: sg-ic, workflow: institutional)
 - [x] Build /jp-ic Japan deeptech demo page (Seiwa Robotics, METI/FEFTA context, 4 agents)
 - [x] Build /us-ic US SaaS demo page (Fluxion Inc., Rule of 40, CAC payback, 4 agents)
+
+## Enhancements sprint 10 (Apr 22 2026)
+- [x] Create /demos index page (three cards: sg-ic, jp-ic, us-ic) + "See examples" nav link
+- [x] Personalise WaitlistCapture headings per region via props (heading + subheading)
+- [x] Add waitlist conversion by source summary above signups table in /admin/usage

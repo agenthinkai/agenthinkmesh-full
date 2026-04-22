@@ -107,7 +107,15 @@ function ConfidenceBar({ value }: { value: number }) {
 }
 
 // ── Waitlist capture ─────────────────────────────────────────────────────────
-function WaitlistCapture({ sourcePage }: { sourcePage: string }) {
+function WaitlistCapture({
+  sourcePage,
+  heading = "Get early access",
+  subheading = "Join institutional investors already using AgenThink Mesh",
+}: {
+  sourcePage: string;
+  heading?: string;
+  subheading?: string;
+}) {
   const [email, setEmail] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -130,10 +138,8 @@ function WaitlistCapture({ sourcePage }: { sourcePage: string }) {
 
   return (
     <div className="border border-white/10 bg-white/5 rounded-xl p-6 mt-8">
-      <h2 className="text-base font-semibold text-white mb-1">Get early access</h2>
-      <p className="text-sm text-slate-400 mb-5">
-        Join institutional investors already using AgenThink Mesh
-      </p>
+      <h2 className="text-base font-semibold text-white mb-1">{heading}</h2>
+      <p className="text-sm text-slate-400 mb-5">{subheading}</p>
       {submitted ? (
         <div className="flex items-center gap-2 text-emerald-400 text-sm font-medium">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
@@ -312,7 +318,11 @@ export default function SgIcDemo() {
         </div>
 
         {/* Waitlist capture */}
-        <WaitlistCapture sourcePage="sg-ic" />
+        <WaitlistCapture
+          sourcePage="sg-ic"
+          heading="Join institutional investors across SEA"
+          subheading="Early access for funds evaluating Southeast Asian deal flow"
+        />
 
         {/* Footer */}
         <div className="mt-10 pt-6 border-t border-white/10 flex items-center justify-between text-xs text-slate-600">

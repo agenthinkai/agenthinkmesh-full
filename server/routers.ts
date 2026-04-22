@@ -3664,6 +3664,21 @@ If a section is not applicable (e.g. no financial data provided), set it to null
           .orderBy(desc(loginEvents.loginAt))
           .limit(5);
       }),
+    // Waitlist signups grouped by sourcePage for conversion tracking
+    waitlistBySource: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      const rows = await db
+        .select({
+          sourcePage: waitlistSignups.sourcePage,
+          count: sql<number>`COUNT(*)`,
+        })
+        .from(waitlistSignups)
+        .groupBy(waitlistSignups.sourcePage)
+        .orderBy(desc(sql`COUNT(*)`));
+      return rows;
+    }),
   }),
 });
 export type AppRouter = typeof appRouter;

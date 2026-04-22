@@ -137,6 +137,9 @@ export default function Home() {
           <a href="#domains" className="text-sm text-white/50 hover:text-white transition-colors">Domains</a>
           <a href="#platform-scope" onClick={(e) => { e.preventDefault(); document.getElementById('platform-scope')?.scrollIntoView({ behavior: 'smooth' }); }} className="text-sm text-white/50 hover:text-white transition-colors cursor-pointer">Platform</a>
           <a href="#contact" className="text-sm text-white/50 hover:text-white transition-colors">Contact</a>
+          <Link href="/demos" className="text-sm text-white/50 hover:text-white transition-colors">
+            See examples
+          </Link>
           <Link href="/pitchmirror" className="text-sm font-semibold text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1">
             <span>🪞</span> PitchMirror
           </Link>
@@ -208,6 +211,13 @@ export default function Home() {
                 {label}
               </a>
             ))}
+            <Link
+              href="/demos"
+              className="text-sm text-white/60 hover:text-white transition-colors"
+              onClick={() => setMobileNavOpen(false)}
+            >
+              See examples
+            </Link>
             <Link
               href="/pitchmirror"
               className="text-sm font-semibold text-violet-400 hover:text-violet-300 transition-colors flex items-center gap-1.5"

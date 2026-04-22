@@ -124,6 +124,9 @@ export default function AdminUsageDashboard() {
   const { data: waitlistData, isLoading: waitlistLoading } = trpc.waitlist.list.useQuery(undefined, {
     enabled: user?.role === "admin",
   });
+  const { data: waitlistBySource } = trpc.adminUsage.waitlistBySource.useQuery(undefined, {
+    enabled: user?.role === "admin",
+  });
 
   // Aggregate daily rows into per-date totals for the chart
   const chartData = useMemo(() => {
@@ -582,6 +585,44 @@ export default function AdminUsageDashboard() {
               {waitlistLoading ? "…" : (waitlistData?.length ?? 0)} total
             </span>
           </div>
+          {/* Source breakdown summary */}
+          {(() => {
+            if (!waitlistBySource || waitlistBySource.length === 0) return null;
+            const KNOWN = ["sg-ic", "jp-ic", "us-ic"];
+            const knownRows = KNOWN.map(src => ({
+              src,
+              count: Number(waitlistBySource.find(r => r.sourcePage === src)?.count ?? 0),
+            }));
+            const otherCount = waitlistBySource
+              .filter(r => !KNOWN.includes(r.sourcePage ?? ""))
+              .reduce((s, r) => s + Number(r.count), 0);
+            const allRows = [...knownRows, { src: "other", count: otherCount }].filter(r => r.count > 0);
+            if (allRows.length === 0) return null;
+            const maxCount = Math.max(...allRows.map(r => r.count));
+            return (
+              <div className="mb-5 pb-4 border-b border-white/10">
+                <p className="text-xs text-slate-500 font-medium mb-2">Signups by source:</p>
+                <div className="flex flex-wrap gap-x-6 gap-y-1.5">
+                  {allRows.map(({ src, count }) => (
+                    <div key={src} className="flex items-center gap-2">
+                      <span className={`text-xs font-mono ${count === maxCount ? "text-emerald-300 font-semibold" : "text-slate-400"}`}>
+                        {src}
+                      </span>
+                      <span className="text-xs text-slate-600">·</span>
+                      <span className={`text-xs font-mono ${count === maxCount ? "text-emerald-300 font-semibold" : "text-slate-400"}`}>
+                        {count} signup{count !== 1 ? "s" : ""}
+                      </span>
+                      {count === maxCount && (
+                        <span className="text-[10px] text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-1.5 py-0.5 rounded font-mono">
+                          top
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
           {waitlistLoading ? (
             <div className="text-slate-500 text-sm">Loading…</div>
           ) : waitlistData && waitlistData.length > 0 ? (
