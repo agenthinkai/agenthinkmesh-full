@@ -3680,5 +3680,72 @@ If a section is not applicable (e.g. no financial data provided), set it to null
       return rows;
     }),
   }),
+
+  // ── Unsubscribe — public token-based email opt-out ──────────────────────────
+  unsubscribe: router({
+    // Check if a token is valid and whether the user is already unsubscribed
+    checkToken: publicProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .query(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const [user] = await db
+          .select({ id: users.id, emailUnsubscribed: users.emailUnsubscribed })
+          .from(users)
+          .where(eq(users.unsubscribeToken, input.token))
+          .limit(1);
+        if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "Invalid unsubscribe token" });
+        return { valid: true, alreadyUnsubscribed: user.emailUnsubscribed };
+      }),
+
+    // Confirm unsubscribe — sets emailUnsubscribed = true
+    confirm: publicProcedure
+      .input(z.object({
+        token: z.string().min(1),
+        reason: z.string().max(500).optional(),
+      }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const [user] = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.unsubscribeToken, input.token))
+          .limit(1);
+        if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "Invalid unsubscribe token" });
+        await db
+          .update(users)
+          .set({
+            emailUnsubscribed: true,
+            emailUnsubscribedAt: new Date(),
+            unsubscribeReason: input.reason ?? null,
+          })
+          .where(eq(users.id, user.id));
+        return { success: true };
+      }),
+
+    // Re-subscribe — clears emailUnsubscribed flag
+    resubscribe: publicProcedure
+      .input(z.object({ token: z.string().min(1) }))
+      .mutation(async ({ input }) => {
+        const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+        const [user] = await db
+          .select({ id: users.id })
+          .from(users)
+          .where(eq(users.unsubscribeToken, input.token))
+          .limit(1);
+        if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "Invalid unsubscribe token" });
+        await db
+          .update(users)
+          .set({
+            emailUnsubscribed: false,
+            emailUnsubscribedAt: null,
+            unsubscribeReason: null,
+          })
+          .where(eq(users.id, user.id));
+        return { success: true };
+      }),
+  }),
 });
 export type AppRouter = typeof appRouter;

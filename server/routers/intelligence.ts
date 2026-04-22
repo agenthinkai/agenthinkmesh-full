@@ -371,7 +371,8 @@ export const intelligenceRouter = router({
     // Send weekly brief via Microsoft Graph API
     const userRows = await db.select().from(users).where(eq(users.id, ctx.user.id)).limit(1);
     const userEmail = userRows[0]?.email;
-    if (userEmail) {
+    // Skip if user has unsubscribed from emails
+    if (userEmail && !userRows[0]?.emailUnsubscribed) {
       try {
         const briefData = JSON.parse(content) as { headline?: string; trend_analysis?: string; institution_summaries?: Array<{ institution: string; headline: string; key_signal: string }>; recommended_actions?: string[] };
         const html = `

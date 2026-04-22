@@ -512,6 +512,13 @@
       "when": 1776832743204,
       "tag": "0072_spotty_chimera",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "5",
+      "when": 1776843721077,
+      "tag": "0073_outgoing_blazing_skull",
+      "breakpoints": true
     }
   ]
 }

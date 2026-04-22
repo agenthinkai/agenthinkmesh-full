@@ -2,6 +2,20 @@ import { and, count, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertPitchTriage, InsertUser, PitchTriage, pitchTriages, pitchMirrorShares, users, autoTriggerLog, InsertAutoTriggerLog, dealSignals, InsertDealSignal, DealSignal } from "../drizzle/schema";
 import { ENV } from './_core/env';
+import { randomBytes } from "crypto";
+
+/** Generate a URL-safe 64-char hex token for unsubscribe links. */
+export function generateUnsubscribeToken(): string {
+  return randomBytes(32).toString("hex");
+}
+
+/** Build the full unsubscribe URL for a given token. */
+export function generateUnsubscribeUrl(token: string): string {
+  const base = process.env.VITE_FRONTEND_FORGE_API_URL
+    ? "https://agenthink-7enctkan.manus.space"
+    : "http://localhost:3000";
+  return `${base}/unsubscribe?token=${token}`;
+}
 
 let _db: ReturnType<typeof drizzle> | null = null;
 
@@ -67,6 +81,9 @@ export async function upsertUser(user: InsertUser): Promise<void> {
     if (Object.keys(updateSet).length === 0) {
       updateSet.lastSignedIn = new Date();
     }
+
+    // Generate unsubscribe token on first insert only (not on duplicate update)
+    values.unsubscribeToken = generateUnsubscribeToken();
 
     await db.insert(users).values(values).onDuplicateKeyUpdate({
       set: updateSet,

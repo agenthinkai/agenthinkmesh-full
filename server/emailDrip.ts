@@ -12,22 +12,26 @@
  *  Day 60 — Trial ended + upgrade CTA
  */
 
-import { getDb } from "./db";
+import { getDb, generateUnsubscribeUrl } from "./db";
 import { users, emailEvents } from "../drizzle/schema";
 import { eq, isNull, lte, and, sql } from "drizzle-orm";
 import { claimDripSend, type Drip } from "./billing";
 import { sendGraphEmail } from "./graphEmail";
 
-// ── Email provider abstraction ────────────────────────────────────────────────
+// ── Email provider abstraction ────────────────────────────────────────────
 
 interface EmailPayload {
   to: string;
   subject: string;
   html: string;
+  unsubscribeUrl?: string;
 }
 
 async function sendEmail(payload: EmailPayload): Promise<boolean> {
-  return sendGraphEmail({ to: payload.to, subject: payload.subject, html: payload.html });
+  const html = payload.unsubscribeUrl
+    ? payload.html.replace("{{unsubscribe_url}}", payload.unsubscribeUrl)
+    : payload.html.replace("{{unsubscribe_url}}", "#");
+  return sendGraphEmail({ to: payload.to, subject: payload.subject, html });
 }
 
 // ── Email templates ───────────────────────────────────────────────────────────
@@ -180,9 +184,14 @@ export async function runDripJob(): Promise<void> {
 
   for (const user of trialUsers) {
     if (!user.email || !user.trialStartedAt) continue;
+    // Skip users who have unsubscribed from emails
+    if (user.emailUnsubscribed) continue;
 
     const name = user.name ?? "";
     const email = user.email;
+    const unsubscribeUrl = user.unsubscribeToken
+      ? generateUnsubscribeUrl(user.unsubscribeToken)
+      : undefined;
     const startedAt = new Date(user.trialStartedAt);
     const daysSinceStart = Math.floor((now.getTime() - startedAt.getTime()) / (1000 * 60 * 60 * 24));
     const runsUsed = 50 - (user.trialRunsRemaining ?? 50);
@@ -196,7 +205,7 @@ export async function runDripJob(): Promise<void> {
       const claimed = await claimDripSend(user.id, "day_1");
       if (claimed) {
         const tmpl = day1Template(name);
-        await sendEmail({ ...tmpl, to: email });
+        await sendEmail({ ...tmpl, to: email, unsubscribeUrl });
       }
     }
 
@@ -205,7 +214,7 @@ export async function runDripJob(): Promise<void> {
       const claimed = await claimDripSend(user.id, "day_15");
       if (claimed) {
         const tmpl = day15Template(name, runsUsed);
-        await sendEmail({ ...tmpl, to: email });
+        await sendEmail({ ...tmpl, to: email, unsubscribeUrl });
       }
     }
 
@@ -214,7 +223,7 @@ export async function runDripJob(): Promise<void> {
       const claimed = await claimDripSend(user.id, "day_45");
       if (claimed) {
         const tmpl = day45Template(name, runsRemaining, daysLeft);
-        await sendEmail({ ...tmpl, to: email });
+        await sendEmail({ ...tmpl, to: email, unsubscribeUrl });
       }
     }
 
@@ -223,7 +232,7 @@ export async function runDripJob(): Promise<void> {
       const claimed = await claimDripSend(user.id, "day_55");
       if (claimed) {
         const tmpl = day55Template(name);
-        await sendEmail({ ...tmpl, to: email });
+        await sendEmail({ ...tmpl, to: email, unsubscribeUrl });
       }
     }
 
@@ -232,7 +241,7 @@ export async function runDripJob(): Promise<void> {
       const claimed = await claimDripSend(user.id, "day_60");
       if (claimed) {
         const tmpl = day60Template(name, runsUsed, user.totalAgentsFired ?? 0);
-        await sendEmail({ ...tmpl, to: email });
+        await sendEmail({ ...tmpl, to: email, unsubscribeUrl });
       }
     }
   }

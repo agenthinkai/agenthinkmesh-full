@@ -455,6 +455,29 @@ function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: nu
         <div style={{ marginBottom: 20, width: "100%" }}>
           <div style={{ fontSize: 10, fontFamily: MONO, color: "#3D4F63", letterSpacing: "0.1em", marginBottom: 10, textTransform: "uppercase" }}>Live Workflows</div>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {/* Pitch Triage CTA — primary action */}
+            <a
+              href="/pitch-triage"
+              style={{
+                display: "flex", alignItems: "center", gap: 14,
+                padding: "14px 20px",
+                background: "rgba(167,139,250,0.08)",
+                border: "1px solid rgba(167,139,250,0.40)",
+                borderRadius: 10, textDecoration: "none",
+                transition: "border-color 0.15s, background 0.15s, transform 0.1s",
+              }}
+              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(167,139,250,0.85)"; (e.currentTarget as HTMLAnchorElement).style.background = "rgba(167,139,250,0.16)"; (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-1px)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(167,139,250,0.40)"; (e.currentTarget as HTMLAnchorElement).style.background = "rgba(167,139,250,0.08)"; (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0)"; }}
+            >
+              <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(167,139,250,0.14)", border: "1px solid rgba(167,139,250,0.30)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, position: "relative" }}>
+                ⚡
+                <span style={{ position: "absolute", top: -4, right: -4, fontFamily: MONO, fontSize: 7, padding: "1px 4px", borderRadius: 3, background: "rgba(167,139,250,0.22)", border: "1px solid rgba(167,139,250,0.55)", color: "#c4b5fd", letterSpacing: "0.06em" }}>LIVE</span>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 10, fontFamily: MONO, color: "rgba(167,139,250,0.75)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 3 }}>Primary Workflow</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#E2E8F0", display: "flex", alignItems: "center", gap: 6 }}>Evaluate a deal <span style={{ fontSize: 12 }}>→</span></div>
+              </div>
+            </a>
             {/* Deal Screening CTA */}
             <a
               href="/deals"

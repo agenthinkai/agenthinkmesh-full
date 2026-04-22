@@ -195,6 +195,16 @@ export const users = mysqlTable("users", {
   createdByAdminId: int("createdByAdminId"),
   /** When the temporary password was issued. Used for 7-day expiry check. */
   tempPasswordIssuedAt: timestamp("tempPasswordIssuedAt"),
+
+  // ── Email unsubscribe ─────────────────────────────────────────────────────────
+  /** True if the user has opted out of all drip/transactional emails. */
+  emailUnsubscribed: boolean("email_unsubscribed").notNull().default(false),
+  /** Timestamp when the user unsubscribed. */
+  emailUnsubscribedAt: timestamp("email_unsubscribed_at"),
+  /** Optional reason provided by the user on unsubscribe. */
+  unsubscribeReason: varchar("unsubscribe_reason", { length: 500 }),
+  /** Unique token used in unsubscribe links. Generated on user creation. */
+  unsubscribeToken: varchar("unsubscribe_token", { length: 64 }).unique(),
 });
 
 export type User = typeof users.$inferSelect;

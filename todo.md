@@ -3182,3 +3182,13 @@
 - [x] Copy emails button in admin waitlist (filtered+sorted, clipboard, 2s feedback)
 - [x] Last exported timestamp below Export CSV (localStorage key mesh_waitlist_last_exported, Kuwait time)
 - [x] /gcc-ic demo page (Tamweel Digital, Saudi fintech, SAMA sandbox, Vision 2030)
+
+## Enhancements sprint 14 (Apr 22 2026)
+- [ ] Unsubscribe DB columns (email_unsubscribed, email_unsubscribed_at, unsubscribe_reason, unsubscribe_token), token on user creation, sendGraphEmail guard + footer link
+- [ ] /unsubscribe page (token lookup, confirm, success/error states)
+- [ ] Re-subscribe endpoint + admin unsubscribe stats
+
+## Bug fix: Pitch Triage missing from landing page hero (Apr 22 2026)
+- [x] Added "Evaluate a deal →" hero card to Landing.tsx above the fold (routes to /pitch-triage)
+- [x] Confirmed nav (SiteNav NAV_ITEMS), CommandCenter zone 3, and sidebar all working
+- [x] Added unsubscribe tRPC router (checkToken, confirm, resubscribe) to fix tsc: 0
