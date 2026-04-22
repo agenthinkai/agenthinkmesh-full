@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { getLoginUrl } from "@/const";
 import { trpc } from "@/lib/trpc";
@@ -67,6 +67,14 @@ export default function Home() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const [activeRole, setActiveRole] = useState<"investment" | "procurement" | "insurance">("investment");
   const [taskInput, setTaskInput] = useState("Screen these 5 pitches against our early-stage B2B SaaS thesis");
+  const inputRef = useRef<HTMLInputElement>(null);
+  const handleChipClick = useCallback((value: string) => {
+    setTaskInput(value);
+    setTimeout(() => {
+      inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+      inputRef.current?.focus();
+    }, 50);
+  }, []);
 
   // Contact form state
   const [contactForm, setContactForm] = useState({
@@ -236,10 +244,11 @@ export default function Home() {
                 { label: "Triage a pitch", value: "Screen these 5 pitches against our early-stage B2B SaaS thesis" },
                 { label: "Screen a deal", value: "Evaluate this Series A deal against our investment criteria" },
                 { label: "Evaluate a vendor", value: "Compare these 3 vendors against our procurement criteria for cloud infrastructure" },
+                { label: "Assess a portfolio company", value: "Summarise the current performance of our 3 portfolio companies against Q2 targets" },
               ].map((chip) => (
                 <button
                   key={chip.label}
-                  onClick={() => setTaskInput(chip.value)}
+                  onClick={() => handleChipClick(chip.value)}
                   className={`px-4 py-1.5 rounded-full text-xs font-medium border transition-all duration-150 ${
                     taskInput === chip.value
                       ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
@@ -278,21 +287,33 @@ export default function Home() {
 
           {/* ── PRIMARY FREE-RUN CTA ── */}
           {!isAuthenticated && (
-            <div className="mb-10">
-              <Link href="/pitchmirror">
-                <button
-                  className="group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-white font-bold text-base shadow-2xl shadow-violet-500/30 transition-all duration-200 hover:scale-[1.03] hover:shadow-violet-500/50 focus:outline-none focus:ring-2 focus:ring-violet-400 focus:ring-offset-2 focus:ring-offset-[#080B14]"
-                  style={{
-                    background: "linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%)",
+            <div className="mb-10 w-full max-w-xl mx-auto">
+              <div className="flex items-center gap-2 rounded-2xl bg-white/[0.05] border border-white/10 px-4 py-3 focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/20 transition-all">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={taskInput}
+                  onChange={(e) => setTaskInput(e.target.value)}
+                  placeholder="Describe your task…"
+                  className="flex-1 min-w-0 bg-transparent text-sm text-white placeholder:text-white/30 outline-none"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && taskInput.trim()) {
+                      trackEvent("home_pitchmirror_cta_click", { location: "hero", chip: "enter" });
+                      window.location.href = `/pitchmirror?task=${encodeURIComponent(taskInput)}`;
+                    }
                   }}
+                />
+                <a
+                  href={`/pitchmirror?task=${encodeURIComponent(taskInput)}`}
                   onClick={() => trackEvent("home_pitchmirror_cta_click", { location: "hero" })}
+                  className="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white font-semibold text-sm shadow-lg shadow-emerald-900/30 transition-all duration-150 hover:scale-[1.03] focus:outline-none"
+                  style={{ background: "linear-gradient(135deg, #10b981 0%, #06b6d4 100%)" }}
                 >
-                  <span className="text-xl">🪞</span>
-                  <span>Run your first task free</span>
-                  <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                </button>
-              </Link>
-              <p className="mt-3 text-xs text-white/40 text-center">
+                  <span>Run free</span>
+                  <ArrowRight className="w-4 h-4" />
+                </a>
+              </div>
+              <p className="mt-2 text-xs text-white/35 text-center">
                 No setup. No training. Just describe what you need.
               </p>
             </div>
@@ -345,8 +366,42 @@ export default function Home() {
                       <div>
                         <div className="text-base font-bold text-white mb-1">Pitch Triage</div>
                         <div className="text-sm text-white/55 leading-relaxed mb-1">Sort your inbound deal flow in minutes, not days.</div>
-                        <div className="text-xs text-emerald-400/80 italic">“Triage 50 pitches in the time it used to take for one”</div>
                       </div>
+                      {/* ── DEMO PLACEHOLDER ── */}
+                      <div className="w-full rounded-xl overflow-hidden border border-emerald-500/20 bg-[#0a1a12]">
+                        {/* Simulated triage output terminal */}
+                        <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-900/30 border-b border-emerald-500/15">
+                          <span className="w-2 h-2 rounded-full bg-red-500/70" />
+                          <span className="w-2 h-2 rounded-full bg-yellow-500/70" />
+                          <span className="w-2 h-2 rounded-full bg-emerald-500/70" />
+                          <span className="ml-2 text-[10px] font-mono text-emerald-400/50">pitch-triage — live output</span>
+                        </div>
+                        <div className="p-3 font-mono text-[10px] leading-relaxed space-y-1 select-none">
+                          <div className="text-white/30">&gt; Analysing 5 pitches…</div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">ENGAGE</span>
+                            <span className="text-white/60">Pitch #1 — B2B SaaS, strong PMF signal</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-1.5 py-0.5 rounded bg-yellow-500/20 text-yellow-400 font-bold">WATCH</span>
+                            <span className="text-white/60">Pitch #2 — Early traction, market unclear</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-bold">PASS</span>
+                            <span className="text-white/60">Pitch #3 — Outside thesis, pre-revenue</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-400 font-bold">ENGAGE</span>
+                            <span className="text-white/60">Pitch #4 — Series A ready, strong team</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="px-1.5 py-0.5 rounded bg-red-500/20 text-red-400 font-bold">PASS</span>
+                            <span className="text-white/60">Pitch #5 — Consumer, not B2B</span>
+                          </div>
+                          <div className="pt-1 text-emerald-400/60">✓ Done in 1m 42s · 2 engage · 1 watch · 2 pass</div>
+                        </div>
+                      </div>
+                      <div className="text-xs text-emerald-400/80 italic">“Triage 50 pitches in the time it used to take for one”</div>
                       <div className="text-sm font-semibold text-emerald-400 flex items-center gap-1.5 group-hover:gap-2.5 transition-all">
                         Run Pitch Triage <ArrowRight className="w-4 h-4" />
                       </div>

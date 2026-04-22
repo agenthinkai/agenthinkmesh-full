@@ -3132,3 +3132,8 @@
 - [x] Add role-switcher tabs (Investment / Procurement / Insurance) above workflow cards
 - [x] Add "What do you need to decide today?" chips (Triage a pitch · Screen a deal · Evaluate a vendor)
 - [x] Remove Education workflow card entirely
+
+## Landing page enhancements sprint 4 (Apr 22 2026)
+- [x] Wire decision chips to hero input box (scroll + focus on click)
+- [x] Add 4th chip "Assess a portfolio company" with PortfolioMesh example
+- [x] Add animated demo placeholder inside Pitch Triage hero card
