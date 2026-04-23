@@ -5,7 +5,7 @@
  * Add contacts manually. See your outreach at a glance.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 
@@ -166,6 +166,54 @@ function AddContactModal({
   );
 }
 
+// ── Gmail Connect Banner ─────────────────────────────────────────────────────
+function GmailConnectBanner() {
+  const [status, setStatus] = useState<"loading" | "connected" | "disconnected">("loading");
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    // Handle OAuth callback result from URL params
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("gmail_connected") === "1") {
+      setStatus("connected");
+      toast.success("Gmail connected", { description: "Reply tracking is now active." });
+      window.history.replaceState({}, "", "/tracker");
+      return;
+    }
+    if (params.get("gmail_error")) {
+      setError(decodeURIComponent(params.get("gmail_error") || "OAuth failed"));
+      setStatus("disconnected");
+      window.history.replaceState({}, "", "/tracker");
+      return;
+    }
+    // Check live connection status from server
+    fetch("/api/gmail/status")
+      .then((r) => r.json())
+      .then((d) => setStatus(d.connected ? "connected" : "disconnected"))
+      .catch(() => setStatus("disconnected"));
+  }, []);
+
+  if (status === "loading" || status === "connected") return null;
+
+  return (
+    <div className="bg-amber-950/40 border border-amber-500/30 rounded-xl px-4 py-3 flex items-center justify-between gap-4 flex-wrap">
+      <div>
+        <p className="text-sm font-semibold text-amber-300">📭 Gmail not connected</p>
+        <p className="text-xs text-amber-400/70 mt-0.5">
+          {error || "Connect farouqsultan@gmail.com to auto-detect replies from your outreach emails."}
+        </p>
+      </div>
+      {/* Initiates Google OAuth flow — redirects to /api/gmail/auth which stores token in gmail_oauth_tokens */}
+      <a
+        href={`/api/gmail/auth?origin=${encodeURIComponent(window.location.origin)}`}
+        className="flex-shrink-0 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black text-xs font-bold rounded-lg transition-colors"
+      >
+        Connect Gmail for reply tracking
+      </a>
+    </div>
+  );
+}
+
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function Tracker() {
   const [logTarget, setLogTarget] = useState<{ id: number; recipientName: string; recipientFirm?: string | null } | null>(null);
@@ -213,6 +261,9 @@ export default function Tracker() {
       </div>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+
+        {/* Gmail connect banner — shown when gmail_oauth_tokens is empty */}
+        <GmailConnectBanner />
 
         {/* Summary cards */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
