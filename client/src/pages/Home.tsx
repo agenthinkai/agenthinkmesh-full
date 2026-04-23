@@ -500,15 +500,7 @@ export default function Home() {
                           2. REMOVE the style={{ display: "none" }} prop from the video tag below
                           The static terminal fallback will then be hidden automatically.
                         */}
-                        <video
-                          autoPlay
-                          loop
-                          muted
-                          playsInline
-                          className="w-full block"
-                          src=""
-                          style={{ display: "none" }}
-                        />
+                        {/* Video placeholder removed — swap in a real src when available */}
                         {/* Static fallback terminal — shown until real video is swapped in */}
                         <div className="flex items-center gap-1.5 px-3 py-2 bg-emerald-900/30 border-b border-emerald-500/15">
                           <span className="w-2 h-2 rounded-full bg-red-500/70" />
