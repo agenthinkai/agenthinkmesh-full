@@ -38,12 +38,13 @@ import {
   resumeFleet,
   abortFleet,
   getFleetState,
+  type FleetOptions,
 } from "../founderFleet";
 
 export const fleetRouter = router({
   // ── Start a new fleet run ─────────────────────────────────────────────────
   start: adminProcedure
-    .input(z.object({ label: z.string().optional() }).optional())
+    .input(z.object({ label: z.string().optional(), quickTest: z.boolean().optional() }).optional())
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });

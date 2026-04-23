@@ -222,7 +222,8 @@ async function saveCosts(runId: number, acc: CostAccumulator): Promise<void> {
 }
 
 // ── Step 1: Generate 100 ideas in one LLM call ────────────────────────────────
-async function generateIdeas(runId: number, acc: CostAccumulator): Promise<number[]> {
+async function generateIdeas(runId: number, acc: CostAccumulator, opts: { ideasPerDomain?: number } = {}): Promise<number[]> {
+  const ideasPerDomain = opts.ideasPerDomain ?? 20;
   const db = await requireDb();
 
   // Load existing fingerprints to avoid duplicates across runs
@@ -233,7 +234,8 @@ async function generateIdeas(runId: number, acc: CostAccumulator): Promise<numbe
     `${d.name} (${d.subSectors.join(", ")})`
   ).join("; ");
 
-  const prompt = `Generate exactly 100 unique business ideas across 5 domains — 20 per domain.
+  const totalIdeas = ideasPerDomain * 5;
+  const prompt = `Generate exactly ${totalIdeas} unique business ideas across 5 domains — ${ideasPerDomain} per domain.
 Domains and sub-sectors: ${domainSpec}
 
 Rules:
@@ -291,7 +293,7 @@ ${Array.from(existingFingerprints).slice(0, 500).join("\n") || "None yet"}`;
     if (existingFingerprints.has(fp)) return false;
     existingFingerprints.add(fp);
     return true;
-  }).slice(0, 100);
+  }).slice(0, totalIdeas);
 
   for (const idea of toInsert) {
     const fp = fingerprint(idea.domain, idea.subSector, idea.description);
@@ -318,16 +320,19 @@ ${Array.from(existingFingerprints).slice(0, 500).join("\n") || "None yet"}`;
 async function runResearch(
   runId: number,
   acc: CostAccumulator,
+  opts: { queriesPerDomain?: number } = {},
 ): Promise<Record<string, string>> {
+  const queriesPerDomain = opts.queriesPerDomain ?? 3;
   const db = await requireDb();
   const researchByDomain: Record<string, string> = {};
 
   for (const domain of FLEET_DOMAINS) {
-    const queries = [
+    const allQueries = [
       `${domain.name} startup market size 2024 2025`,
       `${domain.name} key competitors and market leaders`,
       `${domain.name} regulatory risks and compliance requirements`,
     ];
+    const queries = allQueries.slice(0, queriesPerDomain);
 
     const summaries: string[] = [];
     for (const query of queries) {
@@ -467,7 +472,9 @@ interface PitchEntry {
   idea: FounderAgentIdea;
 }
 
-async function submitToMesh(runId: number, acc: CostAccumulator): Promise<void> {
+async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConcurrent?: number; staggerMs?: number } = {}): Promise<void> {
+  const maxConcurrent = opts.maxConcurrent ?? MAX_CONCURRENT;
+  const staggerMs = opts.staggerMs ?? STAGGER_MS;
   const db = await requireDb();
 
   // Load all pitches for this run (or resume queued ones)
@@ -618,10 +625,10 @@ async function submitToMesh(runId: number, acc: CostAccumulator): Promise<void> 
     await processNext();
   };
 
-  // Launch up to MAX_CONCURRENT workers with stagger
+  // Launch up to maxConcurrent workers with stagger
   const workers: Promise<void>[] = [];
-  for (let i = 0; i < Math.min(MAX_CONCURRENT, queuedEvals.length); i++) {
-    await sleep(i * STAGGER_MS);
+  for (let i = 0; i < Math.min(maxConcurrent, queuedEvals.length); i++) {
+    await sleep(i * staggerMs);
     workers.push(processNext());
   }
 
@@ -749,8 +756,15 @@ No generic statements. Every insight must be grounded in the actual data provide
   }
 }
 
-// ── Main orchestration entry point ────────────────────────────────────────────
-export async function runFleet(runId: number): Promise<void> {
+// -- Fleet run options -------------------------------------------------------
+export interface FleetOptions {
+  /** Quick Test mode: 2 ideas/domain, 1 search/domain, 1 batch pitch call, 3 concurrent evals */
+  quickTest?: boolean;
+}
+// -- Main orchestration entry point ------------------------------------------
+
+export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<void> {
+  const { quickTest = false } = opts;
   fleetState.set(runId, { paused: false, abort: false });
   const acc: CostAccumulator = { searches: 0, llmCalls: 0, tokens: 0, costUsd: 0 };
 
@@ -759,14 +773,14 @@ export async function runFleet(runId: number): Promise<void> {
     await updateRunStatus(runId, "generating", { startedAt: Date.now() });
     if (await waitIfPaused(runId)) { await updateRunStatus(runId, "paused"); return; }
 
-    const ideaIds = await generateIdeas(runId, acc);
+    const ideaIds = await generateIdeas(runId, acc, quickTest ? { ideasPerDomain: 2 } : {});
     await saveCosts(runId, acc);
 
     // Step 2: Research
     await updateRunStatus(runId, "researching");
     if (await waitIfPaused(runId)) { await updateRunStatus(runId, "paused"); return; }
 
-    const researchByDomain = await runResearch(runId, acc);
+    const researchByDomain = await runResearch(runId, acc, quickTest ? { queriesPerDomain: 1 } : {});
     await saveCosts(runId, acc);
 
     // Step 3: Generate pitches
@@ -778,7 +792,7 @@ export async function runFleet(runId: number): Promise<void> {
 
     // Step 4: Submit to mesh
     await updateRunStatus(runId, "evaluating");
-    await submitToMesh(runId, acc);
+    await submitToMesh(runId, acc, quickTest ? { maxConcurrent: 3, staggerMs: 1000 } : {});
     await saveCosts(runId, acc);
 
     if (fleetState.get(runId)?.abort) {

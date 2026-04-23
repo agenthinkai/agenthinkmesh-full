@@ -3344,3 +3344,10 @@
 - [x] Daily schedule at 02:00 UTC via node-cron in server/jobs/founderFleetScheduler.ts
 - [x] Resume interrupted runs on server startup
 - [x] Cross-run trend analytics (SQL aggregation, not LLM)
+
+## FounderAgent Fleet — Quick Test Mode (Apr 23 2026)
+- [x] Add quickTest?: boolean flag to runFleet() in founderFleet.ts — 2 ideas/domain, max 5 searches, 1 batch pitch call, 3 concurrent evals
+- [x] Add quickTest param to fleet.start tRPC procedure
+- [x] Add amber "Quick Test (10 agents)" button to /founder-fleet dashboard
+- [x] TypeScript check + tests passing
+- [ ] Trigger Quick Test run and surface 6 review outputs

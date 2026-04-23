@@ -244,6 +244,15 @@ export default function FounderFleet() {
     onError: (e) => toast.error(e.message),
   });
 
+  const quickTestMut = trpc.fleet.start.useMutation({
+    onSuccess: (data) => {
+      setActiveRunId(data.runId);
+      runsQuery.refetch();
+      statusQuery.refetch();
+      toast.success("Quick Test run started (10 agents)");
+    },
+    onError: (e) => toast.error(e.message),
+  });
   const pauseMut = trpc.fleet.pause.useMutation({
     onSuccess: () => { statusQuery.refetch(); toast.info("Fleet paused"); },
     onError: (e) => toast.error(e.message),
@@ -360,14 +369,25 @@ export default function FounderFleet() {
             )}
             {/* Controls */}
             {isIdle && (
-              <Button
-                size="sm"
-                className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                onClick={() => startMut.mutate({})}
-                disabled={startMut.isPending}
-              >
-                {startMut.isPending ? "Starting…" : "▶ Start Fleet Run"}
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  size="sm"
+                  className="bg-amber-500 hover:bg-amber-600 text-white border-0"
+                  onClick={() => quickTestMut.mutate({ quickTest: true })}
+                  disabled={quickTestMut.isPending || startMut.isPending}
+                  title="Quick Test: 10 agents, ~5 min"
+                >
+                  {quickTestMut.isPending ? "Starting…" : "⚡ Quick Test (10 agents)"}
+                </Button>
+                <Button
+                  size="sm"
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                  onClick={() => startMut.mutate({})}
+                  disabled={startMut.isPending || quickTestMut.isPending}
+                >
+                  {startMut.isPending ? "Starting…" : "▶ Start Fleet Run"}
+                </Button>
+              </div>
             )}
             {isActive && (
               <Button
