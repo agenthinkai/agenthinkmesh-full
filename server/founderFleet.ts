@@ -240,7 +240,7 @@ Domains and sub-sectors: ${domainSpec}
 
 CRITICAL QUALITY RULES — every idea MUST include all four of these:
 1. FOUNDER UNFAIR ADVANTAGE: A specific prior role, network, or domain expertise that gives this founder an edge no generalist has (e.g. "Former Grab regional HR director", "Ex-WHO malaria programme lead", "10-year supply chain operator at Maersk").
-2. TRACTION SIGNAL: At least one concrete early signal — signed LOIs, paid pilots, proprietary dataset, regulatory approval, or paying customers. Not "seeking" or "planning" — something already secured.
+2. TRACTION SIGNAL: Minimum 2 paying customers, signed LOIs, or active pilots. Not "seeking" or "planning" — something already secured and verifiable.
 3. DEFENSIBLE MOAT: A specific moat that is NOT just "AI-powered" or "first mover" — e.g. proprietary data accumulated over years, exclusive distribution partnerships, regulatory licence, switching costs, or network effects with a named mechanism.
 4. WHY NOW / WHY THIS FOUNDER: A specific market timing insight or structural change (regulation, infrastructure, demographic shift) that makes this the right moment, and why this specific founder is positioned to capture it.
 
@@ -259,8 +259,8 @@ Each object must have these exact keys:
   "description": string (2-3 sentences: what they build, founder background, traction signal — max 280 chars),
   "targetRegion": string (e.g. "GCC", "Southeast Asia", "Sub-Saharan Africa", "Latin America", "South Asia", "Europe", "North America"),
   "founderName": string (realistic full name matching the target region),
-  "fundingStage": string (one of: "Pre-seed", "Seed", "Series A"),
-  "fundingAsk": string (e.g. "$500K", "$2M", "$8M")
+  "fundingStage": string (MUST be one of: "Seed", "Series A") — Pre-seed is NOT allowed,
+  "fundingAsk": string — MUST be between $1M and $15M (e.g. "$1.5M", "$3M", "$8M") — no pre-seed asks below $1M
 }
 Existing idea fingerprints to avoid (domain|subSector|description):
 ${Array.from(existingFingerprints).slice(0, 500).join("\n") || "None yet"}`;
@@ -586,7 +586,7 @@ async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConc
       //   2. APPROVED → ENGAGE
       //   3. APPROVED_WITH_CONDITIONS → WATCH
       //   4. For INSUFFICIENT_DATA / REJECTED: fall back to raw finalScore:
-      //      finalScore >= 0.68 → ENGAGE, >= 0.50 → WATCH, else → PASS
+      //      finalScore >= 0.60 → ENGAGE, >= 0.50 → WATCH, else → PASS
       //      This surfaces strong ideas even when the council lacks full data confidence.
       let rawClassification: "ENGAGE" | "WATCH" | "PASS";
       if (councilResult.verdict === "VETOED") {
@@ -598,7 +598,7 @@ async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConc
       } else {
         // INSUFFICIENT_DATA or REJECTED — use raw finalScore as tiebreaker
         const fs = councilResult.finalScore; // 0.0–1.0
-        rawClassification = fs >= 0.68 ? "ENGAGE" : fs >= 0.50 ? "WATCH" : "PASS";
+        rawClassification = fs >= 0.60 ? "ENGAGE" : fs >= 0.50 ? "WATCH" : "PASS";
       }
 
       const classificationScore = classificationToScore(rawClassification);
@@ -710,7 +710,7 @@ ${JSON.stringify(dataForInsights, null, 0)}
 
 Return ONLY a JSON object with these exact keys:
 {
-  "highScorePatterns": [5 specific patterns found in pitches with finalScore >= 70, grounded in actual data],
+  "highScorePatterns": [5 specific patterns found in pitches with finalScore >= 55, grounded in actual data],
   "lowScorePatterns": [5 specific patterns found in pitches with finalScore < 40, grounded in actual data],
   "failureReasons": [top 5 most common failure reasons across all runs, with frequency counts],
   "domainComparison": {
@@ -721,7 +721,7 @@ Return ONLY a JSON object with these exact keys:
     "B2B SaaS": {"avgScore": number, "count": number, "topConcern": string}
   },
   "improvementSuggestions": [5 specific, actionable suggestions for the bottom 30% of ideas by score],
-  "idealPitchStructure": "A concise description of the pitch structure shared by the top 10% of ideas"
+  "idealPitchStructure": "A concise description of the pitch structure shared by pitches with finalScore >= 55 (top performers)"
 }
 
 No generic statements. Every insight must be grounded in the actual data provided.`;
