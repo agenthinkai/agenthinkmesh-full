@@ -78,7 +78,7 @@ import Pricing from "./pages/Pricing";
 import Contact from "./pages/Contact";
 import AccountBilling from "./pages/AccountBilling";
 import PaymentHistory from "./pages/PaymentHistory";
-import { DemoBanner } from "./pages/Home";
+import Home, { DemoBanner } from "./pages/Home";
 import { useAuth } from "./_core/hooks/useAuth";
 import Tracker from "./pages/Tracker";
 import PortfolioMesh from "./pages/PortfolioMesh";
@@ -132,7 +132,8 @@ function Router() {
   return (
     <Switch>
       {/* Public landing page */}
-      <Route path="/" component={Landing} />
+      <Route path="/" component={Home} />
+      <Route path="/platform" component={Landing} />
 
       {/* 3-Screen MVP — core user journey */}
       <Route path="/ask" component={AskScreen} />

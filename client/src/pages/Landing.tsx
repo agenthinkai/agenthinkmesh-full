@@ -649,7 +649,7 @@ export default function Landing() {
 
   const s = {
     tasksRun:       stats?.tasksRun       ?? 2405,
-    verifiedAgents: stats?.verifiedAgents ?? 112,
+    verifiedAgents: stats?.verifiedAgents ?? 115,
     domainContexts: stats?.domainContexts ?? 14,
     avgExecSec:     stats?.avgExecSec     ?? 47,
   };
@@ -1011,7 +1011,7 @@ export default function Landing() {
                 date: "Mar 09, 2026",
                 tag: "LIVE",
                 title: "AgenThinkMesh Platform Launch",
-                body: "Platform launched with Manus OAuth, 14 domain contexts, 112 specialist agents, radial mesh canvas, Deal Screener, Document Vault, Agent Registry, and /build developer docs. All agents verified and health-checked every 30 minutes.",
+                body: "Platform launched with Manus OAuth, 14 domain contexts, 115 specialist agents, radial mesh canvas, Deal Screener, Document Vault, Agent Registry, and /build developer docs. All agents verified and health-checked every 30 minutes.",
               },
               {
                 date: "Coming Soon",

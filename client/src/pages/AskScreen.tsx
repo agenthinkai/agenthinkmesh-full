@@ -419,7 +419,7 @@ export default function AskScreen() {
           <span style={{ color: CYAN, fontSize: 12, fontFamily: "'JetBrains Mono', monospace", letterSpacing: "0.08em" }}>
             {identityProfile.data?.activePersona
               ? `${identityProfile.data.activePersona.replace(/_/g, " ")} MESH · Online`
-              : "112 specialist agents · Mesh Online"}
+              : "115 specialist agents · Mesh Online"}
           </span>
         </div>
 

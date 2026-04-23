@@ -126,7 +126,7 @@ export const appRouter = router({
     platformStats: publicProcedure.query(async () => {
       const db = await getDb();
       // Fallback values when DB is unavailable
-      if (!db) return { tasksRun: 2405, verifiedAgents: 112, domainContexts: 14, avgExecSec: 47 };
+      if (!db) return { tasksRun: 2405, verifiedAgents: 115, domainContexts: 14, avgExecSec: 47 };
 
       const [taskCount, agentCount, avgExec, domainCount] = await Promise.all([
         // Total tasks ever run
@@ -147,7 +147,7 @@ export const appRouter = router({
       return {
         // Show at least the seeded baseline so the page never looks empty
         tasksRun: Math.max(rawTasks, 2405),
-        verifiedAgents: Math.max(rawAgents, 112),
+        verifiedAgents: Math.max(rawAgents, 115),
         domainContexts: Math.max(rawDomains, 14),
         avgExecSec: rawAvgMs > 0 ? Math.round(rawAvgMs / 1000) : 47,
       };

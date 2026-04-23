@@ -1023,18 +1023,35 @@ export default function Home() {
 
       {/* ── FOOTER ── */}
       <footer className="border-t border-white/5 px-6 md:px-12 py-10">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center">
-              <Network className="w-3 h-3 text-white" />
+        <div className="max-w-6xl mx-auto flex flex-col gap-6">
+          {/* IC Demo links row */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pb-5 border-b border-white/5">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-mono text-white/30 uppercase tracking-widest">IC Memos</span>
             </div>
-            <span className="text-sm font-semibold bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">AgenThinkMesh</span>
+            <div className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2">
+              <Link href="/demos" className="text-xs text-emerald-400/70 hover:text-emerald-300 transition-colors font-medium">All Demos</Link>
+              <Link href="/sg-ic" className="text-xs text-white/35 hover:text-white/70 transition-colors">Singapore IC Memo</Link>
+              <Link href="/jp-ic" className="text-xs text-white/35 hover:text-white/70 transition-colors">Japan IC Memo</Link>
+              <Link href="/us-ic" className="text-xs text-white/35 hover:text-white/70 transition-colors">US IC Memo</Link>
+              <Link href="/gcc-ic" className="text-xs text-white/35 hover:text-white/70 transition-colors">GCC IC Memo</Link>
+            </div>
           </div>
-          <p className="text-xs text-white/30 font-mono">© 2026 AgenThink · A structured decision layer for institutional workflows</p>
-          <div className="flex gap-6">
-            {["Privacy", "Terms", "Docs"].map((l) => (
-              <a key={l} href="#" className="text-xs text-white/30 hover:text-white/60 transition-colors">{l}</a>
-            ))}
+          {/* Bottom row */}
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-md bg-gradient-to-br from-violet-500 to-cyan-500 flex items-center justify-center">
+                <Network className="w-3 h-3 text-white" />
+              </div>
+              <span className="text-sm font-semibold bg-gradient-to-r from-violet-400 to-cyan-400 bg-clip-text text-transparent">AgenThinkMesh</span>
+            </div>
+            <p className="text-xs text-white/30 font-mono">© 2026 AgenThink · A structured decision layer for institutional workflows</p>
+            <div className="flex gap-6">
+              {["Privacy", "Terms", "Docs"].map((l) => (
+                <a key={l} href="#" className="text-xs text-white/30 hover:text-white/60 transition-colors">{l}</a>
+              ))}
+              <Link href="/security" className="text-xs text-white/30 hover:text-white/60 transition-colors">Data &amp; Security</Link>
+            </div>
           </div>
         </div>
       </footer>

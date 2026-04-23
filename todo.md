@@ -3224,3 +3224,11 @@
 - [x] Add first-login CMK banner for users without an encryption key ("Your data is not yet encrypted — generate your key")
 - [x] Write CMK vitest: generateKey, getStatus, rotateKey, revokeKey lifecycle end-to-end
 - [x] Add RFC 9116 security.txt at /.well-known/security.txt (Contact, disclosure policy, link to /security)
+
+## Landing Page Fixes (Apr 23 2026)
+- [x] Fix root route / to render Home.tsx (Workflows page) instead of Landing.tsx (old platform page)
+- [x] Move Landing.tsx to /platform route (preserved, not deleted)
+- [x] Update agent count from 112 to 115 across all files (Landing.tsx, AskScreen.tsx, routers.ts)
+- [x] Add IC demo links to Home.tsx footer (All Demos, Singapore IC, Japan IC, US IC, GCC IC)
+- [x] Add Data & Security link to Home.tsx footer
+- [x] Confirm headline, gradient, Pitch Triage hero card, role-switcher tabs, decision chips all present in Home.tsx
