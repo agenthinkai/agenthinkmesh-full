@@ -172,7 +172,8 @@ export default function Home() {
         </button>
         <div className="flex items-center gap-3">
           {isAuthenticated ? (
-            <Link href="/dashboard">
+            // /dashboard does not exist — route to the actual dashboard at /command-center
+            <Link href="/command-center">
               <Button size="sm" className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 border-0 text-white shadow-lg shadow-violet-500/20 text-xs">
                 Open Dashboard <ArrowRight className="w-3 h-3 ml-1" />
               </Button>
@@ -653,7 +654,8 @@ export default function Home() {
 
           <div className="flex items-center justify-center gap-4 flex-wrap">
             {isAuthenticated ? (
-              <Link href="/dashboard">
+              // /dashboard does not exist — route to the actual dashboard at /command-center
+              <Link href="/command-center">
                 <Button size="lg" className="bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 border-0 text-white shadow-xl shadow-violet-500/25 px-8">
                   Open Dashboard <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
