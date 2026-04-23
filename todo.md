@@ -3274,3 +3274,9 @@
 - [x] Add demo.saveNotes tRPC procedure (admin-only)
 - [x] Wire inline notes editing in AdminDemoRequests page (save on blur or save button)
 - [x] Add Schedule call Calendly link column to AdminDemoRequests table (pre-populate name + email as URL params, SWAP comment)
+
+## Demo Request Admin Enhancements — Round 2 (Apr 23 2026)
+- [x] Confirm Calendly URL location (SWAP comment) in AdminDemoRequests.tsx — no live URL yet, SWAP comment left in place at server/routers/demo.ts CALENDLY_BASE_URL constant (line ~14)
+- [x] Add demo.sendFollowUp tRPC procedure (adminProcedure): sends email to requester, CC farouq@agenthink.ai, subject "Following up on your AgenThinkMesh demo request", body with Calendly link; auto-updates status to "contacted" if currently "new"
+- [x] Wire "Send follow-up" button per row in AdminDemoRequests (fires sendFollowUp, shows loading, toast on success/error)
+- [x] Add "Export CSV" button to AdminDemoRequests page header: downloads demo-requests-YYYY-MM-DD.csv with columns name, institution, email, use case, status, notes, date submitted, last updated

@@ -10,7 +10,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 
 type DemoStatus = "new" | "contacted" | "scheduled" | "closed";
@@ -55,9 +54,10 @@ export default function AdminDemoRequests() {
   const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [updatingId, setUpdatingId] = useState<number | null>(null);
-  // notes: local edits keyed by request id
   const [notesMap, setNotesMap] = useState<Record<number, string>>({});
   const [savingNotesId, setSavingNotesId] = useState<number | null>(null);
+  const [sendingFollowUpId, setSendingFollowUpId] = useState<number | null>(null);
+  const [exportLabel, setExportLabel] = useState("Export CSV");
 
   const { data: requests, isLoading, refetch } = trpc.demo.list.useQuery(undefined, {
     enabled: !!user && user.role === "admin",
@@ -81,6 +81,18 @@ export default function AdminDemoRequests() {
     onSettled: () => setSavingNotesId(null),
   });
 
+  const sendFollowUp = trpc.demo.sendFollowUp.useMutation({
+    onSuccess: (data) => {
+      toast.success("Follow-up email sent");
+      if (data.newStatus === "contacted") refetch();
+      setSendingFollowUpId(null);
+    },
+    onError: (err) => {
+      toast.error(err.message ?? "Failed to send follow-up email");
+      setSendingFollowUpId(null);
+    },
+  });
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -100,12 +112,32 @@ export default function AdminDemoRequests() {
   };
 
   const handleNotesSave = (id: number, currentDbNotes: string | null) => {
-    // Only save if the local value differs from what is in the DB
     const localNotes = notesMap[id];
-    if (localNotes === undefined) return; // user never touched this row
-    if (localNotes === (currentDbNotes ?? "")) return; // no change
+    if (localNotes === undefined) return;
+    if (localNotes === (currentDbNotes ?? "")) return;
     setSavingNotesId(id);
     saveNotes.mutate({ id, notes: localNotes });
+  };
+
+  const handleSendFollowUp = (id: number) => {
+    setSendingFollowUpId(id);
+    sendFollowUp.mutate({ id });
+  };
+
+  const handleExportCsv = () => {
+    if (!requests || requests.length === 0) { toast.error("No requests to export"); return; }
+    const headers = ["Name", "Institution", "Email", "Use Case", "Status", "Notes", "Date Submitted", "Last Updated"];
+    const escape = (v: string | null | undefined) => { const s = v ?? ""; return (s.includes(",") || s.includes('"') || s.includes("\n")) ? `"${s.replace(/"/g, '""')}"` : s; };
+    const lines = [headers.join(","), ...requests.map((r) => [escape(r.name), escape(r.institution), escape(r.email), escape(r.useCase), escape(r.status), escape(r.notes), escape(formatDate(r.createdAt)), escape(formatDate(r.updatedAt))].join(","))];
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `demo-requests-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    const count = requests.length;
+    setExportLabel(`✓ Exported ${count} row${count !== 1 ? "s" : ""}`);
+    setTimeout(() => setExportLabel("Export CSV"), 3000);
   };
 
   return (
@@ -119,13 +151,37 @@ export default function AdminDemoRequests() {
         }}
       >
         {/* Header */}
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9", margin: 0 }}>
-            Demo Requests
-          </h1>
-          <p style={{ fontSize: 13, color: "#64748b", marginTop: 6 }}>
-            All inbound demo requests — sorted by most recent. Update status and notes inline.
-          </p>
+        <div style={{ marginBottom: 32, display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+          <div>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: "#f1f5f9", margin: 0 }}>
+              Demo Requests
+            </h1>
+            <p style={{ fontSize: 13, color: "#64748b", marginTop: 6 }}>
+              All inbound demo requests — sorted by most recent. Update status, notes, and send follow-ups inline.
+            </p>
+          </div>
+          <button
+            onClick={handleExportCsv}
+            disabled={!requests || requests.length === 0}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              background: exportLabel.startsWith("✓") ? "rgba(16,185,129,0.12)" : "rgba(255,255,255,0.05)",
+              border: exportLabel.startsWith("✓") ? "1px solid rgba(16,185,129,0.4)" : "1px solid rgba(255,255,255,0.12)",
+              borderRadius: 8,
+              color: exportLabel.startsWith("✓") ? "#10b981" : "#94a3b8",
+              fontSize: 13,
+              fontWeight: 500,
+              padding: "8px 16px",
+              cursor: !requests || requests.length === 0 ? "not-allowed" : "pointer",
+              transition: "all 0.2s",
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+            }}
+          >
+            ⬇ {exportLabel}
+          </button>
         </div>
 
         {/* Stats strip */}
@@ -196,7 +252,7 @@ export default function AdminDemoRequests() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                    {["Name", "Institution", "Email", "Use Case", "Status", "Notes", "Schedule", "Date"].map((h) => (
+                    {["Name", "Institution", "Email", "Use Case", "Status", "Notes", "Actions", "Date"].map((h) => (
                       <th
                         key={h}
                         style={{
@@ -328,36 +384,58 @@ export default function AdminDemoRequests() {
                           )}
                         </div>
                       </td>
-                      {/* Schedule call — Calendly link pre-populated with name + email */}
+                      {/* Actions: Send follow-up + Schedule */}
                       <td style={{ padding: "14px 16px", whiteSpace: "nowrap" }}>
-                        {/* SWAP: insert your Calendly URL below, replacing the placeholder path */}
-                        <a
-                          href={`https://calendly.com/farouqsultan/30min?name=${encodeURIComponent(req.name)}&email=${encodeURIComponent(req.email)}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            display: "inline-flex",
-                            alignItems: "center",
-                            gap: 4,
-                            color: "#10b981",
-                            fontSize: 12,
-                            fontWeight: 500,
-                            textDecoration: "none",
-                            padding: "4px 10px",
-                            border: "1px solid rgba(16,185,129,0.3)",
-                            borderRadius: 6,
-                            background: "rgba(16,185,129,0.06)",
-                            transition: "background 0.15s",
-                          }}
-                          onMouseEnter={(e) => {
-                            (e.currentTarget as HTMLAnchorElement).style.background = "rgba(16,185,129,0.14)";
-                          }}
-                          onMouseLeave={(e) => {
-                            (e.currentTarget as HTMLAnchorElement).style.background = "rgba(16,185,129,0.06)";
-                          }}
-                        >
-                          📅 Schedule
-                        </a>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {/* Send follow-up email button */}
+                          <button
+                            onClick={() => handleSendFollowUp(req.id)}
+                            disabled={sendingFollowUpId === req.id}
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                              color: sendingFollowUpId === req.id ? "#64748b" : "#f59e0b",
+                              fontSize: 12,
+                              fontWeight: 500,
+                              padding: "4px 10px",
+                              border: `1px solid ${sendingFollowUpId === req.id ? "rgba(100,116,139,0.3)" : "rgba(245,158,11,0.3)"}`,
+                              borderRadius: 6,
+                              background: sendingFollowUpId === req.id ? "rgba(100,116,139,0.06)" : "rgba(245,158,11,0.06)",
+                              cursor: sendingFollowUpId === req.id ? "not-allowed" : "pointer",
+                              transition: "all 0.15s",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {sendingFollowUpId === req.id ? "Sending…" : "✉ Follow up"}
+                          </button>
+                          {/* Schedule call — Calendly link */}
+                          {/* SWAP: update CALENDLY_BASE_URL in server/routers/demo.ts line ~14 */}
+                          <a
+                            href={`https://calendly.com/farouqsultan/30min?name=${encodeURIComponent(req.name)}&email=${encodeURIComponent(req.email)}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            style={{
+                              display: "inline-flex",
+                              alignItems: "center",
+                              gap: 4,
+                              color: "#10b981",
+                              fontSize: 12,
+                              fontWeight: 500,
+                              textDecoration: "none",
+                              padding: "4px 10px",
+                              border: "1px solid rgba(16,185,129,0.3)",
+                              borderRadius: 6,
+                              background: "rgba(16,185,129,0.06)",
+                              transition: "background 0.15s",
+                              whiteSpace: "nowrap",
+                            }}
+                            onMouseEnter={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(16,185,129,0.14)"; }}
+                            onMouseLeave={(e) => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(16,185,129,0.06)"; }}
+                          >
+                            📅 Schedule
+                          </a>
+                        </div>
                       </td>
                       {/* Date */}
                       <td style={{ padding: "14px 16px", color: "#64748b", whiteSpace: "nowrap", fontSize: 12 }}>
@@ -374,6 +452,7 @@ export default function AdminDemoRequests() {
         <p style={{ fontSize: 11, color: "#334155", marginTop: 16 }}>
           Updated {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
           {" · "}Status and notes changes are saved immediately.
+          {" · "}Follow-up emails are sent from farouq@agenthink.ai, CC'd to farouq@agenthink.ai.
         </p>
       </div>
     </DashboardLayout>
