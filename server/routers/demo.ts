@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, publicProcedure, protectedProcedure } from "../_core/trpc";
 import { getDb } from "../db";
-import { demoRequests } from "../../drizzle/schema";
+import { demoRequests, demoEmailLog } from "../../drizzle/schema";
 import { notifyOwner } from "../_core/notification";
 import { sendGraphEmail } from "../graphEmail";
 import { eq, desc } from "drizzle-orm";
@@ -11,13 +11,15 @@ const DEMO_STATUSES = ["new", "contacted", "scheduled", "closed"] as const;
 type DemoStatus = typeof DEMO_STATUSES[number];
 
 // ── Calendly booking link ─────────────────────────────────────────────────────
-// SWAP: insert your live Calendly URL here, replacing the placeholder below.
-// File: server/routers/demo.ts  ·  Line ~14
+// Live booking link — update this constant to change the URL everywhere at once.
 const CALENDLY_BASE_URL = "https://calendly.com/farouqsultan/30min";
 
-function buildCalendlyLink(name: string, email: string): string {
+export function buildCalendlyLink(name: string, email: string): string {
   return `${CALENDLY_BASE_URL}?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`;
 }
+
+// ── 24-hour guard ─────────────────────────────────────────────────────────────
+const FOLLOW_UP_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours in ms
 
 // ── Auto-reply email template ─────────────────────────────────────────────────
 function buildAutoReplyHtml(name: string): string {
@@ -213,10 +215,12 @@ export const demoRouter = router({
     }),
 
   // ── Admin: send a follow-up email to a requester ─────────────────────────
+  // force=true bypasses the 24-hour cooldown guard (used after user confirms the warning dialog)
   sendFollowUp: protectedProcedure
     .input(
       z.object({
-        id: z.number().int().positive(),
+        id:    z.number().int().positive(),
+        force: z.boolean().optional().default(false),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -238,6 +242,22 @@ export const demoRouter = router({
       }
 
       const req = rows[0];
+      const now = Date.now();
+
+      // 24-hour cooldown guard — return a warning payload instead of throwing
+      if (!input.force && req.followUpSentAt) {
+        const elapsedMs = now - req.followUpSentAt;
+        if (elapsedMs < FOLLOW_UP_COOLDOWN_MS) {
+          const hoursAgo = Math.round(elapsedMs / (1000 * 60 * 60) * 10) / 10;
+          return {
+            success: false,
+            cooldownWarning: true,
+            hoursAgo,
+            newStatus: req.status,
+          };
+        }
+      }
+
       const calendlyUrl = buildCalendlyLink(req.name, req.email);
 
       // Send follow-up email
@@ -255,14 +275,41 @@ export const demoRouter = router({
         });
       }
 
-      // Auto-advance status from "new" → "contacted" (do not downgrade other statuses)
-      if (req.status === "new") {
-        await db
-          .update(demoRequests)
-          .set({ status: "contacted", updatedAt: Date.now() })
-          .where(eq(demoRequests.id, input.id));
-      }
+      const newStatus: DemoStatus = req.status === "new" ? "contacted" : req.status as DemoStatus;
 
-      return { success: true, newStatus: req.status === "new" ? "contacted" : req.status };
+      // Update followUpSentAt + auto-advance status new → contacted
+      await db
+        .update(demoRequests)
+        .set({
+          followUpSentAt: now,
+          status:         newStatus,
+          updatedAt:      now,
+        })
+        .where(eq(demoRequests.id, input.id));
+
+      // Append to email log
+      await db.insert(demoEmailLog).values({
+        demoRequestId: req.id,
+        recipientName: req.name,
+        institution:   req.institution,
+        email:         req.email,
+        statusAtSend:  req.status,
+        sentAt:        now,
+      });
+
+      return { success: true, cooldownWarning: false, hoursAgo: 0, newStatus };
     }),
+
+  // ── Admin: list email log, most recent first ──────────────────────────────
+  emailLog: protectedProcedure.query(async ({ ctx }) => {
+    if (ctx.user.role !== "admin") {
+      throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+    }
+    const db = await getDb();
+    if (!db) return [];
+    return db
+      .select()
+      .from(demoEmailLog)
+      .orderBy(desc(demoEmailLog.sentAt));
+  }),
 });

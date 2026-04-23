@@ -3280,3 +3280,13 @@
 - [x] Add demo.sendFollowUp tRPC procedure (adminProcedure): sends email to requester, CC farouq@agenthink.ai, subject "Following up on your AgenThinkMesh demo request", body with Calendly link; auto-updates status to "contacted" if currently "new"
 - [x] Wire "Send follow-up" button per row in AdminDemoRequests (fires sendFollowUp, shows loading, toast on success/error)
 - [x] Add "Export CSV" button to AdminDemoRequests page header: downloads demo-requests-YYYY-MM-DD.csv with columns name, institution, email, use case, status, notes, date submitted, last updated
+
+## Demo Request Admin Enhancements — Round 3 (Apr 23 2026)
+- [x] Swap CALENDLY_BASE_URL in server/routers/demo.ts to https://calendly.com/farouqsultan/30min (live link)
+- [x] Add followUpSentAt column (bigint, nullable) to demo_requests table in drizzle/schema.ts; push DB migration
+- [x] Create demo_email_log table in drizzle/schema.ts (id, demoRequestId, recipientName, institution, email, statusAtSend, sentAt); push DB migration
+- [x] Update demo.sendFollowUp: check 24h guard (if followUpSentAt within last 24h, return warning); on success write followUpSentAt + insert row into demo_email_log
+- [x] Add demo.emailLog tRPC procedure (admin-only): returns all email log rows sorted by sentAt desc
+- [x] Add "Last follow-up" column to AdminDemoRequests table (shows formatted date/time or dash)
+- [x] Add 24h warning confirmation dialog in AdminDemoRequests before firing sendFollowUp when guard triggered
+- [x] Add "Email Log" tab to /admin/demo-requests page with columns: name, institution, email, timestamp, status at send

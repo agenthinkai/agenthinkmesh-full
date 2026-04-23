@@ -1706,15 +1706,16 @@ export type InsertCmkAuditEntry = typeof cmkAuditLog.$inferInsert;
 
 // ── Demo Requests ─────────────────────────────────────────────────────────────
 export const demoRequests = mysqlTable("demo_requests", {
-  id:          int("id").primaryKey().autoincrement(),
-  name:        varchar("name", { length: 200 }).notNull(),
-  institution: varchar("institution", { length: 300 }).notNull(),
-  email:       varchar("email", { length: 300 }).notNull(),
-  useCase:     text("use_case").notNull(),
-  status:      varchar("status", { length: 50 }).notNull().default("new"),
-  notes:       text("notes"),
-  createdAt:   bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
-  updatedAt:   bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  id:               int("id").primaryKey().autoincrement(),
+  name:             varchar("name", { length: 200 }).notNull(),
+  institution:      varchar("institution", { length: 300 }).notNull(),
+  email:            varchar("email", { length: 300 }).notNull(),
+  useCase:          text("use_case").notNull(),
+  status:           varchar("status", { length: 50 }).notNull().default("new"),
+  notes:            text("notes"),
+  followUpSentAt:   bigint("follow_up_sent_at", { mode: "number" }),  // UTC ms — last follow-up email sent
+  createdAt:        bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt:        bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 }, (table) => ({
   demoEmailIdx:   index("demo_email_idx").on(table.email),
   demoStatusIdx:  index("demo_status_idx").on(table.status),
@@ -1722,3 +1723,19 @@ export const demoRequests = mysqlTable("demo_requests", {
 }));
 export type DemoRequest = typeof demoRequests.$inferSelect;
 export type InsertDemoRequest = typeof demoRequests.$inferInsert;
+
+// ── Demo Email Log ────────────────────────────────────────────────────────────
+export const demoEmailLog = mysqlTable("demo_email_log", {
+  id:              int("id").primaryKey().autoincrement(),
+  demoRequestId:   int("demo_request_id").notNull(),
+  recipientName:   varchar("recipient_name", { length: 200 }).notNull(),
+  institution:     varchar("institution", { length: 300 }).notNull(),
+  email:           varchar("email", { length: 300 }).notNull(),
+  statusAtSend:    varchar("status_at_send", { length: 50 }).notNull(),
+  sentAt:          bigint("sent_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  delRequestIdx: index("del_request_idx").on(table.demoRequestId),
+  delSentAtIdx:  index("del_sent_at_idx").on(table.sentAt),
+}));
+export type DemoEmailLog = typeof demoEmailLog.$inferSelect;
+export type InsertDemoEmailLog = typeof demoEmailLog.$inferInsert;
