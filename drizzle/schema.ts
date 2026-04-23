@@ -1808,7 +1808,7 @@ export const founderAgentPitches = mysqlTable("founder_agent_pitches", {
   businessModel:        text("business_model").notNull(),
   competitiveAdvantage: text("competitive_advantage").notNull(),
   keyRisk:              text("key_risk").notNull(),
-  fundingAsk:           varchar("funding_ask", { length: 50 }).notNull(),
+  fundingAsk:           text("funding_ask").notNull(),
   summary3s:            text("summary_3s").notNull(), // 3-sentence summary for insights call
   createdAt:            bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 }, (table) => ({

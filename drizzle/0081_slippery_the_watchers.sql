@@ -1,0 +1,1 @@
+ALTER TABLE `founder_agent_pitches` MODIFY COLUMN `funding_ask` text NOT NULL;

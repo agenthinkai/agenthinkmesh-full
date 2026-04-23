@@ -577,11 +577,29 @@ async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConc
       const durationMs = Date.now() - startMs;
 
       // Map verdict → fleet classification
-      // APPROVED → ENGAGE (75-100), APPROVED_WITH_CONDITIONS → WATCH (50-79), all else → PASS (0-49)
-      const rawClassification =
-        councilResult.verdict === "APPROVED" ? "ENGAGE"
-        : councilResult.verdict === "APPROVED_WITH_CONDITIONS" ? "WATCH"
-        : "PASS";
+      // Fleet uses a score-first approach to avoid the INSUFFICIENT_DATA gate
+      // (synthetic pitches lack the financial/traction data that boosts agent confidence,
+      //  so the council's confidence gate fires too aggressively for fleet use).
+      //
+      // Priority order:
+      //   1. VETOED → always PASS (hard regulatory/compliance block)
+      //   2. APPROVED → ENGAGE
+      //   3. APPROVED_WITH_CONDITIONS → WATCH
+      //   4. For INSUFFICIENT_DATA / REJECTED: fall back to raw finalScore:
+      //      finalScore >= 0.68 → ENGAGE, >= 0.50 → WATCH, else → PASS
+      //      This surfaces strong ideas even when the council lacks full data confidence.
+      let rawClassification: "ENGAGE" | "WATCH" | "PASS";
+      if (councilResult.verdict === "VETOED") {
+        rawClassification = "PASS";
+      } else if (councilResult.verdict === "APPROVED") {
+        rawClassification = "ENGAGE";
+      } else if (councilResult.verdict === "APPROVED_WITH_CONDITIONS") {
+        rawClassification = "WATCH";
+      } else {
+        // INSUFFICIENT_DATA or REJECTED — use raw finalScore as tiebreaker
+        const fs = councilResult.finalScore; // 0.0–1.0
+        rawClassification = fs >= 0.68 ? "ENGAGE" : fs >= 0.50 ? "WATCH" : "PASS";
+      }
 
       const classificationScore = classificationToScore(rawClassification);
       const executionScore = deriveExecutionScore(councilResult);
