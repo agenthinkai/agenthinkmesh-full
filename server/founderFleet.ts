@@ -586,7 +586,7 @@ async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConc
       //   2. APPROVED → ENGAGE
       //   3. APPROVED_WITH_CONDITIONS → WATCH
       //   4. For INSUFFICIENT_DATA / REJECTED: fall back to raw finalScore:
-      //      finalScore >= 0.60 → ENGAGE, >= 0.50 → WATCH, else → PASS
+      //      finalScore >= 0.48 → ENGAGE, >= 0.34 → WATCH, else → PASS
       //      This surfaces strong ideas even when the council lacks full data confidence.
       let rawClassification: "ENGAGE" | "WATCH" | "PASS";
       if (councilResult.verdict === "VETOED") {
@@ -598,7 +598,7 @@ async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConc
       } else {
         // INSUFFICIENT_DATA or REJECTED — use raw finalScore as tiebreaker
         const fs = councilResult.finalScore; // 0.0–1.0
-        rawClassification = fs >= 0.60 ? "ENGAGE" : fs >= 0.50 ? "WATCH" : "PASS";
+        rawClassification = fs >= 0.48 ? "ENGAGE" : fs >= 0.34 ? "WATCH" : "PASS";
       }
 
       const classificationScore = classificationToScore(rawClassification);
@@ -661,6 +661,61 @@ async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConc
   await Promise.all(workers);
   // suppress unused variable warning
   void activeCount;
+}
+
+
+// ── Step 6b: Percentile-based re-ranking (guarantees 20/40/40 distribution) ──
+async function reRankByPercentile(runId: number): Promise<void> {
+  const db = await requireDb();
+  const rows = await db.select({
+    id:             founderAgentEvaluations.id,
+    executionScore: founderAgentEvaluations.executionScore,
+    marketScore:    founderAgentEvaluations.marketScore,
+  })
+    .from(founderAgentEvaluations)
+    .where(and(
+      eq(founderAgentEvaluations.runId, runId),
+      eq(founderAgentEvaluations.status, "completed"),
+    ));
+
+  if (rows.length === 0) return;
+
+  // Sort by council_final DESC (ties broken by id ASC for determinism)
+  rows.sort((a, b) => {
+    const aScore = (a.executionScore ?? 0) / 100 * 0.6 + (a.marketScore ?? 0) / 100 * 0.4;
+    const bScore = (b.executionScore ?? 0) / 100 * 0.6 + (b.marketScore ?? 0) / 100 * 0.4;
+    if (bScore !== aScore) return bScore - aScore;
+    return (a.id ?? 0) - (b.id ?? 0);
+  });
+
+  const n = rows.length;
+  const engageCutoff = Math.round(n * 0.20); // top 20%
+  const watchCutoff  = Math.round(n * 0.60); // top 60% (20% ENGAGE + 40% WATCH)
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rawClassification: "ENGAGE" | "WATCH" | "PASS" =
+      i < engageCutoff ? "ENGAGE" :
+      i < watchCutoff  ? "WATCH"  : "PASS";
+    const classificationScore = classificationToScore(rawClassification);
+    const finalScore = computeFinalScore(
+      classificationScore,
+      row.executionScore ?? 0,
+      row.marketScore    ?? 0,
+    );
+    const recommendedAction =
+      rawClassification === "ENGAGE" ? "Run full evaluation"
+      : rawClassification === "WATCH" ? "Request more information"
+      : "No action required";
+    await db.update(founderAgentEvaluations).set({
+      classification:      rawClassification,
+      classificationScore,
+      finalScore,
+      recommendedAction,
+      updatedAt: Date.now(),
+    }).where(eq(founderAgentEvaluations.id, row.id!));
+  }
+  console.log(`[FleetOrchestrator] Re-ranked run ${runId}: ENGAGE=${engageCutoff}, WATCH=${watchCutoff - engageCutoff}, PASS=${n - watchCutoff}`);
 }
 
 // ── Step 7: Pattern extraction (1 Sonnet call over 3-sentence summaries) ──────
@@ -842,6 +897,9 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
       return;
     }
 
+    // Step 6b: Re-rank by percentile to guarantee 20/40/40 distribution
+    await reRankByPercentile(runId);
+    await saveCosts(runId, acc);
     // Step 7: Extract insights
     await updateRunStatus(runId, "extracting");
     await extractInsights(runId, acc);
