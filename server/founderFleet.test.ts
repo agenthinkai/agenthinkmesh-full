@@ -17,17 +17,17 @@ describe("classificationToScore", () => {
     expect(classificationToScore("ENGAGE")).toBe(87);
   });
 
-  it("maps WATCH to 57 (midpoint 40–74)", () => {
-    expect(classificationToScore("WATCH")).toBe(57);
+  it("maps WATCH to 64 (midpoint 50–79)", () => {
+    expect(classificationToScore("WATCH")).toBe(64);
   });
 
-  it("maps PASS to 19 (midpoint 0–39)", () => {
-    expect(classificationToScore("PASS")).toBe(19);
+  it("maps PASS to 24 (midpoint 0–49)", () => {
+    expect(classificationToScore("PASS")).toBe(24);
   });
 
-  it("maps unknown classification to 19 (PASS fallback)", () => {
-    expect(classificationToScore("UNKNOWN")).toBe(19);
-    expect(classificationToScore("")).toBe(19);
+  it("maps unknown classification to 24 (PASS fallback)", () => {
+    expect(classificationToScore("UNKNOWN")).toBe(24);
+    expect(classificationToScore("")).toBe(24);
   });
 });
 

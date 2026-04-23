@@ -3351,3 +3351,12 @@
 - [x] Add amber "Quick Test (10 agents)" button to /founder-fleet dashboard
 - [x] TypeScript check + tests passing
 - [ ] Trigger Quick Test run and surface 6 review outputs
+
+## FounderAgent Fleet — Quality Fixes (Apr 23 2026)
+- [ ] Fix idea generation prompt: force specificity — founder background with unfair advantage, traction signal, defensible moat (not "AI-powered"), geographic/sector insight explaining "why now / why this founder"
+- [ ] Calibrate verdict mapping: APPROVED→ENGAGE (75-100), APPROVED_WITH_CONDITIONS→WATCH (50-79), REJECTED→PASS (0-49)
+- [ ] Confirm council prompt has explicit criteria for each verdict band so distribution is not binary
+- [ ] Add exponential backoff retry to extractInsights (3 retries: 5s, 15s, 30s delays)
+- [ ] TypeScript 0 errors, tests passing
+- [ ] Trigger new Quick Test (10 agents with quickTest flag correctly wired)
+- [ ] Verify score distribution: ≥20% ENGAGE, ≥40% WATCH, ≤40% PASS

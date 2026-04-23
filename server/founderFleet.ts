@@ -52,8 +52,8 @@ export const FLEET_DOMAINS = [
 // ── Scoring helpers ───────────────────────────────────────────────────────────
 export function classificationToScore(classification: string): number {
   if (classification === "ENGAGE") return 87; // midpoint of 75-100
-  if (classification === "WATCH")  return 57; // midpoint of 40-74
-  return 19; // PASS / IGNORE midpoint of 0-39
+  if (classification === "WATCH")  return 64; // midpoint of 50-79
+  return 24; // PASS midpoint of 0-49
 }
 
 export function computeFinalScore(
@@ -235,26 +235,33 @@ async function generateIdeas(runId: number, acc: CostAccumulator, opts: { ideasP
   ).join("; ");
 
   const totalIdeas = ideasPerDomain * 5;
-  const prompt = `Generate exactly ${totalIdeas} unique business ideas across 5 domains — ${ideasPerDomain} per domain.
+  const prompt = `Generate exactly ${totalIdeas} unique, credible early-stage startup ideas across 5 domains — ${ideasPerDomain} per domain.
 Domains and sub-sectors: ${domainSpec}
 
-Rules:
+CRITICAL QUALITY RULES — every idea MUST include all four of these:
+1. FOUNDER UNFAIR ADVANTAGE: A specific prior role, network, or domain expertise that gives this founder an edge no generalist has (e.g. "Former Grab regional HR director", "Ex-WHO malaria programme lead", "10-year supply chain operator at Maersk").
+2. TRACTION SIGNAL: At least one concrete early signal — signed LOIs, paid pilots, proprietary dataset, regulatory approval, or paying customers. Not "seeking" or "planning" — something already secured.
+3. DEFENSIBLE MOAT: A specific moat that is NOT just "AI-powered" or "first mover" — e.g. proprietary data accumulated over years, exclusive distribution partnerships, regulatory licence, switching costs, or network effects with a named mechanism.
+4. WHY NOW / WHY THIS FOUNDER: A specific market timing insight or structural change (regulation, infrastructure, demographic shift) that makes this the right moment, and why this specific founder is positioned to capture it.
+
+WEAK example (do NOT generate): "AI-powered HR platform for SMEs."
+STRONG example (generate at this level): "Former Grab regional HR director building compliance automation for gig economy platforms in Southeast Asia — 3 pilots signed with Grab, Gojek, and Shopee, leveraging 8 years of relationships and proprietary workforce classification data from 2M+ gig contracts."
+
+Other rules:
 - No duplicates (check against existing ideas listed below)
-- No hype language. Realistic and specific.
 - Each idea must cover a different sub-sector within its domain
-- Return ONLY a JSON array of 100 objects, no markdown, no explanation
+- Return ONLY a JSON array of ${totalIdeas} objects, no markdown, no explanation
 
 Each object must have these exact keys:
 {
   "domain": string,
   "subSector": string,
-  "description": string (one sentence, max 120 chars, specific and realistic),
+  "description": string (2-3 sentences: what they build, founder background, traction signal — max 280 chars),
   "targetRegion": string (e.g. "GCC", "Southeast Asia", "Sub-Saharan Africa", "Latin America", "South Asia", "Europe", "North America"),
   "founderName": string (realistic full name matching the target region),
   "fundingStage": string (one of: "Pre-seed", "Seed", "Series A"),
   "fundingAsk": string (e.g. "$500K", "$2M", "$8M")
 }
-
 Existing idea fingerprints to avoid (domain|subSector|description):
 ${Array.from(existingFingerprints).slice(0, 500).join("\n") || "None yet"}`;
 
@@ -570,6 +577,7 @@ async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConc
       const durationMs = Date.now() - startMs;
 
       // Map verdict → fleet classification
+      // APPROVED → ENGAGE (75-100), APPROVED_WITH_CONDITIONS → WATCH (50-79), all else → PASS (0-49)
       const rawClassification =
         councilResult.verdict === "APPROVED" ? "ENGAGE"
         : councilResult.verdict === "APPROVED_WITH_CONDITIONS" ? "WATCH"
@@ -700,18 +708,34 @@ Return ONLY a JSON object with these exact keys:
 
 No generic statements. Every insight must be grounded in the actual data provided.`;
 
-  const resp = await invokeLLM({
-    messages: [
-      { role: "system", content: "You are a startup investment analyst. Return only valid JSON." },
-      { role: "user", content: prompt },
-    ],
-    model: SONNET,
-    max_tokens: 3000,
-  });
-
+  // Retry with exponential backoff: 5s, 15s, 30s
+  const RETRY_DELAYS = [5000, 15000, 30000];
+  let resp: Awaited<ReturnType<typeof invokeLLM>> | null = null;
+  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+    try {
+      resp = await invokeLLM({
+        messages: [
+          { role: "system", content: "You are a startup investment analyst. Return only valid JSON." },
+          { role: "user", content: prompt },
+        ],
+        model: SONNET,
+        max_tokens: 3000,
+      });
+      break; // success
+    } catch (err) {
+      if (attempt < RETRY_DELAYS.length) {
+        const delayMs = RETRY_DELAYS[attempt];
+        console.warn(`[FleetOrchestrator] Insights LLM call failed (attempt ${attempt + 1}), retrying in ${delayMs / 1000}s:`, String(err).slice(0, 120));
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      } else {
+        console.error("[FleetOrchestrator] Insights LLM call failed after all retries:", String(err).slice(0, 200));
+        throw err;
+      }
+    }
+  }
+  if (!resp) return;
   const usage = extractUsage(resp);
   addLlmCost(acc, SONNET, usage.prompt_tokens || 20000, usage.completion_tokens || 2000);
-
   const content = extractContent(resp);
 
   interface InsightsRaw {

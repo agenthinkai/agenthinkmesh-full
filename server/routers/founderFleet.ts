@@ -67,7 +67,8 @@ export const fleetRouter = router({
       if (!runId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create run" });
 
       // Launch in background — do not await
-      runFleet(runId).catch((err) =>
+      const fleetOpts: FleetOptions = { quickTest: input?.quickTest ?? false };
+      runFleet(runId, fleetOpts).catch((err) =>
         console.error(`[FleetRouter] Run ${runId} failed:`, err)
       );
 
