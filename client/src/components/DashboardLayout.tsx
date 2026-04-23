@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Zap, History, Network, ChevronRight, Signal, Shield } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Zap, History, Network, ChevronRight, Signal, Shield, Users } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -102,6 +102,7 @@ const menuItems = [
   { icon: Signal, label: "MVNO Intel", path: "/telco", group: "advanced" },
   { icon: Network, label: "Mesh Dashboard", path: "/mesh", group: "advanced" },
   { icon: LayoutDashboard, label: "Admin", path: "/admin", group: "advanced" },
+  { icon: Users, label: "Demo Requests", path: "/admin/demo-requests", group: "advanced" },
   { icon: Shield, label: "Security Keys", path: "/security-keys", group: "account" },
 ];
 

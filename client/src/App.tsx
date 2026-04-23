@@ -50,6 +50,7 @@ import DomainsPage from "./pages/DomainsPage";
 import BetaAccess from "./pages/BetaAccess";
 import RosieProtocol from "./pages/RosieProtocol";
 import AdminBetaRequests from "./pages/AdminBetaRequests";
+import AdminDemoRequests from "./pages/AdminDemoRequests";
 import Upgrade from "./pages/Upgrade";
 import NotFound from "./pages/NotFound";
 import DealScreener from "./pages/DealScreener";
@@ -191,6 +192,7 @@ function Router() {
       {/* Admin */}
       <Route path="/admin/usage" component={AdminUsageDashboard} />
       <Route path="/admin/beta-requests" component={AdminBetaRequests} />
+      <Route path="/admin/demo-requests" component={AdminDemoRequests} />
       <Route path="/admin/treasury" component={AdminTreasury} />
       <Route path="/upgrade" component={Upgrade} />
       <Route path="/upgrade/success" component={Upgrade} />

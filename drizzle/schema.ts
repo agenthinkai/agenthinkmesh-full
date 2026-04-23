@@ -1711,8 +1711,9 @@ export const demoRequests = mysqlTable("demo_requests", {
   institution: varchar("institution", { length: 300 }).notNull(),
   email:       varchar("email", { length: 300 }).notNull(),
   useCase:     text("use_case").notNull(),
-  status:      varchar("status", { length: 50 }).notNull().default("pending"),
+  status:      varchar("status", { length: 50 }).notNull().default("new"),
   createdAt:   bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt:   bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 }, (table) => ({
   demoEmailIdx:   index("demo_email_idx").on(table.email),
   demoStatusIdx:  index("demo_status_idx").on(table.status),

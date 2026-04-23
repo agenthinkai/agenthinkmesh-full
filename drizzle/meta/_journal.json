@@ -540,6 +540,13 @@
       "when": 1776914442768,
       "tag": "0076_lyrical_skullbuster",
       "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "5",
+      "when": 1776915259768,
+      "tag": "0077_wise_onslaught",
+      "breakpoints": true
     }
   ]
 }

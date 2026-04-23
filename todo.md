@@ -3250,3 +3250,20 @@
 - [x] Build demo.submit tRPC procedure with owner notification
 - [x] Add "Request a private demo" CTA + inline form to landing page
 - [x] "See examples" nav item confirmed present in navbar
+
+## Demo Request Management System (Apr 23 2026)
+- [ ] Update demo_requests schema: add updated_at timestamp, ensure status default is 'new'
+- [ ] Push schema changes to DB
+- [ ] Add demo.list tRPC procedure (admin-only): returns all requests sorted by most recent
+- [ ] Add demo.updateStatus tRPC procedure (admin-only): updates status + updated_at
+- [ ] Send auto-reply confirmation email to requester on demo.submit (from farouq@agenthink.ai, CC farouqsultan@gmail.com)
+- [ ] Build /admin/demo-requests page: table with name, institution, email, use case, status, date submitted
+- [ ] Add inline status dropdown (New/Contacted/Scheduled/Closed) with optimistic update
+- [ ] Add /admin/demo-requests to admin navigation
+
+## Demo Request Management System (Apr 23 2026)
+- [x] Add updated_at and status default 'new' to demo_requests schema, push to DB
+- [x] Add demo.list (admin-only) and demo.updateStatus (admin-only) tRPC procedures
+- [x] Auto-reply confirmation email to requester on demo.submit (from farouq@agenthink.ai, CC farouqsultan@gmail.com)
+- [x] Build /admin/demo-requests page: table with name/institution/email/use case/status/date, inline status dropdown, pipeline stats strip
+- [x] Add Demo Requests to admin sidebar navigation in DashboardLayout
