@@ -781,35 +781,67 @@ Return ONLY a JSON object with these exact keys:
 
 No generic statements. Every insight must be grounded in the actual data provided.`;
 
-  // Retry with exponential backoff: 5s, 15s, 30s
+  // ── Haiku-first with Sonnet fallback ─────────────────────────────────────
+  // Run Haiku first (94% cheaper). If ranking_stability check fails, re-run with Sonnet.
   const RETRY_DELAYS = [5000, 15000, 30000];
-  let resp: Awaited<ReturnType<typeof invokeLLM>> | null = null;
-  for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
-    try {
-      resp = await invokeLLM({
-        messages: [
-          { role: "system", content: "You are a startup investment analyst. Return only valid JSON." },
-          { role: "user", content: prompt },
-        ],
-        model: SONNET,
-        max_tokens: 3000,
-      });
-      break; // success
-    } catch (err) {
-      if (attempt < RETRY_DELAYS.length) {
-        const delayMs = RETRY_DELAYS[attempt];
-        console.warn(`[FleetOrchestrator] Insights LLM call failed (attempt ${attempt + 1}), retrying in ${delayMs / 1000}s:`, String(err).slice(0, 120));
-        await new Promise((resolve) => setTimeout(resolve, delayMs));
-      } else {
-        console.error("[FleetOrchestrator] Insights LLM call failed after all retries:", String(err).slice(0, 200));
-        throw err;
+  const messages: Array<{ role: "system" | "user"; content: string }> = [
+    { role: "system", content: "You are a startup investment analyst. Return only valid JSON." },
+    { role: "user", content: prompt },
+  ];
+
+  async function callWithRetry(model: string): Promise<Awaited<ReturnType<typeof invokeLLM>>> {
+    let lastErr: unknown;
+    for (let attempt = 0; attempt <= RETRY_DELAYS.length; attempt++) {
+      try {
+        return await invokeLLM({ messages, model, max_tokens: 3000 });
+      } catch (err) {
+        lastErr = err;
+        if (attempt < RETRY_DELAYS.length) {
+          const delayMs = RETRY_DELAYS[attempt];
+          console.warn(`[FleetOrchestrator] Insights (${model}) failed (attempt ${attempt + 1}), retrying in ${delayMs / 1000}s:`, String(err).slice(0, 120));
+          await new Promise((resolve) => setTimeout(resolve, delayMs));
+        }
       }
     }
+    console.error(`[FleetOrchestrator] Insights (${model}) failed after all retries:`, String(lastErr).slice(0, 200));
+    throw lastErr;
   }
-  if (!resp) return;
-  const usage = extractUsage(resp);
-  addLlmCost(acc, SONNET, usage.prompt_tokens || 20000, usage.completion_tokens || 2000);
-  const content = extractContent(resp);
+
+  function rankingStabilityScore(parsed: { lowScorePatterns?: string[] }): number {
+    const lsp = parsed.lowScorePatterns ?? [];
+    const top5Relevant = lsp.some((p: string) => /fintech|b2b|saas|payment|compliance/i.test(p));
+    const bottom5Relevant = lsp.some((p: string) => /logistic|edtech|execution|moat|generic/i.test(p));
+    const capturesIdenticalPass = lsp.some((p: string) => /identical|standardized|same.*score|33/i.test(p));
+    return (top5Relevant ? 1 : 0) + (bottom5Relevant ? 1 : 0) + (capturesIdenticalPass ? 1 : 0) + (lsp.length >= 5 ? 1 : 0);
+  }
+
+  // Step 1: Try Haiku
+  let resp = await callWithRetry(HAIKU);
+  let usedModel = HAIKU;
+  let usage = extractUsage(resp);
+  addLlmCost(acc, HAIKU, usage.prompt_tokens || 14732, usage.completion_tokens || 1240);
+
+  // Step 2: Parse and check ranking_stability
+  let rawContent = extractContent(resp);
+  let parsedCheck: { lowScorePatterns?: string[] } | null = null;
+  try {
+    const c = rawContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+    parsedCheck = JSON.parse(c) as { lowScorePatterns?: string[] };
+  } catch { /* will fall through to Sonnet */ }
+
+  if (!parsedCheck || rankingStabilityScore(parsedCheck) < 4) {
+    console.log(`[FleetOrchestrator] Haiku ranking_stability < 4 (score=${parsedCheck ? rankingStabilityScore(parsedCheck) : 'parse_fail'}), escalating to Sonnet`);
+    resp = await callWithRetry(SONNET);
+    usedModel = SONNET;
+    usage = extractUsage(resp);
+    addLlmCost(acc, SONNET, usage.prompt_tokens || 20000, usage.completion_tokens || 2000);
+    rawContent = extractContent(resp);
+  } else {
+    console.log(`[FleetOrchestrator] Haiku insights passed ranking_stability check (score=${rankingStabilityScore(parsedCheck)}), skipping Sonnet`);
+  }
+
+  const content = rawContent;
+  void usedModel; // suppress unused warning
 
   interface InsightsRaw {
     highScorePatterns: string[];
