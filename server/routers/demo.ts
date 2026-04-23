@@ -18,8 +18,8 @@ export function buildCalendlyLink(name: string, email: string): string {
   return `${CALENDLY_BASE_URL}?name=${encodeURIComponent(name)}&email=${encodeURIComponent(email)}`;
 }
 
-// ── 24-hour guard ─────────────────────────────────────────────────────────────
-const FOLLOW_UP_COOLDOWN_MS = 24 * 60 * 60 * 1000; // 24 hours in ms
+// ── 48-hour guard ─────────────────────────────────────────────────────────────
+const FOLLOW_UP_COOLDOWN_MS = 48 * 60 * 60 * 1000; // 48 hours in ms — one contact per 48h institutional cadence
 
 // ── Auto-reply email template ─────────────────────────────────────────────────
 function buildAutoReplyHtml(name: string): string {

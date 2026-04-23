@@ -3290,3 +3290,8 @@
 - [x] Add "Last follow-up" column to AdminDemoRequests table (shows formatted date/time or dash)
 - [x] Add 24h warning confirmation dialog in AdminDemoRequests before firing sendFollowUp when guard triggered
 - [x] Add "Email Log" tab to /admin/demo-requests page with columns: name, institution, email, timestamp, status at send
+
+## Demo Request Admin Enhancements — Round 4 (Apr 23 2026)
+- [x] Extend FOLLOW_UP_COOLDOWN_MS in server/routers/demo.ts from 24h to 48h
+- [x] Add "Days since last contact" computed column to Requests table (derived from followUpSentAt ?? createdAt); show "Today" if <24h, else "N days"; sortable asc/desc; highlight rows >7 days in amber
+- [x] Add "Export Email Log" CSV button on Email Log tab: email-log-YYYY-MM-DD.csv, columns: Recipient Name, Institution, Email, Status at Send, Sent At; label changes to "✓ Exported N rows" for 3s
