@@ -1,4 +1,5 @@
 import { useAuth } from "@/_core/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -21,11 +22,79 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Zap, History, Network, ChevronRight, Signal } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Zap, History, Network, ChevronRight, Signal, Shield } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
 import { Button } from "./ui/button";
+
+/** Banner shown to authenticated users who have not yet generated an encryption key. */
+function CmkBanner() {
+  const [, setLocation] = useLocation();
+  const [dismissed, setDismissed] = useState(() => {
+    try { return localStorage.getItem("cmk-banner-dismissed") === "1"; } catch { return false; }
+  });
+  const { data: keyStatus, isLoading } = trpc.cmk.getStatus.useQuery(undefined, {
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (isLoading || dismissed || !keyStatus || keyStatus.hasKey) return null;
+
+  return (
+    <div
+      style={{
+        background: "rgba(74,222,128,0.08)",
+        borderBottom: "1px solid rgba(74,222,128,0.25)",
+        padding: "10px 20px",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "space-between",
+        gap: 12,
+      }}
+    >
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <Shield style={{ width: 15, height: 15, color: "#4ade80", flexShrink: 0 }} />
+        <span style={{ fontSize: 13, color: "#cbd5e1" }}>
+          Your data is not yet encrypted —{" "}
+          <button
+            onClick={() => setLocation("/security-keys")}
+            style={{
+              color: "#4ade80",
+              background: "none",
+              border: "none",
+              padding: 0,
+              cursor: "pointer",
+              fontSize: 13,
+              textDecoration: "underline",
+              fontFamily: "inherit",
+            }}
+          >
+            generate your key
+          </button>
+        </span>
+      </div>
+      <button
+        onClick={() => {
+          setDismissed(true);
+          try { localStorage.setItem("cmk-banner-dismissed", "1"); } catch { /* ignore */ }
+        }}
+        aria-label="Dismiss"
+        style={{
+          background: "none",
+          border: "none",
+          color: "#64748b",
+          cursor: "pointer",
+          fontSize: 16,
+          lineHeight: 1,
+          padding: "2px 4px",
+          flexShrink: 0,
+        }}
+      >
+        ×
+      </button>
+    </div>
+  );
+}
 
 const menuItems = [
   { icon: Zap, label: "New Analysis", path: "/ask", group: "main" },
@@ -33,6 +102,7 @@ const menuItems = [
   { icon: Signal, label: "MVNO Intel", path: "/telco", group: "advanced" },
   { icon: Network, label: "Mesh Dashboard", path: "/mesh", group: "advanced" },
   { icon: LayoutDashboard, label: "Admin", path: "/admin", group: "advanced" },
+  { icon: Shield, label: "Security Keys", path: "/security-keys", group: "account" },
 ];
 
 const SIDEBAR_WIDTH_KEY = "sidebar-width";
@@ -232,6 +302,34 @@ function DashboardLayoutContent({
                 );
               })}
             </SidebarMenu>
+            {/* Account section */}
+            {!isCollapsed && (
+              <div className="px-4 pt-4 pb-1">
+                <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                  <ChevronRight className="h-3 w-3" /> Account
+                </span>
+              </div>
+            )}
+            <SidebarMenu className="px-2 py-1">
+              {menuItems.filter(i => i.group === "account").map(item => {
+                const isActive = location === item.path;
+                return (
+                  <SidebarMenuItem key={item.path}>
+                    <SidebarMenuButton
+                      isActive={isActive}
+                      onClick={() => setLocation(item.path)}
+                      tooltip={item.label}
+                      className={`h-10 transition-all font-normal text-muted-foreground`}
+                    >
+                      <item.icon
+                        className={`h-4 w-4 ${isActive ? "text-primary" : ""}`}
+                      />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
           </SidebarContent>
 
           <SidebarFooter className="p-3">
@@ -290,6 +388,7 @@ function DashboardLayoutContent({
             </div>
           </div>
         )}
+        <CmkBanner />
         <main className="flex-1 p-4">{children}</main>
       </SidebarInset>
     </>

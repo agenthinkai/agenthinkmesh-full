@@ -162,6 +162,28 @@ async function startServer() {
   // PitchMirror shared-link OG meta injection (must be before Vite/static catch-all)
   registerPitchMirrorMetaRoute(app);
 
+  // RFC 9116 security.txt — automated security scanners and researchers check this path first
+  app.get("/.well-known/security.txt", (_req, res) => {
+    const expires = new Date();
+    expires.setFullYear(expires.getFullYear() + 1);
+    const expiresStr = expires.toISOString().replace(/\.\d{3}Z$/, "+00:00");
+    const body = [
+      "Contact: mailto:security@agenthink.ai",
+      `Expires: ${expiresStr}`,
+      "Preferred-Languages: en",
+      "Policy: https://agenthink-7enctkan.manus.space/security#responsible-disclosure",
+      "Canonical: https://agenthink-7enctkan.manus.space/.well-known/security.txt",
+      "",
+      "# Coordinated Disclosure Policy",
+      "# We request a 90-day coordinated disclosure window from the date of first contact.",
+      "# We will acknowledge receipt within 24 hours and provide a resolution timeline.",
+      "# We do not operate a bug bounty programme at this time.",
+      "# Out-of-scope: social engineering, DoS, third-party service vulnerabilities.",
+    ].join("\n");
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.send(body);
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

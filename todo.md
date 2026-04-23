@@ -3218,3 +3218,9 @@
 - [x] Add TLS/security headers middleware (HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy)
 - [x] Rewrite /security page section 02 with accurate CMK Model A claims and link to /security-keys
 - [x] Add ENCRYPTION_MASTER_KEY to env secrets (envelope encryption master key)
+
+## CMK Enhancements (Apr 23 2026)
+- [x] Add "Security" entry to authenticated sidebar/account nav linking to /security-keys
+- [x] Add first-login CMK banner for users without an encryption key ("Your data is not yet encrypted — generate your key")
+- [x] Write CMK vitest: generateKey, getStatus, rotateKey, revokeKey lifecycle end-to-end
+- [x] Add RFC 9116 security.txt at /.well-known/security.txt (Contact, disclosure policy, link to /security)

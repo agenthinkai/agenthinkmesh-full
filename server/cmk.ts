@@ -133,6 +133,21 @@ export async function getUserKeyRecord(userId: number) {
 }
 
 /**
+ * Get the key record for a user regardless of status (active, revoked, etc.).
+ * Used by getStatus to show revoked key information.
+ */
+export async function getAnyKeyRecord(userId: number) {
+  const db = await getDb();
+  if (!db) return null;
+  const [record] = await db
+    .select()
+    .from(clientEncryptionKeys)
+    .where(eq(clientEncryptionKeys.userId, userId))
+    .limit(1);
+  return record ?? null;
+}
+
+/**
  * Load and unwrap the active data key for a user.
  * Returns null if no active key exists (user has not generated one yet, or revoked).
  */

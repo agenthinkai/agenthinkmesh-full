@@ -20,6 +20,7 @@ import {
   rotateUserKey,
   revokeUserKey,
   getUserKeyRecord,
+  getAnyKeyRecord,
   loadUserDataKey,
 } from "../cmk";
 import { reEncryptUserData } from "../cmkFields";
@@ -27,7 +28,7 @@ import { reEncryptUserData } from "../cmkFields";
 export const cmkRouter = router({
   /** Get the current CMK status for the authenticated user. */
   getStatus: protectedProcedure.query(async ({ ctx }) => {
-    const record = await getUserKeyRecord(ctx.user.id);
+    const record = await getAnyKeyRecord(ctx.user.id);
     if (!record) {
       return {
         hasKey: false,
