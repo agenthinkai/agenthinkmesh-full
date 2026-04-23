@@ -35,6 +35,7 @@ import { registerPitchMirrorMetaRoute } from "../pitchMirrorMetaRoute";
 import inboundEmailWebhookRouter from "../inboundEmailWebhookRoute";
 import graphEmailWebhookRouter from "../graphEmailWebhookRoute";
 import { startGraphSubscriptionJob } from "../jobs/graphSubscription";
+import { startFounderFleetScheduler } from "../jobs/founderFleetScheduler";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -223,6 +224,8 @@ async function startServer() {
       ? "https://agenthink-7enctkan.manus.space"
       : `http://localhost:${port}`;
     startGraphSubscriptionJob(appBaseUrl);
+    // FounderAgent Fleet — daily 02:00 UTC + resume interrupted runs on startup
+    startFounderFleetScheduler();
     // Tier 0 University Signal ingestion — run once at startup, then daily at 02:00 KWT (23:00 UTC)
     runTier0Ingestion().catch(err => console.warn("[Tier0] Initial ingestion failed:", err?.message));
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;

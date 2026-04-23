@@ -18,6 +18,7 @@ export function generateUnsubscribeUrl(token: string): string {
 }
 
 let _db: ReturnType<typeof drizzle> | null = null;
+export type DbType = NonNullable<typeof _db>;
 
 // Lazily create the drizzle instance so local tooling can run without a DB.
 export async function getDb() {

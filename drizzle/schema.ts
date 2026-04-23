@@ -1739,3 +1739,141 @@ export const demoEmailLog = mysqlTable("demo_email_log", {
 }));
 export type DemoEmailLog = typeof demoEmailLog.$inferSelect;
 export type InsertDemoEmailLog = typeof demoEmailLog.$inferInsert;
+
+// ── FounderAgent Fleet ────────────────────────────────────────────────────────
+
+export const founderAgentRuns = mysqlTable("founder_agent_runs", {
+  id:              int("id").primaryKey().autoincrement(),
+  runDate:         varchar("run_date", { length: 20 }).notNull(), // YYYY-MM-DD
+  status:          mysqlEnum("status", ["pending", "generating", "researching", "pitching", "evaluating", "extracting", "completed", "paused", "failed"]).notNull().default("pending"),
+  totalIdeas:      int("total_ideas").notNull().default(0),
+  completed:       int("completed").notNull().default(0),
+  queued:          int("queued").notNull().default(0),
+  running:         int("running").notNull().default(0),
+  totalSearches:   int("total_searches").notNull().default(0),
+  totalLlmCalls:   int("total_llm_calls").notNull().default(0),
+  estimatedTokens: int("estimated_tokens").notNull().default(0),
+  estimatedCostUsd: decimal("estimated_cost_usd", { precision: 10, scale: 4 }).notNull().default("0.0000"),
+  startedAt:       bigint("started_at", { mode: "number" }),
+  completedAt:     bigint("completed_at", { mode: "number" }),
+  createdAt:       bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  farRunDateIdx: index("far_run_date_idx").on(table.runDate),
+  farStatusIdx:  index("far_status_idx").on(table.status),
+}));
+export type FounderAgentRun = typeof founderAgentRuns.$inferSelect;
+export type InsertFounderAgentRun = typeof founderAgentRuns.$inferInsert;
+
+export const founderAgentIdeas = mysqlTable("founder_agent_ideas", {
+  id:              int("id").primaryKey().autoincrement(),
+  runId:           int("run_id").notNull(),
+  domain:          varchar("domain", { length: 100 }).notNull(),
+  subSector:       varchar("sub_sector", { length: 100 }).notNull(),
+  description:     varchar("description", { length: 500 }).notNull(),
+  targetRegion:    varchar("target_region", { length: 100 }).notNull(),
+  founderName:     varchar("founder_name", { length: 100 }).notNull(),
+  fundingStage:    varchar("funding_stage", { length: 50 }).notNull(),
+  fundingAsk:      varchar("funding_ask", { length: 50 }).notNull(),
+  ideaFingerprint: varchar("idea_fingerprint", { length: 64 }).notNull(), // SHA-256 of domain+subSector+description
+  createdAt:       bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  faiRunIdx:         index("fai_run_idx").on(table.runId),
+  faiDomainIdx:      index("fai_domain_idx").on(table.domain),
+  faiFingerprintIdx: index("fai_fingerprint_idx").on(table.ideaFingerprint),
+}));
+export type FounderAgentIdea = typeof founderAgentIdeas.$inferSelect;
+export type InsertFounderAgentIdea = typeof founderAgentIdeas.$inferInsert;
+
+export const founderAgentResearch = mysqlTable("founder_agent_research", {
+  id:            int("id").primaryKey().autoincrement(),
+  runId:         int("run_id").notNull(),
+  domain:        varchar("domain", { length: 100 }).notNull(),
+  query:         varchar("query", { length: 300 }).notNull(),
+  resultSummary: text("result_summary").notNull(),
+  createdAt:     bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  farResRunIdx:    index("farres_run_idx").on(table.runId),
+  farResDomainIdx: index("farres_domain_idx").on(table.domain),
+}));
+export type FounderAgentResearch = typeof founderAgentResearch.$inferSelect;
+export type InsertFounderAgentResearch = typeof founderAgentResearch.$inferInsert;
+
+export const founderAgentPitches = mysqlTable("founder_agent_pitches", {
+  id:                   int("id").primaryKey().autoincrement(),
+  runId:                int("run_id").notNull(),
+  ideaId:               int("idea_id").notNull(),
+  problem:              text("problem").notNull(),
+  solution:             text("solution").notNull(),
+  targetMarket:         text("target_market").notNull(),
+  businessModel:        text("business_model").notNull(),
+  competitiveAdvantage: text("competitive_advantage").notNull(),
+  keyRisk:              text("key_risk").notNull(),
+  fundingAsk:           varchar("funding_ask", { length: 50 }).notNull(),
+  summary3s:            text("summary_3s").notNull(), // 3-sentence summary for insights call
+  createdAt:            bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  fapRunIdx:  index("fap_run_idx").on(table.runId),
+  fapIdeaIdx: index("fap_idea_idx").on(table.ideaId),
+}));
+export type FounderAgentPitch = typeof founderAgentPitches.$inferSelect;
+export type InsertFounderAgentPitch = typeof founderAgentPitches.$inferInsert;
+
+export const founderAgentEvaluations = mysqlTable("founder_agent_evaluations", {
+  id:                 int("id").primaryKey().autoincrement(),
+  runId:              int("run_id").notNull(),
+  ideaId:             int("idea_id").notNull(),
+  pitchId:            int("pitch_id").notNull(),
+  status:             mysqlEnum("status", ["queued", "running", "completed", "failed"]).notNull().default("queued"),
+  classification:     varchar("classification", { length: 20 }), // ENGAGE | WATCH | PASS
+  classificationScore: int("classification_score"), // ENGAGE=75-100, WATCH=40-74, PASS=0-39
+  executionScore:     int("execution_score"),        // 0-100
+  marketScore:        int("market_score"),           // 0-100
+  finalScore:         int("final_score"),            // weighted avg
+  strengths:          text("strengths"),             // JSON array
+  concerns:           text("concerns"),              // JSON array
+  flags:              text("flags"),                 // JSON array
+  agentDisagreements: text("agent_disagreements"),   // JSON array
+  recommendedAction:  varchar("recommended_action", { length: 100 }),
+  durationMs:         int("duration_ms"),
+  errorMessage:       varchar("error_message", { length: 500 }),
+  createdAt:          bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt:          bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  faeRunIdx:    index("fae_run_idx").on(table.runId),
+  faeIdeaIdx:   index("fae_idea_idx").on(table.ideaId),
+  faeStatusIdx: index("fae_status_idx").on(table.status),
+  faeFinalIdx:  index("fae_final_idx").on(table.finalScore),
+}));
+export type FounderAgentEvaluation = typeof founderAgentEvaluations.$inferSelect;
+export type InsertFounderAgentEvaluation = typeof founderAgentEvaluations.$inferInsert;
+
+export const founderAgentInsights = mysqlTable("founder_agent_insights", {
+  id:                    int("id").primaryKey().autoincrement(),
+  runId:                 int("run_id").notNull().unique(),
+  highScorePatterns:     text("high_score_patterns").notNull(),   // JSON array of strings
+  lowScorePatterns:      text("low_score_patterns").notNull(),    // JSON array of strings
+  failureReasons:        text("failure_reasons").notNull(),       // JSON array of strings
+  domainComparison:      text("domain_comparison").notNull(),     // JSON object {domain: {avg, count}}
+  improvementSuggestions: text("improvement_suggestions").notNull(), // JSON array
+  idealPitchStructure:   text("ideal_pitch_structure").notNull(), // string
+  rawJson:               longtext("raw_json").notNull(),
+  createdAt:             bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  fainRunIdx: index("fain_run_idx").on(table.runId),
+}));
+export type FounderAgentInsight = typeof founderAgentInsights.$inferSelect;
+export type InsertFounderAgentInsight = typeof founderAgentInsights.$inferInsert;
+
+export const founderAgentRunCosts = mysqlTable("founder_agent_run_costs", {
+  id:               int("id").primaryKey().autoincrement(),
+  runId:            int("run_id").notNull().unique(),
+  totalSearches:    int("total_searches").notNull().default(0),
+  totalLlmCalls:    int("total_llm_calls").notNull().default(0),
+  estimatedTokens:  int("estimated_tokens").notNull().default(0),
+  estimatedCostUsd: decimal("estimated_cost_usd", { precision: 10, scale: 4 }).notNull().default("0.0000"),
+  createdAt:        bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  farcRunIdx: index("farc_run_idx").on(table.runId),
+}));
+export type FounderAgentRunCost = typeof founderAgentRunCosts.$inferSelect;
+export type InsertFounderAgentRunCost = typeof founderAgentRunCosts.$inferInsert;

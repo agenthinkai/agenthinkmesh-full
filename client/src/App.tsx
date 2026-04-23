@@ -97,6 +97,7 @@ import UsIcDemo from "./pages/UsIcDemo";
 import GccIcDemo from "./pages/GccIcDemo";
 import Demos from "./pages/Demos";
 import Unsubscribe from "./pages/Unsubscribe";
+import FounderFleet from "./pages/FounderFleet";
 import SecurityPage from "./pages/SecurityPage";
 import SecurityKeysPage from "./pages/SecurityKeysPage";
 import PrivacyPage from "./pages/PrivacyPage";
@@ -194,6 +195,7 @@ function Router() {
       <Route path="/admin/beta-requests" component={AdminBetaRequests} />
       <Route path="/admin/demo-requests" component={AdminDemoRequests} />
       <Route path="/admin/treasury" component={AdminTreasury} />
+      <Route path="/founder-fleet" component={FounderFleet} />
       <Route path="/upgrade" component={Upgrade} />
       <Route path="/upgrade/success" component={Upgrade} />
 

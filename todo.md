@@ -3295,3 +3295,52 @@
 - [x] Extend FOLLOW_UP_COOLDOWN_MS in server/routers/demo.ts from 24h to 48h
 - [x] Add "Days since last contact" computed column to Requests table (derived from followUpSentAt ?? createdAt); show "Today" if <24h, else "N days"; sortable asc/desc; highlight rows >7 days in amber
 - [x] Add "Export Email Log" CSV button on Email Log tab: email-log-YYYY-MM-DD.csv, columns: Recipient Name, Institution, Email, Status at Send, Sent At; label changes to "✓ Exported N rows" for 3s
+
+## FounderAgent Fleet — /founder-fleet (Apr 23 2026) — COMPLETED
+
+### Schema (7 tables)
+- [x] founder_agent_runs — run_id, run_date, status, total_ideas, completed, queued, running, paused, total_searches, total_llm_calls, estimated_tokens, estimated_cost_usd, created_at
+- [x] founder_agent_ideas — id, run_id, domain, sub_sector, description, target_region, founder_name, funding_stage, funding_ask, idea_fingerprint, created_at
+- [x] founder_agent_research — id, run_id, domain, query, result_summary, created_at
+- [x] founder_agent_pitches — id, run_id, idea_id, problem, solution, target_market, business_model, competitive_advantage, key_risk, funding_ask, summary_3s, created_at
+- [x] founder_agent_evaluations — id, run_id, idea_id, pitch_id, status (queued/running/completed/failed), classification, classification_score, execution_score, market_score, final_score, strengths, concerns, flags, agent_disagreements, recommended_action, duration_ms, created_at, updated_at
+- [x] founder_agent_insights — id, run_id, high_score_patterns, low_score_patterns, failure_reasons, domain_comparison, improvement_suggestions, ideal_pitch_structure, raw_json, created_at
+
+### Server orchestration
+- [x] server/founderFleet.ts — generateIdeas(), runResearch(), generatePitches(), submitToMesh(), extractInsights()
+- [x] Batched idea generation (1 LLM call, 100 ideas, duplicate fingerprint check)
+- [x] Batched research (max 3 searches per domain, 15 total, cache by domain)
+- [x] Batched pitch generation (5 LLM calls, 20 per domain, include 3-sentence summary)
+- [x] Mesh submission queue (max 10 concurrent, 3s stagger, resume from DB on restart)
+- [x] Scoring: classification→score mapping, execution+market scores from mesh output, weighted final score
+- [x] Pattern extraction (1 Sonnet call over 3-sentence summaries + scores)
+- [x] Cost tracking (increment counters on every LLM call and search)
+
+### tRPC router (server/routers/founderFleet.ts)
+- [x] fleet.start — admin, creates run, triggers orchestration in background
+- [x] fleet.pause / fleet.resume / fleet.abort — admin, sets run status
+- [x] fleet.status — admin, returns current run progress + live evaluation feed
+- [x] fleet.runs — admin, returns list of all runs
+- [x] fleet.runDetail — admin, returns full data for a specific run_id
+- [x] fleet.exportCsv — admin, returns all evaluations for a run as CSV data
+- [x] fleet.insights — admin, returns insights for a run_id
+- [x] fleet.trendStats — admin, returns cross-run domain score trends (SQL aggregation)
+
+### Frontend /founder-fleet
+- [x] Route registered in App.tsx
+- [x] Progress bar (completed/queued/running) + cost summary
+- [x] Live scrolling card feed (founder name, idea, domain, score, classification badge, expand for full detail)
+- [x] Stats strip (avg score, ENGAGE/WATCH/PASS distribution)
+- [x] Domain breakdown table (completion count + avg score per domain, stacked bar)
+- [x] Filterable results table (domain, classification, sortable by score/domain/founder)
+- [x] Row expand: full pitch + mesh evaluation side by side (dialog)
+- [x] Export CSV button
+- [x] Start Fleet / Pause / Resume / Abort controls
+- [x] Run History dropdown
+- [x] Insights tab (high/low score patterns, failure reasons, domain comparison, ideal pitch structure)
+- [x] Trends tab (cross-run domain score history, mini bar charts)
+
+### Scheduling
+- [x] Daily schedule at 02:00 UTC via node-cron in server/jobs/founderFleetScheduler.ts
+- [x] Resume interrupted runs on server startup
+- [x] Cross-run trend analytics (SQL aggregation, not LLM)
