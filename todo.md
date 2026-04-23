@@ -3232,3 +3232,21 @@
 - [x] Add IC demo links to Home.tsx footer (All Demos, Singapore IC, Japan IC, US IC, GCC IC)
 - [x] Add Data & Security link to Home.tsx footer
 - [x] Confirm headline, gradient, Pitch Triage hero card, role-switcher tabs, decision chips all present in Home.tsx
+
+## Priority Enhancements (Apr 23 2026)
+- [ ] Build /privacy page (dark theme, legally complete: data collected, use, retention, user rights, CMK reference)
+- [ ] Build /terms page (dark theme, legally complete: acceptable use, no warranty, liability, governing law)
+- [ ] Wire footer Privacy and Terms links in Home.tsx and Landing.tsx
+- [ ] Add demo_requests DB table and push schema
+- [ ] Add tRPC procedure: demoRequest.submit (public, stores to DB, notifies owner)
+- [ ] Add "Request a private demo →" CTA button + inline form to landing page hero
+- [ ] Add "See examples" nav item to main navbar (SiteNav.tsx) pointing to /demos
+
+## Priority Enhancements (Apr 23 2026)
+- [x] Build /privacy page (dark theme, publicly accessible, legally complete — data collected, retention, CMK reference, user rights)
+- [x] Build /terms page (dark theme, publicly accessible, legally complete — acceptable use, no warranty, limitation of liability, governing law)
+- [x] Wire footer Privacy and Terms links in Home.tsx and Landing.tsx
+- [x] Add demo_requests DB table and push to DB
+- [x] Build demo.submit tRPC procedure with owner notification
+- [x] Add "Request a private demo" CTA + inline form to landing page
+- [x] "See examples" nav item confirmed present in navbar

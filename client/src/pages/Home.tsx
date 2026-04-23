@@ -84,6 +84,25 @@ export default function Home() {
     }, 50);
   }, []);
 
+  // Demo request form state
+  const [demoFormOpen, setDemoFormOpen] = useState(false);
+  const [demoForm, setDemoForm] = useState({ name: "", institution: "", email: "", useCase: "" });
+  const [demoSubmitted, setDemoSubmitted] = useState(false);
+  const submitDemo = trpc.demo.submit.useMutation({
+    onSuccess: () => {
+      setDemoSubmitted(true);
+      setDemoForm({ name: "", institution: "", email: "", useCase: "" });
+      toast.success("Demo request received", { description: "We'll be in touch within one business day." });
+    },
+    onError: (err) => {
+      toast.error("Failed to submit", { description: err.message });
+    },
+  });
+  const handleDemoSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    submitDemo.mutate(demoForm);
+  };
+
   // Contact form state
   const [contactForm, setContactForm] = useState({
     name: "",
@@ -339,6 +358,86 @@ export default function Home() {
               <p className="mt-2 text-xs text-white/35 text-center">
                 No setup. No training. Just describe what you need.
               </p>
+              {/* ── DEMO REQUEST CTA ── */}
+              <div className="mt-4 flex justify-center">
+                {!demoFormOpen && !demoSubmitted && (
+                  <button
+                    onClick={() => setDemoFormOpen(true)}
+                    className="inline-flex items-center gap-2 text-sm text-white/50 hover:text-emerald-400 transition-colors border border-white/10 hover:border-emerald-500/40 rounded-xl px-4 py-2 bg-white/[0.03] hover:bg-emerald-500/5"
+                  >
+                    <Building2 className="w-3.5 h-3.5" />
+                    Request a private demo &rarr;
+                  </button>
+                )}
+                {demoSubmitted && (
+                  <div className="flex items-center gap-2 text-sm text-emerald-400">
+                    <CheckCircle2 className="w-4 h-4" />
+                    Request received — we'll be in touch within one business day.
+                  </div>
+                )}
+              </div>
+              {/* ── DEMO REQUEST INLINE FORM ── */}
+              {demoFormOpen && !demoSubmitted && (
+                <form onSubmit={handleDemoSubmit} className="mt-5 w-full max-w-xl mx-auto rounded-2xl bg-white/[0.04] border border-white/10 p-5 space-y-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <p className="text-sm font-semibold text-white">Request a private demo</p>
+                    <button type="button" onClick={() => setDemoFormOpen(false)} className="text-white/30 hover:text-white/60 transition-colors"><X className="w-4 h-4" /></button>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-white/40 mb-1">Name</label>
+                      <Input
+                        required
+                        value={demoForm.name}
+                        onChange={e => setDemoForm(f => ({ ...f, name: e.target.value }))}
+                        placeholder="Your name"
+                        className="bg-white/[0.04] border-white/10 text-white placeholder:text-white/25 text-sm h-9"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-white/40 mb-1">Institution</label>
+                      <Input
+                        required
+                        value={demoForm.institution}
+                        onChange={e => setDemoForm(f => ({ ...f, institution: e.target.value }))}
+                        placeholder="Fund / firm / organisation"
+                        className="bg-white/[0.04] border-white/10 text-white placeholder:text-white/25 text-sm h-9"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-white/40 mb-1">Work email</label>
+                    <Input
+                      required
+                      type="email"
+                      value={demoForm.email}
+                      onChange={e => setDemoForm(f => ({ ...f, email: e.target.value }))}
+                      placeholder="you@institution.com"
+                      className="bg-white/[0.04] border-white/10 text-white placeholder:text-white/25 text-sm h-9"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs text-white/40 mb-1">Use case</label>
+                    <Textarea
+                      required
+                      value={demoForm.useCase}
+                      onChange={e => setDemoForm(f => ({ ...f, useCase: e.target.value }))}
+                      placeholder="e.g. Triage 200 inbound pitches per quarter, screen vendor contracts…"
+                      className="bg-white/[0.04] border-white/10 text-white placeholder:text-white/25 text-sm resize-none"
+                      rows={3}
+                    />
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={submitDemo.isPending}
+                    className="w-full py-2.5 rounded-xl text-white text-sm font-semibold transition-all disabled:opacity-60"
+                    style={{ background: "linear-gradient(135deg, #10b981 0%, #06b6d4 100%)" }}
+                  >
+                    {submitDemo.isPending ? "Sending…" : "Submit request"}
+                  </button>
+                  <p className="text-[11px] text-white/25 text-center">We respond within one business day. No sales pressure.</p>
+                </form>
+              )}
             </div>
           )}
 
@@ -1047,9 +1146,9 @@ export default function Home() {
             </div>
             <p className="text-xs text-white/30 font-mono">© 2026 AgenThink · A structured decision layer for institutional workflows</p>
             <div className="flex gap-6">
-              {["Privacy", "Terms", "Docs"].map((l) => (
-                <a key={l} href="#" className="text-xs text-white/30 hover:text-white/60 transition-colors">{l}</a>
-              ))}
+              <Link href="/privacy" className="text-xs text-white/30 hover:text-white/60 transition-colors">Privacy</Link>
+              <Link href="/terms" className="text-xs text-white/30 hover:text-white/60 transition-colors">Terms</Link>
+              <a href="#" className="text-xs text-white/30 hover:text-white/60 transition-colors">Docs</a>
               <Link href="/security" className="text-xs text-white/30 hover:text-white/60 transition-colors">Data &amp; Security</Link>
             </div>
           </div>

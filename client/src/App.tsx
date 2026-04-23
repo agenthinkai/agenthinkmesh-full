@@ -98,6 +98,8 @@ import Demos from "./pages/Demos";
 import Unsubscribe from "./pages/Unsubscribe";
 import SecurityPage from "./pages/SecurityPage";
 import SecurityKeysPage from "./pages/SecurityKeysPage";
+import PrivacyPage from "./pages/PrivacyPage";
+import TermsPage from "./pages/TermsPage";
 
 function Router() {
   const { isAuthenticated, loading } = useAuth();
@@ -282,6 +284,9 @@ function Router() {
       <Route path="/security" component={SecurityPage} />
       {/* CMK key management — authenticated */}
       <Route path="/security-keys" component={SecurityKeysPage} />
+      {/* Legal pages — public */}
+      <Route path="/privacy" component={PrivacyPage} />
+      <Route path="/terms" component={TermsPage} />
       {/* Demo index + institutional demo pages */}
       <Route path="/demos" component={Demos} />
       <Route path="/sg-ic" component={SgIcDemo} />

@@ -1703,3 +1703,20 @@ export const cmkAuditLog = mysqlTable("cmk_audit_log", {
 }));
 export type CmkAuditEntry = typeof cmkAuditLog.$inferSelect;
 export type InsertCmkAuditEntry = typeof cmkAuditLog.$inferInsert;
+
+// ── Demo Requests ─────────────────────────────────────────────────────────────
+export const demoRequests = mysqlTable("demo_requests", {
+  id:          int("id").primaryKey().autoincrement(),
+  name:        varchar("name", { length: 200 }).notNull(),
+  institution: varchar("institution", { length: 300 }).notNull(),
+  email:       varchar("email", { length: 300 }).notNull(),
+  useCase:     text("use_case").notNull(),
+  status:      varchar("status", { length: 50 }).notNull().default("pending"),
+  createdAt:   bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  demoEmailIdx:   index("demo_email_idx").on(table.email),
+  demoStatusIdx:  index("demo_status_idx").on(table.status),
+  demoCreatedIdx: index("demo_created_idx").on(table.createdAt),
+}));
+export type DemoRequest = typeof demoRequests.$inferSelect;
+export type InsertDemoRequest = typeof demoRequests.$inferInsert;

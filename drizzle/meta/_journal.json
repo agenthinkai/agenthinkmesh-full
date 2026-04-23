@@ -533,6 +533,13 @@
       "when": 1776858018456,
       "tag": "0075_special_korath",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "5",
+      "when": 1776914442768,
+      "tag": "0076_lyrical_skullbuster",
+      "breakpoints": true
     }
   ]
 }

@@ -1085,6 +1085,8 @@ export default function Landing() {
             {s.verifiedAgents} agents · {s.domainContexts} contexts · 5 domains · Institutional AI orchestration
           </div>
           <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
+            <a href="/privacy" style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, textDecoration: "none", letterSpacing: "0.04em" }}>Privacy</a>
+            <a href="/terms" style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, textDecoration: "none", letterSpacing: "0.04em" }}>Terms</a>
             <a href="/security" style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, textDecoration: "none", letterSpacing: "0.04em" }}>Security</a>
             <a href="/demos" style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, textDecoration: "none", letterSpacing: "0.04em" }}>Examples</a>
             <a href="/contact" style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, textDecoration: "none", letterSpacing: "0.04em" }}>Contact</a>
