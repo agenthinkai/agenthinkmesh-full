@@ -55,6 +55,9 @@ export default function AdminDemoRequests() {
   const { user, loading } = useAuth();
   const [, navigate] = useLocation();
   const [updatingId, setUpdatingId] = useState<number | null>(null);
+  // notes: local edits keyed by request id
+  const [notesMap, setNotesMap] = useState<Record<number, string>>({});
+  const [savingNotesId, setSavingNotesId] = useState<number | null>(null);
 
   const { data: requests, isLoading, refetch } = trpc.demo.list.useQuery(undefined, {
     enabled: !!user && user.role === "admin",
@@ -70,6 +73,12 @@ export default function AdminDemoRequests() {
       toast.error(err.message ?? "Failed to update status");
     },
     onSettled: () => setUpdatingId(null),
+  });
+
+  const saveNotes = trpc.demo.saveNotes.useMutation({
+    onSuccess: () => toast.success("Notes saved"),
+    onError: (err) => toast.error(err.message ?? "Failed to save notes"),
+    onSettled: () => setSavingNotesId(null),
   });
 
   if (loading) {
@@ -90,6 +99,15 @@ export default function AdminDemoRequests() {
     updateStatus.mutate({ id, status });
   };
 
+  const handleNotesSave = (id: number, currentDbNotes: string | null) => {
+    // Only save if the local value differs from what is in the DB
+    const localNotes = notesMap[id];
+    if (localNotes === undefined) return; // user never touched this row
+    if (localNotes === (currentDbNotes ?? "")) return; // no change
+    setSavingNotesId(id);
+    saveNotes.mutate({ id, notes: localNotes });
+  };
+
   return (
     <DashboardLayout>
       <div
@@ -106,7 +124,7 @@ export default function AdminDemoRequests() {
             Demo Requests
           </h1>
           <p style={{ fontSize: 13, color: "#64748b", marginTop: 6 }}>
-            All inbound demo requests — sorted by most recent. Update status inline.
+            All inbound demo requests — sorted by most recent. Update status and notes inline.
           </p>
         </div>
 
@@ -178,7 +196,7 @@ export default function AdminDemoRequests() {
               <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
                 <thead>
                   <tr style={{ borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-                    {["Name", "Institution", "Email", "Use Case", "Status", "Date"].map((h) => (
+                    {["Name", "Institution", "Email", "Use Case", "Status", "Notes", "Schedule", "Date"].map((h) => (
                       <th
                         key={h}
                         style={{
@@ -234,7 +252,7 @@ export default function AdminDemoRequests() {
                         style={{
                           padding: "14px 16px",
                           color: "#94a3b8",
-                          maxWidth: 280,
+                          maxWidth: 220,
                           overflow: "hidden",
                           textOverflow: "ellipsis",
                           whiteSpace: "nowrap",
@@ -279,6 +297,68 @@ export default function AdminDemoRequests() {
                           </SelectContent>
                         </Select>
                       </td>
+                      {/* Notes — inline editable, saves on blur */}
+                      <td style={{ padding: "14px 16px", minWidth: 200 }}>
+                        <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+                          <textarea
+                            rows={2}
+                            value={notesMap[req.id] !== undefined ? notesMap[req.id] : (req.notes ?? "")}
+                            placeholder="Add notes…"
+                            onChange={(e) =>
+                              setNotesMap((prev) => ({ ...prev, [req.id]: e.target.value }))
+                            }
+                            onBlur={() => handleNotesSave(req.id, req.notes ?? null)}
+                            style={{
+                              flex: 1,
+                              background: "rgba(255,255,255,0.04)",
+                              border: "1px solid rgba(255,255,255,0.08)",
+                              borderRadius: 6,
+                              color: "#cbd5e1",
+                              fontSize: 12,
+                              padding: "6px 8px",
+                              resize: "none",
+                              outline: "none",
+                              fontFamily: "inherit",
+                              lineHeight: 1.5,
+                              minWidth: 160,
+                            }}
+                          />
+                          {savingNotesId === req.id && (
+                            <span style={{ color: "#10b981", fontSize: 11, paddingTop: 4 }}>Saving…</span>
+                          )}
+                        </div>
+                      </td>
+                      {/* Schedule call — Calendly link pre-populated with name + email */}
+                      <td style={{ padding: "14px 16px", whiteSpace: "nowrap" }}>
+                        {/* SWAP: insert your Calendly URL below, replacing the placeholder path */}
+                        <a
+                          href={`https://calendly.com/farouqsultan/30min?name=${encodeURIComponent(req.name)}&email=${encodeURIComponent(req.email)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            color: "#10b981",
+                            fontSize: 12,
+                            fontWeight: 500,
+                            textDecoration: "none",
+                            padding: "4px 10px",
+                            border: "1px solid rgba(16,185,129,0.3)",
+                            borderRadius: 6,
+                            background: "rgba(16,185,129,0.06)",
+                            transition: "background 0.15s",
+                          }}
+                          onMouseEnter={(e) => {
+                            (e.currentTarget as HTMLAnchorElement).style.background = "rgba(16,185,129,0.14)";
+                          }}
+                          onMouseLeave={(e) => {
+                            (e.currentTarget as HTMLAnchorElement).style.background = "rgba(16,185,129,0.06)";
+                          }}
+                        >
+                          📅 Schedule
+                        </a>
+                      </td>
                       {/* Date */}
                       <td style={{ padding: "14px 16px", color: "#64748b", whiteSpace: "nowrap", fontSize: 12 }}>
                         {formatDate(req.createdAt)}
@@ -293,7 +373,7 @@ export default function AdminDemoRequests() {
 
         <p style={{ fontSize: 11, color: "#334155", marginTop: 16 }}>
           Updated {new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
-          {" · "}Status changes are saved immediately and reflected in the pipeline view above.
+          {" · "}Status and notes changes are saved immediately.
         </p>
       </div>
     </DashboardLayout>

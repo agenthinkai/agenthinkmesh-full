@@ -3267,3 +3267,10 @@
 - [x] Auto-reply confirmation email to requester on demo.submit (from farouq@agenthink.ai, CC farouqsultan@gmail.com)
 - [x] Build /admin/demo-requests page: table with name/institution/email/use case/status/date, inline status dropdown, pipeline stats strip
 - [x] Add Demo Requests to admin sidebar navigation in DashboardLayout
+
+## Demo Request Management Enhancements (Apr 23 2026)
+- [x] Add owner notification (notifyOwner) on demo.submit — subject "New demo request — [Institution]", include name/institution/email/use case/link to /admin/demo-requests
+- [x] Add notes column to demo_requests schema, push to DB
+- [x] Add demo.saveNotes tRPC procedure (admin-only)
+- [x] Wire inline notes editing in AdminDemoRequests page (save on blur or save button)
+- [x] Add Schedule call Calendly link column to AdminDemoRequests table (pre-populate name + email as URL params, SWAP comment)

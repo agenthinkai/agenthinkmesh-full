@@ -71,10 +71,10 @@ export const demoRouter = router({
         updatedAt:   now,
       });
 
-      // Owner notification — fire and forget
+      // Owner notification — subject: "New demo request — [Institution]"
       notifyOwner({
-        title: `New demo request from ${input.institution}`,
-        content: `**Name:** ${input.name}\n**Institution:** ${input.institution}\n**Email:** ${input.email}\n\n**Use case:**\n${input.useCase}`,
+        title: `New demo request — ${input.institution}`,
+        content: `**Name:** ${input.name}\n**Institution:** ${input.institution}\n**Email:** ${input.email}\n\n**Use case:**\n${input.useCase}\n\n**Manage:** https://agenthink-7enctkan.manus.space/admin/demo-requests`,
       }).catch(() => {/* swallow */});
 
       // Auto-reply to requester — fire and forget, do not fail the mutation
@@ -100,6 +100,27 @@ export const demoRouter = router({
       .from(demoRequests)
       .orderBy(desc(demoRequests.createdAt));
   }),
+
+  // ── Admin: save notes for a demo request ──────────────────────────────────
+  saveNotes: protectedProcedure
+    .input(
+      z.object({
+        id:    z.number().int().positive(),
+        notes: z.string().max(5000),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      if (ctx.user.role !== "admin") {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Admin access required" });
+      }
+      const db = await getDb();
+      if (!db) throw new Error("Database unavailable");
+      await db
+        .update(demoRequests)
+        .set({ notes: input.notes, updatedAt: Date.now() })
+        .where(eq(demoRequests.id, input.id));
+      return { success: true };
+    }),
 
   // ── Admin: update the status of a demo request ────────────────────────────
   updateStatus: protectedProcedure

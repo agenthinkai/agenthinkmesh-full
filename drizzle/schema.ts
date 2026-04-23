@@ -1712,6 +1712,7 @@ export const demoRequests = mysqlTable("demo_requests", {
   email:       varchar("email", { length: 300 }).notNull(),
   useCase:     text("use_case").notNull(),
   status:      varchar("status", { length: 50 }).notNull().default("new"),
+  notes:       text("notes"),
   createdAt:   bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
   updatedAt:   bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 }, (table) => ({

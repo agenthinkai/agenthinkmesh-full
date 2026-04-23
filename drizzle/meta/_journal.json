@@ -547,6 +547,13 @@
       "when": 1776915259768,
       "tag": "0077_wise_onslaught",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "5",
+      "when": 1776917358948,
+      "tag": "0078_complete_mandroid",
+      "breakpoints": true
     }
   ]
 }
