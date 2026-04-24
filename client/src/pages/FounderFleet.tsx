@@ -14,7 +14,7 @@
  *   - Export CSV button
  */
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
@@ -1123,6 +1123,8 @@ function InsightSection({ title, items, color }: { title: string; items: string[
 // ── FleetSchedulerCard ────────────────────────────────────────────────────────
 function FleetSchedulerCard() {
   const { data, isLoading } = trpc.fleet.fleetConfigs.useQuery(undefined, { refetchInterval: 30000 });
+  const runsQuery2 = trpc.fleet.runs.useQuery(undefined, { refetchInterval: 30000 });
+  const [copied, setCopied] = useState(false);
 
   const scoringModeLabel = (mode: string) => {
     if (mode === "shariah_gcc") return "Shariah + GCC";
@@ -1130,12 +1132,66 @@ function FleetSchedulerCard() {
     return mode;
   };
 
+  const handleCopyVerification = useCallback(() => {
+    const cfgs = data ?? [];
+    const runs5 = ((runsQuery2.data ?? []) as FleetRun[]).slice(0, 5);
+    const lines: string[] = [];
+
+    lines.push("-- Q1: SELECT fleet_mode, COUNT(*) as total, AVG(final_score) as avg_score");
+    lines.push("-- FROM founder_agent_evaluations GROUP BY fleet_mode;");
+    lines.push("fleet_mode | total | avg_score");
+    lines.push("(live data not available in UI — run query directly)");
+    lines.push("");
+
+    lines.push("-- Q2: SELECT id, fleet_mode, scoring_mode, runs_completed, runs_remaining, last_run_at, last_run_score");
+    lines.push("-- FROM fleet_config;");
+    lines.push("id | fleet_mode | scoring_mode | runs_completed | runs_remaining | last_run_at | last_run_score");
+    cfgs.forEach(c => {
+      lines.push(`${c.id} | ${c.fleetMode} | ${c.scoringMode ?? "standard"} | ${c.runsCompleted} | ${c.runsRemaining} | ${c.lastRunAt ?? "null"} | ${c.lastRunScore ?? "null"}`);
+    });
+    lines.push("");
+
+    lines.push("-- Q3: SELECT id, fleet_mode, status, total_ideas, completed");
+    lines.push("-- FROM founder_agent_runs ORDER BY created_at DESC LIMIT 5;");
+    lines.push("id | fleet_mode | status | total_ideas | completed");
+    runs5.forEach(r => {
+      lines.push(`${r.id} | ${r.fleetMode ?? "?"} | ${r.status} | ${r.totalIdeas} | ${r.completed}`);
+    });
+
+    navigator.clipboard.writeText(lines.join("\n")).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }, [data, runsQuery2.data]);
+
   return (
     <div className="mt-8 rounded-xl border border-white/10 bg-white/5 p-6">
       <div className="flex items-center gap-3 mb-5">
         <span className="text-lg">🗓️</span>
         <h2 className="text-base font-semibold text-white">Fleet Scheduler</h2>
-        <span className="text-xs text-slate-500 ml-auto">Runs daily at 06:00 KWT</span>
+        <span className="text-xs text-slate-500">Runs daily at 06:00 KWT</span>
+        <button
+          onClick={handleCopyVerification}
+          className="ml-auto flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
+          title="Copy verification query output to clipboard"
+        >
+          {copied ? (
+            <>
+              <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+              <span className="text-emerald-400">Copied!</span>
+            </>
+          ) : (
+            <>
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+              </svg>
+              Copy results
+            </>
+          )}
+        </button>
       </div>
       {isLoading ? (
         <div className="text-slate-500 text-sm">Loading scheduler state…</div>
