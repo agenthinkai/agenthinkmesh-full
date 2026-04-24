@@ -575,6 +575,13 @@
       "when": 1776940347727,
       "tag": "0081_slippery_the_watchers",
       "breakpoints": true
+    },
+    {
+      "idx": 82,
+      "version": "5",
+      "when": 1777020980028,
+      "tag": "0082_strange_captain_stacy",
+      "breakpoints": true
     }
   ]
 }

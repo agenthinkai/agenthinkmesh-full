@@ -44,14 +44,16 @@ import {
 export const fleetRouter = router({
   // ── Start a new fleet run ─────────────────────────────────────────────────
   start: adminProcedure
-    .input(z.object({ label: z.string().optional(), quickTest: z.boolean().optional() }).optional())
+    .input(z.object({ label: z.string().optional(), quickTest: z.boolean().optional(), gccMode: z.boolean().optional() }).optional())
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
       const runDate = new Date().toISOString().slice(0, 10);
+      const isGcc = input?.gccMode ?? false;
       const result = await db.insert(founderAgentRuns).values({
         runDate,
+        fleetMode: isGcc ? "gcc" : "global", // store mode for dashboard filtering
         status: "pending",
         totalIdeas: 0,
         completed: 0,
@@ -67,7 +69,7 @@ export const fleetRouter = router({
       if (!runId) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to create run" });
 
       // Launch in background — do not await
-      const fleetOpts: FleetOptions = { quickTest: input?.quickTest ?? false };
+      const fleetOpts: FleetOptions = { quickTest: input?.quickTest ?? false, gccMode: isGcc };
       runFleet(runId, fleetOpts).catch((err) =>
         console.error(`[FleetRouter] Run ${runId} failed:`, err)
       );
@@ -292,6 +294,8 @@ export const fleetRouter = router({
         summary3s: pitch.summary3s,
         durationMs: e.durationMs,
         updatedAt: e.updatedAt,
+        shariahCompliance: e.shariahCompliance ?? null, // GCC mode: Compliant | Non-compliant | Requires review
+        decisionOutcome: e.decisionOutcome ?? null,     // GCC mode: IC_READY | WATCH_LIST | DECLINED
       }));
     }),
 

@@ -3360,3 +3360,13 @@
 - [ ] TypeScript 0 errors, tests passing
 - [ ] Trigger new Quick Test (10 agents with quickTest flag correctly wired)
 - [ ] Verify score distribution: ≥20% ENGAGE, ≥40% WATCH, ≤40% PASS
+
+## GCC Institutional Fleet Sprint
+
+- [x] TASK 1: Add GCC domain config (5 domains × 20 pitches, sub-sectors, GCC personas, Shariah flag)
+- [x] TASK 2: Add fleet_mode column to founder_agent_evaluations (additive migration)
+- [x] TASK 3: Extend founderFleet.ts with GCC mode — GCC pitch generation, Shariah compliance indicator
+- [x] TASK 4: Add mode selector UI [Global Fleet] [GCC Institutional Fleet] on /founder-fleet
+- [x] TASK 5: GCC summary panel (avg score, top concern, Shariah rate, top domain)
+- [x] TASK 6: Export GCC Results button → gcc-fleet-results-YYYY-MM-DD.csv
+- [x] TASK 7: Assign simulated outcomes (invested/watch/passed) based on score thresholds

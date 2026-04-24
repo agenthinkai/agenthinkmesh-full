@@ -49,6 +49,48 @@ export const FLEET_DOMAINS = [
   },
 ] as const;
 
+// ── GCC Institutional Fleet — domain config ───────────────────────────────────
+export const GCC_FLEET_DOMAINS = [
+  {
+    name: "Islamic Finance",
+    subSectors: ["Shariah-compliant lending", "sukuk issuance", "takaful", "waqf digitisation", "halal supply chain finance"],
+  },
+  {
+    name: "GovTech & Smart Cities",
+    subSectors: ["e-government services", "smart infrastructure", "digital identity", "public safety analytics", "citizen engagement"],
+  },
+  {
+    name: "Energy Transition",
+    subSectors: ["solar EPC", "green hydrogen", "carbon credits", "energy storage", "EV charging infrastructure"],
+  },
+  {
+    name: "Healthcare & Wellness",
+    subSectors: ["medical tourism", "preventive diagnostics", "home care", "mental health", "digital pharmacy"],
+  },
+  {
+    name: "Logistics & Trade",
+    subSectors: ["cross-border e-commerce", "free zone logistics", "cold chain", "port digitalisation", "last-mile delivery"],
+  },
+] as const;
+
+export const GCC_COUNCIL_PERSONAS = [
+  "Saudi Vision 2030 Fund Analyst",
+  "UAE Family Office Principal",
+  "Kuwait Investment Authority Associate",
+  "Qatar Development Bank Director",
+  "Bahrain Fintech Bay Advisor",
+] as const;
+
+function classifyShariahCompliance(domain: string, subSector: string): "Compliant" | "Non-compliant" | "Requires review" {
+  const nonCompliantKeywords = ["interest", "conventional lending", "alcohol", "gambling", "pork", "tobacco", "weapons"];
+  const compliantDomains = ["Islamic Finance", "GovTech & Smart Cities", "Energy Transition"];
+  const combined = `${domain} ${subSector}`.toLowerCase();
+  if (nonCompliantKeywords.some(k => combined.includes(k))) return "Non-compliant";
+  if (compliantDomains.includes(domain)) return "Compliant";
+  return "Requires review";
+}
+
+
 // ── Scoring helpers ───────────────────────────────────────────────────────────
 export function classificationToScore(classification: string): number {
   if (classification === "ENGAGE") return 87; // midpoint of 75-100
@@ -222,7 +264,7 @@ async function saveCosts(runId: number, acc: CostAccumulator): Promise<void> {
 }
 
 // ── Step 1: Generate 100 ideas in one LLM call ────────────────────────────────
-async function generateIdeas(runId: number, acc: CostAccumulator, opts: { ideasPerDomain?: number } = {}): Promise<number[]> {
+async function generateIdeas(runId: number, acc: CostAccumulator, opts: { ideasPerDomain?: number; gccMode?: boolean } = {}): Promise<number[]> {
   const ideasPerDomain = opts.ideasPerDomain ?? 20;
   const db = await requireDb();
 
@@ -327,7 +369,7 @@ ${Array.from(existingFingerprints).slice(0, 500).join("\n") || "None yet"}`;
 async function runResearch(
   runId: number,
   acc: CostAccumulator,
-  opts: { queriesPerDomain?: number } = {},
+  opts: { queriesPerDomain?: number; gccMode?: boolean } = {},
 ): Promise<Record<string, string>> {
   const queriesPerDomain = opts.queriesPerDomain ?? 3;
   const db = await requireDb();
@@ -384,6 +426,7 @@ async function generatePitches(
   ideaIds: number[],
   researchByDomain: Record<string, string>,
   acc: CostAccumulator,
+  opts: { gccMode?: boolean } = {},
 ): Promise<void> {
   const db = await requireDb();
 
@@ -664,6 +707,57 @@ async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConc
 }
 
 
+
+// ── GCC: Assign Shariah compliance flags to evaluations ──────────────────────
+async function assignShariahCompliance(runId: number): Promise<void> {
+  const db = await requireDb();
+  const rows = await db.select({
+    evalId: founderAgentEvaluations.id,
+    domain: founderAgentIdeas.domain,
+    subSector: founderAgentIdeas.subSector,
+  })
+    .from(founderAgentEvaluations)
+    .innerJoin(founderAgentIdeas, eq(founderAgentEvaluations.ideaId, founderAgentIdeas.id))
+    .where(and(
+      eq(founderAgentEvaluations.runId, runId),
+      eq(founderAgentEvaluations.status, "completed"),
+    ));
+  for (const row of rows) {
+    const compliance = classifyShariahCompliance(row.domain, row.subSector);
+    await db.update(founderAgentEvaluations)
+      .set({ shariahCompliance: compliance, updatedAt: Date.now() })
+      .where(eq(founderAgentEvaluations.id, row.evalId));
+  }
+  console.log(`[FleetOrchestrator] Assigned Shariah compliance for run ${runId}`);
+}
+
+// ── GCC: Assign simulated decision outcomes based on score thresholds ─────────
+async function assignDecisionOutcomes(runId: number): Promise<void> {
+  const db = await requireDb();
+  const rows = await db.select({
+    id: founderAgentEvaluations.id,
+    classification: founderAgentEvaluations.classification,
+    finalScore: founderAgentEvaluations.finalScore,
+  })
+    .from(founderAgentEvaluations)
+    .where(and(
+      eq(founderAgentEvaluations.runId, runId),
+      eq(founderAgentEvaluations.status, "completed"),
+    ));
+  for (const row of rows) {
+    // ENGAGE (top 20%) → "invested", WATCH (middle 40%) → null (watch), PASS (bottom 40%) → "passed"
+    const outcome: string | null =
+      row.classification === "ENGAGE" ? "invested" :
+      row.classification === "PASS"   ? "passed"   : null;
+    if (outcome !== null) {
+      await db.update(founderAgentEvaluations)
+        .set({ decisionOutcome: outcome, updatedAt: Date.now() })
+        .where(eq(founderAgentEvaluations.id, row.id));
+    }
+  }
+  console.log(`[FleetOrchestrator] Assigned decision outcomes for run ${runId}`);
+}
+
 // ── Step 6b: Percentile-based re-ranking (guarantees 20/40/40 distribution) ──
 async function reRankByPercentile(runId: number): Promise<void> {
   const db = await requireDb();
@@ -889,6 +983,8 @@ No generic statements. Every insight must be grounded in the actual data provide
 export interface FleetOptions {
   /** Quick Test mode: 2 ideas/domain, 1 search/domain, 1 batch pitch call, 3 concurrent evals */
   quickTest?: boolean;
+  /** GCC Institutional mode: use GCC_FLEET_DOMAINS + GCC council personas + Shariah compliance scoring */
+  gccMode?: boolean;
 }
 // -- Main orchestration entry point ------------------------------------------
 

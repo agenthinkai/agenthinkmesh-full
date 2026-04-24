@@ -83,6 +83,7 @@ interface FleetRun {
   startedAt: number | null;
   completedAt: number | null;
   createdAt: number | null;
+  fleetMode: string | null; // "global" | "gcc"
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -183,6 +184,8 @@ export default function FounderFleet() {
   const [sortField, setSortField] = useState<"finalScore" | "domain" | "founderName">("finalScore");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [exportLabel, setExportLabel] = useState("Export CSV");
+  // GCC Institutional mode toggle
+  const [gccMode, setGccMode] = useState(false);
   const cardFeedRef = useRef<HTMLDivElement>(null);
 
   // ── Queries ────────────────────────────────────────────────────────────────
@@ -239,7 +242,7 @@ export default function FounderFleet() {
       setActiveRunId(data.runId);
       runsQuery.refetch();
       statusQuery.refetch();
-      toast.success("Fleet run started");
+      toast.success(gccMode ? "🕌 GCC Institutional Fleet run started" : "Fleet run started");
     },
     onError: (e) => toast.error(e.message),
   });
@@ -361,7 +364,7 @@ export default function FounderFleet() {
                 <SelectContent>
                   {runs.map((r) => (
                     <SelectItem key={r.id} value={r.id.toString()}>
-                      {r.runDate} — {STATUS_LABELS[r.status]}
+                      {r.fleetMode === "gcc" ? "🕌 " : ""}{r.runDate} — {STATUS_LABELS[r.status]}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -379,13 +382,26 @@ export default function FounderFleet() {
                 >
                   {quickTestMut.isPending ? "Starting…" : "⚡ Quick Test (10 agents)"}
                 </Button>
+                {/* GCC mode toggle — switches domain config and council personas */}
+                <button
+                  type="button"
+                  onClick={() => setGccMode((v) => !v)}
+                  className={`text-xs px-2 py-1 rounded border transition-colors ${
+                    gccMode
+                      ? "border-amber-400 bg-amber-400/20 text-amber-300 font-semibold"
+                      : "border-white/20 bg-white/5 text-muted-foreground hover:border-white/40"
+                  }`}
+                  title="Toggle GCC Institutional mode (Islamic Finance, GovTech, Energy Transition, Healthcare, Logistics)"
+                >
+                  {gccMode ? "🕌 GCC Mode" : "🌐 Global Mode"}
+                </button>
                 <Button
                   size="sm"
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
-                  onClick={() => startMut.mutate({})}
+                  className={gccMode ? "bg-amber-600 hover:bg-amber-700 text-white" : "bg-emerald-600 hover:bg-emerald-700 text-white"}
+                  onClick={() => startMut.mutate({ gccMode })}
                   disabled={startMut.isPending || quickTestMut.isPending}
                 >
-                  {startMut.isPending ? "Starting…" : "▶ Start Fleet Run"}
+                  {startMut.isPending ? "Starting…" : gccMode ? "🕌 Start GCC Fleet" : "▶ Start Fleet Run"}
                 </Button>
               </div>
             )}
@@ -582,6 +598,36 @@ export default function FounderFleet() {
               </div>
             </div>
 
+            {/* GCC Institutional Summary — shown only for GCC mode runs */}
+            {run?.fleetMode === "gcc" && (
+              <div className="rounded-xl border border-amber-400/30 bg-amber-400/5 p-4 space-y-3">
+                <h2 className="text-sm font-semibold text-amber-300 uppercase tracking-wider">
+                  🕌 GCC Institutional Summary
+                </h2>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="rounded-lg bg-white/5 p-3">
+                    <div className="text-muted-foreground mb-1">Council Mandate</div>
+                    <div className="text-foreground font-medium">$10M – $50M · Seed / Series A</div>
+                  </div>
+                  <div className="rounded-lg bg-white/5 p-3">
+                    <div className="text-muted-foreground mb-1">Domains</div>
+                    <div className="text-foreground font-medium">Islamic Finance · GovTech · Energy · Healthcare · Logistics</div>
+                  </div>
+                  <div className="rounded-lg bg-white/5 p-3">
+                    <div className="text-muted-foreground mb-1">Council Personas</div>
+                    <div className="text-foreground font-medium">Vision 2030 · UAE Family Office · KIA · QDB · Bahrain Fintech Bay</div>
+                  </div>
+                  <div className="rounded-lg bg-white/5 p-3">
+                    <div className="text-muted-foreground mb-1">Shariah Compliance</div>
+                    <div className="text-foreground font-medium">Compliant / Requires Review / Non-compliant</div>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Shariah compliance is auto-classified per idea. View the All Results tab for per-idea compliance status.
+                </p>
+              </div>
+            )}
+
             {/* Domain breakdown */}
             <div className="space-y-3">
               <h2 className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">
@@ -689,6 +735,9 @@ export default function FounderFleet() {
                       <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground">Exec</th>
                       <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground">Market</th>
                       <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground">Action</th>
+                      {run?.fleetMode === "gcc" && (
+                        <th className="text-center px-4 py-3 text-xs font-semibold text-amber-400">Shariah</th>
+                      )}
                       <th className="text-center px-4 py-3 text-xs font-semibold text-muted-foreground">Detail</th>
                     </tr>
                   </thead>
@@ -707,6 +756,21 @@ export default function FounderFleet() {
                         <td className="px-4 py-3 text-center"><ScorePill score={r.executionScore} /></td>
                         <td className="px-4 py-3 text-center"><ScorePill score={r.marketScore} /></td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{r.recommendedAction ?? "—"}</td>
+                        {run?.fleetMode === "gcc" && (
+                          <td className="px-4 py-3 text-center">
+                            {(r as { shariahCompliance?: string | null }).shariahCompliance ? (
+                              <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
+                                (r as { shariahCompliance?: string | null }).shariahCompliance === "Compliant"
+                                  ? "text-emerald-400 bg-emerald-400/10"
+                                  : (r as { shariahCompliance?: string | null }).shariahCompliance === "Non-compliant"
+                                  ? "text-red-400 bg-red-400/10"
+                                  : "text-amber-400 bg-amber-400/10"
+                              }`}>
+                                {(r as { shariahCompliance?: string | null }).shariahCompliance}
+                              </span>
+                            ) : <span className="text-muted-foreground text-xs">—</span>}
+                          </td>
+                        )}
                         <td className="px-4 py-3 text-center">
                           <button
                             className="text-xs text-emerald-400 hover:text-emerald-300 underline"

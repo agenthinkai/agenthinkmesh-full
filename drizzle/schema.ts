@@ -1745,6 +1745,7 @@ export type InsertDemoEmailLog = typeof demoEmailLog.$inferInsert;
 export const founderAgentRuns = mysqlTable("founder_agent_runs", {
   id:              int("id").primaryKey().autoincrement(),
   runDate:         varchar("run_date", { length: 20 }).notNull(), // YYYY-MM-DD
+  fleetMode:       varchar("fleet_mode", { length: 20 }).notNull().default("global"), // "global" | "gcc"
   status:          mysqlEnum("status", ["pending", "generating", "researching", "pitching", "evaluating", "extracting", "completed", "paused", "failed"]).notNull().default("pending"),
   totalIdeas:      int("total_ideas").notNull().default(0),
   completed:       int("completed").notNull().default(0),
@@ -1836,6 +1837,9 @@ export const founderAgentEvaluations = mysqlTable("founder_agent_evaluations", {
   recommendedAction:  varchar("recommended_action", { length: 100 }),
   durationMs:         int("duration_ms"),
   errorMessage:       varchar("error_message", { length: 500 }),
+  // GCC-specific fields (additive — null for global runs)
+  shariahCompliance:  varchar("shariah_compliance", { length: 20 }),  // "Compliant" | "Non-compliant" | "Requires review"
+  decisionOutcome:    varchar("decision_outcome", { length: 20 }),    // "invested" | "passed" | null (watch)
   createdAt:          bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
   updatedAt:          bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 }, (table) => ({
