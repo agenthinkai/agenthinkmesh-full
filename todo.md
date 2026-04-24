@@ -3383,3 +3383,13 @@
 - [x] TASK 3: Full (non-truncated) agent findings in deep mode
 - [ ] TASK 3: 🌐 indicator for agents that used web research
 - [x] TASK 3: "Key Differences from Quick Analysis" note when same deal was previously quick-triaged
+
+## History Tab Deep Mode + Re-run Depth + Timeout Guard
+- [x] TASK 1: 🔬 badge next to deal name in history list row when depth="deep"
+- [x] TASK 1: "10 agents" count in history list row when depth="deep"
+- [x] TASK 1: 4 extra agent labels shown in detail panel when depth="deep"
+- [x] TASK 2: Re-run Triage button passes original depth to handleRetriage
+- [x] TASK 2: handleRetriage accepts depth param and sets analysisDepth state
+- [x] TASK 2: Re-run button label shows 🔬 when original depth was deep
+- [x] TASK 3: 55s AbortSignal on deep mode per-agent invokeLLM fetch calls
+- [x] TASK 3: User-friendly "Deep analysis timed out — try Quick mode" error surfaced

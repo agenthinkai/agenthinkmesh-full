@@ -309,9 +309,13 @@ export default function PitchTriage() {
   }
 
   // Called from HistoryTab "Re-run Triage" button
-  function handleRetriage(previewText: string, parentId: number) {
+  function handleRetriage(previewText: string, parentId: number, depth?: "quick" | "deep") {
     setPitchText(previewText);
     setPendingParentId(parentId);
+    if (depth) {
+      setAnalysisDepth(depth);
+      try { localStorage.setItem("atm_triage_depth", depth); } catch {}
+    }
     setSelectedHistoryId(null);
     setActiveTab("triage");
     setPageState("INPUT");
@@ -1838,7 +1842,7 @@ interface HistoryTabProps {
   historyItemQuery: { data?: PitchTriageRow; isLoading: boolean };
   classConfig: Record<string, { bg: string; border: string; text: string; label: string; desc: string }>;
   scoreBadgeColor: (score: number) => { ring: string; text: string };
-  onRetriage: (previewText: string, parentId: number) => void;
+  onRetriage: (previewText: string, parentId: number, depth?: "quick" | "deep") => void;
 }
 
 function HistoryTab({
@@ -2257,75 +2261,104 @@ function HistoryTab({
         )}
 
         {/* Agent grid */}
-        {agentOutputs.length > 0 && (
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
-              gap: 12,
-            }}
-          >
-            {AGENT_ORDER.map((name) => {
-              const agent = agentOutputs.find((a) => a.name === name);
-              if (!agent) return null;
-              const { bg, text } = labelColor(agent.label);
-              return (
-                <div
-                  key={name}
-                  style={{
-                    background: BG2,
-                    border: `1px solid ${BORDER}`,
-                    borderRadius: 10,
-                    padding: "14px 16px",
-                  }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      marginBottom: 8,
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        fontSize: 13,
-                        fontWeight: 600,
-                        color: "#fff",
-                      }}
-                    >
-                      <span>{AGENT_META[name].icon}</span>
-                      <span>{name}</span>
-                    </div>
-                    <span
-                      style={{
-                        background: bg,
-                        color: text,
-                        borderRadius: 4,
-                        padding: "2px 8px",
-                        fontSize: 11,
-                        fontWeight: 700,
-                        letterSpacing: 0.5,
-                        textTransform: "uppercase",
-                      }}
-                    >
-                      {agent.label}
-                    </span>
-                  </div>
-                  <p style={{ color: TEXT2, fontSize: 12, lineHeight: 1.5, margin: 0 }}>
-                    {agent.reasoning}
-                  </p>
-                  <div style={{ marginTop: 8, fontSize: 10, color: MUTED }}>
-                    weight: {AGENT_META[name].weight}%
-                  </div>
+        {agentOutputs.length > 0 && (() => {
+          // Infer depth from agentOutputs count
+          const itemIsDeep = agentOutputs.length >= 7;
+          const itemOrder = itemIsDeep ? AGENT_ORDER_DEEP : AGENT_ORDER_QUICK;
+          return (
+            <>
+              {itemIsDeep && (
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                  <span style={{
+                    background: "rgba(124,58,237,0.15)",
+                    border: "1px solid rgba(124,58,237,0.35)",
+                    color: "#c4b5fd",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    padding: "2px 10px",
+                    borderRadius: 20,
+                    letterSpacing: 0.5,
+                  }}>
+                    🔬 DEEP ANALYSIS · {agentOutputs.length} agents
+                  </span>
+                  <span style={{ fontSize: 10, color: MUTED }}>
+                    Macro Sentinel · Sector Specialist · Competitive Moat · Execution Risk
+                  </span>
                 </div>
-              );
-            })}
-          </div>
-        )}
+              )}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
+                  gap: 12,
+                }}
+              >
+                {itemOrder.map((name) => {
+                  const agent = agentOutputs.find((a) => a.name === name);
+                  if (!agent) return null;
+                  const { bg, text } = labelColor(agent.label);
+                  return (
+                    <div
+                      key={name}
+                      style={{
+                        background: BG2,
+                        border: `1px solid ${itemIsDeep && ["Macro Sentinel", "Sector Specialist", "Competitive Moat", "Execution Risk"].includes(name) ? "rgba(124,58,237,0.25)" : BORDER}`,
+                        borderRadius: 10,
+                        padding: "14px 16px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          marginBottom: 8,
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                            fontSize: 13,
+                            fontWeight: 600,
+                            color: "#fff",
+                          }}
+                        >
+                          <span>{AGENT_META[name].icon}</span>
+                          <span>{name}</span>
+                          {itemIsDeep && AGENT_META[name].webSearch && (
+                            <span style={{ fontSize: 9, color: "#60a5fa" }}>🌐</span>
+                          )}
+                        </div>
+                        <span
+                          style={{
+                            background: bg,
+                            color: text,
+                            borderRadius: 4,
+                            padding: "2px 8px",
+                            fontSize: 11,
+                            fontWeight: 700,
+                            letterSpacing: 0.5,
+                            textTransform: "uppercase",
+                          }}
+                        >
+                          {agent.label}
+                        </span>
+                      </div>
+                      <p style={{ color: TEXT2, fontSize: 12, lineHeight: 1.5, margin: 0 }}>
+                        {agent.reasoning}
+                      </p>
+                      <div style={{ marginTop: 8, fontSize: 10, color: MUTED }}>
+                        weight: {AGENT_META[name].weight}%
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          );
+        })()}
 
         {/* Key signals + missing info */}
         {(keySignals.length > 0 || missingInfo.length > 0) && (
@@ -2507,24 +2540,34 @@ function HistoryTab({
             {copyState === "copied" ? "✓ Copied!" : "✍️ Copy as Markdown"}
           </button>
 
-          {/* Re-run Triage */}
-          <button
-            onClick={() => onRetriage(item.pitchPreview, item.id)}
-            style={{
-              background: "rgba(124,58,237,0.12)",
-              border: "1px solid rgba(124,58,237,0.35)",
-              borderRadius: 6,
-              color: "#a78bfa",
-              fontSize: 12,
-              fontWeight: 600,
-              padding: "7px 14px",
-              cursor: "pointer",
-              transition: "all 0.15s",
-              marginLeft: "auto",
-            }}
-          >
-            ⚡ Re-run Triage
-          </button>
+          {/* Re-run Triage — passes original depth inferred from agentOutputs count */}
+          {(() => {
+            const rerunAgentCount = agentOutputs.length;
+            const rerunIsDeep = rerunAgentCount >= 7;
+            const rerunDepth: "quick" | "deep" = rerunIsDeep ? "deep" : "quick";
+            return (
+              <button
+                onClick={() => onRetriage(item.pitchPreview, item.id, rerunDepth)}
+                style={{
+                  background: rerunIsDeep ? "rgba(124,58,237,0.18)" : "rgba(124,58,237,0.12)",
+                  border: `1px solid ${rerunIsDeep ? "rgba(124,58,237,0.5)" : "rgba(124,58,237,0.35)"}`,
+                  borderRadius: 6,
+                  color: "#a78bfa",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  padding: "7px 14px",
+                  cursor: "pointer",
+                  transition: "all 0.15s",
+                  marginLeft: "auto",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 6,
+                }}
+              >
+                {rerunIsDeep ? "🔬 Re-run Deep" : "⚡ Re-run Triage"}
+              </button>
+            );
+          })()}
 
           {/* Re-evaluate this deal (auto trigger) */}
           {(() => {
@@ -3618,6 +3661,11 @@ function HistoryTab({
       {filteredRows.map((row) => {
         const cfg = classConfig[row.classification];
         const scoreColors = scoreBadgeColor(row.score);
+        // Infer depth from agentOutputs — if ≥7 agents present, it was a deep run
+        const rowAgentCount = (() => {
+          try { return (JSON.parse(row.agentOutputs ?? "[]") as unknown[]).length; } catch { return 0; }
+        })();
+        const rowIsDeep = rowAgentCount >= 7;
         return (
           <button
             key={row.id}
@@ -3748,6 +3796,22 @@ function HistoryTab({
                     }}
                   >
                     RE-RUN
+                  </span>
+                )}
+                {rowIsDeep && (
+                  <span
+                    style={{
+                      fontSize: 9,
+                      color: "#c4b5fd",
+                      background: "rgba(124,58,237,0.15)",
+                      border: "1px solid rgba(124,58,237,0.35)",
+                      borderRadius: 4,
+                      padding: "1px 6px",
+                      letterSpacing: 0.3,
+                      fontWeight: 700,
+                    }}
+                  >
+                    🔬 Deep
                   </span>
                 )}
                 {(row as unknown as { source?: string; triggerType?: string }).source === "auto" && (() => {
@@ -3899,6 +3963,11 @@ function HistoryTab({
             <div style={{ color: MUTED, fontSize: 11, flexShrink: 0, textAlign: "right", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 2 }}>
               <span>{fmtKuwait(row.createdAt)}</span>
               <span style={{ fontSize: 10, color: MUTED, whiteSpace: "nowrap" as const }}>{daysInStage(row)}d in stage</span>
+              {rowAgentCount > 0 && (
+                <span style={{ fontSize: 9, color: rowIsDeep ? "#c4b5fd" : MUTED, whiteSpace: "nowrap" as const }}>
+                  {rowAgentCount} agents
+                </span>
+              )}
             </div>
 
             {/* Signal count indicator — only when > 0 */}
