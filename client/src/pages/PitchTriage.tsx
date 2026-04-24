@@ -43,6 +43,7 @@ interface AgentOutput {
 }
 
 interface TriageResult {
+  id?: number;
   score: number;
   classification: "ENGAGE" | "WATCH" | "IGNORE";
   confidence: "HIGH" | "MEDIUM" | "LOW";
@@ -51,6 +52,11 @@ interface TriageResult {
   keySignals: string[];
   missingInfo: string[];
   topMissingFields: string[];
+  // Partial result fields (deep mode timeout fallback)
+  partial?: boolean;
+  agents_completed?: number;
+  agents_total?: number;
+  timeout_reason?: string;
 }
 
 // ── Label chip colour logic ───────────────────────────────────────────────────
@@ -598,32 +604,65 @@ export default function PitchTriage() {
                 }}
               >
                 {/* Mode selector */}
-                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                  {(["quick", "deep"] as AnalysisDepth[]).map((d) => (
-                    <button
-                      key={d}
-                      onClick={() => {
-                        setAnalysisDepth(d);
-                        try { localStorage.setItem("atm_triage_depth", d); } catch {}
-                      }}
-                      style={{
-                        padding: "5px 14px",
-                        borderRadius: 20,
-                        border: analysisDepth === d ? `1.5px solid ${ACCENT}` : `1px solid ${BORDER}`,
-                        background: analysisDepth === d ? `rgba(124,58,237,0.18)` : "transparent",
-                        color: analysisDepth === d ? "#c4b5fd" : MUTED,
-                        fontSize: 12,
-                        fontWeight: analysisDepth === d ? 700 : 400,
-                        cursor: "pointer",
-                        transition: "all 0.15s",
-                      }}
+                <div style={{ display: "flex", gap: 6, alignItems: "flex-start" }}>
+                  {/* Quick mode button */}
+                  <button
+                    onClick={() => {
+                      setAnalysisDepth("quick");
+                      try { localStorage.setItem("atm_triage_depth", "quick"); } catch {}
+                    }}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: 10,
+                      border: analysisDepth === "quick" ? `1.5px solid ${ACCENT}` : `1px solid ${BORDER}`,
+                      background: analysisDepth === "quick" ? `rgba(124,58,237,0.18)` : "transparent",
+                      color: analysisDepth === "quick" ? "#c4b5fd" : MUTED,
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                      textAlign: "left" as const,
+                      minWidth: 0,
+                    }}
+                  >
+                    <div style={{ fontSize: 12, fontWeight: analysisDepth === "quick" ? 700 : 500, whiteSpace: "nowrap" }}>
+                      ⚡ Quick Analysis
+                    </div>
+                    {/* Desktop subtitle */}
+                    <div
+                      className="mode-subtitle-desktop"
+                      style={{ fontSize: 10, color: analysisDepth === "quick" ? "rgba(196,181,253,0.7)" : "rgba(148,163,184,0.6)", marginTop: 2, whiteSpace: "nowrap" }}
                     >
-                      {d === "quick" ? "⚡ Quick" : "🔬 Deep"}
-                    </button>
-                  ))}
-                  {analysisDepth === "deep" && (
-                    <span style={{ color: MUTED, fontSize: 11, marginLeft: 4 }}>10 agents · ~30s</span>
-                  )}
+                      ~10 seconds · 6 agents · Fast
+                    </div>
+                  </button>
+                  {/* Deep mode button */}
+                  <button
+                    onClick={() => {
+                      setAnalysisDepth("deep");
+                      try { localStorage.setItem("atm_triage_depth", "deep"); } catch {}
+                    }}
+                    style={{
+                      padding: "6px 14px",
+                      borderRadius: 10,
+                      border: analysisDepth === "deep" ? `1.5px solid ${ACCENT}` : `1px solid ${BORDER}`,
+                      background: analysisDepth === "deep" ? `rgba(124,58,237,0.18)` : "transparent",
+                      color: analysisDepth === "deep" ? "#c4b5fd" : MUTED,
+                      cursor: "pointer",
+                      transition: "all 0.15s",
+                      textAlign: "left" as const,
+                      minWidth: 0,
+                    }}
+                  >
+                    <div style={{ fontSize: 12, fontWeight: analysisDepth === "deep" ? 700 : 500, whiteSpace: "nowrap" }}>
+                      🔬 Deep Analysis
+                    </div>
+                    {/* Desktop subtitle */}
+                    <div
+                      className="mode-subtitle-desktop"
+                      style={{ fontSize: 10, color: analysisDepth === "deep" ? "rgba(196,181,253,0.7)" : "rgba(148,163,184,0.6)", marginTop: 2, whiteSpace: "nowrap" }}
+                    >
+                      ~30–60 seconds · 10 agents · Web research · ~$0.05
+                    </div>
+                  </button>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                   <span style={{ color: MUTED, fontSize: 12 }}>
@@ -1056,12 +1095,58 @@ export default function PitchTriage() {
                   )}
                 </div>
               )}
-
-              {/* ── Agent Breakdown section label ──────────────────────────────────── */}
+              {/* ── Partial result warning banner (deep mode timeout) ───────────────────── */}
+              {result.partial && (
+                <div
+                  style={{
+                    background: "rgba(245,158,11,0.10)",
+                    border: "1px solid rgba(245,158,11,0.45)",
+                    borderRadius: 10,
+                    padding: "12px 16px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 8,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span style={{ fontSize: 15 }}>⚠️</span>
+                    <span style={{ color: AMBER, fontSize: 12, fontWeight: 700, letterSpacing: 0.5, textTransform: "uppercase" }}>
+                      Partial Result — {result.agents_completed ?? "?"} of {result.agents_total ?? 10} agents completed within the time limit
+                    </span>
+                  </div>
+                  <p style={{ color: TEXT2, fontSize: 12, margin: 0, lineHeight: 1.5 }}>
+                    The deep analysis timed out before all agents finished. The result above is based on the agents that completed.
+                    Re-run for a full analysis.
+                  </p>
+                  <div>
+                    <button
+                      onClick={() => {
+                        if (result) {
+                          const preview = pitchText.slice(0, 200).trim();
+                          handleRetriage(preview, result.id ?? 0, "deep");
+                        }
+                      }}
+                      style={{
+                        background: "rgba(124,58,237,0.18)",
+                        border: "1px solid rgba(124,58,237,0.5)",
+                        borderRadius: 6,
+                        color: "#c4b5fd",
+                        fontSize: 12,
+                        fontWeight: 600,
+                        padding: "6px 14px",
+                        cursor: "pointer",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      🔬 Re-run Deep Analysis
+                    </button>
+                  </div>
+                </div>
+              )}
+              {/* ── Agent Breakdown section label ────────────────────────────────────── */}
               <div style={{ fontSize: 11, color: MUTED, fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase" as const, marginBottom: -4 }}>
                 Agent Breakdown
-              </div>
-              {/* Agent grid */}
+              </div>              {/* Agent grid */}
               <div
                 style={{
                   display: "grid",
@@ -1875,6 +1960,8 @@ function HistoryTab({
   const [stageFilter, setStageFilter] = useState<StageFilter>("all");
   // Signals-only filter — show only deals with at least one logged signal
   const [showSignalsOnly, setShowSignalsOnly] = useState(false);
+  // Deep-only filter — show only records where depth="deep" (inferred from agentOutputs.length >= 7)
+  const [showDeepOnly, setShowDeepOnly] = useState(false);
 
   // Pattern signal expansion state
   const [patternExpanded, setPatternExpanded] = useState(false);
@@ -2992,7 +3079,14 @@ function HistoryTab({
     : rows.filter((r) => (r.stage ?? "triaged") === stageFilter);
   const filteredRowsUnsorted = stageFilteredRows
     .filter((r) => activeFilters.has(r.classification))
-    .filter((r) => !showSignalsOnly || ((r as unknown as { signalCount?: number }).signalCount ?? 0) > 0);
+    .filter((r) => !showSignalsOnly || ((r as unknown as { signalCount?: number }).signalCount ?? 0) > 0)
+    .filter((r) => {
+      if (!showDeepOnly) return true;
+      try {
+        const outputs = JSON.parse((r as unknown as { agentOutputs?: string }).agentOutputs ?? "[]") as unknown[];
+        return outputs.length >= 7;
+      } catch { return false; }
+    });
   const filteredRows = [...filteredRowsUnsorted].sort((a, b) => {
     if (sortBy === "highest_score") return (b.score ?? 0) - (a.score ?? 0);
     return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
@@ -3605,6 +3699,35 @@ function HistoryTab({
               }}
             >
               📡 Signals · {signalRows.length}
+            </button>
+          );
+        })()}
+        {/* 🔬 Deep filter chip */}
+        {(() => {
+          const deepRows = rows.filter((r) => {
+            try {
+              const outputs = JSON.parse((r as unknown as { agentOutputs?: string }).agentOutputs ?? "[]") as unknown[];
+              return outputs.length >= 7;
+            } catch { return false; }
+          });
+          if (deepRows.length === 0) return null;
+          return (
+            <button
+              onClick={() => setShowDeepOnly((v) => !v)}
+              style={{
+                background: showDeepOnly ? "rgba(124,58,237,0.18)" : "rgba(255,255,255,0.04)",
+                border: `1px solid ${showDeepOnly ? "rgba(124,58,237,0.5)" : BORDER}`,
+                borderRadius: 20,
+                color: showDeepOnly ? "#c4b5fd" : MUTED,
+                fontSize: 11,
+                fontWeight: showDeepOnly ? 700 : 500,
+                padding: "4px 12px",
+                cursor: "pointer",
+                letterSpacing: 0.4,
+                transition: "all 0.15s",
+              }}
+            >
+              🔬 Deep · {deepRows.length}
             </button>
           );
         })()}

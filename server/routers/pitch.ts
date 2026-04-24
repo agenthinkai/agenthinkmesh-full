@@ -528,62 +528,80 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
       };
       const MODEL = isDeep ? "claude-sonnet-4-5" : "claude-haiku-3-5";
       const MAX_TOKENS = isDeep ? 300 : 120;
-      // ── Deep mode: 55 s AbortController timeout guard ──────────────────────────────────────
+      // ── Deep mode: 55 s AbortController + Promise.allSettled for partial results ──────────
       const deepAbortController = isDeep ? new AbortController() : null;
       const deepTimeoutId = isDeep
         ? setTimeout(() => deepAbortController!.abort(), 55_000)
         : null;
+
+      // Helper: parse one agent's LLM response into an AgentResult
+      const parseAgentResponse = (agent: typeof AGENTS[number], res: Awaited<ReturnType<typeof invokeLLM>>): AgentResult => {
+        const contentRaw = res?.choices?.[0]?.message?.content;
+        const raw = (typeof contentRaw === "string" ? contentRaw : "").trim();
+        const cleaned = raw
+          .replace(/^```(?:json)?\s*/i, "")
+          .replace(/\s*```$/i, "")
+          .trim();
+        const parsed = JSON.parse(cleaned) as { label?: unknown; reasoning?: unknown };
+        const label =
+          typeof parsed.label === "string" && agent.labels.includes(parsed.label)
+            ? parsed.label
+            : agent.fallback;
+        const reasoning =
+          typeof parsed.reasoning === "string" && parsed.reasoning.length > 0
+            ? parsed.reasoning.slice(0, 120)
+            : "Unable to determine from available information.";
+        const usedFallback = label === agent.fallback && parsed.label !== agent.fallback;
+        return { name: agent.name, label, reasoning, fallback: usedFallback };
+      };
+
       let agentOutputs: AgentResult[];
+      let isPartialResult = false;
+      let completedAgentCount = 0;
+
       try {
-        agentOutputs = await Promise.all(
+        const settled = await Promise.allSettled(
           AGENTS.map(async (agent) => {
-            try {
-              const res = await invokeLLM({
-                messages: [
-                  { role: "system", content: agent.systemPrompt },
-                  { role: "user", content: `Pitch:\n${truncated}` },
-                ],
-                max_tokens: MAX_TOKENS,
-                model: MODEL,
-                ...(deepAbortController ? { signal: deepAbortController.signal } : {}),
-              });
-              const contentRaw = res?.choices?.[0]?.message?.content;
-              const raw = (typeof contentRaw === "string" ? contentRaw : "").trim();
-              const cleaned = raw
-                .replace(/^```(?:json)?\s*/i, "")
-                .replace(/\s*```$/i, "")
-                .trim();
-              const parsed = JSON.parse(cleaned) as { label?: unknown; reasoning?: unknown };
-              const label =
-                typeof parsed.label === "string" && agent.labels.includes(parsed.label)
-                  ? parsed.label
-                  : agent.fallback;
-              const reasoning =
-                typeof parsed.reasoning === "string" && parsed.reasoning.length > 0
-                  ? parsed.reasoning.slice(0, 120)
-                  : "Unable to determine from available information.";
-              const usedFallback = label === agent.fallback && parsed.label !== agent.fallback;
-              return { name: agent.name, label, reasoning, fallback: usedFallback };
-            } catch (agentErr: unknown) {
-              // Re-throw AbortError so the outer catch can surface a user-friendly message
-              if (agentErr instanceof Error && agentErr.name === "AbortError") throw agentErr;
-              return {
-                name: agent.name,
-                label: agent.fallback,
-                reasoning: "Unable to determine from available information.",
-                fallback: true,
-              };
-            }
+            const res = await invokeLLM({
+              messages: [
+                { role: "system", content: agent.systemPrompt },
+                { role: "user", content: `Pitch:\n${truncated}` },
+              ],
+              max_tokens: MAX_TOKENS,
+              model: MODEL,
+              ...(deepAbortController ? { signal: deepAbortController.signal } : {}),
+            });
+            return parseAgentResponse(agent, res);
           })
         );
-      } catch (parallelErr: unknown) {
-        if (parallelErr instanceof Error && parallelErr.name === "AbortError") {
-          throw new Error(
-            "Deep analysis timed out after 55 s — the Sonnet model is under high load. " +
-            "Please try again in a moment, or switch to \u26a1 Quick mode for an instant result."
-          );
+
+        // Count fulfilled results
+        const fulfilled = settled.filter((r): r is PromiseFulfilledResult<AgentResult> => r.status === "fulfilled");
+        completedAgentCount = fulfilled.length;
+
+        if (isDeep && deepAbortController?.signal.aborted) {
+          // Timeout fired — decide: partial or full error
+          if (completedAgentCount < 3) {
+            throw new Error(
+              "Deep analysis timed out after 55 s — the Sonnet model is under high load. " +
+              "Please try again in a moment, or switch to \u26a1 Quick mode for an instant result."
+            );
+          }
+          isPartialResult = true;
+          // Fill in fallback for agents that didn't complete
+          agentOutputs = AGENTS.map((agent, i) => {
+            const r = settled[i];
+            if (r.status === "fulfilled") return r.value;
+            return { name: agent.name, label: agent.fallback, reasoning: "Did not complete within time limit.", fallback: true };
+          });
+        } else {
+          // All settled (fulfilled or rejected) within time — use fallback for any rejections
+          agentOutputs = AGENTS.map((agent, i) => {
+            const r = settled[i];
+            if (r.status === "fulfilled") return r.value;
+            return { name: agent.name, label: agent.fallback, reasoning: "Unable to determine from available information.", fallback: true };
+          });
         }
-        throw parallelErr;
       } finally {
         if (deepTimeoutId !== null) clearTimeout(deepTimeoutId);
       }
@@ -715,6 +733,13 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         keySignals,
         missingInfo,
         topMissingFields,
+        // Partial result fields (deep mode timeout fallback)
+        ...(isPartialResult ? {
+          partial: true,
+          agents_completed: completedAgentCount,
+          agents_total: AGENTS.length,
+          timeout_reason: "55s limit reached",
+        } : {}),
       };
     }),
 

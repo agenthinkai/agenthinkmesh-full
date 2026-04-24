@@ -3393,3 +3393,14 @@
 - [x] TASK 2: Re-run button label shows 🔬 when original depth was deep
 - [x] TASK 3: 55s AbortSignal on deep mode per-agent invokeLLM fetch calls
 - [x] TASK 3: User-friendly "Deep analysis timed out — try Quick mode" error surfaced
+
+## History Filter + Partial Fallback + Mode Indicator (Batch 3)
+- [x] TASK 1: 🔬 Deep filter chip in History tab (AND logic with existing filters, count badge)
+- [x] TASK 1: showDeepOnly state, filteredRowsUnsorted deep filter, chip hidden when 0 deep records
+- [x] TASK 2: Promise.allSettled replaces Promise.all in deep mode agent parallel run
+- [x] TASK 2: Partial result fallback — if ≥3 agents complete, return partial result with warning banner
+- [x] TASK 2: If <3 agents complete on timeout, throw user-friendly error (existing behaviour)
+- [x] TASK 2: ⚠️ Partial Result banner in RESULTS with agent count + Re-run Deep Analysis button
+- [x] TASK 3: Mode selector redesigned as card-style buttons with subtitle lines
+- [x] TASK 3: ⚡ Quick Analysis subtitle: ~10 seconds · 6 agents · Fast
+- [x] TASK 3: 🔬 Deep Analysis subtitle: ~30-60 seconds · 10 agents · Web research · ~$0.05
