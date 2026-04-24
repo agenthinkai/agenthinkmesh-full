@@ -127,6 +127,23 @@ function fmtTs(ts: number | null): string {
   });
 }
 
+
+/** Returns a human-readable status label with partial-run awareness. */
+function getRunStatusLabel(status: string, completed: number, totalIdeas: number): string {
+  if (status === "failed" && completed > 0) {
+    return `⚠️ Partial (${completed}/${totalIdeas})`;
+  }
+  if (status === "completed") return "✓ Complete";
+  if (status === "failed")    return "✗ Failed";
+  return STATUS_LABELS[status as RunStatus] ?? status;
+}
+/** Returns a CSS color for the run status badge. */
+function getRunStatusColor(status: string, completed: number): string {
+  if (status === "completed") return "#10b981";
+  if (status === "failed" && completed > 0) return "#f59e0b"; // amber for partial
+  if (status === "failed") return "#ef4444";
+  return "#f59e0b";
+}
 // ── Sub-components ────────────────────────────────────────────────────────────
 function ClassBadge({ cls }: { cls: Classification | null }) {
   if (!cls) return <span className="text-muted-foreground text-xs">—</span>;
@@ -453,9 +470,9 @@ export default function FounderFleet() {
               <div className="flex items-center gap-2">
                 <span
                   className="text-sm font-semibold"
-                  style={{ color: run.status === "completed" ? "#10b981" : run.status === "failed" ? "#ef4444" : "#f59e0b" }}
+                  style={{ color: getRunStatusColor(run.status, run.completed) }}
                 >
-                  {STATUS_LABELS[run.status]}
+                  {getRunStatusLabel(run.status, run.completed, run.totalIdeas)}
                 </span>
                 {/* Test run badge — shown for quick test runs, excluded from pattern engine seeding */}
                 {run.isTestRun && (
@@ -916,7 +933,12 @@ export default function FounderFleet() {
                           <tr key={r.id} className="border-b border-white/5">
                             <td className="py-2 text-xs text-foreground">{r.runDate}</td>
                             <td className="py-2 text-center">
-                              <span className="text-xs text-emerald-400">{r.status}</span>
+                              <span
+                                className="text-xs font-medium"
+                                style={{ color: getRunStatusColor(r.status, r.completed) }}
+                              >
+                                {getRunStatusLabel(r.status, r.completed, r.totalIdeas)}
+                              </span>
                             </td>
                             <td className="py-2 text-center text-xs text-muted-foreground">
                               {r.completed}/{r.totalIdeas}

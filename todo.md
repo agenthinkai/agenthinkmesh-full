@@ -3437,3 +3437,16 @@
 - [x] Wire last_run_score to fleet_config on success
 - [x] Fix trigger_gcc_full.ts to check actual DB status
 - [x] GCC run #60007 completed: 100/100 evals, avg=48.79
+
+## Global Fleet + Partial Badge + Cost Guard Bypass (Pasted_content_72/73)
+- [x] TASK 1: trigger_global_run.ts created (mirrors trigger_gcc_full.ts, gccMode=false, bypassCostGuard=true)
+- [x] TASK 1: trigger_global_run.ts updates fleet_config on success (runs_completed, runs_remaining, last_run_at, last_run_score)
+- [x] TASK 1: trigger_gcc_full.ts updated to also pass bypassCostGuard=true
+- [x] TASK 1: Global run #90002 completed — 100/100 evals, fleet_config updated (runs_completed=1, runs_remaining=29, last_run_score=47.66)
+- [x] TASK 2: getRunStatusLabel() helper added to FounderFleet.tsx — shows ⚠️ Partial (N/total) in amber for failed+completed>0
+- [x] TASK 2: getRunStatusColor() helper added — amber for partial, green for completed, red for failed
+- [x] TASK 2: Both run history dropdown and trend table use new helpers
+- [x] TASK 3: bypassCostGuard field added to RunCouncilOptions in councilEngine.ts
+- [x] TASK 3: Cost guard skipped when bypassCostGuard=true; logs Cost guard bypassed for fleet run [id]
+- [x] TASK 3: bypassCostGuard threaded through FleetOptions → runFleet → submitToMesh → runCouncil
+- [x] TASK 3: Fleet router start procedure passes bypassCostGuard=true for all fleet runs

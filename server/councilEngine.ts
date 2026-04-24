@@ -116,6 +116,7 @@ export interface RunCouncilOptions {
   userId?:      number;   // for token deduction (subscription billing)
   councilMode?: CouncilMode; // which set of 10 agents to use
   investorMode?: boolean; // when true, agents balance upside vs risk and answer "what would make this a winning investment?"
+  bypassCostGuard?: boolean; // when true, skip rate/spend guard (fleet runs only)
 }
 
 // ── Zod schema for each persona response ─────────────────────────────────────
@@ -839,6 +840,7 @@ export async function runCouncil(
     userId,
     councilMode = "gcc",
     investorMode = false,
+    bypassCostGuard = false,
   } = options;
 
   const activePersonas = getPersonasForMode(councilMode);
@@ -865,11 +867,13 @@ export async function runCouncil(
   const sessionId = crypto.randomUUID();
   const startMs   = Date.now();
 
-  // Cost guard (skip in tests)
-  if (!skipMemory) {
+  // Cost guard (skip in tests or when fleet bypass is active)
+  if (!skipMemory && !bypassCostGuard) {
     await checkCostGuard(clientId).catch((err) => {
       console.warn("[CouncilEngine] Cost guard check failed (non-fatal):", err);
     });
+  } else if (bypassCostGuard) {
+    console.log(`[CouncilEngine] Cost guard bypassed for fleet run ${taskId ?? clientId}`);
   }
 
   // Phase 3: Retrieve similar past decisions

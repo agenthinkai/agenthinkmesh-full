@@ -544,7 +544,7 @@ interface PitchEntry {
   idea: FounderAgentIdea;
 }
 
-async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConcurrent?: number; staggerMs?: number; gccMode?: boolean } = {}): Promise<void> {
+async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConcurrent?: number; staggerMs?: number; gccMode?: boolean; bypassCostGuard?: boolean } = {}): Promise<void> {
   const maxConcurrent = opts.maxConcurrent ?? MAX_CONCURRENT;
   const staggerMs = opts.staggerMs ?? STAGGER_MS;
   const db = await requireDb();
@@ -647,7 +647,7 @@ async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConc
         let succeeded = false;
         for (let attempt = 0; attempt <= BACKOFF_DELAYS.length; attempt++) {
           try {
-            councilResult = await runCouncil(pitchText, { councilMode: "global_vc" });
+            councilResult = await runCouncil(pitchText, { councilMode: "global_vc", bypassCostGuard: opts.bypassCostGuard ?? false });
             succeeded = true;
             break;
           } catch (retryErr) {
@@ -1085,11 +1085,13 @@ export interface FleetOptions {
   gccMode?: boolean;
   /** Test run flag: if true, skip simulated outcome assignment (keeps test data out of pattern engine) */
   isTestRun?: boolean;
+  /** Bypass cost guard for fleet runs — skips rate/spend check in councilEngine */
+  bypassCostGuard?: boolean;
 }
 // -- Main orchestration entry point ------------------------------------------
 
 export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<void> {
-  const { quickTest = false, isTestRun = false } = opts;
+  const { quickTest = false, isTestRun = false, bypassCostGuard = false } = opts;
   fleetState.set(runId, { paused: false, abort: false });
   const acc: CostAccumulator = { searches: 0, llmCalls: 0, tokens: 0, costUsd: 0 };
 
@@ -1117,7 +1119,9 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
 
     // Step 4: Submit to mesh
     await updateRunStatus(runId, "evaluating");
-    await submitToMesh(runId, acc, quickTest ? { maxConcurrent: 3, staggerMs: 1000, gccMode: opts.gccMode } : { gccMode: opts.gccMode });
+    await submitToMesh(runId, acc, quickTest
+      ? { maxConcurrent: 3, staggerMs: 1000, gccMode: opts.gccMode, bypassCostGuard }
+      : { gccMode: opts.gccMode, bypassCostGuard });
     await saveCosts(runId, acc);
 
     if (fleetState.get(runId)?.abort) {

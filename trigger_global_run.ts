@@ -1,6 +1,6 @@
 /**
- * trigger_gcc_full.ts — Trigger a full 100-idea GCC fleet run
- * Run: npx tsx trigger_gcc_full.ts
+ * trigger_global_run.ts — Trigger a full 100-idea Global fleet run
+ * Run: npx tsx trigger_global_run.ts
  *
  * Updates fleet_config counters ONLY on successful completion.
  * Checks actual DB status after runFleet returns (runFleet never throws — it
@@ -17,7 +17,7 @@ if (!db) { console.error("DB unavailable"); process.exit(1); }
 const today = new Date().toISOString().slice(0, 10);
 const [newRun] = await db.insert(founderAgentRuns).values({
   runDate: today,
-  fleetMode: "gcc",
+  fleetMode: "global",
   status: "pending",
   totalIdeas: 100,
   completed: 0,
@@ -31,11 +31,11 @@ const [newRun] = await db.insert(founderAgentRuns).values({
   createdAt: Date.now(),
 }).$returningId();
 const runId = newRun.id;
-console.log(`[GCC Full Trigger] Created GCC run #${runId} for ${today}`);
-console.log(`[GCC Full Trigger] Launching orchestration with gccMode=true, 100 ideas ...`);
+console.log(`[Global Full Trigger] Created global run #${runId} for ${today}`);
+console.log(`[Global Full Trigger] Launching orchestration with gccMode=false, 100 ideas ...`);
 
 // runFleet never throws — it catches internally and sets status="failed"
-await runFleet(runId, { gccMode: true, bypassCostGuard: true });
+await runFleet(runId, { gccMode: false, bypassCostGuard: true });
 
 // Check actual DB status to determine success
 const [runRow] = await db.select({ status: founderAgentRuns.status })
@@ -43,13 +43,13 @@ const [runRow] = await db.select({ status: founderAgentRuns.status })
   .where(eq(founderAgentRuns.id, runId));
 
 const success = runRow?.status === "completed";
-console.log(`[GCC Full Trigger] Run #${runId} final status: ${runRow?.status ?? "unknown"}`);
+console.log(`[Global Full Trigger] Run #${runId} final status: ${runRow?.status ?? "unknown"}`);
 
 if (success) {
-  // Update fleet_config counters for gcc — only on success
-  const gccConfigs = await db.select().from(fleetConfig).where(eq(fleetConfig.fleetMode, "gcc"));
-  if (gccConfigs.length > 0) {
-    const config = gccConfigs[0];
+  // Update fleet_config counters for global — only on success
+  const globalConfigs = await db.select().from(fleetConfig).where(eq(fleetConfig.fleetMode, "global"));
+  if (globalConfigs.length > 0) {
+    const config = globalConfigs[0];
     const newRemaining = Math.max(0, config.runsRemaining - 1);
     const newCompleted = config.runsCompleted + 1;
 
@@ -59,7 +59,7 @@ if (success) {
       .from(founderAgentEvaluations)
       .where(and(
         eq(founderAgentEvaluations.runId, runId),
-        eq(founderAgentEvaluations.fleetMode, "gcc")
+        eq(founderAgentEvaluations.fleetMode, "global")
       ));
     const avgScore = scoreRow?.avgScore ? parseFloat(String(scoreRow.avgScore)) : null;
 
@@ -73,10 +73,10 @@ if (success) {
       })
       .where(eq(fleetConfig.id, config.id));
 
-    console.log(`[GCC Full Trigger] fleet_config updated: runs_completed=${newCompleted}, runs_remaining=${newRemaining}, last_run_score=${avgScore?.toFixed(1) ?? "N/A"}`);
+    console.log(`[Global Full Trigger] fleet_config updated: runs_completed=${newCompleted}, runs_remaining=${newRemaining}, last_run_score=${avgScore?.toFixed(1) ?? "N/A"}`);
   }
 } else {
-  console.error(`[GCC Full Trigger] Run #${runId} did not complete — fleet_config NOT updated`);
+  console.error(`[Global Full Trigger] Run #${runId} did not complete — fleet_config NOT updated`);
 }
 
 process.exit(success ? 0 : 1);
