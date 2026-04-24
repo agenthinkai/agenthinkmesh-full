@@ -1033,11 +1033,13 @@ export interface FleetOptions {
   quickTest?: boolean;
   /** GCC Institutional mode: use GCC_FLEET_DOMAINS + GCC council personas + Shariah compliance scoring */
   gccMode?: boolean;
+  /** Test run flag: if true, skip simulated outcome assignment (keeps test data out of pattern engine) */
+  isTestRun?: boolean;
 }
 // -- Main orchestration entry point ------------------------------------------
 
 export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<void> {
-  const { quickTest = false } = opts;
+  const { quickTest = false, isTestRun = false } = opts;
   fleetState.set(runId, { paused: false, abort: false });
   const acc: CostAccumulator = { searches: 0, llmCalls: 0, tokens: 0, costUsd: 0 };
 
@@ -1076,6 +1078,13 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
     // Step 6b: Re-rank by percentile to guarantee 20/40/40 distribution
     await reRankByPercentile(runId);
     await saveCosts(runId, acc);
+    // Step 6c: Assign simulated outcomes — skipped for test runs (keeps test data out of pattern engine)
+    if (!isTestRun) {
+      await assignDecisionOutcomes(runId);
+      await saveCosts(runId, acc);
+    } else {
+      console.log(`[FleetOrchestrator] Skipping outcome assignment for test run ${runId}`);
+    }
     // Step 7: Extract insights
     await updateRunStatus(runId, "extracting");
     await extractInsights(runId, acc, opts.gccMode ? "gcc" : "global");

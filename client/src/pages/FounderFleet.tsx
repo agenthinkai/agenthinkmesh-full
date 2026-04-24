@@ -84,6 +84,7 @@ interface FleetRun {
   completedAt: number | null;
   createdAt: number | null;
   fleetMode: string | null; // "global" | "gcc"
+  isTestRun: boolean | null; // test runs excluded from pattern engine seeding
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -364,7 +365,10 @@ export default function FounderFleet() {
                 <SelectContent>
                   {runs.map((r) => (
                     <SelectItem key={r.id} value={r.id.toString()}>
-                      {r.fleetMode === "gcc" ? "🕌 " : ""}{r.runDate} — {STATUS_LABELS[r.status]}
+                      {r.isTestRun
+                        ? `🧪 ${r.fleetMode === "gcc" ? "GCC Quick Test" : "Global Quick Test"} · ${r.totalIdeas} pitches · ${r.runDate}`
+                        : `${r.fleetMode === "gcc" ? "🕌 GCC Run" : "🌐 Global Run"} · ${r.totalIdeas} pitches · ${r.runDate}`
+                      }
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -452,6 +456,12 @@ export default function FounderFleet() {
                 >
                   {STATUS_LABELS[run.status]}
                 </span>
+                {/* Test run badge — shown for quick test runs, excluded from pattern engine seeding */}
+                {run.isTestRun && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 border border-amber-400/30 font-medium">
+                    🧪 Test Run · {run.totalIdeas} pitches · {run.fleetMode === "gcc" ? "GCC Mode" : "Global Mode"}
+                  </span>
+                )}
                 {run.status === "evaluating" && (
                   <span className="text-xs text-muted-foreground">
                     {run.completed}/{run.totalIdeas} evaluated · {run.running} active
@@ -747,7 +757,15 @@ export default function FounderFleet() {
                         key={r.evalId}
                         className="border-b border-white/5 hover:bg-white/5 transition-colors"
                       >
-                        <td className="px-4 py-3 text-xs font-medium text-foreground">{r.founderName}</td>
+                        <td className="px-4 py-3 text-xs font-medium text-foreground">
+                          {r.founderName}
+                          {/* 🧪 badge on each row for test run results — muted, subtle */}
+                          {run?.isTestRun && (
+                            <span className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded bg-amber-400/10 text-amber-400/70 border border-amber-400/20 font-normal align-middle">
+                              🧪 test
+                            </span>
+                          )}
+                        </td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{r.domain}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{r.targetRegion}</td>
                         <td className="px-4 py-3 text-xs text-muted-foreground">{r.fundingStage}</td>
