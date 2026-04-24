@@ -3,6 +3,8 @@
  * Run: npx tsx trigger_gcc_full.ts
  *
  * Updates fleet_config counters ONLY on successful completion.
+ * Checks actual DB status after runFleet returns (runFleet never throws — it
+ * catches internally and sets status="failed", so we must query the DB to know).
  */
 import { getDb } from "./server/db";
 import { founderAgentRuns, fleetConfig, founderAgentEvaluations } from "./drizzle/schema";
@@ -32,14 +34,16 @@ const runId = newRun.id;
 console.log(`[GCC Full Trigger] Created GCC run #${runId} for ${today}`);
 console.log(`[GCC Full Trigger] Launching orchestration with gccMode=true, 100 ideas ...`);
 
-let success = false;
-try {
-  await runFleet(runId, { gccMode: true });
-  success = true;
-  console.log(`[GCC Full Trigger] Run #${runId} completed successfully.`);
-} catch (err) {
-  console.error(`[GCC Full Trigger] Run #${runId} failed:`, (err as Error).message);
-}
+// runFleet never throws — it catches internally and sets status="failed"
+await runFleet(runId, { gccMode: true });
+
+// Check actual DB status to determine success
+const [runRow] = await db.select({ status: founderAgentRuns.status })
+  .from(founderAgentRuns)
+  .where(eq(founderAgentRuns.id, runId));
+
+const success = runRow?.status === "completed";
+console.log(`[GCC Full Trigger] Run #${runId} final status: ${runRow?.status ?? "unknown"}`);
 
 if (success) {
   // Update fleet_config counters for gcc — only on success
@@ -71,6 +75,8 @@ if (success) {
 
     console.log(`[GCC Full Trigger] fleet_config updated: runs_completed=${newCompleted}, runs_remaining=${newRemaining}, last_run_score=${avgScore?.toFixed(1) ?? "N/A"}`);
   }
+} else {
+  console.error(`[GCC Full Trigger] Run #${runId} did not complete — fleet_config NOT updated`);
 }
 
 process.exit(success ? 0 : 1);

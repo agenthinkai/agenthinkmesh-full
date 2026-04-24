@@ -3423,3 +3423,17 @@
 - [x] TASK 3: fleetConfigs tRPC procedure added to founderFleet router
 - [x] TASK 3: FleetSchedulerCard component added to FounderFleet.tsx admin page
 - [x] TASK 4: First GCC run triggered (run #60003 quickTest completed; run #60005 got 85/100 evals before rate limit)
+
+## Rate Limit Backoff + GCC Full Run (Pasted_content_71.txt)
+- [x] TASK 1: Exponential backoff (60s/120s/180s, max 3 retries) on 412 rate limit errors in runResearch
+- [x] TASK 1: Exponential backoff in submitToMesh runCouncil call
+- [x] TASK 2: Wire last_run_score to fleet_config after every run completion (trigger_gcc_full.ts fix)
+- [x] TASK 2: Fix trigger_gcc_full.ts to check actual DB status (runFleet never throws)
+- [x] TASK 3: Full 100-idea GCC run #60007 completed — 100/100 evaluations, avg_score=48.79
+
+## Rate Limit Backoff + GCC Full Run
+- [x] Backoff in runResearch (60s/120s/180s, max 3 retries)
+- [x] Backoff in submitToMesh runCouncil call
+- [x] Wire last_run_score to fleet_config on success
+- [x] Fix trigger_gcc_full.ts to check actual DB status
+- [x] GCC run #60007 completed: 100/100 evals, avg=48.79

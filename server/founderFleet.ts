@@ -382,20 +382,47 @@ async function runResearch(
     for (const query of queries) {
       acc.searches++;
       // Use LLM to synthesise research (shared across all 20 agents in this domain)
-      const resp = await invokeLLM({
-        messages: [
-          {
-            role: "system",
-            content: "You are a concise market research analyst. Provide factual, specific answers in 2-3 sentences.",
-          },
-          {
-            role: "user",
-            content: `Provide a brief, factual answer to: "${query}". Be specific with numbers and names where possible.`,
-          },
-        ],
-        model: HAIKU,
-        max_tokens: 300,
-      });
+      // Rate limit backoff for research calls
+      let resp!: Awaited<ReturnType<typeof invokeLLM>>;
+      {
+        const BACKOFF_DELAYS_R = [60_000, 120_000, 180_000];
+        let lastErrR: unknown;
+        let succeededR = false;
+        for (let attemptR = 0; attemptR <= BACKOFF_DELAYS_R.length; attemptR++) {
+          try {
+            resp = await invokeLLM({
+              messages: [
+                {
+                  role: "system",
+                  content: "You are a concise market research analyst. Provide factual, specific answers in 2-3 sentences.",
+                },
+                {
+                  role: "user",
+                  content: `Provide a brief, factual answer to: "${query}". Be specific with numbers and names where possible.`,
+                },
+              ],
+              model: HAIKU,
+              max_tokens: 300,
+            });
+            succeededR = true;
+            break;
+          } catch (retryErrR) {
+            const msgR = String(retryErrR);
+            const isRateLimitR = msgR.includes("412") || msgR.toLowerCase().includes("rate limit");
+            if (isRateLimitR && attemptR < BACKOFF_DELAYS_R.length) {
+              const waitMsR = BACKOFF_DELAYS_R[attemptR];
+              console.warn(
+                `[FleetOrchestrator] Rate limit hit (research) — waiting ${waitMsR / 1000}s before retry (attempt ${attemptR + 1}/3)`
+              );
+              await sleep(waitMsR);
+              lastErrR = retryErrR;
+            } else {
+              throw retryErrR;
+            }
+          }
+        }
+        if (!succeededR) throw lastErrR;
+      }
       const usage = extractUsage(resp);
       addLlmCost(acc, HAIKU, usage.prompt_tokens || 200, usage.completion_tokens || 150);
       const summary = extractContent(resp);
@@ -612,7 +639,34 @@ async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConc
 
     const startMs = Date.now();
     try {
-      const councilResult = await runCouncil(pitchText, { councilMode: "global_vc" });
+      // Rate limit backoff: 60s → 120s → 180s, max 3 retries
+      let councilResult!: Awaited<ReturnType<typeof runCouncil>>;
+      {
+        const BACKOFF_DELAYS = [60_000, 120_000, 180_000];
+        let lastErr: unknown;
+        let succeeded = false;
+        for (let attempt = 0; attempt <= BACKOFF_DELAYS.length; attempt++) {
+          try {
+            councilResult = await runCouncil(pitchText, { councilMode: "global_vc" });
+            succeeded = true;
+            break;
+          } catch (retryErr) {
+            const msg = String(retryErr);
+            const isRateLimit = msg.includes("412") || msg.toLowerCase().includes("rate limit");
+            if (isRateLimit && attempt < BACKOFF_DELAYS.length) {
+              const waitMs = BACKOFF_DELAYS[attempt];
+              console.warn(
+                `[FleetOrchestrator] Rate limit hit — waiting ${waitMs / 1000}s before retry (attempt ${attempt + 1}/3)`
+              );
+              await sleep(waitMs);
+              lastErr = retryErr;
+            } else {
+              throw retryErr;
+            }
+          }
+        }
+        if (!succeeded) throw lastErr;
+      }
       const durationMs = Date.now() - startMs;
 
       // Map verdict → fleet classification
