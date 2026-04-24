@@ -51,9 +51,11 @@ export const fleetRouter = router({
 
       const runDate = new Date().toISOString().slice(0, 10);
       const isGcc = input?.gccMode ?? false;
+      const isTest = input?.quickTest ?? false;
       const result = await db.insert(founderAgentRuns).values({
         runDate,
         fleetMode: isGcc ? "gcc" : "global", // store mode for dashboard filtering
+        isTestRun: isTest, // test runs excluded from pattern engine seeding
         status: "pending",
         totalIdeas: 0,
         completed: 0,

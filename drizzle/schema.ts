@@ -1746,6 +1746,7 @@ export const founderAgentRuns = mysqlTable("founder_agent_runs", {
   id:              int("id").primaryKey().autoincrement(),
   runDate:         varchar("run_date", { length: 20 }).notNull(), // YYYY-MM-DD
   fleetMode:       varchar("fleet_mode", { length: 20 }).notNull().default("global"), // "global" | "gcc"
+  isTestRun:       boolean("is_test_run").notNull().default(false), // test runs excluded from pattern engine seeding
   status:          mysqlEnum("status", ["pending", "generating", "researching", "pitching", "evaluating", "extracting", "completed", "paused", "failed"]).notNull().default("pending"),
   totalIdeas:      int("total_ideas").notNull().default(0),
   completed:       int("completed").notNull().default(0),

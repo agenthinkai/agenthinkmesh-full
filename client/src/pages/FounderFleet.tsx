@@ -376,11 +376,11 @@ export default function FounderFleet() {
                 <Button
                   size="sm"
                   className="bg-amber-500 hover:bg-amber-600 text-white border-0"
-                  onClick={() => quickTestMut.mutate({ quickTest: true })}
+                  onClick={() => quickTestMut.mutate({ quickTest: true, gccMode })} // pass current mode so test run uses correct domain config
                   disabled={quickTestMut.isPending || startMut.isPending}
-                  title="Quick Test: 10 agents, ~5 min"
+                  title={gccMode ? "GCC Quick Test: 10 agents, Shariah + Vision 2030 scoring" : "Quick Test: 10 agents, ~5 min"}
                 >
-                  {quickTestMut.isPending ? "Starting…" : "⚡ Quick Test (10 agents)"}
+                  {quickTestMut.isPending ? "Starting…" : gccMode ? "⚡ GCC Quick Test (10)" : "⚡ Quick Test (10 agents)"}
                 </Button>
                 {/* GCC mode toggle — switches domain config and council personas */}
                 <button

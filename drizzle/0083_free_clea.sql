@@ -1,0 +1,1 @@
+ALTER TABLE `founder_agent_runs` ADD `is_test_run` boolean DEFAULT false NOT NULL;

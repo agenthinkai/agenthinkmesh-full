@@ -761,46 +761,66 @@ async function assignDecisionOutcomes(runId: number): Promise<void> {
 // ── Step 6b: Percentile-based re-ranking (guarantees 20/40/40 distribution) ──
 async function reRankByPercentile(runId: number): Promise<void> {
   const db = await requireDb();
+  // Join with ideas to get domain for diversity cap
   const rows = await db.select({
     id:             founderAgentEvaluations.id,
     executionScore: founderAgentEvaluations.executionScore,
     marketScore:    founderAgentEvaluations.marketScore,
+    domain:         founderAgentIdeas.domain,
   })
     .from(founderAgentEvaluations)
+    .innerJoin(founderAgentIdeas, eq(founderAgentEvaluations.ideaId, founderAgentIdeas.id))
     .where(and(
       eq(founderAgentEvaluations.runId, runId),
       eq(founderAgentEvaluations.status, "completed"),
     ));
-
   if (rows.length === 0) return;
-
-  // Sort by council_final DESC (ties broken by id ASC for determinism)
+  // Sort by composite score DESC (ties broken by id ASC for determinism)
   rows.sort((a, b) => {
     const aScore = (a.executionScore ?? 0) / 100 * 0.6 + (a.marketScore ?? 0) / 100 * 0.4;
     const bScore = (b.executionScore ?? 0) / 100 * 0.6 + (b.marketScore ?? 0) / 100 * 0.4;
     if (bScore !== aScore) return bScore - aScore;
     return (a.id ?? 0) - (b.id ?? 0);
   });
-
   const n = rows.length;
   const engageCutoff = Math.round(n * 0.20); // top 20%
   const watchCutoff  = Math.round(n * 0.60); // top 60% (20% ENGAGE + 40% WATCH)
-
+  // Domain diversity cap: max 4 ENGAGE per domain per run (resets each run, not cumulative)
+  const DOMAIN_ENGAGE_CAP = 4;
+  const domainEngageCount: Record<string, number> = {};
+  let capAppliedCount = 0;
   for (let i = 0; i < rows.length; i++) {
     const row = rows[i];
-    const rawClassification: "ENGAGE" | "WATCH" | "PASS" =
+    let rawClassification: "ENGAGE" | "WATCH" | "PASS" =
       i < engageCutoff ? "ENGAGE" :
       i < watchCutoff  ? "WATCH"  : "PASS";
+    // Apply domain diversity cap to ENGAGE verdicts
+    if (rawClassification === "ENGAGE") {
+      const domain = row.domain ?? "Unknown";
+      const currentCount = domainEngageCount[domain] ?? 0;
+      if (currentCount >= DOMAIN_ENGAGE_CAP) {
+        // Downgrade to WATCH — domain cap reached
+        console.log(`[FleetOrchestrator] [${domain}] ENGAGE cap reached — downgrading to WATCH (eval id=${row.id})`);
+        rawClassification = "WATCH";
+        capAppliedCount++;
+      } else {
+        domainEngageCount[domain] = currentCount + 1;
+      }
+    }
     const classificationScore = classificationToScore(rawClassification);
     const finalScore = computeFinalScore(
       classificationScore,
       row.executionScore ?? 0,
       row.marketScore    ?? 0,
     );
+    // If this was a cap downgrade, note it in the recommended action
+    const wasCapDowngraded = rawClassification === "WATCH" && i < engageCutoff;
     const recommendedAction =
       rawClassification === "ENGAGE" ? "Run full evaluation"
-      : rawClassification === "WATCH" ? "Request more information"
-      : "No action required";
+      : wasCapDowngraded
+        ? "Domain cap applied — strong deal but sector quota reached for this run"
+        : rawClassification === "WATCH" ? "Request more information"
+        : "No action required";
     await db.update(founderAgentEvaluations).set({
       classification:      rawClassification,
       classificationScore,
@@ -809,11 +829,12 @@ async function reRankByPercentile(runId: number): Promise<void> {
       updatedAt: Date.now(),
     }).where(eq(founderAgentEvaluations.id, row.id!));
   }
-  console.log(`[FleetOrchestrator] Re-ranked run ${runId}: ENGAGE=${engageCutoff}, WATCH=${watchCutoff - engageCutoff}, PASS=${n - watchCutoff}`);
+  const engageTotal = Object.values(domainEngageCount).reduce((a, b) => a + b, 0);
+  console.log(`[FleetOrchestrator] Re-ranked run ${runId}: ENGAGE=${engageTotal}, WATCH=${watchCutoff - engageCutoff + capAppliedCount}, PASS=${n - watchCutoff}${capAppliedCount > 0 ? ` (${capAppliedCount} domain cap downgrades)` : ""}`);
 }
 
 // ── Step 7: Pattern extraction (1 Sonnet call over 3-sentence summaries) ──────
-async function extractInsights(runId: number, acc: CostAccumulator): Promise<void> {
+async function extractInsights(runId: number, acc: CostAccumulator, fleetMode: "global" | "gcc" = "global"): Promise<void> {
   const db = await requireDb();
 
   interface EvalJoinRow {
@@ -852,11 +873,36 @@ async function extractInsights(runId: number, acc: CostAccumulator): Promise<voi
     strengths:      JSON.parse(e.eval.strengths ?? "[]") as string[],
   }));
 
-  const prompt = `You are analysing the results of 100 autonomous founder simulations evaluated by an investment council.
-
+  // ── Prompt selection: GCC variant vs global ─────────────────────────────
+  const gccPrompt = `You are analysing the results of ${evals.length} autonomous founder simulations evaluated by a GCC Institutional Investment Council.
 Dataset (${evals.length} evaluated pitches):
 ${JSON.stringify(dataForInsights, null, 0)}
+Return ONLY a JSON object with these exact keys:
+{
+  "highScorePatterns": [5 specific patterns found in pitches with finalScore >= 55, grounded in actual data, referencing GCC-specific strengths],
+  "lowScorePatterns": [5 specific patterns found in pitches with finalScore < 40, grounded in actual data, referencing GCC-specific weaknesses],
+  "failureReasons": [top 5 most common failure reasons across all runs, with frequency counts and GCC context],
+  "domainComparison": {
+    "Islamic Finance": {"avgScore": number, "count": number, "topConcern": string},
+    "GovTech": {"avgScore": number, "count": number, "topConcern": string},
+    "Energy Transition": {"avgScore": number, "count": number, "topConcern": string},
+    "Healthcare": {"avgScore": number, "count": number, "topConcern": string},
+    "Logistics": {"avgScore": number, "count": number, "topConcern": string}
+  },
+  "improvementSuggestions": [5 specific, actionable suggestions for the bottom 30% of ideas by score, framed for GCC institutional investors],
+  "idealPitchStructure": "A concise description of the pitch structure shared by pitches with finalScore >= 55 (top performers), highlighting GCC-specific success factors"
+}
+Evaluate each pitch across these GCC-specific dimensions:
+1. Vision 2030 / UAE Net Zero alignment — Strong / Partial / None
+2. Shariah revenue model (halal, riba-free, no prohibited activities) — Compliant / Requires Review / Non-compliant
+3. GCC regulatory readiness (SAMA, CBUAE, CMA Kuwait, DFSA, CBB — licence or sandbox pathway defined) — Clear / Unclear / Not addressed
+4. Family office / sovereign fund fit (KIA, QIA, Mubadala, PIF, ADQ appeal) — Strong fit / Possible / Unlikely
+5. Localisation depth (Arabic language support, local hiring mandate, GCC data residency) — Deep / Surface / None
+No generic statements. Every insight must be grounded in the actual data provided.`;
 
+  const globalPrompt = `You are analysing the results of 100 autonomous founder simulations evaluated by an investment council.
+Dataset (${evals.length} evaluated pitches):
+${JSON.stringify(dataForInsights, null, 0)}
 Return ONLY a JSON object with these exact keys:
 {
   "highScorePatterns": [5 specific patterns found in pitches with finalScore >= 55, grounded in actual data],
@@ -872,8 +918,10 @@ Return ONLY a JSON object with these exact keys:
   "improvementSuggestions": [5 specific, actionable suggestions for the bottom 30% of ideas by score],
   "idealPitchStructure": "A concise description of the pitch structure shared by pitches with finalScore >= 55 (top performers)"
 }
-
 No generic statements. Every insight must be grounded in the actual data provided.`;
+
+  // Select prompt based on fleet mode
+  const prompt = fleetMode === "gcc" ? gccPrompt : globalPrompt;
 
   // ── Haiku-first with Sonnet fallback ─────────────────────────────────────
   // Run Haiku first (94% cheaper). If ranking_stability check fails, re-run with Sonnet.
@@ -1030,7 +1078,7 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
     await saveCosts(runId, acc);
     // Step 7: Extract insights
     await updateRunStatus(runId, "extracting");
-    await extractInsights(runId, acc);
+    await extractInsights(runId, acc, opts.gccMode ? "gcc" : "global");
     await saveCosts(runId, acc);
 
     // Complete
