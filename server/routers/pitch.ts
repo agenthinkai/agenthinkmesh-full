@@ -395,13 +395,16 @@ export const pitchRouter = router({
       z.object({
         pitchText: z.string().min(10).max(20000),
         parentTriageId: z.number().int().positive().optional(),
+        depth: z.enum(["quick", "deep"]).default("quick"),
       })
     )
     .mutation(async ({ input, ctx }) => {
-      const truncated = input.pitchText.slice(0, 3000);
+      const isDeep = input.depth === "deep";
+      const truncated = input.pitchText.slice(0, isDeep ? 6000 : 3000);
 
-      // ── Agent definitions ─────────────────────────────────────────────────
-      type AgentName = "Market Signal" | "Business Model" | "Traction" | "Founder Signal" | "Risk" | "Completeness";
+      // ── Agent definitions ─────────────────────────────────────────────────────────────────────
+      type AgentName = "Market Signal" | "Business Model" | "Traction" | "Founder Signal" | "Risk" | "Completeness"
+        | "Macro Sentinel" | "Sector Specialist" | "Competitive Moat" | "Execution Risk";
       const AGENTS: Array<{
         name: AgentName;
         labels: string[];
@@ -458,14 +461,73 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         },
       ];
 
-      // ── Run all 6 agents in parallel ──────────────────────────────────────
+      // ── Deep-mode: web search + 4 extra agents ──────────────────────────────
+      if (isDeep) {
+        const fetchMarketContext = async (query: string): Promise<string> => {
+          const apiKey = process.env.NEWS_API_KEY;
+          if (!apiKey) return "";
+          try {
+            const q = encodeURIComponent(query);
+            const url = `https://gnews.io/api/v4/search?q=${q}&lang=en&max=4&apikey=${apiKey}`;
+            const r = await fetch(url);
+            if (!r.ok) return "";
+            const data = await r.json() as { articles?: Array<{ title: string; description: string; publishedAt: string; source: { name: string } }> };
+            if (!data.articles?.length) return "";
+            return data.articles.map((a) =>
+              `[${a.publishedAt?.slice(0, 10)} \u00b7 ${a.source?.name}] ${a.title}. ${a.description ?? ""}`
+            ).join("\n");
+          } catch { return ""; }
+        }
+        const searchQuery = truncated.slice(0, 200).replace(/\n/g, " ").trim();
+        const [marketNews, sectorNews] = await Promise.all([
+          fetchMarketContext(searchQuery + " market funding"),
+          fetchMarketContext(searchQuery + " sector trends"),
+        ]);
+        const webContext = [
+          marketNews ? `RECENT MARKET NEWS:\n${marketNews}` : "",
+          sectorNews ? `SECTOR TRENDS:\n${sectorNews}` : "",
+        ].filter(Boolean).join("\n\n");
+        if (webContext) {
+          const msAgent = AGENTS.find((a) => a.name === "Market Signal");
+          if (msAgent) msAgent.systemPrompt += `\n\n${webContext}`;
+        }
+        const deepAgents: typeof AGENTS = [
+          {
+            name: "Macro Sentinel" as AgentName,
+            labels: ["favourable", "neutral", "adverse"],
+            fallback: "neutral",
+            systemPrompt: `You are a macroeconomic analyst. Evaluate the pitch in the context of current macro conditions and return ONLY valid JSON.\nRules: (1) cite a specific macro factor that helps or hurts this deal; (2) reasoning MUST be \u226425 words.\nFormat: {"label": "favourable"|"neutral"|"adverse", "reasoning": "<specific macro factor, \u226425 words>"}${webContext ? `\n\n${webContext}` : ""}`,
+          },
+          {
+            name: "Sector Specialist" as AgentName,
+            labels: ["high-growth", "stable", "declining"],
+            fallback: "stable",
+            systemPrompt: `You are a sector specialist. Evaluate the pitch's sector/industry trajectory and return ONLY valid JSON.\nRules: (1) name the specific sector and cite a growth signal or headwind; (2) reasoning MUST be \u226425 words.\nFormat: {"label": "high-growth"|"stable"|"declining", "reasoning": "<sector name + specific signal, \u226425 words>"}${webContext ? `\n\n${webContext}` : ""}`,
+          },
+          {
+            name: "Competitive Moat" as AgentName,
+            labels: ["strong", "moderate", "weak"],
+            fallback: "moderate",
+            systemPrompt: `You are a competitive moat analyst. Evaluate the defensibility of this business and return ONLY valid JSON.\nRules: (1) identify the specific moat type (network effects, IP, switching costs, cost advantage, brand) or lack thereof; (2) reasoning MUST be \u226425 words.\nFormat: {"label": "strong"|"moderate"|"weak", "reasoning": "<moat type + evidence, \u226425 words>"}`,
+          },
+          {
+            name: "Execution Risk" as AgentName,
+            labels: ["low", "medium", "high"],
+            fallback: "medium",
+            systemPrompt: `You are an execution risk analyst. Evaluate the team's ability to execute and return ONLY valid JSON.\nRules: (1) cite specific evidence of execution capability or gap (team size, prior experience, advisory board, roadmap clarity); (2) reasoning MUST be \u226425 words.\nFormat: {"label": "low"|"medium"|"high", "reasoning": "<execution signal from pitch, \u226425 words>"}`,
+          },
+        ];
+        AGENTS.push(...deepAgents);
+      }
+      // ── Run all agents in parallel ──────────────────────────────────────
       type AgentResult = {
         name: AgentName;
         label: string;
         reasoning: string;
         fallback: boolean;
       };
-
+      const MODEL = isDeep ? "claude-sonnet-4-5" : "claude-haiku-3-5";
+      const MAX_TOKENS = isDeep ? 300 : 120;
       const agentOutputs: AgentResult[] = await Promise.all(
         AGENTS.map(async (agent) => {
           try {
@@ -474,7 +536,8 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
                 { role: "system", content: agent.systemPrompt },
                 { role: "user", content: `Pitch:\n${truncated}` },
               ],
-              max_tokens: 120,
+              max_tokens: MAX_TOKENS,
+              model: MODEL,
             });
             const contentRaw = res?.choices?.[0]?.message?.content;
             const raw = (typeof contentRaw === "string" ? contentRaw : "").trim();
@@ -503,15 +566,19 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
           }
         })
       );
-
-      // ── Deterministic scoring ─────────────────────────────────────────────
-      const WEIGHTS: Record<AgentName, number> = {
+      // ── Deterministic scoring ──────────────────────────────────────────────────────────────────
+      const WEIGHTS: Record<string, number> = {
         "Market Signal": 20,
         "Business Model": 18,
         "Traction": 22,
         "Founder Signal": 20,
         "Risk": 15,
         "Completeness": 5,
+        // Deep-mode only
+        "Macro Sentinel": 12,
+        "Sector Specialist": 14,
+        "Competitive Moat": 12,
+        "Execution Risk": 10,
       };
       const LABEL_SCORES: Record<string, number> = {
         // Market Signal
@@ -526,20 +593,27 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         low: 100, medium: 50, high: 0,
         // Completeness
         complete: 100, partial: 50, insufficient: 0,
+        // Deep agents
+        favourable: 100, adverse: 0,
+        "high-growth": 100, stable: 60, declining: 10,
+        moderate: 60,
       };
 
       const byName = Object.fromEntries(
         agentOutputs.map((r) => [r.name, r])
-      ) as Record<AgentName, AgentResult>;
+      ) as Record<string, AgentResult>;
 
       let rawScore = 0;
-      for (const agent of AGENTS) {
-        const labelScore = LABEL_SCORES[byName[agent.name].label] ?? 50;
-        rawScore += (labelScore * WEIGHTS[agent.name]) / 100;
+      let totalWeight = 0;
+      for (const r of agentOutputs) {
+        const w = WEIGHTS[r.name] ?? 0;
+        const labelScore = LABEL_SCORES[r.label] ?? 50;
+        rawScore += (labelScore * w) / 100;
+        totalWeight += w;
       }
-      const score = Math.round(rawScore);
-
-      // ── Classification ────────────────────────────────────────────────────
+      // Normalise to 100-point scale regardless of agent count
+      const score = totalWeight > 0 ? Math.round((rawScore / totalWeight) * 100) : 0;
+      // ── Classification ──────────────────────────────────────────────────────────────────
       const completenessLabel = byName["Completeness"].label;
       const riskLabel = byName["Risk"].label;
       const founderLabel = byName["Founder Signal"].label;

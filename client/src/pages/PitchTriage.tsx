@@ -29,7 +29,11 @@ type AgentName =
   | "Traction"
   | "Founder Signal"
   | "Risk"
-  | "Completeness";
+  | "Completeness"
+  | "Macro Sentinel"
+  | "Sector Specialist"
+  | "Competitive Moat"
+  | "Execution Risk";
 
 interface AgentOutput {
   name: AgentName;
@@ -61,16 +65,21 @@ function labelColor(label: string): { bg: string; text: string } {
 }
 
 // ── Agent display order + icons ───────────────────────────────────────────────
-const AGENT_META: Record<AgentName, { icon: string; weight: number }> = {
+type AnalysisDepth = "quick" | "deep";
+const AGENT_META: Record<AgentName, { icon: string; weight: number; webSearch?: boolean }> = {
   Traction: { icon: "📈", weight: 22 },
-  "Market Signal": { icon: "🌐", weight: 20 },
+  "Market Signal": { icon: "🌐", weight: 20, webSearch: true },
   "Founder Signal": { icon: "👤", weight: 20 },
   "Business Model": { icon: "💡", weight: 18 },
   Risk: { icon: "⚠️", weight: 15 },
   Completeness: { icon: "📋", weight: 5 },
+  // Deep-mode only agents
+  "Macro Sentinel": { icon: "🏦", weight: 12, webSearch: true },
+  "Sector Specialist": { icon: "🔭", weight: 14, webSearch: true },
+  "Competitive Moat": { icon: "🛡️", weight: 12 },
+  "Execution Risk": { icon: "⚙️", weight: 10 },
 };
-
-const AGENT_ORDER: AgentName[] = [
+const AGENT_ORDER_QUICK: AgentName[] = [
   "Traction",
   "Market Signal",
   "Founder Signal",
@@ -78,9 +87,23 @@ const AGENT_ORDER: AgentName[] = [
   "Risk",
   "Completeness",
 ];
+const AGENT_ORDER_DEEP: AgentName[] = [
+  "Traction",
+  "Market Signal",
+  "Founder Signal",
+  "Business Model",
+  "Risk",
+  "Completeness",
+  "Macro Sentinel",
+  "Sector Specialist",
+  "Competitive Moat",
+  "Execution Risk",
+];
+// Backward-compat alias — always points to quick order (used in HistoryTab etc.)
+const AGENT_ORDER: AgentName[] = AGENT_ORDER_QUICK;
 
-// ── Loading agent names (staggered reveal) ────────────────────────────────────
-const LOADING_STEPS = [
+// ── Loading agent names (staggered reveal) ────────────────────────────────────────────
+const LOADING_STEPS_QUICK = [
   "Initialising decision agents…",
   "Analysing traction signals…",
   "Scanning market landscape…",
@@ -90,6 +113,21 @@ const LOADING_STEPS = [
   "Checking pitch completeness…",
   "Computing decision score…",
 ];
+const LOADING_STEPS_DEEP = [
+  "Initialising 10-agent deep analysis…",
+  "Fetching live market data…",
+  "Analysing traction signals…",
+  "Scanning market landscape…",
+  "Evaluating founder profile…",
+  "Reviewing business model…",
+  "Assessing risk factors…",
+  "Checking pitch completeness…",
+  "Running macro & sector analysis…",
+  "Mapping competitive moat…",
+  "Evaluating execution risk…",
+  "Synthesising deep decision score…",
+];
+const LOADING_STEPS = LOADING_STEPS_QUICK;
 
 // ── Kuwait timezone formatter───────────────────────────────────────────────────────────────
 function fmtKuwait(date: Date | string | null | undefined): string {
@@ -137,6 +175,13 @@ export default function PitchTriage() {
   const markEscalated = trpc.pitch.markEscalated.useMutation();
   const updateStage = trpc.pitch.updateStage.useMutation();
   const [movedToDiligence, setMovedToDiligence] = useState(false);
+  // Analysis depth — persisted in localStorage
+  const [analysisDepth, setAnalysisDepth] = useState<AnalysisDepth>(() => {
+    try { return (localStorage.getItem("atm_triage_depth") as AnalysisDepth) ?? "quick"; } catch { return "quick"; }
+  });
+  const [triageStartTime, setTriageStartTime] = useState<number | null>(null);
+  const [triageElapsedSec, setTriageElapsedSec] = useState<number | null>(null);
+  const [lastDepthUsed, setLastDepthUsed] = useState<AnalysisDepth>("quick");
   // Expansion state for per-deal pattern insight on result screen
   const [resultPatternExpanded, setResultPatternExpanded] = useState(false);
   const [resultCopyState, setResultCopyState] = useState<"idle" | "copied">("idle");
@@ -195,6 +240,7 @@ export default function PitchTriage() {
       const d = data as TriageResult & { id?: number };
       setResult(d);
       if (d.id) setSavedTriageId(d.id);
+      setTriageElapsedSec(triageStartTime ? Math.round((Date.now() - triageStartTime) / 1000) : null);
       setPageState("RESULTS");
     },
     onError: (err) => {
@@ -227,20 +273,24 @@ export default function PitchTriage() {
     if (pageState !== "LOADING") return;
     setLoadingStep(0);
     setCompletedAgents(new Set());
-
+    const activeOrder = lastDepthUsed === "deep" ? AGENT_ORDER_DEEP : AGENT_ORDER_QUICK;
+    const activeSteps = lastDepthUsed === "deep" ? LOADING_STEPS_DEEP : LOADING_STEPS_QUICK;
+    const intervalMs = lastDepthUsed === "deep" ? 1200 : 600;
     let step = 0;
     loadingTimerRef.current = setInterval(() => {
       step += 1;
       setLoadingStep(step);
-      // Reveal agents one by one starting at step 1
-      if (step >= 1 && step <= AGENT_ORDER.length) {
-        const agentName = AGENT_ORDER[step - 1];
+      // Reveal agents one by one (deep: offset by 2 for "init" + "fetching" steps)
+      const agentOffset = lastDepthUsed === "deep" ? 2 : 1;
+      const agentIdx = step - agentOffset;
+      if (agentIdx >= 0 && agentIdx < activeOrder.length) {
+        const agentName = activeOrder[agentIdx];
         setCompletedAgents((prev) => { const next = new Set(prev); next.add(agentName); return next; });
       }
-      if (step >= LOADING_STEPS.length - 1) {
+      if (step >= activeSteps.length - 1) {
         if (loadingTimerRef.current) clearInterval(loadingTimerRef.current);
       }
-    }, 600);
+    }, intervalMs);
 
     return () => {
       if (loadingTimerRef.current) clearInterval(loadingTimerRef.current);
@@ -251,7 +301,10 @@ export default function PitchTriage() {
     if (!pitchText.trim() || pitchText.trim().length < 10) return;
     setError(null);
     setPageState("LOADING");
-    triage.mutate({ pitchText: pitchText.trim(), parentTriageId: pendingParentId ?? undefined });
+    setTriageStartTime(Date.now());
+    setTriageElapsedSec(null);
+    setLastDepthUsed(analysisDepth);
+    triage.mutate({ pitchText: pitchText.trim(), parentTriageId: pendingParentId ?? undefined, depth: analysisDepth });
     setPendingParentId(null);
   }
 
@@ -540,33 +593,63 @@ export default function PitchTriage() {
                   marginTop: 16,
                 }}
               >
-                <span style={{ color: MUTED, fontSize: 12 }}>
-                  {pitchText.length.toLocaleString()} chars
-                  {pitchText.length > 3000 && (
-                    <span style={{ color: AMBER, marginLeft: 6 }}>
-                      (first 3,000 chars used)
-                    </span>
+                {/* Mode selector */}
+                <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                  {(["quick", "deep"] as AnalysisDepth[]).map((d) => (
+                    <button
+                      key={d}
+                      onClick={() => {
+                        setAnalysisDepth(d);
+                        try { localStorage.setItem("atm_triage_depth", d); } catch {}
+                      }}
+                      style={{
+                        padding: "5px 14px",
+                        borderRadius: 20,
+                        border: analysisDepth === d ? `1.5px solid ${ACCENT}` : `1px solid ${BORDER}`,
+                        background: analysisDepth === d ? `rgba(124,58,237,0.18)` : "transparent",
+                        color: analysisDepth === d ? "#c4b5fd" : MUTED,
+                        fontSize: 12,
+                        fontWeight: analysisDepth === d ? 700 : 400,
+                        cursor: "pointer",
+                        transition: "all 0.15s",
+                      }}
+                    >
+                      {d === "quick" ? "⚡ Quick" : "🔬 Deep"}
+                    </button>
+                  ))}
+                  {analysisDepth === "deep" && (
+                    <span style={{ color: MUTED, fontSize: 11, marginLeft: 4 }}>10 agents · ~30s</span>
                   )}
-                </span>
-                <Button
-                  onClick={handleSubmit}
-                  disabled={pitchText.trim().length < 10}
-                  style={{
-                    background: pitchText.trim().length >= 10
-                      ? `linear-gradient(135deg, ${ACCENT}, #a855f7)`
-                      : "rgba(255,255,255,0.08)",
-                    color: pitchText.trim().length >= 10 ? "#fff" : MUTED,
-                    border: "none",
-                    borderRadius: 8,
-                    padding: "10px 24px",
-                    fontWeight: 700,
-                    fontSize: 14,
-                    cursor: pitchText.trim().length >= 10 ? "pointer" : "not-allowed",
-                    transition: "opacity 0.2s",
-                  }}
-                >
-                  ⚡ Get Decision
-                </Button>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <span style={{ color: MUTED, fontSize: 12 }}>
+                    {pitchText.length.toLocaleString()} chars
+                    {pitchText.length > (analysisDepth === "deep" ? 6000 : 3000) && (
+                      <span style={{ color: AMBER, marginLeft: 6 }}>
+                        (first {analysisDepth === "deep" ? "6,000" : "3,000"} chars used)
+                      </span>
+                    )}
+                  </span>
+                  <Button
+                    onClick={handleSubmit}
+                    disabled={pitchText.trim().length < 10}
+                    style={{
+                      background: pitchText.trim().length >= 10
+                        ? `linear-gradient(135deg, ${ACCENT}, #a855f7)`
+                        : "rgba(255,255,255,0.08)",
+                      color: pitchText.trim().length >= 10 ? "#fff" : MUTED,
+                      border: "none",
+                      borderRadius: 8,
+                      padding: "10px 24px",
+                      fontWeight: 700,
+                      fontSize: 14,
+                      cursor: pitchText.trim().length >= 10 ? "pointer" : "not-allowed",
+                      transition: "opacity 0.2s",
+                    }}
+                  >
+                    {analysisDepth === "deep" ? "🔬 Deep Analysis" : "⚡ Get Decision"}
+                  </Button>
+                </div>
               </div>
 
               {/* Agent preview chips */}
@@ -578,10 +661,10 @@ export default function PitchTriage() {
                 }}
               >
                 <p style={{ color: MUTED, fontSize: 11, marginBottom: 10, letterSpacing: 0.5 }}>
-                  6 AGENTS WILL EVALUATE IN PARALLEL
+                  {analysisDepth === "deep" ? "10 AGENTS WILL EVALUATE IN PARALLEL" : "6 AGENTS WILL EVALUATE IN PARALLEL"}
                 </p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
-                  {AGENT_ORDER.map((name) => (
+                  {(analysisDepth === "deep" ? AGENT_ORDER_DEEP : AGENT_ORDER_QUICK).map((name) => (
                     <div
                       key={name}
                       style={{
@@ -714,11 +797,32 @@ export default function PitchTriage() {
                 }}
               >
                 <div>
-                  <div style={{ fontSize: 11, color: MUTED, fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase" as const, marginBottom: 4 }}>
-                    Decision Memo
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                    <div style={{ fontSize: 11, color: MUTED, fontWeight: 600, letterSpacing: 0.8, textTransform: "uppercase" as const }}>
+                      Decision Memo
+                    </div>
+                    {lastDepthUsed === "deep" && (
+                      <span style={{
+                        background: "rgba(124,58,237,0.2)",
+                        border: "1px solid rgba(124,58,237,0.5)",
+                        color: "#c4b5fd",
+                        fontSize: 10,
+                        fontWeight: 700,
+                        padding: "2px 8px",
+                        borderRadius: 20,
+                        letterSpacing: 0.5,
+                      }}>
+                        🔬 DEEP ANALYSIS
+                      </span>
+                    )}
                   </div>
-                  <div style={{ fontSize: 11, color: MUTED }}>
-                    {fmtKuwait(new Date())}
+                  <div style={{ fontSize: 11, color: MUTED, display: "flex", gap: 8, alignItems: "center" }}>
+                    <span>{fmtKuwait(new Date())}</span>
+                    {lastDepthUsed === "deep" && (
+                      <span style={{ color: MUTED }}>
+                        · {lastDepthUsed === "deep" ? "10" : "6"} agents{triageElapsedSec !== null ? ` · ${triageElapsedSec}s` : ""}
+                      </span>
+                    )}
                   </div>
                 </div>
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" as const }}>
@@ -853,6 +957,21 @@ export default function PitchTriage() {
                       >
                         CONFIDENCE: {result.confidence}
                       </span>
+                      {lastDepthUsed === "deep" && (
+                        <span
+                          style={{
+                            fontSize: 10,
+                            color: "#a78bfa",
+                            background: "rgba(124,58,237,0.10)",
+                            borderRadius: 4,
+                            padding: "2px 7px",
+                            fontWeight: 600,
+                            letterSpacing: 0.5,
+                          }}
+                        >
+                          🌐 WEB-AUGMENTED
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -946,7 +1065,7 @@ export default function PitchTriage() {
                   gap: 12,
                 }}
               >
-                {AGENT_ORDER.map((name) => {
+                {(lastDepthUsed === "deep" ? AGENT_ORDER_DEEP : AGENT_ORDER_QUICK).map((name) => {
                   const agent = result.agentOutputs.find((a) => a.name === name);
                   if (!agent) return null;
                   const { bg, text } = labelColor(agent.label);
@@ -1035,7 +1154,10 @@ export default function PitchTriage() {
                           color: MUTED,
                         }}
                       >
-                        weight: {AGENT_META[name].weight}%
+                        weight: {AGENT_META[name as AgentName]?.weight ?? 0}%
+                        {lastDepthUsed === "deep" && AGENT_META[name as AgentName]?.webSearch && (
+                          <span style={{ marginLeft: 6, color: "#60a5fa", fontSize: 9 }}>🌐 web-augmented</span>
+                        )}
                       </div>
                     </div>
                   );

@@ -3370,3 +3370,16 @@
 - [x] TASK 5: GCC summary panel (avg score, top concern, Shariah rate, top domain)
 - [x] TASK 6: Export GCC Results button → gcc-fleet-results-YYYY-MM-DD.csv
 - [x] TASK 7: Assign simulated outcomes (invested/watch/passed) based on score thresholds
+
+## Deep Analysis Mode (Pasted_content_69.txt)
+- [x] TASK 1: Mode selector UI (⚡ Quick / 🔬 Deep) on triage input form with localStorage persistence
+- [x] TASK 1: Progress indicator for deep mode showing agent names as each completes
+- [x] TASK 2: Backend depth param in pitch.triage procedure (z.enum quick/deep)
+- [x] TASK 2: Deep mode — Sonnet model, max_tokens=1500, extended reasoning prompt
+- [x] TASK 2: Deep mode — 4 additional agents (Macro Sentinel, Sector Specialist, Competitive Moat, Execution Risk)
+- [x] TASK 2: Deep mode — web search (gnews) for Market Signal, Macro Sentinel, Sector Specialist
+- [ ] TASK 3: 🔬 Deep Analysis badge in result header
+- [x] TASK 3: "10 agents · [time]s" count in result header
+- [x] TASK 3: Full (non-truncated) agent findings in deep mode
+- [ ] TASK 3: 🌐 indicator for agents that used web research
+- [x] TASK 3: "Key Differences from Quick Analysis" note when same deal was previously quick-triaged
