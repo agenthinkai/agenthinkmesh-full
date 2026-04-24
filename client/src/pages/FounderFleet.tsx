@@ -290,6 +290,16 @@ export default function FounderFleet() {
     onError: (e) => toast.error(e.message),
   });
 
+  const resumeRunMut = trpc.fleet.resumeRun.useMutation({
+    onSuccess: (data) => {
+      setActiveRunId(data.runId);
+      runsQuery.refetch();
+      statusQuery.refetch();
+      toast.success(`▶ Resuming run #${data.runId} — ${data.queued} evaluations re-queued`);
+    },
+    onError: (e) => toast.error(e.message),
+  });
+
   // ── Auto-scroll card feed ──────────────────────────────────────────────────
   useEffect(() => {
     if (cardFeedRef.current) {
@@ -933,12 +943,24 @@ export default function FounderFleet() {
                           <tr key={r.id} className="border-b border-white/5">
                             <td className="py-2 text-xs text-foreground">{r.runDate}</td>
                             <td className="py-2 text-center">
-                              <span
-                                className="text-xs font-medium"
-                                style={{ color: getRunStatusColor(r.status, r.completed) }}
-                              >
-                                {getRunStatusLabel(r.status, r.completed, r.totalIdeas)}
-                              </span>
+                              <div className="inline-flex items-center gap-2">
+                                <span
+                                  className="text-xs font-medium"
+                                  style={{ color: getRunStatusColor(r.status, r.completed) }}
+                                >
+                                  {getRunStatusLabel(r.status, r.completed, r.totalIdeas)}
+                                </span>
+                                {r.status === "failed" && r.completed > 0 && (
+                                  <button
+                                    onClick={() => resumeRunMut.mutate({ runId: r.id })}
+                                    disabled={resumeRunMut.isPending}
+                                    className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-xs font-medium bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors disabled:opacity-50"
+                                    title={`Resume run #${r.id} — re-queue ${r.totalIdeas - r.completed} missing evaluations`}
+                                  >
+                                    ▶ Resume
+                                  </button>
+                                )}
+                              </div>
                             </td>
                             <td className="py-2 text-center text-xs text-muted-foreground">
                               {r.completed}/{r.totalIdeas}
@@ -1124,6 +1146,7 @@ function InsightSection({ title, items, color }: { title: string; items: string[
 function FleetSchedulerCard() {
   const { data, isLoading } = trpc.fleet.fleetConfigs.useQuery(undefined, { refetchInterval: 30000 });
   const runsQuery2 = trpc.fleet.runs.useQuery(undefined, { refetchInterval: 30000 });
+  const evalStatsQuery = trpc.fleet.evalStats.useQuery(undefined, { refetchInterval: 60000 });
   const [copied, setCopied] = useState(false);
 
   const scoringModeLabel = (mode: string) => {
@@ -1140,7 +1163,11 @@ function FleetSchedulerCard() {
     lines.push("-- Q1: SELECT fleet_mode, COUNT(*) as total, AVG(final_score) as avg_score");
     lines.push("-- FROM founder_agent_evaluations GROUP BY fleet_mode;");
     lines.push("fleet_mode | total | avg_score");
-    lines.push("(live data not available in UI — run query directly)");
+    const evalRows = evalStatsQuery.data?.byMode ?? [];
+    evalRows.forEach(r => {
+      lines.push(`${r.fleetMode.padEnd(10)} | ${String(r.total).padEnd(5)} | ${r.avgScore !== null ? r.avgScore.toFixed(4) : "null"}`);
+    });
+    lines.push(`Total      | ${evalStatsQuery.data?.totalEvaluations ?? "?"} |`);
     lines.push("");
 
     lines.push("-- Q2: SELECT id, fleet_mode, scoring_mode, runs_completed, runs_remaining, last_run_at, last_run_score");
@@ -1162,7 +1189,7 @@ function FleetSchedulerCard() {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     });
-  }, [data, runsQuery2.data]);
+  }, [data, runsQuery2.data, evalStatsQuery.data]);
 
   return (
     <div className="mt-8 rounded-xl border border-white/10 bg-white/5 p-6">
@@ -1245,6 +1272,48 @@ function FleetSchedulerCard() {
           </table>
         </div>
       )}
+
+      {/* Eval Stats (Q1) */}
+      <div className="mt-5 pt-5 border-t border-white/10">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Evaluations by Mode</span>
+          {evalStatsQuery.isLoading && <span className="text-xs text-slate-600">Loading…</span>}
+          {evalStatsQuery.data && (
+            <span className="text-xs text-slate-600 ml-auto">Total: {evalStatsQuery.data.totalEvaluations.toLocaleString()}</span>
+          )}
+        </div>
+        {evalStatsQuery.data && evalStatsQuery.data.byMode.length > 0 ? (
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/10 text-left text-xs text-slate-500">
+                <th className="pb-2 pr-4">Mode</th>
+                <th className="pb-2 pr-4 text-right">Evaluations</th>
+                <th className="pb-2 text-right">Avg Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {evalStatsQuery.data.byMode.map(r => (
+                <tr key={r.fleetMode} className="border-b border-white/5 last:border-0">
+                  <td className="py-2 pr-4 font-mono text-emerald-400 uppercase text-xs">{r.fleetMode}</td>
+                  <td className="py-2 pr-4 text-right text-slate-300">{r.total.toLocaleString()}</td>
+                  <td className="py-2 text-right">
+                    {r.avgScore !== null
+                      ? <span className="font-mono text-sky-400">{r.avgScore.toFixed(2)}</span>
+                      : <span className="text-slate-600">—</span>}
+                  </td>
+                </tr>
+              ))}
+              <tr className="border-t border-white/10">
+                <td className="py-2 pr-4 text-xs text-slate-500 font-semibold">Total</td>
+                <td className="py-2 pr-4 text-right text-slate-300 font-semibold">{evalStatsQuery.data.totalEvaluations.toLocaleString()}</td>
+                <td />
+              </tr>
+            </tbody>
+          </table>
+        ) : !evalStatsQuery.isLoading ? (
+          <div className="text-slate-600 text-xs">No evaluation data yet.</div>
+        ) : null}
+      </div>
     </div>
   );
 }

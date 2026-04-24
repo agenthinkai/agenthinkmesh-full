@@ -3450,3 +3450,12 @@
 - [x] TASK 3: Cost guard skipped when bypassCostGuard=true; logs Cost guard bypassed for fleet run [id]
 - [x] TASK 3: bypassCostGuard threaded through FleetOptions → runFleet → submitToMesh → runCouncil
 - [x] TASK 3: Fleet router start procedure passes bypassCostGuard=true for all fleet runs
+
+## evalStats + Stuck Cleanup + Resume Partial Run (Pasted_content_74.txt)
+- [x] TASK 1: fleet.evalStats tRPC query (admin-only, GROUP BY fleet_mode)
+- [x] TASK 1: Wire evalStats below fleet_config table in FleetSchedulerCard
+- [x] TASK 1: Include evalStats in Copy Results button output
+- [x] TASK 2: Pre-run stuck eval cleanup in trigger_gcc_full.ts
+- [x] TASK 2: Pre-run stuck eval cleanup in trigger_global_run.ts
+- [x] TASK 3: fleet.resumeRun tRPC mutation (input: runId, bypassCostGuard=true)
+- [x] TASK 3: Resume button next to Partial badge in run history table

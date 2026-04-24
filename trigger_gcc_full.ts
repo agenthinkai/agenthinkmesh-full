@@ -9,7 +9,7 @@
 import { getDb } from "./server/db";
 import { founderAgentRuns, fleetConfig, founderAgentEvaluations } from "./drizzle/schema";
 import { runFleet } from "./server/founderFleet";
-import { eq, avg, and } from "drizzle-orm";
+import { eq, avg, and, sql } from "drizzle-orm";
 
 const db = await getDb();
 if (!db) { console.error("DB unavailable"); process.exit(1); }
@@ -32,8 +32,23 @@ const [newRun] = await db.insert(founderAgentRuns).values({
 }).$returningId();
 const runId = newRun.id;
 console.log(`[GCC Full Trigger] Created GCC run #${runId} for ${today}`);
-console.log(`[GCC Full Trigger] Launching orchestration with gccMode=true, 100 ideas ...`);
 
+// ── Pre-run cleanup: mark orphaned 'running' evals (>10 min old) as failed ──
+const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+const cleanupResult = await db.update(founderAgentEvaluations)
+  .set({
+    status: "failed",
+    errorMessage: `Orphaned — cleaned up before new GCC run at ${new Date().toISOString()}`,
+    updatedAt: Date.now(),
+  })
+  .where(and(
+    eq(founderAgentEvaluations.status, "running"),
+    sql`${founderAgentEvaluations.updatedAt} < ${tenMinutesAgo}`,
+  ));
+const cleanedCount = (cleanupResult as unknown as [{ affectedRows: number }])[0]?.affectedRows ?? 0;
+console.log(`[GCC Full Trigger] Cleaned up ${cleanedCount} orphaned evaluations before run`);
+
+console.log(`[GCC Full Trigger] Launching orchestration with gccMode=true, 100 ideas ...`);
 // runFleet never throws — it catches internally and sets status="failed"
 await runFleet(runId, { gccMode: true, bypassCostGuard: true });
 

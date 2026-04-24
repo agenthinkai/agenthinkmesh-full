@@ -458,4 +458,77 @@ export const fleetRouter = router({
         .where(eq(founderAgentRunCosts.runId, input.runId)).limit(1);
       return rows[0] ?? null;
     }),
+
+  // ── Evaluation stats aggregated by fleet_mode (Q1 verification query) ────
+  evalStats: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return { byMode: [], totalEvaluations: 0, lastUpdated: Date.now() };
+    const rows = await db
+      .select({
+        fleetMode: founderAgentEvaluations.fleetMode,
+        total: sql<number>`COUNT(*)`,
+        avgScore: sql<number>`AVG(${founderAgentEvaluations.finalScore})`,
+      })
+      .from(founderAgentEvaluations)
+      .groupBy(founderAgentEvaluations.fleetMode)
+      .orderBy(founderAgentEvaluations.fleetMode);
+    const byMode = rows.map(r => ({
+      fleetMode: r.fleetMode ?? "unknown",
+      total: Number(r.total),
+      avgScore: r.avgScore !== null ? parseFloat(Number(r.avgScore).toFixed(4)) : null,
+    }));
+    const totalEvaluations = byMode.reduce((sum, r) => sum + r.total, 0);
+    return { byMode, totalEvaluations, lastUpdated: Date.now() };
+  }),
+
+  // ── Resume a partial run (status=failed, completed>0) ───────────────────────
+  resumeRun: adminProcedure
+    .input(z.object({ runId: z.number() }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      // Validate: run must exist and be a partial failure
+      const [runRow] = await db.select().from(founderAgentRuns)
+        .where(eq(founderAgentRuns.id, input.runId)).limit(1);
+      if (!runRow) throw new TRPCError({ code: "NOT_FOUND", message: "Run not found" });
+      if (runRow.status !== "failed") throw new TRPCError({ code: "BAD_REQUEST", message: "Run is not in failed state" });
+      if ((runRow.completed ?? 0) === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Run has no completed evaluations — use a fresh run" });
+
+      // Reset run to pitching so runFleet resumes from the evaluation phase
+      await db.update(founderAgentRuns)
+        .set({ status: "pitching", completedAt: null })
+        .where(eq(founderAgentRuns.id, input.runId));
+
+      // Mark any orphaned 'running' evals as failed so they get re-queued
+      const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+      await db.update(founderAgentEvaluations)
+        .set({
+          status: "failed",
+          errorMessage: `Orphaned — re-queued by resumeRun at ${new Date().toISOString()}`,
+          updatedAt: Date.now(),
+        })
+        .where(and(
+          eq(founderAgentEvaluations.runId, input.runId),
+          eq(founderAgentEvaluations.status, "running"),
+          sql`${founderAgentEvaluations.updatedAt} < ${tenMinutesAgo}`,
+        ));
+
+      // Count queued (non-completed) evaluations
+      const [countRow] = await db
+        .select({ cnt: sql<number>`COUNT(*)` })
+        .from(founderAgentEvaluations)
+        .where(and(
+          eq(founderAgentEvaluations.runId, input.runId),
+          sql`${founderAgentEvaluations.status} != 'completed'`,
+        ));
+      const queued = Number(countRow?.cnt ?? 0);
+
+      // Re-launch fleet orchestration in background — it will resume from current DB state
+      runFleet(input.runId, { bypassCostGuard: true }).catch((err) =>
+        console.error(`[FleetRouter] ResumeRun ${input.runId} failed:`, err)
+      );
+
+      return { queued, runId: input.runId };
+    }),
 });
