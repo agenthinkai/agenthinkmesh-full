@@ -522,7 +522,7 @@ interface PitchEntry {
   idea: FounderAgentIdea;
 }
 
-async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConcurrent?: number; staggerMs?: number } = {}): Promise<void> {
+async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConcurrent?: number; staggerMs?: number; gccMode?: boolean } = {}): Promise<void> {
   const maxConcurrent = opts.maxConcurrent ?? MAX_CONCURRENT;
   const staggerMs = opts.staggerMs ?? STAGGER_MS;
   const db = await requireDb();
@@ -562,6 +562,7 @@ async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConc
         ideaId: idea.id,
         pitchId: pitch.id,
         status: "queued",
+        fleetMode: opts.gccMode ? "gcc" : "global",
       });
     }
   }
@@ -1067,7 +1068,7 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
 
     // Step 4: Submit to mesh
     await updateRunStatus(runId, "evaluating");
-    await submitToMesh(runId, acc, quickTest ? { maxConcurrent: 3, staggerMs: 1000 } : {});
+    await submitToMesh(runId, acc, quickTest ? { maxConcurrent: 3, staggerMs: 1000, gccMode: opts.gccMode } : { gccMode: opts.gccMode });
     await saveCosts(runId, acc);
 
     if (fleetState.get(runId)?.abort) {

@@ -3404,3 +3404,10 @@
 - [x] TASK 3: Mode selector redesigned as card-style buttons with subtitle lines
 - [x] TASK 3: ⚡ Quick Analysis subtitle: ~10 seconds · 6 agents · Fast
 - [x] TASK 3: 🔬 Deep Analysis subtitle: ~30-60 seconds · 10 agents · Web research · ~$0.05
+
+## Infrastructure Fixes (2026-04-24)
+- [x] TASK 1: Create fleet_config table via Drizzle schema + db:push + seed global/gcc rows
+- [x] TASK 2: Add fleet_mode column to founder_agent_evaluations + db:push + backfill + wire insert
+- [x] TASK 3: Wire 06:00 KWT cron to fleet_config (reads active configs, decrements runs_remaining)
+- [x] TASK 4: Trigger first GCC run — run #60003 completed (quickTest, 10 ideas, avg score 53.5)
+- [ ] BLOCKER: Full 100-idea GCC run fails due to prompt size (440+ fingerprints exceed upstream context) — needs prompt batching fix (split into 5x20 calls)

@@ -1838,6 +1838,8 @@ export const founderAgentEvaluations = mysqlTable("founder_agent_evaluations", {
   recommendedAction:  varchar("recommended_action", { length: 100 }),
   durationMs:         int("duration_ms"),
   errorMessage:       varchar("error_message", { length: 500 }),
+  // Fleet mode — which fleet produced this evaluation
+  fleetMode:          varchar("fleet_mode", { length: 20 }).notNull().default("global"),
   // GCC-specific fields (additive — null for global runs)
   shariahCompliance:  varchar("shariah_compliance", { length: 20 }),  // "Compliant" | "Non-compliant" | "Requires review"
   decisionOutcome:    varchar("decision_outcome", { length: 20 }),    // "invested" | "passed" | null (watch)
@@ -1882,3 +1884,19 @@ export const founderAgentRunCosts = mysqlTable("founder_agent_run_costs", {
 }));
 export type FounderAgentRunCost = typeof founderAgentRunCosts.$inferSelect;
 export type InsertFounderAgentRunCost = typeof founderAgentRunCosts.$inferInsert;
+
+// ── Fleet Config ──────────────────────────────────────────────────────────────
+export const fleetConfig = mysqlTable("fleet_config", {
+  id:            int("id").primaryKey().autoincrement(),
+  fleetMode:     varchar("fleet_mode", { length: 20 }).notNull(),
+  runsTotal:     int("runs_total").notNull().default(30),
+  runsCompleted: int("runs_completed").notNull().default(0),
+  runsRemaining: int("runs_remaining").notNull().default(30),
+  lastRunAt:     bigint("last_run_at", { mode: "number" }),
+  lastRunScore:  decimal("last_run_score", { precision: 6, scale: 2 }),
+  lastRunCost:   decimal("last_run_cost", { precision: 10, scale: 4 }),
+  active:        boolean("active").notNull().default(true),
+  createdAt:     bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type FleetConfig = typeof fleetConfig.$inferSelect;
+export type InsertFleetConfig = typeof fleetConfig.$inferInsert;

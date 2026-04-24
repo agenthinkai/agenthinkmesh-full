@@ -1,0 +1,1 @@
+ALTER TABLE `founder_agent_evaluations` ADD `fleet_mode` varchar(20) DEFAULT 'global' NOT NULL;
