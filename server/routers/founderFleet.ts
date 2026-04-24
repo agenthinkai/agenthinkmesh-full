@@ -30,6 +30,7 @@ import {
   FounderAgentIdea,
   FounderAgentPitch,
   FounderAgentEvaluation,
+  fleetConfig,
 } from "../../drizzle/schema";
 
 import {
@@ -221,6 +222,12 @@ export const fleetRouter = router({
       .orderBy(desc(founderAgentRuns.createdAt))
       .limit(50);
     return runs as FounderAgentRun[];
+  }),
+  // ── Fleet config (scheduler state) ───────────────────────────────────────
+  fleetConfigs: adminProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) return [];
+    return await db.select().from(fleetConfig).orderBy(fleetConfig.id);
   }),
 
   // ── Full detail for a specific run (filterable table) ─────────────────────

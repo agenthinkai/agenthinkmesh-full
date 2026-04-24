@@ -227,6 +227,7 @@ export default function FounderFleet() {
     { enabled: activeRunId !== null && activeTab === "insights" }
   );
 
+  const fleetConfigsQuery = trpc.fleet.fleetConfigs.useQuery(undefined, { refetchInterval: 30000 });
   const trendQuery = trpc.fleet.trendStats.useQuery(
     undefined,
     { enabled: activeTab === "trends" }
@@ -989,6 +990,8 @@ export default function FounderFleet() {
         )}
       </div>
 
+      {/* ── Fleet Scheduler card ─────────────────────────────────────────── */}
+      <FleetSchedulerCard />
       {/* ── Expanded eval detail dialog ───────────────────────────────────── */}
       {expandedEvalId !== null && (() => {
         const evalRow = tableRows.find((r) => r.evalId === expandedEvalId)
@@ -1090,6 +1093,79 @@ function InsightSection({ title, items, color }: { title: string; items: string[
             <li key={i} className="text-sm text-muted-foreground">• {item}</li>
           ))}
         </ul>
+      )}
+    </div>
+  );
+}
+
+// ── FleetSchedulerCard ────────────────────────────────────────────────────────
+function FleetSchedulerCard() {
+  const { data, isLoading } = trpc.fleet.fleetConfigs.useQuery(undefined, { refetchInterval: 30000 });
+
+  const scoringModeLabel = (mode: string) => {
+    if (mode === "shariah_gcc") return "Shariah + GCC";
+    if (mode === "standard") return "Standard";
+    return mode;
+  };
+
+  return (
+    <div className="mt-8 rounded-xl border border-white/10 bg-white/5 p-6">
+      <div className="flex items-center gap-3 mb-5">
+        <span className="text-lg">🗓️</span>
+        <h2 className="text-base font-semibold text-white">Fleet Scheduler</h2>
+        <span className="text-xs text-slate-500 ml-auto">Runs daily at 06:00 KWT</span>
+      </div>
+      {isLoading ? (
+        <div className="text-slate-500 text-sm">Loading scheduler state…</div>
+      ) : !data || data.length === 0 ? (
+        <div className="text-slate-500 text-sm">No fleet configs found.</div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/10 text-left text-xs text-slate-500">
+                <th className="pb-2 pr-4">Mode</th>
+                <th className="pb-2 pr-4">Scoring</th>
+                <th className="pb-2 pr-4 text-center">Total</th>
+                <th className="pb-2 pr-4 text-center">Done</th>
+                <th className="pb-2 pr-4 text-center">Remaining</th>
+                <th className="pb-2 pr-4">Last Run</th>
+                <th className="pb-2 pr-4 text-center">Last Score</th>
+                <th className="pb-2">Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((cfg) => (
+                <tr key={cfg.id} className="border-b border-white/5 last:border-0">
+                  <td className="py-3 pr-4 font-mono text-emerald-400 uppercase text-xs">{cfg.fleetMode}</td>
+                  <td className="py-3 pr-4 text-slate-300">{scoringModeLabel(cfg.scoringMode ?? "standard")}</td>
+                  <td className="py-3 pr-4 text-center text-slate-400">{cfg.runsTotal}</td>
+                  <td className="py-3 pr-4 text-center text-slate-300">{cfg.runsCompleted}</td>
+                  <td className="py-3 pr-4 text-center">
+                    <span className={cfg.runsRemaining === 0 ? "text-red-400" : "text-emerald-400"}>
+                      {cfg.runsRemaining}
+                    </span>
+                  </td>
+                  <td className="py-3 pr-4 text-slate-400 text-xs">
+                    {cfg.lastRunAt
+                      ? new Date(cfg.lastRunAt).toLocaleString("en-KW", { timeZone: "Asia/Kuwait", dateStyle: "short", timeStyle: "short" })
+                      : "—"}
+                  </td>
+                  <td className="py-3 pr-4 text-center">
+                    {cfg.lastRunScore != null
+                      ? <span className="font-mono text-sky-400">{parseFloat(String(cfg.lastRunScore)).toFixed(1)}</span>
+                      : <span className="text-slate-600">—</span>}
+                  </td>
+                  <td className="py-3">
+                    {cfg.active
+                      ? <span className="inline-flex items-center gap-1 text-xs text-emerald-400"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />Active</span>
+                      : <span className="inline-flex items-center gap-1 text-xs text-slate-500"><span className="w-1.5 h-1.5 rounded-full bg-slate-600 inline-block" />Exhausted</span>}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

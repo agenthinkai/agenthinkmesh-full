@@ -266,99 +266,94 @@ async function saveCosts(runId: number, acc: CostAccumulator): Promise<void> {
 // ── Step 1: Generate 100 ideas in one LLM call ────────────────────────────────
 async function generateIdeas(runId: number, acc: CostAccumulator, opts: { ideasPerDomain?: number; gccMode?: boolean } = {}): Promise<number[]> {
   const ideasPerDomain = opts.ideasPerDomain ?? 20;
+  const { gccMode = false } = opts;
   const db = await requireDb();
 
   // Load existing fingerprints to avoid duplicates across runs
+  // Load existing fingerprints once — shared across all domain calls to prevent cross-domain duplicates
   const existingRows = await db.select({ fp: founderAgentIdeas.ideaFingerprint }).from(founderAgentIdeas);
   const existingFingerprints = new Set(existingRows.map((r: { fp: string }) => r.fp));
 
-  const domainSpec = FLEET_DOMAINS.map((d) =>
-    `${d.name} (${d.subSectors.join(", ")})`
-  ).join("; ");
-
-  const totalIdeas = ideasPerDomain * 5;
-  const prompt = `Generate exactly ${totalIdeas} unique, credible early-stage startup ideas across 5 domains — ${ideasPerDomain} per domain.
-Domains and sub-sectors: ${domainSpec}
-
-CRITICAL QUALITY RULES — every idea MUST include all four of these:
-1. FOUNDER UNFAIR ADVANTAGE: A specific prior role, network, or domain expertise that gives this founder an edge no generalist has (e.g. "Former Grab regional HR director", "Ex-WHO malaria programme lead", "10-year supply chain operator at Maersk").
-2. TRACTION SIGNAL: Minimum 2 paying customers, signed LOIs, or active pilots. Not "seeking" or "planning" — something already secured and verifiable.
-3. DEFENSIBLE MOAT: A specific moat that is NOT just "AI-powered" or "first mover" — e.g. proprietary data accumulated over years, exclusive distribution partnerships, regulatory licence, switching costs, or network effects with a named mechanism.
-4. WHY NOW / WHY THIS FOUNDER: A specific market timing insight or structural change (regulation, infrastructure, demographic shift) that makes this the right moment, and why this specific founder is positioned to capture it.
-
-WEAK example (do NOT generate): "AI-powered HR platform for SMEs."
-STRONG example (generate at this level): "Former Grab regional HR director building compliance automation for gig economy platforms in Southeast Asia — 3 pilots signed with Grab, Gojek, and Shopee, leveraging 8 years of relationships and proprietary workforce classification data from 2M+ gig contracts."
-
-Other rules:
-- No duplicates (check against existing ideas listed below)
-- Each idea must cover a different sub-sector within its domain
-- Return ONLY a JSON array of ${totalIdeas} objects, no markdown, no explanation
-
-Each object must have these exact keys:
-{
-  "domain": string,
-  "subSector": string,
-  "description": string (2-3 sentences: what they build, founder background, traction signal — max 280 chars),
-  "targetRegion": string (e.g. "GCC", "Southeast Asia", "Sub-Saharan Africa", "Latin America", "South Asia", "Europe", "North America"),
-  "founderName": string (realistic full name matching the target region),
-  "fundingStage": string (MUST be one of: "Seed", "Series A") — Pre-seed is NOT allowed,
-  "fundingAsk": string — MUST be between $1M and $15M (e.g. "$1.5M", "$3M", "$8M") — no pre-seed asks below $1M
-}
-Existing idea fingerprints to avoid (domain|subSector|description):
-${Array.from(existingFingerprints).slice(0, 500).join("\n") || "None yet"}`;
-
-  const resp = await invokeLLM({
-    messages: [
-      { role: "system", content: "You are a startup idea generator. Return only valid JSON arrays." },
-      { role: "user", content: prompt },
-    ],
-    model: HAIKU,
-    max_tokens: 8000,
-  });
-
-  const usage = extractUsage(resp);
-  addLlmCost(acc, HAIKU, usage.prompt_tokens || 4000, usage.completion_tokens || 4000);
-
-  const content = extractContent(resp);
+  const domains = gccMode ? GCC_FLEET_DOMAINS : FLEET_DOMAINS;
+  const insertedIds: number[] = [];
 
   interface IdeaRaw {
     domain: string; subSector: string; description: string;
     targetRegion: string; founderName: string; fundingStage: string; fundingAsk: string;
   }
-  let ideas: IdeaRaw[] = [];
 
-  try {
-    const cleaned = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-    ideas = JSON.parse(cleaned) as IdeaRaw[];
-  } catch {
-    console.error("[FleetOrchestrator] Failed to parse ideas JSON:", content.slice(0, 200));
-    throw new Error("Failed to parse idea generation response");
-  }
+  // ── Per-domain calls: 1 LLM call per domain, ideasPerDomain ideas each ────
+  for (const domain of domains) {
+    const domainSubSectors = domain.subSectors.join(", ");
+    const regionHint = gccMode ? "GCC (Saudi Arabia, UAE, Kuwait, Qatar, Bahrain, Oman)" : "global emerging markets";
+    const prompt = `Generate exactly ${ideasPerDomain} unique, credible early-stage startup ideas for the domain: ${domain.name}.
+Sub-sectors to cover (one idea per sub-sector): ${domainSubSectors}
+Target region: ${regionHint}
+CRITICAL QUALITY RULES — every idea MUST include all four of these:
+1. FOUNDER UNFAIR ADVANTAGE: A specific prior role, network, or domain expertise that gives this founder an edge no generalist has.
+2. TRACTION SIGNAL: Minimum 2 paying customers, signed LOIs, or active pilots. Not "seeking" or "planning" — something already secured and verifiable.
+3. DEFENSIBLE MOAT: A specific moat that is NOT just "AI-powered" or "first mover" — e.g. proprietary data, exclusive distribution, regulatory licence, switching costs, or network effects.
+4. WHY NOW / WHY THIS FOUNDER: A specific market timing insight or structural change that makes this the right moment, and why this specific founder is positioned to capture it.
+Other rules:
+- No duplicates (check against existing ideas listed below)
+- Each idea must cover a different sub-sector within ${domain.name}
+- Return ONLY a JSON array of ${ideasPerDomain} objects, no markdown, no explanation
+Each object must have these exact keys:
+{
+  "domain": string (must be "${domain.name}"),
+  "subSector": string,
+  "description": string (2-3 sentences: what they build, founder background, traction signal — max 280 chars),
+  "targetRegion": string,
+  "founderName": string (realistic full name matching the target region),
+  "fundingStage": string (MUST be one of: "Seed", "Series A") — Pre-seed is NOT allowed,
+  "fundingAsk": string — MUST be between $1M and $15M (e.g. "$1.5M", "$3M", "$8M") — no pre-seed asks below $1M
+}
+Existing idea fingerprints to avoid (domain|subSector|description):
+\${Array.from(existingFingerprints).slice(0, 200).join("\n") || "None yet"}`;
 
-  // Deduplicate and insert
-  const insertedIds: number[] = [];
-  const toInsert = ideas.filter((idea: IdeaRaw) => {
-    const fp = fingerprint(idea.domain, idea.subSector, idea.description);
-    if (existingFingerprints.has(fp)) return false;
-    existingFingerprints.add(fp);
-    return true;
-  }).slice(0, totalIdeas);
-
-  for (const idea of toInsert) {
-    const fp = fingerprint(idea.domain, idea.subSector, idea.description);
-    const result = await db.insert(founderAgentIdeas).values({
-      runId,
-      domain: idea.domain,
-      subSector: idea.subSector,
-      description: idea.description,
-      targetRegion: idea.targetRegion,
-      founderName: idea.founderName,
-      fundingStage: idea.fundingStage,
-      fundingAsk: idea.fundingAsk,
-      ideaFingerprint: fp,
+    const resp = await invokeLLM({
+      messages: [
+        { role: "system", content: "You are a startup idea generator. Return only valid JSON arrays." },
+        { role: "user", content: prompt },
+      ],
+      model: HAIKU,
+      max_tokens: 2000,
     });
-    const insertId = (result as unknown as [{ insertId: number }])[0]?.insertId;
-    if (insertId) insertedIds.push(insertId);
+    const usage = extractUsage(resp);
+    addLlmCost(acc, HAIKU, usage.prompt_tokens || 800, usage.completion_tokens || 800);
+    const rawContent = extractContent(resp);
+    let domainIdeas: IdeaRaw[] = [];
+    try {
+      const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+      domainIdeas = JSON.parse(cleaned) as IdeaRaw[];
+    } catch {
+      console.error(`[FleetOrchestrator] Failed to parse ideas JSON for domain ${domain.name}:`, rawContent.slice(0, 200));
+      continue; // skip this domain rather than aborting the whole run
+    }
+    // Deduplicate and insert for this domain
+    const toInsert = domainIdeas.filter((idea: IdeaRaw) => {
+      const fp = fingerprint(idea.domain, idea.subSector, idea.description);
+      if (existingFingerprints.has(fp)) return false;
+      existingFingerprints.add(fp);
+      return true;
+    }).slice(0, ideasPerDomain);
+    for (const idea of toInsert) {
+      const fp = fingerprint(idea.domain, idea.subSector, idea.description);
+      const result = await db.insert(founderAgentIdeas).values({
+        runId,
+        domain: idea.domain,
+        subSector: idea.subSector,
+        description: idea.description,
+        targetRegion: idea.targetRegion,
+        founderName: idea.founderName,
+        fundingStage: idea.fundingStage,
+        fundingAsk: idea.fundingAsk,
+        ideaFingerprint: fp,
+      });
+      const insertId = (result as unknown as [{ insertId: number }])[0]?.insertId;
+      if (insertId) insertedIds.push(insertId);
+    }
+    console.log(`[FleetOrchestrator] Domain "${domain.name}": ${toInsert.length} ideas inserted`);
   }
 
   await db.update(founderAgentRuns).set({ totalIdeas: insertedIds.length }).where(eq(founderAgentRuns.id, runId));

@@ -1,0 +1,1 @@
+ALTER TABLE `founder_agent_ideas` MODIFY COLUMN `description` text NOT NULL;

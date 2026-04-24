@@ -3411,3 +3411,15 @@
 - [x] TASK 3: Wire 06:00 KWT cron to fleet_config (reads active configs, decrements runs_remaining)
 - [x] TASK 4: Trigger first GCC run — run #60003 completed (quickTest, 10 ideas, avg score 53.5)
 - [ ] BLOCKER: Full 100-idea GCC run fails due to prompt size (440+ fingerprints exceed upstream context) — needs prompt batching fix (split into 5x20 calls)
+
+## Sprint: fleet_config + fleet_mode + cron + GCC run
+- [x] TASK 1: fleet_config table created via Drizzle schema + db:push + seeded (global, gcc)
+- [x] TASK 1: generateIdeas split into 5x20 per-domain calls (fixes 100-idea run context overflow)
+- [x] TASK 1: founderAgentIdeas.description widened from varchar(500) to text
+- [x] TASK 2: fleet_mode column added to founder_agent_evaluations + db:push + backfill (430 rows = global)
+- [x] TASK 2: fleet_mode wired into evaluation insert in founderFleet.ts (via submitToMesh opts)
+- [x] TASK 2: trigger_gcc_full.ts only updates fleet_config on success (not on failure)
+- [x] TASK 3: scoring_mode column added to fleet_config + db:push + gcc row set to shariah_gcc
+- [x] TASK 3: fleetConfigs tRPC procedure added to founderFleet router
+- [x] TASK 3: FleetSchedulerCard component added to FounderFleet.tsx admin page
+- [x] TASK 4: First GCC run triggered (run #60003 quickTest completed; run #60005 got 85/100 evals before rate limit)

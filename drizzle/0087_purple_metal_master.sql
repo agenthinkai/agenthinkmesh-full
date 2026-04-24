@@ -1,0 +1,1 @@
+ALTER TABLE `fleet_config` ADD `scoring_mode` varchar(50) DEFAULT 'standard' NOT NULL;

@@ -603,6 +603,20 @@
       "when": 1777035664235,
       "tag": "0085_classy_scarlet_witch",
       "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "5",
+      "when": 1777038261125,
+      "tag": "0086_normal_nick_fury",
+      "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "5",
+      "when": 1777038449124,
+      "tag": "0087_purple_metal_master",
+      "breakpoints": true
     }
   ]
 }

@@ -1771,7 +1771,7 @@ export const founderAgentIdeas = mysqlTable("founder_agent_ideas", {
   runId:           int("run_id").notNull(),
   domain:          varchar("domain", { length: 100 }).notNull(),
   subSector:       varchar("sub_sector", { length: 100 }).notNull(),
-  description:     varchar("description", { length: 500 }).notNull(),
+  description:     text("description").notNull(),
   targetRegion:    varchar("target_region", { length: 100 }).notNull(),
   founderName:     varchar("founder_name", { length: 100 }).notNull(),
   fundingStage:    varchar("funding_stage", { length: 50 }).notNull(),
@@ -1896,6 +1896,7 @@ export const fleetConfig = mysqlTable("fleet_config", {
   lastRunScore:  decimal("last_run_score", { precision: 6, scale: 2 }),
   lastRunCost:   decimal("last_run_cost", { precision: 10, scale: 4 }),
   active:        boolean("active").notNull().default(true),
+  scoringMode:   varchar("scoring_mode", { length: 50 }).notNull().default("standard"),
   createdAt:     bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 });
 export type FleetConfig = typeof fleetConfig.$inferSelect;
