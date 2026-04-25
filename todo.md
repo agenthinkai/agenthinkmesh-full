@@ -3459,3 +3459,7 @@
 - [x] TASK 2: Pre-run stuck eval cleanup in trigger_global_run.ts
 - [x] TASK 3: fleet.resumeRun tRPC mutation (input: runId, bypassCostGuard=true)
 - [x] TASK 3: Resume button next to Partial badge in run history table
+
+## Scheduler bypassCostGuard Fix
+- [x] Add bypassCostGuard:true to runFleet call in founderFleetScheduler.ts
+- [x] Move fleet_config counter decrement to post-success only
