@@ -1756,6 +1756,11 @@ export const founderAgentRuns = mysqlTable("founder_agent_runs", {
   totalLlmCalls:   int("total_llm_calls").notNull().default(0),
   estimatedTokens: int("estimated_tokens").notNull().default(0),
   estimatedCostUsd: decimal("estimated_cost_usd", { precision: 10, scale: 4 }).notNull().default("0.0000"),
+  // Actual token & cost totals (aggregated from evaluations after run completes)
+  totalTokensInput:  int("total_tokens_input").notNull().default(0),
+  totalTokensOutput: int("total_tokens_output").notNull().default(0),
+  totalTokens:       int("total_tokens").notNull().default(0),
+  totalCostUsd:      decimal("total_cost_usd", { precision: 10, scale: 4 }).notNull().default("0.0000"),
   startedAt:       bigint("started_at", { mode: "number" }),
   completedAt:     bigint("completed_at", { mode: "number" }),
   createdAt:       bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
@@ -1843,6 +1848,11 @@ export const founderAgentEvaluations = mysqlTable("founder_agent_evaluations", {
   // GCC-specific fields (additive — null for global runs)
   shariahCompliance:  varchar("shariah_compliance", { length: 20 }),  // "Compliant" | "Non-compliant" | "Requires review"
   decisionOutcome:    varchar("decision_outcome", { length: 20 }),    // "invested" | "passed" | null (watch)
+  // Token & cost tracking (additive)
+  tokensInput:        int("tokens_input").notNull().default(0),
+  tokensOutput:       int("tokens_output").notNull().default(0),
+  tokensTotal:        int("tokens_total").notNull().default(0),
+  costUsd:            decimal("cost_usd", { precision: 10, scale: 6 }).notNull().default("0.000000"),
   createdAt:          bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
   updatedAt:          bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 }, (table) => ({
@@ -1894,8 +1904,10 @@ export const fleetConfig = mysqlTable("fleet_config", {
   runsRemaining: int("runs_remaining").notNull().default(30),
   lastRunAt:     bigint("last_run_at", { mode: "number" }),
   lastRunScore:  decimal("last_run_score", { precision: 6, scale: 2 }),
-  lastRunCost:   decimal("last_run_cost", { precision: 10, scale: 4 }),
-  active:        boolean("active").notNull().default(true),
+  lastRunCost:    decimal("last_run_cost", { precision: 10, scale: 4 }),
+  lastRunCostUsd: decimal("last_run_cost_usd", { precision: 10, scale: 4 }).notNull().default("0.0000"),
+  totalCostUsd:   decimal("total_cost_usd", { precision: 10, scale: 4 }).notNull().default("0.0000"),
+  active:         boolean("active").notNull().default(true),
   scoringMode:   varchar("scoring_mode", { length: 50 }).notNull().default("standard"),
   createdAt:     bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 });

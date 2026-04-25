@@ -13,7 +13,7 @@
 import type { Express, Request, Response } from "express";
 import { getDb } from "./db";
 import { fleetConfig, founderAgentRuns, founderAgentEvaluations } from "../drizzle/schema";
-import { eq, desc, count, avg } from "drizzle-orm";
+import { eq, desc, count, avg, sql } from "drizzle-orm";
 
 const CRON_SCHEDULE = "0 3 * * *";
 const CRON_LABEL = "0 3 * * * (06:00 Asia/Kuwait)";
@@ -79,6 +79,8 @@ export function registerFleetSchedulerStatusRoute(app: Express): void {
           fleetMode: founderAgentEvaluations.fleetMode,
           total: count(),
           avgScore: avg(founderAgentEvaluations.finalScore),
+          totalTokens: sql<number>`SUM(tokens_total)`,
+          totalCostUsd: sql<number>`SUM(cost_usd)`,
         })
         .from(founderAgentEvaluations)
         .groupBy(founderAgentEvaluations.fleetMode);
@@ -90,6 +92,8 @@ export function registerFleetSchedulerStatusRoute(app: Express): void {
         runs_remaining: cfg.runsRemaining,
         last_run_at: toKWT(cfg.lastRunAt ?? undefined),
         last_run_score: cfg.lastRunScore ? parseFloat(cfg.lastRunScore) : null,
+        last_run_cost_usd: cfg.lastRunCostUsd ? parseFloat(String(cfg.lastRunCostUsd)) : 0,
+        total_cost_usd: cfg.totalCostUsd ? parseFloat(String(cfg.totalCostUsd)) : 0,
         last_run_status: lastRunStatusMap[cfg.fleetMode] ?? "unknown",
         active: cfg.active,
         next_run: cfg.active ? nextFireKWT() : null,
@@ -104,6 +108,8 @@ export function registerFleetSchedulerStatusRoute(app: Express): void {
           fleet_mode: r.fleetMode,
           total: Number(r.total),
           avg_score: r.avgScore ? parseFloat(String(r.avgScore)) : null,
+          total_tokens: Number((r as any).totalTokens ?? 0),
+          total_cost_usd: (r as any).totalCostUsd ? parseFloat(String((r as any).totalCostUsd)) : 0,
         })),
       });
     } catch (err) {

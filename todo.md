@@ -3468,3 +3468,30 @@
 - [x] TASK 1: Revert phantom counter decrements for runs #120001 and #120002
 - [x] TASK 2: Add notifyOwner alert to founderFleetScheduler.ts post-run block
 - [x] TASK 3: Add GET /api/fleet/scheduler-status endpoint
+
+## Token & Cost Tracking (Pasted_content_75)
+- [ ] TASK 1: Add tokens_input/output/total/cost_usd columns to founder_agent_evaluations
+- [ ] TASK 1: Add total_tokens_input/output/total/cost_usd columns to founder_agent_runs
+- [ ] TASK 1: Add last_run_cost_usd/total_cost_usd columns to fleet_config
+- [ ] TASK 1: Capture LLM token usage in evaluation pipeline with Haiku/Sonnet pricing
+- [ ] TASK 1: Aggregate tokens/cost to run on completion
+- [ ] TASK 1: Update fleet_config cost fields after each run
+- [ ] TASK 2: Cost summary section in FleetSchedulerCard
+- [ ] TASK 2: Tokens + Cost columns in run history table
+- [ ] TASK 2: Include cost summary in Copy Results button output
+- [ ] TASK 2: Add cost fields to /api/fleet/scheduler-status response
+
+## Token & Cost Tracking (Pasted_content_75)
+- [x] TASK 1: Schema migration — add tokens_input/output/total/cost_usd to founder_agent_evaluations
+- [x] TASK 1: Schema migration — add total_tokens_input/output/total/cost_usd to founder_agent_runs
+- [x] TASK 1: Schema migration — add last_run_cost_usd/total_cost_usd to fleet_config
+- [x] TASK 1: Extend CostAccumulator with inputTokens/outputTokens fields
+- [x] TASK 1: Write per-eval token/cost to evaluation row on completion
+- [x] TASK 1: Write run token/cost totals in saveCosts
+- [x] TASK 1: Aggregate run cost to fleet_config after successful completion
+- [x] TASK 2: Add cost columns to trendStats and evalStats tRPC procedures
+- [x] TASK 2: Add cost fields to fleetSchedulerStatusRoute response
+- [x] TASK 2: Add Last Cost / Total Cost columns to FleetSchedulerCard fleet_config table
+- [x] TASK 2: Add Tokens / Cost columns to evalStats table in FleetSchedulerCard
+- [x] TASK 2: Update copy button to include token/cost in Q1 and Q2 output
+- [x] TASK 2: Show actual totalCostUsd (amber) in trend table run rows

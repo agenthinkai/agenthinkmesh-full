@@ -14,7 +14,7 @@ import { getDb } from "./db";
 import {
   founderAgentRuns, founderAgentIdeas, founderAgentResearch,
   founderAgentPitches, founderAgentEvaluations, founderAgentInsights,
-  founderAgentRunCosts,
+  founderAgentRunCosts, fleetConfig,
   FounderAgentIdea, FounderAgentPitch, FounderAgentEvaluation,
 } from "../drizzle/schema";
 import { eq, and, inArray, sql } from "drizzle-orm";
@@ -134,7 +134,9 @@ const COST_PER_1K_OUTPUT_SONNET = 0.015;
 interface CostAccumulator {
   searches: number;
   llmCalls: number;
-  tokens: number;
+  tokens: number;       // total = input + output
+  inputTokens: number;  // input only
+  outputTokens: number; // output only
   costUsd: number;
 }
 
@@ -145,7 +147,9 @@ function addLlmCost(
   outputTokens: number,
 ): void {
   acc.llmCalls++;
-  acc.tokens += inputTokens + outputTokens;
+  acc.inputTokens  += inputTokens;
+  acc.outputTokens += outputTokens;
+  acc.tokens       += inputTokens + outputTokens;
   const isHaiku = model.includes("haiku");
   acc.costUsd += (inputTokens  / 1000) * (isHaiku ? COST_PER_1K_INPUT_HAIKU  : COST_PER_1K_INPUT_SONNET);
   acc.costUsd += (outputTokens / 1000) * (isHaiku ? COST_PER_1K_OUTPUT_HAIKU : COST_PER_1K_OUTPUT_SONNET);
@@ -242,6 +246,11 @@ async function saveCosts(runId: number, acc: CostAccumulator): Promise<void> {
     totalLlmCalls:    acc.llmCalls,
     estimatedTokens:  acc.tokens,
     estimatedCostUsd: acc.costUsd.toFixed(4),
+    // Actual token breakdown (updated incrementally)
+    totalTokensInput:  acc.inputTokens,
+    totalTokensOutput: acc.outputTokens,
+    totalTokens:       acc.tokens,
+    totalCostUsd:      acc.costUsd.toFixed(4),
   }).where(eq(founderAgentRuns.id, runId));
 
   const existing = await db.select({ id: founderAgentRunCosts.id })
@@ -712,6 +721,20 @@ async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConc
         : rawClassification === "WATCH" ? "Request more information"
         : "No action required";
 
+      // Per-eval token tracking: estimate from council run (10 agents × Haiku)
+      // These are estimates since councilEngine doesn't expose per-call usage
+      const evalInputTokens  = 10 * 3000;  // ~3000 input tokens per agent
+      const evalOutputTokens = 10 * 2048;  // ~2048 output tokens per agent
+      const evalTokensTotal  = evalInputTokens + evalOutputTokens;
+      const evalCostUsd      =
+        (evalInputTokens  / 1000) * 0.00025 +   // Haiku input
+        (evalOutputTokens / 1000) * 0.00125;     // Haiku output
+      // Add to run accumulator
+      acc.inputTokens  += evalInputTokens;
+      acc.outputTokens += evalOutputTokens;
+      acc.tokens       += evalTokensTotal;
+      acc.costUsd      += evalCostUsd;
+      acc.llmCalls     += 10;
       await dbInner.update(founderAgentEvaluations).set({
         status: "completed",
         classification: rawClassification,
@@ -725,6 +748,10 @@ async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConc
         agentDisagreements: JSON.stringify(agentDisagreements),
         recommendedAction,
         durationMs,
+        tokensInput:  evalInputTokens,
+        tokensOutput: evalOutputTokens,
+        tokensTotal:  evalTokensTotal,
+        costUsd:      evalCostUsd.toFixed(6),
         updatedAt: Date.now(),
       }).where(eq(founderAgentEvaluations.id, evalRow.id));
 
@@ -1093,7 +1120,7 @@ export interface FleetOptions {
 export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<void> {
   const { quickTest = false, isTestRun = false, bypassCostGuard = false } = opts;
   fleetState.set(runId, { paused: false, abort: false });
-  const acc: CostAccumulator = { searches: 0, llmCalls: 0, tokens: 0, costUsd: 0 };
+  const acc: CostAccumulator = { searches: 0, llmCalls: 0, tokens: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 };
 
   try {
     // Step 1: Generate ideas
@@ -1146,6 +1173,26 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
 
     // Complete
     await updateRunStatus(runId, "completed", { completedAt: Date.now() });
+    // Aggregate run cost to fleet_config
+    try {
+      const db2 = await requireDb();
+      const [runRow] = await db2.select({
+        fleetMode: founderAgentRuns.fleetMode,
+        totalCostUsd: founderAgentRuns.totalCostUsd,
+      }).from(founderAgentRuns).where(eq(founderAgentRuns.id, runId)).limit(1);
+      if (runRow) {
+        const runCost = parseFloat(String(runRow.totalCostUsd ?? "0"));
+        await db2.update(fleetConfig)
+          .set({
+            lastRunCostUsd: runCost.toFixed(4),
+            totalCostUsd: sql`total_cost_usd + ${runCost.toFixed(4)}`,
+          })
+          .where(eq(fleetConfig.fleetMode, runRow.fleetMode));
+        console.log(`[FleetOrchestrator] Updated fleet_config cost for ${runRow.fleetMode}: lastRunCost=$${runCost.toFixed(4)}`);
+      }
+    } catch (costErr) {
+      console.warn("[FleetOrchestrator] fleet_config cost update failed (non-fatal):", costErr);
+    }
   } catch (err) {
     console.error(`[FleetOrchestrator] Run ${runId} failed:`, err);
     await updateRunStatus(runId, "failed");

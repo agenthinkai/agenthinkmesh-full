@@ -939,7 +939,7 @@ export default function FounderFleet() {
                         </tr>
                       </thead>
                       <tbody>
-                        {trendQuery.data.runs.map((r: { id: number; runDate: string; status: string; completed: number; totalIdeas: number; estimatedCostUsd: string | null }) => (
+                        {trendQuery.data.runs.map((r: { id: number; runDate: string; status: string; completed: number; totalIdeas: number; estimatedCostUsd: string | null; totalCostUsd?: string | null; totalTokens?: number | null }) => (
                           <tr key={r.id} className="border-b border-white/5">
                             <td className="py-2 text-xs text-foreground">{r.runDate}</td>
                             <td className="py-2 text-center">
@@ -965,8 +965,10 @@ export default function FounderFleet() {
                             <td className="py-2 text-center text-xs text-muted-foreground">
                               {r.completed}/{r.totalIdeas}
                             </td>
-                            <td className="py-2 text-right text-xs text-muted-foreground">
-                              ${Number(r.estimatedCostUsd ?? 0).toFixed(4)}
+                            <td className="py-2 text-right text-xs">
+                              {r.totalCostUsd != null && Number(r.totalCostUsd) > 0
+                                ? <span className="font-mono text-amber-400">${Number(r.totalCostUsd).toFixed(4)}</span>
+                                : <span className="text-muted-foreground">${Number(r.estimatedCostUsd ?? 0).toFixed(4)}</span>}
                             </td>
                           </tr>
                         ))}
@@ -1162,19 +1164,23 @@ function FleetSchedulerCard() {
 
     lines.push("-- Q1: SELECT fleet_mode, COUNT(*) as total, AVG(final_score) as avg_score");
     lines.push("-- FROM founder_agent_evaluations GROUP BY fleet_mode;");
-    lines.push("fleet_mode | total | avg_score");
+    lines.push("fleet_mode | total | avg_score | tokens | cost_usd");
     const evalRows = evalStatsQuery.data?.byMode ?? [];
     evalRows.forEach(r => {
-      lines.push(`${r.fleetMode.padEnd(10)} | ${String(r.total).padEnd(5)} | ${r.avgScore !== null ? r.avgScore.toFixed(4) : "null"}`);
+      const tokens = (r as any).totalTokens ? ((r as any).totalTokens as number).toLocaleString() : "—";
+      const cost = (r as any).totalCostUsd != null ? `$${((r as any).totalCostUsd as number).toFixed(4)}` : "—";
+      lines.push(`${r.fleetMode.padEnd(10)} | ${String(r.total).padEnd(5)} | ${r.avgScore !== null ? r.avgScore.toFixed(4) : "null"} | ${tokens} | ${cost}`);
     });
-    lines.push(`Total      | ${evalStatsQuery.data?.totalEvaluations ?? "?"} |`);
+    lines.push(`Total      | ${evalStatsQuery.data?.totalEvaluations ?? "?"} | | |`);
     lines.push("");
 
     lines.push("-- Q2: SELECT id, fleet_mode, scoring_mode, runs_completed, runs_remaining, last_run_at, last_run_score");
     lines.push("-- FROM fleet_config;");
-    lines.push("id | fleet_mode | scoring_mode | runs_completed | runs_remaining | last_run_at | last_run_score");
+    lines.push("id | fleet_mode | scoring_mode | runs_completed | runs_remaining | last_run_at | last_run_score | last_run_cost_usd | total_cost_usd");
     cfgs.forEach(c => {
-      lines.push(`${c.id} | ${c.fleetMode} | ${c.scoringMode ?? "standard"} | ${c.runsCompleted} | ${c.runsRemaining} | ${c.lastRunAt ?? "null"} | ${c.lastRunScore ?? "null"}`);
+      const lastCost = (c as any).lastRunCostUsd != null ? `$${parseFloat(String((c as any).lastRunCostUsd)).toFixed(4)}` : "null";
+      const totalCost = (c as any).totalCostUsd != null ? `$${parseFloat(String((c as any).totalCostUsd)).toFixed(4)}` : "null";
+      lines.push(`${c.id} | ${c.fleetMode} | ${c.scoringMode ?? "standard"} | ${c.runsCompleted} | ${c.runsRemaining} | ${c.lastRunAt ?? "null"} | ${c.lastRunScore ?? "null"} | ${lastCost} | ${totalCost}`);
     });
     lines.push("");
 
@@ -1236,6 +1242,8 @@ function FleetSchedulerCard() {
                 <th className="pb-2 pr-4 text-center">Remaining</th>
                 <th className="pb-2 pr-4">Last Run</th>
                 <th className="pb-2 pr-4 text-center">Last Score</th>
+                <th className="pb-2 pr-4 text-right">Last Cost</th>
+                <th className="pb-2 pr-4 text-right">Total Cost</th>
                 <th className="pb-2">Status</th>
               </tr>
             </thead>
@@ -1259,6 +1267,16 @@ function FleetSchedulerCard() {
                   <td className="py-3 pr-4 text-center">
                     {cfg.lastRunScore != null
                       ? <span className="font-mono text-sky-400">{parseFloat(String(cfg.lastRunScore)).toFixed(1)}</span>
+                      : <span className="text-slate-600">—</span>}
+                  </td>
+                  <td className="py-3 pr-4 text-right">
+                    {(cfg as any).lastRunCostUsd != null
+                      ? <span className="font-mono text-amber-400">${parseFloat(String((cfg as any).lastRunCostUsd)).toFixed(4)}</span>
+                      : <span className="text-slate-600">—</span>}
+                  </td>
+                  <td className="py-3 pr-4 text-right">
+                    {(cfg as any).totalCostUsd != null
+                      ? <span className="font-mono text-amber-300">${parseFloat(String((cfg as any).totalCostUsd)).toFixed(4)}</span>
                       : <span className="text-slate-600">—</span>}
                   </td>
                   <td className="py-3">
@@ -1288,7 +1306,9 @@ function FleetSchedulerCard() {
               <tr className="border-b border-white/10 text-left text-xs text-slate-500">
                 <th className="pb-2 pr-4">Mode</th>
                 <th className="pb-2 pr-4 text-right">Evaluations</th>
-                <th className="pb-2 text-right">Avg Score</th>
+                <th className="pb-2 pr-4 text-right">Avg Score</th>
+                <th className="pb-2 pr-4 text-right">Tokens</th>
+                <th className="pb-2 text-right">Cost (USD)</th>
               </tr>
             </thead>
             <tbody>
@@ -1296,9 +1316,17 @@ function FleetSchedulerCard() {
                 <tr key={r.fleetMode} className="border-b border-white/5 last:border-0">
                   <td className="py-2 pr-4 font-mono text-emerald-400 uppercase text-xs">{r.fleetMode}</td>
                   <td className="py-2 pr-4 text-right text-slate-300">{r.total.toLocaleString()}</td>
-                  <td className="py-2 text-right">
+                  <td className="py-2 pr-4 text-right">
                     {r.avgScore !== null
                       ? <span className="font-mono text-sky-400">{r.avgScore.toFixed(2)}</span>
+                      : <span className="text-slate-600">—</span>}
+                  </td>
+                  <td className="py-2 pr-4 text-right text-slate-400 font-mono text-xs">
+                    {(r as any).totalTokens ? ((r as any).totalTokens as number).toLocaleString() : "—"}
+                  </td>
+                  <td className="py-2 text-right">
+                    {(r as any).totalCostUsd != null
+                      ? <span className="font-mono text-amber-400">${((r as any).totalCostUsd as number).toFixed(4)}</span>
                       : <span className="text-slate-600">—</span>}
                   </td>
                 </tr>

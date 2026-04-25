@@ -617,6 +617,13 @@
       "when": 1777038449124,
       "tag": "0087_purple_metal_master",
       "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "5",
+      "when": 1777102118632,
+      "tag": "0088_far_professor_monster",
+      "breakpoints": true
     }
   ]
 }

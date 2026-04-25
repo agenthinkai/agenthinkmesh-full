@@ -404,6 +404,10 @@ export const fleetRouter = router({
       completed: founderAgentRuns.completed,
       totalIdeas: founderAgentRuns.totalIdeas,
       estimatedCostUsd: founderAgentRuns.estimatedCostUsd,
+      totalCostUsd: founderAgentRuns.totalCostUsd,
+      totalTokensInput: founderAgentRuns.totalTokensInput,
+      totalTokensOutput: founderAgentRuns.totalTokensOutput,
+      totalTokens: founderAgentRuns.totalTokens,
       createdAt: founderAgentRuns.createdAt,
       completedAt: founderAgentRuns.completedAt,
     })
@@ -468,6 +472,10 @@ export const fleetRouter = router({
         fleetMode: founderAgentEvaluations.fleetMode,
         total: sql<number>`COUNT(*)`,
         avgScore: sql<number>`AVG(${founderAgentEvaluations.finalScore})`,
+        totalTokensInput: sql<number>`SUM(${founderAgentEvaluations.tokensInput})`,
+        totalTokensOutput: sql<number>`SUM(${founderAgentEvaluations.tokensOutput})`,
+        totalTokens: sql<number>`SUM(${founderAgentEvaluations.tokensTotal})`,
+        totalCostUsd: sql<number>`SUM(${founderAgentEvaluations.costUsd})`,
       })
       .from(founderAgentEvaluations)
       .groupBy(founderAgentEvaluations.fleetMode)
@@ -476,6 +484,10 @@ export const fleetRouter = router({
       fleetMode: r.fleetMode ?? "unknown",
       total: Number(r.total),
       avgScore: r.avgScore !== null ? parseFloat(Number(r.avgScore).toFixed(4)) : null,
+      totalTokensInput: Number(r.totalTokensInput ?? 0),
+      totalTokensOutput: Number(r.totalTokensOutput ?? 0),
+      totalTokens: Number(r.totalTokens ?? 0),
+      totalCostUsd: r.totalCostUsd !== null ? parseFloat(Number(r.totalCostUsd).toFixed(4)) : 0,
     }));
     const totalEvaluations = byMode.reduce((sum, r) => sum + r.total, 0);
     return { byMode, totalEvaluations, lastUpdated: Date.now() };
