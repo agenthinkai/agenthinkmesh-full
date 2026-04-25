@@ -3463,3 +3463,8 @@
 ## Scheduler bypassCostGuard Fix
 - [x] Add bypassCostGuard:true to runFleet call in founderFleetScheduler.ts
 - [x] Move fleet_config counter decrement to post-success only
+
+## Phantom Counter Revert + notifyOwner + Scheduler Health (Pasted_content_75)
+- [x] TASK 1: Revert phantom counter decrements for runs #120001 and #120002
+- [x] TASK 2: Add notifyOwner alert to founderFleetScheduler.ts post-run block
+- [x] TASK 3: Add GET /api/fleet/scheduler-status endpoint

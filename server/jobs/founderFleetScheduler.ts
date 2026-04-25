@@ -18,6 +18,7 @@ import { runFleet, resumeInterruptedRuns } from "../founderFleet";
 import { getDb } from "../db";
 import { founderAgentRuns, fleetConfig, founderAgentEvaluations } from "../../drizzle/schema";
 import { eq, and, avg, sql } from "drizzle-orm";
+import { notifyOwner } from "../_core/notification";
 
 let schedulerStarted = false;
 
@@ -144,8 +145,39 @@ export function startFounderFleetScheduler(): void {
             .where(eq(fleetConfig.id, config.id));
 
           console.log(`[FounderFleet] fleet_config updated: runs_completed=${newCompleted}, runs_remaining=${newRemaining}, last_run_score=${avgScore?.toFixed(1) ?? "N/A"}`);
+
+          // Fire-and-forget owner notification — success
+          notifyOwner({
+            title: `Fleet run complete — ${config.fleetMode}`,
+            content: `${config.fleetMode} run #${runId} completed:\n100/100 evaluations\nAvg score: ${avgScore?.toFixed(2) ?? "N/A"}\nRuns remaining: ${newRemaining}`,
+          }).catch((notifyErr: unknown) =>
+            console.error(`[FounderFleet] notifyOwner failed for ${config.fleetMode} run #${runId}:`, (notifyErr as Error)?.message)
+          );
         } else {
           console.error(`[FounderFleet] ${config.fleetMode} run #${runId} did not complete — fleet_config counters NOT updated`);
+
+          // Fire-and-forget owner notification — failure
+          // Get completed count from DB for the failure message
+          dbPost
+            .select({ completed: founderAgentRuns.completed, totalIdeas: founderAgentRuns.totalIdeas })
+            .from(founderAgentRuns)
+            .where(eq(founderAgentRuns.id, runId))
+            .then(([failRow]) => {
+              notifyOwner({
+                title: `Fleet run failed — ${config.fleetMode}`,
+                content: `${config.fleetMode} run #${runId} failed at ${failRow?.completed ?? 0}/${failRow?.totalIdeas ?? 100} evaluations.\nCheck logs for details.\nRuns remaining: ${config.runsRemaining}`,
+              }).catch((notifyErr: unknown) =>
+                console.error(`[FounderFleet] notifyOwner failed for ${config.fleetMode} run #${runId}:`, (notifyErr as Error)?.message)
+              );
+            })
+            .catch(() => {
+              notifyOwner({
+                title: `Fleet run failed — ${config.fleetMode}`,
+                content: `${config.fleetMode} run #${runId} failed.\nCheck logs for details.\nRuns remaining: ${config.runsRemaining}`,
+              }).catch((notifyErr: unknown) =>
+                console.error(`[FounderFleet] notifyOwner failed for ${config.fleetMode} run #${runId}:`, (notifyErr as Error)?.message)
+              );
+            });
         }
 
       } catch (err) {

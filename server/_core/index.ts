@@ -32,6 +32,7 @@ import signalsIngestRouter from "../signalsIngestRoute";
 import dealScreenRouter from "../dealScreenRoute";
 import { dataRoomUploadRouter } from "../dataRoomUploadRoute";
 import { registerPitchMirrorMetaRoute } from "../pitchMirrorMetaRoute";
+import { registerFleetSchedulerStatusRoute } from "../fleetSchedulerStatusRoute";
 import inboundEmailWebhookRouter from "../inboundEmailWebhookRoute";
 import graphEmailWebhookRouter from "../graphEmailWebhookRoute";
 import { startGraphSubscriptionJob } from "../jobs/graphSubscription";
@@ -160,6 +161,8 @@ async function startServer() {
   // Microsoft Graph API inbound email webhook (new primary route)
   app.use("/api/webhooks/graph-email", graphEmailWebhookRouter);
 
+  // Fleet scheduler health check — public GET /api/fleet/scheduler-status
+  registerFleetSchedulerStatusRoute(app);
   // PitchMirror shared-link OG meta injection (must be before Vite/static catch-all)
   registerPitchMirrorMetaRoute(app);
 
