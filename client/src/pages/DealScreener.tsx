@@ -13,6 +13,7 @@ import DataRoomUpload, { type DataRoomResult } from "@/components/DataRoomUpload
 import DataRoomBatch from "@/components/DataRoomBatch";
 import DataRoomV2 from "@/components/DataRoomV2";
 import { DecisionUpgradePanel } from "@/components/DecisionUpgradePanel";
+import { trackEvent } from "@/lib/analytics";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const BG = "#070b12";
@@ -3056,6 +3057,13 @@ export default function DealScreener() {
     }
   }, [dealDetail]);
 
+  // Track unauthenticated preview view (TASK 4)
+  useEffect(() => {
+    if (!loading && !isAuthenticated) {
+      trackEvent("deal_screening_preview_view", { referrer: document.referrer });
+    }
+  }, [loading, isAuthenticated]);
+
   if (loading) return null;
 
   if (!isAuthenticated) {
@@ -3106,6 +3114,37 @@ export default function DealScreener() {
             <div style={{ fontSize: 14, color: TEXT2, lineHeight: 1.65, marginBottom: 28 }}>
               Run a full AI council evaluation on any deal — market, moat, financials, team, and regulatory risk — and get a scored IC Memo in under 60 seconds.
             </div>
+            {/* Demo link — above sign-in CTA */}
+            <div style={{ marginBottom: 16 }}>
+              <a
+                href={(() => {
+                  try {
+                    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    const lang = navigator.language || "";
+                    const isGcc = /Asia\/(Kuwait|Riyadh|Dubai|Bahrain|Muscat|Qatar|Aden)/.test(tz) || /^ar/.test(lang);
+                    return isGcc ? "/gcc-ic" : "/sg-ic";
+                  } catch { return "/sg-ic"; }
+                })()}
+                onClick={() => {
+                  try {
+                    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                    const lang = navigator.language || "";
+                    const isGcc = /Asia\/(Kuwait|Riyadh|Dubai|Bahrain|Muscat|Qatar|Aden)/.test(tz) || /^ar/.test(lang);
+                    const dest = isGcc ? "/gcc-ic" : "/sg-ic";
+                    trackEvent("deal_screening_demo_click", { destination: dest, location: "deals_preview" });
+                  } catch {}
+                }}
+                style={{
+                  display: "inline-block", padding: "9px 20px",
+                  background: "transparent", color: ACCENT,
+                  border: `1px solid ${ACCENT}55`,
+                  borderRadius: 6, fontFamily: MONO, fontSize: 11,
+                  fontWeight: 600, textDecoration: "none",
+                }}
+              >
+                See a full deal memo example →
+              </a>
+            </div>
             <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
               <a href={getLoginUrl()} style={{
                 display: "inline-block", padding: "12px 28px",
@@ -3121,7 +3160,11 @@ export default function DealScreener() {
                 fontWeight: 600, textDecoration: "none",
               }}>Try PitchMirror free →</a>
             </div>
-            <div style={{ marginTop: 16, fontFamily: MONO, fontSize: 10, color: MUTED }}>115 agents · 14 domains · avg 47s per evaluation</div>
+            {/* Pricing link — below sign-in CTA */}
+            <div style={{ marginTop: 14 }}>
+              <a href="/pricing" style={{ fontFamily: MONO, fontSize: 10, color: MUTED, textDecoration: "none", borderBottom: `1px solid ${MUTED}55` }}>See pricing →</a>
+            </div>
+            <div style={{ marginTop: 12, fontFamily: MONO, fontSize: 10, color: MUTED }}>115 agents · 14 domains · avg 47s per evaluation</div>
           </div>
         </div>
       </div>
@@ -3257,6 +3300,16 @@ export default function DealScreener() {
             onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
           >
             BILLING ↗
+          </a>
+          <a
+            href="/demos"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ fontFamily: MONO, fontSize: 10, color: MUTED, textDecoration: "none", letterSpacing: "0.08em" }}
+            onMouseEnter={e => (e.currentTarget.style.color = ACCENT)}
+            onMouseLeave={e => (e.currentTarget.style.color = MUTED)}
+          >
+            LIVE EXAMPLES ↗
           </a>
           <span style={{ fontFamily: MONO, fontSize: 10, color: MUTED }}>
             DECISION ENGINE · COUNCIL OF 10

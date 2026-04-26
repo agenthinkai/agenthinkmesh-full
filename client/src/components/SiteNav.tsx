@@ -183,6 +183,7 @@ function MobileDrawer({ open, onClose, currentPath, isAuthenticated, user, logou
         <div style={{ padding: "8px 0", borderBottom: `1px solid ${BORDER}`, flexShrink: 0 }}>
           {[
             { label: "Domains", href: "/domains" },
+            { label: "Pricing", href: "/pricing" },
             { label: "Deal Screener", href: "/deals" },
             { label: "Procurement Eval", href: "/procurement" },
             { label: "Pitch Triage", href: "/pitch-triage" },
@@ -662,6 +663,7 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
             {/* Desktop-only static links */}
             {!isMobile && [
               { label: "Domains", href: "/domains" },
+              { label: "Pricing", href: "/pricing" },
               {
                 label: "Contact",
                 href: isLandingPage ? "#contact" : "/contact",

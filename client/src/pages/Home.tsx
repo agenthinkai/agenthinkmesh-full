@@ -674,6 +674,74 @@ export default function Home() {
         </div>
       </section>
 
+      {/* ── FOUNDER / INVESTOR SPLIT ── */}
+      <section className="py-14 px-6 md:px-12 border-t border-white/5">
+        <div className="max-w-5xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left — For Founders */}
+            <div className="flex flex-col gap-4 p-7 rounded-2xl bg-gradient-to-br from-emerald-900/30 to-emerald-900/10 border border-emerald-500/25 hover:border-emerald-500/40 transition-colors">
+              <div className="text-3xl">🚀</div>
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-emerald-400/70 mb-2">For Founders</div>
+                <h3 className="text-xl font-bold text-white mb-2 leading-tight">Get investor feedback on your pitch</h3>
+                <p className="text-sm text-white/55">Free · No login · 60 seconds</p>
+              </div>
+              <a
+                href="/pitchmirror"
+                onClick={() => trackEvent("home_pitchmirror_cta_click", { location: "split_section" })}
+                className="inline-flex items-center justify-center gap-2 py-3 px-5 rounded-xl text-white font-semibold text-sm transition-all hover:scale-[1.02] focus:outline-none mt-auto"
+                style={{ background: "linear-gradient(135deg, #10b981 0%, #06b6d4 100%)" }}
+              >
+                Try PitchMirror →
+              </a>
+            </div>
+
+            {/* Right — For Investors */}
+            <div className="flex flex-col gap-4 p-7 rounded-2xl bg-gradient-to-br from-blue-900/30 to-blue-900/10 border border-blue-500/25 hover:border-blue-500/40 transition-colors">
+              <div className="text-3xl">🏦</div>
+              <div>
+                <div className="text-[10px] font-mono uppercase tracking-widest text-blue-400/70 mb-2">For Investors</div>
+                <h3 className="text-xl font-bold text-white mb-2 leading-tight">Screen deals like an institutional fund</h3>
+                <p className="text-sm text-white/55">10-agent council · Shariah compliance · IC Memo in 45 seconds</p>
+              </div>
+              <div className="flex flex-col gap-2 mt-auto">
+                <a
+                  href={(() => {
+                    try {
+                      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                      const lang = navigator.language || "";
+                      const isGcc = /Asia\/(Kuwait|Riyadh|Dubai|Bahrain|Muscat|Qatar|Aden)/.test(tz)
+                        || /^ar/.test(lang);
+                      return isGcc ? "/gcc-ic" : "/sg-ic";
+                    } catch { return "/sg-ic"; }
+                  })()}
+                  onClick={(e) => {
+                    try {
+                      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+                      const lang = navigator.language || "";
+                      const isGcc = /Asia\/(Kuwait|Riyadh|Dubai|Bahrain|Muscat|Qatar|Aden)/.test(tz) || /^ar/.test(lang);
+                      const dest = isGcc ? "/gcc-ic" : "/sg-ic";
+                      trackEvent("deal_screening_demo_click", { destination: dest, location: "homepage_split" });
+                    } catch {}
+                  }}
+                  className="inline-flex items-center justify-center gap-2 py-3 px-5 rounded-xl text-white font-semibold text-sm transition-all hover:scale-[1.02] focus:outline-none"
+                  style={{ background: "linear-gradient(135deg, #3b82f6 0%, #6366f1 100%)" }}
+                >
+                  See a live deal memo →
+                </a>
+                <a
+                  href={isAuthenticated ? "/deals" : getLoginUrl("/deals")}
+                  onClick={() => trackEvent("deal_screening_cta_click", { location: "homepage" })}
+                  className="inline-flex items-center justify-center gap-2 py-2.5 px-5 rounded-xl text-white/75 font-medium text-sm border border-blue-500/30 hover:border-blue-400/60 hover:text-white bg-blue-500/8 hover:bg-blue-500/15 transition-all"
+                >
+                  Start screening deals →
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── DEMO PREVIEW STRIP ── */}
       {!isAuthenticated && (
         <section className="py-16 px-6 md:px-12 border-t border-white/5 bg-gradient-to-b from-violet-950/20 to-transparent">
@@ -1104,6 +1172,7 @@ export default function Home() {
             </div>
             <p className="text-xs text-white/30 font-mono">© 2026 AgenThink · A structured decision layer for institutional workflows</p>
             <div className="flex gap-6">
+              <Link href="/pricing" className="text-xs text-white/30 hover:text-white/60 transition-colors">Pricing</Link>
               <Link href="/privacy" className="text-xs text-white/30 hover:text-white/60 transition-colors">Privacy</Link>
               <Link href="/terms" className="text-xs text-white/30 hover:text-white/60 transition-colors">Terms</Link>
               <a href="#" className="text-xs text-white/30 hover:text-white/60 transition-colors">Docs</a>

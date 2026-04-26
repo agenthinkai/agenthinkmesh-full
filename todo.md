@@ -3519,3 +3519,23 @@
 - [x] TASK 4: Deal Screener + Procurement preview layer
 - [x] TASK 5: Lazy-load bundle split for PitchMirror
 - [x] TASK 6: Messaging alignment across homepage, PitchMirror, /ask
+
+## Deal Screening Visibility + Pricing Sprint
+
+- [x] TASK 1: Add two-column founder/investor split section below homepage hero
+- [x] TASK 1: Left col — 🚀 "Get investor feedback on your pitch" + PitchMirror CTA
+- [x] TASK 1: Right col — 🏦 "Screen deals like an institutional fund" + geo-detected demo CTA + "Start screening deals →"
+- [x] TASK 1: Mobile stacks vertically, founders first
+- [x] TASK 2: Create /pricing page (3 tiers: Starter $299, Professional $999, Institutional custom)
+- [x] TASK 2: Add /pricing to main nav (desktop + mobile)
+- [x] TASK 2: Add /pricing to landing page footer
+- [x] TASK 2: Add /pricing link to Deal Screening unauthenticated preview
+- [x] TASK 3: Add "See a full deal memo example →" link above sign-in CTA on /deals unauthenticated view
+- [x] TASK 3: Add "See pricing →" link below sign-in CTA on /deals unauthenticated view
+- [x] TASK 3: Add "Live examples →" link in /deals authenticated page header (opens /demos in new tab)
+- [x] TASK 4: trackEvent("deal_screening_preview_view") on unauthenticated /deals view
+- [x] TASK 4: trackEvent("deal_screening_demo_click") on demo link click
+- [x] TASK 4: trackEvent("deal_screening_cta_click") on "Start screening deals" CTA (fires from Pricing.tsx)
+- [x] TASK 4: trackEvent("pricing_page_view") on /pricing page load
+- [x] TASK 4: trackEvent("pricing_cta_click", { tier }) on each pricing CTA
+- [x] TASK 4: Add "Deal Screening Funnel" widget to /admin/usage page

@@ -1,163 +1,125 @@
 /**
  * Pricing — /pricing
- * 3-tier pricing page with real Stripe Subscribe buttons.
- * Professional ($49/mo) and Enterprise ($199/mo) go through Stripe Checkout.
- * Starter is free — directs to login.
+ * Three institutional tiers: Starter ($299), Professional ($999), Institutional (Custom).
+ * Static page — no tRPC calls, no schema changes.
+ * Tracks pricing_page_view and pricing_cta_click events.
  */
 
-import { useState } from "react";
+import { useEffect } from "react";
 import SiteNav from "@/components/SiteNav";
-import { getLoginUrl } from "@/const";
-import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/_core/hooks/useAuth";
+import { trackEvent } from "@/lib/analytics";
+import { Check } from "lucide-react";
 
 const NAVY = "#080D1A";
 const CARD = "#0D1E35";
 const BORDER = "rgba(52,211,153,0.15)";
 const GREEN = "#34D399";
-const GOLD = "#F59E0B";
-const TEAL = "#38BDF8";
+const BLUE = "#3B82F6";
+const VIOLET = "#8B5CF6";
 const WHITE = "#F0F4FA";
 const MUTED = "rgba(240,244,250,0.55)";
 
-type PlanKey = "starter" | "professional" | "enterprise";
+type TierId = "starter" | "professional" | "institutional";
 
 interface Tier {
+  id: TierId;
   name: string;
-  planKey: PlanKey;
   price: string;
   period: string;
-  tagline: string;
+  for: string;
   highlight: boolean;
-  accentColor: string;
   badge?: string;
+  accentColor: string;
+  highlightBorder: string;
+  highlightGlow: string;
+  ctaBg: string;
+  ctaColor: string;
   features: string[];
   cta: string;
-  ctaStyle: "outline" | "filled" | "gold";
+  ctaHref: string;
 }
 
 const TIERS: Tier[] = [
   {
+    id: "starter",
     name: "Starter",
-    planKey: "starter",
-    price: "Free",
-    period: "",
-    tagline: "50 Council runs to explore the platform",
-    highlight: false,
-    accentColor: TEAL,
-    features: [
-      "50 Council runs (lifetime trial)",
-      "All 10 Council personas",
-      "Basic verdict report",
-      "Deal Screener module",
-      "Community support",
-    ],
-    cta: "Start Free",
-    ctaStyle: "outline",
-  },
-  {
-    name: "Professional",
-    planKey: "professional",
-    price: "$49",
+    price: "$299",
     period: "/month",
-    tagline: "5,000 tokens/month for active teams",
-    highlight: true,
+    for: "Solo analysts and small family offices",
+    highlight: false,
     accentColor: GREEN,
-    badge: "Most Popular",
+    highlightBorder: BORDER,
+    highlightGlow: "none",
+    ctaBg: `linear-gradient(135deg, #10b981 0%, #06b6d4 100%)`,
+    ctaColor: "#080D1A",
     features: [
-      "5,000 tokens per month",
-      "All 10 Council personas",
-      "Full PDF Council report",
-      "Memory-augmented voting",
-      "ForecastMesh + Knowledge Vault",
-      "Priority email support",
-      "Stripe invoice per session",
+      "50 deal screenings per month",
+      "Full 10-agent council per deal",
+      "IC Memo PDF export",
+      "Pipeline tracking",
+      "Email support",
     ],
-    cta: "Subscribe — $49/mo",
-    ctaStyle: "filled",
+    cta: "Start free trial →",
+    ctaHref: "/login",
   },
   {
-    name: "Enterprise",
-    planKey: "enterprise",
-    price: "$199",
+    id: "professional",
+    name: "Professional",
+    price: "$999",
     period: "/month",
-    tagline: "25,000 tokens/month with dedicated support",
-    highlight: false,
-    accentColor: GOLD,
+    for: "Investment teams up to 5 analysts",
+    highlight: true,
+    badge: "Most Popular",
+    accentColor: BLUE,
+    highlightBorder: `2px solid ${BLUE}`,
+    highlightGlow: "0 0 40px rgba(59,130,246,0.18)",
+    ctaBg: `linear-gradient(135deg, ${BLUE} 0%, #6366f1 100%)`,
+    ctaColor: WHITE,
     features: [
-      "25,000 tokens per month",
-      "All 10 Council personas",
-      "Full PDF Council report",
-      "Memory-augmented voting",
-      "Self-Learning Loop access",
-      "Dedicated account manager",
-      "Custom integration support",
-      "SLA guarantee",
+      "Everything in Starter",
+      "Unlimited deal screenings",
+      "Shariah compliance screening",
+      "Cross-deal pattern recognition",
+      "Deep Analysis mode (Sonnet)",
+      "Priority support",
     ],
-    cta: "Subscribe — $199/mo",
-    ctaStyle: "gold",
-  },
-];
-
-const FAQ = [
-  {
-    q: "What is a token?",
-    a: "1 token = 1 agent call. A full 10-persona Council run costs 10 tokens. Viewing past results never consumes tokens.",
+    cta: "Start free trial →",
+    ctaHref: "/login",
   },
   {
-    q: "Do unused tokens roll over?",
-    a: "No. Tokens reset at the start of each billing cycle. Unused tokens do not carry forward.",
-  },
-  {
-    q: "Can I upgrade or downgrade at any time?",
-    a: "Yes. Plan changes take effect immediately via the Stripe Customer Portal. Prorated credits apply.",
-  },
-  {
-    q: "What is the Knowledge Vault RAG?",
-    a: "The Knowledge Vault contains 460 GCC institutional scenarios across 8 domains. Agents automatically retrieve the most relevant scenarios before generating outputs.",
-  },
-  {
-    q: "Is my data used to train the models?",
-    a: "No. Your data is never used to train shared models. Enterprise customers can optionally provide institutional data to train a private, dedicated model.",
+    id: "institutional",
+    name: "Institutional",
+    price: "Custom",
+    period: "",
+    for: "Funds, family offices, sovereign wealth",
+    highlight: false,
+    accentColor: VIOLET,
+    highlightBorder: "1px solid rgba(139,92,246,0.3)",
+    highlightGlow: "none",
+    ctaBg: `linear-gradient(135deg, ${VIOLET} 0%, #a855f7 100%)`,
+    ctaColor: WHITE,
+    features: [
+      "Everything in Professional",
+      "Unlimited seats",
+      "Custom agent configuration",
+      "On-premise deployment option",
+      "Dedicated account manager",
+      "SLA guarantee",
+      "AES-256 encryption + compliance docs",
+    ],
+    cta: "Talk to us →",
+    ctaHref: "mailto:farouqsultan@gmail.com",
   },
 ];
 
 export default function Pricing() {
-  const { user } = useAuth();
-  const [loadingPlan, setLoadingPlan] = useState<PlanKey | null>(null);
+  useEffect(() => {
+    trackEvent("pricing_page_view", { referrer: document.referrer });
+  }, []);
 
-  const createCheckout = trpc.billing.createCheckoutSession.useMutation({
-    onSuccess: (data) => {
-      if (data.url) {
-        window.open(data.url, '_blank');
-      }
-    },
-    onError: (err) => {
-      console.error("[Pricing] Checkout error:", err);
-      alert("Failed to start checkout. Please try again.");
-    },
-    onSettled: () => setLoadingPlan(null),
-  });
-
-  function handleSubscribe(tier: Tier) {
-    if (tier.planKey === "starter") {
-      // Free plan — just send to login / dashboard
-      window.location.href = user ? "/council" : getLoginUrl("/council");
-      return;
-    }
-
-    if (!user) {
-      // Must be logged in — redirect to login with return path
-      window.location.href = getLoginUrl(`/pricing?plan=${tier.planKey}`);
-      return;
-    }
-
-    setLoadingPlan(tier.planKey);
-    createCheckout.mutate({
-      plan: tier.planKey as "professional" | "enterprise",
-      origin: window.location.origin,
-    });
-  }
+  const handleCtaClick = (tier: TierId) => {
+    trackEvent("pricing_cta_click", { tier });
+  };
 
   return (
     <div style={{ minHeight: "100vh", background: NAVY, color: WHITE }}>
@@ -177,14 +139,11 @@ export default function Pricing() {
             Transparent Pricing
           </div>
           <h1 style={{ fontSize: 40, fontWeight: 900, color: WHITE, margin: "0 0 14px", lineHeight: 1.15 }}>
-            Institutional AI for the GCC
+            Simple, transparent pricing
           </h1>
           <p style={{ fontSize: 16, color: MUTED, maxWidth: 520, margin: "0 auto", lineHeight: 1.6 }}>
-            Token-based billing — pay for what you use. Every plan includes the full AgenThinkMesh Council, ForecastMesh, and the GCC Knowledge Vault.
+            Built for institutional investors. Priced to replace a junior analyst.
           </p>
-          <div style={{ marginTop: 16, fontSize: 12, color: "rgba(52,211,153,0.7)", fontWeight: 600 }}>
-            1 token = 1 agent call · 10 tokens = full 10-persona Council run
-          </div>
         </div>
 
         {/* Pricing cards */}
@@ -193,125 +152,100 @@ export default function Pricing() {
           gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
           gap: 20,
           alignItems: "start",
-          marginBottom: 80,
+          marginBottom: 60,
         }}>
-          {TIERS.map((tier) => {
-            const isLoading = loadingPlan === tier.planKey;
-            return (
-              <div
-                key={tier.name}
-                style={{
-                  background: tier.highlight ? "rgba(13,30,53,0.95)" : CARD,
-                  border: tier.highlight
-                    ? `2px solid ${GREEN}`
-                    : `1px solid ${BORDER}`,
-                  borderRadius: 16,
-                  padding: "28px 24px",
-                  position: "relative",
-                  boxShadow: tier.highlight
-                    ? "0 0 40px rgba(52,211,153,0.12)"
-                    : "none",
-                }}
-              >
-                {/* Badge */}
-                {tier.badge && (
-                  <div style={{
-                    position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
-                    background: GREEN, color: "#080D1A", fontSize: 10, fontWeight: 800,
-                    letterSpacing: "0.08em", textTransform: "uppercase",
-                    padding: "3px 12px", borderRadius: 20,
-                  }}>
-                    {tier.badge}
-                  </div>
-                )}
-
-                {/* Tier name */}
-                <div style={{ fontSize: 11, fontWeight: 700, color: tier.accentColor, letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 8 }}>
-                  {tier.name}
+          {TIERS.map((tier) => (
+            <div
+              key={tier.id}
+              style={{
+                background: tier.highlight ? "rgba(13,30,53,0.95)" : CARD,
+                border: tier.highlightBorder,
+                borderRadius: 16,
+                padding: "28px 24px",
+                position: "relative",
+                boxShadow: tier.highlightGlow,
+              }}
+            >
+              {/* Badge */}
+              {tier.badge && (
+                <div style={{
+                  position: "absolute", top: -12, left: "50%", transform: "translateX(-50%)",
+                  background: BLUE, color: WHITE, fontSize: 10, fontWeight: 800,
+                  letterSpacing: "0.08em", textTransform: "uppercase",
+                  padding: "3px 12px", borderRadius: 20,
+                }}>
+                  {tier.badge}
                 </div>
+              )}
 
-                {/* Price */}
-                <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 6 }}>
-                  <span style={{ fontSize: 38, fontWeight: 900, color: WHITE }}>{tier.price}</span>
-                  {tier.period && <span style={{ fontSize: 14, color: MUTED }}>{tier.period}</span>}
-                </div>
+              {/* Tier label */}
+              <div style={{
+                fontSize: 11, fontWeight: 700, color: tier.accentColor,
+                letterSpacing: "0.1em", textTransform: "uppercase", marginBottom: 6,
+              }}>
+                {tier.name}
+              </div>
+              <div style={{ fontSize: 12, color: MUTED, marginBottom: 16 }}>{tier.for}</div>
 
-                <p style={{ fontSize: 13, color: MUTED, marginBottom: 24, lineHeight: 1.5 }}>{tier.tagline}</p>
-
-                {/* CTA Button */}
-                <button
-                  onClick={() => handleSubscribe(tier)}
-                  disabled={isLoading}
-                  style={{
-                    display: "block", width: "100%", textAlign: "center",
-                    padding: "11px 20px", borderRadius: 8, fontSize: 14, fontWeight: 700,
-                    marginBottom: 24, cursor: isLoading ? "wait" : "pointer",
-                    opacity: isLoading ? 0.7 : 1,
-                    transition: "opacity 0.2s",
-                    ...(tier.ctaStyle === "filled"
-                      ? { background: GREEN, color: "#080D1A", border: "none" }
-                      : tier.ctaStyle === "gold"
-                      ? { background: "rgba(245,158,11,0.15)", color: GOLD, border: `1px solid rgba(245,158,11,0.35)` }
-                      : { background: "rgba(56,189,248,0.1)", color: TEAL, border: `1px solid rgba(56,189,248,0.3)` }),
-                  }}
-                >
-                  {isLoading ? "Opening Stripe Checkout…" : tier.cta}
-                </button>
-
-                {/* Divider */}
-                <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", marginBottom: 20 }} />
-
-                {/* Features */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-                  {tier.features.map((f, i) => (
-                    <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
-                      <span style={{ color: tier.accentColor, fontSize: 14, flexShrink: 0, marginTop: 1 }}>✓</span>
-                      <span style={{ fontSize: 13, color: MUTED, lineHeight: 1.4 }}>{f}</span>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Login hint for paid plans when not logged in */}
-                {!user && tier.planKey !== "starter" && (
-                  <div style={{ marginTop: 16, fontSize: 11, color: "rgba(240,244,250,0.35)", textAlign: "center" }}>
-                    You'll be asked to log in before checkout
-                  </div>
+              {/* Price */}
+              <div style={{ display: "flex", alignItems: "baseline", gap: 4, marginBottom: 20 }}>
+                <span style={{ fontSize: 40, fontWeight: 900, color: WHITE }}>{tier.price}</span>
+                {tier.period && (
+                  <span style={{ fontSize: 14, color: MUTED }}>{tier.period}</span>
                 )}
               </div>
-            );
-          })}
+
+              {/* CTA */}
+              <a
+                href={tier.ctaHref}
+                onClick={() => handleCtaClick(tier.id)}
+                style={{
+                  display: "block", textAlign: "center", textDecoration: "none",
+                  padding: "11px 20px", borderRadius: 8, fontSize: 14, fontWeight: 700,
+                  marginBottom: 24, background: tier.ctaBg, color: tier.ctaColor,
+                  transition: "opacity 0.15s",
+                }}
+                onMouseEnter={e => (e.currentTarget.style.opacity = "0.88")}
+                onMouseLeave={e => (e.currentTarget.style.opacity = "1")}
+              >
+                {tier.cta}
+              </a>
+
+              {/* Divider */}
+              <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", marginBottom: 20 }} />
+
+              {/* Features */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {tier.features.map((f) => (
+                  <div key={f} style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
+                    <Check style={{ width: 14, height: 14, color: GREEN, flexShrink: 0, marginTop: 2 }} />
+                    <span style={{ fontSize: 13, color: MUTED, lineHeight: 1.4 }}>{f}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
 
-        {/* FAQ */}
-        <div style={{ maxWidth: 720, margin: "0 auto" }}>
-          <h2 style={{ fontSize: 22, fontWeight: 800, color: WHITE, textAlign: "center", marginBottom: 32 }}>
-            Frequently Asked Questions
-          </h2>
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {FAQ.map((item, i) => (
-              <div
-                key={i}
-                style={{
-                  background: CARD, border: `1px solid ${BORDER}`,
-                  borderRadius: 12, padding: "18px 20px",
-                }}
-              >
-                <div style={{ fontSize: 14, fontWeight: 700, color: WHITE, marginBottom: 8 }}>
-                  {item.q}
-                </div>
-                <p style={{ fontSize: 13, color: MUTED, margin: 0, lineHeight: 1.6 }}>{item.a}</p>
-              </div>
-            ))}
-          </div>
+        {/* Comparison line */}
+        <div style={{
+          textAlign: "center", marginBottom: 72,
+          background: "rgba(52,211,153,0.05)",
+          border: `1px solid rgba(52,211,153,0.15)`,
+          borderRadius: 16, padding: "32px 24px",
+          maxWidth: 680, marginLeft: "auto", marginRight: "auto",
+        }}>
+          <p style={{ fontSize: 16, color: WHITE, lineHeight: 1.8, margin: 0 }}>
+            A junior analyst costs{" "}
+            <strong>$80,000/year</strong>.<br />
+            The Mesh costs{" "}
+            <strong style={{ color: GREEN }}>$11,988/year</strong>.<br />
+            <span style={{ fontSize: 14, color: MUTED }}>Same judgment. 5,760× faster.</span>
+          </p>
         </div>
 
         {/* Bottom CTA */}
-        <div style={{
-          textAlign: "center", marginTop: 72,
-          background: "rgba(52,211,153,0.05)",
-          border: `1px solid rgba(52,211,153,0.15)`,
-          borderRadius: 16, padding: "40px 24px",
-        }}>
+        <div style={{ textAlign: "center" }}>
           <h3 style={{ fontSize: 22, fontWeight: 800, color: WHITE, marginBottom: 10 }}>
             Not sure which plan is right for you?
           </h3>
@@ -328,28 +262,6 @@ export default function Pricing() {
           >
             Book a Demo →
           </a>
-          <div style={{ marginTop: 16 }}>
-            <a
-              href="/contact"
-              style={{
-                fontSize: 13,
-                color: "rgba(240,244,250,0.4)",
-                textDecoration: "none",
-                borderBottom: "1px solid transparent",
-                transition: "color 0.2s, border-color 0.2s",
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.color = "rgba(240,244,250,0.75)";
-                e.currentTarget.style.borderBottomColor = "rgba(240,244,250,0.4)";
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.color = "rgba(240,244,250,0.4)";
-                e.currentTarget.style.borderBottomColor = "transparent";
-              }}
-            >
-              Not sure which plan is right for you? Book a 15-minute call — no sales pitch.
-            </a>
-          </div>
         </div>
       </div>
     </div>

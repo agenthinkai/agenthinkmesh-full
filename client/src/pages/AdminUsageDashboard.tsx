@@ -783,6 +783,43 @@ export default function AdminUsageDashboard() {
           })()}
         </div>
 
+        {/* ── Deal Screening Funnel ── */}
+        <div className="mt-10 rounded-2xl border border-white/8 bg-white/[0.02] p-6">
+          <div className="flex items-center justify-between mb-5">
+            <div>
+              <h2 className="text-base font-bold text-white">Deal Screening Funnel</h2>
+              <p className="text-xs text-slate-500 mt-0.5">Conversion events tracked via Umami analytics. View live counts in the Umami dashboard.</p>
+            </div>
+            <a
+              href={`${import.meta.env.VITE_ANALYTICS_ENDPOINT ?? ""}/websites`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-teal-400 hover:text-teal-300 transition-colors border border-teal-500/30 rounded-lg px-3 py-1.5 hover:border-teal-400/50"
+            >
+              Open Umami ↗
+            </a>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {[
+              { event: "deal_screening_preview_view", label: "Preview Views", desc: "Unauthenticated user lands on /deals", color: "text-blue-400", border: "border-blue-500/20" },
+              { event: "deal_screening_demo_click", label: "Demo Clicks", desc: "\"See a full deal memo example\" clicked", color: "text-cyan-400", border: "border-cyan-500/20" },
+              { event: "deal_screening_cta_click", label: "Screening CTA Clicks", desc: "\"Start screening deals\" clicked", color: "text-emerald-400", border: "border-emerald-500/20" },
+              { event: "pricing_page_view", label: "Pricing Page Views", desc: "User visits /pricing", color: "text-violet-400", border: "border-violet-500/20" },
+              { event: "pricing_cta_click", label: "Pricing CTA Clicks", desc: "Tier CTA clicked (starter/professional/institutional)", color: "text-amber-400", border: "border-amber-500/20" },
+              { event: "home_deal_screening_cta_click", label: "Signups from Funnel", desc: "Deal screening CTA from homepage hero", color: "text-rose-400", border: "border-rose-500/20" },
+            ].map((row) => (
+              <div key={row.event} className={`rounded-xl border ${row.border} bg-white/[0.02] p-4`}>
+                <div className={`text-sm font-semibold ${row.color} mb-1`}>{row.label}</div>
+                <div className="text-xs text-slate-500 mb-2 leading-relaxed">{row.desc}</div>
+                <code className="text-[10px] font-mono text-slate-600 bg-white/[0.04] px-2 py-0.5 rounded">{row.event}</code>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 text-xs text-slate-600 font-mono">
+            All events fire via <code className="text-slate-500">trackEvent()</code> in <code className="text-slate-500">client/src/lib/analytics.ts</code> → Umami custom events API.
+          </div>
+        </div>
+
       </div>
       </div>
     </MeshSidebar>
