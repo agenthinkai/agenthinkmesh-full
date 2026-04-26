@@ -3579,3 +3579,14 @@
 - [x] Empty state: "No deep mode triages recorded yet. Run a deep analysis to populate this table."
 - [x] tsc --noEmit: EXIT:0
 - [x] Tests: 761/761 passed
+
+## Fleet Email Summary Sprint (two tasks)
+
+- [x] TASK 1: Audited founderFleetScheduler.ts — notifyOwner fires on SUCCESS and FAILURE per mode (in-app push, not email; no farouq@agenthink.ai recipient)
+- [x] TASK 2: Implemented combined fleet summary email to farouq@agenthink.ai via sendGraphEmail after both fleet runs complete
+- [x] TASK 2: Email subject: "AgenThink Fleet Report — [date] Kuwait"
+- [x] TASK 2: Email body: Global Fleet + GCC Fleet status blocks + Pattern Moat summary
+- [x] TASK 2: Sends after BOTH runs complete; marks failed mode as "FAILED" in email
+- [x] TASK 2: No schema changes, no new tRPC procedures
+- [x] TASK 2: tsc --noEmit: EXIT:0
+- [x] TASK 2: Tests: 761/761 passed
