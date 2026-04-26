@@ -3539,3 +3539,11 @@
 - [x] TASK 4: trackEvent("pricing_page_view") on /pricing page load
 - [x] TASK 4: trackEvent("pricing_cta_click", { tier }) on each pricing CTA
 - [x] TASK 4: Add "Deal Screening Funnel" widget to /admin/usage page
+
+## Homepage CTA Tracking + Demos Page
+
+- [x] TASK 1: Add trackEvent("deal_screening_cta_click", { location: "homepage_investor_col" }) to "Start screening deals →" button in Home.tsx
+- [x] TASK 2: /demos page already existed with all 4 cards; fixed grid to 2x2, updated subtitle to match spec
+- [x] TASK 2: /demos route already registered in App.tsx (line 321)
+- [x] TASK 2: Updated back-link text to "← Back to all examples" on all 4 IC memo pages
+- [x] TASK 2: /demos already in footer nav in Home.tsx (line 1158)

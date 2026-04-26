@@ -152,13 +152,12 @@ export default function Demos() {
             Live Deal Memos
           </h1>
           <p className="text-slate-400 text-base max-w-xl mx-auto">
-            See how AgenThink Mesh evaluates real deals across different markets
-            and deal types.
+            See how AgenThink Mesh evaluates real deals across different markets.
           </p>
         </div>
 
         {/* Cards */}
-        <div className="grid sm:grid-cols-3 gap-5">
+        <div className="grid sm:grid-cols-2 gap-5">
           {DEMOS.map((demo) => (
             <div
               key={demo.href}

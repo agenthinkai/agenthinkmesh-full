@@ -200,7 +200,7 @@ export default function UsIcDemo() {
             <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor">
               <path d="M12.25 8.75a.75.75 0 0 0 0-1.5H5.56l2.22-2.22a.75.75 0 1 0-1.06-1.06l-3.5 3.5a.75.75 0 0 0 0 1.06l3.5 3.5a.75.75 0 1 0 1.06-1.06L5.56 8.75h6.69z" />
             </svg>
-            All examples
+            ← Back to all examples
           </Link>
         </div>
         {/* Memo header */}
