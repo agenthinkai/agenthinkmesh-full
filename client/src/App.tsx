@@ -1,107 +1,132 @@
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { lazy, Suspense } from "react";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
+import { useAuth } from "./_core/hooks/useAuth";
+
+// ── Critical path: eager imports (homepage, auth, lightweight shells) ──────────
+import Home, { DemoBanner } from "./pages/Home";
 import Landing from "./pages/Landing";
 import MeshDashboard from "./pages/MeshDashboard";
-import AgentRegistry from "./pages/AgentRegistry";
-import Build from "./pages/Build";
-import AnnotationStudio from "./pages/AnnotationStudio";
 import AskScreen from "./pages/AskScreen";
-import ResultScreen from "./pages/ResultScreen";
-import HistoryScreen from "./pages/HistoryScreen";
-import PortfolioHome from "./pages/PortfolioHome";
-import PortfolioUpload from "./pages/PortfolioUpload";
-import PortfolioAnalyzing from "./pages/PortfolioAnalyzing";
-import PortfolioReport from "./pages/PortfolioReport";
-import PortfolioVault from "./pages/PortfolioVault";
-import PortfolioIntel from "./pages/PortfolioIntel";
-import PortfolioIntelRun from "./pages/PortfolioIntelRun";
-import PortfolioGuardian from "./pages/PortfolioGuardian";
-import InsuranceHome from "./pages/InsuranceHome";
-import InsuranceRun from "./pages/InsuranceRun";
-import TakafulAlerts from "./pages/TakafulAlerts";
-import AdMeshHome from "./pages/AdMeshHome";
-import AdMeshRun from "./pages/AdMeshRun";
-import SocialMediaHome from "./pages/SocialMediaHome";
-import SocialMediaRun from "./pages/SocialMediaRun";
-import OpenClawOverview from "./pages/OpenClawOverview";
-import DiscoveryPage from "./pages/DiscoveryPage";
-import BridgePage from "./pages/BridgePage";
-import PolicyPage from "./pages/PolicyPage";
-import ManifestsPage from "./pages/ManifestsPage";
-import TurnaroundHome from "./pages/TurnaroundHome";
-import TurnaroundUpload from "./pages/TurnaroundUpload";
-import TurnaroundCommand from "./pages/TurnaroundCommand";
-import TurnaroundReport from "./pages/TurnaroundReport";
-import PersonaSelector from "./pages/PersonaSelector";
-import ForceMajeureAgent from "./pages/ForceMajeureAgent";
-import GameTheoryAgent from "./pages/GameTheoryAgent";
-import ETFStudio from "./pages/ETFStudio";
-import PartnerCRM from "./pages/PartnerCRM";
-import AdminUsageDashboard from "./pages/AdminUsageDashboard";
-import CommandCenter from "./pages/CommandCenter";
-import MeshIntelligence from "./pages/Intelligence";
-import MeshSidebar from "./components/MeshSidebar";
-import AdminTreasury from "./pages/AdminTreasury";
-import DomainAgents from "./pages/DomainAgents";
-import DomainsPage from "./pages/DomainsPage";
-import BetaAccess from "./pages/BetaAccess";
-import RosieProtocol from "./pages/RosieProtocol";
-import AdminBetaRequests from "./pages/AdminBetaRequests";
-import AdminDemoRequests from "./pages/AdminDemoRequests";
-import Upgrade from "./pages/Upgrade";
-import NotFound from "./pages/NotFound";
-import DealScreener from "./pages/DealScreener";
-import PitchTriage from "./pages/PitchTriage";
 import PitchMirror from "./pages/PitchMirror";
 import PitchMirrorShared from "./pages/PitchMirrorShared";
 import PitchMirrorLanding from "./pages/PitchMirrorLanding";
-import ProcurementScreener from "./pages/ProcurementScreener";
-import Contacts from "./pages/Contacts";
-import DealComparison from "./pages/DealComparison";
-import SharedReport from "./pages/SharedReport";
-import ReportsHistory from "./pages/ReportsHistory";
-import IntelligenceHome from "./pages/IntelligenceHome";
-import IntelligenceTracking from "./pages/IntelligenceTracking";
-import IntelligenceBriefs from "./pages/IntelligenceBriefs";
-import IntelligenceHistory from "./pages/IntelligenceHistory";
-import IntelligenceAdmin from "./pages/IntelligenceAdmin";
-import Telco from "./pages/Telco";
-import ForecastDashboard from "./pages/ForecastDashboard";
-import ForecastNew from "./pages/ForecastNew";
-import ForecastDetail from "./pages/ForecastDetail";
-import KnowledgeVault from "./pages/KnowledgeVault";
-import SelfLearning from "./pages/SelfLearning";
-import Pitch from "./pages/Pitch";
-import Pricing from "./pages/Pricing";
-import Contact from "./pages/Contact";
-import AccountBilling from "./pages/AccountBilling";
-import PaymentHistory from "./pages/PaymentHistory";
-import Home, { DemoBanner } from "./pages/Home";
-import { useAuth } from "./_core/hooks/useAuth";
-import Tracker from "./pages/Tracker";
-import PortfolioMesh from "./pages/PortfolioMesh";
-import PortfolioMeshHistory from "./pages/PortfolioMeshHistory";
-import PortfolioMeshDemo from "./pages/PortfolioMeshDemo";
-import PortfolioMeshRunDetail from "./pages/PortfolioMeshRunDetail";
-import PortfolioMeshShare from "./pages/PortfolioMeshShare";
-import AdminUserCreate from "./pages/AdminUserCreate";
-import AdminUserList from "./pages/AdminUserList";
+import NotFound from "./pages/NotFound";
 import PasswordLogin from "./pages/PasswordLogin";
 import ChangePassword from "./pages/ChangePassword";
-import SgIcDemo from "./pages/SgIcDemo";
-import JpIcDemo from "./pages/JpIcDemo";
-import UsIcDemo from "./pages/UsIcDemo";
-import GccIcDemo from "./pages/GccIcDemo";
-import Demos from "./pages/Demos";
-import Unsubscribe from "./pages/Unsubscribe";
-import FounderFleet from "./pages/FounderFleet";
+import Pricing from "./pages/Pricing";
+import Contact from "./pages/Contact";
 import SecurityPage from "./pages/SecurityPage";
-import SecurityKeysPage from "./pages/SecurityKeysPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
+import BetaAccess from "./pages/BetaAccess";
+import Unsubscribe from "./pages/Unsubscribe";
+import MeshSidebar from "./components/MeshSidebar";
+
+// ── Lazy imports: heavy pages loaded only when navigated to ───────────────────
+const AgentRegistry = lazy(() => import("./pages/AgentRegistry"));
+const Build = lazy(() => import("./pages/Build"));
+const AnnotationStudio = lazy(() => import("./pages/AnnotationStudio"));
+const ResultScreen = lazy(() => import("./pages/ResultScreen"));
+const HistoryScreen = lazy(() => import("./pages/HistoryScreen"));
+const PortfolioHome = lazy(() => import("./pages/PortfolioHome"));
+const PortfolioUpload = lazy(() => import("./pages/PortfolioUpload"));
+const PortfolioAnalyzing = lazy(() => import("./pages/PortfolioAnalyzing"));
+const PortfolioReport = lazy(() => import("./pages/PortfolioReport"));
+const PortfolioVault = lazy(() => import("./pages/PortfolioVault"));
+const PortfolioIntel = lazy(() => import("./pages/PortfolioIntel"));
+const PortfolioIntelRun = lazy(() => import("./pages/PortfolioIntelRun"));
+const PortfolioGuardian = lazy(() => import("./pages/PortfolioGuardian"));
+const InsuranceHome = lazy(() => import("./pages/InsuranceHome"));
+const InsuranceRun = lazy(() => import("./pages/InsuranceRun"));
+const TakafulAlerts = lazy(() => import("./pages/TakafulAlerts"));
+const AdMeshHome = lazy(() => import("./pages/AdMeshHome"));
+const AdMeshRun = lazy(() => import("./pages/AdMeshRun"));
+const SocialMediaHome = lazy(() => import("./pages/SocialMediaHome"));
+const SocialMediaRun = lazy(() => import("./pages/SocialMediaRun"));
+const OpenClawOverview = lazy(() => import("./pages/OpenClawOverview"));
+const DiscoveryPage = lazy(() => import("./pages/DiscoveryPage"));
+const BridgePage = lazy(() => import("./pages/BridgePage"));
+const PolicyPage = lazy(() => import("./pages/PolicyPage"));
+const ManifestsPage = lazy(() => import("./pages/ManifestsPage"));
+const TurnaroundHome = lazy(() => import("./pages/TurnaroundHome"));
+const TurnaroundUpload = lazy(() => import("./pages/TurnaroundUpload"));
+const TurnaroundCommand = lazy(() => import("./pages/TurnaroundCommand"));
+const TurnaroundReport = lazy(() => import("./pages/TurnaroundReport"));
+const PersonaSelector = lazy(() => import("./pages/PersonaSelector"));
+const ForceMajeureAgent = lazy(() => import("./pages/ForceMajeureAgent"));
+const GameTheoryAgent = lazy(() => import("./pages/GameTheoryAgent"));
+const ETFStudio = lazy(() => import("./pages/ETFStudio"));
+const PartnerCRM = lazy(() => import("./pages/PartnerCRM"));
+const AdminUsageDashboard = lazy(() => import("./pages/AdminUsageDashboard"));
+const CommandCenter = lazy(() => import("./pages/CommandCenter"));
+const MeshIntelligence = lazy(() => import("./pages/Intelligence"));
+const AdminTreasury = lazy(() => import("./pages/AdminTreasury"));
+const DomainAgents = lazy(() => import("./pages/DomainAgents"));
+const DomainsPage = lazy(() => import("./pages/DomainsPage"));
+const RosieProtocol = lazy(() => import("./pages/RosieProtocol"));
+const AdminBetaRequests = lazy(() => import("./pages/AdminBetaRequests"));
+const AdminDemoRequests = lazy(() => import("./pages/AdminDemoRequests"));
+const Upgrade = lazy(() => import("./pages/Upgrade"));
+const DealScreener = lazy(() => import("./pages/DealScreener"));
+const PitchTriage = lazy(() => import("./pages/PitchTriage"));
+const ProcurementScreener = lazy(() => import("./pages/ProcurementScreener"));
+const Contacts = lazy(() => import("./pages/Contacts"));
+const DealComparison = lazy(() => import("./pages/DealComparison"));
+const SharedReport = lazy(() => import("./pages/SharedReport"));
+const ReportsHistory = lazy(() => import("./pages/ReportsHistory"));
+const IntelligenceHome = lazy(() => import("./pages/IntelligenceHome"));
+const IntelligenceTracking = lazy(() => import("./pages/IntelligenceTracking"));
+const IntelligenceBriefs = lazy(() => import("./pages/IntelligenceBriefs"));
+const IntelligenceHistory = lazy(() => import("./pages/IntelligenceHistory"));
+const IntelligenceAdmin = lazy(() => import("./pages/IntelligenceAdmin"));
+const Telco = lazy(() => import("./pages/Telco"));
+const ForecastDashboard = lazy(() => import("./pages/ForecastDashboard"));
+const ForecastNew = lazy(() => import("./pages/ForecastNew"));
+const ForecastDetail = lazy(() => import("./pages/ForecastDetail"));
+const KnowledgeVault = lazy(() => import("./pages/KnowledgeVault"));
+const SelfLearning = lazy(() => import("./pages/SelfLearning"));
+const Pitch = lazy(() => import("./pages/Pitch"));
+const AccountBilling = lazy(() => import("./pages/AccountBilling"));
+const PaymentHistory = lazy(() => import("./pages/PaymentHistory"));
+const Tracker = lazy(() => import("./pages/Tracker"));
+const PortfolioMesh = lazy(() => import("./pages/PortfolioMesh"));
+const PortfolioMeshHistory = lazy(() => import("./pages/PortfolioMeshHistory"));
+const PortfolioMeshDemo = lazy(() => import("./pages/PortfolioMeshDemo"));
+const PortfolioMeshRunDetail = lazy(() => import("./pages/PortfolioMeshRunDetail"));
+const PortfolioMeshShare = lazy(() => import("./pages/PortfolioMeshShare"));
+const AdminUserCreate = lazy(() => import("./pages/AdminUserCreate"));
+const AdminUserList = lazy(() => import("./pages/AdminUserList"));
+const SgIcDemo = lazy(() => import("./pages/SgIcDemo"));
+const JpIcDemo = lazy(() => import("./pages/JpIcDemo"));
+const UsIcDemo = lazy(() => import("./pages/UsIcDemo"));
+const GccIcDemo = lazy(() => import("./pages/GccIcDemo"));
+const Demos = lazy(() => import("./pages/Demos"));
+const FounderFleet = lazy(() => import("./pages/FounderFleet"));
+const SecurityKeysPage = lazy(() => import("./pages/SecurityKeysPage"));
+
+// ── Page-level loading fallback ───────────────────────────────────────────────
+function PageLoader() {
+  return (
+    <div style={{
+      minHeight: "100vh", display: "flex", alignItems: "center",
+      justifyContent: "center", background: "#0B1629",
+    }}>
+      <div style={{ textAlign: "center" }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: "50%",
+          border: "3px solid #1e2d3d", borderTopColor: "#4a9eff",
+          animation: "spin 0.8s linear infinite", margin: "0 auto 10px",
+        }} />
+        <div style={{ fontSize: 11, color: "#64748b", fontFamily: "'JetBrains Mono', monospace" }}>Loading…</div>
+      </div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
 
 function Router() {
   const { isAuthenticated, loading } = useAuth();
@@ -134,6 +159,7 @@ function Router() {
   }
 
   return (
+    <Suspense fallback={<PageLoader />}>
     <Switch>
       {/* Public landing page */}
       <Route path="/" component={Home} />
@@ -302,6 +328,7 @@ function Router() {
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
     </Switch>
+    </Suspense>
   );
 }
 

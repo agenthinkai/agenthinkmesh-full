@@ -788,17 +788,54 @@ export default function ProcurementScreener() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <div className="text-center">
-          <div className="text-4xl mb-4">🔒</div>
-          <h2 className="text-xl font-bold text-slate-100 mb-2">Authentication Required</h2>
-          <p className="text-slate-400 text-sm mb-6">Sign in to access the Procurement Evaluation Engine.</p>
-          <Button
-            onClick={() => { window.location.href = getLoginUrl(); }}
-            className="bg-blue-600 hover:bg-blue-700 text-white"
-          >
-            SIGN IN
-          </Button>
+      <div className="min-h-screen bg-slate-950 text-slate-100 relative overflow-hidden">
+        {/* Blurred sample output */}
+        <div className="filter blur-md opacity-30 pointer-events-none select-none p-10">
+          <div className="max-w-4xl mx-auto">
+            <div className="font-mono text-xs text-blue-400 tracking-widest mb-6">PROCUREMENT EVALUATION — SAMPLE OUTPUT</div>
+            <div className="grid grid-cols-3 gap-4 mb-6">
+              {[{l:"VENDOR SCORE",v:"78 / 100",c:"text-green-400"},{l:"RECOMMENDATION",v:"APPROVE",c:"text-green-400"},{l:"RISK RATING",v:"LOW",c:"text-green-400"}].map(m => (
+                <div key={m.l} className="bg-slate-900 border border-slate-800 rounded-lg p-4">
+                  <div className="font-mono text-[9px] text-slate-500 tracking-widest mb-2">{m.l}</div>
+                  <div className={`text-2xl font-bold ${m.c}`}>{m.v}</div>
+                </div>
+              ))}
+            </div>
+            <div className="bg-slate-900 border border-slate-800 rounded-lg p-5 mb-4">
+              <div className="font-mono text-[9px] text-blue-400 tracking-widest mb-4">AGENT COUNCIL BREAKDOWN</div>
+              {["Financial Stability Agent","Compliance & Regulatory Agent","Delivery Capability Agent","ESG Screening Agent","Shariah Compliance Agent"].map((a, i) => (
+                <div key={a} className="flex items-center gap-3 mb-3">
+                  <div className="font-mono text-xs text-slate-400 flex-1">{a}</div>
+                  <div className="w-28 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full" style={{ width: `${[78,82,71,88,75][i]}%` }} />
+                  </div>
+                  <div className="font-mono text-xs text-blue-400 w-8 text-right">{[78,82,71,88,75][i]}</div>
+                </div>
+              ))}
+            </div>
+            <div className="bg-slate-900 border border-slate-800 rounded-lg p-5">
+              <div className="font-mono text-[9px] text-blue-400 tracking-widest mb-3">EVALUATION SUMMARY</div>
+              <p className="text-sm text-slate-400 leading-relaxed">Vendor demonstrates strong financial stability with 8+ years of operating history and ISO 27001 certification. Delivery SLA compliance at 97.3% over the past 24 months. Minor ESG gap identified in Scope 3 emissions reporting. Shariah screening: no prohibited activities detected...</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Overlay gate */}
+        <div className="absolute inset-0 flex items-center justify-center" style={{ background: "linear-gradient(to bottom, transparent 0%, rgba(2,6,23,0.88) 35%, rgba(2,6,23,0.97) 60%)" }}>
+          <div className="text-center max-w-md px-6">
+            <div className="text-4xl mb-4">📦</div>
+            <h2 className="text-2xl font-bold text-slate-100 mb-3">Procurement Evaluation Engine</h2>
+            <p className="text-slate-400 text-sm leading-relaxed mb-8">Score any vendor or supplier across financial stability, compliance, delivery capability, ESG, and Shariah criteria — structured output in under 60 seconds.</p>
+            <div className="flex gap-3 justify-center flex-wrap">
+              <Button onClick={() => { window.location.href = getLoginUrl(); }} className="bg-blue-600 hover:bg-blue-700 text-white font-mono text-xs tracking-widest px-6">
+                SIGN IN TO EVALUATE →
+              </Button>
+              <a href="/pitchmirror" className="inline-flex items-center px-5 py-2 border border-slate-700 rounded text-slate-400 font-mono text-xs tracking-widest hover:text-slate-200 transition-colors">
+                Try PitchMirror free →
+              </a>
+            </div>
+            <p className="mt-5 font-mono text-[10px] text-slate-600">9 agents · ISO/Shariah/ESG criteria · avg 47s</p>
+          </div>
         </div>
       </div>
     );

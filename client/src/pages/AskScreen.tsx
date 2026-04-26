@@ -440,10 +440,13 @@ export default function AskScreen() {
           </span>
         </h1>
 
-        <p style={{ color: MUTED, fontSize: 16, textAlign: "center", marginBottom: 36, lineHeight: 1.6, maxWidth: 560 }}>
+        <p style={{ color: MUTED, fontSize: 16, textAlign: "center", marginBottom: 8, lineHeight: 1.6, maxWidth: 560 }}>
           {identityProfile.data?.activePersona
             ? `Your Mesh is configured for ${identityProfile.data.activePersona.replace(/_/g, " ").toLowerCase()} workflows. The right agents are ready.`
             : "AgenThinkMesh transforms unstructured inputs into consistent, auditable outputs across Finance, Legal, Healthcare, GCC Wealth, and Education."}
+        </p>
+        <p style={{ color: MUTED, fontSize: 13, textAlign: "center", marginBottom: 28, opacity: 0.65, fontStyle: "italic" }}>
+          AI that evaluates decisions — not just generates content
         </p>
 
         {/* Input area */}

@@ -264,40 +264,15 @@ export default function Home() {
           </div>
 
           <h1 className="text-4xl md:text-6xl font-bold tracking-tight leading-[1.08] mb-5">
-            Your team’s structured analysis,{" "}
+            Get investor-style feedback on your pitch{" "}
             <span className="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">
-              on demand
+              in 60 seconds
             </span>
           </h1>
 
           <p className="text-lg text-white/65 max-w-2xl mx-auto mb-3 leading-relaxed">
-            Stop spending hours on structured analysis. Describe your task, get a decision-ready output in seconds.
+            Paste your idea and see how a decision council evaluates it. AI that evaluates decisions — not just generates content.
           </p>
-
-          {/* ── WHAT DO YOU NEED TO DECIDE? CHIPS ── */}
-          <div className="mb-8">
-            <p className="text-xs text-white/40 font-mono uppercase tracking-widest mb-3">What do you need to decide today?</p>
-            <div className="flex items-center justify-center gap-2 flex-wrap">
-              {[
-                { label: "Triage a pitch", value: "Screen these 5 pitches against our early-stage B2B SaaS thesis", stage: "early_revenue" },
-                { label: "Screen a deal", value: "Evaluate this Series A deal against our investment criteria", stage: "scaling" },
-                { label: "Evaluate a vendor", value: "Compare these 3 vendors against our procurement criteria for cloud infrastructure", stage: "building" },
-                { label: "Assess a portfolio company", value: "Summarise the current performance of our 3 portfolio companies against Q2 targets", stage: "portfolio" },
-              ].map((chip) => (
-                <button
-                  key={chip.label}
-                  onClick={() => handleChipClick(chip.label, chip.value, chip.stage)}
-                  className={`px-4 py-1.5 rounded-full text-xs font-medium border transition-all duration-150 ${
-                    taskInput === chip.value
-                      ? "bg-emerald-500/20 border-emerald-500/50 text-emerald-300"
-                      : "bg-white/5 border-white/10 text-white/55 hover:bg-white/10 hover:text-white/80 hover:border-white/20"
-                  }`}
-                >
-                  {chip.label}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* ── 3-STEP EXPLAINER ── */}
           <div className="flex items-center justify-center gap-0 mb-8 flex-wrap">
@@ -326,39 +301,28 @@ export default function Home() {
           {/* ── PRIMARY FREE-RUN CTA ── */}
           {!isAuthenticated && (
             <div className="mb-10 w-full max-w-xl mx-auto">
-              <div className="flex items-center gap-2 rounded-2xl bg-white/[0.05] border border-white/10 px-4 py-3 focus-within:border-emerald-500/50 focus-within:ring-1 focus-within:ring-emerald-500/20 transition-all">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={taskInput}
-                  onChange={(e) => setTaskInput(e.target.value)}
-                  placeholder="Describe your task…"
-                  className="flex-1 min-w-0 bg-transparent text-sm text-white placeholder:text-white/30 outline-none"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && taskInput.trim()) {
-                      trackEvent("home_pitchmirror_cta_click", { location: "hero", chip: "enter" });
-                      window.location.href = `/pitchmirror?task=${encodeURIComponent(taskInput)}&stage=${encodeURIComponent(chipStage)}&chip=${encodeURIComponent(chipLabel)}`;
-                    }
-                  }}
-                />
-                {/* ↵ Enter keyboard shortcut indicator */}
-                <span className="flex-shrink-0 hidden sm:flex items-center gap-0.5 text-[10px] text-white/20 font-mono select-none pointer-events-none mr-1">
-                  <kbd className="px-1 py-0.5 rounded border border-white/10 bg-white/5 text-white/20 text-[9px] leading-none">↵</kbd>
-                  <span>Enter</span>
-                </span>
+              {/* Primary PitchMirror CTA */}
+              <a
+                href="/pitchmirror"
+                onClick={() => trackEvent("home_pitchmirror_cta_click", { location: "hero_primary" })}
+                className="block w-full text-center py-4 px-6 rounded-2xl text-white font-bold text-lg shadow-xl shadow-emerald-900/40 transition-all duration-150 hover:scale-[1.02] hover:shadow-emerald-900/60 focus:outline-none mb-2"
+                style={{ background: "linear-gradient(135deg, #10b981 0%, #06b6d4 100%)" }}
+              >
+                Try PitchMirror →
+              </a>
+              <p className="mt-2 text-xs text-white/45 text-center">
+                Free · No login required · Takes ~30 seconds
+              </p>
+              {/* Secondary deal screening CTA */}
+              <div className="mt-4 flex justify-center">
                 <a
-                  href={`/pitchmirror?task=${encodeURIComponent(taskInput)}&stage=${encodeURIComponent(chipStage)}&chip=${encodeURIComponent(chipLabel)}`}
-                  onClick={() => trackEvent("home_pitchmirror_cta_click", { location: "hero" })}
-                  className="flex-shrink-0 inline-flex items-center gap-2 px-4 py-2 rounded-xl text-white font-semibold text-sm shadow-lg shadow-emerald-900/30 transition-all duration-150 hover:scale-[1.03] focus:outline-none"
-                  style={{ background: "linear-gradient(135deg, #10b981 0%, #06b6d4 100%)" }}
+                  href="/deals"
+                  onClick={() => trackEvent("home_deal_screening_cta_click", { location: "hero_secondary" })}
+                  className="inline-flex items-center gap-2 text-sm text-white/50 hover:text-cyan-400 transition-colors border border-white/10 hover:border-cyan-500/40 rounded-xl px-4 py-2 bg-white/[0.03] hover:bg-cyan-500/5"
                 >
-                  <span>Run free</span>
-                  <ArrowRight className="w-4 h-4" />
+                  Run full deal screening →
                 </a>
               </div>
-              <p className="mt-2 text-xs text-white/35 text-center">
-                No setup. No training. Just describe what you need.
-              </p>
               {/* ── DEMO REQUEST CTA ── */}
               <div className="mt-4 flex justify-center">
                 {!demoFormOpen && !demoSubmitted && (

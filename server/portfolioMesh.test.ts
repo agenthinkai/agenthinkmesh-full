@@ -149,7 +149,8 @@ describe("App.tsx routes", () => {
 
   it("imports PortfolioMesh page", () => {
     const src = readFileSync(join(ROOT, "client/src/App.tsx"), "utf-8");
-    expect(src).toContain('import PortfolioMesh from "./pages/PortfolioMesh"');
+    // PortfolioMesh is now a lazy import for bundle splitting (TASK 5)
+    expect(src).toContain('import("./pages/PortfolioMesh")');
   });
 });
 

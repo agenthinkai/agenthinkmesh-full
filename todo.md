@@ -3495,3 +3495,27 @@
 - [x] TASK 2: Add Tokens / Cost columns to evalStats table in FleetSchedulerCard
 - [x] TASK 2: Update copy button to include token/cost in Q1 and Q2 output
 - [x] TASK 2: Show actual totalCostUsd (amber) in trend table run rows
+
+## Growth Correction (Pasted_content_76)
+- [x] TASK 1: Replace homepage hero input bar with PitchMirror CTA (headline, subtext, primary CTA, sub-label)
+- [x] TASK 1: Visually demote workflow cards below the fold
+- [x] TASK 2: Add highlighted PitchMirror nav item to SiteNav (desktop + mobile drawer)
+- [x] TASK 2: Add secondary "Run full deal screening →" CTA in hero
+- [x] TASK 3: Update ShareButton copy link toast to "Link copied — share your investor score"
+- [x] TASK 3: Add "Post to LinkedIn" button with pre-filled intent text
+- [x] TASK 3: Add watermark footer to shared result pages (/pitchmirror/r/:token)
+- [x] TASK 4: Add "See what you get" preview section to /deals unauthenticated view
+- [x] TASK 4: Add "See what you get" preview section to /procurement unauthenticated view
+- [x] TASK 5: Lazy-load mesh canvas, domains, and dashboard components in App.tsx
+- [x] TASK 5: Ensure PitchMirror loads independently of mesh bundle (Suspense wrapper added)
+- [x] TASK 6: Update homepage subtext to "AI that evaluates decisions — not just generates content"
+- [x] TASK 6: Update PitchMirror header secondary line with new positioning text
+- [x] TASK 6: Update /ask page with new positioning text
+
+## Growth Correction (Pasted_content_76) — Summary
+- [x] TASK 1: Replace homepage hero with PitchMirror CTA
+- [x] TASK 2: Add PitchMirror nav item + secondary deal screening CTA
+- [x] TASK 3: LinkedIn share button + watermark on shared pages
+- [x] TASK 4: Deal Screener + Procurement preview layer
+- [x] TASK 5: Lazy-load bundle split for PitchMirror
+- [x] TASK 6: Messaging alignment across homepage, PitchMirror, /ask

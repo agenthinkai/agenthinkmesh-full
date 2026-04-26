@@ -3060,22 +3060,69 @@ export default function DealScreener() {
 
   if (!isAuthenticated) {
     return (
-      <div style={{ minHeight: "100vh", background: BG, display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ fontFamily: MONO, fontSize: 12, color: TEXT2, marginBottom: 16 }}>Sign in to access Deal Screener</div>
-          <a href={getLoginUrl()} style={{
-            display: "inline-block",
-            padding: "10px 24px",
-            background: ACCENT,
-            color: "#000",
-            borderRadius: 4,
-            fontFamily: MONO,
-            fontSize: 12,
-            fontWeight: 700,
-            textDecoration: "none",
-          }}>
-            SIGN IN →
-          </a>
+      <div style={{ minHeight: "100vh", background: BG, color: TEXT, fontFamily: "'Inter', sans-serif", position: "relative" }}>
+        {/* Blurred sample output */}
+        <div style={{ filter: "blur(6px)", opacity: 0.35, pointerEvents: "none", userSelect: "none", padding: "40px 24px 0" }}>
+          <div style={{ maxWidth: 900, margin: "0 auto" }}>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, letterSpacing: "0.12em", marginBottom: 24 }}>DEAL SCREENER — SAMPLE OUTPUT</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 24 }}>
+              {[{label:"OVERALL SCORE",val:"72 / 100",color:"#4ade80"},{label:"CONVICTION",val:"ENGAGE",color:"#4ade80"},{label:"RISK LEVEL",val:"MEDIUM",color:"#fbbf24"}].map(m => (
+                <div key={m.label} style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "16px 20px" }}>
+                  <div style={{ fontFamily: MONO, fontSize: 9, color: TEXT2, letterSpacing: "0.1em", marginBottom: 8 }}>{m.label}</div>
+                  <div style={{ fontSize: 22, fontWeight: 700, color: m.color }}>{m.val}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "20px 24px", marginBottom: 16 }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: ACCENT, letterSpacing: "0.1em", marginBottom: 12 }}>AGENT COUNCIL BREAKDOWN</div>
+              {["Market Opportunity Agent","Competitive Moat Agent","Financial Viability Agent","Team Assessment Agent","Regulatory Risk Agent"].map((a, i) => (
+                <div key={a} style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
+                  <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, flex: 1 }}>{a}</div>
+                  <div style={{ width: 120, height: 6, background: BORDER, borderRadius: 3, overflow: "hidden" }}>
+                    <div style={{ width: `${[72,68,81,65,74][i]}%`, height: "100%", background: ACCENT, borderRadius: 3 }} />
+                  </div>
+                  <div style={{ fontFamily: MONO, fontSize: 11, color: ACCENT, width: 30, textAlign: "right" }}>{[72,68,81,65,74][i]}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ background: BG2, border: `1px solid ${BORDER}`, borderRadius: 8, padding: "20px 24px" }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: ACCENT, letterSpacing: "0.1em", marginBottom: 12 }}>IC MEMO EXCERPT</div>
+              <div style={{ fontSize: 13, color: TEXT2, lineHeight: 1.7 }}>
+                The company operates in a $4.2B addressable market with a defensible SaaS moat. Revenue growth of 3.2× YoY with net dollar retention of 118% signals strong product-market fit. Key risks include regulatory exposure in 3 jurisdictions and a 14-month cash runway at current burn...
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Overlay gate */}
+        <div style={{
+          position: "absolute", inset: 0,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          background: "linear-gradient(to bottom, transparent 0%, rgba(7,11,18,0.85) 35%, rgba(7,11,18,0.97) 60%)",
+        }}>
+          <div style={{ textAlign: "center", maxWidth: 460, padding: "0 24px" }}>
+            <div style={{ fontSize: 32, marginBottom: 16 }}>⚖️</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: TEXT, marginBottom: 10 }}>Deal Screener</div>
+            <div style={{ fontSize: 14, color: TEXT2, lineHeight: 1.65, marginBottom: 28 }}>
+              Run a full AI council evaluation on any deal — market, moat, financials, team, and regulatory risk — and get a scored IC Memo in under 60 seconds.
+            </div>
+            <div style={{ display: "flex", gap: 12, justifyContent: "center", flexWrap: "wrap" }}>
+              <a href={getLoginUrl()} style={{
+                display: "inline-block", padding: "12px 28px",
+                background: ACCENT, color: "#000",
+                borderRadius: 6, fontFamily: MONO, fontSize: 12,
+                fontWeight: 700, textDecoration: "none",
+              }}>SIGN IN TO RUN A SCREEN →</a>
+              <a href="/pitchmirror" style={{
+                display: "inline-block", padding: "12px 20px",
+                background: "transparent", color: TEXT2,
+                border: `1px solid ${BORDER}`,
+                borderRadius: 6, fontFamily: MONO, fontSize: 12,
+                fontWeight: 600, textDecoration: "none",
+              }}>Try PitchMirror free →</a>
+            </div>
+            <div style={{ marginTop: 16, fontFamily: MONO, fontSize: 10, color: MUTED }}>115 agents · 14 domains · avg 47s per evaluation</div>
+          </div>
         </div>
       </div>
     );
