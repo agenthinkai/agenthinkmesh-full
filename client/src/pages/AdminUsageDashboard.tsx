@@ -820,62 +820,91 @@ export default function AdminUsageDashboard() {
           </div>
         </div>
 
-        {/* ── Monte Carlo Calibration Table ── */}
-        <div className="mt-10 rounded-2xl border border-white/8 bg-white/[0.02] p-6">
-          <div className="mb-5">
-            <h2 className="text-base font-bold text-white">Monte Carlo Calibration</h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Raw deal parameters extracted per deep-mode triage run, stored in{" "}
-              <code className="text-slate-400">pitch_triages.monteCarloDealParams</code>. Used to calibrate
-              simulation weights over time. Columns are the 6 financial signals passed to the 1,000-iteration
-              Box-Muller engine.
-            </p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead>
-                <tr className="border-b border-white/8 text-slate-500">
-                  <th className="pb-2 pr-4 font-medium">Parameter</th>
-                  <th className="pb-2 pr-4 font-medium">DB Column</th>
-                  <th className="pb-2 pr-4 font-medium">Range</th>
-                  <th className="pb-2 font-medium">Interpretation</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {[
-                  { param: "revenue_growth_rate", range: "0–100", note: "YoY revenue growth signal (100 = hypergrowth)" },
-                  { param: "gross_margin", range: "0–100", note: "Gross margin quality (100 = >80% SaaS-grade)" },
-                  { param: "market_size_usd", range: "0–100", note: "TAM signal (100 = >$10B addressable)" },
-                  { param: "churn_rate", range: "0–100", note: "Retention quality (100 = near-zero churn)" },
-                  { param: "time_to_profitability", range: "0–100", note: "Path clarity (100 = already profitable)" },
-                  { param: "pivot_probability", range: "0–100", note: "Business model stability (100 = no pivot risk)" },
-                ].map((row) => (
-                  <tr key={row.param} className="text-slate-400">
-                    <td className="py-2 pr-4 font-mono text-teal-400/80">{row.param}</td>
-                    <td className="py-2 pr-4 font-mono text-slate-600 text-[10px]">monteCarloDealParams.{row.param}</td>
-                    <td className="py-2 pr-4 text-slate-500">{row.range}</td>
-                    <td className="py-2 text-slate-500">{row.note}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <div className="mt-4 p-3 rounded-xl bg-white/[0.03] border border-white/5 text-xs text-slate-500">
-            <span className="text-slate-400 font-medium">How to use: </span>
-            Query{" "}
-            <code className="text-teal-400/70">SELECT monteCarloDealParams, score FROM pitch_triages WHERE monteCarloDealParams IS NOT NULL</code>
-            {" "}to build a calibration dataset. Compare extracted params against the final{" "}
-            <code className="text-teal-400/70">score</code> to identify which parameters best predict real outcomes and adjust simulation weights accordingly.
-          </div>
-        </div>
+        {/* ── Monte Carlo Parameter Calibration (live) ── */}
+        <MCCalibrationWidget isAdmin={user?.role === "admin"} />
 
       </div>
       </div>
     </MeshSidebar>
   );
 }
+// ── Monte Carlo Parameter Calibration widget ─────────────────────────────────
+function MCCalibrationWidget({ isAdmin }: { isAdmin: boolean }) {
+  const { data, isLoading } = trpc.adminUsage.mcCalibration.useQuery(undefined, {
+    enabled: isAdmin,
+  });
 
-// ── Inline login history expand row ───────────────────────────────────────────
+  return (
+    <div className="mt-10 rounded-2xl border border-white/8 bg-white/[0.02] p-6">
+      <div className="mb-5">
+        <h2 className="text-base font-bold text-white">Monte Carlo Parameter Calibration</h2>
+        <p className="text-xs text-slate-500 mt-0.5">
+          Avg / Min / Max / Spread for each signal parameter across all deep-mode triage runs.
+          Source: <code className="text-slate-400">pitch_triages.monteCarloDealParams</code>.
+        </p>
+      </div>
+
+      {isLoading ? (
+        <div className="text-slate-500 text-xs py-4">Loading calibration data…</div>
+      ) : !data || data.empty ? (
+        <div className="rounded-xl border border-white/5 bg-white/[0.02] p-6 text-center">
+          <p className="text-slate-400 text-sm font-medium">No deep mode triages recorded yet.</p>
+          <p className="text-slate-600 text-xs mt-1">Run a deep analysis to populate this table.</p>
+        </div>
+      ) : (
+        <>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left">
+              <thead>
+                <tr className="border-b border-white/8 text-slate-500">
+                  <th className="pb-2 pr-6 font-medium">Parameter</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Avg</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Min</th>
+                  <th className="pb-2 pr-4 font-medium text-right">Max</th>
+                  <th className="pb-2 font-medium text-right">Spread</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {data.params.map((p) => (
+                  <tr key={p.key} className="text-slate-300">
+                    <td className="py-2 pr-6 font-medium">{p.label}</td>
+                    <td className="py-2 pr-4 text-right font-mono text-teal-400">{p.avg}</td>
+                    <td className="py-2 pr-4 text-right font-mono text-slate-500">{p.min}</td>
+                    <td className="py-2 pr-4 text-right font-mono text-slate-500">{p.max}</td>
+                    <td className="py-2 text-right font-mono"
+                      style={{ color: p.spread >= 50 ? "#f87171" : p.spread >= 25 ? "#fbbf24" : "#4ade80" }}>
+                      {p.spread}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+              <div className="text-xs text-amber-400 font-semibold mb-0.5">Highest spread parameter</div>
+              <div className="text-sm text-white font-bold">{data.highestSpread}</div>
+              <div className="text-xs text-slate-500 mt-0.5">Most uncertain dimension in your deal flow</div>
+            </div>
+            <div className="rounded-xl border border-white/8 bg-white/[0.02] p-4 grid grid-cols-2 gap-3">
+              <div>
+                <div className="text-xs text-slate-500 mb-0.5">Deep mode triages</div>
+                <div className="text-lg font-bold text-teal-400">{data.deepCount}</div>
+              </div>
+              <div>
+                <div className="text-xs text-slate-500 mb-0.5">Quick mode triages</div>
+                <div className="text-lg font-bold text-slate-400">{data.quickCount}</div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+// ── Inline login history expand row ─────────────────────────────────────────────
 function LoginHistoryRow({ userId, isAdmin }: { userId: string; isAdmin: boolean }) {
   const { data, isLoading } = trpc.adminUsage.getUserLoginHistory.useQuery(
     { userId },

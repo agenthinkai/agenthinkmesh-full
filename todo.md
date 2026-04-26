@@ -3567,3 +3567,15 @@
 - [x] TASK 3: Add monteCarloDealParams nullable JSON column to pitch_triages (migration 0090_clear_roxanne_simpson.sql)
 - [x] TASK 3: Store 6 raw financial parameters in monteCarloDealParams after extractDealParams runs in pitch.ts
 - [x] TASK 3: Add "Monte Carlo Calibration" table to /admin/usage (6 parameters with DB column, range, interpretation, and calibration query)
+
+## Monte Carlo Parameter Calibration Live Table (pasted_content_4.txt)
+
+- [x] Add adminUsage.mcCalibration tRPC procedure (adminProcedure) with raw SQL query for avg/min/max per 5 agent signals
+- [x] Return deepCount (triages with MC data) and quickCount (triages without)
+- [x] Add Monte Carlo Parameter Calibration section to AdminUsageDashboard.tsx (MCCalibrationWidget)
+- [x] Table: Parameter | Avg | Min | Max | Spread (5 rows, colour-coded spread)
+- [x] Below table: highest spread parameter name + "Most uncertain dimension" label
+- [x] Below table: deep mode triages count + quick mode triages count in summary cards
+- [x] Empty state: "No deep mode triages recorded yet. Run a deep analysis to populate this table."
+- [x] tsc --noEmit: EXIT:0
+- [x] Tests: 761/761 passed

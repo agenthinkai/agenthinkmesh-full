@@ -3685,8 +3685,59 @@ If a section is not applicable (e.g. no financial data provided), set it to null
         .orderBy(desc(sql`COUNT(*)`));
       return rows;
     }),
+    // Monte Carlo Parameter Calibration — avg/min/max/spread per 5 agent signals
+    mcCalibration: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      // Raw SQL — JSON_EXTRACT works on TiDB/MySQL JSON columns
+      const [statsRow] = await db.execute(sql`
+        SELECT
+          AVG(JSON_EXTRACT(monteCarloDealParams, '$.market_signal'))          AS avg_market,
+          MIN(JSON_EXTRACT(monteCarloDealParams, '$.market_signal'))          AS min_market,
+          MAX(JSON_EXTRACT(monteCarloDealParams, '$.market_signal'))          AS max_market,
+          AVG(JSON_EXTRACT(monteCarloDealParams, '$.traction'))               AS avg_traction,
+          MIN(JSON_EXTRACT(monteCarloDealParams, '$.traction'))               AS min_traction,
+          MAX(JSON_EXTRACT(monteCarloDealParams, '$.traction'))               AS max_traction,
+          AVG(JSON_EXTRACT(monteCarloDealParams, '$.founder_signal'))         AS avg_founder,
+          MIN(JSON_EXTRACT(monteCarloDealParams, '$.founder_signal'))         AS min_founder,
+          MAX(JSON_EXTRACT(monteCarloDealParams, '$.founder_signal'))         AS max_founder,
+          AVG(JSON_EXTRACT(monteCarloDealParams, '$.business_model_clarity')) AS avg_biz,
+          MIN(JSON_EXTRACT(monteCarloDealParams, '$.business_model_clarity')) AS min_biz,
+          MAX(JSON_EXTRACT(monteCarloDealParams, '$.business_model_clarity')) AS max_biz,
+          AVG(JSON_EXTRACT(monteCarloDealParams, '$.risk_level'))             AS avg_risk,
+          MIN(JSON_EXTRACT(monteCarloDealParams, '$.risk_level'))             AS min_risk,
+          MAX(JSON_EXTRACT(monteCarloDealParams, '$.risk_level'))             AS max_risk,
+          COUNT(*)                                                             AS deep_count
+        FROM pitch_triages
+        WHERE monteCarloDealParams IS NOT NULL
+      `) as unknown as [Record<string, number | null>];
+      const [countRow] = await db.execute(sql`
+        SELECT COUNT(*) AS quick_count
+        FROM pitch_triages
+        WHERE monteCarloDealParams IS NULL
+      `) as unknown as [Record<string, number>];
+      const r = statsRow ?? {};
+      const deepCount = Number(r.deep_count ?? 0);
+      const quickCount = Number(countRow?.quick_count ?? 0);
+      if (deepCount === 0) return { empty: true as const, deepCount: 0, quickCount };
+      const params = [
+        { key: "market_signal",          label: "Market Signal",   avg: r.avg_market,   min: r.min_market,   max: r.max_market },
+        { key: "traction",               label: "Traction",        avg: r.avg_traction, min: r.min_traction, max: r.max_traction },
+        { key: "founder_signal",         label: "Founder Signal",  avg: r.avg_founder,  min: r.min_founder,  max: r.max_founder },
+        { key: "business_model_clarity", label: "Business Model",  avg: r.avg_biz,      min: r.min_biz,      max: r.max_biz },
+        { key: "risk_level",             label: "Risk Level",      avg: r.avg_risk,     min: r.min_risk,     max: r.max_risk },
+      ].map((p) => ({
+        ...p,
+        avg:    Math.round(Number(p.avg ?? 0)),
+        min:    Math.round(Number(p.min ?? 0)),
+        max:    Math.round(Number(p.max ?? 0)),
+        spread: Math.round(Number(p.max ?? 0) - Number(p.min ?? 0)),
+      }));
+      const highestSpread = params.reduce((a, b) => (b.spread > a.spread ? b : a));
+      return { empty: false as const, params, highestSpread: highestSpread.label, deepCount, quickCount };
+    }),
   }),
-
   // ── Unsubscribe — public token-based email opt-out ──────────────────────────
   unsubscribe: router({
     // Check if a token is valid and whether the user is already unsubscribed
