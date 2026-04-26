@@ -3608,3 +3608,11 @@
 - [x] TASK 3: maybeSendFirstScaleVerificationEmail() added to founderFleetScheduler.ts; fires once for first run with total_ideas>=200 (gcc) or >=300 (global); subject "Fleet scaled to 500/day — first run verified"
 - [x] tsc --noEmit: EXIT:0
 - [x] Tests: 761/761 passing
+
+## Fleet Operations Sprint 2 (Tasks 1/2/3)
+
+- [x] TASK 1: SlimFleetStatus component added to AdminUsageDashboard.tsx — fleet_mode badge, progress bar, N/M label, last run time, runs remaining, auto-refresh 30s
+- [x] TASK 2: DAILY_API_SPEND_CAP=20 set in env; error message updated; notifyOwner alert added (fire-and-forget) when cap hit
+- [x] TASK 3: All 4 URLs return 200 OK on deployed domain
+- [x] tsc --noEmit: EXIT:0
+- [x] Tests: 761/761 passing

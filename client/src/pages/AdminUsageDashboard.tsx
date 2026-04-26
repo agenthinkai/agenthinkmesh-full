@@ -820,6 +820,9 @@ export default function AdminUsageDashboard() {
           </div>
         </div>
 
+        {/* ── Fleet Status ── */}
+        <SlimFleetStatus />
+
         {/* ── Monte Carlo Parameter Calibration (live) ── */}
         <MCCalibrationWidget isAdmin={user?.role === "admin"} />
 
@@ -828,7 +831,129 @@ export default function AdminUsageDashboard() {
     </MeshSidebar>
   );
 }
-// ── Monte Carlo Parameter Calibration widget ─────────────────────────────────
+// ── SlimFleetStatus ──────────────────────────────────────────────────────────
+// Active run statuses that warrant live polling
+const FLEET_ACTIVE_STATUSES = ["pending", "generating", "researching", "pitching", "evaluating", "extracting"];
+
+type SlimFleetRun = {
+  id: number;
+  runDate: string;
+  status: string;
+  totalIdeas: number;
+  completed: number;
+  fleetMode: string | null;
+  startedAt: number | null;
+};
+
+function SlimFleetProgressBar({ run }: { run: SlimFleetRun }) {
+  const total = run.totalIdeas > 0 ? run.totalIdeas : 1;
+  const pct   = Math.min(100, Math.round((run.completed / total) * 100));
+
+  let barColor = "bg-amber-500";
+  if (run.status === "completed")                          barColor = "bg-emerald-500";
+  else if (run.status === "failed" && run.completed > 0)   barColor = "bg-amber-500";
+  else if (pct >= 50)                                      barColor = "bg-sky-500";
+
+  let label: React.ReactNode;
+  if (run.status === "pending") {
+    label = <span className="text-slate-500">Queued — starting shortly</span>;
+  } else if (run.status === "completed") {
+    label = <span className="text-emerald-400">{run.completed} / {run.totalIdeas} evaluations complete ✓</span>;
+  } else if (run.status === "failed" && run.completed > 0) {
+    label = <span className="text-amber-400">{run.completed} / {run.totalIdeas} — partial run ⚠️</span>;
+  } else {
+    label = <span className="text-slate-300">{run.completed} / {run.totalIdeas} evaluations complete</span>;
+  }
+
+  return (
+    <div className="mt-1.5">
+      <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+          style={{ width: `${run.status === "pending" ? 0 : pct}%` }}
+        />
+      </div>
+      <div className="mt-1 text-xs">{label}</div>
+    </div>
+  );
+}
+
+function SlimFleetStatus() {
+  const runsRaw = trpc.fleet.runs.useQuery(undefined, { refetchInterval: 30000 });
+  const cfgRaw  = trpc.fleet.fleetConfigs.useQuery(undefined, { refetchInterval: 30000 });
+
+  const runs = (runsRaw.data ?? []) as SlimFleetRun[];
+  const hasActive = runs.some(r => FLEET_ACTIVE_STATUSES.includes(r.status));
+
+  // Latest run per fleet mode
+  const latestByMode = useMemo(() => {
+    const map: Record<string, SlimFleetRun> = {};
+    for (const r of runs) {
+      const mode = r.fleetMode ?? "global";
+      if (!map[mode]) map[mode] = r;
+    }
+    return map;
+  }, [runs]);
+
+  const cfgs = (cfgRaw.data ?? []) as Array<{ id: number; fleetMode: string; runsRemaining: number; lastRunAt: number | null }>;
+
+  if (runsRaw.isLoading) {
+    return (
+      <div className="mt-10 rounded-2xl border border-white/8 bg-white/[0.02] p-6">
+        <div className="text-slate-500 text-sm">Loading fleet status…</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-10 rounded-2xl border border-white/8 bg-white/[0.02] p-6">
+      <div className="flex items-center gap-2 mb-4">
+        <span className="text-lg">🗓️</span>
+        <h2 className="text-base font-bold text-white">Fleet Status</h2>
+        <span className="text-xs text-slate-500">Daily at 06:00 KWT</span>
+        {hasActive && (
+          <span className="ml-auto flex items-center gap-1 text-xs text-amber-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" />
+            Live — 30s refresh
+          </span>
+        )}
+      </div>
+
+      {Object.keys(latestByMode).length === 0 ? (
+        <div className="text-slate-600 text-sm">No fleet runs found.</div>
+      ) : (
+        <div className="space-y-5">
+          {Object.entries(latestByMode).map(([mode, run]) => {
+            const cfg = cfgs.find(c => c.fleetMode === mode);
+            const lastRunAt = cfg?.lastRunAt
+              ? new Date(cfg.lastRunAt).toLocaleString("en-KW", { timeZone: "Asia/Kuwait", dateStyle: "short", timeStyle: "short" })
+              : "—";
+            return (
+              <div key={mode} className="rounded-xl border border-white/10 bg-white/5 p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="font-mono text-emerald-400 uppercase text-xs font-semibold">{mode}</span>
+                  <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-white/10 text-slate-300">
+                    {run.status === "completed" ? "✅" : run.status === "failed" ? "❌" : run.status === "pending" ? "⏳" : "🔄"}
+                    {" "}{run.status}
+                  </span>
+                  <span className="ml-auto text-xs text-slate-500">Last: {lastRunAt}</span>
+                </div>
+                <SlimFleetProgressBar run={run} />
+                {cfg && (
+                  <div className="mt-2 text-xs text-slate-500">
+                    {cfg.runsRemaining} run{cfg.runsRemaining !== 1 ? "s" : ""} remaining in this 30-day cycle
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Monte Carlo Parameter Calibration widget ─────────────────────────────────────────────────────────────────
 function MCCalibrationWidget({ isAdmin }: { isAdmin: boolean }) {
   const { data, isLoading } = trpc.adminUsage.mcCalibration.useQuery(undefined, {
     enabled: isAdmin,

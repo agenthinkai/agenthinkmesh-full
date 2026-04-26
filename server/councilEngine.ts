@@ -38,6 +38,7 @@ import {
   tokenUsage,
 } from "../drizzle/schema";
 import { TOKENS_PER_COUNCIL_RUN } from "./lib/stripePlans";
+import { notifyOwner } from "./_core/notification";
 
 // invokeLLM uses BUILT_IN_FORGE_API — no Anthropic SDK needed
 
@@ -672,9 +673,13 @@ export async function checkCostGuard(clientId: string = "default"): Promise<void
   const currentSpend = parseFloat(spendRow[0]?.value ?? "0");
 
   if (currentSpend >= DAILY_SPEND_CAP_USD) {
+    // Fire-and-forget owner notification (non-blocking)
+    notifyOwner({
+      title: "Daily spend cap reached — user triage blocked until midnight",
+      content: `Daily API spend: $${currentSpend.toFixed(2)} (cap: $${DAILY_SPEND_CAP_USD}). Normal user triage is blocked until midnight UTC. Fleet runs with bypassCostGuard=true are unaffected.`,
+    }).catch(() => { /* silent */ });
     throw new Error(
-      `🛑 DAILY API SPEND CAP — $${currentSpend.toFixed(2)} spent today ` +
-      `(cap: $${DAILY_SPEND_CAP_USD}). Council runs halted. Resets midnight UTC.`
+      "Daily analysis limit reached — resets at midnight Kuwait time"
     );
   }
   if (currentSpend >= DAILY_SPEND_CAP_USD * 0.8) {
