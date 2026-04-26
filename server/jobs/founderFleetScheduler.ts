@@ -200,6 +200,134 @@ https://agenthink-7enctkan.manus.space/admin/usage`;
   console.log("[FounderFleet] Email body preview:\n" + textBody);
 }
 
+// ── One-time first-500/day verification email ────────────────────────────────
+
+/**
+ * Fires once — for the first run where total_ideas >= 200 (gcc) or >= 300 (global).
+ * Checks the DB to see if any previous run already had scaled targets; if not, sends
+ * the verification email and logs the fact. Fire-and-forget, never throws.
+ */
+async function maybeSendFirstScaleVerificationEmail(
+  results: FleetRunResult[]
+): Promise<void> {
+  const db = await getDb();
+  if (!db) return;
+
+  // Only fire if at least one result has the new scaled total_ideas
+  const hasScaledRun = results.some(
+    (r) => (r.mode === "gcc" && r.totalIdeas >= 200) || (r.mode === "global" && r.totalIdeas >= 300)
+  );
+  if (!hasScaledRun) return;
+
+  // Check whether a prior scaled run already exists (i.e. this is NOT the first)
+  const [priorScaled] = await db
+    .select({ cnt: sql<number>`COUNT(*)` })
+    .from(founderAgentRuns)
+    .where(
+      sql`(fleet_mode = 'gcc' AND total_ideas >= 200) OR (fleet_mode = 'global' AND total_ideas >= 300)`
+    );
+  const priorCount = Number(priorScaled?.cnt ?? 0);
+
+  // If priorCount > results.length, earlier scaled runs already exist — skip
+  if (priorCount > results.length) {
+    console.log(`[FounderFleet] First-scale verification email skipped — ${priorCount} prior scaled runs found`);
+    return;
+  }
+
+  // Build totals for the email
+  const globalAgg = await db
+    .select({ total: sql<number>`COUNT(*)`, avgScore: avg(founderAgentEvaluations.finalScore) })
+    .from(founderAgentEvaluations)
+    .where(eq(founderAgentEvaluations.fleetMode, "global"));
+  const gccAgg = await db
+    .select({ total: sql<number>`COUNT(*)`, avgScore: avg(founderAgentEvaluations.finalScore) })
+    .from(founderAgentEvaluations)
+    .where(eq(founderAgentEvaluations.fleetMode, "gcc"));
+
+  const totalToDate = Number(globalAgg[0]?.total ?? 0) + Number(gccAgg[0]?.total ?? 0);
+
+  const gccResult  = results.find((r) => r.mode === "gcc");
+  const globalResult = results.find((r) => r.mode === "global");
+
+  const gccStatus  = gccResult?.status === "completed" ? "completed" : "FAILED";
+  const gccEvals   = gccResult ? `${gccResult.evaluations} / 200` : "N/A";
+  const gccScore   = gccResult?.avgScore !== null && gccResult?.avgScore !== undefined ? gccResult.avgScore.toFixed(2) : "N/A";
+
+  const globalStatus = globalResult?.status === "completed" ? "completed" : "FAILED";
+  const globalEvals  = globalResult ? `${globalResult.evaluations} / 300` : "N/A";
+  const globalScore  = globalResult?.avgScore !== null && globalResult?.avgScore !== undefined ? globalResult.avgScore.toFixed(2) : "N/A";
+
+  const textBody = `First 500/day run complete.
+
+GCC FLEET
+Status:      ${gccStatus}
+Evaluations: ${gccEvals}
+Avg score:   ${gccScore}
+
+GLOBAL FLEET
+Status:      ${globalStatus}
+Evaluations: ${globalEvals}
+Avg score:   ${globalScore}
+
+Total evaluations to date: ${totalToDate}
+
+Scaling trajectory on track:
+Today:             500 / day
+Target (Sep 2026): 100,000 / day`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Fleet scaled to 500/day</title></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb;margin:0;padding:24px;">
+  <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:8px;border:1px solid #e5e7eb;padding:32px;">
+    <div style="margin-bottom:24px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;color:#16a34a;text-transform:uppercase;margin-bottom:4px;">Scale Milestone</div>
+      <div style="font-size:20px;font-weight:700;color:#111827;">First 500/day run complete.</div>
+    </div>
+
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+      <tr><td colspan="2" style="font-weight:700;font-size:13px;letter-spacing:0.08em;color:#374151;padding:8px 0 4px;border-bottom:1px solid #e5e7eb;">GCC FLEET</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;width:160px;">Status</td><td style="padding:4px 0;font-weight:600;color:${gccResult?.status === "completed" ? "#16a34a" : "#dc2626"}">${gccStatus}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Evaluations</td><td style="padding:4px 0;">${gccEvals}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Avg score</td><td style="padding:4px 0;">${gccScore}</td></tr>
+    </table>
+
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+      <tr><td colspan="2" style="font-weight:700;font-size:13px;letter-spacing:0.08em;color:#374151;padding:8px 0 4px;border-bottom:1px solid #e5e7eb;">GLOBAL FLEET</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;width:160px;">Status</td><td style="padding:4px 0;font-weight:600;color:${globalResult?.status === "completed" ? "#16a34a" : "#dc2626"}">${globalStatus}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Evaluations</td><td style="padding:4px 0;">${globalEvals}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Avg score</td><td style="padding:4px 0;">${globalScore}</td></tr>
+    </table>
+
+    <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+      <tr><td colspan="2" style="font-weight:700;font-size:13px;letter-spacing:0.08em;color:#374151;padding:8px 0 4px;border-bottom:1px solid #e5e7eb;">TRAJECTORY</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;width:220px;">Total evaluations to date</td><td style="padding:4px 0;font-weight:600;">${totalToDate.toLocaleString()}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Today</td><td style="padding:4px 0;">500 / day</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Target (Sep 2026)</td><td style="padding:4px 0;">100,000 / day</td></tr>
+    </table>
+
+    <a href="https://agenthink-7enctkan.manus.space/admin/usage"
+       style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;padding:10px 20px;border-radius:6px;font-size:13px;font-weight:600;">
+      View full results &rarr;
+    </a>
+  </div>
+</body>
+</html>`;
+
+  const sent = await sendGraphEmail({
+    to: "farouq@agenthink.ai",
+    subject: "Fleet scaled to 500/day \u2014 first run verified",
+    html,
+  });
+
+  if (sent) {
+    console.log("[FounderFleet] First-scale verification email sent to farouq@agenthink.ai");
+    console.log("[FounderFleet] Verification email body preview:\n" + textBody);
+  } else {
+    console.error("[FounderFleet] First-scale verification email FAILED");
+  }
+}
+
 // ── Scheduler ─────────────────────────────────────────────────────────────────
 
 let schedulerStarted = false;
@@ -405,6 +533,11 @@ export function startFounderFleetScheduler(): void {
     if (fleetResults.length > 0) {
       buildAndSendFleetEmail(fleetResults, runTs).catch((emailErr: unknown) =>
         console.error("[FounderFleet] Fleet summary email error:", (emailErr as Error)?.message)
+      );
+
+      // One-time first-500/day verification email (fire-and-forget)
+      maybeSendFirstScaleVerificationEmail(fleetResults).catch((verifyErr: unknown) =>
+        console.error("[FounderFleet] First-scale verification email error:", (verifyErr as Error)?.message)
       );
     }
 

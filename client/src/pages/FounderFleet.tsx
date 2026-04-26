@@ -1145,11 +1145,67 @@ function InsightSection({ title, items, color }: { title: string; items: string[
 }
 
 // ── FleetSchedulerCard ────────────────────────────────────────────────────────
+// Active run statuses that warrant live polling
+const ACTIVE_STATUSES: RunStatus[] = ["pending", "generating", "researching", "pitching", "evaluating", "extracting"];
+
+function FleetProgressBar({ run }: { run: FleetRun }) {
+  const total = run.totalIdeas > 0 ? run.totalIdeas : 1;
+  const pct   = Math.min(100, Math.round((run.completed / total) * 100));
+
+  let barColor = "bg-amber-500";
+  if (run.status === "completed")                      barColor = "bg-emerald-500";
+  else if (run.status === "failed" && run.completed > 0) barColor = "bg-amber-500";
+  else if (pct >= 50)                                   barColor = "bg-sky-500";
+
+  let label: React.ReactNode;
+  if (run.status === "pending") {
+    label = <span className="text-slate-500">Queued — starting shortly</span>;
+  } else if (run.status === "completed") {
+    label = <span className="text-emerald-400">{run.completed} / {run.totalIdeas} evaluations complete ✓</span>;
+  } else if (run.status === "failed" && run.completed > 0) {
+    label = <span className="text-amber-400">{run.completed} / {run.totalIdeas} — partial run ⚠️</span>;
+  } else {
+    label = <span className="text-slate-300">{run.completed} / {run.totalIdeas} evaluations complete</span>;
+  }
+
+  return (
+    <div className="mt-2">
+      <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-500 ${barColor}`}
+          style={{ width: `${run.status === "pending" ? 0 : pct}%` }}
+        />
+      </div>
+      <div className="mt-1 text-xs">{label}</div>
+    </div>
+  );
+}
+
 function FleetSchedulerCard() {
-  const { data, isLoading } = trpc.fleet.fleetConfigs.useQuery(undefined, { refetchInterval: 30000 });
-  const runsQuery2 = trpc.fleet.runs.useQuery(undefined, { refetchInterval: 30000 });
+  const runs2Raw = trpc.fleet.runs.useQuery(undefined, { refetchInterval: 30000 });
+  // Determine if any run is currently active so we can tighten the poll interval
+  const activeRuns = ((runs2Raw.data ?? []) as FleetRun[]).filter(r => ACTIVE_STATUSES.includes(r.status));
+  const hasActiveRun = activeRuns.length > 0;
+
+  const { data, isLoading } = trpc.fleet.fleetConfigs.useQuery(undefined, {
+    refetchInterval: hasActiveRun ? 30000 : false,
+  });
+  const runsQuery2 = trpc.fleet.runs.useQuery(undefined, {
+    refetchInterval: hasActiveRun ? 30000 : 60000,
+  });
   const evalStatsQuery = trpc.fleet.evalStats.useQuery(undefined, { refetchInterval: 60000 });
   const [copied, setCopied] = useState(false);
+
+  // Latest run per fleet mode (for progress bars)
+  const latestRunByMode = useMemo(() => {
+    const all = (runsQuery2.data ?? []) as FleetRun[];
+    const map: Record<string, FleetRun> = {};
+    for (const r of all) {
+      const mode = r.fleetMode ?? "global";
+      if (!map[mode]) map[mode] = r; // already sorted DESC by created_at
+    }
+    return map;
+  }, [runsQuery2.data]);
 
   const scoringModeLabel = (mode: string) => {
     if (mode === "shariah_gcc") return "Shariah + GCC";
@@ -1288,6 +1344,38 @@ function FleetSchedulerCard() {
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Progress bars — one per fleet mode, showing latest run */}
+      {Object.keys(latestRunByMode).length > 0 && (
+        <div className="mt-5 pt-5 border-t border-white/10">
+          <div className="flex items-center gap-2 mb-3">
+            <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Latest Run Progress</span>
+            {hasActiveRun && (
+              <span className="ml-auto flex items-center gap-1 text-xs text-amber-400">
+                <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse inline-block" />
+                Live — refreshes every 30s
+              </span>
+            )}
+          </div>
+          <div className="space-y-4">
+            {Object.entries(latestRunByMode).map(([mode, run]) => (
+              <div key={mode}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-mono text-emerald-400 uppercase text-xs">{mode}</span>
+                  <span className="text-xs text-slate-500">
+                    {run.status === "pending" ? "Queued" :
+                     run.status === "completed" ? "Completed" :
+                     run.status === "failed" ? "Failed" :
+                     STATUS_LABELS[run.status] ?? run.status}
+                  </span>
+                  <span className="text-xs text-slate-600 ml-auto">{run.runDate}</span>
+                </div>
+                <FleetProgressBar run={run} />
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

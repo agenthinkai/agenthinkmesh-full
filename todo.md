@@ -3600,3 +3600,11 @@
 - [x] tsc --noEmit: EXIT:0
 - [x] Tests: 761/761 passing
 - [x] Manual run verification: DB insert confirmed gcc total_ideas=200, global total_ideas=300
+
+## Fleet Operations Sprint (Tasks 1/2/3)
+
+- [x] TASK 1: MAX_RUNS_PER_HOUR=50 set in env; bypassCostGuard=true skips checkCostGuard entirely (line 871 councilEngine.ts: `if (!skipMemory && !bypassCostGuard)`)
+- [x] TASK 2: FleetProgressBar component added to FleetSchedulerCard; auto-refresh every 30s when active run detected; stops polling when completed/failed
+- [x] TASK 3: maybeSendFirstScaleVerificationEmail() added to founderFleetScheduler.ts; fires once for first run with total_ideas>=200 (gcc) or >=300 (global); subject "Fleet scaled to 500/day — first run verified"
+- [x] tsc --noEmit: EXIT:0
+- [x] Tests: 761/761 passing
