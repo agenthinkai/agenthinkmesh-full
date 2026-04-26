@@ -417,6 +417,8 @@ router.post("/:dealId/memo-pdf", async (req: Request, res: Response): Promise<vo
     try { conditions = JSON.parse(record.conditionsToProceed || "[]"); } catch { /* ignore */ }
     let blockers: string[] = [];
     try { blockers = JSON.parse(record.blockingIssues || "[]"); } catch { /* ignore */ }
+    let monteCarloAnalysis: { p10: number; p50: number; p90: number; mean: number; std: number; upside_skew: boolean; verdict: string; distribution_label: string } | undefined;
+    try { monteCarloAnalysis = record.monteCarloAnalysis ? JSON.parse(record.monteCarloAnalysis as string) : undefined; } catch { /* ignore */ }
 
     const memoInput = {
       dealName: record.dealName,
@@ -427,6 +429,7 @@ router.post("/:dealId/memo-pdf", async (req: Request, res: Response): Promise<vo
       conditionsToProceed: conditions,
       blockingIssues: blockers,
       councilMode: (record.councilMode as "gcc" | "global_vc" | "india_pe" | undefined) ?? "global_vc",
+      monteCarloAnalysis,
       votes: votes.map(v => ({
         personaId: v.personaId ?? "",
         personaName: v.personaName ?? v.personaRole ?? "",

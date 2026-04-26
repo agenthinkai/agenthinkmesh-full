@@ -56,6 +56,13 @@ interface TriageResult {
   monteCarloAnalysis?: {
     p10: number; p50: number; p90: number; mean: number; std: number;
     upside_skew: boolean; verdict: string; distribution_label: string;
+    agentSignals?: {
+      market_signal: number;
+      traction: number;
+      founder_signal: number;
+      business_model_clarity: number;
+      risk_level: number;
+    };
   };
   // Partial result fields (deep mode timeout fallback)
   partial?: boolean;
@@ -68,6 +75,64 @@ interface TriageResult {
 const GREEN_LABELS = new Set(["strong", "clear", "low", "complete"]);
 const AMBER_LABELS = new Set(["weak", "partial", "early", "neutral", "medium"]);
 // everything else → red
+
+// ── Parameter Extraction Row (collapsible, below Monte Carlo section) ────────
+interface AgentSignals {
+  market_signal: number;
+  traction: number;
+  founder_signal: number;
+  business_model_clarity: number;
+  risk_level: number;
+}
+function paramChipColor(value: number): { bg: string; text: string } {
+  if (value >= 70) return { bg: "rgba(34,197,94,0.15)", text: "#4ade80" };
+  if (value >= 40) return { bg: "rgba(245,158,11,0.15)", text: "#fbbf24" };
+  return { bg: "rgba(239,68,68,0.15)", text: "#f87171" };
+}
+const PARAM_LABELS: Array<{ key: keyof AgentSignals; label: string }> = [
+  { key: "market_signal",          label: "Market Signal" },
+  { key: "traction",               label: "Traction" },
+  { key: "founder_signal",         label: "Founder Signal" },
+  { key: "business_model_clarity", label: "Business Model Clarity" },
+  { key: "risk_level",             label: "Risk Level" },
+];
+function ParameterExtractionRow({ signals }: { signals: AgentSignals }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{ marginTop: 12, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 10 }}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          background: "none", border: "none", cursor: "pointer", padding: 0,
+          display: "flex", alignItems: "center", gap: 6,
+          fontSize: 11, color: "rgba(255,255,255,0.45)", fontFamily: "inherit",
+        }}
+      >
+        <span>📊 View extracted parameters</span>
+        <span style={{ fontSize: 10, transition: "transform 0.2s", transform: open ? "rotate(180deg)" : "rotate(0deg)" }}>▾</span>
+      </button>
+      {open && (
+        <div style={{ marginTop: 10 }}>
+          <div style={{ display: "flex", flexWrap: "wrap" as const, gap: 8 }}>
+            {PARAM_LABELS.map(({ key, label }) => {
+              const value = signals[key];
+              const { bg, text } = paramChipColor(value);
+              return (
+                <div key={key} style={{ background: bg, borderRadius: 6, padding: "5px 10px", display: "flex", flexDirection: "column" as const, alignItems: "center", minWidth: 100 }}>
+                  <span style={{ fontSize: 15, fontWeight: 700, color: text, fontFamily: "monospace" }}>{value}<span style={{ fontSize: 10, fontWeight: 400, marginLeft: 1 }}>/100</span></span>
+                  <span style={{ fontSize: 9, color: "rgba(255,255,255,0.45)", marginTop: 2, textAlign: "center" as const }}>{label}</span>
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ marginTop: 8, fontSize: 10, color: "rgba(255,255,255,0.3)", lineHeight: 1.5 }}>
+            These parameters were extracted from your pitch text and used as inputs to the 1,000 scenario simulation.
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function labelColor(label: string): { bg: string; text: string } {
   if (GREEN_LABELS.has(label)) return { bg: "rgba(34,197,94,0.15)", text: "#4ade80" };
@@ -1942,6 +2007,10 @@ export default function PitchTriage() {
                   <div style={{ marginTop: 10, fontSize: 11, color: "rgba(255,255,255,0.35)", lineHeight: 1.5 }}>
                     Probabilistic range of deal scores across 1,000 simulated market scenarios. Bear/bull spread reflects sensitivity to market, traction, and founder signal uncertainty.
                   </div>
+                  {/* ── Collapsible Parameter Extraction ── */}
+                  {result.monteCarloAnalysis.agentSignals && (
+                    <ParameterExtractionRow signals={result.monteCarloAnalysis.agentSignals} />
+                  )}
                 </div>
               )}
               {/* ── Triage routing CTA (ENGAGE only) ──────────────────── */}

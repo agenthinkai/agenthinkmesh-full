@@ -33,6 +33,7 @@ export const pitchTriages = mysqlTable("pitch_triages", {
   triggerType: varchar("triggerType", { length: 32 }), // "stale_diligence" | "stale_ic_ready" | "score_drop" | "pattern_shift" | null
   source: varchar("source", { length: 16 }), // "auto" | null (null = manually initiated)
   monteCarloAnalysis: text("monteCarloAnalysis"), // JSON string — nullable, added in Monte Carlo sprint
+  monteCarloDealParams: text("monteCarloDealParams"), // JSON string — 5 extracted signal params (market_signal, traction, founder_signal, business_model_clarity, risk_level)
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   ptUserIdx: index("pt_user_idx").on(table.userId),
@@ -907,12 +908,12 @@ export const dealScreenings = mysqlTable("deal_screenings", {
   // Investor Mode flag — when true, council uses upside-first framing
   investorMode: boolean("investorMode").notNull().default(false),
 
+    // Monte Carlo scenario analysis (JSON, nullable — added in MC sprint)
+  monteCarloAnalysis: text("monteCarloAnalysis"),
   // Provenance
   sourceType: mysqlEnum("sourceType", ["manual", "signal"]).default("manual").notNull(),
-
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 });
-
 export type DealScreening = typeof dealScreenings.$inferSelect;
 export type InsertDealScreening = typeof dealScreenings.$inferInsert;
 

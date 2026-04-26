@@ -26,6 +26,8 @@ import { detectTier0Signal } from "./tier0Signals";
 import { runTriage } from "./triageEngine";
 import { checkDuplicate } from "./dealDedup";
 import { runRealityAlignment, type RealityAlignmentResult } from "./realityAlignmentEngine";
+import { extractDealParams } from "./lib/monteCarloParams";
+import { runMonteCarloSimulation } from "./lib/monteCarlo";
 
 export type CouncilMode = "gcc" | "global_vc" | "india_pe";
 export type SourceType = "manual" | "signal";
@@ -171,7 +173,11 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
     };
   }
 
-  // ── Layer 2: Full Council ───────────────────────────────────────────────────
+  // ── Layer 2: Full Council + Monte Carlo (parallel) ──────────────────────────
+  const monteCarloPromise = extractDealParams(dealText)
+    .then((params) => runMonteCarloSimulation(params))
+    .catch((err) => { console.error("[runScreeningPipeline][MonteCarlo] Failed:", err); return null; });
+
   const result = await runCouncil(dealText, {
     userId: userId ?? undefined,
     councilMode,
@@ -194,6 +200,9 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
       `[RealityAlignment] Verdict overridden to INSUFFICIENT_DATA. Reason: ${realityAlignment.gateReason}`
     );
   }
+
+  // Await Monte Carlo result (started in parallel with council)
+  const monteCarloResult = await monteCarloPromise;
 
   // Persist council result if we have a userId
   if (userId !== null && db) {
@@ -223,6 +232,7 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
           councilMode,
           triageResult: JSON.stringify(triageResult),
           triageSkipped: false,
+          ...(monteCarloResult ? { monteCarloAnalysis: JSON.stringify(monteCarloResult) } : {}),
       });
     } catch (e) {
       console.error("[runScreeningPipeline][Council] Failed to persist council record:", e);

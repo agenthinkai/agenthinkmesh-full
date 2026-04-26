@@ -526,6 +526,7 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
       const monteCarloPromise: Promise<{
         p10: number; p50: number; p90: number; mean: number; std: number;
         upside_skew: boolean; verdict: string; distribution_label: string;
+        rawParams?: object;
       } | null> = isDeep
         ? (async () => {
             try {
@@ -545,6 +546,7 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
                 upside_skew: mcResult.upside_skew,
                 verdict: mcVerdict,
                 distribution_label: distributionLabel,
+                rawParams: params as unknown as object,
               };
             } catch (err) {
               console.warn("[MonteCarlo] Failed (non-fatal):", err);
@@ -742,7 +744,20 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         .map((r) => `${r.name}: ${r.reasoning}`);
 
       // ── Await Monte Carlo (already running in parallel) ─────────────────
-      const monteCarloAnalysis = await monteCarloPromise;
+      const monteCarloAnalysisRaw = await monteCarloPromise;
+      // Augment with agent signal scores (derived from byName, no extra LLM call)
+      const monteCarloAnalysis = monteCarloAnalysisRaw
+        ? {
+            ...monteCarloAnalysisRaw,
+            agentSignals: {
+              market_signal:          LABEL_SCORES[byName["Market Signal"]?.label ?? ""] ?? 50,
+              traction:               LABEL_SCORES[byName["Traction"]?.label ?? ""] ?? 50,
+              founder_signal:         LABEL_SCORES[byName["Founder Signal"]?.label ?? ""] ?? 50,
+              business_model_clarity: LABEL_SCORES[byName["Business Model"]?.label ?? ""] ?? 50,
+              risk_level:             100 - (LABEL_SCORES[byName["Risk"]?.label ?? ""] ?? 50),
+            },
+          }
+        : null;
 
       // ── Persist to history (await so we can return the id for escalation tracking) ──
       const pitchPreview = input.pitchText.slice(0, 200).trim();
@@ -759,6 +774,7 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         nextStep,
         parentTriageId: input.parentTriageId ?? null,
         ...(monteCarloAnalysis ? { monteCarloAnalysis: JSON.stringify(monteCarloAnalysis) } : {}),
+        ...(monteCarloAnalysisRaw?.rawParams ? { monteCarloDealParams: JSON.stringify(monteCarloAnalysisRaw.rawParams) } : {}),
       }).catch((err) => { console.error("[PitchTriage] Failed to persist history:", err); return null; });
 
       return {

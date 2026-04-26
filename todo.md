@@ -3556,3 +3556,14 @@
 - [x] TASK 3: Add monteCarloAnalysis nullable JSON column to pitch_triages (migration 0089_faulty_legion.sql)
 - [x] TASK 3: Surface Monte Carlo section in triage result UI (P10/P50/P90 pills + percentile bar + distribution label)
 - [x] TASK 3: Add Section 16 Monte Carlo Scenario Analysis to IC Memo PDF (percentile table + interpretation)
+
+## Monte Carlo Parameter Visibility Sprint (pasted_content_3.txt)
+
+- [x] TASK 1: Add collapsible "Parameter Extraction" row below Monte Carlo percentile bar in PitchTriage.tsx
+- [x] TASK 1: Five parameter chips (Market Signal, Traction, Founder Signal, Business Model Clarity, Risk Level) with colour-coding (>=70 green, 40-69 amber, <40 red)
+- [x] TASK 1: Read from monteCarloAnalysis.agentSignals (derived from agent labels, no new LLM call, no schema changes)
+- [x] TASK 2: Retrieve monteCarloAnalysis from triage record in dealScreenRoute.ts and pass to ICMemoInput
+- [x] TASK 2: Section 16 renders in Deal Screener PDF when monteCarloAnalysis is present
+- [x] TASK 3: Add monteCarloDealParams nullable JSON column to pitch_triages (migration 0090_clear_roxanne_simpson.sql)
+- [x] TASK 3: Store 6 raw financial parameters in monteCarloDealParams after extractDealParams runs in pitch.ts
+- [x] TASK 3: Add "Monte Carlo Calibration" table to /admin/usage (6 parameters with DB column, range, interpretation, and calibration query)

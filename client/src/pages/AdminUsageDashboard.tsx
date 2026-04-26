@@ -820,6 +820,55 @@ export default function AdminUsageDashboard() {
           </div>
         </div>
 
+        {/* ── Monte Carlo Calibration Table ── */}
+        <div className="mt-10 rounded-2xl border border-white/8 bg-white/[0.02] p-6">
+          <div className="mb-5">
+            <h2 className="text-base font-bold text-white">Monte Carlo Calibration</h2>
+            <p className="text-xs text-slate-500 mt-0.5">
+              Raw deal parameters extracted per deep-mode triage run, stored in{" "}
+              <code className="text-slate-400">pitch_triages.monteCarloDealParams</code>. Used to calibrate
+              simulation weights over time. Columns are the 6 financial signals passed to the 1,000-iteration
+              Box-Muller engine.
+            </p>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs text-left">
+              <thead>
+                <tr className="border-b border-white/8 text-slate-500">
+                  <th className="pb-2 pr-4 font-medium">Parameter</th>
+                  <th className="pb-2 pr-4 font-medium">DB Column</th>
+                  <th className="pb-2 pr-4 font-medium">Range</th>
+                  <th className="pb-2 font-medium">Interpretation</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {[
+                  { param: "revenue_growth_rate", range: "0–100", note: "YoY revenue growth signal (100 = hypergrowth)" },
+                  { param: "gross_margin", range: "0–100", note: "Gross margin quality (100 = >80% SaaS-grade)" },
+                  { param: "market_size_usd", range: "0–100", note: "TAM signal (100 = >$10B addressable)" },
+                  { param: "churn_rate", range: "0–100", note: "Retention quality (100 = near-zero churn)" },
+                  { param: "time_to_profitability", range: "0–100", note: "Path clarity (100 = already profitable)" },
+                  { param: "pivot_probability", range: "0–100", note: "Business model stability (100 = no pivot risk)" },
+                ].map((row) => (
+                  <tr key={row.param} className="text-slate-400">
+                    <td className="py-2 pr-4 font-mono text-teal-400/80">{row.param}</td>
+                    <td className="py-2 pr-4 font-mono text-slate-600 text-[10px]">monteCarloDealParams.{row.param}</td>
+                    <td className="py-2 pr-4 text-slate-500">{row.range}</td>
+                    <td className="py-2 text-slate-500">{row.note}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <div className="mt-4 p-3 rounded-xl bg-white/[0.03] border border-white/5 text-xs text-slate-500">
+            <span className="text-slate-400 font-medium">How to use: </span>
+            Query{" "}
+            <code className="text-teal-400/70">SELECT monteCarloDealParams, score FROM pitch_triages WHERE monteCarloDealParams IS NOT NULL</code>
+            {" "}to build a calibration dataset. Compare extracted params against the final{" "}
+            <code className="text-teal-400/70">score</code> to identify which parameters best predict real outcomes and adjust simulation weights accordingly.
+          </div>
+        </div>
+
       </div>
       </div>
     </MeshSidebar>
