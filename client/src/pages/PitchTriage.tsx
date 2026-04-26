@@ -52,6 +52,11 @@ interface TriageResult {
   keySignals: string[];
   missingInfo: string[];
   topMissingFields: string[];
+  // Monte Carlo analysis (deep mode only)
+  monteCarloAnalysis?: {
+    p10: number; p50: number; p90: number; mean: number; std: number;
+    upside_skew: boolean; verdict: string; distribution_label: string;
+  };
   // Partial result fields (deep mode timeout fallback)
   partial?: boolean;
   agents_completed?: number;
@@ -1860,6 +1865,85 @@ export default function PitchTriage() {
                 )}
               </div>
 
+              {/* ── Monte Carlo Scenario Analysis (deep mode only) ──────── */}
+              {result.monteCarloAnalysis && (
+                <div
+                  style={{
+                    background: "rgba(99,102,241,0.06)",
+                    border: "1px solid rgba(99,102,241,0.25)",
+                    borderRadius: 10,
+                    padding: "16px 18px",
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+                    <span style={{ fontSize: 14 }}>🎲</span>
+                    <div style={{ fontSize: 10, color: "#818cf8", fontWeight: 700, letterSpacing: 0.8, textTransform: "uppercase" as const }}>
+                      Monte Carlo Scenario Analysis
+                    </div>
+                    <div style={{ marginLeft: "auto", fontSize: 10, color: "rgba(255,255,255,0.3)" }}>
+                      1,000 simulations
+                    </div>
+                  </div>
+                  {/* Percentile bar */}
+                  <div style={{ marginBottom: 14 }}>
+                    <div style={{ position: "relative" as const, height: 8, background: "rgba(255,255,255,0.07)", borderRadius: 4, overflow: "hidden" as const }}>
+                      {/* Interquartile range fill */}
+                      <div style={{
+                        position: "absolute" as const,
+                        left: `${result.monteCarloAnalysis.p10}%`,
+                        width: `${result.monteCarloAnalysis.p90 - result.monteCarloAnalysis.p10}%`,
+                        height: "100%",
+                        background: "rgba(99,102,241,0.45)",
+                        borderRadius: 4,
+                      }} />
+                      {/* p50 marker */}
+                      <div style={{
+                        position: "absolute" as const,
+                        left: `${result.monteCarloAnalysis.p50}%`,
+                        width: 2,
+                        height: "100%",
+                        background: "#818cf8",
+                        transform: "translateX(-50%)",
+                      }} />
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", marginTop: 4, fontSize: 10, color: "rgba(255,255,255,0.35)" }}>
+                      <span>0</span>
+                      <span>50</span>
+                      <span>100</span>
+                    </div>
+                  </div>
+                  {/* Percentile values */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 12 }}>
+                    {[
+                      { label: "Bear (p10)", value: result.monteCarloAnalysis.p10 },
+                      { label: "Base (p50)", value: result.monteCarloAnalysis.p50 },
+                      { label: "Bull (p90)", value: result.monteCarloAnalysis.p90 },
+                    ].map(({ label, value }) => (
+                      <div key={label} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 6, padding: "8px 10px", textAlign: "center" as const }}>
+                        <div style={{ fontSize: 18, fontWeight: 700, color: "#c7d2fe", fontFamily: "monospace" }}>{value}</div>
+                        <div style={{ fontSize: 9, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>{label}</div>
+                      </div>
+                    ))}
+                  </div>
+                  {/* Distribution label + skew */}
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" as const }}>
+                    <span style={{ fontSize: 10, background: "rgba(99,102,241,0.15)", color: "#a5b4fc", borderRadius: 4, padding: "3px 8px", fontWeight: 600 }}>
+                      {result.monteCarloAnalysis.distribution_label}
+                    </span>
+                    {result.monteCarloAnalysis.upside_skew && (
+                      <span style={{ fontSize: 10, background: "rgba(34,197,94,0.12)", color: "#4ade80", borderRadius: 4, padding: "3px 8px", fontWeight: 600 }}>
+                        ↑ Upside skew
+                      </span>
+                    )}
+                    <span style={{ fontSize: 10, background: "rgba(255,255,255,0.05)", color: "rgba(255,255,255,0.4)", borderRadius: 4, padding: "3px 8px" }}>
+                      σ = {result.monteCarloAnalysis.std}
+                    </span>
+                  </div>
+                  <div style={{ marginTop: 10, fontSize: 11, color: "rgba(255,255,255,0.35)", lineHeight: 1.5 }}>
+                    Probabilistic range of deal scores across 1,000 simulated market scenarios. Bear/bull spread reflects sensitivity to market, traction, and founder signal uncertainty.
+                  </div>
+                </div>
+              )}
               {/* ── Triage routing CTA (ENGAGE only) ──────────────────── */}
               {result.classification === "ENGAGE" && (
                 <div

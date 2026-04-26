@@ -624,6 +624,13 @@
       "when": 1777102118632,
       "tag": "0088_far_professor_monster",
       "breakpoints": true
+    },
+    {
+      "idx": 89,
+      "version": "5",
+      "when": 1777192813071,
+      "tag": "0089_faulty_legion",
+      "breakpoints": true
     }
   ]
 }

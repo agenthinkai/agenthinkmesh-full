@@ -1,0 +1,1 @@
+ALTER TABLE `pitch_triages` ADD `monteCarloAnalysis` text;

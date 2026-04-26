@@ -32,6 +32,7 @@ export const pitchTriages = mysqlTable("pitch_triages", {
   decisionOutcome: varchar("decisionOutcome", { length: 16 }), // "invested" | "passed" | null — real outcome for calibration
   triggerType: varchar("triggerType", { length: 32 }), // "stale_diligence" | "stale_ic_ready" | "score_drop" | "pattern_shift" | null
   source: varchar("source", { length: 16 }), // "auto" | null (null = manually initiated)
+  monteCarloAnalysis: text("monteCarloAnalysis"), // JSON string — nullable, added in Monte Carlo sprint
   createdAt: timestamp("createdAt").defaultNow().notNull(),
 }, (table) => ({
   ptUserIdx: index("pt_user_idx").on(table.userId),

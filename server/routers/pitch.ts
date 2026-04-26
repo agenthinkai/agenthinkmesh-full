@@ -16,6 +16,8 @@ import { PitchTriage } from "../../drizzle/schema";
 import { sql } from "drizzle-orm";
 import { runCouncil } from "../councilEngine";
 import { invokeLLM } from "../_core/llm";
+import { extractDealParams } from "../lib/monteCarloParams";
+import { runMonteCarloSimulation, getDistributionLabel } from "../lib/monteCarlo";
 import crypto from "crypto";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -519,6 +521,38 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         ];
         AGENTS.push(...deepAgents);
       }
+      // ── Deep mode: start Monte Carlo param extraction in parallel ──────
+      // Fire-and-forget alongside agent calls — never blocks triage result
+      const monteCarloPromise: Promise<{
+        p10: number; p50: number; p90: number; mean: number; std: number;
+        upside_skew: boolean; verdict: string; distribution_label: string;
+      } | null> = isDeep
+        ? (async () => {
+            try {
+              const params = await extractDealParams(truncated);
+              const mcResult = runMonteCarloSimulation(params, 1000);
+              const distributionLabel = getDistributionLabel(mcResult);
+              // Derive verdict from p50 using same thresholds as main scoring
+              const mcVerdict =
+                mcResult.p50 >= 62 ? "ENGAGE" :
+                mcResult.p50 >= 38 ? "WATCH" : "IGNORE";
+              return {
+                p10: mcResult.p10,
+                p50: mcResult.p50,
+                p90: mcResult.p90,
+                mean: mcResult.mean,
+                std: mcResult.std,
+                upside_skew: mcResult.upside_skew,
+                verdict: mcVerdict,
+                distribution_label: distributionLabel,
+              };
+            } catch (err) {
+              console.warn("[MonteCarlo] Failed (non-fatal):", err);
+              return null;
+            }
+          })()
+        : Promise.resolve(null);
+
       // ── Run all agents in parallel ──────────────────────────────────────
       type AgentResult = {
         name: AgentName;
@@ -707,6 +741,9 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         .filter((r) => redLabels.has(r.label))
         .map((r) => `${r.name}: ${r.reasoning}`);
 
+      // ── Await Monte Carlo (already running in parallel) ─────────────────
+      const monteCarloAnalysis = await monteCarloPromise;
+
       // ── Persist to history (await so we can return the id for escalation tracking) ──
       const pitchPreview = input.pitchText.slice(0, 200).trim();
       const savedId = await savePitchTriage({
@@ -721,6 +758,7 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         topMissingFields: JSON.stringify(topMissingFields),
         nextStep,
         parentTriageId: input.parentTriageId ?? null,
+        ...(monteCarloAnalysis ? { monteCarloAnalysis: JSON.stringify(monteCarloAnalysis) } : {}),
       }).catch((err) => { console.error("[PitchTriage] Failed to persist history:", err); return null; });
 
       return {
@@ -733,6 +771,8 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         keySignals,
         missingInfo,
         topMissingFields,
+        // Monte Carlo analysis (deep mode only, nullable)
+        ...(monteCarloAnalysis ? { monteCarloAnalysis } : {}),
         // Partial result fields (deep mode timeout fallback)
         ...(isPartialResult ? {
           partial: true,

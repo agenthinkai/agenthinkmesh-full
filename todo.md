@@ -3547,3 +3547,12 @@
 - [x] TASK 2: /demos route already registered in App.tsx (line 321)
 - [x] TASK 2: Updated back-link text to "← Back to all examples" on all 4 IC memo pages
 - [x] TASK 2: /demos already in footer nav in Home.tsx (line 1158)
+
+## Monte Carlo Simulation Sprint (pasted_content_2.txt)
+
+- [x] TASK 1: Create server/lib/monteCarloParams.ts with extractDealParams() using single Haiku LLM call
+- [x] TASK 2: Create server/lib/monteCarlo.ts with runMonteCarloSimulation() — pure TS math, 1000 iterations
+- [x] TASK 3: Wire Monte Carlo into pitch.ts deep mode triage (parallel with agents, ~3ms overhead)
+- [x] TASK 3: Add monteCarloAnalysis nullable JSON column to pitch_triages (migration 0089_faulty_legion.sql)
+- [x] TASK 3: Surface Monte Carlo section in triage result UI (P10/P50/P90 pills + percentile bar + distribution label)
+- [x] TASK 3: Add Section 16 Monte Carlo Scenario Analysis to IC Memo PDF (percentile table + interpretation)

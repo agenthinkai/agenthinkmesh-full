@@ -48,6 +48,10 @@ export interface ICMemoInput {
   votes:               PersonaVoteInput[];
   councilMode?:        "gcc" | "global_vc" | "india_pe";
   patternContext?:     "invested_match" | "passed_match";
+  monteCarloAnalysis?: {
+    p10: number; p50: number; p90: number; mean: number; std: number;
+    upside_skew: boolean; verdict: string; distribution_label: string;
+  };
 }
 
 interface FinancialRow {
@@ -1750,6 +1754,90 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       doc.rect(ML, doc.y + 3, BODY_W, 0.5).fill(BORDER_C);
       doc.y += 12;
     });
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SECTION 16 — MONTE CARLO SCENARIO ANALYSIS (optional, deep mode only)
+    // ─────────────────────────────────────────────────────────────────────────
+    if (input.monteCarloAnalysis) {
+      const mc = input.monteCarloAnalysis;
+      newSectionPage("16. Monte Carlo Scenario Analysis");
+      sectionDivider("16", "Monte Carlo Scenario Analysis", "#6366f1");
+      ensureSpace(60);
+      doc.font("Helvetica-Bold").fontSize(9).fillColor(MUTED)
+        .text("METHODOLOGY", ML, doc.y, { width: BODY_W });
+      doc.y += 4;
+      doc.font("Helvetica").fontSize(9).fillColor(TEXT)
+        .text(
+          "1,000 independent scenario simulations were run by perturbing deal parameters " +
+          "(market signal, traction, founder signal, business model clarity, and risk) " +
+          "using Gaussian noise calibrated to the agent confidence distribution. " +
+          "Each scenario produces an independent weighted score. The distribution below " +
+          "reflects the range of plausible outcomes given information uncertainty.",
+          ML, doc.y, { width: BODY_W }
+        );
+      doc.y += 14;
+
+      // Percentile table
+      ensureSpace(60);
+      const mcRows = [
+        ["Scenario", "Score", "Classification"],
+        [`Bear Case (p10)`, `${mc.p10}`, mc.p10 >= 62 ? "ENGAGE" : mc.p10 >= 38 ? "WATCH" : "IGNORE"],
+        [`Base Case (p50)`, `${mc.p50}`, mc.p50 >= 62 ? "ENGAGE" : mc.p50 >= 38 ? "WATCH" : "IGNORE"],
+        [`Bull Case (p90)`, `${mc.p90}`, mc.p90 >= 62 ? "ENGAGE" : mc.p90 >= 38 ? "WATCH" : "IGNORE"],
+        [`Mean`, `${mc.mean}`, "—"],
+        [`Std Dev (σ)`, `${mc.std}`, "—"],
+      ];
+      const colW = [BODY_W * 0.45, BODY_W * 0.2, BODY_W * 0.35];
+      let rowY = doc.y;
+      mcRows.forEach((row, ri) => {
+        const isHeader = ri === 0;
+        const rowH = 18;
+        ensureSpace(rowH + 4);
+        if (isHeader) {
+          doc.rect(ML, rowY, BODY_W, rowH).fill("#f5f5f5");
+        } else if (ri % 2 === 0) {
+          doc.rect(ML, rowY, BODY_W, rowH).fill("#fafafa");
+        }
+        let cx = ML;
+        row.forEach((cell, ci) => {
+          doc.font(isHeader ? "Helvetica-Bold" : "Helvetica")
+            .fontSize(9).fillColor(TEXT)
+            .text(cell, cx + 4, rowY + 5, { width: colW[ci] - 8, lineBreak: false });
+          cx += colW[ci];
+        });
+        rowY += rowH;
+      });
+      doc.y = rowY + 8;
+
+      // Distribution label + skew
+      ensureSpace(30);
+      doc.font("Helvetica-Bold").fontSize(9).fillColor(MUTED)
+        .text("DISTRIBUTION CHARACTERISTICS", ML, doc.y, { width: BODY_W });
+      doc.y += 4;
+      doc.font("Helvetica").fontSize(9).fillColor(TEXT)
+        .text(
+          `Distribution: ${mc.distribution_label}  |  Upside skew: ${mc.upside_skew ? "Yes" : "No"}  |  ` +
+          `Spread (p90 − p10): ${mc.p90 - mc.p10} points`,
+          ML, doc.y, { width: BODY_W }
+        );
+      doc.y += 14;
+
+      // Interpretation
+      ensureSpace(40);
+      doc.font("Helvetica-Bold").fontSize(9).fillColor(MUTED)
+        .text("INTERPRETATION", ML, doc.y, { width: BODY_W });
+      doc.y += 4;
+      const spread = mc.p90 - mc.p10;
+      const interpretation =
+        spread <= 20
+          ? "Tight distribution — the deal score is robust to parameter uncertainty. High conviction in the base case."
+          : spread <= 35
+          ? "Moderate spread — outcome is sensitive to 1–2 key variables. Conditions to proceed should address the primary uncertainty driver."
+          : "Wide distribution — significant information uncertainty. The bear case is materially different from the bull case. Additional diligence is recommended before committing capital.";
+      doc.font("Helvetica").fontSize(9).fillColor(TEXT)
+        .text(interpretation, ML, doc.y, { width: BODY_W });
+      doc.y += 14;
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // FOOTER ON ALL PAGES
