@@ -3590,3 +3590,13 @@
 - [x] TASK 2: No schema changes, no new tRPC procedures
 - [x] TASK 2: tsc --noEmit: EXIT:0
 - [x] TASK 2: Tests: 761/761 passed
+
+## Fleet Scale-Up: 200 → 500 evaluations/day
+
+- [x] Update founderFleetScheduler.ts: GCC 200 ideas (5 domains ×40), Global 300 ideas (5 domains ×60)
+- [x] Update max_cost_usd per run: no-op — cost guard is daily cap ($50) with bypassCostGuard=true already set
+- [x] Update fleet summary email targets: email uses r.totalIdeas dynamically — no change needed
+- [x] UPDATE fleet_config SET runs_total=30 — confirmed already 30 for both modes
+- [x] tsc --noEmit: EXIT:0
+- [x] Tests: 761/761 passing
+- [x] Manual run verification: DB insert confirmed gcc total_ideas=200, global total_ideas=300

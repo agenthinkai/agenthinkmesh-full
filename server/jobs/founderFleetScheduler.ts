@@ -241,6 +241,10 @@ export function startFounderFleetScheduler(): void {
       const isGcc = config.fleetMode === "gcc";
       console.log(`[FounderFleet] Starting ${config.fleetMode} fleet run (${config.runsRemaining} remaining)`);
 
+      // Per-mode idea targets: GCC=200 (5 domains ×40), Global=300 (5 domains ×60)
+      const ideasPerDomain = isGcc ? 40 : 60;
+      const targetIdeas = isGcc ? 200 : 300;
+
       try {
         const today = new Date().toISOString().slice(0, 10);
 
@@ -265,7 +269,7 @@ export function startFounderFleetScheduler(): void {
           runDate: today,
           fleetMode: config.fleetMode,
           status: "pending",
-          totalIdeas: 100,
+          totalIdeas: targetIdeas,
           completed: 0,
           queued: 0,
           running: 0,
@@ -287,7 +291,7 @@ export function startFounderFleetScheduler(): void {
         // Run fleet — bypassCostGuard=true so the 10-runs/hour cap does not block
         // scheduled runs. runFleet never throws; it catches internally and sets
         // status="failed", so we must query the DB to determine success.
-        await runFleet(runId, { gccMode: isGcc, bypassCostGuard: true });
+        await runFleet(runId, { gccMode: isGcc, bypassCostGuard: true, ideasPerDomain });
 
         // ── Post-run: check actual DB status ──────────────────────────────────
         const dbPost = await getDb();
@@ -298,7 +302,7 @@ export function startFounderFleetScheduler(): void {
             runId,
             status: "failed",
             evaluations: 0,
-            totalIdeas: 100,
+            totalIdeas: targetIdeas,
             avgScore: null,
             runsRemaining: config.runsRemaining,
           });
@@ -347,7 +351,7 @@ export function startFounderFleetScheduler(): void {
           // In-app notification — success
           notifyOwner({
             title: `Fleet run complete — ${config.fleetMode}`,
-            content: `${config.fleetMode} run #${runId} completed:\n${runRow?.completed ?? 100}/100 evaluations\nAvg score: ${avgScore?.toFixed(2) ?? "N/A"}\nRuns remaining: ${newRemaining}`,
+            content: `${config.fleetMode} run #${runId} completed:\n${runRow?.completed ?? targetIdeas}/${targetIdeas} evaluations\nAvg score: ${avgScore?.toFixed(2) ?? "N/A"}\nRuns remaining: ${newRemaining}`,
           }).catch((notifyErr: unknown) =>
             console.error(`[FounderFleet] notifyOwner failed for ${config.fleetMode} run #${runId}:`, (notifyErr as Error)?.message)
           );
@@ -356,8 +360,8 @@ export function startFounderFleetScheduler(): void {
             mode: config.fleetMode,
             runId,
             status: "completed",
-            evaluations: runRow?.completed ?? 100,
-            totalIdeas: runRow?.totalIdeas ?? 100,
+            evaluations: runRow?.completed ?? targetIdeas,
+            totalIdeas: runRow?.totalIdeas ?? targetIdeas,
             avgScore,
             runsRemaining: newRemaining,
           });
@@ -367,7 +371,7 @@ export function startFounderFleetScheduler(): void {
           // In-app notification — failure
           notifyOwner({
             title: `Fleet run failed — ${config.fleetMode}`,
-            content: `${config.fleetMode} run #${runId} failed at ${runRow?.completed ?? 0}/${runRow?.totalIdeas ?? 100} evaluations.\nCheck logs for details.\nRuns remaining: ${config.runsRemaining}`,
+            content: `${config.fleetMode} run #${runId} failed at ${runRow?.completed ?? 0}/${runRow?.totalIdeas ?? targetIdeas} evaluations.\nCheck logs for details.\nRuns remaining: ${config.runsRemaining}`,
           }).catch((notifyErr: unknown) =>
             console.error(`[FounderFleet] notifyOwner failed for ${config.fleetMode} run #${runId}:`, (notifyErr as Error)?.message)
           );
@@ -377,7 +381,7 @@ export function startFounderFleetScheduler(): void {
             runId,
             status: "failed",
             evaluations: runRow?.completed ?? 0,
-            totalIdeas: runRow?.totalIdeas ?? 100,
+            totalIdeas: runRow?.totalIdeas ?? targetIdeas,
             avgScore: null,
             runsRemaining: config.runsRemaining,
           });
@@ -390,7 +394,7 @@ export function startFounderFleetScheduler(): void {
           runId: -1,
           status: "failed",
           evaluations: 0,
-          totalIdeas: 100,
+          totalIdeas: targetIdeas,
           avgScore: null,
           runsRemaining: config.runsRemaining,
         });

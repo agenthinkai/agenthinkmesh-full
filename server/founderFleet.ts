@@ -1114,11 +1114,13 @@ export interface FleetOptions {
   isTestRun?: boolean;
   /** Bypass cost guard for fleet runs — skips rate/spend check in councilEngine */
   bypassCostGuard?: boolean;
+  /** Override ideas per domain (default: 20). GCC fleet uses 40 (→200 total), Global uses 60 (→300 total) */
+  ideasPerDomain?: number;
 }
 // -- Main orchestration entry point ------------------------------------------
 
 export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<void> {
-  const { quickTest = false, isTestRun = false, bypassCostGuard = false } = opts;
+  const { quickTest = false, isTestRun = false, bypassCostGuard = false, ideasPerDomain } = opts;
   fleetState.set(runId, { paused: false, abort: false });
   const acc: CostAccumulator = { searches: 0, llmCalls: 0, tokens: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 };
 
@@ -1127,7 +1129,7 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
     await updateRunStatus(runId, "generating", { startedAt: Date.now() });
     if (await waitIfPaused(runId)) { await updateRunStatus(runId, "paused"); return; }
 
-    const ideaIds = await generateIdeas(runId, acc, quickTest ? { ideasPerDomain: 2 } : {});
+    const ideaIds = await generateIdeas(runId, acc, quickTest ? { ideasPerDomain: 2 } : { ideasPerDomain, gccMode: opts.gccMode });
     await saveCosts(runId, acc);
 
     // Step 2: Research
