@@ -33,6 +33,7 @@ import dealScreenRouter from "../dealScreenRoute";
 import { dataRoomUploadRouter } from "../dataRoomUploadRoute";
 import { registerPitchMirrorMetaRoute } from "../pitchMirrorMetaRoute";
 import { registerFleetSchedulerStatusRoute } from "../fleetSchedulerStatusRoute";
+import { registerEncryptionReportRoute } from "../encryptionReportRoute";
 import fleetTriggerRouter from "../fleetTriggerRoute";
 import inboundEmailWebhookRouter from "../inboundEmailWebhookRoute";
 import graphEmailWebhookRouter from "../graphEmailWebhookRoute";
@@ -164,6 +165,8 @@ async function startServer() {
 
   // Fleet scheduler health check — public GET /api/fleet/scheduler-status
   registerFleetSchedulerStatusRoute(app);
+  // Encryption coverage report — admin-only GET /api/admin/encryption-report
+  registerEncryptionReportRoute(app);
   // External fleet trigger — POST /api/scheduled/fleet-trigger (X-Scheduler-Secret auth)
   app.use("/api/scheduled", fleetTriggerRouter);
   // PitchMirror shared-link OG meta injection (must be before Vite/static catch-all)

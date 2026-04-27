@@ -85,18 +85,41 @@ Rotation complete — 985 rows re-encrypted, 0 errors.
 
 ---
 
-### 5. Verify
+### 5. Verify coverage post-rotation
 
-After deployment, check that encryption coverage remains at 100%:
+After deployment, confirm encryption coverage is still 100% using the admin report endpoint:
 
-1. Navigate to `/security` (must be logged in as admin)
-2. Open the **Encryption Status** section (06)
-3. Confirm:
-   - `pitch_triages: 100%`
-   - `founder_agent_evaluations: 100%`
-   - `Overall: 100%`
+```bash
+curl https://agenthink-7enctkan.manus.space/api/admin/encryption-report \
+  -H "Cookie: app_session_id=<your-admin-session-cookie>"
+```
 
-Or query the `system.encryptionStatus` tRPC endpoint directly.
+Expected response:
+
+```json
+{
+  "overall": { "coverage": 100, "encrypted": ..., "total": ... },
+  "tables": [
+    { "table": "pitch_triages", "coverage": 100, ... },
+    { "table": "founder_agent_evaluations", "coverage": 100, ... },
+    { "table": "founder_agent_insights", "coverage": 100, ... }
+  ]
+}
+```
+
+Confirm:
+- `overall.coverage: 100`
+- `pitch_triages.coverage: 100`
+- `founder_agent_evaluations.coverage: 100`
+- `founder_agent_insights.coverage: 100`
+
+**If coverage drops below 100% after rotation:**
+- Do not proceed
+- Check server logs for decryption errors (`[CMK] decryptWithMasterKey failed`)
+- Re-run the rotation script with the correct new key
+- Do not discard the old key until coverage is confirmed at 100%
+
+Alternatively, navigate to `/security` (logged in as admin) → **Encryption Status** section (06) to view the same data in the UI.
 
 ---
 
@@ -116,6 +139,7 @@ If the rotation script fails mid-way:
 
 ## Notes
 
-- The rotation script only covers `pitch_triages` (fields: `agentOutputs`, `keySignals`, `missingInfo`). If `founder_agent_evaluations` fields are added to the rotation scope in future, update both the script and this runbook.
-- `recommended_action` in `founder_agent_evaluations` is also encrypted. Ensure the rotation script is extended to cover it when it is added.
-- `pitchPreview` in `pitch_triages` and `recommended_action` (legacy plaintext rows) are **not** encrypted — they are short label fields stored as plaintext. The rotation script does not touch them.
+- The rotation script currently covers `pitch_triages` (fields: `agentOutputs`, `keySignals`, `missingInfo`). The following encrypted tables/fields are **not yet covered** by the rotation script and must be added before the next rotation:
+  - `founder_agent_evaluations`: `strengths`, `concerns`, `flags`, `recommendedAction`
+  - `founder_agent_insights`: `highScorePatterns`, `lowScorePatterns`, `failureReasons`
+- `pitchPreview` in `pitch_triages` is **not** encrypted — it is a short truncated preview stored as plaintext. The rotation script does not touch it.

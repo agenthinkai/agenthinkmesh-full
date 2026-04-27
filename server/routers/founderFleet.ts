@@ -322,9 +322,9 @@ export const fleetRouter = router({
       if (!row) return null;
 
       return {
-        highScorePatterns:      JSON.parse(row.highScorePatterns ?? "[]") as string[],
-        lowScorePatterns:       JSON.parse(row.lowScorePatterns ?? "[]") as string[],
-        failureReasons:         JSON.parse(row.failureReasons ?? "[]") as string[],
+        highScorePatterns:      JSON.parse(decryptWithMasterKey(row.highScorePatterns) ?? "[]") as string[],
+        lowScorePatterns:       JSON.parse(decryptWithMasterKey(row.lowScorePatterns) ?? "[]") as string[],
+        failureReasons:         JSON.parse(decryptWithMasterKey(row.failureReasons) ?? "[]") as string[],
         domainComparison:       JSON.parse(row.domainComparison ?? "{}") as Record<string, { avgScore: number; count: number; topConcern: string }>,
         improvementSuggestions: JSON.parse(row.improvementSuggestions ?? "[]") as string[],
         idealPitchStructure:    row.idealPitchStructure ?? "",

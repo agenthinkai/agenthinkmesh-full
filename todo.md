@@ -3699,3 +3699,6 @@
 - [ ] Task 2: Write docs/key-rotation-runbook.md
 - [ ] Task 3: Migrate recommended_action varchar(100) -> text in schema.ts + pnpm db:push
 - [ ] Task 3: Encrypt recommended_action on insert + decrypt on read + backfill existing rows
+- [x] Task 1: Update docs/key-rotation-runbook.md with Step 5 post-rotation coverage verification
+- [x] Task 2: Encrypt highScorePatterns/lowScorePatterns/failureReasons in founder_agent_insights + backfill + extend encryptionStatus
+- [x] Task 3: Add GET /api/admin/encryption-report plain HTTP endpoint with admin auth

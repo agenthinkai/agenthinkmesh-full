@@ -1094,9 +1094,9 @@ No generic statements. Every insight must be grounded in the actual data provide
 
   const insightData = {
     runId,
-    highScorePatterns:      JSON.stringify(insights.highScorePatterns ?? []),
-    lowScorePatterns:       JSON.stringify(insights.lowScorePatterns ?? []),
-    failureReasons:         JSON.stringify(insights.failureReasons ?? []),
+    highScorePatterns:      encryptWithMasterKey(JSON.stringify(insights.highScorePatterns ?? [])) ?? "",
+    lowScorePatterns:       encryptWithMasterKey(JSON.stringify(insights.lowScorePatterns ?? [])) ?? "",
+    failureReasons:         encryptWithMasterKey(JSON.stringify(insights.failureReasons ?? [])) ?? "",
     domainComparison:       JSON.stringify(insights.domainComparison ?? {}),
     improvementSuggestions: JSON.stringify(insights.improvementSuggestions ?? []),
     idealPitchStructure:    insights.idealPitchStructure ?? "",
