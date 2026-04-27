@@ -29,6 +29,7 @@ export default defineConfig({
       NODE_ENV: "test",
       // Test-only master key (64 hex chars = 32 bytes). Never used in production.
       ENCRYPTION_MASTER_KEY: process.env.ENCRYPTION_MASTER_KEY ?? "0000000000000000000000000000000000000000000000000000000000000001",
+      FLEET_COST_ALERT_THRESHOLD_USD: "50",
     },
     testTimeout: 30000,
     // Use jsdom for any .tsx test files (React component tests)

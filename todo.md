@@ -3657,3 +3657,13 @@
 - [x] tsc --noEmit: EXIT:0
 - [x] Tests: 761/761 passing
 - [x] Checkpoint saved
+
+## Encryption & Config Cleanup (Tasks 1-3)
+
+- [x] TASK 1: Set ENCRYPTION_MASTER_KEY secret (same value as DATA_ENCRYPTION_KEY)
+- [x] TASK 1: Simplify getMasterKey() in cmk.ts to read only ENCRYPTION_MASTER_KEY (remove alias)
+- [x] TASK 1: Confirm ENCRYPTION_MASTER_KEY: SET (length=64) — confirmed
+- [x] TASK 2: Oldest pitch_triage id=1 is PLAINTEXT — decryptField() returns original value, no data loss
+- [x] TASK 3: FLEET_COST_ALERT_THRESHOLD_USD: "50" added to vitest.config.ts test env
+- [x] tsc --noEmit: EXIT:0
+- [x] Tests: 761/761 passing
