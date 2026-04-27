@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { trpc } from "../lib/trpc";
 
 const NAVY_950 = "#060A14";
 const NAVY_900 = "#0A0E1A";
@@ -20,6 +21,12 @@ interface Section {
 }
 
 export default function SecurityPage() {
+  // Live encryption coverage — admin-only, auto-refreshes every 60s
+  const { data: encStatus } = trpc.system.encryptionStatus.useQuery(
+    undefined,
+    { refetchInterval: 60_000, retry: false }
+  );
+
   const sections: Section[] = [
     {
       id: "data-handling",
@@ -328,9 +335,13 @@ export default function SecurityPage() {
               icon: "✅",
               title: "System encryption: Active",
               lines: [
-                "Agent analysis, reasoning, and verdicts encrypted at rest using AES-256-GCM.",
-                "All new records encrypted automatically. All existing records backfilled.",
-                "Algorithm: AES-256-GCM · Key: ENCRYPTION_MASTER_KEY (platform-managed)",
+                encStatus
+                  ? `Coverage: ${encStatus.coverage}% (${encStatus.encrypted.toLocaleString()} of ${encStatus.total.toLocaleString()} records encrypted)`
+                  : "Agent analysis, reasoning, and verdicts encrypted at rest using AES-256-GCM.",
+                "Algorithm: AES-256-GCM \u00b7 Key: ENCRYPTION_MASTER_KEY (platform-managed)",
+                encStatus
+                  ? `Last checked: ${new Date(encStatus.lastUpdated).toLocaleTimeString()} \u00b7 auto-refreshes every 60s`
+                  : "All new records encrypted automatically. All existing records backfilled.",
               ],
             },
             {

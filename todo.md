@@ -3688,3 +3688,9 @@
 - [x] Task 1: Encrypt keySignals and missingInfo in savePitchTriage + decrypt on all read paths
 - [x] Task 2: Backfill all legacy plaintext agentOutputs/keySignals/missingInfo rows (985 rows, 0 errors)
 - [x] Task 3: Add Encryption Status section to /security page
+
+## Session — Encryption Coverage Stats + Key Rotation + Fleet Encryption
+
+- [ ] Task 1: Add system.encryptionStatus admin-only tRPC query + live stats on /security page
+- [ ] Task 2: Write rotate-master-key.mjs with --dry-run and atomic all-or-nothing rotation
+- [ ] Task 3: Encrypt strengths/concerns/flags/recommended_action in founder_agent_evaluations + backfill

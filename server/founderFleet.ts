@@ -20,6 +20,7 @@ import {
 import { eq, and, inArray, sql } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
 import { runCouncil } from "./councilEngine";
+import { encryptWithMasterKey, decryptWithMasterKey } from "./cmk";
 
 // ── Model constants ────────────────────────────────────────────────────────────
 const HAIKU  = "claude-haiku-3-5";
@@ -752,9 +753,9 @@ async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConc
         executionScore,
         marketScore,
         finalScore,
-        strengths:          JSON.stringify(strengths),
-        concerns:           JSON.stringify(concerns),
-        flags:              JSON.stringify(flags),
+        strengths:          encryptWithMasterKey(JSON.stringify(strengths)),
+        concerns:           encryptWithMasterKey(JSON.stringify(concerns)),
+        flags:              encryptWithMasterKey(JSON.stringify(flags)),
         agentDisagreements: JSON.stringify(agentDisagreements),
         recommendedAction,
         durationMs,
@@ -956,8 +957,8 @@ async function extractInsights(runId: number, acc: CostAccumulator, fleetMode: "
     finalScore:     e.eval.finalScore,
     executionScore: e.eval.executionScore,
     marketScore:    e.eval.marketScore,
-    concerns:       JSON.parse(e.eval.concerns ?? "[]") as string[],
-    strengths:      JSON.parse(e.eval.strengths ?? "[]") as string[],
+    concerns:       JSON.parse(decryptWithMasterKey(e.eval.concerns) ?? "[]") as string[],
+    strengths:      JSON.parse(decryptWithMasterKey(e.eval.strengths) ?? "[]") as string[],
   }));
 
   // ── Prompt selection: GCC variant vs global ─────────────────────────────

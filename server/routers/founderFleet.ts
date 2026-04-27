@@ -33,6 +33,7 @@ import {
   fleetConfig,
 } from "../../drizzle/schema";
 
+import { decryptWithMasterKey } from "../cmk";
 import {
   runFleet,
   pauseFleet,
@@ -203,9 +204,9 @@ export const fleetRouter = router({
           executionScore: e.executionScore,
           marketScore: e.marketScore,
           recommendedAction: e.recommendedAction,
-          strengths: JSON.parse(e.strengths ?? "[]") as string[],
-          concerns: JSON.parse(e.concerns ?? "[]") as string[],
-          flags: JSON.parse(e.flags ?? "[]") as string[],
+          strengths: JSON.parse(decryptWithMasterKey(e.strengths) ?? "[]") as string[],
+          concerns: JSON.parse(decryptWithMasterKey(e.concerns) ?? "[]") as string[],
+          flags: JSON.parse(decryptWithMasterKey(e.flags) ?? "[]") as string[],
           summary3s: pitch.summary3s,
           updatedAt: e.updatedAt,
         })),
@@ -290,9 +291,9 @@ export const fleetRouter = router({
         marketScore: e.marketScore,
         finalScore: e.finalScore,
         recommendedAction: e.recommendedAction,
-        strengths: JSON.parse(e.strengths ?? "[]") as string[],
-        concerns: JSON.parse(e.concerns ?? "[]") as string[],
-        flags: JSON.parse(e.flags ?? "[]") as string[],
+        strengths: JSON.parse(decryptWithMasterKey(e.strengths) ?? "[]") as string[],
+        concerns: JSON.parse(decryptWithMasterKey(e.concerns) ?? "[]") as string[],
+        flags: JSON.parse(decryptWithMasterKey(e.flags) ?? "[]") as string[],
         agentDisagreements: JSON.parse(e.agentDisagreements ?? "[]") as string[],
         problem: pitch.problem,
         solution: pitch.solution,
@@ -373,9 +374,9 @@ export const fleetRouter = router({
       ].map(escape).join(",");
 
       const csvRows = rows.map(({ eval: e, idea, pitch }) => {
-        const strengths = JSON.parse(e.strengths ?? "[]") as string[];
-        const concerns  = JSON.parse(e.concerns  ?? "[]") as string[];
-        const flags     = JSON.parse(e.flags     ?? "[]") as string[];
+        const strengths = JSON.parse(decryptWithMasterKey(e.strengths) ?? "[]") as string[];
+        const concerns  = JSON.parse(decryptWithMasterKey(e.concerns)  ?? "[]") as string[];
+        const flags     = JSON.parse(decryptWithMasterKey(e.flags)     ?? "[]") as string[];
         return [
           idea.domain, idea.subSector, idea.founderName, idea.targetRegion,
           idea.fundingStage, idea.fundingAsk,
