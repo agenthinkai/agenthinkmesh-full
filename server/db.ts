@@ -1,4 +1,5 @@
 import { and, count, desc, eq, gte, inArray, isNull, sql } from "drizzle-orm";
+import { encryptWithMasterKey, decryptWithMasterKey } from "./cmk";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertPitchTriage, InsertUser, PitchTriage, pitchTriages, pitchMirrorShares, users, autoTriggerLog, InsertAutoTriggerLog, dealSignals, InsertDealSignal, DealSignal } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -110,14 +111,34 @@ export async function getUserByOpenId(openId: string) {
 // TODO: add feature queries here as your schema grows.
 
 // ── Pitch Triage History helpers ───────────────────────────────────────────────────────────────
+/**
+ * Decrypt the agentOutputs field on a PitchTriage row.
+ * Handles three cases transparently:
+ *   1. null/undefined  → null
+ *   2. "sys:..." prefix → AES-256-GCM decrypt with ENCRYPTION_MASTER_KEY
+ *   3. No prefix       → legacy plaintext, returned as-is
+ */
+function decryptAgentOutputs(row: PitchTriage): PitchTriage {
+  if (!row.agentOutputs) return row;
+  const decrypted = decryptWithMasterKey(row.agentOutputs);
+  return { ...row, agentOutputs: decrypted };
+}
+
 export async function savePitchTriage(data: InsertPitchTriage): Promise<number | null> {
   const db = await getDb();
   if (!db) {
     console.warn("[Database] Cannot save pitch triage: database not available");
     return null;
   }
+  // Encrypt agentOutputs with the system master key before persisting.
+  // pitchPreview is left as plaintext (it is already a truncated preview, low sensitivity).
+  // Legacy plaintext records are handled transparently by decryptWithMasterKey's fallback.
+  const encryptedData: InsertPitchTriage = {
+    ...data,
+    agentOutputs: encryptWithMasterKey(data.agentOutputs ?? null) ?? undefined,
+  };
   try {
-    const result = await db.insert(pitchTriages).values(data);
+    const result = await db.insert(pitchTriages).values(encryptedData);
     // MySQL2 returns insertId on the result
     return (result as unknown as { insertId: number }[])[0]?.insertId ?? null;
   } catch (error) {
@@ -129,12 +150,13 @@ export async function savePitchTriage(data: InsertPitchTriage): Promise<number |
 export async function getPitchTriageHistory(userId: string, limit = 50): Promise<PitchTriage[]> {
   const db = await getDb();
   if (!db) return [];
-  return db
+  const rows = await db
     .select()
     .from(pitchTriages)
     .where(eq(pitchTriages.userId, userId))
     .orderBy(desc(pitchTriages.createdAt))
     .limit(limit);
+  return rows.map(decryptAgentOutputs);
 }
 
 export async function getPitchTriageById(id: number, userId: string) {
@@ -148,7 +170,7 @@ export async function getPitchTriageById(id: number, userId: string) {
   const row = rows[0] ?? null;
   // Ownership check
   if (row && row.userId !== userId) return null;
-  return row;
+  return row ? decryptAgentOutputs(row) : null;
 }
 
 export async function markPitchTriageEscalated(id: number, userId: string): Promise<boolean> {
@@ -224,7 +246,7 @@ export async function getOutcomeHistory(
   const db = await getDb();
   if (!db) return [];
   try {
-    return await db
+    const rows = await db
       .select()
       .from(pitchTriages)
       .where(
@@ -235,6 +257,7 @@ export async function getOutcomeHistory(
       )
       .orderBy(desc(pitchTriages.createdAt))
       .limit(limit);
+    return rows.map(decryptAgentOutputs);
   } catch (error) {
     console.error("[Database] Failed to fetch outcome history:", error);
     return [];
@@ -436,7 +459,8 @@ export async function getPreviousTriageForDeal(
       )
       .orderBy(desc(pitchTriages.createdAt))
       .limit(1);
-    return rows[0] ?? null;
+    const row = rows[0] ?? null;
+    return row ? decryptAgentOutputs(row) : null;
   } catch (error) {
     console.error("[Database] getPreviousTriageForDeal failed:", error);
     return null;

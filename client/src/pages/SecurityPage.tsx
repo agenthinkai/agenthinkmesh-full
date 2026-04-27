@@ -98,11 +98,18 @@ export default function SecurityPage() {
               Customer-Managed Keys (CMK)
             </span>
             <p style={{ margin: 0, color: SILVER_300, lineHeight: 1.75, fontSize: 14 }}>
-              Each account has a unique AES-256-GCM encryption key generated exclusively for that
-              account. Deal analysis outputs, pitch content, vault document text, and deal signals
-              are encrypted with this key before being written to the database. The key is stored
-              using envelope encryption: it is itself encrypted with a server-side master key
-              before storage, so the raw data key is never persisted in plaintext anywhere.
+              <strong style={{ color: GREEN_400 }}>System-level encryption (always on):</strong>{" "}
+              Agent analysis and reasoning outputs are encrypted at rest using AES-256-GCM,
+              regardless of whether you have generated a CMK. This is applied automatically to
+              every new pitch triage record using a platform-managed master key.
+            </p>
+            <p style={{ margin: 0, color: SILVER_300, lineHeight: 1.75, fontSize: 14 }}>
+              Each account can additionally generate a unique AES-256-GCM encryption key
+              exclusively for that account. When enabled, vault document text and deal signals
+              are encrypted with this per-account key before being written to the database.
+              The key is stored using envelope encryption: it is itself encrypted with a
+              server-side master key before storage, so the raw data key is never persisted
+              in plaintext anywhere.
             </p>
             <p style={{ margin: 0, color: SILVER_300, lineHeight: 1.75, fontSize: 14 }}>
               <strong style={{ color: GREEN_400 }}>You control the key lifecycle.</strong> From

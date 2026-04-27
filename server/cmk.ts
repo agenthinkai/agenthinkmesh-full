@@ -114,6 +114,48 @@ export function decryptField(encoded: string | null | undefined, dataKey: Buffer
   }
 }
 
+// ── System-level field encryption (ENCRYPTION_MASTER_KEY direct) ─────────────
+
+/**
+ * Encrypt a string field using ENCRYPTION_MASTER_KEY directly (no per-user key).
+ * Returns a string with the format: "sys:<iv_hex>:<ciphertext_hex>:<authTag_hex>"
+ *
+ * The "sys:" prefix distinguishes system-encrypted values from:
+ *   - Legacy plaintext records (no prefix, no colons, or colons but no "sys:")
+ *   - CMK per-user encrypted values (format: "<iv>:<ciphertext>:<authTag>")
+ *
+ * Use this for system-generated records (e.g. founder fleet pitch_triages) where
+ * no per-user data key exists.
+ */
+export function encryptWithMasterKey(value: string | null | undefined): string | null {
+  if (value == null) return null;
+  const masterKey = getMasterKey();
+  const encrypted = aesEncrypt(Buffer.from(value, "utf8"), masterKey);
+  return `sys:${encrypted}`;
+}
+
+/**
+ * Decrypt a value encrypted by encryptWithMasterKey.
+ *
+ * Fallback behaviour:
+ *   - null/undefined input  → returns null
+ *   - No "sys:" prefix      → returns as-is (legacy plaintext fallback)
+ *   - Decryption failure    → returns null with a console warning
+ */
+export function decryptWithMasterKey(encoded: string | null | undefined): string | null {
+  if (encoded == null) return null;
+  // Legacy plaintext fallback — old records written before encryption was enabled
+  if (!encoded.startsWith("sys:")) return encoded;
+  const inner = encoded.slice(4); // strip "sys:" prefix
+  try {
+    const masterKey = getMasterKey();
+    return aesDecrypt(inner, masterKey).toString("utf8");
+  } catch {
+    console.warn("[CMK] decryptWithMasterKey failed — returning null. Possible key mismatch or tampered data.");
+    return null;
+  }
+}
+
 // ── Key lifecycle ─────────────────────────────────────────────────────────────
 
 /**

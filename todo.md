@@ -3667,3 +3667,18 @@
 - [x] TASK 3: FLEET_COST_ALERT_THRESHOLD_USD: "50" added to vitest.config.ts test env
 - [x] tsc --noEmit: EXIT:0
 - [x] Tests: 761/761 passing
+
+## Deploy & Backfill Sprint (Tasks 1-3)
+
+- [ ] TASK 1: Verify GET https://agenthink-7enctkan.manus.space/admin/usage → 200 OK
+- [ ] TASK 2: Write backfill migration script for plaintext pitch_triages records
+- [ ] TASK 2: Run backfill and verify COUNT(*) WHERE pitchPreview NOT LIKE '%:%:%' = 0
+- [ ] TASK 3: Remove DATA_ENCRYPTION_KEY from secrets
+- [ ] TASK 3: Confirm ENCRYPTION_MASTER_KEY: SET (length=64) still resolves
+- [ ] tsc --noEmit: EXIT:0
+- [ ] Tests: 761/761 passing
+
+## Session — AES-256-GCM Encryption + userId Investigation
+
+- [x] Implement system-level AES-256-GCM encryption for NEW pitch_triages records (agentOutputs only) using ENCRYPTION_MASTER_KEY directly — NOT CMK per-user system; old plaintext records untouched; pitchPreview left as plaintext
+- [x] Investigate and report userId mismatch in pitch_triages — FINDING: no mismatch, userId stores users.id (int PK as string), consistent across all inserts and reads
