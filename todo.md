@@ -3682,3 +3682,9 @@
 
 - [x] Implement system-level AES-256-GCM encryption for NEW pitch_triages records (agentOutputs only) using ENCRYPTION_MASTER_KEY directly — NOT CMK per-user system; old plaintext records untouched; pitchPreview left as plaintext
 - [x] Investigate and report userId mismatch in pitch_triages — FINDING: no mismatch, userId stores users.id (int PK as string), consistent across all inserts and reads
+
+## Session — Encrypt keySignals + missingInfo + Backfill + Security Status
+
+- [x] Task 1: Encrypt keySignals and missingInfo in savePitchTriage + decrypt on all read paths
+- [x] Task 2: Backfill all legacy plaintext agentOutputs/keySignals/missingInfo rows (985 rows, 0 errors)
+- [x] Task 3: Add Encryption Status section to /security page

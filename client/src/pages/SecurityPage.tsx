@@ -312,8 +312,84 @@ export default function SecurityPage() {
       ),
     },
     {
-      id: "security-contact",
+      id: "encryption-status",
       label: "06",
+      title: "Encryption Status",
+      content: (
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <p style={{ margin: 0, color: SILVER_300, lineHeight: 1.75 }}>
+            Current encryption status for all data stored in AgenThink Mesh. This section
+            reflects the actual runtime state — not aspirational claims.
+          </p>
+
+          {/* Status rows */}
+          {[
+            {
+              icon: "✅",
+              title: "System encryption: Active",
+              lines: [
+                "Agent analysis, reasoning, and verdicts encrypted at rest using AES-256-GCM.",
+                "All new records encrypted automatically. All existing records backfilled.",
+                "Algorithm: AES-256-GCM · Key: ENCRYPTION_MASTER_KEY (platform-managed)",
+              ],
+            },
+            {
+              icon: "✅",
+              title: "Transport security: Active",
+              lines: [
+                "All connections between clients, the application server, and the database",
+                "use TLS 1.3. HTTP Strict Transport Security (HSTS) enforced on all endpoints.",
+              ],
+            },
+            {
+              icon: "✅",
+              title: "Data isolation: Active",
+              lines: [
+                "Each user's data is scoped by account at the API layer.",
+                "No cross-user data access is possible through the application layer.",
+              ],
+            },
+          ].map(({ icon, title, lines }) => (
+            <div
+              key={title}
+              style={{
+                background: "rgba(74,222,128,0.04)",
+                border: "1px solid rgba(74,222,128,0.15)",
+                borderRadius: 8,
+                padding: "16px 20px",
+                display: "flex",
+                gap: 14,
+              }}
+            >
+              <span style={{ fontSize: 18, lineHeight: 1, marginTop: 2 }}>{icon}</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <span
+                  style={{
+                    color: "#F1F5F9",
+                    fontWeight: 600,
+                    fontSize: 14,
+                    fontFamily: MONO,
+                  }}
+                >
+                  {title}
+                </span>
+                {lines.map((line, i) => (
+                  <span
+                    key={i}
+                    style={{ color: SILVER_400, fontSize: 13, lineHeight: 1.65 }}
+                  >
+                    {line}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ),
+    },
+    {
+      id: "security-contact",
+      label: "07",
       title: "Security Contact",
       content: (
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>

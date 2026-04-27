@@ -112,16 +112,19 @@ export async function getUserByOpenId(openId: string) {
 
 // ── Pitch Triage History helpers ───────────────────────────────────────────────────────────────
 /**
- * Decrypt the agentOutputs field on a PitchTriage row.
- * Handles three cases transparently:
+ * Decrypt the agentOutputs, keySignals, and missingInfo fields on a PitchTriage row.
+ * Handles three cases transparently for each field:
  *   1. null/undefined  → null
  *   2. "sys:..." prefix → AES-256-GCM decrypt with ENCRYPTION_MASTER_KEY
  *   3. No prefix       → legacy plaintext, returned as-is
  */
 function decryptAgentOutputs(row: PitchTriage): PitchTriage {
-  if (!row.agentOutputs) return row;
-  const decrypted = decryptWithMasterKey(row.agentOutputs);
-  return { ...row, agentOutputs: decrypted };
+  return {
+    ...row,
+    agentOutputs: row.agentOutputs ? decryptWithMasterKey(row.agentOutputs) : row.agentOutputs,
+    keySignals:   row.keySignals   ? decryptWithMasterKey(row.keySignals)   : row.keySignals,
+    missingInfo:  row.missingInfo  ? decryptWithMasterKey(row.missingInfo)  : row.missingInfo,
+  };
 }
 
 export async function savePitchTriage(data: InsertPitchTriage): Promise<number | null> {
@@ -130,12 +133,14 @@ export async function savePitchTriage(data: InsertPitchTriage): Promise<number |
     console.warn("[Database] Cannot save pitch triage: database not available");
     return null;
   }
-  // Encrypt agentOutputs with the system master key before persisting.
+  // Encrypt agentOutputs, keySignals, and missingInfo with the system master key before persisting.
   // pitchPreview is left as plaintext (it is already a truncated preview, low sensitivity).
   // Legacy plaintext records are handled transparently by decryptWithMasterKey's fallback.
   const encryptedData: InsertPitchTriage = {
     ...data,
     agentOutputs: encryptWithMasterKey(data.agentOutputs ?? null) ?? undefined,
+    keySignals:   encryptWithMasterKey(data.keySignals   ?? null) ?? undefined,
+    missingInfo:  encryptWithMasterKey(data.missingInfo  ?? null) ?? undefined,
   };
   try {
     const result = await db.insert(pitchTriages).values(encryptedData);
