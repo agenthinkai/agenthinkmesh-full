@@ -403,24 +403,11 @@ Target (Sep 2026): 100,000 / day`;
   }
 }
 
-// ── Scheduler ─────────────────────────────────────────────────────────────────
+// ── Shared daily fleet execution (used by cron + HTTP trigger) ───────────────
 
-let schedulerStarted = false;
-
-export function startFounderFleetScheduler(): void {
-  if (process.env.NODE_ENV === "test") return;
-  if (schedulerStarted) return;
-  schedulerStarted = true;
-
-  // Resume any interrupted runs from a previous server session
-  resumeInterruptedRuns().catch((err: unknown) =>
-    console.warn("[FounderFleet] Resume on startup failed:", (err as Error)?.message)
-  );
-
-  // Daily at 06:00 Asia/Kuwait (= 03:00 UTC)
-  cron.schedule("0 3 * * *", async () => {
+export async function runDailyFleet(): Promise<void> {
     const runTs = Date.now();
-    console.log("[FounderFleet] Daily scheduled run starting at 06:00 KWT (03:00 UTC)");
+    console.log("[FounderFleet] Daily fleet run starting");
     const db = await getDb();
     if (!db) {
       console.warn("[FounderFleet] DB unavailable — skipping scheduled run");
@@ -616,6 +603,27 @@ export function startFounderFleetScheduler(): void {
       );
     }
 
+}
+
+// ── Scheduler ─────────────────────────────────────────────────────────────────
+
+let schedulerStarted = false;
+
+export function startFounderFleetScheduler(): void {
+  if (process.env.NODE_ENV === "test") return;
+  if (schedulerStarted) return;
+  schedulerStarted = true;
+
+  // Resume any interrupted runs from a previous server session
+  resumeInterruptedRuns().catch((err: unknown) =>
+    console.warn("[FounderFleet] Resume on startup failed:", (err as Error)?.message)
+  );
+
+  // Daily at 06:00 Asia/Kuwait (= 03:00 UTC)
+  cron.schedule("0 3 * * *", () => {
+    runDailyFleet().catch((err: unknown) =>
+      console.error("[FounderFleet] Cron run error:", (err as Error)?.message)
+    );
   }, { timezone: "UTC" });
 
   console.log("[FounderFleet] Daily scheduler registered — fires at 06:00 KWT (03:00 UTC)");

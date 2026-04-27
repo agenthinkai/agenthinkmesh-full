@@ -3622,3 +3622,14 @@
 - [x] Add TOKENS & COST section to buildAndSendFleetEmail in founderFleetScheduler.ts (no schema changes)
 - [x] tsc --noEmit: EXIT:0
 - [x] Tests: 761/761 passing
+
+## Fleet External Trigger (Tasks 1 & 2)
+
+- [x] TASK 1: Add POST /api/scheduled/fleet-trigger endpoint with X-Scheduler-Secret auth
+- [x] TASK 1: Background fleet execution (gcc=200, global=300, bypassCostGuard=true)
+- [x] TASK 1: SCHEDULER_SECRET set via env (length=64)
+- [x] TASK 2: SCHEDULER_SECRET set via webdev_request_secrets
+- [ ] TASK 2: Set up daily Manus schedule at 03:00 UTC
+- [ ] TASK 2: Trigger immediate run and verify total_ideas=200/300 in DB
+- [ ] tsc --noEmit: EXIT:0
+- [ ] Tests: 761/761 passing
