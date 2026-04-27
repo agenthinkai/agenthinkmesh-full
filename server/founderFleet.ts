@@ -291,11 +291,21 @@ async function generateIdeas(runId: number, acc: CostAccumulator, opts: { ideasP
     targetRegion: string; founderName: string; fundingStage: string; fundingAsk: string;
   }
 
-  // ── Per-domain calls: 1 LLM call per domain, ideasPerDomain ideas each ────
+  // ── Per-domain calls: batched at MAX_IDEAS_PER_LLM_CALL each to stay within output token budget ────
+  // When ideasPerDomain > MAX_IDEAS_PER_LLM_CALL (e.g. GCC=40), we run multiple batches per domain.
+  // This prevents JSON truncation that caused completed=0 on the first 200-idea GCC run.
+  const MAX_IDEAS_PER_LLM_CALL = 20;
   for (const domain of domains) {
     const domainSubSectors = domain.subSectors.join(", ");
     const regionHint = gccMode ? "GCC (Saudi Arabia, UAE, Kuwait, Qatar, Bahrain, Oman)" : "global emerging markets";
-    const prompt = `Generate exactly ${ideasPerDomain} unique, credible early-stage startup ideas for the domain: ${domain.name}.
+    const batchCount = Math.ceil(ideasPerDomain / MAX_IDEAS_PER_LLM_CALL);
+    const batchSize = Math.min(ideasPerDomain, MAX_IDEAS_PER_LLM_CALL);
+    let domainInserted = 0;
+    for (let batch = 0; batch < batchCount; batch++) {
+      const remaining = ideasPerDomain - domainInserted;
+      const thisBatch = Math.min(batchSize, remaining);
+      if (thisBatch <= 0) break;
+      const prompt = `Generate exactly ${thisBatch} unique, credible early-stage startup ideas for the domain: ${domain.name}.
 Sub-sectors to cover (one idea per sub-sector): ${domainSubSectors}
 Target region: ${regionHint}
 CRITICAL QUALITY RULES — every idea MUST include all four of these:
@@ -306,7 +316,7 @@ CRITICAL QUALITY RULES — every idea MUST include all four of these:
 Other rules:
 - No duplicates (check against existing ideas listed below)
 - Each idea must cover a different sub-sector within ${domain.name}
-- Return ONLY a JSON array of ${ideasPerDomain} objects, no markdown, no explanation
+- Return ONLY a JSON array of ${thisBatch} objects, no markdown, no explanation
 Each object must have these exact keys:
 {
   "domain": string (must be "${domain.name}"),
@@ -318,51 +328,52 @@ Each object must have these exact keys:
   "fundingAsk": string — MUST be between $1M and $15M (e.g. "$1.5M", "$3M", "$8M") — no pre-seed asks below $1M
 }
 Existing idea fingerprints to avoid (domain|subSector|description):
-\${Array.from(existingFingerprints).slice(0, 200).join("\n") || "None yet"}`;
+${Array.from(existingFingerprints).slice(0, 200).join("\n") || "None yet"}`;
 
-    const resp = await invokeLLM({
-      messages: [
-        { role: "system", content: "You are a startup idea generator. Return only valid JSON arrays." },
-        { role: "user", content: prompt },
-      ],
-      model: HAIKU,
-      max_tokens: 2000,
-    });
-    const usage = extractUsage(resp);
-    addLlmCost(acc, HAIKU, usage.prompt_tokens || 800, usage.completion_tokens || 800);
-    const rawContent = extractContent(resp);
-    let domainIdeas: IdeaRaw[] = [];
-    try {
-      const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      domainIdeas = JSON.parse(cleaned) as IdeaRaw[];
-    } catch {
-      console.error(`[FleetOrchestrator] Failed to parse ideas JSON for domain ${domain.name}:`, rawContent.slice(0, 200));
-      continue; // skip this domain rather than aborting the whole run
-    }
-    // Deduplicate and insert for this domain
-    const toInsert = domainIdeas.filter((idea: IdeaRaw) => {
-      const fp = fingerprint(idea.domain, idea.subSector, idea.description);
-      if (existingFingerprints.has(fp)) return false;
-      existingFingerprints.add(fp);
-      return true;
-    }).slice(0, ideasPerDomain);
-    for (const idea of toInsert) {
-      const fp = fingerprint(idea.domain, idea.subSector, idea.description);
-      const result = await db.insert(founderAgentIdeas).values({
-        runId,
-        domain: idea.domain,
-        subSector: idea.subSector,
-        description: idea.description,
-        targetRegion: idea.targetRegion,
-        founderName: idea.founderName,
-        fundingStage: idea.fundingStage,
-        fundingAsk: idea.fundingAsk,
-        ideaFingerprint: fp,
+      const resp = await invokeLLM({
+        messages: [
+          { role: "system", content: "You are a startup idea generator. Return only valid JSON arrays." },
+          { role: "user", content: prompt },
+        ],
+        model: HAIKU,
+        max_tokens: 2000,
       });
-      const insertId = (result as unknown as [{ insertId: number }])[0]?.insertId;
-      if (insertId) insertedIds.push(insertId);
+      const usage = extractUsage(resp);
+      addLlmCost(acc, HAIKU, usage.prompt_tokens || 800, usage.completion_tokens || 800);
+      const rawContent = extractContent(resp);
+      let batchIdeas: IdeaRaw[] = [];
+      try {
+        const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+        batchIdeas = JSON.parse(cleaned) as IdeaRaw[];
+      } catch {
+        console.error(`[FleetOrchestrator] Failed to parse ideas JSON for domain ${domain.name} batch ${batch + 1}:`, rawContent.slice(0, 200));
+        continue; // skip this batch, try next
+      }
+      // Deduplicate and insert for this batch
+      const toInsert = batchIdeas.filter((idea: IdeaRaw) => {
+        const fp = fingerprint(idea.domain, idea.subSector, idea.description);
+        if (existingFingerprints.has(fp)) return false;
+        existingFingerprints.add(fp);
+        return true;
+      }).slice(0, thisBatch);
+      for (const idea of toInsert) {
+        const fp = fingerprint(idea.domain, idea.subSector, idea.description);
+        const result = await db.insert(founderAgentIdeas).values({
+          runId,
+          domain: idea.domain,
+          subSector: idea.subSector,
+          description: idea.description,
+          targetRegion: idea.targetRegion,
+          founderName: idea.founderName,
+          fundingStage: idea.fundingStage,
+          fundingAsk: idea.fundingAsk,
+          ideaFingerprint: fp,
+        });
+        const insertId = (result as unknown as [{ insertId: number }])[0]?.insertId;
+        if (insertId) { insertedIds.push(insertId); domainInserted++; }
+      }
+      console.log(`[FleetOrchestrator] Domain "${domain.name}" batch ${batch + 1}/${batchCount}: ${toInsert.length} ideas inserted (domain total: ${domainInserted})`);
     }
-    console.log(`[FleetOrchestrator] Domain "${domain.name}": ${toInsert.length} ideas inserted`);
   }
 
   await db.update(founderAgentRuns).set({ totalIdeas: insertedIds.length }).where(eq(founderAgentRuns.id, runId));
@@ -378,8 +389,8 @@ async function runResearch(
   const queriesPerDomain = opts.queriesPerDomain ?? 3;
   const db = await requireDb();
   const researchByDomain: Record<string, string> = {};
-
-  for (const domain of FLEET_DOMAINS) {
+  const researchDomains = opts.gccMode ? GCC_FLEET_DOMAINS : FLEET_DOMAINS;
+  for (const domain of researchDomains) {
     const allQueries = [
       `${domain.name} startup market size 2024 2025`,
       `${domain.name} key competitors and market leaders`,
@@ -460,11 +471,10 @@ async function generatePitches(
   opts: { gccMode?: boolean } = {},
 ): Promise<void> {
   const db = await requireDb();
-
   const ideas = await db.select().from(founderAgentIdeas)
     .where(and(eq(founderAgentIdeas.runId, runId), inArray(founderAgentIdeas.id, ideaIds)));
-
-  for (const domain of FLEET_DOMAINS) {
+  const pitchDomains = opts.gccMode ? GCC_FLEET_DOMAINS : FLEET_DOMAINS;
+  for (const domain of pitchDomains) {
     const domainIdeas = ideas.filter((i: FounderAgentIdea) => i.domain === domain.name);
     if (domainIdeas.length === 0) continue;
 
@@ -1136,14 +1146,14 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
     await updateRunStatus(runId, "researching");
     if (await waitIfPaused(runId)) { await updateRunStatus(runId, "paused"); return; }
 
-    const researchByDomain = await runResearch(runId, acc, quickTest ? { queriesPerDomain: 1 } : {});
+    const researchByDomain = await runResearch(runId, acc, quickTest ? { queriesPerDomain: 1, gccMode: opts.gccMode } : { gccMode: opts.gccMode });
     await saveCosts(runId, acc);
 
     // Step 3: Generate pitches
     await updateRunStatus(runId, "pitching");
     if (await waitIfPaused(runId)) { await updateRunStatus(runId, "paused"); return; }
 
-    await generatePitches(runId, ideaIds, researchByDomain, acc);
+    await generatePitches(runId, ideaIds, researchByDomain, acc, { gccMode: opts.gccMode });
     await saveCosts(runId, acc);
 
     // Step 4: Submit to mesh

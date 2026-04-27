@@ -18,6 +18,10 @@
  */
 import { Router, Request, Response } from "express";
 import { runDailyFleet } from "./jobs/founderFleetScheduler";
+import { runFleet } from "./founderFleet";
+import { getDb } from "./db";
+import { fleetConfig as fleetConfigTable, founderAgentRuns } from "../drizzle/schema";
+import { eq, and } from "drizzle-orm";
 
 const router = Router();
 
@@ -33,13 +37,44 @@ router.post("/fleet-trigger", (req: Request, res: Response) => {
   const timestamp = new Date().toISOString();
   console.log(`[FleetTrigger] External trigger received at ${timestamp}`);
 
-  // Return immediately — fleet runs in background
-  res.json({ status: "triggered", timestamp });
+  const { mode } = req.body as { mode?: string };
 
-  // Fire-and-forget background execution
-  runDailyFleet().catch((err: unknown) => {
-    console.error("[FleetTrigger] Background fleet run error:", (err as Error)?.message);
-  });
+  // Return immediately — fleet runs in background
+  res.json({ status: "triggered", timestamp, mode: mode ?? "all" });
+
+  if (mode === "gcc" || mode === "global") {
+    // Single-mode trigger: run only the specified fleet config
+    (async () => {
+      try {
+        const db = await getDb();
+        if (!db) { console.error("[FleetTrigger] DB unavailable"); return; }
+        const [config] = await db.select().from(fleetConfigTable)
+          .where(and(eq(fleetConfigTable.fleetMode, mode), eq(fleetConfigTable.active, true)));
+        if (!config) { console.error(`[FleetTrigger] No active fleet_config for mode=${mode}`); return; }
+        const isGcc = mode === "gcc";
+        const ideasPerDomain = isGcc ? 40 : 60;
+        const targetIdeas = isGcc ? 200 : 300;
+        const today = new Date().toISOString().slice(0, 10);
+        const [newRun] = await db.insert(founderAgentRuns).values({
+          runDate: today, fleetMode: mode, status: "pending",
+          totalIdeas: targetIdeas, completed: 0, queued: 0, running: 0,
+          totalSearches: 0, totalLlmCalls: 0, estimatedTokens: 0,
+          estimatedCostUsd: "0", startedAt: Date.now(), createdAt: Date.now(),
+        }).$returningId();
+        const runId = newRun.id;
+        console.log(`[FleetTrigger] Single-mode trigger: ${mode} run #${runId}`);
+        await runFleet(runId, { gccMode: isGcc, bypassCostGuard: true, ideasPerDomain });
+        console.log(`[FleetTrigger] ${mode} run #${runId} completed`);
+      } catch (err) {
+        console.error(`[FleetTrigger] Single-mode ${mode} run error:`, (err as Error)?.message);
+      }
+    })();
+  } else {
+    // Full daily fleet (both modes)
+    runDailyFleet().catch((err: unknown) => {
+      console.error("[FleetTrigger] Background fleet run error:", (err as Error)?.message);
+    });
+  }
 });
 
 export default router;

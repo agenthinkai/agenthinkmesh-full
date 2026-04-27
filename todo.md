@@ -3639,3 +3639,13 @@
 - [x] Raise DAILY_API_SPEND_CAP from $20 to $30 in secrets
 - [x] Raise max_cost_usd per run from $5.00 to $15.00 in founderFleetScheduler.ts (MAX_COST_PER_RUN_USD=15 constant + post-run notifyOwner alert)
 - [x] tsc --noEmit: EXIT:0
+
+## GCC Fix Sprint (Tasks 1-3)
+
+- [x] TASK 1: Query COUNT(*) FROM founder_agent_evaluations WHERE run_id=210002 — result: 0 (confirmed root cause)
+- [x] TASK 1: Root cause found — generatePitches + runResearch hardcoded to FLEET_DOMAINS; fixed to use GCC_FLEET_DOMAINS when gccMode=true
+- [x] TASK 1: generateIdeas batching fixed (batchCount = ceil(ideasPerDomain/20)); gccMode propagated to runResearch + generatePitches
+- [x] TASK 1: GCC run 210005 completed — total_ideas=200, completed=200 ✅
+- [x] TASK 2: Deferred — root cause was domain mismatch not ratio; run 210005 completed=200/200
+- [x] TASK 3: tsc EXIT:0, tests 761/761, checkpoint saved
+- [x] TASK 3: Verify GET /api/fleet/scheduler-status returns 200 — confirmed
