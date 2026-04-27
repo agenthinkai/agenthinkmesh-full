@@ -1842,7 +1842,7 @@ export const founderAgentEvaluations = mysqlTable("founder_agent_evaluations", {
   concerns:           text("concerns"),              // JSON array
   flags:              text("flags"),                 // JSON array
   agentDisagreements: text("agent_disagreements"),   // JSON array
-  recommendedAction:  varchar("recommended_action", { length: 100 }),
+  recommendedAction:  text("recommended_action"),
   durationMs:         int("duration_ms"),
   errorMessage:       varchar("error_message", { length: 500 }),
   // Fleet mode — which fleet produced this evaluation

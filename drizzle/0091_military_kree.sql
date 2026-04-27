@@ -1,0 +1,1 @@
+ALTER TABLE `founder_agent_evaluations` MODIFY COLUMN `recommended_action` text;

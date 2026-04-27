@@ -757,7 +757,7 @@ async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConc
         concerns:           encryptWithMasterKey(JSON.stringify(concerns)),
         flags:              encryptWithMasterKey(JSON.stringify(flags)),
         agentDisagreements: JSON.stringify(agentDisagreements),
-        recommendedAction,
+        recommendedAction:  encryptWithMasterKey(recommendedAction),
         durationMs,
         tokensInput:  evalInputTokens,
         tokensOutput: evalOutputTokens,
@@ -913,7 +913,7 @@ async function reRankByPercentile(runId: number): Promise<void> {
       classification:      rawClassification,
       classificationScore,
       finalScore,
-      recommendedAction,
+      recommendedAction:  encryptWithMasterKey(recommendedAction),
       updatedAt: Date.now(),
     }).where(eq(founderAgentEvaluations.id, row.id!));
   }

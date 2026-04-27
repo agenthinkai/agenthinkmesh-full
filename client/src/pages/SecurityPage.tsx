@@ -336,13 +336,18 @@ export default function SecurityPage() {
               title: "System encryption: Active",
               lines: [
                 encStatus
-                  ? `Coverage: ${encStatus.coverage}% (${encStatus.encrypted.toLocaleString()} of ${encStatus.total.toLocaleString()} records encrypted)`
+                  ? `pitch_triages: ${encStatus.tables[0]?.coverage ?? 0}% (${(encStatus.tables[0]?.encrypted ?? 0).toLocaleString()} of ${(encStatus.tables[0]?.total ?? 0).toLocaleString()} records)`
                   : "Agent analysis, reasoning, and verdicts encrypted at rest using AES-256-GCM.",
-                "Algorithm: AES-256-GCM \u00b7 Key: ENCRYPTION_MASTER_KEY (platform-managed)",
+                encStatus
+                  ? `founder_agent_evaluations: ${encStatus.tables[1]?.coverage ?? 0}% (${(encStatus.tables[1]?.encrypted ?? 0).toLocaleString()} of ${(encStatus.tables[1]?.total ?? 0).toLocaleString()} records)`
+                  : "All new records encrypted automatically. All existing records backfilled.",
+                encStatus
+                  ? `Overall: ${encStatus.overall.coverage}% (${encStatus.overall.encrypted.toLocaleString()} of ${encStatus.overall.total.toLocaleString()} records) \u00b7 AES-256-GCM`
+                  : "Algorithm: AES-256-GCM \u00b7 Key: ENCRYPTION_MASTER_KEY (platform-managed)",
                 encStatus
                   ? `Last checked: ${new Date(encStatus.lastUpdated).toLocaleTimeString()} \u00b7 auto-refreshes every 60s`
-                  : "All new records encrypted automatically. All existing records backfilled.",
-              ],
+                  : "",
+              ].filter(Boolean) as string[],
             },
             {
               icon: "✅",
