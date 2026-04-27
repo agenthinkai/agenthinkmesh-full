@@ -2,22 +2,24 @@
 /**
  * rotate-master-key.mjs
  *
- * Re-encrypts all sys:-prefixed fields in pitch_triages using a new master key.
+ * Atomically re-encrypts all sys:-prefixed fields across all three encrypted
+ * tables from ENCRYPTION_MASTER_KEY → NEW_ENCRYPTION_MASTER_KEY.
  *
  * Usage:
- *   NEW_ENCRYPTION_MASTER_KEY=<64-char-hex> node rotate-master-key.mjs [--dry-run]
+ *   NEW_ENCRYPTION_MASTER_KEY=<64-hex> node server/scripts/rotate-master-key.mjs [--dry-run]
  *
- * The OLD key is read from ENCRYPTION_MASTER_KEY env.
- * The NEW key is read from NEW_ENCRYPTION_MASTER_KEY env.
- *
- * Fields rotated per row:
- *   - agentOutputs
- *   - keySignals
- *   - missingInfo
+ * Tables and fields rotated:
+ *   - pitch_triages
+ *       agentOutputs, keySignals, missingInfo
+ *   - founder_agent_evaluations
+ *       strengths, concerns, flags, recommended_action
+ *   - founder_agent_insights
+ *       highScorePatterns, lowScorePatterns, failureReasons
  *
  * Safety:
  *   - --dry-run logs what would happen without writing anything
- *   - If any row fails: the entire rotation is aborted (all-or-nothing)
+ *   - All three tables are processed in one pass; if any row fails to
+ *     decrypt, the entire rotation is aborted before any writes occur
  *   - Rows that are not sys:-prefixed are skipped (plaintext fallback rows)
  */
 
@@ -56,10 +58,10 @@ function decryptSys(encoded, keyBuf) {
   const parts = encoded.split(":");
   if (parts.length !== 4) throw new Error(`Malformed sys: value: ${encoded.slice(0, 30)}`);
   const [, ivHex, ciphertextHex, authTagHex] = parts;
-  const iv       = Buffer.from(ivHex,       "hex");
+  const iv        = Buffer.from(ivHex,         "hex");
   const cipherBuf = Buffer.from(ciphertextHex, "hex");
-  const authTag  = Buffer.from(authTagHex,  "hex");
-  const decipher = crypto.createDecipheriv("aes-256-gcm", keyBuf, iv);
+  const authTag   = Buffer.from(authTagHex,    "hex");
+  const decipher  = crypto.createDecipheriv("aes-256-gcm", keyBuf, iv);
   decipher.setAuthTag(authTag);
   const plain = Buffer.concat([decipher.update(cipherBuf), decipher.final()]);
   return plain.toString("utf8");
@@ -74,6 +76,36 @@ function encryptSys(plaintext, keyBuf) {
   return `sys:${iv.toString("hex")}:${enc.toString("hex")}:${tag.toString("hex")}`;
 }
 
+// ── Re-encrypt a single nullable field ───────────────────────────────────────
+function rotateField(value, oldKeyBuf, newKeyBuf) {
+  if (!value || !value.startsWith("sys:")) return value;
+  const plain = decryptSys(value, oldKeyBuf);
+  if (plain === null) return value;
+  return encryptSys(plain, newKeyBuf);
+}
+
+// ── Table definitions ─────────────────────────────────────────────────────────
+const TABLES = [
+  {
+    name:   "pitch_triages",
+    fields: ["agentOutputs", "keySignals", "missingInfo"],
+    pk:     "id",
+    where:  "agentOutputs LIKE 'sys:%' OR keySignals LIKE 'sys:%' OR missingInfo LIKE 'sys:%'",
+  },
+  {
+    name:   "founder_agent_evaluations",
+    fields: ["strengths", "concerns", "flags", "recommended_action"],
+    pk:     "id",
+    where:  "strengths LIKE 'sys:%' OR concerns LIKE 'sys:%' OR flags LIKE 'sys:%' OR recommended_action LIKE 'sys:%'",
+  },
+  {
+    name:   "founder_agent_insights",
+    fields: ["high_score_patterns", "low_score_patterns", "failure_reasons"],
+    pk:     "id",
+    where:  "high_score_patterns LIKE 'sys:%' OR low_score_patterns LIKE 'sys:%' OR failure_reasons LIKE 'sys:%'",
+  },
+];
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 async function main() {
   const oldKeyBuf = validateKey(process.env.ENCRYPTION_MASTER_KEY,     "ENCRYPTION_MASTER_KEY");
@@ -85,56 +117,67 @@ async function main() {
 
   const conn = await mysql.createConnection(process.env.DATABASE_URL);
 
-  // Fetch all rows that have at least one sys:-prefixed field
-  const [rows] = await conn.execute(
-    `SELECT id, agentOutputs, keySignals, missingInfo
-     FROM pitch_triages
-     WHERE agentOutputs LIKE 'sys:%'
-        OR keySignals   LIKE 'sys:%'
-        OR missingInfo  LIKE 'sys:%'`
-  );
+  // ── Phase 1: Fetch rows from all tables (dry-run or live) ─────────────────
+  const allTableData = [];
+  let totalRows = 0;
 
-  console.log(`Rotating ${rows.length} rows...`);
+  for (const table of TABLES) {
+    const selectFields = [table.pk, ...table.fields].join(", ");
+    const [rows] = await conn.execute(
+      `SELECT ${selectFields} FROM ${table.name} WHERE ${table.where}`
+    );
+    allTableData.push({ table, rows });
+    totalRows += rows.length;
+
+    if (DRY_RUN) {
+      console.log(`Would rotate ${rows.length} rows in ${table.name}`);
+    }
+  }
 
   if (DRY_RUN) {
-    console.log(`Would rotate ${rows.length} rows`);
+    console.log(`Total: ${totalRows} rows across 3 tables`);
     console.log("Dry run complete — no changes made");
     await conn.end();
     return;
   }
 
-  // ── Atomic: build all updates first, abort on any failure ────────────────
-  const updates = [];
-  for (const row of rows) {
-    try {
-      const newAo = row.agentOutputs?.startsWith("sys:")
-        ? encryptSys(decryptSys(row.agentOutputs, oldKeyBuf), newKeyBuf)
-        : row.agentOutputs;
-      const newKs = row.keySignals?.startsWith("sys:")
-        ? encryptSys(decryptSys(row.keySignals, oldKeyBuf), newKeyBuf)
-        : row.keySignals;
-      const newMi = row.missingInfo?.startsWith("sys:")
-        ? encryptSys(decryptSys(row.missingInfo, oldKeyBuf), newKeyBuf)
-        : row.missingInfo;
-      updates.push({ id: row.id, agentOutputs: newAo, keySignals: newKs, missingInfo: newMi });
-    } catch (err) {
-      await conn.end();
-      console.error(`\nRotation ABORTED — failed on row id=${row.id}: ${err.message}`);
-      console.error("No rows were written. The database is unchanged.");
-      process.exit(1);
+  // ── Phase 2: Decrypt all rows — abort on any failure before writing ───────
+  const allUpdates = [];
+
+  for (const { table, rows } of allTableData) {
+    const updates = [];
+    for (const row of rows) {
+      try {
+        const updated = { [table.pk]: row[table.pk] };
+        for (const field of table.fields) {
+          updated[field] = rotateField(row[field], oldKeyBuf, newKeyBuf);
+        }
+        updates.push(updated);
+      } catch (err) {
+        await conn.end();
+        console.error(`\nRotation ABORTED — failed on ${table.name} id=${row[table.pk]}: ${err.message}`);
+        console.error("No rows were written across any table. The database is unchanged.");
+        process.exit(1);
+      }
     }
+    allUpdates.push({ table, updates });
+    console.log(`Prepared ${updates.length} rows from ${table.name}`);
   }
 
-  // ── All decrypts succeeded — now write ───────────────────────────────────
-  for (const u of updates) {
-    await conn.execute(
-      `UPDATE pitch_triages SET agentOutputs=?, keySignals=?, missingInfo=? WHERE id=?`,
-      [u.agentOutputs, u.keySignals, u.missingInfo, u.id]
-    );
-    console.log(`Rotated row id=${u.id}`);
+  // ── Phase 3: All decrypts succeeded — write all tables ───────────────────
+  for (const { table, updates } of allUpdates) {
+    for (const u of updates) {
+      const setClause = table.fields.map(f => `${f}=?`).join(", ");
+      const values    = [...table.fields.map(f => u[f]), u[table.pk]];
+      await conn.execute(
+        `UPDATE ${table.name} SET ${setClause} WHERE ${table.pk}=?`,
+        values
+      );
+    }
+    console.log(`Rotated ${updates.length} rows in ${table.name}`);
   }
 
-  console.log(`\nRotation complete — ${updates.length} rows re-encrypted`);
+  console.log(`\nRotation complete — ${totalRows} rows re-encrypted across 3 tables`);
   console.log("\nNow update ENCRYPTION_MASTER_KEY in your secrets panel to the new key.");
   await conn.end();
 }

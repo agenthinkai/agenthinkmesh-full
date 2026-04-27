@@ -3691,14 +3691,14 @@
 
 ## Session — Encryption Coverage Stats + Key Rotation + Fleet Encryption
 
-- [ ] Task 1: Add system.encryptionStatus admin-only tRPC query + live stats on /security page
-- [ ] Task 2: Write rotate-master-key.mjs with --dry-run and atomic all-or-nothing rotation
-- [ ] Task 3: Encrypt strengths/concerns/flags/recommended_action in founder_agent_evaluations + backfill
-- [ ] Task 1: Extend system.encryptionStatus to include founder_agent_evaluations (per-table + overall coverage)
-- [ ] Task 1: Update /security page to show per-table coverage rows
-- [ ] Task 2: Write docs/key-rotation-runbook.md
-- [ ] Task 3: Migrate recommended_action varchar(100) -> text in schema.ts + pnpm db:push
-- [ ] Task 3: Encrypt recommended_action on insert + decrypt on read + backfill existing rows
+- [x] Task 1: Add system.encryptionStatus admin-only tRPC query + live stats on /security page
+- [x] Task 2: Write rotate-master-key.mjs with --dry-run and atomic all-or-nothing rotation
+- [x] Task 3: Encrypt strengths/concerns/flags/recommended_action in founder_agent_evaluations + backfill
+- [x] Task 1: Extend system.encryptionStatus to include founder_agent_evaluations (per-table + overall coverage)
+- [x] Task 1: Update /security page to show per-table coverage rows
+- [x] Task 2: Write docs/key-rotation-runbook.md
+- [x] Task 3: Migrate recommended_action varchar(100) -> text in schema.ts + pnpm db:push
+- [x] Task 3: Encrypt recommended_action on insert + decrypt on read + backfill existing rows
 - [x] Task 1: Update docs/key-rotation-runbook.md with Step 5 post-rotation coverage verification
 - [x] Task 2: Encrypt highScorePatterns/lowScorePatterns/failureReasons in founder_agent_insights + backfill + extend encryptionStatus
 - [x] Task 3: Add GET /api/admin/encryption-report plain HTTP endpoint with admin auth
