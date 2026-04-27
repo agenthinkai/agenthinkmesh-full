@@ -3616,3 +3616,9 @@
 - [x] TASK 3: All 4 URLs return 200 OK on deployed domain
 - [x] tsc --noEmit: EXIT:0
 - [x] Tests: 761/761 passing
+
+## Fleet Email Token/Cost Section
+
+- [x] Add TOKENS & COST section to buildAndSendFleetEmail in founderFleetScheduler.ts (no schema changes)
+- [x] tsc --noEmit: EXIT:0
+- [x] Tests: 761/761 passing

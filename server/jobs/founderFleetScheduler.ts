@@ -20,7 +20,7 @@ import cron from "node-cron";
 import { runFleet, resumeInterruptedRuns } from "../founderFleet";
 import { getDb } from "../db";
 import { founderAgentRuns, fleetConfig, founderAgentEvaluations } from "../../drizzle/schema";
-import { eq, and, avg, sql } from "drizzle-orm";
+import { eq, and, avg, sql, sum } from "drizzle-orm";
 import { notifyOwner } from "../_core/notification";
 import { sendGraphEmail } from "../graphEmail";
 
@@ -103,6 +103,45 @@ async function buildAndSendFleetEmail(
       ? `${parseFloat(gap) >= 0 ? "+" : ""}${gap} points`
       : "N/A";
 
+  // ── Token & cost aggregates per mode (from today's runs) ───────────────────────────
+  // Keyed by runId from the current run results
+  const runIds = results.map((r) => r.runId).filter((id) => id > 0);
+
+  // Per-mode token/cost: query founder_agent_runs for each runId
+  const tokensByMode: Record<string, { tokIn: number; tokOut: number; cost: number }> = {};
+  for (const r of results) {
+    if (r.runId <= 0) {
+      tokensByMode[r.mode] = { tokIn: 0, tokOut: 0, cost: 0 };
+      continue;
+    }
+    const row = await db
+      .select({
+        tokIn:  sql<number>`COALESCE(SUM(total_tokens_input), 0)`,
+        tokOut: sql<number>`COALESCE(SUM(total_tokens_output), 0)`,
+        cost:   sql<number>`COALESCE(SUM(CAST(total_cost_usd AS DECIMAL(10,4))), 0)`,
+      })
+      .from(founderAgentRuns)
+      .where(eq(founderAgentRuns.id, r.runId));
+    tokensByMode[r.mode] = {
+      tokIn:  Number(row[0]?.tokIn  ?? 0),
+      tokOut: Number(row[0]?.tokOut ?? 0),
+      cost:   Number(row[0]?.cost   ?? 0),
+    };
+  }
+
+  // Cumulative cost across ALL runs to date
+  const cumulativeRow = await db
+    .select({ totalCost: sql<number>`COALESCE(SUM(CAST(total_cost_usd AS DECIMAL(10,4))), 0)` })
+    .from(founderAgentRuns);
+  const cumulativeCost = Number(cumulativeRow[0]?.totalCost ?? 0);
+
+  // Combined totals for today's runs
+  const combinedTokIn  = Object.values(tokensByMode).reduce((a, v) => a + v.tokIn, 0);
+  const combinedTokOut = Object.values(tokensByMode).reduce((a, v) => a + v.tokOut, 0);
+  const combinedCost   = Object.values(tokensByMode).reduce((a, v) => a + v.cost, 0);
+  const totalEvals     = results.reduce((a, r) => a + r.evaluations, 0);
+  const costPerEval    = totalEvals > 0 ? combinedCost / totalEvals : 0;
+
   // ── Build per-mode blocks ──────────────────────────────────────────────────
   const modeBlocks = results.map((r) => {
     const modeTitle = r.mode === "gcc" ? "GCC FLEET" : "GLOBAL FLEET";
@@ -116,7 +155,18 @@ Avg score:       ${scoreLabel}
 Runs remaining:  ${r.runsRemaining} / 30`;
   });
 
-  // ── Plain-text body ────────────────────────────────────────────────────────
+  // ── Build token/cost text block per mode ─────────────────────────────────────────────────────────────────
+  const tokenTextBlocks = results.map((r) => {
+    const t = tokensByMode[r.mode] ?? { tokIn: 0, tokOut: 0, cost: 0 };
+    const modeTitle = r.mode === "gcc" ? "GCC Fleet:" : "Global Fleet:";
+    return `${modeTitle}
+  Tokens input:   ${t.tokIn.toLocaleString()}
+  Tokens output:  ${t.tokOut.toLocaleString()}
+  Total tokens:   ${(t.tokIn + t.tokOut).toLocaleString()}
+  Run cost:       $${t.cost.toFixed(2)}`;
+  }).join("\n\n");
+
+  // ── Plain-text body ─────────────────────────────────────────────────────────────────
   const textBody = `Daily Fleet Run Summary
 Date: ${date} · ${time} Kuwait time
 
@@ -128,10 +178,17 @@ Global avg score:  ${globalAvg !== null ? globalAvg.toFixed(2) : "N/A"}
 GCC avg score:     ${gccAvg !== null ? gccAvg.toFixed(2) : "N/A"}
 GCC vs Global gap: ${gapLabel}
 
-View full results:
-https://agenthink-7enctkan.manus.space/admin/usage`;
+TOKENS & COST
+${tokenTextBlocks}
 
-  // ── HTML body ─────────────────────────────────────────────────────────────
+Combined:
+  Total tokens today:  ${(combinedTokIn + combinedTokOut).toLocaleString()}
+  Total cost today:    $${combinedCost.toFixed(2)}
+  Cost per evaluation: $${costPerEval.toFixed(4)}
+  Cumulative cost:     $${cumulativeCost.toFixed(2)} (all runs to date)
+
+View full results:
+https://agenthink-7enctkan.manus.space/admin/usage`;// ── HTML body ─────────────────────────────────────────────────────────────
   const modeBlocksHtml = results
     .map((r) => {
       const modeTitle = r.mode === "gcc" ? "GCC FLEET" : "GLOBAL FLEET";
@@ -172,6 +229,24 @@ https://agenthink-7enctkan.manus.space/admin/usage`;
       <tr><td style="padding:4px 0;color:#6b7280;">Global avg score</td><td style="padding:4px 0;">${globalAvg !== null ? globalAvg.toFixed(2) : "N/A"}</td></tr>
       <tr><td style="padding:4px 0;color:#6b7280;">GCC avg score</td><td style="padding:4px 0;">${gccAvg !== null ? gccAvg.toFixed(2) : "N/A"}</td></tr>
       <tr><td style="padding:4px 0;color:#6b7280;">GCC vs Global gap</td><td style="padding:4px 0;font-weight:600;">${gapLabel}</td></tr>
+    </table>
+
+    <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+      <tr><td colspan="2" style="font-weight:700;font-size:13px;letter-spacing:0.08em;color:#374151;padding:8px 0 4px;border-bottom:1px solid #e5e7eb;">TOKENS &amp; COST</td></tr>
+      ${results.map((r) => {
+        const t = tokensByMode[r.mode] ?? { tokIn: 0, tokOut: 0, cost: 0 };
+        const modeTitle = r.mode === "gcc" ? "GCC Fleet" : "Global Fleet";
+        return `<tr><td colspan="2" style="padding:6px 0 2px;font-weight:600;color:#374151;font-size:12px;">${modeTitle}</td></tr>
+        <tr><td style="padding:2px 0;color:#6b7280;width:220px;padding-left:12px;">Tokens input</td><td style="padding:2px 0;">${t.tokIn.toLocaleString()}</td></tr>
+        <tr><td style="padding:2px 0;color:#6b7280;padding-left:12px;">Tokens output</td><td style="padding:2px 0;">${t.tokOut.toLocaleString()}</td></tr>
+        <tr><td style="padding:2px 0;color:#6b7280;padding-left:12px;">Total tokens</td><td style="padding:2px 0;">${(t.tokIn + t.tokOut).toLocaleString()}</td></tr>
+        <tr><td style="padding:2px 0 6px;color:#6b7280;padding-left:12px;">Run cost</td><td style="padding:2px 0 6px;">\$${t.cost.toFixed(2)}</td></tr>`;
+      }).join("")}
+      <tr><td colspan="2" style="padding:6px 0 2px;font-weight:600;color:#374151;font-size:12px;">Combined</td></tr>
+      <tr><td style="padding:2px 0;color:#6b7280;width:220px;padding-left:12px;">Total tokens today</td><td style="padding:2px 0;">${(combinedTokIn + combinedTokOut).toLocaleString()}</td></tr>
+      <tr><td style="padding:2px 0;color:#6b7280;padding-left:12px;">Total cost today</td><td style="padding:2px 0;">\$${combinedCost.toFixed(2)}</td></tr>
+      <tr><td style="padding:2px 0;color:#6b7280;padding-left:12px;">Cost per evaluation</td><td style="padding:2px 0;">\$${costPerEval.toFixed(4)}</td></tr>
+      <tr><td style="padding:2px 0;color:#6b7280;padding-left:12px;">Cumulative cost</td><td style="padding:2px 0;font-weight:600;">\$${cumulativeCost.toFixed(2)} (all runs to date)</td></tr>
     </table>
 
     <a href="https://agenthink-7enctkan.manus.space/admin/usage"
