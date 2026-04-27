@@ -55,6 +55,13 @@ function formatKuwaitDate(ts: number): string {
   });
 }
 
+/** Safety ceiling per run — alert (non-blocking) if a single run exceeds this amount.
+ * Raised from $5.00 → $15.00 to accommodate the 300-idea global run (~$10.14).
+ * bypassCostGuard=true skips the daily cap check; this guard is additive and fires
+ * a notifyOwner alert so anomalous runs are caught before they accumulate.
+ */
+const MAX_COST_PER_RUN_USD = 15;
+
 // ── Fleet run result record ───────────────────────────────────────────────────
 
 interface FleetRunResult {
@@ -537,6 +544,20 @@ export async function runDailyFleet(): Promise<void> {
             .where(eq(fleetConfig.id, config.id));
 
           console.log(`[FounderFleet] fleet_config updated: runs_completed=${newCompleted}, runs_remaining=${newRemaining}, last_run_score=${avgScore?.toFixed(1) ?? "N/A"}`);
+
+          // Post-run cost ceiling check (non-blocking alert)
+          const [costRow] = await dbPost
+            .select({ runCost: sql<string>`COALESCE(total_cost_usd, '0')` })
+            .from(founderAgentRuns)
+            .where(eq(founderAgentRuns.id, runId));
+          const runCostUsd = parseFloat(String(costRow?.runCost ?? "0"));
+          if (runCostUsd > MAX_COST_PER_RUN_USD) {
+            console.warn(`[FounderFleet] Run #${runId} cost $${runCostUsd.toFixed(2)} exceeds ceiling $${MAX_COST_PER_RUN_USD}`);
+            notifyOwner({
+              title: `Fleet cost alert — ${config.fleetMode} run #${runId}`,
+              content: `Run cost $${runCostUsd.toFixed(2)} exceeded the $${MAX_COST_PER_RUN_USD} per-run ceiling.\nConsider raising MAX_COST_PER_RUN_USD or reviewing idea count.`,
+            }).catch(() => {});
+          }
 
           // In-app notification — success
           notifyOwner({

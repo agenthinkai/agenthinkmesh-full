@@ -3631,5 +3631,11 @@
 - [x] TASK 2: SCHEDULER_SECRET set via webdev_request_secrets
 - [ ] TASK 2: Set up daily Manus schedule at 03:00 UTC
 - [ ] TASK 2: Trigger immediate run and verify total_ideas=200/300 in DB
-- [ ] tsc --noEmit: EXIT:0
+- [x] tsc --noEmit: EXIT:0
 - [ ] Tests: 761/761 passing
+
+## Cost Guard Quick Fix
+
+- [x] Raise DAILY_API_SPEND_CAP from $20 to $30 in secrets
+- [x] Raise max_cost_usd per run from $5.00 to $15.00 in founderFleetScheduler.ts (MAX_COST_PER_RUN_USD=15 constant + post-run notifyOwner alert)
+- [x] tsc --noEmit: EXIT:0
