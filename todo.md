@@ -3649,3 +3649,11 @@
 - [x] TASK 2: Deferred — root cause was domain mismatch not ratio; run 210005 completed=200/200
 - [x] TASK 3: tsc EXIT:0, tests 761/761, checkpoint saved
 - [x] TASK 3: Verify GET /api/fleet/scheduler-status returns 200 — confirmed
+
+## Secret Wiring (DATA_ENCRYPTION_KEY + FLEET_COST_ALERT_THRESHOLD_USD)
+
+- [x] cmk.ts: getMasterKey() now reads DATA_ENCRYPTION_KEY as alias for ENCRYPTION_MASTER_KEY
+- [x] founderFleetScheduler.ts: MAX_COST_PER_RUN_USD reads FLEET_COST_ALERT_THRESHOLD_USD env var (fallback $15)
+- [x] tsc --noEmit: EXIT:0
+- [x] Tests: 761/761 passing
+- [x] Checkpoint saved

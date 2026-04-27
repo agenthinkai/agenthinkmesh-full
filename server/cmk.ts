@@ -21,10 +21,11 @@ import { clientEncryptionKeys, cmkAuditLog } from "../drizzle/schema";
 // ── Master key ────────────────────────────────────────────────────────────────
 
 function getMasterKey(): Buffer {
-  const hex = process.env.ENCRYPTION_MASTER_KEY;
+  // Accept DATA_ENCRYPTION_KEY as an alias for ENCRYPTION_MASTER_KEY
+  const hex = process.env.ENCRYPTION_MASTER_KEY ?? process.env.DATA_ENCRYPTION_KEY;
   if (!hex || hex.length !== 64) {
     throw new Error(
-      "[CMK] ENCRYPTION_MASTER_KEY is missing or not 32 bytes (64 hex chars). " +
+      "[CMK] ENCRYPTION_MASTER_KEY (or DATA_ENCRYPTION_KEY) is missing or not 32 bytes (64 hex chars). " +
         "Set it in Settings → Secrets."
     );
   }

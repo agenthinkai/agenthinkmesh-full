@@ -60,7 +60,7 @@ function formatKuwaitDate(ts: number): string {
  * bypassCostGuard=true skips the daily cap check; this guard is additive and fires
  * a notifyOwner alert so anomalous runs are caught before they accumulate.
  */
-const MAX_COST_PER_RUN_USD = 15;
+const MAX_COST_PER_RUN_USD = parseFloat(process.env.FLEET_COST_ALERT_THRESHOLD_USD ?? "15");
 
 // ── Fleet run result record ───────────────────────────────────────────────────
 
