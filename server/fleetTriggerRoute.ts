@@ -13,19 +13,26 @@
  *   - Sends daily summary email when both complete
  *   - Uses bypassCostGuard: true (same as the cron)
  *
+ * Special actions (via body.action):
+ *   "test-email" — Sends a test email to farouq@agenthink.ai via Graph API
+ *                  and returns the result synchronously. Used to verify that
+ *                  MS_CLIENT_ID / MS_CLIENT_SECRET / MS_TENANT_ID are correctly
+ *                  configured in the production environment.
+ *
  * This endpoint exists to wake Cloud Run from hibernation and trigger the fleet
  * regardless of whether the in-process node-cron survived.
  */
 import { Router, Request, Response } from "express";
 import { runDailyFleet } from "./jobs/founderFleetScheduler";
 import { runFleet } from "./founderFleet";
+import { sendGraphEmail } from "./graphEmail";
 import { getDb } from "./db";
 import { fleetConfig as fleetConfigTable, founderAgentRuns } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 
 const router = Router();
 
-router.post("/fleet-trigger", (req: Request, res: Response) => {
+router.post("/fleet-trigger", async (req: Request, res: Response) => {
   const secret = process.env.SCHEDULER_SECRET;
   const provided = req.headers["x-scheduler-secret"];
 
@@ -37,8 +44,58 @@ router.post("/fleet-trigger", (req: Request, res: Response) => {
   const timestamp = new Date().toISOString();
   console.log(`[FleetTrigger] External trigger received at ${timestamp}`);
 
-  const { mode } = req.body as { mode?: string };
+  const { mode, action } = req.body as { mode?: string; action?: string };
 
+  // ── Special action: test-email ─────────────────────────────────────────────
+  // Sends a test email synchronously and returns the result.
+  // Use this to verify Graph API credentials are working in production.
+  if (action === "test-email") {
+    const credCheck = {
+      MS_CLIENT_ID:     !!process.env.MS_CLIENT_ID,
+      MS_CLIENT_SECRET: !!process.env.MS_CLIENT_SECRET,
+      MS_TENANT_ID:     !!process.env.MS_TENANT_ID,
+    };
+    const allSet = Object.values(credCheck).every(Boolean);
+    if (!allSet) {
+      console.error("[FleetTrigger] test-email: Graph API credentials missing", credCheck);
+      res.status(500).json({
+        action: "test-email",
+        success: false,
+        error: "Graph API credentials not configured — set MS_CLIENT_ID, MS_CLIENT_SECRET, MS_TENANT_ID in production secrets",
+        credentials: credCheck,
+      });
+      return;
+    }
+    try {
+      const sent = await sendGraphEmail({
+        to: "farouq@agenthink.ai",
+        subject: `AgenThink Fleet — Graph API test (${new Date().toLocaleString("en-GB", { timeZone: "Asia/Kuwait" })})`,
+        html: `<p>This is a test email sent from the AgenThink fleet trigger endpoint to verify that the Microsoft Graph API credentials are correctly configured in the production environment.</p><p>Timestamp: ${timestamp}</p>`,
+      });
+      console.log(`[FleetTrigger] test-email result: ${sent ? "SENT" : "FAILED"}`);
+      res.json({
+        action: "test-email",
+        success: sent,
+        timestamp,
+        credentials: credCheck,
+        message: sent
+          ? "Test email sent to farouq@agenthink.ai — check inbox"
+          : "sendGraphEmail returned false — check server logs for Graph API error details",
+      });
+    } catch (err) {
+      const msg = (err as Error)?.message ?? String(err);
+      console.error("[FleetTrigger] test-email threw:", msg);
+      res.status(500).json({
+        action: "test-email",
+        success: false,
+        error: msg,
+        credentials: credCheck,
+      });
+    }
+    return;
+  }
+
+  // ── Normal fleet trigger ───────────────────────────────────────────────────
   // Return immediately — fleet runs in background
   res.json({ status: "triggered", timestamp, mode: mode ?? "all" });
 

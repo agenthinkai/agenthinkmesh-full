@@ -509,6 +509,24 @@ async function runSingleFleetMode(
     const success = runRow?.status === "completed";
     console.log(`[FounderFleet] ${config.fleetMode} run #${runId} final status: ${runRow?.status ?? "unknown"}`);
 
+    // ── Partial ratio check ───────────────────────────────────────────────
+    // If the run completed but fewer than 50% of ideas were evaluated,
+    // treat it as a partial run: notify owner but still count it as completed.
+    if (success) {
+      const completedCount = runRow?.completed ?? 0;
+      const totalIdeasCount = runRow?.totalIdeas ?? targetIdeas;
+      if (completedCount < totalIdeasCount * 0.5) {
+        console.warn(
+          `[FounderFleet] ${config.fleetMode} run #${runId} is PARTIAL — ` +
+          `${completedCount}/${totalIdeasCount} evaluations (<50%)`
+        );
+        notifyOwner({
+          title:   `Fleet partial run — ${config.fleetMode} run #${runId}`,
+          content: `${config.fleetMode} run #${runId} completed but only ${completedCount}/${totalIdeasCount} evaluations finished (<50%).\nThis may indicate a rate-limit or timeout issue mid-run.\nRuns remaining: ${config.runsRemaining}`,
+        }).catch(() => {});
+      }
+    }
+
     if (success) {
       // Only decrement runs_remaining and increment runs_completed on success
       const newRemaining = Math.max(0, config.runsRemaining - 1);
