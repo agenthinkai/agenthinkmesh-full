@@ -13,7 +13,7 @@
 import type { Express, Request, Response } from "express";
 import { getDb } from "./db";
 import { fleetConfig, founderAgentRuns, founderAgentEvaluations } from "../drizzle/schema";
-import { eq, desc, count, avg, sql } from "drizzle-orm";
+import { eq, desc, count, avg, sql, and } from "drizzle-orm";
 
 const CRON_SCHEDULE = "0 3 * * *";
 const CRON_LABEL = "0 3 * * * (06:00 Asia/Kuwait)";
@@ -58,14 +58,32 @@ export function registerFleetSchedulerStatusRoute(app: Express): void {
       }
 
       const lastRunStatusMap: Record<string, string> = {};
+      const lastRunIdMap: Record<string, number> = {};
+      const lastRunErrorsMap: Record<string, string[]> = {};
       for (const mode of fleetModes) {
         const [lastRun] = await db
-          .select({ status: founderAgentRuns.status })
+          .select({ status: founderAgentRuns.status, id: founderAgentRuns.id })
           .from(founderAgentRuns)
           .where(eq(founderAgentRuns.fleetMode, mode))
           .orderBy(desc(founderAgentRuns.createdAt))
           .limit(1);
         lastRunStatusMap[mode] = lastRun?.status ?? "unknown";
+        lastRunIdMap[mode] = lastRun?.id ?? -1;
+        // If the last run failed, fetch up to 5 evaluation error messages
+        if (lastRun?.status === "failed" && lastRun.id > 0) {
+          const failedEvals = await db
+            .select({ errorMessage: founderAgentEvaluations.errorMessage })
+            .from(founderAgentEvaluations)
+            .where(and(
+              eq(founderAgentEvaluations.runId, lastRun.id),
+              eq(founderAgentEvaluations.status, "failed"),
+            ))
+            .orderBy(desc(founderAgentEvaluations.updatedAt))
+            .limit(5);
+          lastRunErrorsMap[mode] = failedEvals
+            .map((e) => e.errorMessage ?? "")
+            .filter(Boolean);
+        }
       }
 
       // ── evaluation totals ─────────────────────────────────────────────────
@@ -95,6 +113,8 @@ export function registerFleetSchedulerStatusRoute(app: Express): void {
         last_run_cost_usd: cfg.lastRunCostUsd ? parseFloat(String(cfg.lastRunCostUsd)) : 0,
         total_cost_usd: cfg.totalCostUsd ? parseFloat(String(cfg.totalCostUsd)) : 0,
         last_run_status: lastRunStatusMap[cfg.fleetMode] ?? "unknown",
+        last_run_id: lastRunIdMap[cfg.fleetMode] ?? -1,
+        last_failed_eval_errors: lastRunErrorsMap[cfg.fleetMode] ?? [],
         active: cfg.active,
         next_run: cfg.active ? nextFireKWT() : null,
       }));
