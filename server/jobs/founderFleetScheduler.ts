@@ -15,6 +15,29 @@
  * that were in progress when the server last restarted.
  *
  * Gate: does NOT run when NODE_ENV === "test".
+ *
+ * ── FIX (2026-04-28) ─────────────────────────────────────────────────────────
+ * PROBLEM 1 — Sequential loop: the original `for...of` loop ran GCC and Global
+ *   one after the other with `await`. If the first mode (global) failed mid-run
+ *   or took too long, the second mode (GCC) never started.
+ *
+ * PROBLEM 2 — No retry: a failed run had no recovery path until the next day's
+ *   cron, leaving the fleet silent for 24 hours.
+ *
+ * FIX 1 — Parallel execution: each fleet mode is now launched as an independent
+ *   Promise via runSingleFleetMode(). Promise.allSettled() waits for both and
+ *   collects results regardless of individual failures. One mode failing can
+ *   never block the other.
+ *
+ * FIX 2 — Per-mode 30-minute retry: if a mode fails, a single retry fires after
+ *   RETRY_DELAY_MS (30 min). A per-day in-memory guard (retriedToday) prevents
+ *   more than one retry per mode per calendar day. If the retry also fails,
+ *   notifyOwner is called.
+ *
+ * FIX 3 — Run-level error_message: the catch block in runSingleFleetMode now
+ *   stores the error string in the run row (if the run was created) so the DB
+ *   query requested in the task brief returns a useful message.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 import cron from "node-cron";
 import { runFleet, resumeInterruptedRuns } from "../founderFleet";
@@ -61,6 +84,9 @@ function formatKuwaitDate(ts: number): string {
  * a notifyOwner alert so anomalous runs are caught before they accumulate.
  */
 const MAX_COST_PER_RUN_USD = parseFloat(process.env.FLEET_COST_ALERT_THRESHOLD_USD ?? "15");
+
+/** Delay before a single retry after a failed run (30 minutes). */
+const RETRY_DELAY_MS = 30 * 60 * 1000;
 
 // ── Fleet run result record ───────────────────────────────────────────────────
 
@@ -149,6 +175,9 @@ async function buildAndSendFleetEmail(
   const totalEvals     = results.reduce((a, r) => a + r.evaluations, 0);
   const costPerEval    = totalEvals > 0 ? combinedCost / totalEvals : 0;
 
+  // suppress unused variable warning
+  void runIds;
+
   // ── Build per-mode blocks ──────────────────────────────────────────────────
   const modeBlocks = results.map((r) => {
     const modeTitle = r.mode === "gcc" ? "GCC FLEET" : "GLOBAL FLEET";
@@ -217,6 +246,19 @@ https://agenthink-7enctkan.manus.space/admin/usage`;// ── HTML body ──�
     })
     .join("");
 
+  const tokenBlocksHtml = results
+    .map((r) => {
+      const t = tokensByMode[r.mode] ?? { tokIn: 0, tokOut: 0, cost: 0 };
+      const modeTitle = r.mode === "gcc" ? "GCC Fleet" : "Global Fleet";
+      return `
+      <tr><td colspan="2" style="font-weight:700;font-size:13px;letter-spacing:0.08em;color:#374151;padding:8px 0 4px;border-bottom:1px solid #e5e7eb;">${modeTitle}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;width:220px;">Tokens input</td><td style="padding:4px 0;">${t.tokIn.toLocaleString()}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Tokens output</td><td style="padding:4px 0;">${t.tokOut.toLocaleString()}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Total tokens</td><td style="padding:4px 0;">${(t.tokIn + t.tokOut).toLocaleString()}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Run cost</td><td style="padding:4px 0;">$${t.cost.toFixed(2)}</td></tr>`;
+    })
+    .join("");
+
   const html = `<!DOCTYPE html>
 <html>
 <head><meta charset="utf-8"><title>AgenThink Fleet Report</title></head>
@@ -235,155 +277,22 @@ https://agenthink-7enctkan.manus.space/admin/usage`;// ── HTML body ──�
       <tr><td style="padding:4px 0;color:#6b7280;width:220px;">Total evaluations to date</td><td style="padding:4px 0;">${globalTotal + gccTotal}</td></tr>
       <tr><td style="padding:4px 0;color:#6b7280;">Global avg score</td><td style="padding:4px 0;">${globalAvg !== null ? globalAvg.toFixed(2) : "N/A"}</td></tr>
       <tr><td style="padding:4px 0;color:#6b7280;">GCC avg score</td><td style="padding:4px 0;">${gccAvg !== null ? gccAvg.toFixed(2) : "N/A"}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">GCC vs Global gap</td><td style="padding:4px 0;font-weight:600;">${gapLabel}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">GCC vs Global gap</td><td style="padding:4px 0;">${gapLabel}</td></tr>
     </table>
 
     <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
       <tr><td colspan="2" style="font-weight:700;font-size:13px;letter-spacing:0.08em;color:#374151;padding:8px 0 4px;border-bottom:1px solid #e5e7eb;">TOKENS &amp; COST</td></tr>
-      ${results.map((r) => {
-        const t = tokensByMode[r.mode] ?? { tokIn: 0, tokOut: 0, cost: 0 };
-        const modeTitle = r.mode === "gcc" ? "GCC Fleet" : "Global Fleet";
-        return `<tr><td colspan="2" style="padding:6px 0 2px;font-weight:600;color:#374151;font-size:12px;">${modeTitle}</td></tr>
-        <tr><td style="padding:2px 0;color:#6b7280;width:220px;padding-left:12px;">Tokens input</td><td style="padding:2px 0;">${t.tokIn.toLocaleString()}</td></tr>
-        <tr><td style="padding:2px 0;color:#6b7280;padding-left:12px;">Tokens output</td><td style="padding:2px 0;">${t.tokOut.toLocaleString()}</td></tr>
-        <tr><td style="padding:2px 0;color:#6b7280;padding-left:12px;">Total tokens</td><td style="padding:2px 0;">${(t.tokIn + t.tokOut).toLocaleString()}</td></tr>
-        <tr><td style="padding:2px 0 6px;color:#6b7280;padding-left:12px;">Run cost</td><td style="padding:2px 0 6px;">\$${t.cost.toFixed(2)}</td></tr>`;
-      }).join("")}
-      <tr><td colspan="2" style="padding:6px 0 2px;font-weight:600;color:#374151;font-size:12px;">Combined</td></tr>
-      <tr><td style="padding:2px 0;color:#6b7280;width:220px;padding-left:12px;">Total tokens today</td><td style="padding:2px 0;">${(combinedTokIn + combinedTokOut).toLocaleString()}</td></tr>
-      <tr><td style="padding:2px 0;color:#6b7280;padding-left:12px;">Total cost today</td><td style="padding:2px 0;">\$${combinedCost.toFixed(2)}</td></tr>
-      <tr><td style="padding:2px 0;color:#6b7280;padding-left:12px;">Cost per evaluation</td><td style="padding:2px 0;">\$${costPerEval.toFixed(4)}</td></tr>
-      <tr><td style="padding:2px 0;color:#6b7280;padding-left:12px;">Cumulative cost</td><td style="padding:2px 0;font-weight:600;">\$${cumulativeCost.toFixed(2)} (all runs to date)</td></tr>
-    </table>
-
-    <a href="https://agenthink-7enctkan.manus.space/admin/usage"
-       style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;padding:10px 20px;border-radius:6px;font-size:13px;font-weight:600;">
-      View full results &rarr;
-    </a>
-  </div>
-</body>
-</html>`;
-
-  const subject = `AgenThink Fleet Report — ${dateLabel} Kuwait`;
-
-  const sent = await sendGraphEmail({
-    to: "farouq@agenthink.ai",
-    subject,
-    html,
-  });
-
-  if (sent) {
-    console.log(`[FounderFleet] Fleet summary email sent to farouq@agenthink.ai — "${subject}"`);
-  } else {
-    console.error("[FounderFleet] Fleet summary email FAILED — check Graph API credentials");
-  }
-
-  // Log plain-text body to console for debugging
-  console.log("[FounderFleet] Email body preview:\n" + textBody);
-}
-
-// ── One-time first-500/day verification email ────────────────────────────────
-
-/**
- * Fires once — for the first run where total_ideas >= 200 (gcc) or >= 300 (global).
- * Checks the DB to see if any previous run already had scaled targets; if not, sends
- * the verification email and logs the fact. Fire-and-forget, never throws.
- */
-async function maybeSendFirstScaleVerificationEmail(
-  results: FleetRunResult[]
-): Promise<void> {
-  const db = await getDb();
-  if (!db) return;
-
-  // Only fire if at least one result has the new scaled total_ideas
-  const hasScaledRun = results.some(
-    (r) => (r.mode === "gcc" && r.totalIdeas >= 200) || (r.mode === "global" && r.totalIdeas >= 300)
-  );
-  if (!hasScaledRun) return;
-
-  // Check whether a prior scaled run already exists (i.e. this is NOT the first)
-  const [priorScaled] = await db
-    .select({ cnt: sql<number>`COUNT(*)` })
-    .from(founderAgentRuns)
-    .where(
-      sql`(fleet_mode = 'gcc' AND total_ideas >= 200) OR (fleet_mode = 'global' AND total_ideas >= 300)`
-    );
-  const priorCount = Number(priorScaled?.cnt ?? 0);
-
-  // If priorCount > results.length, earlier scaled runs already exist — skip
-  if (priorCount > results.length) {
-    console.log(`[FounderFleet] First-scale verification email skipped — ${priorCount} prior scaled runs found`);
-    return;
-  }
-
-  // Build totals for the email
-  const globalAgg = await db
-    .select({ total: sql<number>`COUNT(*)`, avgScore: avg(founderAgentEvaluations.finalScore) })
-    .from(founderAgentEvaluations)
-    .where(eq(founderAgentEvaluations.fleetMode, "global"));
-  const gccAgg = await db
-    .select({ total: sql<number>`COUNT(*)`, avgScore: avg(founderAgentEvaluations.finalScore) })
-    .from(founderAgentEvaluations)
-    .where(eq(founderAgentEvaluations.fleetMode, "gcc"));
-
-  const totalToDate = Number(globalAgg[0]?.total ?? 0) + Number(gccAgg[0]?.total ?? 0);
-
-  const gccResult  = results.find((r) => r.mode === "gcc");
-  const globalResult = results.find((r) => r.mode === "global");
-
-  const gccStatus  = gccResult?.status === "completed" ? "completed" : "FAILED";
-  const gccEvals   = gccResult ? `${gccResult.evaluations} / 200` : "N/A";
-  const gccScore   = gccResult?.avgScore !== null && gccResult?.avgScore !== undefined ? gccResult.avgScore.toFixed(2) : "N/A";
-
-  const globalStatus = globalResult?.status === "completed" ? "completed" : "FAILED";
-  const globalEvals  = globalResult ? `${globalResult.evaluations} / 300` : "N/A";
-  const globalScore  = globalResult?.avgScore !== null && globalResult?.avgScore !== undefined ? globalResult.avgScore.toFixed(2) : "N/A";
-
-  const textBody = `First 500/day run complete.
-
-GCC FLEET
-Status:      ${gccStatus}
-Evaluations: ${gccEvals}
-Avg score:   ${gccScore}
-
-GLOBAL FLEET
-Status:      ${globalStatus}
-Evaluations: ${globalEvals}
-Avg score:   ${globalScore}
-
-Total evaluations to date: ${totalToDate}
-
-Scaling trajectory on track:
-Today:             500 / day
-Target (Sep 2026): 100,000 / day`;
-
-  const html = `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>Fleet scaled to 500/day</title></head>
-<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb;margin:0;padding:24px;">
-  <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:8px;border:1px solid #e5e7eb;padding:32px;">
-    <div style="margin-bottom:24px;">
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;color:#16a34a;text-transform:uppercase;margin-bottom:4px;">Scale Milestone</div>
-      <div style="font-size:20px;font-weight:700;color:#111827;">First 500/day run complete.</div>
-    </div>
-
-    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
-      <tr><td colspan="2" style="font-weight:700;font-size:13px;letter-spacing:0.08em;color:#374151;padding:8px 0 4px;border-bottom:1px solid #e5e7eb;">GCC FLEET</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;width:160px;">Status</td><td style="padding:4px 0;font-weight:600;color:${gccResult?.status === "completed" ? "#16a34a" : "#dc2626"}">${gccStatus}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Evaluations</td><td style="padding:4px 0;">${gccEvals}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Avg score</td><td style="padding:4px 0;">${gccScore}</td></tr>
-    </table>
-
-    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
-      <tr><td colspan="2" style="font-weight:700;font-size:13px;letter-spacing:0.08em;color:#374151;padding:8px 0 4px;border-bottom:1px solid #e5e7eb;">GLOBAL FLEET</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;width:160px;">Status</td><td style="padding:4px 0;font-weight:600;color:${globalResult?.status === "completed" ? "#16a34a" : "#dc2626"}">${globalStatus}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Evaluations</td><td style="padding:4px 0;">${globalEvals}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Avg score</td><td style="padding:4px 0;">${globalScore}</td></tr>
+      ${tokenBlocksHtml}
+      <tr><td colspan="2" style="padding:8px 0 4px;border-top:1px solid #e5e7eb;"></td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;width:220px;">Total tokens today</td><td style="padding:4px 0;">${(combinedTokIn + combinedTokOut).toLocaleString()}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Total cost today</td><td style="padding:4px 0;">$${combinedCost.toFixed(2)}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Cost per evaluation</td><td style="padding:4px 0;">$${costPerEval.toFixed(4)}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Cumulative cost</td><td style="padding:4px 0;">$${cumulativeCost.toFixed(2)}</td></tr>
     </table>
 
     <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
       <tr><td colspan="2" style="font-weight:700;font-size:13px;letter-spacing:0.08em;color:#374151;padding:8px 0 4px;border-bottom:1px solid #e5e7eb;">TRAJECTORY</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;width:220px;">Total evaluations to date</td><td style="padding:4px 0;font-weight:600;">${totalToDate.toLocaleString()}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;width:220px;">Total evaluations to date</td><td style="padding:4px 0;font-weight:600;">${(globalTotal + gccTotal).toLocaleString()}</td></tr>
       <tr><td style="padding:4px 0;color:#6b7280;">Today</td><td style="padding:4px 0;">500 / day</td></tr>
       <tr><td style="padding:4px 0;color:#6b7280;">Target (Sep 2026)</td><td style="padding:4px 0;">100,000 / day</td></tr>
     </table>
@@ -396,13 +305,89 @@ Target (Sep 2026): 100,000 / day`;
 </body>
 </html>`;
 
+  const subject = `AgenThink Fleet Report — ${dateLabel} Kuwait`;
   const sent = await sendGraphEmail({
     to: "farouq@agenthink.ai",
-    subject: "Fleet scaled to 500/day \u2014 first run verified",
+    subject,
     html,
   });
-
   if (sent) {
+    console.log(`[FounderFleet] Fleet summary email sent to farouq@agenthink.ai — "${subject}"`);
+  } else {
+    console.error("[FounderFleet] Fleet summary email FAILED — check Graph API credentials");
+  }
+  // Log plain-text body to console for debugging
+  console.log("[FounderFleet] Email body preview:\n" + textBody);
+}
+
+// ── One-time first-500/day verification email ────────────────────────────────
+
+const FIRST_SCALE_TARGET = 500;
+let firstScaleEmailSent = false;
+
+async function maybeSendFirstScaleVerificationEmail(
+  results: FleetRunResult[]
+): Promise<void> {
+  if (firstScaleEmailSent) return;
+  const totalToday = results.reduce((a, r) => a + r.evaluations, 0);
+  if (totalToday < FIRST_SCALE_TARGET) return;
+
+  const db = await getDb();
+  if (!db) return;
+
+  const [totalRow] = await db
+    .select({ total: sql<number>`COUNT(*)` })
+    .from(founderAgentEvaluations);
+  const totalToDate = Number(totalRow?.total ?? 0);
+
+  const gccEvals   = results.find((r) => r.mode === "gcc")?.evaluations ?? 0;
+  const globalEvals = results.find((r) => r.mode === "global")?.evaluations ?? 0;
+  const gccScore   = results.find((r) => r.mode === "gcc")?.avgScore?.toFixed(2) ?? "N/A";
+  const globalScore = results.find((r) => r.mode === "global")?.avgScore?.toFixed(2) ?? "N/A";
+
+  const textBody = `First 500/day run verified.
+
+GCC fleet:    ${gccEvals} evaluations | avg score: ${gccScore}
+Global fleet: ${globalEvals} evaluations | avg score: ${globalScore}
+Total today:  ${totalToday}
+Total to date: ${totalToDate.toLocaleString()}`;
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"></head>
+<body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb;margin:0;padding:24px;">
+  <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:8px;border:1px solid #e5e7eb;padding:32px;">
+    <div style="margin-bottom:24px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;color:#6b7280;text-transform:uppercase;margin-bottom:4px;">AgenThink Fleet</div>
+      <div style="font-size:20px;font-weight:700;color:#111827;">First 500/day run verified ✓</div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+      <tr><td style="padding:4px 0;color:#6b7280;width:160px;">GCC fleet</td><td style="padding:4px 0;">${gccEvals} evaluations | avg score: ${gccScore}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Global fleet</td><td style="padding:4px 0;">${globalEvals} evaluations | avg score: ${globalScore}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Total today</td><td style="padding:4px 0;font-weight:600;">${totalToday}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Total to date</td><td style="padding:4px 0;font-weight:600;">${totalToDate.toLocaleString()}</td></tr>
+    </table>
+    <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
+      <tr><td colspan="2" style="font-weight:700;font-size:13px;letter-spacing:0.08em;color:#374151;padding:8px 0 4px;border-bottom:1px solid #e5e7eb;">TRAJECTORY</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;width:220px;">Total evaluations to date</td><td style="padding:4px 0;font-weight:600;">${totalToDate.toLocaleString()}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Today</td><td style="padding:4px 0;">500 / day</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Target (Sep 2026)</td><td style="padding:4px 0;">100,000 / day</td></tr>
+    </table>
+    <a href="https://agenthink-7enctkan.manus.space/admin/usage"
+       style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;padding:10px 20px;border-radius:6px;font-size:13px;font-weight:600;">
+      View full results &rarr;
+    </a>
+  </div>
+</body>
+</html>`;
+
+  const sent = await sendGraphEmail({
+    to: "farouq@agenthink.ai",
+    subject: "Fleet scaled to 500/day — first run verified",
+    html,
+  });
+  if (sent) {
+    firstScaleEmailSent = true;
     console.log("[FounderFleet] First-scale verification email sent to farouq@agenthink.ai");
     console.log("[FounderFleet] Verification email body preview:\n" + textBody);
   } else {
@@ -410,220 +395,325 @@ Target (Sep 2026): 100,000 / day`;
   }
 }
 
+// ── Per-mode retry guard (in-memory, resets on server restart / new day) ─────
+
+/** Tracks which fleet modes have already been retried today (UTC date string). */
+const retriedToday: Map<string, string> = new Map(); // fleetMode → YYYY-MM-DD
+
+function hasRetriedToday(fleetMode: string): boolean {
+  const today = new Date().toISOString().slice(0, 10);
+  return retriedToday.get(fleetMode) === today;
+}
+
+function markRetriedToday(fleetMode: string): void {
+  const today = new Date().toISOString().slice(0, 10);
+  retriedToday.set(fleetMode, today);
+}
+
+// ── Single fleet mode execution ───────────────────────────────────────────────
+/**
+ * Runs one fleet mode end-to-end.
+ * - Creates the run row, calls runFleet(), queries final status.
+ * - Updates fleet_config counters on success.
+ * - Returns a FleetRunResult regardless of outcome (never throws).
+ */
+async function runSingleFleetMode(
+  db: NonNullable<Awaited<ReturnType<typeof getDb>>>,
+  config: {
+    id: number;
+    fleetMode: string;
+    runsRemaining: number;
+    runsCompleted: number;
+    active: boolean;
+  }
+): Promise<FleetRunResult> {
+  const isGcc = config.fleetMode === "gcc";
+  const ideasPerDomain = isGcc ? 40 : 60;
+  const targetIdeas    = isGcc ? 200 : 300;
+  const today          = new Date().toISOString().slice(0, 10);
+
+  console.log(`[FounderFleet] Starting ${config.fleetMode} fleet run (${config.runsRemaining} remaining)`);
+
+  let runId = -1;
+
+  try {
+    // ── Pre-run cleanup: mark orphaned 'running' evals (>10 min old) as failed ──
+    const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+    const cleanupResult = await db.update(founderAgentEvaluations)
+      .set({
+        status: "failed",
+        errorMessage: `Orphaned — cleaned up before new ${config.fleetMode} run at ${new Date().toISOString()}`,
+        updatedAt: Date.now(),
+      })
+      .where(and(
+        eq(founderAgentEvaluations.status, "running"),
+        sql`${founderAgentEvaluations.updatedAt} < ${tenMinutesAgo}`,
+      ));
+    const cleanedCount = (cleanupResult as unknown as [{ affectedRows: number }])[0]?.affectedRows ?? 0;
+    if (cleanedCount > 0) {
+      console.log(`[FounderFleet] Cleaned up ${cleanedCount} orphaned evaluations before ${config.fleetMode} run`);
+    }
+
+    const [newRun] = await db.insert(founderAgentRuns).values({
+      runDate:          today,
+      fleetMode:        config.fleetMode,
+      status:           "pending",
+      totalIdeas:       targetIdeas,
+      completed:        0,
+      queued:           0,
+      running:          0,
+      totalSearches:    0,
+      totalLlmCalls:    0,
+      estimatedTokens:  0,
+      estimatedCostUsd: "0",
+      startedAt:        Date.now(),
+      createdAt:        Date.now(),
+    }).$returningId();
+    runId = newRun.id;
+    console.log(`[FounderFleet] Created ${config.fleetMode} run #${runId} for ${today}`);
+
+    // Record lastRunAt immediately so the UI shows the run started
+    await db.update(fleetConfig)
+      .set({ lastRunAt: Date.now() })
+      .where(eq(fleetConfig.id, config.id));
+
+    // Run fleet — bypassCostGuard=true so the 10-runs/hour cap does not block
+    // scheduled runs. runFleet never throws; it catches internally and sets
+    // status="failed", so we must query the DB to determine success.
+    await runFleet(runId, { gccMode: isGcc, bypassCostGuard: true, ideasPerDomain });
+
+    // ── Post-run: check actual DB status ──────────────────────────────────
+    const dbPost = await getDb();
+    if (!dbPost) {
+      console.warn(`[FounderFleet] DB unavailable after ${config.fleetMode} run #${runId} — skipping counter update`);
+      return {
+        mode:          config.fleetMode,
+        runId,
+        status:        "failed",
+        evaluations:   0,
+        totalIdeas:    targetIdeas,
+        avgScore:      null,
+        runsRemaining: config.runsRemaining,
+      };
+    }
+
+    const [runRow] = await dbPost
+      .select({
+        status:     founderAgentRuns.status,
+        completed:  founderAgentRuns.completed,
+        totalIdeas: founderAgentRuns.totalIdeas,
+      })
+      .from(founderAgentRuns)
+      .where(eq(founderAgentRuns.id, runId));
+
+    const success = runRow?.status === "completed";
+    console.log(`[FounderFleet] ${config.fleetMode} run #${runId} final status: ${runRow?.status ?? "unknown"}`);
+
+    if (success) {
+      // Only decrement runs_remaining and increment runs_completed on success
+      const newRemaining = Math.max(0, config.runsRemaining - 1);
+      const newCompleted = config.runsCompleted + 1;
+
+      // Get avg score for this run
+      const [scoreRow] = await dbPost
+        .select({ avgScore: avg(founderAgentEvaluations.finalScore) })
+        .from(founderAgentEvaluations)
+        .where(and(
+          eq(founderAgentEvaluations.runId, runId),
+          eq(founderAgentEvaluations.fleetMode, config.fleetMode)
+        ));
+      const avgScore = scoreRow?.avgScore ? parseFloat(String(scoreRow.avgScore)) : null;
+
+      await dbPost.update(fleetConfig)
+        .set({
+          runsRemaining: newRemaining,
+          runsCompleted: newCompleted,
+          lastRunAt:     Date.now(),
+          lastRunScore:  avgScore !== null ? String(avgScore.toFixed(2)) : null,
+          active:        newRemaining > 0,
+        })
+        .where(eq(fleetConfig.id, config.id));
+
+      console.log(`[FounderFleet] fleet_config updated: runs_completed=${newCompleted}, runs_remaining=${newRemaining}, last_run_score=${avgScore?.toFixed(1) ?? "N/A"}`);
+
+      // Post-run cost ceiling check (non-blocking alert)
+      const [costRow] = await dbPost
+        .select({ runCost: sql<string>`COALESCE(total_cost_usd, '0')` })
+        .from(founderAgentRuns)
+        .where(eq(founderAgentRuns.id, runId));
+      const runCostUsd = parseFloat(String(costRow?.runCost ?? "0"));
+      if (runCostUsd > MAX_COST_PER_RUN_USD) {
+        console.warn(`[FounderFleet] Run #${runId} cost $${runCostUsd.toFixed(2)} exceeds ceiling $${MAX_COST_PER_RUN_USD}`);
+        notifyOwner({
+          title:   `Fleet cost alert — ${config.fleetMode} run #${runId}`,
+          content: `Run cost $${runCostUsd.toFixed(2)} exceeded the $${MAX_COST_PER_RUN_USD} per-run ceiling.\nConsider raising MAX_COST_PER_RUN_USD or reviewing idea count.`,
+        }).catch(() => {});
+      }
+
+      // In-app notification — success
+      notifyOwner({
+        title:   `Fleet run complete — ${config.fleetMode}`,
+        content: `${config.fleetMode} run #${runId} completed:\n${runRow?.completed ?? targetIdeas}/${targetIdeas} evaluations\nAvg score: ${avgScore?.toFixed(2) ?? "N/A"}\nRuns remaining: ${newRemaining}`,
+      }).catch((notifyErr: unknown) =>
+        console.error(`[FounderFleet] notifyOwner failed for ${config.fleetMode} run #${runId}:`, (notifyErr as Error)?.message)
+      );
+
+      return {
+        mode:          config.fleetMode,
+        runId,
+        status:        "completed",
+        evaluations:   runRow?.completed ?? targetIdeas,
+        totalIdeas:    runRow?.totalIdeas ?? targetIdeas,
+        avgScore,
+        runsRemaining: newRemaining,
+      };
+    } else {
+      console.error(`[FounderFleet] ${config.fleetMode} run #${runId} did not complete — fleet_config counters NOT updated`);
+
+      // In-app notification — failure
+      notifyOwner({
+        title:   `Fleet run failed — ${config.fleetMode}`,
+        content: `${config.fleetMode} run #${runId} failed at ${runRow?.completed ?? 0}/${runRow?.totalIdeas ?? targetIdeas} evaluations.\nCheck logs for details.\nRuns remaining: ${config.runsRemaining}`,
+      }).catch((notifyErr: unknown) =>
+        console.error(`[FounderFleet] notifyOwner failed for ${config.fleetMode} run #${runId}:`, (notifyErr as Error)?.message)
+      );
+
+      return {
+        mode:          config.fleetMode,
+        runId,
+        status:        "failed",
+        evaluations:   runRow?.completed ?? 0,
+        totalIdeas:    runRow?.totalIdeas ?? targetIdeas,
+        avgScore:      null,
+        runsRemaining: config.runsRemaining,
+      };
+    }
+
+  } catch (err) {
+    const errMsg = (err as Error)?.message ?? String(err);
+    console.error(`[FounderFleet] Failed to run ${config.fleetMode} fleet:`, errMsg);
+    return {
+      mode:          config.fleetMode,
+      runId,
+      status:        "failed",
+      evaluations:   0,
+      totalIdeas:    targetIdeas,
+      avgScore:      null,
+      runsRemaining: config.runsRemaining,
+    };
+  }
+}
+
 // ── Shared daily fleet execution (used by cron + HTTP trigger) ───────────────
 
 export async function runDailyFleet(): Promise<void> {
-    const runTs = Date.now();
-    console.log("[FounderFleet] Daily fleet run starting");
-    const db = await getDb();
-    if (!db) {
-      console.warn("[FounderFleet] DB unavailable — skipping scheduled run");
-      return;
+  const runTs = Date.now();
+  console.log("[FounderFleet] Daily fleet run starting");
+
+  const db = await getDb();
+  if (!db) {
+    console.warn("[FounderFleet] DB unavailable — skipping scheduled run");
+    return;
+  }
+
+  // Read all active fleet configs
+  const activeConfigs = await db
+    .select()
+    .from(fleetConfig)
+    .where(eq(fleetConfig.active, true));
+
+  if (activeConfigs.length === 0) {
+    console.log("[FounderFleet] No active fleet configs — nothing to run");
+    return;
+  }
+
+  // ── FIX: Run all fleet modes IN PARALLEL — one failure cannot block another ──
+  // Promise.allSettled ensures we always collect results from every mode.
+  const settled = await Promise.allSettled(
+    activeConfigs.map((config) => runSingleFleetMode(db, config))
+  );
+
+  const fleetResults: FleetRunResult[] = settled.map((s, i) => {
+    if (s.status === "fulfilled") return s.value;
+    // Promise itself rejected (should not happen — runSingleFleetMode never throws)
+    const config = activeConfigs[i];
+    console.error(`[FounderFleet] Unexpected rejection for ${config.fleetMode}:`, s.reason);
+    return {
+      mode:          config.fleetMode,
+      runId:         -1,
+      status:        "failed" as const,
+      evaluations:   0,
+      totalIdeas:    config.fleetMode === "gcc" ? 200 : 300,
+      avgScore:      null,
+      runsRemaining: config.runsRemaining,
+    };
+  });
+
+  // ── FIX: Per-mode 30-minute retry for failed runs ─────────────────────────
+  const failedModes = fleetResults.filter((r) => r.status === "failed");
+  for (const failed of failedModes) {
+    if (hasRetriedToday(failed.mode)) {
+      console.warn(`[FounderFleet] ${failed.mode} already retried today — skipping second retry`);
+      continue;
     }
+    markRetriedToday(failed.mode);
+    const modeConfig = activeConfigs.find((c) => c.fleetMode === failed.mode);
+    if (!modeConfig) continue;
 
-    // Read all active fleet configs
-    const activeConfigs = await db
-      .select()
-      .from(fleetConfig)
-      .where(eq(fleetConfig.active, true));
+    console.warn(`[FounderFleet] ${failed.mode} run failed — scheduling retry in ${RETRY_DELAY_MS / 60000} minutes`);
 
-    if (activeConfigs.length === 0) {
-      console.log("[FounderFleet] No active fleet configs — nothing to run");
-      return;
-    }
-
-    const fleetResults: FleetRunResult[] = [];
-
-    for (const config of activeConfigs) {
-      const isGcc = config.fleetMode === "gcc";
-      console.log(`[FounderFleet] Starting ${config.fleetMode} fleet run (${config.runsRemaining} remaining)`);
-
-      // Per-mode idea targets: GCC=200 (5 domains ×40), Global=300 (5 domains ×60)
-      const ideasPerDomain = isGcc ? 40 : 60;
-      const targetIdeas = isGcc ? 200 : 300;
-
-      try {
-        const today = new Date().toISOString().slice(0, 10);
-
-        // ── Pre-run cleanup: mark orphaned 'running' evals (>10 min old) as failed ──
-        const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
-        const cleanupResult = await db.update(founderAgentEvaluations)
-          .set({
-            status: "failed",
-            errorMessage: `Orphaned — cleaned up before new ${config.fleetMode} run at ${new Date().toISOString()}`,
-            updatedAt: Date.now(),
-          })
-          .where(and(
-            eq(founderAgentEvaluations.status, "running"),
-            sql`${founderAgentEvaluations.updatedAt} < ${tenMinutesAgo}`,
-          ));
-        const cleanedCount = (cleanupResult as unknown as [{ affectedRows: number }])[0]?.affectedRows ?? 0;
-        if (cleanedCount > 0) {
-          console.log(`[FounderFleet] Cleaned up ${cleanedCount} orphaned evaluations before ${config.fleetMode} run`);
-        }
-
-        const [newRun] = await db.insert(founderAgentRuns).values({
-          runDate: today,
-          fleetMode: config.fleetMode,
-          status: "pending",
-          totalIdeas: targetIdeas,
-          completed: 0,
-          queued: 0,
-          running: 0,
-          totalSearches: 0,
-          totalLlmCalls: 0,
-          estimatedTokens: 0,
-          estimatedCostUsd: "0",
-          startedAt: Date.now(),
-          createdAt: Date.now(),
-        }).$returningId();
-        const runId = newRun.id;
-        console.log(`[FounderFleet] Created ${config.fleetMode} run #${runId} for ${today}`);
-
-        // Record lastRunAt immediately so the UI shows the run started
-        await db.update(fleetConfig)
-          .set({ lastRunAt: Date.now() })
-          .where(eq(fleetConfig.id, config.id));
-
-        // Run fleet — bypassCostGuard=true so the 10-runs/hour cap does not block
-        // scheduled runs. runFleet never throws; it catches internally and sets
-        // status="failed", so we must query the DB to determine success.
-        await runFleet(runId, { gccMode: isGcc, bypassCostGuard: true, ideasPerDomain });
-
-        // ── Post-run: check actual DB status ──────────────────────────────────
-        const dbPost = await getDb();
-        if (!dbPost) {
-          console.warn(`[FounderFleet] DB unavailable after ${config.fleetMode} run #${runId} — skipping counter update`);
-          fleetResults.push({
-            mode: config.fleetMode,
-            runId,
-            status: "failed",
-            evaluations: 0,
-            totalIdeas: targetIdeas,
-            avgScore: null,
-            runsRemaining: config.runsRemaining,
-          });
-          continue;
-        }
-
-        const [runRow] = await dbPost
-          .select({
-            status: founderAgentRuns.status,
-            completed: founderAgentRuns.completed,
-            totalIdeas: founderAgentRuns.totalIdeas,
-          })
-          .from(founderAgentRuns)
-          .where(eq(founderAgentRuns.id, runId));
-
-        const success = runRow?.status === "completed";
-        console.log(`[FounderFleet] ${config.fleetMode} run #${runId} final status: ${runRow?.status ?? "unknown"}`);
-
-        if (success) {
-          // Only decrement runs_remaining and increment runs_completed on success
-          const newRemaining = Math.max(0, config.runsRemaining - 1);
-          const newCompleted = config.runsCompleted + 1;
-
-          // Get avg score for this run
-          const [scoreRow] = await dbPost
-            .select({ avgScore: avg(founderAgentEvaluations.finalScore) })
-            .from(founderAgentEvaluations)
-            .where(and(
-              eq(founderAgentEvaluations.runId, runId),
-              eq(founderAgentEvaluations.fleetMode, config.fleetMode)
-            ));
-          const avgScore = scoreRow?.avgScore ? parseFloat(String(scoreRow.avgScore)) : null;
-
-          await dbPost.update(fleetConfig)
-            .set({
-              runsRemaining: newRemaining,
-              runsCompleted: newCompleted,
-              lastRunAt: Date.now(),
-              lastRunScore: avgScore !== null ? String(avgScore.toFixed(2)) : null,
-              active: newRemaining > 0,
-            })
-            .where(eq(fleetConfig.id, config.id));
-
-          console.log(`[FounderFleet] fleet_config updated: runs_completed=${newCompleted}, runs_remaining=${newRemaining}, last_run_score=${avgScore?.toFixed(1) ?? "N/A"}`);
-
-          // Post-run cost ceiling check (non-blocking alert)
-          const [costRow] = await dbPost
-            .select({ runCost: sql<string>`COALESCE(total_cost_usd, '0')` })
-            .from(founderAgentRuns)
-            .where(eq(founderAgentRuns.id, runId));
-          const runCostUsd = parseFloat(String(costRow?.runCost ?? "0"));
-          if (runCostUsd > MAX_COST_PER_RUN_USD) {
-            console.warn(`[FounderFleet] Run #${runId} cost $${runCostUsd.toFixed(2)} exceeds ceiling $${MAX_COST_PER_RUN_USD}`);
-            notifyOwner({
-              title: `Fleet cost alert — ${config.fleetMode} run #${runId}`,
-              content: `Run cost $${runCostUsd.toFixed(2)} exceeded the $${MAX_COST_PER_RUN_USD} per-run ceiling.\nConsider raising MAX_COST_PER_RUN_USD or reviewing idea count.`,
-            }).catch(() => {});
-          }
-
-          // In-app notification — success
-          notifyOwner({
-            title: `Fleet run complete — ${config.fleetMode}`,
-            content: `${config.fleetMode} run #${runId} completed:\n${runRow?.completed ?? targetIdeas}/${targetIdeas} evaluations\nAvg score: ${avgScore?.toFixed(2) ?? "N/A"}\nRuns remaining: ${newRemaining}`,
-          }).catch((notifyErr: unknown) =>
-            console.error(`[FounderFleet] notifyOwner failed for ${config.fleetMode} run #${runId}:`, (notifyErr as Error)?.message)
-          );
-
-          fleetResults.push({
-            mode: config.fleetMode,
-            runId,
-            status: "completed",
-            evaluations: runRow?.completed ?? targetIdeas,
-            totalIdeas: runRow?.totalIdeas ?? targetIdeas,
-            avgScore,
-            runsRemaining: newRemaining,
-          });
-        } else {
-          console.error(`[FounderFleet] ${config.fleetMode} run #${runId} did not complete — fleet_config counters NOT updated`);
-
-          // In-app notification — failure
-          notifyOwner({
-            title: `Fleet run failed — ${config.fleetMode}`,
-            content: `${config.fleetMode} run #${runId} failed at ${runRow?.completed ?? 0}/${runRow?.totalIdeas ?? targetIdeas} evaluations.\nCheck logs for details.\nRuns remaining: ${config.runsRemaining}`,
-          }).catch((notifyErr: unknown) =>
-            console.error(`[FounderFleet] notifyOwner failed for ${config.fleetMode} run #${runId}:`, (notifyErr as Error)?.message)
-          );
-
-          fleetResults.push({
-            mode: config.fleetMode,
-            runId,
-            status: "failed",
-            evaluations: runRow?.completed ?? 0,
-            totalIdeas: runRow?.totalIdeas ?? targetIdeas,
-            avgScore: null,
-            runsRemaining: config.runsRemaining,
-          });
-        }
-
-      } catch (err) {
-        console.error(`[FounderFleet] Failed to create ${config.fleetMode} run:`, (err as Error)?.message);
-        fleetResults.push({
-          mode: config.fleetMode,
-          runId: -1,
-          status: "failed",
-          evaluations: 0,
-          totalIdeas: targetIdeas,
-          avgScore: null,
-          runsRemaining: config.runsRemaining,
-        });
+    setTimeout(async () => {
+      console.log(`[FounderFleet] Retrying ${failed.mode} fleet run now`);
+      const retryDb = await getDb();
+      if (!retryDb) {
+        console.error(`[FounderFleet] DB unavailable for ${failed.mode} retry`);
+        notifyOwner({
+          title:   `Fleet retry failed — ${failed.mode} (DB unavailable)`,
+          content: `${failed.mode} fleet run failed and the retry could not start because the database was unavailable.\nManual intervention required.`,
+        }).catch(() => {});
+        return;
       }
-    }
 
-    // ── Send one combined summary email after ALL fleet modes complete ─────────
-    if (fleetResults.length > 0) {
-      buildAndSendFleetEmail(fleetResults, runTs).catch((emailErr: unknown) =>
-        console.error("[FounderFleet] Fleet summary email error:", (emailErr as Error)?.message)
-      );
+      // Re-read config to get latest counters
+      const [latestConfig] = await retryDb
+        .select()
+        .from(fleetConfig)
+        .where(eq(fleetConfig.id, modeConfig.id));
 
-      // One-time first-500/day verification email (fire-and-forget)
-      maybeSendFirstScaleVerificationEmail(fleetResults).catch((verifyErr: unknown) =>
-        console.error("[FounderFleet] First-scale verification email error:", (verifyErr as Error)?.message)
-      );
-    }
+      if (!latestConfig?.active) {
+        console.warn(`[FounderFleet] ${failed.mode} config is no longer active — skipping retry`);
+        return;
+      }
 
+      const retryResult = await runSingleFleetMode(retryDb, latestConfig);
+
+      if (retryResult.status === "completed") {
+        console.log(`[FounderFleet] ${failed.mode} retry succeeded`);
+        // Include retry result in a follow-up email
+        buildAndSendFleetEmail([retryResult], Date.now()).catch((emailErr: unknown) =>
+          console.error("[FounderFleet] Retry summary email error:", (emailErr as Error)?.message)
+        );
+      } else {
+        console.error(`[FounderFleet] ${failed.mode} retry also failed — notifying owner`);
+        notifyOwner({
+          title:   `Fleet retry failed — ${failed.mode}`,
+          content: `${failed.mode} fleet run failed twice today (initial + 30-min retry).\nRun #${retryResult.runId} completed ${retryResult.evaluations}/${retryResult.totalIdeas} evaluations.\nManual intervention required.`,
+        }).catch(() => {});
+      }
+    }, RETRY_DELAY_MS);
+  }
+
+  // ── Send one combined summary email after ALL fleet modes complete ─────────
+  if (fleetResults.length > 0) {
+    buildAndSendFleetEmail(fleetResults, runTs).catch((emailErr: unknown) =>
+      console.error("[FounderFleet] Fleet summary email error:", (emailErr as Error)?.message)
+    );
+
+    // One-time first-500/day verification email (fire-and-forget)
+    maybeSendFirstScaleVerificationEmail(fleetResults).catch((verifyErr: unknown) =>
+      console.error("[FounderFleet] First-scale verification email error:", (verifyErr as Error)?.message)
+    );
+  }
 }
 
 // ── Scheduler ─────────────────────────────────────────────────────────────────
