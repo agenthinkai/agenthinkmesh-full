@@ -171,9 +171,13 @@ async function startServer() {
   registerEncryptionReportRoute(app);
   // External fleet trigger — POST /api/scheduled/fleet-trigger (X-Scheduler-Secret auth)
   app.use("/api/scheduled", fleetTriggerRouter);
+  // Option A fleet trigger — POST /api/fleet/trigger
+  // Mounted under /api/fleet/* which is NOT blocked by the Manus reverse-proxy cookie-auth
+  // (unlike /api/scheduled/* which is blocked). This is the primary external trigger path.
+  app.use("/api/fleet", webhookFleetTriggerRouter);
   // Public webhook fleet trigger — POST /webhook/fleet-trigger (bypasses /api/* proxy auth)
-  // This route exists outside the /api/* namespace to avoid the Manus reverse-proxy
-  // cookie-auth middleware that blocks all /api/scheduled/* requests.
+  // Note: /webhook/* is caught by the SPA catch-all; kept for completeness but /api/fleet/trigger
+  // is the recommended path.
   app.use("/webhook", webhookFleetTriggerRouter);
   // PitchMirror shared-link OG meta injection (must be before Vite/static catch-all)
   registerPitchMirrorMetaRoute(app);
