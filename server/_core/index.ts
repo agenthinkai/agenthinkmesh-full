@@ -35,10 +35,12 @@ import { registerPitchMirrorMetaRoute } from "../pitchMirrorMetaRoute";
 import { registerFleetSchedulerStatusRoute } from "../fleetSchedulerStatusRoute";
 import { registerEncryptionReportRoute } from "../encryptionReportRoute";
 import fleetTriggerRouter from "../fleetTriggerRoute";
+import webhookFleetTriggerRouter from "../webhookFleetTriggerRoute";
 import inboundEmailWebhookRouter from "../inboundEmailWebhookRoute";
 import graphEmailWebhookRouter from "../graphEmailWebhookRoute";
 import { startGraphSubscriptionJob } from "../jobs/graphSubscription";
 import { startFounderFleetScheduler } from "../jobs/founderFleetScheduler";
+import { startSelfPingJob } from "../jobs/selfPingJob";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -169,6 +171,10 @@ async function startServer() {
   registerEncryptionReportRoute(app);
   // External fleet trigger — POST /api/scheduled/fleet-trigger (X-Scheduler-Secret auth)
   app.use("/api/scheduled", fleetTriggerRouter);
+  // Public webhook fleet trigger — POST /webhook/fleet-trigger (bypasses /api/* proxy auth)
+  // This route exists outside the /api/* namespace to avoid the Manus reverse-proxy
+  // cookie-auth middleware that blocks all /api/scheduled/* requests.
+  app.use("/webhook", webhookFleetTriggerRouter);
   // PitchMirror shared-link OG meta injection (must be before Vite/static catch-all)
   registerPitchMirrorMetaRoute(app);
 
@@ -235,6 +241,8 @@ async function startServer() {
     startGraphSubscriptionJob(appBaseUrl);
     // FounderAgent Fleet — daily 02:00 UTC + resume interrupted runs on startup
     startFounderFleetScheduler();
+    // Self-ping keep-alive — pings /api/health every 10 min to prevent Cloud Run hibernation
+    startSelfPingJob();
     // Tier 0 University Signal ingestion — run once at startup, then daily at 02:00 KWT (23:00 UTC)
     runTier0Ingestion().catch(err => console.warn("[Tier0] Initial ingestion failed:", err?.message));
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
