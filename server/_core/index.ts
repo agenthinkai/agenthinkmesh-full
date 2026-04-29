@@ -175,6 +175,14 @@ async function startServer() {
   // Mounted under /api/fleet/* which is NOT blocked by the Manus reverse-proxy cookie-auth
   // (unlike /api/scheduled/* which is blocked). This is the primary external trigger path.
   app.use("/api/fleet", webhookFleetTriggerRouter);
+  // Direct top-level fleet trigger — POST /api/fleet-trigger
+  // Avoids any /api/fleet/* proxy sub-path blocking; matches /api/payment-confirm pattern
+  // which is confirmed to pass through the proxy (returns 400 from Express, not 403 from proxy).
+  app.post("/api/fleet-trigger", async (req, res) => {
+    // Forward to the same handler by re-routing through the router
+    req.url = "/fleet-trigger";
+    webhookFleetTriggerRouter(req, res, () => res.status(404).json({ error: "Not found" }));
+  });
   // Public webhook fleet trigger — POST /webhook/fleet-trigger (bypasses /api/* proxy auth)
   // Note: /webhook/* is caught by the SPA catch-all; kept for completeness but /api/fleet/trigger
   // is the recommended path.
