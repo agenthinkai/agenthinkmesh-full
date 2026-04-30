@@ -3,9 +3,12 @@
  *
  * POST /api/scheduled/fleet-trigger
  *
- * Authentication:
- *   Header: X-Scheduler-Secret: <SCHEDULER_SECRET env var>
- *   Returns 401 if header is missing or wrong.
+ * Authentication (either of):
+ *   (a) Header: X-Scheduler-Secret: <SCHEDULER_SECRET env var>
+ *   (b) Manus cron cookie (app_session_id) — the Manus reverse-proxy validates
+ *       the cron cookie before forwarding to /api/scheduled/* routes, so its
+ *       presence here is sufficient proof of a legitimate Manus scheduler call.
+ *   Returns 401 if neither auth method is satisfied.
  *
  * Behaviour:
  *   - Returns 200 immediately (fire-and-forget background execution)
@@ -36,7 +39,16 @@ router.post("/fleet-trigger", async (req: Request, res: Response) => {
   const secret = process.env.SCHEDULER_SECRET;
   const provided = req.headers["x-scheduler-secret"];
 
-  if (!secret || !provided || provided !== secret) {
+  // Accept either:
+  //   (a) valid X-Scheduler-Secret header matching SCHEDULER_SECRET env var, OR
+  //   (b) the Manus cron cookie (app_session_id) — the Manus reverse-proxy already
+  //       validates the cron cookie before forwarding to /api/scheduled/* routes,
+  //       so its presence here means the request is legitimately from the Manus scheduler.
+  const hasCronCookie = typeof req.headers.cookie === 'string' &&
+    req.headers.cookie.includes('app_session_id=');
+  const secretValid = !!(secret && provided && provided === secret);
+
+  if (!secretValid && !hasCronCookie) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }

@@ -255,6 +255,16 @@ async function startServer() {
     startFounderFleetScheduler();
     // Self-ping keep-alive — pings /api/health every 10 min to prevent Cloud Run hibernation
     startSelfPingJob();
+    // setInterval-based keep-warm: fires even if node-cron is killed by Cloud Run hibernation
+    // This is the primary keep-alive mechanism; startSelfPingJob() is a secondary cron-based backup.
+    setInterval(async () => {
+      try {
+        await fetch('https://agenthink-7enctkan.manus.space/api/health');
+        console.log('[HealthPing] Server kept warm');
+      } catch (e) {
+        console.error('[HealthPing] Failed:', e);
+      }
+    }, 10 * 60 * 1000); // every 10 minutes
     // Tier 0 University Signal ingestion — run once at startup, then daily at 02:00 KWT (23:00 UTC)
     runTier0Ingestion().catch(err => console.warn("[Tier0] Initial ingestion failed:", err?.message));
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
