@@ -1127,11 +1127,17 @@ export interface FleetOptions {
   bypassCostGuard?: boolean;
   /** Override ideas per domain (default: 20). GCC fleet uses 40 (→200 total), Global uses 60 (→300 total) */
   ideasPerDomain?: number;
+  /**
+   * Batch mode: when true, skip the final status=completed / extractInsights / reRankByPercentile
+   * steps so the run stays in-progress for the next batch to continue.
+   * Set to false (or omit) on the LAST batch to finalize the run normally.
+   */
+  isFinalBatch?: boolean;
 }
 // -- Main orchestration entry point ------------------------------------------
 
 export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<void> {
-  const { quickTest = false, isTestRun = false, bypassCostGuard = false, ideasPerDomain } = opts;
+  const { quickTest = false, isTestRun = false, bypassCostGuard = false, ideasPerDomain, isFinalBatch = true } = opts;
   fleetState.set(runId, { paused: false, abort: false });
   const acc: CostAccumulator = { searches: 0, llmCalls: 0, tokens: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 };
 
@@ -1169,42 +1175,47 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
       return;
     }
 
-    // Step 6b: Re-rank by percentile to guarantee 20/40/40 distribution
-    await reRankByPercentile(runId);
-    await saveCosts(runId, acc);
-    // Step 6c: Assign simulated outcomes — skipped for test runs (keeps test data out of pattern engine)
-    if (!isTestRun) {
-      await assignDecisionOutcomes(runId);
+    if (isFinalBatch) {
+      // Step 6b: Re-rank by percentile to guarantee 20/40/40 distribution
+      await reRankByPercentile(runId);
       await saveCosts(runId, acc);
-    } else {
-      console.log(`[FleetOrchestrator] Skipping outcome assignment for test run ${runId}`);
-    }
-    // Step 7: Extract insights
-    await updateRunStatus(runId, "extracting");
-    await extractInsights(runId, acc, opts.gccMode ? "gcc" : "global");
-    await saveCosts(runId, acc);
-
-    // Complete
-    await updateRunStatus(runId, "completed", { completedAt: Date.now() });
-    // Aggregate run cost to fleet_config
-    try {
-      const db2 = await requireDb();
-      const [runRow] = await db2.select({
-        fleetMode: founderAgentRuns.fleetMode,
-        totalCostUsd: founderAgentRuns.totalCostUsd,
-      }).from(founderAgentRuns).where(eq(founderAgentRuns.id, runId)).limit(1);
-      if (runRow) {
-        const runCost = parseFloat(String(runRow.totalCostUsd ?? "0"));
-        await db2.update(fleetConfig)
-          .set({
-            lastRunCostUsd: runCost.toFixed(4),
-            totalCostUsd: sql`total_cost_usd + ${runCost.toFixed(4)}`,
-          })
-          .where(eq(fleetConfig.fleetMode, runRow.fleetMode));
-        console.log(`[FleetOrchestrator] Updated fleet_config cost for ${runRow.fleetMode}: lastRunCost=$${runCost.toFixed(4)}`);
+      // Step 6c: Assign simulated outcomes — skipped for test runs (keeps test data out of pattern engine)
+      if (!isTestRun) {
+        await assignDecisionOutcomes(runId);
+        await saveCosts(runId, acc);
+      } else {
+        console.log(`[FleetOrchestrator] Skipping outcome assignment for test run ${runId}`);
       }
-    } catch (costErr) {
-      console.warn("[FleetOrchestrator] fleet_config cost update failed (non-fatal):", costErr);
+      // Step 7: Extract insights
+      await updateRunStatus(runId, "extracting");
+      await extractInsights(runId, acc, opts.gccMode ? "gcc" : "global");
+      await saveCosts(runId, acc);
+
+      // Complete
+      await updateRunStatus(runId, "completed", { completedAt: Date.now() });
+      // Aggregate run cost to fleet_config
+      try {
+        const db2 = await requireDb();
+        const [runRow] = await db2.select({
+          fleetMode: founderAgentRuns.fleetMode,
+          totalCostUsd: founderAgentRuns.totalCostUsd,
+        }).from(founderAgentRuns).where(eq(founderAgentRuns.id, runId)).limit(1);
+        if (runRow) {
+          const runCost = parseFloat(String(runRow.totalCostUsd ?? "0"));
+          await db2.update(fleetConfig)
+            .set({
+              lastRunCostUsd: runCost.toFixed(4),
+              totalCostUsd: sql`total_cost_usd + ${runCost.toFixed(4)}`,
+            })
+            .where(eq(fleetConfig.fleetMode, runRow.fleetMode));
+          console.log(`[FleetOrchestrator] Updated fleet_config cost for ${runRow.fleetMode}: lastRunCost=$${runCost.toFixed(4)}`);
+        }
+      } catch (costErr) {
+        console.warn("[FleetOrchestrator] fleet_config cost update failed (non-fatal):", costErr);
+      }
+    } else {
+      // Intermediate batch: stay in evaluating status so the next batch can continue
+      console.log(`[FleetOrchestrator] Run ${runId}: intermediate batch complete — staying in evaluating for next batch`);
     }
   } catch (err) {
     console.error(`[FleetOrchestrator] Run ${runId} failed:`, err);
