@@ -1128,16 +1128,24 @@ export interface FleetOptions {
   /** Override ideas per domain (default: 20). GCC fleet uses 40 (→200 total), Global uses 60 (→300 total) */
   ideasPerDomain?: number;
   /**
-   * Batch mode: when true, skip the final status=completed / extractInsights / reRankByPercentile
-   * steps so the run stays in-progress for the next batch to continue.
-   * Set to false (or omit) on the LAST batch to finalize the run normally.
+   * Batch mode for multi-batch global runs.
+   *
+   * - "single" (default): existing behaviour — run all steps, set status=completed at end.
+   * - "first":  first batch of N — skip final post-processing, set status="running" when done.
+   * - "middle": intermediate batch — skip final post-processing, keep status="running".
+   * - "last":   final batch — run all post-processing steps and set status="completed" as normal.
+   *
+   * GCC and all existing callers omit this option (defaults to "single"), so behaviour
+   * is completely unchanged for them.
    */
-  isFinalBatch?: boolean;
+  batchMode?: "single" | "first" | "middle" | "last";
 }
 // -- Main orchestration entry point ------------------------------------------
 
 export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<void> {
-  const { quickTest = false, isTestRun = false, bypassCostGuard = false, ideasPerDomain, isFinalBatch = true } = opts;
+  const { quickTest = false, isTestRun = false, bypassCostGuard = false, ideasPerDomain, batchMode = "single" } = opts;
+  // Derive whether this batch should finalise the run (run post-processing + set completed)
+  const isFinalBatch = batchMode === "single" || batchMode === "last";
   fleetState.set(runId, { paused: false, abort: false });
   const acc: CostAccumulator = { searches: 0, llmCalls: 0, tokens: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 };
 
@@ -1176,6 +1184,7 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
     }
 
     if (isFinalBatch) {
+      // Final batch (or single run): run all post-processing steps and mark completed
       // Step 6b: Re-rank by percentile to guarantee 20/40/40 distribution
       await reRankByPercentile(runId);
       await saveCosts(runId, acc);
@@ -1214,8 +1223,11 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
         console.warn("[FleetOrchestrator] fleet_config cost update failed (non-fatal):", costErr);
       }
     } else {
-      // Intermediate batch: stay in evaluating status so the next batch can continue
-      console.log(`[FleetOrchestrator] Run ${runId}: intermediate batch complete — staying in evaluating for next batch`);
+      // Intermediate batch (first or middle): keep status=evaluating so the run stays
+      // visibly in-progress while the next batch starts. The scheduler loop will
+      // continue with the next batch immediately after this function returns.
+      await updateRunStatus(runId, "evaluating");
+      console.log(`[FleetOrchestrator] Run ${runId}: batch (${batchMode}) complete — status=evaluating, ready for next batch`);
     }
   } catch (err) {
     console.error(`[FleetOrchestrator] Run ${runId} failed:`, err);

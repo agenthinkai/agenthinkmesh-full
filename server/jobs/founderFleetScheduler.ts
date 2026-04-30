@@ -496,10 +496,14 @@ async function runSingleFleetMode(
       const GLOBAL_BATCH_COUNT            = 3;  // 3 batches × 100 = 300 total
       console.log(`[FounderFleet] Global run #${runId}: running ${GLOBAL_BATCH_COUNT} sequential batches of ${GLOBAL_BATCH_IDEAS_PER_DOMAIN * 5} ideas each (total: ${GLOBAL_BATCH_COUNT * GLOBAL_BATCH_IDEAS_PER_DOMAIN * 5})`);
       for (let batch = 1; batch <= GLOBAL_BATCH_COUNT; batch++) {
-        const isFinalBatch = batch === GLOBAL_BATCH_COUNT;
-        console.log(`[FounderFleet] Global run #${runId}: starting batch ${batch}/${GLOBAL_BATCH_COUNT} (isFinalBatch=${isFinalBatch})`);
-        await runFleet(runId, { gccMode: false, bypassCostGuard: true, ideasPerDomain: GLOBAL_BATCH_IDEAS_PER_DOMAIN, isFinalBatch });
-        console.log(`[FounderFleet] Global run #${runId}: batch ${batch}/${GLOBAL_BATCH_COUNT} complete`);
+        // Determine batchMode: first | middle | last
+        const batchMode: "first" | "middle" | "last" =
+          batch === 1                   ? "first"
+          : batch === GLOBAL_BATCH_COUNT ? "last"
+          : "middle";
+        console.log(`[FounderFleet] Global run #${runId}: starting batch ${batch}/${GLOBAL_BATCH_COUNT} (batchMode=${batchMode})`);
+        await runFleet(runId, { gccMode: false, bypassCostGuard: true, ideasPerDomain: GLOBAL_BATCH_IDEAS_PER_DOMAIN, batchMode });
+        console.log(`[FounderFleet] Global run #${runId}: batch ${batch}/${GLOBAL_BATCH_COUNT} complete (batchMode=${batchMode})`);
       }
     }
 
