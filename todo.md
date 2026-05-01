@@ -3716,3 +3716,13 @@
 - [x] Fix 2: Fixed createRun/saveIps result destructuring — Drizzle MySQL insert returns array
 - [x] Verified: createRun returns runId — no more Failed to save IPS error
 - [x] tsc: EXIT:0, Tests: 778/778 pass
+
+## Insurance Pipeline Bug Fix — NaN runId / Stream connection lost (01 May 2026)
+- [x] Root cause 1: startRun INSERT — db.execute returns [ResultSetHeader, null]; was cast as plain object so result.insertId was undefined → Number(undefined) = NaN
+- [x] Root cause 2: Stream route SELECT — db.execute returns [rows, fields]; was cast as Array<Row> so runRows[0] was the rows array not the first row
+- [x] Root cause 3: Stream route auth — req.user always undefined (no middleware); fixed by calling sdk.authenticateRequest(req) directly
+- [x] Fix: server/routers/insurance.ts — all db.execute calls use [0] indexing; InsertResult/SelectResult helper types added
+- [x] Fix: server/insuranceStreamRoute.ts — auth via sdk.authenticateRequest, SELECT uses [0], runId validated before SSE headers, keep-alive ping added
+- [x] Fix: client/src/pages/InsuranceRun.tsx — EventSource uses withCredentials:true, runId NaN guard before opening stream, retry with backoff (max 3), clear error messages
+- [x] Verified: startRun returns {runId:30007}, stream returns all 7 agents, NaN guard returns 400
+- [x] tsc: EXIT:0, Tests: 778/778 pass

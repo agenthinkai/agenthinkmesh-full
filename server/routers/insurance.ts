@@ -9,6 +9,10 @@ import { assertWorkflowAccess } from "../billing";
 import { sql } from "drizzle-orm";
 import { INSURANCE_AGENTS, CHAIN_MAP, getInsuranceAgentById } from "../../shared/insuranceAgents";
 
+// Helper: Drizzle mysql2 db.execute returns [ResultSetHeader|rows, fields] — always index [0]
+type InsertResult = [{ insertId: number }, unknown];
+type SelectResult<T> = [T[], unknown];
+
 export const insuranceRouter = router({
 
   // ── List all 10 agents ────────────────────────────────────────────────────
@@ -74,12 +78,18 @@ export const insuranceRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
-      const result = await db.execute(
+      // db.execute returns [ResultSetHeader, null] for INSERT — must use [0].insertId
+      const insertResult = await db.execute(
         sql`INSERT INTO insurance_runs (userId, runType, status, inputSummary, createdAt)
             VALUES (${ctx.user.id}, ${input.runType}, 'pending', ${input.inputText.slice(0, 500)}, ${new Date()})`
-      ) as unknown as { insertId: number };
+      ) as unknown as InsertResult;
 
-      const runId = Number(result.insertId);
+      const runId = Number(insertResult[0].insertId);
+      console.log(`[Insurance] startRun: created run id=${runId} type=${input.runType} userId=${ctx.user.id}`);
+
+      if (!runId || isNaN(runId)) {
+        throw new Error(`Failed to create run: invalid insertId (got ${insertResult[0]?.insertId})`);
+      }
 
       return {
         runId,
@@ -95,9 +105,10 @@ export const insuranceRouter = router({
       const db = await getDb();
       if (!db) throw new Error("Database unavailable");
 
-      const runs = await db.execute(
+      // db.execute returns [rows, fields] for SELECT — must use [0] to get rows array
+      const runsResult = await db.execute(
         sql`SELECT * FROM insurance_runs WHERE id = ${input.runId} AND userId = ${ctx.user.id} LIMIT 1`
-      ) as unknown as Array<{
+      ) as unknown as SelectResult<{
         id: number;
         runType: string;
         status: string;
@@ -114,12 +125,13 @@ export const insuranceRouter = router({
         completedAt: number;
       }>;
 
+      const runs = runsResult[0];
       if (!runs.length) throw new Error("Run not found");
 
       const run = runs[0];
-      const steps = await db.execute(
+      const stepsResult = await db.execute(
         sql`SELECT * FROM insurance_steps WHERE runId = ${input.runId} ORDER BY createdAt ASC`
-      ) as unknown as Array<{
+      ) as unknown as SelectResult<{
         id: number;
         agentId: string;
         agentName: string;
@@ -128,6 +140,8 @@ export const insuranceRouter = router({
         tokensUsed: number;
         durationMs: number;
       }>;
+
+      const steps = stepsResult[0];
 
       return {
         ...run,
@@ -144,12 +158,12 @@ export const insuranceRouter = router({
     const db = await getDb();
     if (!db) return [];
 
-    const runs = await db.execute(
+    const runsResult = await db.execute(
       sql`SELECT id, runType, status, uwDecision, confidenceScore, riskScore, premiumIndication,
                  takafulCompliant, treatyRecommendation, durationMs, createdAt, completedAt
           FROM insurance_runs WHERE userId = ${ctx.user.id}
           ORDER BY createdAt DESC LIMIT 50`
-    ) as unknown as Array<{
+    ) as unknown as SelectResult<{
       id: number;
       runType: string;
       status: string;
@@ -164,7 +178,7 @@ export const insuranceRouter = router({
       completedAt: number;
     }>;
 
-    return runs;
+    return runsResult[0];
   }),
 
   // ── Get Takaful alerts ────────────────────────────────────────────────────
@@ -174,11 +188,11 @@ export const insuranceRouter = router({
       const db = await getDb();
       if (!db) return [];
 
-      const alerts = await db.execute(
+      const alertsResult = await db.execute(
         input.includeAcknowledged
           ? sql`SELECT * FROM takaful_alerts WHERE userId = ${ctx.user.id} ORDER BY createdAt DESC LIMIT 50`
           : sql`SELECT * FROM takaful_alerts WHERE userId = ${ctx.user.id} AND isAcknowledged = 0 ORDER BY createdAt DESC LIMIT 20`
-      ) as unknown as Array<{
+      ) as unknown as SelectResult<{
         id: number;
         alertType: string;
         severity: string;
@@ -189,7 +203,7 @@ export const insuranceRouter = router({
         createdAt: number;
       }>;
 
-      return alerts;
+      return alertsResult[0];
     }),
 
   // ── Acknowledge a Takaful alert ───────────────────────────────────────────

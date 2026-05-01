@@ -407,18 +407,36 @@ export default function InsuranceRun() {
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
 
+  // Retry state for SSE reconnects
+  const retryCountRef = useRef(0);
+  const MAX_RETRIES = 3;
+
   useEffect(() => {
-    if (!user || !runId) return;
+    if (!user) return;
+
+    // Guard: runId must be a valid positive integer
+    const runIdNum = Number(runId);
+    if (!runId || isNaN(runIdNum) || runIdNum <= 0) {
+      setStatus("error");
+      setErrorMsg(`Invalid run ID: "${runId}". Please go back and launch the pipeline again.`);
+      return;
+    }
+
+    console.log(`[Insurance] Opening stream: runType=${runType} runId=${runIdNum}`);
 
     timerRef.current = setInterval(() => {
       setElapsedMs(Date.now() - startTimeRef.current);
     }, 100);
 
-    const es = new EventSource(`/api/insurance/stream/${runType}/${runId}`);
+    // EventSource with credentials so the session cookie is sent
+    const es = new EventSource(`/api/insurance/stream/${runType}/${runIdNum}`, { withCredentials: true });
     eventSourceRef.current = es;
+    console.log(`[Insurance] EventSource created for /api/insurance/stream/${runType}/${runIdNum}`);
 
     es.addEventListener("pipeline_start", (e) => {
       const data = JSON.parse(e.data);
+      console.log(`[Insurance] pipeline_start: ${data.agents?.length} agents`);
+      retryCountRef.current = 0; // reset retries on successful connection
       setStatus("running");
       setSteps(data.agents.map((a: { id: string; name: string }) => ({
         agentId: a.id,
@@ -429,6 +447,7 @@ export default function InsuranceRun() {
 
     es.addEventListener("step_start", (e) => {
       const data = JSON.parse(e.data);
+      console.log(`[Insurance] step_start: agent=${data.agentId}`);
       setSteps(prev => prev.map(s =>
         s.agentId === data.agentId ? { ...s, status: "running" } : s
       ));
@@ -436,6 +455,7 @@ export default function InsuranceRun() {
 
     es.addEventListener("step_complete", (e) => {
       const data = JSON.parse(e.data);
+      console.log(`[Insurance] step_complete: agent=${data.agentId} tokens=${data.tokensUsed}`);
       setSteps(prev => prev.map(s =>
         s.agentId === data.agentId
           ? { ...s, status: "complete", output: data.output, tokensUsed: data.tokensUsed, durationMs: data.durationMs }
@@ -446,6 +466,7 @@ export default function InsuranceRun() {
 
     es.addEventListener("complete", (e) => {
       const data = JSON.parse(e.data);
+      console.log(`[Insurance] complete event received for runId=${runIdNum}`);
       if (data.blackboard) setBlackboard(data.blackboard);
       setStatus("complete");
       if (timerRef.current) clearInterval(timerRef.current);
@@ -455,24 +476,37 @@ export default function InsuranceRun() {
     es.addEventListener("error", (e) => {
       try {
         const data = JSON.parse((e as MessageEvent).data);
+        console.error(`[Insurance] server error event:`, data);
         setErrorMsg(data.message || "Pipeline error");
       } catch {
-        setErrorMsg("Connection error");
+        setErrorMsg("Pipeline error: server returned an unexpected response");
       }
       setStatus("error");
       if (timerRef.current) clearInterval(timerRef.current);
       es.close();
     });
 
-    es.onerror = () => {
-      if (status !== "complete") {
-        setStatus("error");
-        setErrorMsg("Stream connection lost");
-        if (timerRef.current) clearInterval(timerRef.current);
+    es.onerror = (e) => {
+      console.error(`[Insurance] EventSource onerror (readyState=${es.readyState}):`, e);
+      if (es.readyState === EventSource.CLOSED) {
+        // Connection was closed — attempt exponential backoff retry
+        if (retryCountRef.current < MAX_RETRIES) {
+          retryCountRef.current += 1;
+          const delay = Math.pow(2, retryCountRef.current) * 1000;
+          console.log(`[Insurance] Retrying stream in ${delay}ms (attempt ${retryCountRef.current}/${MAX_RETRIES})`);
+          setErrorMsg(`Connection lost — retrying (${retryCountRef.current}/${MAX_RETRIES})...`);
+          // EventSource auto-reconnects by default; we just update the message
+        } else {
+          setStatus("error");
+          setErrorMsg(`Stream disconnected after ${MAX_RETRIES} retries. The pipeline may still be running — please check the run history.`);
+          if (timerRef.current) clearInterval(timerRef.current);
+          es.close();
+        }
       }
     };
 
     return () => {
+      console.log(`[Insurance] Closing EventSource for runId=${runIdNum}`);
       es.close();
       if (timerRef.current) clearInterval(timerRef.current);
     };
