@@ -299,7 +299,7 @@ export const portfolioMeshRouter = router({
         await db.update(ipsConfigs).set(values).where(eq(ipsConfigs.id, existing.id));
         return { id: existing.id, ...input };
       } else {
-        const result = await db.insert(ipsConfigs).values(values) as unknown as { insertId: number };
+        const [result] = await db.insert(ipsConfigs).values(values) as unknown as [{ insertId: number }, unknown];
         return { id: result.insertId, ...input };
       }
     }),
@@ -738,12 +738,17 @@ Respond in valid JSON only. No markdown. No extra keys.`;
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await requireDb();
-      const result = await db.insert(portfolioRuns).values({
+      // Omit ipsConfigId entirely when not provided — passing null causes
+      // Drizzle to serialize it as an empty string in some MySQL driver versions
+      const baseValues = {
         userId: ctx.user.id,
-        ipsConfigId: input.ipsConfigId ?? null,
         ipsSnapshot: JSON.stringify(input.ipsSnapshot),
-        status: "draft",
-      }) as unknown as { insertId: number };
+        status: "draft" as const,
+      };
+      const insertValues = input.ipsConfigId !== undefined
+        ? { ...baseValues, ipsConfigId: input.ipsConfigId }
+        : baseValues;
+      const [result] = await db.insert(portfolioRuns).values(insertValues) as unknown as [{ insertId: number }, unknown];
       return { runId: result.insertId };
     }),
 

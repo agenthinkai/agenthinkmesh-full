@@ -3702,3 +3702,17 @@
 - [x] Task 1: Update docs/key-rotation-runbook.md with Step 5 post-rotation coverage verification
 - [x] Task 2: Encrypt highScorePatterns/lowScorePatterns/failureReasons in founder_agent_insights + backfill + extend encryptionStatus
 - [x] Task 3: Add GET /api/admin/encryption-report plain HTTP endpoint with admin auth
+
+## IPS Bug Fix — createRun MySQL INSERT failure (01 May 2026)
+- [x] Root cause: isBenchmark + benchmarkLabel columns in Drizzle schema but missing from DB — Drizzle includes ALL schema columns in INSERT, causing MySQL to reject with "default" for NOT NULL isBenchmark
+- [x] Fix 1: Applied ALTER TABLE portfolio_runs ADD isBenchmark boolean DEFAULT false NOT NULL; ADD benchmarkLabel varchar(128) directly to DB
+- [x] Fix 2: Fixed createRun and saveIps result destructuring — Drizzle MySQL insert returns [ResultSetHeader, null], not ResultSetHeader directly — changed to const [result] = await db.insert(...)
+- [x] Verified: createRun returns {"runId":4} — no more "Failed to save IPS" error
+- [x] tsc: EXIT:0, Tests: 778/778 pass
+
+## IPS Bug Fix — createRun MySQL INSERT failure (01 May 2026)
+- [x] Root cause: isBenchmark + benchmarkLabel columns in Drizzle schema but missing from DB
+- [x] Fix 1: Applied ALTER TABLE portfolio_runs ADD isBenchmark/benchmarkLabel directly to DB
+- [x] Fix 2: Fixed createRun/saveIps result destructuring — Drizzle MySQL insert returns array
+- [x] Verified: createRun returns runId — no more Failed to save IPS error
+- [x] tsc: EXIT:0, Tests: 778/778 pass
