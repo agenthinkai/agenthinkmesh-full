@@ -329,7 +329,10 @@ Each object must have these exact keys:
   "fundingAsk": string — MUST be between $1M and $15M (e.g. "$1.5M", "$3M", "$8M") — no pre-seed asks below $1M
 }
 Existing idea fingerprints to avoid (domain|subSector|description):
-${Array.from(existingFingerprints).slice(0, 200).join("\n") || "None yet"}`;
+${Array.from(existingFingerprints).slice(-50).join("\n") || "None yet"}`;
+      // Note: we use the last 50 fingerprints (most recent) rather than the first 200.
+      // With 10k+ ideas in the DB the full list makes prompts enormous and slow.
+      // Recent fingerprints are most relevant for dedup within a run.
 
       const resp = await invokeLLM({
         messages: [
