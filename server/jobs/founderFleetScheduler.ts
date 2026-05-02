@@ -428,8 +428,10 @@ async function runSingleFleetMode(
   }
 ): Promise<FleetRunResult> {
   const isGcc = config.fleetMode === "gcc";
-  const ideasPerDomain = isGcc ? 40 : 60;
-  const targetIdeas    = isGcc ? 200 : 300;
+  // Global reduced from 300 → 200 ideas (40/domain × 5 domains) for reliability.
+  // 300-idea runs hit Cloud Run timeout consistently; 200 matches GCC's proven limit.
+  const ideasPerDomain = 40; // same for both modes: 40 × 5 domains = 200 ideas
+  const targetIdeas    = 200;
   const today          = new Date().toISOString().slice(0, 10);
 
   console.log(`[FounderFleet] Starting ${config.fleetMode} fleet run (${config.runsRemaining} remaining)`);
@@ -481,31 +483,10 @@ async function runSingleFleetMode(
     // scheduled runs. runFleet never throws; it catches internally and sets
     // status="failed", so we must query the DB to determine success.
     //
-    // ── BATCH STRATEGY (global only) ─────────────────────────────────────────
-    // The global run (300 ideas, 10 concurrent evals) was hitting Cloud Run
-    // OOM limits mid-run. Fix: split into 3 sequential batches of 100 ideas
-    // each (ideasPerDomain=20 × 5 domains = 100/batch). All batches write to
-    // the same runId so DB counters accumulate to 300 correctly.
-    // GCC runs 200 ideas in one pass (no OOM risk at that volume).
-    if (isGcc) {
-      // GCC: single pass — 40 ideas/domain × 5 domains = 200 total
-      await runFleet(runId, { gccMode: true, bypassCostGuard: true, ideasPerDomain });
-    } else {
-      // Global: 3 sequential batches — 20 ideas/domain × 5 domains = 100 ideas/batch × 3 = 300 total
-      const GLOBAL_BATCH_IDEAS_PER_DOMAIN = 20; // 20 × 5 domains = 100 ideas per batch
-      const GLOBAL_BATCH_COUNT            = 3;  // 3 batches × 100 = 300 total
-      console.log(`[FounderFleet] Global run #${runId}: running ${GLOBAL_BATCH_COUNT} sequential batches of ${GLOBAL_BATCH_IDEAS_PER_DOMAIN * 5} ideas each (total: ${GLOBAL_BATCH_COUNT * GLOBAL_BATCH_IDEAS_PER_DOMAIN * 5})`);
-      for (let batch = 1; batch <= GLOBAL_BATCH_COUNT; batch++) {
-        // Determine batchMode: first | middle | last
-        const batchMode: "first" | "middle" | "last" =
-          batch === 1                   ? "first"
-          : batch === GLOBAL_BATCH_COUNT ? "last"
-          : "middle";
-        console.log(`[FounderFleet] Global run #${runId}: starting batch ${batch}/${GLOBAL_BATCH_COUNT} (batchMode=${batchMode})`);
-        await runFleet(runId, { gccMode: false, bypassCostGuard: true, ideasPerDomain: GLOBAL_BATCH_IDEAS_PER_DOMAIN, batchMode });
-        console.log(`[FounderFleet] Global run #${runId}: batch ${batch}/${GLOBAL_BATCH_COUNT} complete (batchMode=${batchMode})`);
-      }
-    }
+    // Both modes: single pass — 40 ideas/domain × 5 domains = 200 total
+    // Global was previously 300 (3×100 batches) but hit Cloud Run timeout consistently.
+    // Reduced to 200 to match GCC's proven reliable limit.
+    await runFleet(runId, { gccMode: isGcc, bypassCostGuard: true, ideasPerDomain });
 
     // ── Post-run: check actual DB status ──────────────────────────────────
     const dbPost = await getDb();
