@@ -456,23 +456,41 @@ async function runSingleFleetMode(
       console.log(`[FounderFleet] Cleaned up ${cleanedCount} orphaned evaluations before ${config.fleetMode} run`);
     }
 
-    const [newRun] = await db.insert(founderAgentRuns).values({
-      runDate:          today,
-      fleetMode:        config.fleetMode,
-      status:           "pending",
-      totalIdeas:       targetIdeas,
-      completed:        0,
-      queued:           0,
-      running:          0,
-      totalSearches:    0,
-      totalLlmCalls:    0,
-      estimatedTokens:  0,
-      estimatedCostUsd: "0",
-      startedAt:        Date.now(),
-      createdAt:        Date.now(),
-    }).$returningId();
-    runId = newRun.id;
-    console.log(`[FounderFleet] Created ${config.fleetMode} run #${runId} for ${today}`);
+    // Resume today's failed/interrupted run if one exists, rather than always creating a new one.
+    // This allows the phase-level resume logic in runFleet() to skip already-completed phases.
+    const { desc: descOrd } = await import("drizzle-orm");
+    const [existingRun] = await db.select()
+      .from(founderAgentRuns)
+      .where(and(
+        eq(founderAgentRuns.fleetMode, config.fleetMode),
+        eq(founderAgentRuns.runDate, today),
+      ))
+      .orderBy(descOrd(founderAgentRuns.createdAt))
+      .limit(1);
+
+    if (existingRun && ["failed", "generating", "researching", "pitching", "evaluating", "extracting"].includes(existingRun.status)) {
+      runId = existingRun.id;
+      console.log(`[FounderFleet] Resuming ${config.fleetMode} run #${runId} (was: ${existingRun.status})`);
+      await db.update(founderAgentRuns).set({ status: "pending" }).where(eq(founderAgentRuns.id, runId));
+    } else {
+      const [newRun] = await db.insert(founderAgentRuns).values({
+        runDate:          today,
+        fleetMode:        config.fleetMode,
+        status:           "pending",
+        totalIdeas:       targetIdeas,
+        completed:        0,
+        queued:           0,
+        running:          0,
+        totalSearches:    0,
+        totalLlmCalls:    0,
+        estimatedTokens:  0,
+        estimatedCostUsd: "0",
+        startedAt:        Date.now(),
+        createdAt:        Date.now(),
+      }).$returningId();
+      runId = newRun.id;
+      console.log(`[FounderFleet] Created ${config.fleetMode} run #${runId} for ${today}`);
+    }
 
     // Record lastRunAt immediately so the UI shows the run started
     await db.update(fleetConfig)
@@ -667,7 +685,7 @@ export async function runDailyFleet(): Promise<void> {
       runId:         -1,
       status:        "failed" as const,
       evaluations:   0,
-      totalIdeas:    config.fleetMode === "gcc" ? 200 : 300,
+      totalIdeas:    200,
       avgScore:      null,
       runsRemaining: config.runsRemaining,
     };
