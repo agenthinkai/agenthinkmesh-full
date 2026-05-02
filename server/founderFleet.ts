@@ -334,14 +334,25 @@ ${Array.from(existingFingerprints).slice(-50).join("\n") || "None yet"}`;
       // With 10k+ ideas in the DB the full list makes prompts enormous and slow.
       // Recent fingerprints are most relevant for dedup within a run.
 
-      const resp = await invokeLLM({
-        messages: [
-          { role: "system", content: "You are a startup idea generator. Return only valid JSON arrays." },
-          { role: "user", content: prompt },
-        ],
-        model: HAIKU,
-        max_tokens: 2000,
-      });
+      let resp: Awaited<ReturnType<typeof invokeLLM>>;
+      try {
+        resp = await invokeLLM({
+          messages: [
+            { role: "system", content: "You are a startup idea generator. Return only valid JSON arrays." },
+            { role: "user", content: prompt },
+          ],
+          model: HAIKU,
+          max_tokens: 2000,
+        });
+      } catch (llmErr) {
+        // Log the full error so it appears in Cloud Run logs for diagnosis
+        console.error(
+          `[FleetOrchestrator] generateIdeas LLM error — domain "${domain.name}" batch ${batch + 1}:`,
+          (llmErr as Error)?.message ?? String(llmErr),
+          llmErr,
+        );
+        continue; // skip this batch, try next domain
+      }
       const usage = extractUsage(resp);
       addLlmCost(acc, HAIKU, usage.prompt_tokens || 800, usage.completion_tokens || 800);
       const rawContent = extractContent(resp);
@@ -1282,8 +1293,15 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
       console.log(`[FleetOrchestrator] Run ${runId}: batch (${batchMode}) complete — status=evaluating, ready for next batch`);
     }
   } catch (err) {
-    console.error(`[FleetOrchestrator] Run ${runId} failed:`, err);
-    await updateRunStatus(runId, "failed");
+    const errMsg = (err as Error)?.message ?? String(err);
+    console.error(`[FleetOrchestrator] Run ${runId} failed:`, errMsg, err);
+    // Persist error message to run row for diagnosis (best-effort)
+    try {
+      const dbErr = await requireDb();
+      await dbErr.update(founderAgentRuns)
+        .set({ status: "failed" })
+        .where(eq(founderAgentRuns.id, runId));
+    } catch { /* ignore */ }
   } finally {
     fleetState.delete(runId);
   }
