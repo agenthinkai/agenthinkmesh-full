@@ -35,6 +35,7 @@ import { registerPitchMirrorMetaRoute } from "../pitchMirrorMetaRoute";
 import { registerFleetSchedulerStatusRoute } from "../fleetSchedulerStatusRoute";
 import { registerEncryptionReportRoute } from "../encryptionReportRoute";
 import fleetTriggerRouter from "../fleetTriggerRoute";
+import fleetPhaseRouter from "../fleetPhaseRoute";
 import webhookFleetTriggerRouter from "../webhookFleetTriggerRoute";
 import inboundEmailWebhookRouter from "../inboundEmailWebhookRoute";
 import graphEmailWebhookRouter from "../graphEmailWebhookRoute";
@@ -170,7 +171,9 @@ async function startServer() {
   // Encryption coverage report — admin-only GET /api/admin/encryption-report
   registerEncryptionReportRoute(app);
   // External fleet trigger — POST /api/scheduled/fleet-trigger (X-Scheduler-Secret auth)
+  // Phase-based fleet trigger — POST /api/scheduled/fleet-phase?phase=generate|research|pitch|evaluate&mode=gcc|global
   app.use("/api/scheduled", fleetTriggerRouter);
+  app.use("/api/scheduled", fleetPhaseRouter);
   // Option A fleet trigger — POST /api/fleet/trigger
   // Mounted under /api/fleet/* which is NOT blocked by the Manus reverse-proxy cookie-auth
   // (unlike /api/scheduled/* which is blocked). This is the primary external trigger path.

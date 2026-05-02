@@ -1322,3 +1322,170 @@ export async function resumeInterruptedRuns(): Promise<void> {
     );
   }
 }
+
+// ── Phase type ────────────────────────────────────────────────────────────────
+export type FleetPhase = "generate" | "research" | "pitch" | "evaluate";
+
+export interface FleetPhaseOptions {
+  gccMode?: boolean;
+  bypassCostGuard?: boolean;
+  ideasPerDomain?: number;
+}
+
+export interface FleetPhaseResult {
+  ideasGenerated?: number;
+  researchDomains?: number;
+  pitchesGenerated?: number;
+  evaluationsCompleted?: number;
+  runStatus?: string;
+}
+
+/**
+ * runFleetPhase — Execute a single named phase for an existing run.
+ *
+ * Each phase reads its prerequisites from the DB and writes its output to the DB.
+ * Phases are idempotent: if the phase has already been completed for this run,
+ * it returns immediately with the existing counts.
+ *
+ * Phase order: generate → research → pitch → evaluate
+ */
+export async function runFleetPhase(
+  runId: number,
+  phase: FleetPhase,
+  opts: FleetPhaseOptions = {},
+): Promise<FleetPhaseResult> {
+  const { gccMode = false, bypassCostGuard = false, ideasPerDomain } = opts;
+  const acc: CostAccumulator = { searches: 0, llmCalls: 0, tokens: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 };
+  const db = await requireDb();
+
+  // ── Phase: generate ──────────────────────────────────────────────────────
+  if (phase === "generate") {
+    // Idempotency: skip if ideas already exist for this run
+    const existing = await db.select({ id: founderAgentIdeas.id })
+      .from(founderAgentIdeas).where(eq(founderAgentIdeas.runId, runId));
+    if (existing.length > 0) {
+      console.log(`[FleetPhase] generate run ${runId}: ${existing.length} ideas already exist — skipping`);
+      await updateRunStatus(runId, "researching");
+      return { ideasGenerated: existing.length };
+    }
+    await updateRunStatus(runId, "generating", { startedAt: Date.now() });
+    const ideaIds = await generateIdeas(runId, acc, { ideasPerDomain, gccMode });
+    await saveCosts(runId, acc);
+    // Advance status to researching so the next phase can start
+    await updateRunStatus(runId, "researching");
+    return { ideasGenerated: ideaIds.length };
+  }
+
+  // ── Phase: research ──────────────────────────────────────────────────────
+  if (phase === "research") {
+    // Idempotency: skip if research rows already exist for this run
+    const existingResearch = await db.select({ id: founderAgentResearch.id })
+      .from(founderAgentResearch).where(eq(founderAgentResearch.runId, runId));
+    if (existingResearch.length > 0) {
+      console.log(`[FleetPhase] research run ${runId}: ${existingResearch.length} research rows already exist — skipping`);
+      await updateRunStatus(runId, "pitching");
+      return { researchDomains: existingResearch.length };
+    }
+    // Require ideas to exist
+    const ideas = await db.select({ id: founderAgentIdeas.id })
+      .from(founderAgentIdeas).where(eq(founderAgentIdeas.runId, runId));
+    if (ideas.length === 0) {
+      throw new Error(`run ${runId}: no ideas found — run generate phase first`);
+    }
+    await updateRunStatus(runId, "researching");
+    const researchByDomain = await runResearch(runId, acc, { gccMode });
+    await saveCosts(runId, acc);
+    // Advance status to pitching
+    await updateRunStatus(runId, "pitching");
+    return { researchDomains: Object.keys(researchByDomain).length };
+  }
+
+  // ── Phase: pitch ─────────────────────────────────────────────────────────
+  if (phase === "pitch") {
+    // Idempotency: skip if pitches already exist for this run
+    const existingPitches = await db.select({ id: founderAgentPitches.id })
+      .from(founderAgentPitches).where(eq(founderAgentPitches.runId, runId));
+    if (existingPitches.length > 0) {
+      console.log(`[FleetPhase] pitch run ${runId}: ${existingPitches.length} pitches already exist — skipping`);
+      await updateRunStatus(runId, "evaluating");
+      return { pitchesGenerated: existingPitches.length };
+    }
+    // Require ideas and research to exist
+    const ideas = await db.select({ id: founderAgentIdeas.id })
+      .from(founderAgentIdeas).where(eq(founderAgentIdeas.runId, runId));
+    if (ideas.length === 0) {
+      throw new Error(`run ${runId}: no ideas found — run generate phase first`);
+    }
+    const researchRows = await db.select({
+      domain: founderAgentResearch.domain,
+      resultSummary: founderAgentResearch.resultSummary,
+    }).from(founderAgentResearch).where(eq(founderAgentResearch.runId, runId));
+
+    const researchByDomain: Record<string, string> = {};
+    for (const r of researchRows) {
+      if (r.domain && r.resultSummary) {
+        researchByDomain[r.domain] = (researchByDomain[r.domain] ?? "") + r.resultSummary + "\n";
+      }
+    }
+
+    await updateRunStatus(runId, "pitching");
+    const ideaIds = ideas.map((i) => i.id);
+    await generatePitches(runId, ideaIds, researchByDomain, acc, { gccMode });
+    await saveCosts(runId, acc);
+    // Advance status to evaluating
+    await updateRunStatus(runId, "evaluating");
+    const pitchCount = await db.select({ id: founderAgentPitches.id })
+      .from(founderAgentPitches).where(eq(founderAgentPitches.runId, runId));
+    return { pitchesGenerated: pitchCount.length };
+  }
+
+  // ── Phase: evaluate ──────────────────────────────────────────────────────
+  if (phase === "evaluate") {
+    await updateRunStatus(runId, "evaluating");
+    await submitToMesh(runId, acc, { gccMode, bypassCostGuard });
+    await saveCosts(runId, acc);
+
+    // Post-processing: re-rank, assign outcomes, extract insights, mark completed
+    await reRankByPercentile(runId);
+    await assignDecisionOutcomes(runId);
+    await saveCosts(runId, acc);
+
+    await updateRunStatus(runId, "extracting");
+    await extractInsights(runId, acc, gccMode ? "gcc" : "global");
+    await saveCosts(runId, acc);
+
+    await updateRunStatus(runId, "completed", { completedAt: Date.now() });
+
+    // Aggregate run cost to fleet_config (best-effort)
+    try {
+      const [runRow] = await db.select({
+        fleetMode:    founderAgentRuns.fleetMode,
+        totalCostUsd: founderAgentRuns.totalCostUsd,
+      }).from(founderAgentRuns).where(eq(founderAgentRuns.id, runId)).limit(1);
+      if (runRow) {
+        const runCost = parseFloat(String(runRow.totalCostUsd ?? "0"));
+        await db.update(fleetConfig)
+          .set({
+            lastRunCostUsd: runCost.toFixed(4),
+            totalCostUsd:   sql`total_cost_usd + ${runCost.toFixed(4)}`,
+          })
+          .where(eq(fleetConfig.fleetMode, runRow.fleetMode));
+      }
+    } catch (costErr) {
+      console.warn("[FleetPhase] fleet_config cost update failed (non-fatal):", costErr);
+    }
+
+    // Count completed evaluations
+    const { count: evalCount } = await db.select({ count: sql<number>`count(*)` })
+      .from(founderAgentEvaluations)
+      .where(and(
+        eq(founderAgentEvaluations.runId, runId),
+        eq(founderAgentEvaluations.status, "completed"),
+      ))
+      .then((rows) => rows[0] ?? { count: 0 });
+
+    return { evaluationsCompleted: Number(evalCount), runStatus: "completed" };
+  }
+
+  throw new Error(`Unknown phase: ${phase}`);
+}
