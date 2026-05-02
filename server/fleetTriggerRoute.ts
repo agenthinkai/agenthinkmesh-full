@@ -121,17 +121,40 @@ router.post("/fleet-trigger", async (req: Request, res: Response) => {
           .where(and(eq(fleetConfigTable.fleetMode, mode), eq(fleetConfigTable.active, true)));
         if (!config) { console.error(`[FleetTrigger] No active fleet_config for mode=${mode}`); return; }
         const isGcc = mode === "gcc";
-        const ideasPerDomain = isGcc ? 40 : 60;
-        const targetIdeas = isGcc ? 200 : 300;
+        // Both modes: 40 ideas/domain × 5 domains = 200 total (Global reduced from 300 for reliability)
+        const ideasPerDomain = 40;
+        const targetIdeas = 200;
         const today = new Date().toISOString().slice(0, 10);
-        const [newRun] = await db.insert(founderAgentRuns).values({
-          runDate: today, fleetMode: mode, status: "pending",
-          totalIdeas: targetIdeas, completed: 0, queued: 0, running: 0,
-          totalSearches: 0, totalLlmCalls: 0, estimatedTokens: 0,
-          estimatedCostUsd: "0", startedAt: Date.now(), createdAt: Date.now(),
-        }).$returningId();
-        const runId = newRun.id;
-        console.log(`[FleetTrigger] Single-mode trigger: ${mode} run #${runId}`);
+
+        // Resume today's failed/interrupted run if one exists, rather than creating a new one.
+        // This prevents duplicate runs and allows the pipeline to continue from where it left off.
+        const { desc } = await import("drizzle-orm");
+        const [existingRun] = await db.select()
+          .from(founderAgentRuns)
+          .where(and(
+            eq(founderAgentRuns.fleetMode, mode),
+            eq(founderAgentRuns.runDate, today),
+          ))
+          .orderBy(desc(founderAgentRuns.createdAt))
+          .limit(1);
+
+        let runId: number;
+        if (existingRun && ["failed", "generating", "researching", "pitching", "evaluating", "extracting"].includes(existingRun.status)) {
+          // Resume the existing run from its last known phase
+          runId = existingRun.id;
+          console.log(`[FleetTrigger] Resuming ${mode} run #${runId} (was: ${existingRun.status})`);
+          // Reset status to pending so runFleet re-enters from the beginning of the failed phase
+          await db.update(founderAgentRuns).set({ status: "pending" }).where(eq(founderAgentRuns.id, runId));
+        } else {
+          const [newRun] = await db.insert(founderAgentRuns).values({
+            runDate: today, fleetMode: mode, status: "pending",
+            totalIdeas: targetIdeas, completed: 0, queued: 0, running: 0,
+            totalSearches: 0, totalLlmCalls: 0, estimatedTokens: 0,
+            estimatedCostUsd: "0", startedAt: Date.now(), createdAt: Date.now(),
+          }).$returningId();
+          runId = newRun.id;
+          console.log(`[FleetTrigger] New ${mode} run #${runId}`);
+        }
         await runFleet(runId, { gccMode: isGcc, bypassCostGuard: true, ideasPerDomain });
         console.log(`[FleetTrigger] ${mode} run #${runId} completed`);
       } catch (err) {

@@ -1161,26 +1161,67 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
   const acc: CostAccumulator = { searches: 0, llmCalls: 0, tokens: 0, inputTokens: 0, outputTokens: 0, costUsd: 0 };
 
   try {
-    // Step 1: Generate ideas
-    await updateRunStatus(runId, "generating", { startedAt: Date.now() });
-    if (await waitIfPaused(runId)) { await updateRunStatus(runId, "paused"); return; }
+    // ── Phase-level resume: check what's already been done for this runId ────────
+    // If this run was interrupted mid-pipeline, skip phases that already completed.
+    const dbResume = await requireDb();
+    const existingIdeas = await dbResume.select({ id: founderAgentIdeas.id })
+      .from(founderAgentIdeas).where(eq(founderAgentIdeas.runId, runId));
+    const existingPitches = await dbResume.select({ id: founderAgentPitches.id })
+      .from(founderAgentPitches).where(eq(founderAgentPitches.runId, runId));
+    const hasIdeas   = existingIdeas.length > 0;
+    const hasPitches = existingPitches.length > 0;
+    console.log(`[FleetOrchestrator] Run ${runId}: resume check — ideas=${existingIdeas.length}, pitches=${existingPitches.length}`);
 
-    const ideaIds = await generateIdeas(runId, acc, quickTest ? { ideasPerDomain: 2 } : { ideasPerDomain, gccMode: opts.gccMode });
-    await saveCosts(runId, acc);
+    // Step 1: Generate ideas (skip if already generated)
+    let ideaIds: number[];
+    if (hasIdeas) {
+      ideaIds = existingIdeas.map((r) => r.id);
+      console.log(`[FleetOrchestrator] Run ${runId}: skipping generateIdeas (${ideaIds.length} ideas already in DB)`);
+    } else {
+      await updateRunStatus(runId, "generating", { startedAt: Date.now() });
+      if (await waitIfPaused(runId)) { await updateRunStatus(runId, "paused"); return; }
+      ideaIds = await generateIdeas(runId, acc, quickTest ? { ideasPerDomain: 2 } : { ideasPerDomain, gccMode: opts.gccMode });
+      await saveCosts(runId, acc);
+    }
 
-    // Step 2: Research
-    await updateRunStatus(runId, "researching");
-    if (await waitIfPaused(runId)) { await updateRunStatus(runId, "paused"); return; }
+    // Step 2: Research (skip if pitches already exist — research is a prerequisite for pitches)
+    let researchByDomain: Record<string, string>;
+    if (hasPitches) {
+      // Pitches exist, so research was already done — reconstruct domain map from existing research rows
+      const existingResearch = await dbResume.select({
+        domain: founderAgentResearch.domain,
+        resultSummary: founderAgentResearch.resultSummary,
+      }).from(founderAgentResearch).where(eq(founderAgentResearch.runId, runId));
+      researchByDomain = {};
+      for (const r of existingResearch) {
+        if (r.domain && r.resultSummary) {
+          // Aggregate all query summaries per domain into a single string
+          researchByDomain[r.domain] = (researchByDomain[r.domain] ?? "") + r.resultSummary + "\n";
+        }
+      }
+      console.log(`[FleetOrchestrator] Run ${runId}: skipping runResearch (pitches already exist)`);
+    } else if (hasIdeas) {
+      // Ideas exist but no pitches — re-run research (fast: 5 domains × 3 LLM calls)
+      await updateRunStatus(runId, "researching");
+      if (await waitIfPaused(runId)) { await updateRunStatus(runId, "paused"); return; }
+      researchByDomain = await runResearch(runId, acc, quickTest ? { queriesPerDomain: 1, gccMode: opts.gccMode } : { gccMode: opts.gccMode });
+      await saveCosts(runId, acc);
+    } else {
+      await updateRunStatus(runId, "researching");
+      if (await waitIfPaused(runId)) { await updateRunStatus(runId, "paused"); return; }
+      researchByDomain = await runResearch(runId, acc, quickTest ? { queriesPerDomain: 1, gccMode: opts.gccMode } : { gccMode: opts.gccMode });
+      await saveCosts(runId, acc);
+    }
 
-    const researchByDomain = await runResearch(runId, acc, quickTest ? { queriesPerDomain: 1, gccMode: opts.gccMode } : { gccMode: opts.gccMode });
-    await saveCosts(runId, acc);
-
-    // Step 3: Generate pitches
-    await updateRunStatus(runId, "pitching");
-    if (await waitIfPaused(runId)) { await updateRunStatus(runId, "paused"); return; }
-
-    await generatePitches(runId, ideaIds, researchByDomain, acc, { gccMode: opts.gccMode });
-    await saveCosts(runId, acc);
+    // Step 3: Generate pitches (skip if already generated)
+    if (hasPitches) {
+      console.log(`[FleetOrchestrator] Run ${runId}: skipping generatePitches (${existingPitches.length} pitches already in DB)`);
+    } else {
+      await updateRunStatus(runId, "pitching");
+      if (await waitIfPaused(runId)) { await updateRunStatus(runId, "paused"); return; }
+      await generatePitches(runId, ideaIds, researchByDomain, acc, { gccMode: opts.gccMode });
+      await saveCosts(runId, acc);
+    }
 
     // Step 4: Submit to mesh
     await updateRunStatus(runId, "evaluating");
