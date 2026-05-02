@@ -428,10 +428,12 @@ async function runSingleFleetMode(
   }
 ): Promise<FleetRunResult> {
   const isGcc = config.fleetMode === "gcc";
-  // Global reduced from 300 → 200 ideas (40/domain × 5 domains) for reliability.
-  // 300-idea runs hit Cloud Run timeout consistently; 200 matches GCC's proven limit.
-  const ideasPerDomain = 40; // same for both modes: 40 × 5 domains = 200 ideas
-  const targetIdeas    = 200;
+  // GCC: 20 ideas/domain × 5 domains = 100 total (1 LLM batch per domain = ~15 min, within timeout)
+  // Global: 40 ideas/domain × 5 domains = 200 total
+  // GCC was 200 but hit Cloud Run timeout consistently during generateIdeas (10 sequential LLM calls ~30 min).
+  // Reducing to 100 (5 LLM calls) cuts generation time in half.
+  const ideasPerDomain = isGcc ? 20 : 40;
+  const targetIdeas    = isGcc ? 100 : 200;
   const today          = new Date().toISOString().slice(0, 10);
 
   console.log(`[FounderFleet] Starting ${config.fleetMode} fleet run (${config.runsRemaining} remaining)`);

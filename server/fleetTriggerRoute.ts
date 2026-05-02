@@ -121,9 +121,10 @@ router.post("/fleet-trigger", async (req: Request, res: Response) => {
           .where(and(eq(fleetConfigTable.fleetMode, mode), eq(fleetConfigTable.active, true)));
         if (!config) { console.error(`[FleetTrigger] No active fleet_config for mode=${mode}`); return; }
         const isGcc = mode === "gcc";
-        // Both modes: 40 ideas/domain × 5 domains = 200 total (Global reduced from 300 for reliability)
-        const ideasPerDomain = 40;
-        const targetIdeas = 200;
+        // GCC: 20 ideas/domain × 5 domains = 100 total (1 LLM batch per domain, ~15 min)
+        // Global: 40 ideas/domain × 5 domains = 200 total
+        const ideasPerDomain = isGcc ? 20 : 40;
+        const targetIdeas = isGcc ? 100 : 200;
         const today = new Date().toISOString().slice(0, 10);
 
         // Resume today's failed/interrupted run if one exists, rather than creating a new one.
