@@ -564,9 +564,14 @@ interface PitchEntry {
   idea: FounderAgentIdea;
 }
 
-async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConcurrent?: number; staggerMs?: number; gccMode?: boolean; bypassCostGuard?: boolean } = {}): Promise<void> {
+async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConcurrent?: number; staggerMs?: number; gccMode?: boolean; bypassCostGuard?: boolean; chunkSize?: number } = {}): Promise<void> {
   const maxConcurrent = opts.maxConcurrent ?? MAX_CONCURRENT;
   const staggerMs = opts.staggerMs ?? STAGGER_MS;
+  // chunkSize: process evaluations in sequential chunks of N to prevent Cloud Run
+  // timeout from killing an entire run. Progress is saved to DB after each chunk.
+  // A timeout mid-chunk loses at most chunkSize evaluations; resume picks up from
+  // the last saved position (queued evals only — completed ones are skipped).
+  const EVAL_CHUNK_SIZE = opts.chunkSize ?? 50;
   const db = await requireDb();
 
   // Load all pitches for this run (or resume queued ones)
@@ -621,177 +626,180 @@ async function submitToMesh(runId: number, acc: CostAccumulator, opts: { maxConc
     pitches.map(({ pitch, idea }) => [idea.id, { pitch, idea }])
   );
 
-  // Concurrency queue
-  let activeCount = 0;
-  let queueIndex = 0;
+  // ── Chunked evaluation loop ────────────────────────────────────────────────
+  // Split queuedEvals into sequential chunks of EVAL_CHUNK_SIZE.
+  // Each chunk runs with full concurrency (maxConcurrent workers).
+  // After each chunk completes, costs are saved to DB — a Cloud Run timeout
+  // mid-chunk loses at most EVAL_CHUNK_SIZE evaluations, not the whole run.
+  const totalChunks = Math.ceil(queuedEvals.length / EVAL_CHUNK_SIZE);
+  console.log(`[FleetOrchestrator] Run ${runId}: ${queuedEvals.length} evals split into ${totalChunks} chunks of ${EVAL_CHUNK_SIZE}`);
 
-  const processNext = async (): Promise<void> => {
-    if (queueIndex >= queuedEvals.length) return;
-    const evalRow = queuedEvals[queueIndex++];
-    activeCount++;
+  for (let chunkIdx = 0; chunkIdx < totalChunks; chunkIdx++) {
+    const chunkStart = chunkIdx * EVAL_CHUNK_SIZE;
+    const chunkEnd   = Math.min(chunkStart + EVAL_CHUNK_SIZE, queuedEvals.length);
+    const chunk      = queuedEvals.slice(chunkStart, chunkEnd);
+    console.log(`[FleetOrchestrator] Run ${runId}: chunk ${chunkIdx + 1}/${totalChunks} — evals ${chunkStart + 1}–${chunkEnd}`);
 
-    const entry = pitchMap.get(evalRow.ideaId ?? 0);
-    if (!entry) {
-      activeCount--;
-      return processNext();
-    }
+    // Concurrency queue for this chunk
+    let activeCount = 0;
+    let queueIndex  = 0;
 
-    const aborted = await waitIfPaused(runId);
-    if (aborted) { activeCount--; return; }
+    const processNext = async (): Promise<void> => {
+      if (queueIndex >= chunk.length) return;
+      const evalRow = chunk[queueIndex++];
+      activeCount++;
 
-    const { pitch, idea } = entry;
-    const pitchText = [
-      `Problem: ${pitch.problem}`,
-      `Solution: ${pitch.solution}`,
-      `Target Market: ${pitch.targetMarket}`,
-      `Business Model: ${pitch.businessModel}`,
-      `Competitive Advantage: ${pitch.competitiveAdvantage}`,
-      `Key Risk: ${pitch.keyRisk}`,
-      `Funding Ask: ${pitch.fundingAsk}`,
-    ].join("\n");
+      const entry = pitchMap.get(evalRow.ideaId ?? 0);
+      if (!entry) {
+        activeCount--;
+        return processNext();
+      }
 
-    // Mark as running
-    const dbInner = await requireDb();
-    await dbInner.update(founderAgentEvaluations)
-      .set({ status: "running", updatedAt: Date.now() })
-      .where(eq(founderAgentEvaluations.id, evalRow.id));
-    await incrementRunCounters(runId, { queued: -1, running: 1 });
+      const aborted = await waitIfPaused(runId);
+      if (aborted) { activeCount--; return; }
 
-    const startMs = Date.now();
-    try {
-      // Rate limit backoff: 60s → 120s → 180s, max 3 retries
-      let councilResult!: Awaited<ReturnType<typeof runCouncil>>;
-      {
-        const BACKOFF_DELAYS = [60_000, 120_000, 180_000];
-        let lastErr: unknown;
-        let succeeded = false;
-        for (let attempt = 0; attempt <= BACKOFF_DELAYS.length; attempt++) {
-          try {
-            councilResult = await runCouncil(pitchText, { councilMode: "global_vc", bypassCostGuard: opts.bypassCostGuard ?? false });
-            succeeded = true;
-            break;
-          } catch (retryErr) {
-            const msg = String(retryErr);
-            const isRateLimit = msg.includes("412") || msg.toLowerCase().includes("rate limit");
-            if (isRateLimit && attempt < BACKOFF_DELAYS.length) {
-              const waitMs = BACKOFF_DELAYS[attempt];
-              console.warn(
-                `[FleetOrchestrator] Rate limit hit — waiting ${waitMs / 1000}s before retry (attempt ${attempt + 1}/3)`
-              );
-              await sleep(waitMs);
-              lastErr = retryErr;
-            } else {
-              throw retryErr;
+      const { pitch, idea } = entry;
+      const pitchText = [
+        `Problem: ${pitch.problem}`,
+        `Solution: ${pitch.solution}`,
+        `Target Market: ${pitch.targetMarket}`,
+        `Business Model: ${pitch.businessModel}`,
+        `Competitive Advantage: ${pitch.competitiveAdvantage}`,
+        `Key Risk: ${pitch.keyRisk}`,
+        `Funding Ask: ${pitch.fundingAsk}`,
+      ].join("\n");
+
+      // Mark as running
+      const dbInner = await requireDb();
+      await dbInner.update(founderAgentEvaluations)
+        .set({ status: "running", updatedAt: Date.now() })
+        .where(eq(founderAgentEvaluations.id, evalRow.id));
+      await incrementRunCounters(runId, { queued: -1, running: 1 });
+
+      const startMs = Date.now();
+      try {
+        // Rate limit backoff: 60s → 120s → 180s, max 3 retries
+        let councilResult!: Awaited<ReturnType<typeof runCouncil>>;
+        {
+          const BACKOFF_DELAYS = [60_000, 120_000, 180_000];
+          let lastErr: unknown;
+          let succeeded = false;
+          for (let attempt = 0; attempt <= BACKOFF_DELAYS.length; attempt++) {
+            try {
+              councilResult = await runCouncil(pitchText, { councilMode: "global_vc", bypassCostGuard: opts.bypassCostGuard ?? false });
+              succeeded = true;
+              break;
+            } catch (retryErr) {
+              const msg = String(retryErr);
+              const isRateLimit = msg.includes("412") || msg.toLowerCase().includes("rate limit");
+              if (isRateLimit && attempt < BACKOFF_DELAYS.length) {
+                const waitMs = BACKOFF_DELAYS[attempt];
+                console.warn(
+                  `[FleetOrchestrator] Rate limit hit — waiting ${waitMs / 1000}s before retry (attempt ${attempt + 1}/3)`
+                );
+                await sleep(waitMs);
+                lastErr = retryErr;
+              } else {
+                throw retryErr;
+              }
             }
           }
+          if (!succeeded) throw lastErr;
         }
-        if (!succeeded) throw lastErr;
+        const durationMs = Date.now() - startMs;
+
+        // Map verdict → fleet classification
+        let rawClassification: "ENGAGE" | "WATCH" | "PASS";
+        if (councilResult.verdict === "VETOED") {
+          rawClassification = "PASS";
+        } else if (councilResult.verdict === "APPROVED") {
+          rawClassification = "ENGAGE";
+        } else if (councilResult.verdict === "APPROVED_WITH_CONDITIONS") {
+          rawClassification = "WATCH";
+        } else {
+          const fs = councilResult.finalScore;
+          rawClassification = fs >= 0.48 ? "ENGAGE" : fs >= 0.34 ? "WATCH" : "PASS";
+        }
+
+        const classificationScore = classificationToScore(rawClassification);
+        const executionScore = deriveExecutionScore(councilResult);
+        const marketScore = deriveMarketScore(councilResult);
+        const finalScore = computeFinalScore(classificationScore, executionScore, marketScore);
+
+        const strengths = councilResult.conditionsToProceed.slice(0, 3);
+        const concerns = councilResult.blockingIssues.slice(0, 3);
+        const flags = councilResult.hardFlags.slice(0, 3);
+        const agentDisagreements = councilResult.votes
+          .filter((v) => v.vote === "HARD_NO" || v.vote === "HARD_YES")
+          .map((v) => `${v.personaName}: ${v.vote}`)
+          .slice(0, 3);
+
+        const recommendedAction =
+          rawClassification === "ENGAGE" ? "Run full evaluation"
+          : rawClassification === "WATCH" ? "Request more information"
+          : "No action required";
+
+        const evalInputTokens  = 10 * 3000;
+        const evalOutputTokens = 10 * 2048;
+        const evalTokensTotal  = evalInputTokens + evalOutputTokens;
+        const evalCostUsd      =
+          (evalInputTokens  / 1000) * 0.00025 +
+          (evalOutputTokens / 1000) * 0.00125;
+        acc.inputTokens  += evalInputTokens;
+        acc.outputTokens += evalOutputTokens;
+        acc.tokens       += evalTokensTotal;
+        acc.costUsd      += evalCostUsd;
+        acc.llmCalls     += 10;
+        await dbInner.update(founderAgentEvaluations).set({
+          status: "completed",
+          classification: rawClassification,
+          classificationScore,
+          executionScore,
+          marketScore,
+          finalScore,
+          strengths:          encryptWithMasterKey(JSON.stringify(strengths)),
+          concerns:           encryptWithMasterKey(JSON.stringify(concerns)),
+          flags:              encryptWithMasterKey(JSON.stringify(flags)),
+          agentDisagreements: JSON.stringify(agentDisagreements),
+          recommendedAction:  encryptWithMasterKey(recommendedAction),
+          durationMs,
+          tokensInput:  evalInputTokens,
+          tokensOutput: evalOutputTokens,
+          tokensTotal:  evalTokensTotal,
+          costUsd:      evalCostUsd.toFixed(6),
+          updatedAt: Date.now(),
+        }).where(eq(founderAgentEvaluations.id, evalRow.id));
+
+        await incrementRunCounters(runId, { completed: 1, running: -1 });
+      } catch (err) {
+        const durationMs = Date.now() - startMs;
+        await dbInner.update(founderAgentEvaluations).set({
+          status: "failed",
+          errorMessage: String(err).slice(0, 500),
+          durationMs,
+          updatedAt: Date.now(),
+        }).where(eq(founderAgentEvaluations.id, evalRow.id));
+        await incrementRunCounters(runId, { running: -1 });
       }
-      const durationMs = Date.now() - startMs;
 
-      // Map verdict → fleet classification
-      // Fleet uses a score-first approach to avoid the INSUFFICIENT_DATA gate
-      // (synthetic pitches lack the financial/traction data that boosts agent confidence,
-      //  so the council's confidence gate fires too aggressively for fleet use).
-      //
-      // Priority order:
-      //   1. VETOED → always PASS (hard regulatory/compliance block)
-      //   2. APPROVED → ENGAGE
-      //   3. APPROVED_WITH_CONDITIONS → WATCH
-      //   4. For INSUFFICIENT_DATA / REJECTED: fall back to raw finalScore:
-      //      finalScore >= 0.48 → ENGAGE, >= 0.34 → WATCH, else → PASS
-      //      This surfaces strong ideas even when the council lacks full data confidence.
-      let rawClassification: "ENGAGE" | "WATCH" | "PASS";
-      if (councilResult.verdict === "VETOED") {
-        rawClassification = "PASS";
-      } else if (councilResult.verdict === "APPROVED") {
-        rawClassification = "ENGAGE";
-      } else if (councilResult.verdict === "APPROVED_WITH_CONDITIONS") {
-        rawClassification = "WATCH";
-      } else {
-        // INSUFFICIENT_DATA or REJECTED — use raw finalScore as tiebreaker
-        const fs = councilResult.finalScore; // 0.0–1.0
-        rawClassification = fs >= 0.48 ? "ENGAGE" : fs >= 0.34 ? "WATCH" : "PASS";
-      }
+      activeCount--;
+      await processNext();
+    };
 
-      const classificationScore = classificationToScore(rawClassification);
-      const executionScore = deriveExecutionScore(councilResult);
-      const marketScore = deriveMarketScore(councilResult);
-      const finalScore = computeFinalScore(classificationScore, executionScore, marketScore);
-
-      const strengths = councilResult.conditionsToProceed.slice(0, 3);
-      const concerns = councilResult.blockingIssues.slice(0, 3);
-      const flags = councilResult.hardFlags.slice(0, 3);
-      const agentDisagreements = councilResult.votes
-        .filter((v) => v.vote === "HARD_NO" || v.vote === "HARD_YES")
-        .map((v) => `${v.personaName}: ${v.vote}`)
-        .slice(0, 3);
-
-      const recommendedAction =
-        rawClassification === "ENGAGE" ? "Run full evaluation"
-        : rawClassification === "WATCH" ? "Request more information"
-        : "No action required";
-
-      // Per-eval token tracking: estimate from council run (10 agents × Haiku)
-      // These are estimates since councilEngine doesn't expose per-call usage
-      const evalInputTokens  = 10 * 3000;  // ~3000 input tokens per agent
-      const evalOutputTokens = 10 * 2048;  // ~2048 output tokens per agent
-      const evalTokensTotal  = evalInputTokens + evalOutputTokens;
-      const evalCostUsd      =
-        (evalInputTokens  / 1000) * 0.00025 +   // Haiku input
-        (evalOutputTokens / 1000) * 0.00125;     // Haiku output
-      // Add to run accumulator
-      acc.inputTokens  += evalInputTokens;
-      acc.outputTokens += evalOutputTokens;
-      acc.tokens       += evalTokensTotal;
-      acc.costUsd      += evalCostUsd;
-      acc.llmCalls     += 10;
-      await dbInner.update(founderAgentEvaluations).set({
-        status: "completed",
-        classification: rawClassification,
-        classificationScore,
-        executionScore,
-        marketScore,
-        finalScore,
-        strengths:          encryptWithMasterKey(JSON.stringify(strengths)),
-        concerns:           encryptWithMasterKey(JSON.stringify(concerns)),
-        flags:              encryptWithMasterKey(JSON.stringify(flags)),
-        agentDisagreements: JSON.stringify(agentDisagreements),
-        recommendedAction:  encryptWithMasterKey(recommendedAction),
-        durationMs,
-        tokensInput:  evalInputTokens,
-        tokensOutput: evalOutputTokens,
-        tokensTotal:  evalTokensTotal,
-        costUsd:      evalCostUsd.toFixed(6),
-        updatedAt: Date.now(),
-      }).where(eq(founderAgentEvaluations.id, evalRow.id));
-
-      await incrementRunCounters(runId, { completed: 1, running: -1 });
-    } catch (err) {
-      const durationMs = Date.now() - startMs;
-      await dbInner.update(founderAgentEvaluations).set({
-        status: "failed",
-        errorMessage: String(err).slice(0, 500),
-        durationMs,
-        updatedAt: Date.now(),
-      }).where(eq(founderAgentEvaluations.id, evalRow.id));
-      await incrementRunCounters(runId, { running: -1 });
+    // Launch up to maxConcurrent workers with stagger for this chunk
+    const workers: Promise<void>[] = [];
+    for (let i = 0; i < Math.min(maxConcurrent, chunk.length); i++) {
+      await sleep(i * staggerMs);
+      workers.push(processNext());
     }
+    await Promise.all(workers);
+    // suppress unused variable warning
+    void activeCount;
 
-    activeCount--;
-    await processNext();
-  };
-
-  // Launch up to maxConcurrent workers with stagger
-  const workers: Promise<void>[] = [];
-  for (let i = 0; i < Math.min(maxConcurrent, queuedEvals.length); i++) {
-    await sleep(i * staggerMs);
-    workers.push(processNext());
+    // Save costs to DB after each chunk so progress is never lost on timeout
+    await saveCosts(runId, acc);
+    console.log(`[FleetOrchestrator] Run ${runId}: chunk ${chunkIdx + 1}/${totalChunks} complete — costs saved`);
   }
-
-  await Promise.all(workers);
-  // suppress unused variable warning
-  void activeCount;
 }
 
 
