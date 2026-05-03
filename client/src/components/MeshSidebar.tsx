@@ -72,6 +72,24 @@ export default function MeshSidebar({ children }: MeshSidebarProps) {
   const [location] = useLocation();
   const isMobile = useIsMobile();
   const { user, logout } = useAuth();
+
+  // ── NEW-badge dismiss on first visit ──────────────────────────────
+  const SEEN_KEY = "seen_gcc_equities";
+  const [seenGccEquities, setSeenGccEquities] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return window.localStorage.getItem(SEEN_KEY) === "1";
+  });
+  useEffect(() => {
+    if (!seenGccEquities && location.startsWith("/gcc-equities")) {
+      window.localStorage.setItem(SEEN_KEY, "1");
+      setSeenGccEquities(true);
+    }
+  }, [location, seenGccEquities]);
+  const navItems = NAV_ITEMS.map((item) =>
+    item.path === "/gcc-equities"
+      ? { ...item, badge: seenGccEquities ? undefined : "NEW" }
+      : item,
+  );
   const logoutMutation = trpc.auth.logout.useMutation({
     onSuccess: () => { window.location.href = "/"; },
   });
@@ -105,7 +123,7 @@ export default function MeshSidebar({ children }: MeshSidebarProps) {
             zIndex: 50,
           }}
         >
-          {NAV_ITEMS.filter((item) => !item.adminOnly || user?.role === "admin").map((item) => {
+          {navItems.filter((item) => !item.adminOnly || user?.role === "admin").map((item) => {
             const active = isActive(item.path, location, item.exact);
             return (
               <Link key={item.path} href={item.path}>
@@ -208,7 +226,7 @@ export default function MeshSidebar({ children }: MeshSidebarProps) {
 
         {/* Nav items */}
         <nav style={{ flex: 1, padding: "8px 0", overflowY: "auto" }}>
-          {NAV_ITEMS.filter((item) => !item.adminOnly || user?.role === "admin").map((item) => {
+          {navItems.filter((item) => !item.adminOnly || user?.role === "admin").map((item) => {
             const active = isActive(item.path, location, item.exact);
             return (
               <Link key={item.path} href={item.path}>
