@@ -3756,3 +3756,11 @@
 - [x] Smoke test: hardFlags=[] (no DEGRADED AGENTS entry) ✓
 - [x] Smoke test: GCC_EQ_MICRO voted NO conf=0 with AFTER_HOURS_CLOSED blocker — correctly treated as structural refusal, not degraded ✓
 - [x] Smoke test: structuralNoCount=2 (LIQUIDITY + MICRO) ✓
+
+## GCC Equities Council — Patch 10A (03 May 2026)
+- [x] Normalize KWT_BASKET weights in navMath.ts: original sum 0.6774 → each weight divided by 0.6774 → sum 0.9999
+- [x] tsc --noEmit: EXIT:0
+- [x] Smoke test: NAV PROXY (KWD): 0.7646 (coverage 99.99%) ✓
+- [x] Smoke test: no coverage-gate note in evidenceBlob ✓
+- [x] Smoke test: GCC_EQ_QUANT voted NO on merit (expected open-gap < implied move, precedents rejected), NOT on coverage gate ✓
+- [x] Smoke test: hardFlags=[] ✓

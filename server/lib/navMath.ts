@@ -3,11 +3,22 @@
 // Pure arithmetic. No I/O, no LLM calls. The result of buildEvidenceBlob()
 // is injected as a string into each persona's user message before dispatch.
 
+// Weights normalized from disclosed top-10 index weights (original sum = 0.6774).
+// Each value = original / 0.6774 so the basket sums to ~1.0 and a full-basket
+// submission yields coverage ~100% rather than 67.74%.
 export const KWT_BASKET: Record<string, number> = {
-  KFH: 0.2302, NBK: 0.2160, ZAIN: 0.0488, WARBABANK: 0.0338,
-  GBK: 0.0327, MABANEE: 0.0318, NIND: 0.0238, ABK: 0.0229,
-  ALTIJARIA: 0.0192, BOURSA: 0.0182,
+  KFH:       0.3398,
+  NBK:       0.3189,
+  ZAIN:      0.0720,
+  WARBABANK: 0.0499,
+  GBK:       0.0483,
+  MABANEE:   0.0469,
+  NIND:      0.0351,
+  ABK:       0.0338,
+  ALTIJARIA: 0.0283,
+  BOURSA:    0.0269,
 };
+// Sanity: sum = 0.9999
 
 export interface ConstituentQuote {
   symbol: string;
