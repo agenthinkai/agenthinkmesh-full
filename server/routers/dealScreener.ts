@@ -180,6 +180,7 @@ export const dealScreenerRouter = router({
           councilMode: input.councilMode,
           investorMode: input.investorMode ?? false,
           sourceType: input.sourceType ?? "manual",
+          evidenceBlob: ownerResult.evidenceBlob ?? null,
         });
         let ownerIcReport = null;
         try { ownerIcReport = await generateSingleDealICReport(input.dealName, input.dealText, ownerResult); } catch {}
@@ -375,6 +376,7 @@ export const dealScreenerRouter = router({
         dealHash: dedupResult.dealHash,
         triageResult: JSON.stringify(triageResult),
         triageSkipped: false,
+        evidenceBlob: result.evidenceBlob ?? null,
       });
 
       // Link the Stripe payment row to this deal run (so billing history shows the deal name)

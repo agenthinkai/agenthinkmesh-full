@@ -114,6 +114,7 @@ export interface CouncilResult {
   sessionId:             string;
   durationMs:            number;
   actionsTriggered:      string[];
+  evidenceBlob?:         string;   // gcc_equities only — the deterministic evidence prepended to dealText
 }
 
 export interface RunCouncilOptions {
@@ -1203,6 +1204,7 @@ export async function runCouncil(
     sessionId,
     durationMs:            Date.now() - startMs,
     actionsTriggered:      [],
+    evidenceBlob:          councilMode === 'gcc_equities' && augmentedDealText !== dealText ? augmentedDealText : undefined,
   };
 
   // Audit log (never throws)

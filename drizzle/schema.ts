@@ -910,6 +910,8 @@ export const dealScreenings = mysqlTable("deal_screenings", {
 
     // Monte Carlo scenario analysis (JSON, nullable — added in MC sprint)
   monteCarloAnalysis: text("monteCarloAnalysis"),
+  // GCC Equities — deterministic evidence blob shown to the council (nullable — gcc_equities only)
+  evidenceBlob: text("evidenceBlob"),
   // Provenance
   sourceType: mysqlEnum("sourceType", ["manual", "signal"]).default("manual").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),

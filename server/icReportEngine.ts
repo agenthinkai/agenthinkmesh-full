@@ -259,7 +259,8 @@ Respond with a JSON object matching this exact schema (no markdown, raw JSON onl
   ],
   "groundedFacts": ["<fact directly stated in the deal text>"],
   "inferredInsights": ["<INFERRED: insight derived by agents, not stated in input>"]
-}`;
+}`
+  + (result.evidenceBlob ? `\n\nQUANTITATIVE EVIDENCE (GCC Equities — shown to the council verbatim):\n${result.evidenceBlob.slice(0, 1200)}` : "");
 
 
   const response = await invokeLLM({

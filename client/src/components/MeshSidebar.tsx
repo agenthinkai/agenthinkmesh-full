@@ -32,13 +32,14 @@ interface NavItem {
   label: string;
   exact?: boolean;
   adminOnly?: boolean;
+  badge?: string;  // short pill text, e.g. "NEW"
 }
 
 const NAV_ITEMS: NavItem[] = [
   { path: "/command-center", icon: "⚡", label: "Command", exact: true },
   { path: "/pitch-triage", icon: "📋", label: "Evaluate" },
   { path: "/deals", icon: "📁", label: "Pipeline" },
-  { path: "/gcc-equities", icon: "📈", label: "GCC Equities" },
+  { path: "/gcc-equities", icon: "📈", label: "GCC Equities", badge: "NEW" },
   { path: "/mesh-intelligence", icon: "📊", label: "Intelligence" },
   { path: "/admin/usage", icon: "⚙️", label: "Admin", adminOnly: true },
 ];
@@ -229,7 +230,15 @@ export default function MeshSidebar({ children }: MeshSidebarProps) {
                   }}
                 >
                   <span style={{ fontSize: 16, flexShrink: 0 }}>{item.icon}</span>
-                  {!collapsed && <span>{item.label}</span>}
+                  {!collapsed && <span style={{ flex: 1 }}>{item.label}</span>}
+                  {!collapsed && item.badge && (
+                    <span style={{
+                      fontSize: 9, fontWeight: 700, letterSpacing: "0.05em",
+                      padding: "1px 5px", borderRadius: 4,
+                      background: "rgba(245,158,11,0.18)", color: "#f59e0b",
+                      flexShrink: 0,
+                    }}>{item.badge}</span>
+                  )}
                 </div>
               </Link>
             );
