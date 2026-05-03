@@ -153,7 +153,7 @@ export const dealScreenerRouter = router({
       // Owner bypass — skip rate limit and payment entirely
       if (isOwner(ctx.user.email)) {
         const ownerDealId = randomUUID();
-        const ownerResult = await runCouncil(input.dealText, { userId: undefined, councilMode: input.councilMode, investorMode: input.investorMode });
+        const ownerResult = await runCouncil(input.dealText, { userId: undefined, councilMode: input.councilMode, investorMode: input.investorMode, signalPayload: input.signalPayload });
         await db.insert(dealScreenings).values({
           dealId: ownerDealId,
           userId: ctx.user.id,
@@ -343,6 +343,7 @@ export const dealScreenerRouter = router({
         userId: skipTokenGuard ? undefined : ctx.user.id,
         councilMode: input.councilMode,
         investorMode: input.investorMode,
+        signalPayload: input.signalPayload,
       });
       // Persist to database
       await db.insert(dealScreenings).values({

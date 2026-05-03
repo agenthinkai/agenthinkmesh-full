@@ -42,6 +42,10 @@ import {
   PERSONAS_GCC_EQUITIES,
   DOMAIN_WEIGHTS_GCC_EQUITIES,
 } from "./lib/personas-gcc-equities";
+import {
+  buildEvidenceBlob,
+  type SignalRequest,
+} from "./lib/navMath";
 import { notifyOwner } from "./_core/notification";
 
 // invokeLLM uses BUILT_IN_FORGE_API — no Anthropic SDK needed
@@ -122,6 +126,7 @@ export interface RunCouncilOptions {
   councilMode?: CouncilMode; // which set of 10 agents to use
   investorMode?: boolean; // when true, agents balance upside vs risk and answer "what would make this a winning investment?"
   bypassCostGuard?: boolean; // when true, skip rate/spend guard (fleet runs only)
+  signalPayload?: SignalRequest; // optional — gcc_equities only; drives buildEvidenceBlob
 }
 
 // ── Zod schema for each persona response ─────────────────────────────────────
@@ -919,9 +924,28 @@ export async function runCouncil(
 
   // (investorMode already destructured from options above)
 
+  // For gcc_equities, prepend deterministic NAV/Friday Gap evidence before dispatch
+  let augmentedDealText = dealText;
+  if (councilMode === "gcc_equities" && options.signalPayload) {
+    try {
+      const evidence = buildEvidenceBlob(options.signalPayload);
+      augmentedDealText =
+        `── DETERMINISTIC EVIDENCE ──\n` +
+        `${evidence}\n\n` +
+        `── ANALYST NOTES ──\n` +
+        `${dealText}`;
+    } catch (err) {
+      // Math failure must not crash the council — fall back to raw dealText
+      console.warn(
+        "[gcc_equities] buildEvidenceBlob failed, falling back to raw dealText:",
+        err,
+      );
+    }
+  }
+
   // Run all 10 personas in parallel
   const results = await Promise.allSettled(
-    activePersonas.map((p) => callPersona(p, dealText, memoryContext, investorMode))
+    activePersonas.map((p) => callPersona(p, augmentedDealText, memoryContext, investorMode))
   );
 
   const votes: PersonaVote[] = results.map((r, i) => {
