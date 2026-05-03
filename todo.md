@@ -3778,3 +3778,14 @@
 - [x] Smoke test: GCC_EQ_LIQUIDITY voted NO citing MARKET_CLOSED (not missing bid/ask data) ✓
 - [x] Smoke test: hardFlags=[] ✓
 - [x] Smoke test: coverage 99.99% ✓
+
+## GCC Equities Council — Patch 13 (03 May 2026)
+- [x] 13A: Create server/lib/newsFeed.ts with fetchDisclosures (Boursa Kuwait + KUNA), formatDisclosuresForEvidence, 5-min in-memory cache
+- [x] 13B: Replace GCC_EQ_DISCLOSURE systemPrompt — empty feed = YES, NEWS_FEED_UNAVAILABLE only on missing DISCLOSURES section
+- [x] 13C: Wire fetchDisclosures into councilEngine.ts gcc_equities evidence build; disclosures appended before ANALYST NOTES
+- [x] tsc --noEmit: EXIT:0
+- [x] Smoke test: DISCLOSURES section present in evidenceBlob: "DISCLOSURES (last 24h): no items returned by feeds." ✓
+- [x] Smoke test: GCC_EQ_DISCLOSURE voted YES conf=0.95 — "feeds checked, no material items" ✓ (was NO with NEWS_FEED_UNAVAILABLE)
+- [x] Smoke test: hardFlags=[] ✓
+- [x] Smoke test: yesCount=3 noCount=7 (FORENSIC regressed to NO — see note below)
+- Note: FORENSIC voted NO citing "lack of explicit data confirming absence of forensic red flags" — this is a prompt issue to address in patch 14

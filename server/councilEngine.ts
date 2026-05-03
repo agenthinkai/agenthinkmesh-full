@@ -46,6 +46,7 @@ import {
   buildEvidenceBlob,
   type SignalRequest,
 } from "./lib/navMath";
+import { fetchDisclosures, formatDisclosuresForEvidence } from "./lib/newsFeed";
 import { notifyOwner } from "./_core/notification";
 
 // invokeLLM uses BUILT_IN_FORGE_API — no Anthropic SDK needed
@@ -936,20 +937,29 @@ export async function runCouncil(
 
   // (investorMode already destructured from options above)
 
-  // For gcc_equities, prepend deterministic NAV/Friday Gap evidence before dispatch
+  // For gcc_equities, prepend deterministic NAV/Friday Gap evidence + disclosures before dispatch
   let augmentedDealText = dealText;
   if (councilMode === "gcc_equities" && options.signalPayload) {
     try {
       const evidence = buildEvidenceBlob(options.signalPayload);
+
+      let disclosuresBlock = "";
+      try {
+        const items = await fetchDisclosures(options.signalPayload.symbol);
+        disclosuresBlock = "\n\n" + formatDisclosuresForEvidence(items);
+      } catch {
+        disclosuresBlock = "\n\nDISCLOSURES (last 24h): feed errored; treat as unavailable.";
+      }
+
       augmentedDealText =
         `── DETERMINISTIC EVIDENCE ──\n` +
-        `${evidence}\n\n` +
+        `${evidence}${disclosuresBlock}\n\n` +
         `── ANALYST NOTES ──\n` +
         `${dealText}`;
     } catch (err) {
       // Math failure must not crash the council — fall back to raw dealText
       console.warn(
-        "[gcc_equities] buildEvidenceBlob failed, falling back to raw dealText:",
+        "[gcc_equities] evidence build failed:",
         err,
       );
     }
