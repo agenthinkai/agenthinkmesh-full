@@ -3745,3 +3745,14 @@
 - [x] Patch 10D: Tiebreaker loop — also flips NO votes (not just SOFT_NO)
 - [x] tsc --noEmit: EXIT:0
 - [x] Smoke test: SHARIAH voted YES on clean KFH payload ✓; KWT return 1.2465% confirmed reaching LLMs ✓; no Zod parse errors ✓
+
+## GCC Equities Council — Patch 11 (03 May 2026)
+- [x] Patch 11A: Replace silentFails-based degraded detection with stricter predicate in runCouncil() — only isSilentFail, timedOut, or empty stub responses count as degraded
+- [x] Patch 11A: Refine isSilentFail assignment in parsePersonaResponse — conf=0 with substantive rationale/blockers is a structural refusal (valid NO), not a silent fail
+- [x] Patch 11B: Add structuralNoCount + structuralNoSeats to CouncilResult type and return object
+- [x] Patch 11B: STRUCTURAL_BLOCKERS list: MARKET_CLOSED, NEWS_FEED_UNAVAILABLE, NO_BID_ASK, NO_BID_ASK_DATA, NO_MACRO_TAPE, NO_EARNINGS_DATA, INSUFFICIENT_CONTEXT, AFTER_HOURS_CLOSED
+- [x] Fix dealScreenRoute.ts mock CouncilResult to include structuralNoCount=0 / structuralNoSeats=[]
+- [x] tsc --noEmit: EXIT:0
+- [x] Smoke test: hardFlags=[] (no DEGRADED AGENTS entry) ✓
+- [x] Smoke test: GCC_EQ_MICRO voted NO conf=0 with AFTER_HOURS_CLOSED blocker — correctly treated as structural refusal, not degraded ✓
+- [x] Smoke test: structuralNoCount=2 (LIQUIDITY + MICRO) ✓

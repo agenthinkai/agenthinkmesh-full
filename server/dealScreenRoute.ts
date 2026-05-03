@@ -328,6 +328,8 @@ router.post("/:dealId/generate-memo", async (req: Request, res: Response): Promi
       criticalBlockers: blockers,   // alias
       hardFlags: [],                // not stored separately
       silentFails: [],              // not stored separately
+      structuralNoCount: 0,         // not stored separately
+      structuralNoSeats: [],        // not stored separately
       votes: votes as CouncilResult["votes"],
       decisionMemoryId: null,
       memoryContextUsed: false,

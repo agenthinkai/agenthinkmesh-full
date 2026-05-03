@@ -107,6 +107,8 @@ export interface CouncilResult {
   criticalBlockers:      string[];   // alias for blockingIssues (v3.0 compat)
   hardFlags:             string[];
   silentFails:           string[];
+  structuralNoCount:     number;
+  structuralNoSeats:     Array<{ personaId: string; blockers: string[] }>;
   votes:                 PersonaVote[];
   decisionMemoryId:      number | null;
   memoryContextUsed:     boolean;
@@ -800,10 +802,19 @@ async function callPersona(
     const parsed     = parsePersonaResponse(content);
     const confidence = parsed.confidence;
 
-    // [FIX 3] Silent fail detection
-    const isSilentFail = confidence === 0;
+    // [FIX 3 / PATCH 11A] Silent fail detection.
+    // conf=0 is only a true silent fail when the response is also empty
+    // (no rationale, no blockers). A structural refusal — conf=0 but with a
+    // substantive rationale and/or blockers (e.g. Microstructure on a closed
+    // market) — is a legitimate NO vote, not degradation.
+    const hasSubstantiveResponse =
+      (parsed.rationale && parsed.rationale.trim().length >= 10) ||
+      (parsed.blockers && parsed.blockers.length > 0);
+    const isSilentFail = confidence === 0 && !hasSubstantiveResponse;
     if (isSilentFail) {
-      console.warn(`[SILENT_FAIL] ${persona.name} returned confidence=0. Model may be degraded.`);
+      console.warn(`[SILENT_FAIL] ${persona.name} returned confidence=0 with empty response. Model may be degraded.`);
+    } else if (confidence === 0) {
+      console.log(`[STRUCTURAL_REFUSAL] ${persona.name} returned confidence=0 with rationale/blockers — treating as valid NO vote.`);
     }
 
     return {
@@ -1005,8 +1016,41 @@ export async function runCouncil(
   const confidenceScore =
     votes.reduce((sum, v) => sum + v.confidence, 0) / votes.length;
 
-  // Silent fails
+  // Silent fails (for backward-compat field on CouncilResult)
   const silentFails = votes.filter((v) => v.isSilentFail).map((v) => v.personaRole);
+
+  // [PATCH 11A] Degraded agents — true failures only (silent fail / timeout /
+  // parse error / empty stub response). Confident NO-with-blocker is NOT degraded.
+  const degradedAgents = votes.filter((v) => {
+    if (v.isSilentFail) return true;
+    if (v.timedOut)     return true;
+    // Suspicious stub: vote returned but no rationale, no blockers, no conditions
+    if (
+      (!v.rationale || v.rationale.trim().length < 10) &&
+      (!v.blockers   || v.blockers.length === 0) &&
+      (!v.conditions || v.conditions.length === 0)
+    ) return true;
+    return false;
+  });
+
+  // [PATCH 11B] Structural NOs — seats that voted NO because data was unavailable,
+  // not because the trade is bad. Informational only; tally is unchanged.
+  const STRUCTURAL_BLOCKERS = [
+    "MARKET_CLOSED",
+    "NEWS_FEED_UNAVAILABLE",
+    "NO_BID_ASK",
+    "NO_BID_ASK_DATA",
+    "NO_MACRO_TAPE",
+    "NO_EARNINGS_DATA",
+    "INSUFFICIENT_CONTEXT",
+    "AFTER_HOURS_CLOSED",
+  ];
+  const structuralNoSeats = votes.filter(
+    (v) =>
+      (v.vote === "NO" || v.vote === "SOFT_NO") &&
+      Array.isArray(v.blockers) &&
+      v.blockers.some((b) => STRUCTURAL_BLOCKERS.includes(b)),
+  );
 
   // Hard flags — mode-aware veto detection
   const hardFlags: string[] = [];
@@ -1067,8 +1111,12 @@ export async function runCouncil(
     hardFlags.push(`❌ INDIA LEGAL VETO — ${inLegalVote.rationale.slice(0, 100)}`);
   if (geoVote?.keyFlags?.some((f) => f.toLowerCase().includes("sanction")))
     hardFlags.push(`⚠️ SANCTIONS FLAG — ${geoVote.personaRole}`);
-  if (silentFails.length > 0)
-    hardFlags.push(`🟡 DEGRADED AGENTS (verify results): ${silentFails.join(", ")}`);
+  if (degradedAgents.length > 0)
+    hardFlags.push(
+      `🟡 DEGRADED AGENTS (verify results): ${degradedAgents
+        .map((v) => v.personaRole ?? v.personaId)
+        .join(", ")}`,
+    );
 
   // Tiebreaker
   let tiebreakerTriggered  = false;
@@ -1199,6 +1247,8 @@ export async function runCouncil(
     criticalBlockers:      blockingIssues,   // alias
     hardFlags,
     silentFails,
+    structuralNoCount:     structuralNoSeats.length,
+    structuralNoSeats:     structuralNoSeats.map((v) => ({ personaId: v.personaId, blockers: v.blockers })),
     votes:                 workingVotes,
     decisionMemoryId:      null,
     memoryContextUsed,
