@@ -1215,12 +1215,14 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
       // Ideas exist but no pitches — re-run research (fast: 5 domains × 3 LLM calls)
       await updateRunStatus(runId, "researching");
       if (await waitIfPaused(runId)) { await updateRunStatus(runId, "paused"); return; }
-      researchByDomain = await runResearch(runId, acc, quickTest ? { queriesPerDomain: 1, gccMode: opts.gccMode } : { gccMode: opts.gccMode });
+      // COST FIX: force quick mode (1 query/domain) for all fleet runs — deep research costs 3× more
+      researchByDomain = await runResearch(runId, acc, { queriesPerDomain: 1, gccMode: opts.gccMode });
       await saveCosts(runId, acc);
     } else {
       await updateRunStatus(runId, "researching");
       if (await waitIfPaused(runId)) { await updateRunStatus(runId, "paused"); return; }
-      researchByDomain = await runResearch(runId, acc, quickTest ? { queriesPerDomain: 1, gccMode: opts.gccMode } : { gccMode: opts.gccMode });
+      // COST FIX: force quick mode (1 query/domain) for all fleet runs — deep research costs 3× more
+      researchByDomain = await runResearch(runId, acc, { queriesPerDomain: 1, gccMode: opts.gccMode });
       await saveCosts(runId, acc);
     }
 
@@ -1393,7 +1395,8 @@ export async function runFleetPhase(
       throw new Error(`run ${runId}: no ideas found — run generate phase first`);
     }
     await updateRunStatus(runId, "researching");
-    const researchByDomain = await runResearch(runId, acc, { gccMode });
+    // COST FIX: force quick mode (1 query/domain) for all fleet runs — deep research costs 3× more
+    const researchByDomain = await runResearch(runId, acc, { queriesPerDomain: 1, gccMode });
     await saveCosts(runId, acc);
     // Advance status to pitching
     await updateRunStatus(runId, "pitching");

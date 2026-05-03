@@ -43,7 +43,7 @@ import cron from "node-cron";
 import { runFleet, resumeInterruptedRuns } from "../founderFleet";
 import { getDb } from "../db";
 import { founderAgentRuns, fleetConfig, founderAgentEvaluations } from "../../drizzle/schema";
-import { eq, and, avg, sql, sum } from "drizzle-orm";
+import { eq, and, avg, sql, sum, gte, count } from "drizzle-orm";
 import { notifyOwner } from "../_core/notification";
 import { sendGraphEmail } from "../graphEmail";
 
@@ -456,6 +456,62 @@ async function runSingleFleetMode(
     const cleanedCount = (cleanupResult as unknown as [{ affectedRows: number }])[0]?.affectedRows ?? 0;
     if (cleanedCount > 0) {
       console.log(`[FounderFleet] Cleaned up ${cleanedCount} orphaned evaluations before ${config.fleetMode} run`);
+    }
+
+    // ── COST GUARD 1: Hard daily cap — max 2 runs per fleet mode per calendar day ──
+    const DAILY_RUN_CAP = 2;
+    const [todayRunCount] = await db
+      .select({ n: count() })
+      .from(founderAgentRuns)
+      .where(and(
+        eq(founderAgentRuns.fleetMode, config.fleetMode),
+        eq(founderAgentRuns.runDate, today),
+      ));
+    const runsToday = Number(todayRunCount?.n ?? 0);
+    if (runsToday >= DAILY_RUN_CAP) {
+      console.warn(`[FounderFleet] DAILY CAP reached for ${config.fleetMode}: ${runsToday}/${DAILY_RUN_CAP} runs today — skipping`);
+      await notifyOwner({
+        title: `Fleet daily cap reached — ${config.fleetMode}`,
+        content: `${config.fleetMode} fleet has already completed ${runsToday} run(s) today (cap: ${DAILY_RUN_CAP}). No further runs will be started until tomorrow.`,
+      });
+      return {
+        mode: config.fleetMode,
+        runId: -1,
+        status: "failed" as const,
+        evaluations: 0,
+        totalIdeas: targetIdeas,
+        avgScore: null,
+        runsRemaining: config.runsRemaining,
+      };
+    }
+
+    // ── COST GUARD 2: Duplicate detection — skip if a run completed in last 30 min ──
+    const DUPLICATE_WINDOW_MS = 30 * 60 * 1000;
+    const windowStart = Date.now() - DUPLICATE_WINDOW_MS;
+    const [recentCompleted] = await db.select({ id: founderAgentRuns.id, createdAt: founderAgentRuns.createdAt })
+      .from(founderAgentRuns)
+      .where(and(
+        eq(founderAgentRuns.fleetMode, config.fleetMode),
+        eq(founderAgentRuns.status, "completed"),
+        gte(founderAgentRuns.createdAt, windowStart),
+      ))
+      .limit(1);
+    if (recentCompleted) {
+      const minsAgo = Math.round((Date.now() - Number(recentCompleted.createdAt)) / 60_000);
+      console.warn(`[FounderFleet] DUPLICATE GUARD: ${config.fleetMode} run #${recentCompleted.id} completed ${minsAgo}m ago — skipping to prevent duplicate`);
+      await notifyOwner({
+        title: `Fleet duplicate run blocked — ${config.fleetMode}`,
+        content: `A ${config.fleetMode} fleet run (#${recentCompleted.id}) completed only ${minsAgo} minutes ago. This run was skipped to prevent duplicate API spend.`,
+      });
+      return {
+        mode: config.fleetMode,
+        runId: recentCompleted.id,
+        status: "failed" as const,
+        evaluations: 0,
+        totalIdeas: targetIdeas,
+        avgScore: null,
+        runsRemaining: config.runsRemaining,
+      };
     }
 
     // Resume today's failed/interrupted run if one exists, rather than always creating a new one.

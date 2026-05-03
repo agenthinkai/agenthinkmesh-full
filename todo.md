@@ -1,5 +1,11 @@
 # AgenThinkMesh Full-Stack TODO
 
+## Cost Controls (2026-05-03)
+- [x] Task 1 — Daily fleet run cap: max 2 runs per fleet mode per calendar day (founderFleetScheduler.ts)
+- [x] Task 2 — Force quick mode for fleet research: queriesPerDomain=1 (founderFleet.ts)
+- [x] Task 3 — Duplicate run detection: skip if same mode completed in last 30 min (founderFleetScheduler.ts)
+- [x] Raise DAILY_API_SPEND_CAP to $50
+
 ## Auth & User
 - [x] Database schema: users table with apiKey, preferredContext fields + taskHistory table
 - [x] Login/Register page with Manus OAuth (Google, GitHub, email)
