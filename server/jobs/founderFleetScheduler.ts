@@ -29,10 +29,9 @@
  *   collects results regardless of individual failures. One mode failing can
  *   never block the other.
  *
- * FIX 2 — Per-mode 30-minute retry: if a mode fails, a single retry fires after
- *   RETRY_DELAY_MS (30 min). A per-day in-memory guard (retriedToday) prevents
- *   more than one retry per mode per calendar day. If the retry also fails,
- *   notifyOwner is called.
+ * FIX 2 — REMOVED (2026-05-03 emergency cost fix): auto-retry has been removed.
+ *   Fleet runs once per day per mode. If a run fails, the owner is notified and
+ *   a manual re-trigger is available via the admin UI. No automatic retries.
  *
  * FIX 3 — Run-level error_message: the catch block in runSingleFleetMode now
  *   stores the error string in the run row (if the run was created) so the DB
@@ -84,9 +83,6 @@ function formatKuwaitDate(ts: number): string {
  * a notifyOwner alert so anomalous runs are caught before they accumulate.
  */
 const MAX_COST_PER_RUN_USD = parseFloat(process.env.FLEET_COST_ALERT_THRESHOLD_USD ?? "15");
-
-/** Delay before a single retry after a failed run (30 minutes). */
-const RETRY_DELAY_MS = 30 * 60 * 1000;
 
 // ── Fleet run result record ───────────────────────────────────────────────────
 
@@ -395,21 +391,6 @@ Total to date: ${totalToDate.toLocaleString()}`;
   }
 }
 
-// ── Per-mode retry guard (in-memory, resets on server restart / new day) ─────
-
-/** Tracks which fleet modes have already been retried today (UTC date string). */
-const retriedToday: Map<string, string> = new Map(); // fleetMode → YYYY-MM-DD
-
-function hasRetriedToday(fleetMode: string): boolean {
-  const today = new Date().toISOString().slice(0, 10);
-  return retriedToday.get(fleetMode) === today;
-}
-
-function markRetriedToday(fleetMode: string): void {
-  const today = new Date().toISOString().slice(0, 10);
-  retriedToday.set(fleetMode, today);
-}
-
 // ── Single fleet mode execution ───────────────────────────────────────────────
 /**
  * Runs one fleet mode end-to-end.
@@ -458,8 +439,9 @@ async function runSingleFleetMode(
       console.log(`[FounderFleet] Cleaned up ${cleanedCount} orphaned evaluations before ${config.fleetMode} run`);
     }
 
-    // ── COST GUARD 1: Hard daily cap — max 2 runs per fleet mode per calendar day ──
-    const DAILY_RUN_CAP = 2;
+    // COST GUARD 1: Hard daily cap — max 1 run per fleet mode per calendar day.
+    // EMERGENCY COST FIX (2026-05-03): Reduced from 2 → 1. No automatic retries.
+    const DAILY_RUN_CAP = 1;
     const [todayRunCount] = await db
       .select({ n: count() })
       .from(founderAgentRuns)
@@ -749,58 +731,17 @@ export async function runDailyFleet(): Promise<void> {
     };
   });
 
-  // ── FIX: Per-mode 30-minute retry for failed runs ─────────────────────────
+  // EMERGENCY COST FIX: Auto-retry removed. Fleet runs once per day per mode.
+  // If a run fails, it fails. No automatic retries. Owner is notified via the
+  // summary email below. Manual re-trigger available via the admin UI.
   const failedModes = fleetResults.filter((r) => r.status === "failed");
-  for (const failed of failedModes) {
-    if (hasRetriedToday(failed.mode)) {
-      console.warn(`[FounderFleet] ${failed.mode} already retried today — skipping second retry`);
-      continue;
-    }
-    markRetriedToday(failed.mode);
-    const modeConfig = activeConfigs.find((c) => c.fleetMode === failed.mode);
-    if (!modeConfig) continue;
-
-    console.warn(`[FounderFleet] ${failed.mode} run failed — scheduling retry in ${RETRY_DELAY_MS / 60000} minutes`);
-
-    setTimeout(async () => {
-      console.log(`[FounderFleet] Retrying ${failed.mode} fleet run now`);
-      const retryDb = await getDb();
-      if (!retryDb) {
-        console.error(`[FounderFleet] DB unavailable for ${failed.mode} retry`);
-        notifyOwner({
-          title:   `Fleet retry failed — ${failed.mode} (DB unavailable)`,
-          content: `${failed.mode} fleet run failed and the retry could not start because the database was unavailable.\nManual intervention required.`,
-        }).catch(() => {});
-        return;
-      }
-
-      // Re-read config to get latest counters
-      const [latestConfig] = await retryDb
-        .select()
-        .from(fleetConfig)
-        .where(eq(fleetConfig.id, modeConfig.id));
-
-      if (!latestConfig?.active) {
-        console.warn(`[FounderFleet] ${failed.mode} config is no longer active — skipping retry`);
-        return;
-      }
-
-      const retryResult = await runSingleFleetMode(retryDb, latestConfig);
-
-      if (retryResult.status === "completed") {
-        console.log(`[FounderFleet] ${failed.mode} retry succeeded`);
-        // Include retry result in a follow-up email
-        buildAndSendFleetEmail([retryResult], Date.now()).catch((emailErr: unknown) =>
-          console.error("[FounderFleet] Retry summary email error:", (emailErr as Error)?.message)
-        );
-      } else {
-        console.error(`[FounderFleet] ${failed.mode} retry also failed — notifying owner`);
-        notifyOwner({
-          title:   `Fleet retry failed — ${failed.mode}`,
-          content: `${failed.mode} fleet run failed twice today (initial + 30-min retry).\nRun #${retryResult.runId} completed ${retryResult.evaluations}/${retryResult.totalIdeas} evaluations.\nManual intervention required.`,
-        }).catch(() => {});
-      }
-    }, RETRY_DELAY_MS);
+  if (failedModes.length > 0) {
+    const failedList = failedModes.map((r) => r.mode).join(", ");
+    console.warn(`[FounderFleet] Failed modes (no retry): ${failedList}`);
+    notifyOwner({
+      title:   `Fleet run failed — ${failedList}`,
+      content: `The following fleet mode(s) failed today and will NOT be retried automatically: ${failedList}.\nManual re-trigger available via the admin UI.`,
+    }).catch(() => {});
   }
 
   // ── Send one combined summary email after ALL fleet modes complete ─────────
