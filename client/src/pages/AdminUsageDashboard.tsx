@@ -305,6 +305,16 @@ export default function AdminUsageDashboard() {
           <p className="text-slate-400 text-sm mt-1">
             Daily token consumption, per-user activity, and rate limit events across all LLM endpoints.
           </p>
+          <p className="text-xs text-slate-500 mt-2 font-mono">
+            {[actTotal, wlTotal, leTotal, feTotal].some(n => n > 0) ? (
+              <>
+                <span className="text-slate-400">{fmtNumber(actTotal)}</span>{" users · "}
+                <span className="text-slate-400">{fmtNumber(wlTotal)}</span>{" waitlist · "}
+                <span className="text-slate-400">{fmtNumber(leTotal)}</span>{" logins · "}
+                <span className="text-slate-400">{fmtNumber(feTotal)}</span>{" fleet evals"}
+              </>
+            ) : "Loading counts…"}
+          </p>
         </div>
 
         {/* Today's KPI cards */}
@@ -661,6 +671,12 @@ export default function AdminUsageDashboard() {
               className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 hover:bg-white/20 transition-colors">
               {actSortDir === "desc" ? "↓ Desc" : "↑ Asc"}
             </button>
+            {(actEmail || actDateFrom || actDateTo || actSortBy !== "lastLoginAt" || actSortDir !== "desc") && (
+              <button onClick={() => { setActEmail(""); setActDateFrom(""); setActDateTo(""); setActSortBy("lastLoginAt"); setActSortDir("desc"); setActPage(1); }}
+                className="text-xs bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 px-2.5 py-1 rounded transition-colors">
+                ✕ Reset
+              </button>
+            )}
           </div>
           {/* Email signal summary */}
           <div className="text-xs text-slate-500 mb-3">
@@ -753,6 +769,12 @@ export default function AdminUsageDashboard() {
               className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 hover:bg-white/20 transition-colors">
               {waitlistSortOrder === "desc" ? "↓ Newest" : "↑ Oldest"}
             </button>
+            {(waitlistSourceFilter !== "all" || wlDateFrom || wlDateTo || waitlistSortOrder !== "desc") && (
+              <button onClick={() => { setWaitlistSourceFilter("all"); setWlDateFrom(""); setWlDateTo(""); setWaitlistSortOrder("desc"); setWlPage(1); }}
+                className="text-xs bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 px-2.5 py-1 rounded transition-colors">
+                ✕ Reset
+              </button>
+            )}
             <button
               onClick={() => {
                 const rows = waitlistRows;
@@ -861,6 +883,29 @@ export default function AdminUsageDashboard() {
             <input type="date" value={leDateTo}
               onChange={e => { setLeDateTo(e.target.value); setLePage(1); }}
               className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50" />
+            <button
+              onClick={() => {
+                const header = ["User ID", "Email", "IP Address", "Country", "Login At"];
+                const csvRows = loginEventRows.map(r => [
+                  r.userId, r.email ?? "", r.ipAddress ?? "", r.country ?? "",
+                  r.loginAt ? new Date(r.loginAt).toLocaleString("en-KW", { timeZone: "Asia/Kuwait" }) : "",
+                ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+                const csv = [header.join(","), ...csvRows].join("\n");
+                const blob = new Blob([csv], { type: "text/csv" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a"); a.href = url;
+                a.download = `login-events-${new Date().toISOString().slice(0,10)}.csv`;
+                a.click(); URL.revokeObjectURL(url);
+              }}
+              className="text-xs bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 hover:text-slate-200 px-2.5 py-1 rounded transition-colors">
+              Export CSV
+            </button>
+            {(leEmail || leCountry || leDateFrom || leDateTo) && (
+              <button onClick={() => { setLeEmail(""); setLeCountry(""); setLeDateFrom(""); setLeDateTo(""); setLePage(1); }}
+                className="text-xs bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 px-2.5 py-1 rounded transition-colors">
+                ✕ Reset
+              </button>
+            )}
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -918,6 +963,31 @@ export default function AdminUsageDashboard() {
             <input type="date" value={feDateTo}
               onChange={e => { setFeDateTo(e.target.value); setFePage(1); }}
               className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50" />
+            <button
+              onClick={() => {
+                const header = ["Run ID", "Fleet Mode", "Classification", "Score", "Cost USD", "Status", "Created"];
+                const csvRows = fleetEvalRows.map(r => [
+                  r.runId, r.fleetMode, r.classification ?? "",
+                  r.finalScore != null ? r.finalScore.toFixed(2) : "",
+                  r.costUsd, r.status,
+                  new Date(r.createdAt).toLocaleString("en-KW", { timeZone: "Asia/Kuwait" }),
+                ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+                const csv = [header.join(","), ...csvRows].join("\n");
+                const blob = new Blob([csv], { type: "text/csv" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a"); a.href = url;
+                a.download = `fleet-evaluations-${new Date().toISOString().slice(0,10)}.csv`;
+                a.click(); URL.revokeObjectURL(url);
+              }}
+              className="text-xs bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 hover:text-slate-200 px-2.5 py-1 rounded transition-colors">
+              Export CSV
+            </button>
+            {(feFleetMode || feStatus || feDateFrom || feDateTo) && (
+              <button onClick={() => { setFeFleetMode(""); setFeStatus(""); setFeDateFrom(""); setFeDateTo(""); setFePage(1); }}
+                className="text-xs bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 px-2.5 py-1 rounded transition-colors">
+                ✕ Reset
+              </button>
+            )}
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
