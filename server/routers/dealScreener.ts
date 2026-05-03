@@ -139,6 +139,7 @@ export const dealScreenerRouter = router({
             kwtFridayClose:   z.number().positive().optional(),
             thresholdBps:     z.number().int().min(1).max(500).optional(),
             notes:            z.string().max(2000).optional(),
+            macroTape:        z.string().max(2000).optional(),
           })
           .optional(),
         sourceType: z.enum(["manual", "signal"]).optional().default("manual"),

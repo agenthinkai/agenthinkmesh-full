@@ -3764,3 +3764,17 @@
 - [x] Smoke test: no coverage-gate note in evidenceBlob ✓
 - [x] Smoke test: GCC_EQ_QUANT voted NO on merit (expected open-gap < implied move, precedents rejected), NOT on coverage gate ✓
 - [x] Smoke test: hardFlags=[] ✓
+
+## GCC Equities Council — Patch 12 (03 May 2026)
+- [x] 12A: Add macroTape optional field to SignalRequest interface in navMath.ts
+- [x] 12B: Surface macroTape as "MACRO TAPE (Friday global close):" block in buildEvidenceBlob output
+- [x] 12C: Add macroTape z.string().max(2000).optional() to signalPayload zod schema in dealScreener.ts
+- [x] 12D: Strengthen SEED_QUOTES in GccEquitiesCouncil.tsx — top 6 names now have ~20bps bid/ask spreads pre-filled
+- [x] 12E: Add macroTape useState (pre-filled with sample tape) and textarea UI before Analyst Notes section
+- [x] 12F: Pass macroTape through in onSubmit payload
+- [x] tsc --noEmit: EXIT:0
+- [x] Smoke test: yesCount=4 noCount=6 (was 2/8 before patch 12) ✓
+- [x] Smoke test: GCC_EQ_MACRO voted YES — reasoning from macroTape (S&P, STOXX, Brent, Tadawul) ✓
+- [x] Smoke test: GCC_EQ_LIQUIDITY voted NO citing MARKET_CLOSED (not missing bid/ask data) ✓
+- [x] Smoke test: hardFlags=[] ✓
+- [x] Smoke test: coverage 99.99% ✓

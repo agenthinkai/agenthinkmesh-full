@@ -31,16 +31,16 @@ interface QuoteRow {
 
 // Top-10 KWT basket constituents — match server/lib/navMath.ts:KWT_BASKET
 const SEED_QUOTES: QuoteRow[] = [
-  { symbol: "KFH",       bid: "", ask: "", last: "0.620" },
-  { symbol: "NBK",       bid: "", ask: "", last: "1.040" },
-  { symbol: "ZAIN",      bid: "", ask: "", last: "0.490" },
-  { symbol: "WARBABANK", bid: "", ask: "", last: "0.255" },
-  { symbol: "GBK",       bid: "", ask: "", last: "0.310" },
-  { symbol: "MABANEE",   bid: "", ask: "", last: "0.815" },
-  { symbol: "NIND",      bid: "", ask: "", last: "0.235" },
-  { symbol: "ABK",       bid: "", ask: "", last: "0.300" },
-  { symbol: "ALTIJARIA", bid: "", ask: "", last: "0.108" },
-  { symbol: "BOURSA",    bid: "", ask: "", last: "3.700" },
+  { symbol: "KFH",       bid: "0.619", ask: "0.621", last: "0.620" },
+  { symbol: "NBK",       bid: "1.039", ask: "1.041", last: "1.040" },
+  { symbol: "ZAIN",      bid: "0.489", ask: "0.491", last: "0.490" },
+  { symbol: "WARBABANK", bid: "0.254", ask: "0.256", last: "0.255" },
+  { symbol: "GBK",       bid: "0.309", ask: "0.311", last: "0.310" },
+  { symbol: "MABANEE",   bid: "0.814", ask: "0.816", last: "0.815" },
+  { symbol: "NIND",      bid: "",      ask: "",       last: "0.235" },
+  { symbol: "ABK",       bid: "",      ask: "",       last: "0.300" },
+  { symbol: "ALTIJARIA", bid: "",      ask: "",       last: "0.108" },
+  { symbol: "BOURSA",    bid: "",      ask: "",       last: "3.700" },
 ];
 
 
@@ -53,6 +53,10 @@ export default function GccEquitiesCouncil() {
   const [kwtFri, setKwtFri] = useState("36.55");
   const [thresholdBps, setThresholdBps] = useState("15");
   const [notes, setNotes] = useState("");
+  const [macroTape, setMacroTape] = useState(
+    "S&P 500 +0.4%, STOXX 600 +0.2%, Brent +1.8% to USD 78.50, " +
+      "DXY -0.3%. No major GCC headlines. Tadawul Thu close +0.5%."
+  );
   const [quotes, setQuotes] = useState<QuoteRow[]>(SEED_QUOTES);
 
   const screen = trpc.dealScreener.screen.useMutation();
@@ -83,6 +87,7 @@ export default function GccEquitiesCouncil() {
       kwtFridayClose:   kwtFri ? parseFloat(kwtFri) : undefined,
       thresholdBps: thresholdBps ? parseInt(thresholdBps, 10) : 15,
       notes: notes || undefined,
+      macroTape: macroTape || undefined,
     };
 
     const dealText =
@@ -246,6 +251,21 @@ export default function GccEquitiesCouncil() {
         </div>
       </section>
 
+      {/* ─ Macro tape ────────────────────────────────────────────── */}
+      <section>
+        <label className="block">
+          <span className="text-xs uppercase tracking-wider text-slate-500">
+            Macro Tape (Friday global close)
+          </span>
+          <textarea
+            value={macroTape}
+            onChange={(e) => setMacroTape(e.target.value)}
+            rows={2}
+            className="mt-1 block w-full border rounded px-3 py-2 font-mono text-xs"
+            placeholder="S&P 500 +X%, Brent +Y%, DXY ±Z%, GCC headlines..."
+          />
+        </label>
+      </section>
       {/* ─ Analyst notes ──────────────────────────────────────────── */}
       <section>
         <label className="block">

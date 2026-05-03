@@ -114,6 +114,7 @@ export interface SignalRequest {
   kwtFridayClose?: number;
   thresholdBps?: number;
   notes?: string;
+  macroTape?: string;  // Friday global close context for Macro Sentinel
 }
 
 export function buildEvidenceBlob(req: SignalRequest): string {
@@ -157,6 +158,12 @@ export function buildEvidenceBlob(req: SignalRequest): string {
     lines.push(
       `  ${q.symbol.padEnd(12)} bid=${q.bid ?? "-"} ask=${q.ask ?? "-"} last=${q.last ?? "-"} mid=${m ?? "-"}`,
     );
+  }
+
+  if (req.macroTape) {
+    lines.push("");
+    lines.push("MACRO TAPE (Friday global close):");
+    lines.push(req.macroTape);
   }
 
   if (req.notes) {
