@@ -623,6 +623,7 @@ export const dealScreenerRouter = router({
           investorMode: dealScreenings.investorMode,
           sourceType: dealScreenings.sourceType,
           createdAt: dealScreenings.createdAt,
+          evidenceBlob: dealScreenings.evidenceBlob,
         })
         .from(dealScreenings)
         .where(eq(dealScreenings.userId, ctx.user.id))

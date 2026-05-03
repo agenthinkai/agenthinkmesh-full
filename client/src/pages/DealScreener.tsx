@@ -78,7 +78,8 @@ interface CouncilResult {
   conditionsToProceed: string[];
   blockingIssues: string[];
   votes: PersonaVote[];
-  councilMode?: "gcc" | "global_vc" | "india_pe";
+  councilMode?: "gcc" | "global_vc" | "india_pe" | "gcc_equities";
+  evidenceBlob?: string | null;
   icReport?: ICReportData | null;
   universitySignal?: UniversitySignal | null;
   precedents?: Array<{ taskDescription: string; finalVerdict: string | null; similarity: number; }>;
@@ -188,9 +189,20 @@ const PERSONA_META: Record<string, { icon: string; color: string }> = {
   FEMA_ADVISOR: { icon: "💱", color: "#4a9eff" },
   IN_FOUNDER: { icon: "👤", color: "#ff4757" },
   IN_CONTRARIAN: { icon: "🔥", color: "#ff4757" },
+  // GCC Equities
+  GCC_EQ_MACRO:      { icon: "🌍", color: "#4a9eff" },
+  GCC_EQ_RISK:       { icon: "🛡️", color: "#ff9f43" },
+  GCC_EQ_SHARIAH:    { icon: "☪️",  color: "#00ff87" },
+  GCC_EQ_REG:        { icon: "⚖️",  color: "#ff4757" },
+  GCC_EQ_DISCLOSURE: { icon: "📋", color: "#a855f7" },
+  GCC_EQ_FORENSIC:   { icon: "🔍", color: "#ff9f43" },
+  GCC_EQ_QUANT:      { icon: "📐", color: "#4a9eff" },
+  GCC_EQ_LIQUIDITY:  { icon: "💧", color: "#00ff87" },
+  GCC_EQ_ESG:        { icon: "🌱", color: "#00ff87" },
+  GCC_EQ_CONTRARIAN: { icon: "🔥", color: "#ff4757" },
 };
 
-type CouncilModeType = "gcc" | "global_vc" | "india_pe";
+type CouncilModeType = "gcc" | "global_vc" | "india_pe" | "gcc_equities";
 
 const PERSONA_ORDERS: Record<CouncilModeType, { id: string; label: string }[]> = {
   gcc: [
@@ -228,6 +240,18 @@ const PERSONA_ORDERS: Record<CouncilModeType, { id: string; label: string }[]> =
     { id: "FEMA_ADVISOR", label: "FEMA / FDI Advisor" },
     { id: "IN_FOUNDER", label: "Founder Evaluator" },
     { id: "IN_CONTRARIAN", label: "Contrarian" },
+  ],
+  gcc_equities: [
+    { id: "GCC_EQ_MACRO",       label: "GCC Macro Strategist" },
+    { id: "GCC_EQ_RISK",        label: "Risk & Volatility" },
+    { id: "GCC_EQ_SHARIAH",     label: "Shariah Screener" },
+    { id: "GCC_EQ_REG",         label: "Regulatory & CMA" },
+    { id: "GCC_EQ_DISCLOSURE",  label: "Disclosure Analyst" },
+    { id: "GCC_EQ_FORENSIC",    label: "Forensic Accountant" },
+    { id: "GCC_EQ_QUANT",       label: "Quant / NAV Math" },
+    { id: "GCC_EQ_LIQUIDITY",   label: "Liquidity & Market Micro" },
+    { id: "GCC_EQ_ESG",         label: "ESG & Governance" },
+    { id: "GCC_EQ_CONTRARIAN",  label: "Contrarian" },
   ],
 };
 
@@ -283,7 +307,66 @@ function VerdictBadge({ verdict, compact = false }: { verdict: VerdictType; comp
   );
 }
 
-// ── VoteCard ──────────────────────────────────────────────────────────────────
+// ── VoteCard ───────// ── QuantitativeEvidenceSection ─────────────────────────────────
+function QuantitativeEvidenceSection({ evidenceBlob }: { evidenceBlob: string }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div style={{
+      background: BG2,
+      border: `1px solid rgba(74,158,255,0.25)`,
+      borderLeft: `3px solid ${ACCENT}`,
+      borderRadius: 8,
+      marginBottom: 20,
+      overflow: "hidden",
+    }}>
+      {/* Header / toggle */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          padding: "12px 20px",
+          background: "transparent",
+          border: "none",
+          cursor: "pointer",
+          color: ACCENT,
+        }}
+      >
+        <span style={{ fontFamily: MONO, fontSize: 9, letterSpacing: "0.15em", flex: 1, textAlign: "left" }}>
+          📊 QUANTITATIVE EVIDENCE
+        </span>
+        <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED }}>
+          {open ? "▲ COLLAPSE" : "▼ EXPAND"}
+        </span>
+      </button>
+      {/* Body */}
+      {open && (
+        <div style={{ padding: "0 20px 16px" }}>
+          <pre style={{
+            fontFamily: MONO,
+            fontSize: 11,
+            color: TEXT2,
+            background: BG3,
+            border: `1px solid ${BORDER}`,
+            borderRadius: 6,
+            padding: "12px 16px",
+            overflowX: "auto",
+            whiteSpace: "pre-wrap",
+            wordBreak: "break-word",
+            lineHeight: 1.6,
+            margin: 0,
+          }}>
+            {evidenceBlob}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── VoteCard ────────────────────────────────────────────
 function VoteCard({ vote, result }: { vote: PersonaVote; result?: CouncilResult }) {
   const [expanded, setExpanded] = useState(false);
   const meta = PERSONA_META[vote.personaId] ?? { icon: "🤖", color: ACCENT };
@@ -1622,6 +1705,11 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
           )}
         </div>
        </div>
+
+      {/* ── Quantitative Evidence (GCC Equities only) ─────────────────────── */}
+      {result.councilMode === "gcc_equities" && result.evidenceBlob && (
+        <QuantitativeEvidenceSection evidenceBlob={result.evidenceBlob} />
+      )}
 
       {/* Similar Deals — RAG precedent layer */}
       {result.precedents && result.precedents.length > 0 && (
