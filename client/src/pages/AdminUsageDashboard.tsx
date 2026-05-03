@@ -72,10 +72,82 @@ function fmtRelative(date: Date | string | null): string {
   return d.toLocaleDateString();
 }
 
+// ── Reusable pagination controls ──────────────────────────────────────────────
+function PaginationBar({
+  page, totalPages, onPrev, onNext,
+}: { page: number; totalPages: number; onPrev: () => void; onNext: () => void }) {
+  if (totalPages <= 1) return null;
+  return (
+    <div className="flex items-center justify-between mt-4 text-xs text-slate-500">
+      <span>Page {page} of {totalPages}</span>
+      <div className="flex gap-2">
+        <button
+          disabled={page <= 1}
+          onClick={onPrev}
+          className="px-3 py-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >← Prev</button>
+        <button
+          disabled={page >= totalPages}
+          onClick={onNext}
+          className="px-3 py-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+        >Next →</button>
+      </div>
+    </div>
+  );
+}
+
+// ── Skeleton row ──────────────────────────────────────────────────────────────
+function SkeletonRows({ cols, rows = 5 }: { cols: number; rows?: number }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, i) => (
+        <tr key={i} className="border-b border-white/5">
+          {Array.from({ length: cols }).map((_, j) => (
+            <td key={j} className="py-2.5 pr-4">
+              <div className="h-3 bg-white/10 rounded animate-pulse" style={{ width: `${60 + ((i * j * 13) % 35)}%` }} />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </>
+  );
+}
+
 export default function AdminUsageDashboard() {
   const { user, loading: authLoading } = useAuth();
   const [days, setDays] = useState(30);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
+
+  // ── User Activity pagination + filters ──
+  const [actPage, setActPage] = useState(1);
+  const [actEmail, setActEmail] = useState("");
+  const [actDateFrom, setActDateFrom] = useState("");
+  const [actDateTo, setActDateTo] = useState("");
+  const [actSortBy, setActSortBy] = useState<"lastLoginAt" | "loginCount">("lastLoginAt");
+  const [actSortDir, setActSortDir] = useState<"asc" | "desc">("desc");
+  const ACT_LIMIT = 20;
+
+  // ── Waitlist pagination + filters ──
+  const [wlPage, setWlPage] = useState(1);
+  const [wlDateFrom, setWlDateFrom] = useState("");
+  const [wlDateTo, setWlDateTo] = useState("");
+  const WL_LIMIT = 20;
+
+  // ── Login Events pagination + filters ──
+  const [lePage, setLePage] = useState(1);
+  const [leEmail, setLeEmail] = useState("");
+  const [leCountry, setLeCountry] = useState("");
+  const [leDateFrom, setLeDateFrom] = useState("");
+  const [leDateTo, setLeDateTo] = useState("");
+  const LE_LIMIT = 20;
+
+  // ── Fleet Evaluations pagination + filters ──
+  const [fePage, setFePage] = useState(1);
+  const [feFleetMode, setFeFleetMode] = useState("");
+  const [feStatus, setFeStatus] = useState<"" | "queued" | "running" | "completed" | "failed">("" );
+  const [feDateFrom, setFeDateFrom] = useState("");
+  const [feDateTo, setFeDateTo] = useState("");
+  const FE_LIMIT = 50;
 
   const { data: today, isLoading: todayLoading } = trpc.adminUsage.todaySummary.useQuery(undefined, {
     enabled: user?.role === "admin",
@@ -115,24 +187,69 @@ export default function AdminUsageDashboard() {
 
   const assignEnterprise = trpc.billing.assignEnterprise.useMutation();
 
-  const { data: activityData, isLoading: activityLoading } = trpc.adminUsage.getUserActivity.useQuery(undefined, {
-    enabled: user?.role === "admin",
-  });
-  const activityRows = activityData?.rows;
+  // ── User Activity query (server-side paginated) ──
+  const { data: activityData, isLoading: activityLoading } = trpc.adminUsage.getUserActivity.useQuery({
+    limit: ACT_LIMIT,
+    offset: (actPage - 1) * ACT_LIMIT,
+    email: actEmail || undefined,
+    dateFrom: actDateFrom || undefined,
+    dateTo: actDateTo || undefined,
+    sortBy: actSortBy,
+    sortDir: actSortDir,
+  }, { enabled: user?.role === "admin" });
+  const activityRows = activityData?.rows ?? [];
+  const actTotal = activityData?.total ?? 0;
+  const actTotalPages = Math.max(1, Math.ceil(actTotal / ACT_LIMIT));
   const emailSignalCount = activityData?.emailSignalCount ?? 0;
 
-  const { data: waitlistData, isLoading: waitlistLoading } = trpc.waitlist.list.useQuery(undefined, {
-    enabled: user?.role === "admin",
-  });
-  const { data: waitlistBySource } = trpc.adminUsage.waitlistBySource.useQuery(undefined, {
-    enabled: user?.role === "admin",
-  });
+  // ── Waitlist query (server-side paginated) ──
   const [waitlistSourceFilter, setWaitlistSourceFilter] = useState<string>("all");
   const [waitlistSortOrder, setWaitlistSortOrder] = useState<"desc" | "asc">("desc");
   const [copyEmailsLabel, setCopyEmailsLabel] = useState<string | null>(null);
   const [lastExported, setLastExported] = useState<string | null>(() =>
     typeof window !== "undefined" ? localStorage.getItem("mesh_waitlist_last_exported") : null
   );
+  const { data: waitlistData, isLoading: waitlistLoading } = trpc.waitlist.list.useQuery({
+    limit: WL_LIMIT,
+    offset: (wlPage - 1) * WL_LIMIT,
+    sourcePage: waitlistSourceFilter !== "all" ? waitlistSourceFilter : undefined,
+    dateFrom: wlDateFrom || undefined,
+    dateTo: wlDateTo || undefined,
+    sortDir: waitlistSortOrder,
+  }, { enabled: user?.role === "admin" });
+  const waitlistRows = waitlistData?.rows ?? [];
+  const wlTotal = waitlistData?.total ?? 0;
+  const wlTotalPages = Math.max(1, Math.ceil(wlTotal / WL_LIMIT));
+
+  const { data: waitlistBySource } = trpc.adminUsage.waitlistBySource.useQuery(undefined, {
+    enabled: user?.role === "admin",
+  });
+
+  // ── Login Events query (server-side paginated) ──
+  const { data: loginEventsData, isLoading: loginEventsLoading } = trpc.adminUsage.listLoginEvents.useQuery({
+    limit: LE_LIMIT,
+    offset: (lePage - 1) * LE_LIMIT,
+    email: leEmail || undefined,
+    country: leCountry || undefined,
+    dateFrom: leDateFrom || undefined,
+    dateTo: leDateTo || undefined,
+  }, { enabled: user?.role === "admin" });
+  const loginEventRows = loginEventsData?.rows ?? [];
+  const leTotal = loginEventsData?.total ?? 0;
+  const leTotalPages = Math.max(1, Math.ceil(leTotal / LE_LIMIT));
+
+  // ── Fleet Evaluations query (server-side paginated) ──
+  const { data: fleetEvalData, isLoading: fleetEvalLoading } = trpc.adminUsage.listFleetEvaluations.useQuery({
+    limit: FE_LIMIT,
+    offset: (fePage - 1) * FE_LIMIT,
+    fleetMode: feFleetMode || undefined,
+    status: feStatus || undefined,
+    dateFrom: feDateFrom || undefined,
+    dateTo: feDateTo || undefined,
+  }, { enabled: user?.role === "admin" });
+  const fleetEvalRows = fleetEvalData?.rows ?? [];
+  const feTotal = fleetEvalData?.total ?? 0;
+  const feTotalPages = Math.max(1, Math.ceil(feTotal / FE_LIMIT));
 
   // Aggregate daily rows into per-date totals for the chart
   const chartData = useMemo(() => {
@@ -516,29 +633,59 @@ export default function AdminUsageDashboard() {
 
         {/* User Activity Table */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-6 mt-8">
-          <h2 className="text-base font-semibold text-white mb-4">User Activity</h2>
-          {/* Email signal summary line */}
-          <div className="text-xs text-slate-500 mb-4">
-            {activityLoading ? null : emailSignalCount > 0
-              ? `${emailSignalCount} email signal${emailSignalCount !== 1 ? "s" : ""} auto-logged this month`
-              : "No email signals yet"}
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-white">User Activity</h2>
+            <span className="text-xs text-slate-500">{actTotal} total</span>
           </div>
-          {activityLoading ? (
-            <div className="text-slate-500 text-sm">Loading…</div>
-          ) : activityRows && activityRows.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-white/10 text-slate-500 text-left">
-                    <th className="pb-2 pr-4">User</th>
-                    <th className="pb-2 pr-4">IP Address</th>
-                    <th className="pb-2 pr-4">Country</th>
-                    <th className="pb-2 pr-4">Last Login</th>
-                    <th className="pb-2">Login Count</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {activityRows.map((row) => (
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <input
+              type="text" placeholder="Filter by email…" value={actEmail}
+              onChange={e => { setActEmail(e.target.value); setActPage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 placeholder-slate-600 focus:outline-none focus:border-teal-500/50 w-48"
+            />
+            <input type="date" value={actDateFrom}
+              onChange={e => { setActDateFrom(e.target.value); setActPage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50"
+            />
+            <input type="date" value={actDateTo}
+              onChange={e => { setActDateTo(e.target.value); setActPage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50"
+            />
+            <select value={actSortBy} onChange={e => { setActSortBy(e.target.value as "lastLoginAt" | "loginCount"); setActPage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50">
+              <option value="lastLoginAt">Sort: Last Login</option>
+              <option value="loginCount">Sort: Login Count</option>
+            </select>
+            <button onClick={() => setActSortDir(d => d === "desc" ? "asc" : "desc")}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 hover:bg-white/20 transition-colors">
+              {actSortDir === "desc" ? "↓ Desc" : "↑ Asc"}
+            </button>
+          </div>
+          {/* Email signal summary */}
+          <div className="text-xs text-slate-500 mb-3">
+            {!activityLoading && (emailSignalCount > 0
+              ? `${emailSignalCount} email signal${emailSignalCount !== 1 ? "s" : ""} auto-logged this month`
+              : "No email signals yet")}
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/10 text-slate-500 text-left">
+                  <th className="pb-2 pr-4">User</th>
+                  <th className="pb-2 pr-4">IP Address</th>
+                  <th className="pb-2 pr-4">Country</th>
+                  <th className="pb-2 pr-4">Last Login</th>
+                  <th className="pb-2">Login Count</th>
+                </tr>
+              </thead>
+              <tbody>
+                {activityLoading ? (
+                  <SkeletonRows cols={5} rows={5} />
+                ) : activityRows.length === 0 ? (
+                  <tr><td colSpan={5} className="py-6 text-center text-slate-500 text-sm">No users found.</td></tr>
+                ) : (
+                  activityRows.map((row) => (
                     <>
                       <tr
                         key={row.userId}
@@ -551,18 +698,14 @@ export default function AdminUsageDashboard() {
                         </td>
                         <td className="py-2 pr-4 font-mono text-slate-400 text-xs">{row.lastIp ?? "—"}</td>
                         <td className="py-2 pr-4 text-slate-300">
-                          {row.lastCountry
-                            ? `${countryFlag(row.lastCountry)} ${row.lastCountry}`.trim()
-                            : "—"}
+                          {row.lastCountry ? `${countryFlag(row.lastCountry)} ${row.lastCountry}`.trim() : "—"}
                         </td>
                         <td className="py-2 pr-4 text-slate-400">{fmtRelative(row.lastLoginAt)}</td>
                         <td className="py-2 text-slate-400">
                           <span className="flex items-center gap-2">
                             {row.loginCount}
                             {row.loginCount > 0 && (
-                              <span className="text-slate-600 text-xs">
-                                {expandedUser === row.userId ? "▲" : "▼"}
-                              </span>
+                              <span className="text-slate-600 text-xs">{expandedUser === row.userId ? "▲" : "▼"}</span>
                             )}
                           </span>
                         </td>
@@ -571,216 +714,251 @@ export default function AdminUsageDashboard() {
                         <LoginHistoryRow userId={row.userId} isAdmin={user?.role === "admin"} />
                       )}
                     </>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="text-slate-500 text-sm">No users found.</div>
-          )}
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <PaginationBar page={actPage} totalPages={actTotalPages} onPrev={() => setActPage(p => p - 1)} onNext={() => setActPage(p => p + 1)} />
         </div>
 
         {/* Waitlist Signups */}
         <div className="bg-white/5 border border-white/10 rounded-xl p-6 mt-8">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-3">
             <div>
               <h2 className="text-base font-semibold text-white">Waitlist Signups</h2>
               <p className="text-xs text-slate-400 mt-0.5">All users who joined the waitlist via the landing page.</p>
             </div>
-            <div className="flex items-center gap-3">
-              <select
-                value={waitlistSourceFilter}
-                onChange={(e) => setWaitlistSourceFilter(e.target.value)}
-                className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50"
-              >
-                <option value="all">All sources</option>
-                <option value="sg-ic">sg-ic</option>
-                <option value="jp-ic">jp-ic</option>
-                <option value="us-ic">us-ic</option>
-                <option value="demos">demos</option>
-                <option value="other">other</option>
-              </select>
-              <span className="text-xs font-mono text-teal-400 bg-teal-400/10 border border-teal-400/20 px-2 py-0.5 rounded">
-                {waitlistLoading ? "…" : (() => {
-                  const filtered = waitlistSourceFilter === "all"
-                    ? (waitlistData ?? [])
-                    : (waitlistData ?? []).filter(r => {
-                        const KNOWN = ["sg-ic", "jp-ic", "us-ic", "demos"];
-                        if (waitlistSourceFilter === "other") return !KNOWN.includes(r.sourcePage ?? "");
-                        return r.sourcePage === waitlistSourceFilter;
-                      });
-                  return `${filtered.length} signup${filtered.length !== 1 ? "s" : ""}`;
-                })()}
-              </span>
-              <button
-                onClick={() => {
-                  const KNOWN_SOURCES = ["sg-ic", "jp-ic", "us-ic", "demos"];
-                  const rows = (waitlistData ?? []).filter(r => {
-                    if (waitlistSourceFilter === "all") return true;
-                    if (waitlistSourceFilter === "other") return !KNOWN_SOURCES.includes(r.sourcePage ?? "");
-                    return r.sourcePage === waitlistSourceFilter;
-                  }).slice().sort((a, b) => {
-                    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-                    return waitlistSortOrder === "desc" ? tb - ta : ta - tb;
-                  });
-                  const header = ["Email", "Source", "Interest", "Signed Up"];
-                  const csvRows = rows.map(r => [
-                    r.email ?? "",
-                    r.sourcePage ?? "",
-                    r.stageInterest ?? "",
-                    r.createdAt
-                      ? new Date(r.createdAt).toLocaleString("en-KW", { timeZone: "Asia/Kuwait", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", timeZoneName: "short" })
-                      : "",
-                  ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
-                  const csv = [header.join(","), ...csvRows].join("\n");
-                  const today = new Date().toISOString().slice(0, 10);
-                  const blob = new Blob([csv], { type: "text/csv" });
-                  const url = URL.createObjectURL(blob);
-                  const a = document.createElement("a");
-                  a.href = url;
-                  a.download = `waitlist-signups-${today}.csv`;
-                  a.click();
-                  URL.revokeObjectURL(url);
-                  const kwt = new Date().toLocaleString("en-KW", {
-                    timeZone: "Asia/Kuwait",
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                    hour12: false,
-                  }).replace(",", "") + " KWT";
-                  localStorage.setItem("mesh_waitlist_last_exported", kwt);
-                  setLastExported(kwt);
-                }}
-                className="text-xs bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 text-slate-400 hover:text-slate-200 px-2.5 py-1 rounded transition-colors"
-              >
-                Export CSV
-              </button>
-              <button
-                onClick={() => {
-                  const KNOWN_SOURCES = ["sg-ic", "jp-ic", "us-ic", "demos"];
-                  const rows = (waitlistData ?? []).filter(r => {
-                    if (waitlistSourceFilter === "all") return true;
-                    if (waitlistSourceFilter === "other") return !KNOWN_SOURCES.includes(r.sourcePage ?? "");
-                    return r.sourcePage === waitlistSourceFilter;
-                  }).slice().sort((a, b) => {
-                    const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-                    const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-                    return waitlistSortOrder === "desc" ? tb - ta : ta - tb;
-                  });
-                  const emails = rows.map(r => r.email ?? "").filter(Boolean).join(", ");
-                  navigator.clipboard.writeText(emails).then(() => {
-                    setCopyEmailsLabel(`\u2713 Copied ${rows.length} email${rows.length !== 1 ? "s" : ""}`);
-                    setTimeout(() => setCopyEmailsLabel(null), 2000);
-                  });
-                }}
-                className="text-xs bg-white/5 border border-white/10 hover:border-white/20 hover:bg-white/10 text-slate-400 hover:text-slate-200 px-2.5 py-1 rounded transition-colors min-w-[96px] text-center"
-              >
-                {copyEmailsLabel ?? "Copy emails"}
-              </button>
-            </div>
+            <span className="text-xs text-slate-500">{wlTotal} total</span>
           </div>
-          {lastExported && (
-            <p className="text-[11px] text-slate-600 mt-1 mb-0">Last exported: {lastExported}</p>
-          )}
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2 mb-3">
+            <select value={waitlistSourceFilter}
+              onChange={e => { setWaitlistSourceFilter(e.target.value); setWlPage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50">
+              <option value="all">All sources</option>
+              <option value="sg-ic">sg-ic</option>
+              <option value="jp-ic">jp-ic</option>
+              <option value="us-ic">us-ic</option>
+              <option value="demos">demos</option>
+              <option value="other">other</option>
+            </select>
+            <input type="date" value={wlDateFrom}
+              onChange={e => { setWlDateFrom(e.target.value); setWlPage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50" />
+            <input type="date" value={wlDateTo}
+              onChange={e => { setWlDateTo(e.target.value); setWlPage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50" />
+            <button onClick={() => { setWaitlistSortOrder(o => o === "desc" ? "asc" : "desc"); setWlPage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 hover:bg-white/20 transition-colors">
+              {waitlistSortOrder === "desc" ? "↓ Newest" : "↑ Oldest"}
+            </button>
+            <button
+              onClick={() => {
+                const rows = waitlistRows;
+                const header = ["Email", "Source", "Interest", "Signed Up"];
+                const csvRows = rows.map(r => [
+                  r.email ?? "", r.sourcePage ?? "", r.stageInterest ?? "",
+                  r.createdAt ? new Date(r.createdAt).toLocaleString("en-KW", { timeZone: "Asia/Kuwait" }) : "",
+                ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(","));
+                const csv = [header.join(","), ...csvRows].join("\n");
+                const blob = new Blob([csv], { type: "text/csv" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a"); a.href = url;
+                a.download = `waitlist-signups-${new Date().toISOString().slice(0,10)}.csv`;
+                a.click(); URL.revokeObjectURL(url);
+                const kwt = new Date().toLocaleString("en-KW", { timeZone: "Asia/Kuwait", day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }).replace(",", "") + " KWT";
+                localStorage.setItem("mesh_waitlist_last_exported", kwt); setLastExported(kwt);
+              }}
+              className="text-xs bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 hover:text-slate-200 px-2.5 py-1 rounded transition-colors">
+              Export CSV
+            </button>
+            <button
+              onClick={() => {
+                const emails = waitlistRows.map(r => r.email ?? "").filter(Boolean).join(", ");
+                navigator.clipboard.writeText(emails).then(() => {
+                  setCopyEmailsLabel(`✓ Copied ${waitlistRows.length}`);
+                  setTimeout(() => setCopyEmailsLabel(null), 2000);
+                });
+              }}
+              className="text-xs bg-white/5 border border-white/10 hover:bg-white/10 text-slate-400 hover:text-slate-200 px-2.5 py-1 rounded transition-colors min-w-[96px] text-center">
+              {copyEmailsLabel ?? "Copy emails"}
+            </button>
+          </div>
+          {lastExported && <p className="text-[11px] text-slate-600 mb-2">Last exported: {lastExported}</p>}
           {/* Source breakdown summary */}
           {(() => {
             if (!waitlistBySource || waitlistBySource.length === 0) return null;
             const KNOWN = ["sg-ic", "jp-ic", "us-ic"];
-            const knownRows = KNOWN.map(src => ({
-              src,
-              count: Number(waitlistBySource.find(r => r.sourcePage === src)?.count ?? 0),
-            }));
-            const otherCount = waitlistBySource
-              .filter(r => !KNOWN.includes(r.sourcePage ?? ""))
-              .reduce((s, r) => s + Number(r.count), 0);
+            const knownRows = KNOWN.map(src => ({ src, count: Number(waitlistBySource.find(r => r.sourcePage === src)?.count ?? 0) }));
+            const otherCount = waitlistBySource.filter(r => !KNOWN.includes(r.sourcePage ?? "")).reduce((s, r) => s + Number(r.count), 0);
             const allRows = [...knownRows, { src: "other", count: otherCount }].filter(r => r.count > 0);
             if (allRows.length === 0) return null;
             const maxCount = Math.max(...allRows.map(r => r.count));
             return (
-              <div className="mb-5 pb-4 border-b border-white/10">
+              <div className="mb-4 pb-3 border-b border-white/10">
                 <p className="text-xs text-slate-500 font-medium mb-2">Signups by source:</p>
                 <div className="flex flex-wrap gap-x-6 gap-y-1.5">
                   {allRows.map(({ src, count }) => (
                     <div key={src} className="flex items-center gap-2">
-                      <span className={`text-xs font-mono ${count === maxCount ? "text-emerald-300 font-semibold" : "text-slate-400"}`}>
-                        {src}
-                      </span>
+                      <span className={`text-xs font-mono ${count === maxCount ? "text-emerald-300 font-semibold" : "text-slate-400"}`}>{src}</span>
                       <span className="text-xs text-slate-600">·</span>
-                      <span className={`text-xs font-mono ${count === maxCount ? "text-emerald-300 font-semibold" : "text-slate-400"}`}>
-                        {count} signup{count !== 1 ? "s" : ""}
-                      </span>
-                      {count === maxCount && (
-                        <span className="text-[10px] text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-1.5 py-0.5 rounded font-mono">
-                          top
-                        </span>
-                      )}
+                      <span className={`text-xs font-mono ${count === maxCount ? "text-emerald-300 font-semibold" : "text-slate-400"}`}>{count}</span>
+                      {count === maxCount && <span className="text-[10px] text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 px-1.5 py-0.5 rounded font-mono">top</span>}
                     </div>
                   ))}
                 </div>
               </div>
             );
           })()}
-          {waitlistLoading ? (
-            <div className="text-slate-500 text-sm">Loading…</div>
-          ) : (() => {
-            const KNOWN_SOURCES = ["sg-ic", "jp-ic", "us-ic", "demos"];
-            const filteredRows = (waitlistData ?? []).filter(r => {
-              if (waitlistSourceFilter === "all") return true;
-              if (waitlistSourceFilter === "other") return !KNOWN_SOURCES.includes(r.sourcePage ?? "");
-              return r.sourcePage === waitlistSourceFilter;
-            }).slice().sort((a, b) => {
-              const ta = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-              const tb = b.createdAt ? new Date(b.createdAt).getTime() : 0;
-              return waitlistSortOrder === "desc" ? tb - ta : ta - tb;
-            });
-            return filteredRows.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-xs text-slate-500 border-b border-white/10">
-                    <th className="pb-2 pr-4 font-medium">Email</th>
-                    <th className="pb-2 pr-4 font-medium">Workflow Interest</th>
-                    <th className="pb-2 pr-4 font-medium">Source Page</th>
-                    <th className="pb-2 font-medium">
-                      <button
-                        onClick={() => setWaitlistSortOrder(o => o === "desc" ? "asc" : "desc")}
-                        className="inline-flex items-center gap-1 hover:text-slate-300 transition-colors cursor-pointer"
-                      >
-                        Signed Up
-                        <span className="text-[10px]">{waitlistSortOrder === "desc" ? "↓" : "↑"}</span>
-                      </button>
-                    </th>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-xs text-slate-500 border-b border-white/10">
+                  <th className="pb-2 pr-4 font-medium">Email</th>
+                  <th className="pb-2 pr-4 font-medium">Workflow Interest</th>
+                  <th className="pb-2 pr-4 font-medium">Source Page</th>
+                  <th className="pb-2 font-medium">Signed Up</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {waitlistLoading ? (
+                  <SkeletonRows cols={4} rows={5} />
+                ) : waitlistRows.length === 0 ? (
+                  <tr><td colSpan={4} className="py-6 text-center text-slate-500 text-sm">
+                    {waitlistSourceFilter === "all" ? "No waitlist signups yet." : `No signups from source “${waitlistSourceFilter}”.`}
+                  </td></tr>
+                ) : waitlistRows.map(row => (
+                  <tr key={row.id} className="hover:bg-white/[0.03] transition-colors">
+                    <td className="py-2 pr-4 text-slate-200 font-mono text-xs">{row.email}</td>
+                    <td className="py-2 pr-4"><span className="text-xs bg-teal-400/10 text-teal-300 border border-teal-400/20 px-2 py-0.5 rounded">{row.stageInterest ?? "—"}</span></td>
+                    <td className="py-2 pr-4 text-slate-400 text-xs">{row.sourcePage ?? "—"}</td>
+                    <td className="py-2 text-slate-400 text-xs">{row.createdAt ? new Date(row.createdAt).toLocaleString("en-KW", { timeZone: "Asia/Kuwait" }) : "—"}</td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {filteredRows.map((row) => (
-                    <tr key={row.id} className="hover:bg-white/[0.03] transition-colors">
-                      <td className="py-2 pr-4 text-slate-200 font-mono text-xs">{row.email}</td>
-                      <td className="py-2 pr-4">
-                        <span className="text-xs bg-teal-400/10 text-teal-300 border border-teal-400/20 px-2 py-0.5 rounded">
-                          {row.stageInterest ?? "—"}
-                        </span>
-                      </td>
-                      <td className="py-2 pr-4 text-slate-400 text-xs">{row.sourcePage ?? "—"}</td>
-                      <td className="py-2 text-slate-400 text-xs">
-                        {row.createdAt
-                          ? new Date(row.createdAt).toLocaleString("en-KW", { timeZone: "Asia/Kuwait" })
-                          : "—"}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="text-slate-500 text-sm">
-              {waitlistSourceFilter === "all" ? "No waitlist signups yet." : `No signups from source “${waitlistSourceFilter}”.`}
-            </div>
-          );
-          })()}
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <PaginationBar page={wlPage} totalPages={wlTotalPages} onPrev={() => setWlPage(p => p - 1)} onNext={() => setWlPage(p => p + 1)} />
+        </div>
+
+        {/* Login Events */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6 mt-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-white">Login Events</h2>
+            <span className="text-xs text-slate-500">{leTotal} total</span>
+          </div>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <input type="text" placeholder="Filter by email…" value={leEmail}
+              onChange={e => { setLeEmail(e.target.value); setLePage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 placeholder-slate-600 focus:outline-none focus:border-teal-500/50 w-48" />
+            <input type="text" placeholder="Country (e.g. KW)…" value={leCountry}
+              onChange={e => { setLeCountry(e.target.value); setLePage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 placeholder-slate-600 focus:outline-none focus:border-teal-500/50 w-32" />
+            <input type="date" value={leDateFrom}
+              onChange={e => { setLeDateFrom(e.target.value); setLePage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50" />
+            <input type="date" value={leDateTo}
+              onChange={e => { setLeDateTo(e.target.value); setLePage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50" />
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/10 text-slate-500 text-left">
+                  <th className="pb-2 pr-4">User</th>
+                  <th className="pb-2 pr-4">IP Address</th>
+                  <th className="pb-2 pr-4">Country</th>
+                  <th className="pb-2">Login At</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loginEventsLoading ? (
+                  <SkeletonRows cols={4} rows={5} />
+                ) : loginEventRows.length === 0 ? (
+                  <tr><td colSpan={4} className="py-6 text-center text-slate-500 text-sm">No login events found.</td></tr>
+                ) : loginEventRows.map(row => (
+                  <tr key={row.id} className="border-b border-white/5 hover:bg-white/5">
+                    <td className="py-2 pr-4">
+                      <div className="text-slate-200 text-xs">{row.email}</div>
+                      <div className="text-slate-600 text-[11px] font-mono">{row.userId}</div>
+                    </td>
+                    <td className="py-2 pr-4 font-mono text-slate-400 text-xs">{row.ipAddress ?? "—"}</td>
+                    <td className="py-2 pr-4 text-slate-300 text-xs">{row.country ? `${countryFlag(row.country)} ${row.country}` : "—"}</td>
+                    <td className="py-2 text-slate-400 text-xs">{fmtRelative(row.loginAt)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <PaginationBar page={lePage} totalPages={leTotalPages} onPrev={() => setLePage(p => p - 1)} onNext={() => setLePage(p => p + 1)} />
+        </div>
+
+        {/* Fleet Evaluations */}
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6 mt-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold text-white">Fleet Evaluations</h2>
+            <span className="text-xs text-slate-500">{feTotal} total</span>
+          </div>
+          <div className="flex flex-wrap gap-2 mb-4">
+            <input type="text" placeholder="Fleet mode…" value={feFleetMode}
+              onChange={e => { setFeFleetMode(e.target.value); setFePage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 placeholder-slate-600 focus:outline-none focus:border-teal-500/50 w-36" />
+            <select value={feStatus} onChange={e => { setFeStatus(e.target.value as typeof feStatus); setFePage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50">
+              <option value="">All statuses</option>
+              <option value="queued">queued</option>
+              <option value="running">running</option>
+              <option value="completed">completed</option>
+              <option value="failed">failed</option>
+            </select>
+            <input type="date" value={feDateFrom}
+              onChange={e => { setFeDateFrom(e.target.value); setFePage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50" />
+            <input type="date" value={feDateTo}
+              onChange={e => { setFeDateTo(e.target.value); setFePage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50" />
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/10 text-slate-500 text-left">
+                  <th className="pb-2 pr-4">Run ID</th>
+                  <th className="pb-2 pr-4">Fleet Mode</th>
+                  <th className="pb-2 pr-4">Classification</th>
+                  <th className="pb-2 pr-4">Score</th>
+                  <th className="pb-2 pr-4">Cost</th>
+                  <th className="pb-2 pr-4">Status</th>
+                  <th className="pb-2">Created</th>
+                </tr>
+              </thead>
+              <tbody>
+                {fleetEvalLoading ? (
+                  <SkeletonRows cols={7} rows={5} />
+                ) : fleetEvalRows.length === 0 ? (
+                  <tr><td colSpan={7} className="py-6 text-center text-slate-500 text-sm">No fleet evaluations found.</td></tr>
+                ) : fleetEvalRows.map(row => (
+                  <tr key={row.id} className="border-b border-white/5 hover:bg-white/5">
+                    <td className="py-2 pr-4 font-mono text-slate-400 text-xs">#{row.runId}</td>
+                    <td className="py-2 pr-4 text-slate-300 text-xs">{row.fleetMode}</td>
+                    <td className="py-2 pr-4 text-slate-400 text-xs">{row.classification ?? "—"}</td>
+                    <td className="py-2 pr-4 text-slate-300 text-xs">{row.finalScore != null ? row.finalScore.toFixed(2) : "—"}</td>
+                    <td className="py-2 pr-4 text-slate-400 text-xs">${row.costUsd}</td>
+                    <td className="py-2 pr-4">
+                      <span className={`text-[11px] px-1.5 py-0.5 rounded font-mono ${
+                        row.status === "completed" ? "bg-emerald-400/10 text-emerald-300" :
+                        row.status === "failed" ? "bg-red-400/10 text-red-300" :
+                        row.status === "running" ? "bg-amber-400/10 text-amber-300" :
+                        "bg-slate-400/10 text-slate-400"
+                      }`}>{row.status}</span>
+                    </td>
+                    <td className="py-2 text-slate-400 text-xs">{fmtRelative(new Date(row.createdAt))}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <PaginationBar page={fePage} totalPages={feTotalPages} onPrev={() => setFePage(p => p - 1)} onNext={() => setFePage(p => p + 1)} />
         </div>
 
         {/* ── Deal Screening Funnel ── */}

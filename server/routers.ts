@@ -5,7 +5,7 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
-import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews, turnaroundSessions, roles, partnerInstitutions, partnershipRequests, llmUsage, highDemandLog, loginEvents, dealSignals, waitlistSignups } from "../drizzle/schema";
+import { taskHistory, agents, agentMetrics, vaultDocuments, annotations, annotationExports, users, contactSubmissions, meshTasks, portfolioReviews, turnaroundSessions, roles, partnerInstitutions, partnershipRequests, llmUsage, highDemandLog, loginEvents, dealSignals, waitlistSignups, founderAgentEvaluations, founderAgentRuns } from "../drizzle/schema";
 import { recordLlmUsage } from "./llmRateLimit";
 import { turnaroundRouter } from "./routers/turnaround";
 import { identityRouter } from "./routers/identity";
@@ -37,7 +37,7 @@ import { adminProvisionRouter } from "./routers/adminProvision";
 import { decisionUpgradeRouter } from "./routers/decisionUpgrade";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
-import { eq, desc, gte, sql, and, like, or, isNull, lt } from "drizzle-orm";
+import { eq, desc, gte, lte, sql, and, like, or, isNull, lt } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
 import { getRAGContext, injectRAGContext } from "./ragContext";
 import { notifyOwner } from "./_core/notification";
@@ -3076,13 +3076,45 @@ If a section is not applicable (e.g. no financial data provided), set it to null
         }).catch(() => false);
         return { success: true };
       }),
-    // Admin: list all waitlist signups
+    // Admin: list waitlist signups (paginated + filtered)
     list: protectedProcedure
-      .query(async ({ ctx }) => {
+      .input(z.object({
+        limit:      z.number().min(1).max(100).default(20),
+        offset:     z.number().min(0).default(0),
+        sourcePage: z.string().optional(),
+        dateFrom:   z.string().optional(),
+        dateTo:     z.string().optional(),
+        sortDir:    z.enum(["asc", "desc"]).default("desc"),
+      }).optional())
+      .query(async ({ ctx, input }) => {
         if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
         const db = await getDb();
-        if (!db) return [];
-        return db.select().from(waitlistSignups).orderBy(waitlistSignups.createdAt);
+        if (!db) return { rows: [], total: 0 };
+
+        const limit      = Math.min(input?.limit  ?? 20, 100);
+        const offset     = input?.offset ?? 0;
+        const sourcePage = input?.sourcePage;
+        const dateFrom   = input?.dateFrom ? new Date(input.dateFrom) : undefined;
+        const dateTo     = input?.dateTo   ? new Date(input.dateTo)   : undefined;
+        const sortDir    = input?.sortDir  ?? "desc";
+
+        const conds = [];
+        if (sourcePage && sourcePage !== "all") conds.push(eq(waitlistSignups.sourcePage, sourcePage));
+        if (dateFrom) conds.push(gte(waitlistSignups.createdAt, dateFrom));
+        if (dateTo)   conds.push(lte(waitlistSignups.createdAt, dateTo));
+
+        const whereClause = conds.length > 0 ? and(...conds) : undefined;
+
+        const [totalRow, rows] = await Promise.all([
+          db.select({ count: sql<number>`COUNT(*)` }).from(waitlistSignups).where(whereClause),
+          db.select().from(waitlistSignups)
+            .where(whereClause)
+            .orderBy(sortDir === "desc" ? desc(waitlistSignups.createdAt) : waitlistSignups.createdAt)
+            .limit(limit)
+            .offset(offset),
+        ]);
+
+        return { rows, total: Number(totalRow[0]?.count ?? 0) };
       }),
   }),
   // ── Portfolio Intelligence ───────────────────────────────────────────────────────────────────────────────────────────
@@ -3584,18 +3616,42 @@ If a section is not applicable (e.g. no financial data provided), set it to null
         .orderBy(desc(users.createdAt));
     }),
 
-    // User Activity — one row per user, most recent login first
-    getUserActivity: protectedProcedure.query(async ({ ctx }) => {
+    // User Activity — one row per user, most recent login first (paginated)
+    getUserActivity: protectedProcedure
+      .input(z.object({
+        limit:     z.number().min(1).max(100).default(20),
+        offset:    z.number().min(0).default(0),
+        email:     z.string().optional(),
+        dateFrom:  z.string().optional(), // ISO date string
+        dateTo:    z.string().optional(), // ISO date string
+        sortBy:    z.enum(["lastLoginAt", "loginCount"]).default("lastLoginAt"),
+        sortDir:   z.enum(["asc", "desc"]).default("desc"),
+      }).optional())
+      .query(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-      // Get all users
-      const allUsers = await db
+      const limit  = Math.min(input?.limit  ?? 20, 100);
+      const offset = input?.offset ?? 0;
+      const emailFilter = input?.email?.trim();
+      const dateFrom = input?.dateFrom ? new Date(input.dateFrom) : undefined;
+      const dateTo   = input?.dateTo   ? new Date(input.dateTo)   : undefined;
+      const sortBy  = input?.sortBy  ?? "lastLoginAt";
+      const sortDir = input?.sortDir ?? "desc";
+
+      // Get users with optional email filter
+      const userQuery = db
         .select({ id: users.id, name: users.name, email: users.email })
         .from(users);
+      const allUsers = emailFilter
+        ? await userQuery.where(like(users.email, `%${emailFilter}%`))
+        : await userQuery;
 
-      // Get latest login event per user + total count
+      // Get login stats per user
+      const loginStatsConds = [];
+      if (dateFrom) loginStatsConds.push(gte(loginEvents.loginAt, dateFrom));
+      if (dateTo)   loginStatsConds.push(lte(loginEvents.loginAt, dateTo));
       const loginStats = await db
         .select({
           userId: loginEvents.userId,
@@ -3609,6 +3665,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
           loginCount: sql<number>`COUNT(*)`,
         })
         .from(loginEvents)
+        .where(loginStatsConds.length > 0 ? and(...loginStatsConds) : undefined)
         .groupBy(loginEvents.userId);
 
       const statsMap = new Map(loginStats.map((s) => [s.userId, s]));
@@ -3626,13 +3683,21 @@ If a section is not applicable (e.g. no financial data provided), set it to null
         };
       });
 
-      // Sort: users with logins first (most recent), then users without
+      // Sort
       rows.sort((a, b) => {
+        if (sortBy === "loginCount") {
+          return sortDir === "desc" ? b.loginCount - a.loginCount : a.loginCount - b.loginCount;
+        }
+        // lastLoginAt
         if (!a.lastLoginAt && !b.lastLoginAt) return 0;
-        if (!a.lastLoginAt) return 1;
-        if (!b.lastLoginAt) return -1;
-        return new Date(b.lastLoginAt).getTime() - new Date(a.lastLoginAt).getTime();
+        if (!a.lastLoginAt) return sortDir === "desc" ? 1 : -1;
+        if (!b.lastLoginAt) return sortDir === "desc" ? -1 : 1;
+        const diff = new Date(b.lastLoginAt).getTime() - new Date(a.lastLoginAt).getTime();
+        return sortDir === "desc" ? diff : -diff;
       });
+
+      const total = rows.length;
+      const pagedRows = rows.slice(offset, offset + limit);
 
       // Count email-sourced signals in the last 30 days
       const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -3647,7 +3712,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
         );
       const emailSignalCount = Number(emailSignalRows[0]?.count ?? 0);
 
-      return { rows, emailSignalCount };
+      return { rows: pagedRows, total, emailSignalCount };
     }),
 
     // Per-user login history — last 5 events
@@ -3670,6 +3735,109 @@ If a section is not applicable (e.g. no financial data provided), set it to null
           .orderBy(desc(loginEvents.loginAt))
           .limit(5);
       }),
+    // Login Events — paginated list with filters
+    listLoginEvents: protectedProcedure
+      .input(z.object({
+        limit:    z.number().min(1).max(100).default(20),
+        offset:   z.number().min(0).default(0),
+        email:    z.string().optional(),
+        country:  z.string().optional(),
+        dateFrom: z.string().optional(),
+        dateTo:   z.string().optional(),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        const db = await getDb();
+        if (!db) return { rows: [], total: 0 };
+
+        const limit   = Math.min(input?.limit  ?? 20, 100);
+        const offset  = input?.offset ?? 0;
+        const email   = input?.email?.trim();
+        const country = input?.country?.trim();
+        const dateFrom = input?.dateFrom ? new Date(input.dateFrom) : undefined;
+        const dateTo   = input?.dateTo   ? new Date(input.dateTo)   : undefined;
+
+        const conds = [];
+        if (email)   conds.push(like(loginEvents.email, `%${email}%`));
+        if (country) conds.push(eq(loginEvents.country, country));
+        if (dateFrom) conds.push(gte(loginEvents.loginAt, dateFrom));
+        if (dateTo)   conds.push(lte(loginEvents.loginAt, dateTo));
+
+        const whereClause = conds.length > 0 ? and(...conds) : undefined;
+
+        const [totalRow, rows] = await Promise.all([
+          db.select({ count: sql<number>`COUNT(*)` }).from(loginEvents).where(whereClause),
+          db.select({
+            id:        loginEvents.id,
+            userId:    loginEvents.userId,
+            email:     loginEvents.email,
+            ipAddress: loginEvents.ipAddress,
+            country:   loginEvents.country,
+            loginAt:   loginEvents.loginAt,
+          })
+            .from(loginEvents)
+            .where(whereClause)
+            .orderBy(desc(loginEvents.loginAt))
+            .limit(limit)
+            .offset(offset),
+        ]);
+
+        return { rows, total: Number(totalRow[0]?.count ?? 0) };
+      }),
+
+    // Fleet Evaluations — paginated list with filters
+    listFleetEvaluations: protectedProcedure
+      .input(z.object({
+        limit:     z.number().min(1).max(100).default(50),
+        offset:    z.number().min(0).default(0),
+        fleetMode: z.string().optional(),
+        status:    z.enum(["queued", "running", "completed", "failed"]).optional(),
+        dateFrom:  z.string().optional(),
+        dateTo:    z.string().optional(),
+      }).optional())
+      .query(async ({ ctx, input }) => {
+        if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
+        const db = await getDb();
+        if (!db) return { rows: [], total: 0 };
+
+        const limit     = Math.min(input?.limit  ?? 50, 100);
+        const offset    = input?.offset ?? 0;
+        const fleetMode = input?.fleetMode;
+        const status    = input?.status;
+        const dateFrom  = input?.dateFrom ? Number(new Date(input.dateFrom)) : undefined;
+        const dateTo    = input?.dateTo   ? Number(new Date(input.dateTo))   : undefined;
+
+        const conds = [];
+        if (fleetMode && fleetMode !== "all") conds.push(eq(founderAgentEvaluations.fleetMode, fleetMode));
+        if (status)   conds.push(eq(founderAgentEvaluations.status, status));
+        if (dateFrom) conds.push(gte(founderAgentEvaluations.createdAt, dateFrom));
+        if (dateTo)   conds.push(lte(founderAgentEvaluations.createdAt, dateTo));
+
+        const whereClause = conds.length > 0 ? and(...conds) : undefined;
+
+        const [totalRow, rows] = await Promise.all([
+          db.select({ count: sql<number>`COUNT(*)` }).from(founderAgentEvaluations).where(whereClause),
+          db.select({
+            id:             founderAgentEvaluations.id,
+            runId:          founderAgentEvaluations.runId,
+            status:         founderAgentEvaluations.status,
+            fleetMode:      founderAgentEvaluations.fleetMode,
+            classification: founderAgentEvaluations.classification,
+            finalScore:     founderAgentEvaluations.finalScore,
+            costUsd:        founderAgentEvaluations.costUsd,
+            durationMs:     founderAgentEvaluations.durationMs,
+            createdAt:      founderAgentEvaluations.createdAt,
+          })
+            .from(founderAgentEvaluations)
+            .where(whereClause)
+            .orderBy(desc(founderAgentEvaluations.createdAt))
+            .limit(limit)
+            .offset(offset),
+        ]);
+
+        return { rows, total: Number(totalRow[0]?.count ?? 0) };
+      }),
+
     // Waitlist signups grouped by sourcePage for conversion tracking
     waitlistBySource: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
