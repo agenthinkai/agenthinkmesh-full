@@ -37,7 +37,7 @@ import { adminProvisionRouter } from "./routers/adminProvision";
 import { decisionUpgradeRouter } from "./routers/decisionUpgrade";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
-import { eq, desc, gte, lte, sql, and, like, or, isNull, lt } from "drizzle-orm";
+import { eq, desc, asc, gte, lte, sql, and, like, or, isNull, lt, count } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
 import { getRAGContext, injectRAGContext } from "./ragContext";
 import { notifyOwner } from "./_core/notification";
@@ -3598,25 +3598,48 @@ If a section is not applicable (e.g. no financial data provided), set it to null
       }),
 
     // All registered users with their usage stats
-    allUsers: protectedProcedure.query(async ({ ctx }) => {
+    allUsers: protectedProcedure
+      .input(z.object({
+        limit:   z.number().min(1).max(100).default(25),
+        offset:  z.number().min(0).default(0),
+        search:  z.string().optional(),
+        role:    z.enum(["user", "admin", ""]).default(""),
+        sortBy:  z.enum(["createdAt", "lastSignedIn", "name", "email"]).default("createdAt"),
+        sortDir: z.enum(["asc", "desc"]).default("desc"),
+      }).optional())
+      .query(async ({ ctx, input }) => {
       if (ctx.user.role !== "admin") throw new TRPCError({ code: "FORBIDDEN" });
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
-
-      return db
-        .select({
+      const limit   = Math.min(input?.limit  ?? 25, 100);
+      const offset  = input?.offset  ?? 0;
+      const search  = input?.search?.trim();
+      const roleFilter = input?.role ?? "";
+      const sortBy  = input?.sortBy  ?? "createdAt";
+      const sortDir = input?.sortDir ?? "desc";
+      const conds: ReturnType<typeof eq>[] = [];
+      if (search) conds.push(or(like(users.name, `%${search}%`), like(users.email, `%${search}%`)) as ReturnType<typeof eq>);
+      if (roleFilter) conds.push(eq(users.role, roleFilter as "user" | "admin"));
+      const where = conds.length > 0 ? and(...conds) : undefined;
+      const sortCol = sortBy === "lastSignedIn" ? users.lastSignedIn
+        : sortBy === "name" ? users.name
+        : sortBy === "email" ? users.email
+        : users.createdAt;
+      const orderExpr = sortDir === "asc" ? asc(sortCol) : desc(sortCol);
+      const [totalResult, rows] = await Promise.all([
+        db.select({ total: count() }).from(users).where(where),
+        db.select({
           id: users.id,
           name: users.name,
           email: users.email,
           role: users.role,
           createdAt: users.createdAt,
           lastSignedIn: users.lastSignedIn,
-        })
-        .from(users)
-        .orderBy(desc(users.createdAt));
+        }).from(users).where(where).orderBy(orderExpr).limit(limit).offset(offset),
+      ]);
+      return { rows, total: totalResult[0]?.total ?? 0 };
     }),
-
-    // User Activity — one row per user, most recent login first (paginated)
+        // User Activity — one row per user, most recent login first (paginated)
     getUserActivity: protectedProcedure
       .input(z.object({
         limit:     z.number().min(1).max(100).default(20),

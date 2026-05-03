@@ -74,23 +74,38 @@ function fmtRelative(date: Date | string | null): string {
 
 // ── Reusable pagination controls ──────────────────────────────────────────────
 function PaginationBar({
-  page, totalPages, onPrev, onNext,
-}: { page: number; totalPages: number; onPrev: () => void; onNext: () => void }) {
-  if (totalPages <= 1) return null;
+  page, totalPages, total, pageSize, onPage, onPageSize, pageSizeOptions,
+}: {
+  page: number;
+  totalPages: number;
+  total: number;
+  pageSize: number;
+  onPage: (p: number) => void;
+  onPageSize?: (n: number) => void;
+  pageSizeOptions?: number[];
+}) {
+  if (totalPages === 0) return null;
+  const from = (page - 1) * pageSize + 1;
+  const to = Math.min(page * pageSize, total);
+  const btnCls = "px-2.5 py-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors";
   return (
-    <div className="flex items-center justify-between mt-4 text-xs text-slate-500">
-      <span>Page {page} of {totalPages}</span>
-      <div className="flex gap-2">
-        <button
-          disabled={page <= 1}
-          onClick={onPrev}
-          className="px-3 py-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-        >← Prev</button>
-        <button
-          disabled={page >= totalPages}
-          onClick={onNext}
-          className="px-3 py-1 rounded bg-white/5 border border-white/10 hover:bg-white/10 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-        >Next →</button>
+    <div className="flex flex-wrap items-center justify-between mt-4 gap-2 text-xs text-slate-500">
+      <span>Showing {from}–{to} of {total.toLocaleString()}</span>
+      <div className="flex items-center gap-1.5">
+        {onPageSize && pageSizeOptions && (
+          <select
+            value={pageSize}
+            onChange={e => onPageSize(Number(e.target.value))}
+            className="text-xs bg-white/10 border border-white/10 rounded px-1.5 py-1 text-slate-300 mr-2"
+          >
+            {pageSizeOptions.map(n => <option key={n} value={n}>{n} / page</option>)}
+          </select>
+        )}
+        <button disabled={page <= 1} onClick={() => onPage(1)} className={btnCls}>«</button>
+        <button disabled={page <= 1} onClick={() => onPage(page - 1)} className={btnCls}>‹ Prev</button>
+        <span className="px-2 text-slate-400">Page {page} of {totalPages}</span>
+        <button disabled={page >= totalPages} onClick={() => onPage(page + 1)} className={btnCls}>Next ›</button>
+        <button disabled={page >= totalPages} onClick={() => onPage(totalPages)} className={btnCls}>»</button>
       </div>
     </div>
   );
@@ -117,6 +132,22 @@ export default function AdminUsageDashboard() {
   const { user, loading: authLoading } = useAuth();
   const [days, setDays] = useState(30);
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
+
+  // ── Registered Users pagination + filters ──
+  const [usersPage, setUsersPage] = useState(1);
+  const [usersPageSize, setUsersPageSize] = useState(25);
+  const [usersSearch, setUsersSearch] = useState("");
+  const [usersRole, setUsersRole] = useState<"" | "user" | "admin">("");
+  const [usersSortBy, setUsersSortBy] = useState<"createdAt" | "lastSignedIn" | "name" | "email">("createdAt");
+  const [usersSortDir, setUsersSortDir] = useState<"asc" | "desc">("desc");
+
+  // ── User Plans pagination + filters ──
+  const [plansPage, setPlansPage] = useState(1);
+  const [plansPageSize, setPlansPageSize] = useState(25);
+  const [plansSearch, setPlansSearch] = useState("");
+  const [plansTier, setPlansTier] = useState<"" | "trial" | "standard" | "pro" | "enterprise">("");
+  const [plansSortBy, setPlansSortBy] = useState<"createdAt" | "planTier" | "totalCompletedRuns" | "trialRunsRemaining">("createdAt");
+  const [plansSortDir, setPlansSortDir] = useState<"asc" | "desc">("desc");
 
   // ── User Activity pagination + filters ──
   const [actPage, setActPage] = useState(1);
@@ -164,9 +195,17 @@ export default function AdminUsageDashboard() {
     { enabled: user?.role === "admin" }
   );
 
-  const { data: allUsers, isLoading: usersLoading } = trpc.adminUsage.allUsers.useQuery(undefined, {
-    enabled: user?.role === "admin",
-  });
+  const { data: allUsersData, isLoading: usersLoading } = trpc.adminUsage.allUsers.useQuery({
+    limit: usersPageSize,
+    offset: (usersPage - 1) * usersPageSize,
+    search: usersSearch || undefined,
+    role: usersRole,
+    sortBy: usersSortBy,
+    sortDir: usersSortDir,
+  }, { enabled: user?.role === "admin" });
+  const allUsers = allUsersData?.rows ?? [];
+  const usersTotal = allUsersData?.total ?? 0;
+  const usersTotalPages = Math.max(1, Math.ceil(usersTotal / usersPageSize));
 
   const { data: highDemand, isLoading: hdLoading } = trpc.adminUsage.highDemandEvents.useQuery(
     { limit: 20 },
@@ -181,9 +220,17 @@ export default function AdminUsageDashboard() {
     enabled: user?.role === "admin",
   });
 
-  const { data: usersWithPlan } = trpc.billing.listUsersWithPlan.useQuery(undefined, {
-    enabled: user?.role === "admin",
-  });
+  const { data: usersWithPlanData } = trpc.billing.listUsersWithPlan.useQuery({
+    limit: plansPageSize,
+    offset: (plansPage - 1) * plansPageSize,
+    search: plansSearch || undefined,
+    planTier: plansTier,
+    sortBy: plansSortBy,
+    sortDir: plansSortDir,
+  }, { enabled: user?.role === "admin" });
+  const usersWithPlan = usersWithPlanData?.rows ?? [];
+  const plansTotal = usersWithPlanData?.total ?? 0;
+  const plansTotalPages = Math.max(1, Math.ceil(plansTotal / plansPageSize));
 
   const assignEnterprise = trpc.billing.assignEnterprise.useMutation();
 
@@ -411,7 +458,10 @@ export default function AdminUsageDashboard() {
           {dailyLoading ? (
             <div className="h-32 flex items-center justify-center text-slate-500 text-xs">Loading…</div>
           ) : chartData.length === 0 ? (
-            <div className="h-32 flex items-center justify-center text-slate-500 text-xs">No data yet</div>
+            <div className="h-32 flex items-center justify-center flex-col gap-2 text-slate-500 text-xs">
+              <span>No token usage recorded in this period</span>
+              <span className="text-slate-600">Usage data appears here once LLM calls are made</span>
+            </div>
           ) : (
             <div className="flex items-end gap-1 h-32 overflow-x-auto pb-1">
               {chartData.map(([date, tokens]) => {
@@ -489,26 +539,60 @@ export default function AdminUsageDashboard() {
         </div>
 
         {/* All registered users */}
-        <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-          <h2 className="text-sm font-semibold text-white mb-4">Registered Users</h2>
-          {usersLoading ? (
-            <div className="text-slate-500 text-xs">Loading…</div>
-          ) : !allUsers || allUsers.length === 0 ? (
-            <div className="text-slate-500 text-xs">No users found</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="text-slate-500 border-b border-white/10">
-                    <th className="text-left py-2 pr-4">Name</th>
-                    <th className="text-left py-2 pr-4">Email</th>
-                    <th className="text-left py-2 pr-4">Role</th>
-                    <th className="text-left py-2 pr-4">Joined</th>
-                    <th className="text-left py-2">Last Sign-in</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {allUsers.map((u) => (
+        <div className="bg-white/5 border border-white/10 rounded-xl p-5 mb-8">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-semibold text-white">Registered Users</h2>
+            <span className="text-xs text-slate-500">{usersTotal.toLocaleString()} total</span>
+          </div>
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <input
+              type="text" placeholder="Search name or email…" value={usersSearch}
+              onChange={e => { setUsersSearch(e.target.value); setUsersPage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 placeholder-slate-600 focus:outline-none focus:border-teal-500/50 w-52"
+            />
+            <select value={usersRole} onChange={e => { setUsersRole(e.target.value as "" | "user" | "admin"); setUsersPage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50">
+              <option value="">All roles</option>
+              <option value="user">User</option>
+              <option value="admin">Admin</option>
+            </select>
+            <select value={usersSortBy} onChange={e => { setUsersSortBy(e.target.value as "createdAt" | "lastSignedIn" | "name" | "email"); setUsersPage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50">
+              <option value="createdAt">Sort: Joined</option>
+              <option value="lastSignedIn">Sort: Last Sign-in</option>
+              <option value="name">Sort: Name</option>
+              <option value="email">Sort: Email</option>
+            </select>
+            <button onClick={() => setUsersSortDir(d => d === "desc" ? "asc" : "desc")}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 hover:bg-white/20 transition-colors">
+              {usersSortDir === "desc" ? "↓ Desc" : "↑ Asc"}
+            </button>
+            {(usersSearch || usersRole || usersSortBy !== "createdAt" || usersSortDir !== "desc") && (
+              <button onClick={() => { setUsersSearch(""); setUsersRole(""); setUsersSortBy("createdAt"); setUsersSortDir("desc"); setUsersPage(1); }}
+                className="text-xs bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 px-2.5 py-1 rounded transition-colors">
+                ✕ Reset
+              </button>
+            )}
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-slate-500 border-b border-white/10">
+                  <th className="text-left py-2 pr-4">Name</th>
+                  <th className="text-left py-2 pr-4">Email</th>
+                  <th className="text-left py-2 pr-4">Role</th>
+                  <th className="text-left py-2 pr-4">Joined</th>
+                  <th className="text-left py-2">Last Sign-in</th>
+                </tr>
+              </thead>
+              <tbody>
+                {usersLoading ? (
+                  <SkeletonRows cols={5} rows={5} />
+                ) : allUsers.length === 0 ? (
+                  <tr><td colSpan={5} className="py-6 text-center text-slate-500 text-xs">No users found</td></tr>
+                ) : (
+                  allUsers.map((u) => (
                     <tr key={u.id} className="border-b border-white/5 hover:bg-white/5">
                       <td className="py-2 pr-4 text-slate-200">{u.name ?? "—"}</td>
                       <td className="py-2 pr-4 text-slate-400">{u.email ?? "—"}</td>
@@ -517,18 +601,20 @@ export default function AdminUsageDashboard() {
                           {u.role}
                         </span>
                       </td>
-                      <td className="py-2 pr-4 text-slate-500">
-                        {new Date(u.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="py-2 text-slate-500">
-                        {new Date(u.lastSignedIn).toLocaleDateString()}
-                      </td>
+                      <td className="py-2 pr-4 text-slate-500">{new Date(u.createdAt).toLocaleDateString()}</td>
+                      <td className="py-2 text-slate-500">{u.lastSignedIn ? new Date(u.lastSignedIn).toLocaleDateString() : "—"}</td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <PaginationBar
+            page={usersPage} totalPages={usersTotalPages} total={usersTotal} pageSize={usersPageSize}
+            onPage={p => setUsersPage(p)}
+            onPageSize={n => { setUsersPageSize(n); setUsersPage(1); }}
+            pageSizeOptions={[25, 50, 100]}
+          />
         </div>
         {/* ── Trial Metrics ─────────────────────────────────────────────── */}
         <div className="mb-10">
@@ -591,23 +677,63 @@ export default function AdminUsageDashboard() {
         </div>
 
         {/* ── Users with Plan ───────────────────────────────────────────────── */}
-        <div className="mb-10">
-          <h2 className="text-lg font-semibold text-slate-200 mb-4">User Plans</h2>
-          {usersWithPlan && usersWithPlan.length > 0 ? (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-white/10 text-slate-500 text-left">
-                    <th className="pb-2 pr-4">User</th>
-                    <th className="pb-2 pr-4">Plan</th>
-                    <th className="pb-2 pr-4">Runs Used</th>
-                    <th className="pb-2 pr-4">Trial Remaining</th>
-                    <th className="pb-2 pr-4">Converted</th>
-                    <th className="pb-2">Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {usersWithPlan.map((u) => (
+        <div className="mb-10 bg-white/5 border border-white/10 rounded-xl p-5">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold text-slate-200">User Plans</h2>
+            <span className="text-xs text-slate-500">{plansTotal.toLocaleString()} total</span>
+          </div>
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2 mb-4">
+            <input
+              type="text" placeholder="Search name or email…" value={plansSearch}
+              onChange={e => { setPlansSearch(e.target.value); setPlansPage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 placeholder-slate-600 focus:outline-none focus:border-teal-500/50 w-52"
+            />
+            <select value={plansTier} onChange={e => { setPlansTier(e.target.value as "" | "trial" | "standard" | "pro" | "enterprise"); setPlansPage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50">
+              <option value="">All plans</option>
+              <option value="trial">Trial</option>
+              <option value="standard">Standard</option>
+              <option value="pro">Pro</option>
+              <option value="enterprise">Enterprise</option>
+            </select>
+            <select value={plansSortBy} onChange={e => { setPlansSortBy(e.target.value as "createdAt" | "planTier" | "totalCompletedRuns" | "trialRunsRemaining"); setPlansPage(1); }}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 focus:outline-none focus:border-teal-500/50">
+              <option value="createdAt">Sort: Joined</option>
+              <option value="planTier">Sort: Plan</option>
+              <option value="totalCompletedRuns">Sort: Runs Used</option>
+              <option value="trialRunsRemaining">Sort: Trial Remaining</option>
+            </select>
+            <button onClick={() => setPlansSortDir(d => d === "desc" ? "asc" : "desc")}
+              className="text-xs bg-white/10 border border-white/10 rounded px-2 py-1 text-slate-300 hover:bg-white/20 transition-colors">
+              {plansSortDir === "desc" ? "↓ Desc" : "↑ Asc"}
+            </button>
+            {(plansSearch || plansTier || plansSortBy !== "createdAt" || plansSortDir !== "desc") && (
+              <button onClick={() => { setPlansSearch(""); setPlansTier(""); setPlansSortBy("createdAt"); setPlansSortDir("desc"); setPlansPage(1); }}
+                className="text-xs bg-red-500/10 border border-red-500/20 hover:bg-red-500/20 text-red-400 px-2.5 py-1 rounded transition-colors">
+                ✕ Reset
+              </button>
+            )}
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-white/10 text-slate-500 text-left">
+                  <th className="pb-2 pr-4">User</th>
+                  <th className="pb-2 pr-4">Plan</th>
+                  <th className="pb-2 pr-4">Runs Used</th>
+                  <th className="pb-2 pr-4">Trial Remaining</th>
+                  <th className="pb-2 pr-4">Converted</th>
+                  <th className="pb-2">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {!usersWithPlanData ? (
+                  <SkeletonRows cols={6} rows={5} />
+                ) : usersWithPlan.length === 0 ? (
+                  <tr><td colSpan={6} className="py-6 text-center text-slate-500 text-sm">No users found.</td></tr>
+                ) : (
+                  usersWithPlan.map((u) => (
                     <tr key={u.id} className="border-b border-white/5 hover:bg-white/5">
                       <td className="py-2 pr-4 text-slate-200">{u.name ?? u.email ?? `#${u.id}`}</td>
                       <td className="py-2 pr-4">
@@ -632,13 +758,17 @@ export default function AdminUsageDashboard() {
                         )}
                       </td>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          ) : (
-            <div className="text-slate-500 text-sm">No users found.</div>
-          )}
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+          <PaginationBar
+            page={plansPage} totalPages={plansTotalPages} total={plansTotal} pageSize={plansPageSize}
+            onPage={p => setPlansPage(p)}
+            onPageSize={n => { setPlansPageSize(n); setPlansPage(1); }}
+            pageSizeOptions={[25, 50, 100]}
+          />
         </div>
 
         {/* User Activity Table */}
@@ -735,7 +865,7 @@ export default function AdminUsageDashboard() {
               </tbody>
             </table>
           </div>
-          <PaginationBar page={actPage} totalPages={actTotalPages} onPrev={() => setActPage(p => p - 1)} onNext={() => setActPage(p => p + 1)} />
+          <PaginationBar page={actPage} totalPages={actTotalPages} total={actTotal} pageSize={ACT_LIMIT} onPage={p => setActPage(p)} />
         </div>
 
         {/* Waitlist Signups */}
@@ -861,7 +991,7 @@ export default function AdminUsageDashboard() {
               </tbody>
             </table>
           </div>
-          <PaginationBar page={wlPage} totalPages={wlTotalPages} onPrev={() => setWlPage(p => p - 1)} onNext={() => setWlPage(p => p + 1)} />
+          <PaginationBar page={wlPage} totalPages={wlTotalPages} total={wlTotal} pageSize={WL_LIMIT} onPage={p => setWlPage(p)} />
         </div>
 
         {/* Login Events */}
@@ -936,7 +1066,7 @@ export default function AdminUsageDashboard() {
               </tbody>
             </table>
           </div>
-          <PaginationBar page={lePage} totalPages={leTotalPages} onPrev={() => setLePage(p => p - 1)} onNext={() => setLePage(p => p + 1)} />
+          <PaginationBar page={lePage} totalPages={leTotalPages} total={leTotal} pageSize={LE_LIMIT} onPage={p => setLePage(p)} />
         </div>
 
         {/* Fleet Evaluations */}
@@ -1028,7 +1158,10 @@ export default function AdminUsageDashboard() {
               </tbody>
             </table>
           </div>
-          <PaginationBar page={fePage} totalPages={feTotalPages} onPrev={() => setFePage(p => p - 1)} onNext={() => setFePage(p => p + 1)} />
+          <PaginationBar page={fePage} totalPages={feTotalPages} total={feTotal} pageSize={FE_LIMIT} onPage={p => setFePage(p)}
+            onPageSize={n => { setFePage(1); }}
+            pageSizeOptions={[25, 50, 100, 200]}
+          />
         </div>
 
         {/* ── Deal Screening Funnel ── */}

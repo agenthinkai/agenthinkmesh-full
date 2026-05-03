@@ -4,7 +4,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { eq, and, count, avg, sql } from "drizzle-orm";
+import { eq, and, count, avg, sql, asc, desc as descOp, like, or } from "drizzle-orm";
 import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import { protectedTreasuryProcedure } from "../trpc/protectedTreasuryProcedure";
 import { getDb } from "../db";
@@ -622,22 +622,49 @@ export const billingRouter = router({
   }),
 
   // ── ADMIN: list all users with plan info ───────────────────────────────────
-  listUsersWithPlan: adminProcedure.query(async () => {
+  listUsersWithPlan: adminProcedure
+    .input(z.object({
+      limit:    z.number().min(1).max(100).default(25),
+      offset:   z.number().min(0).default(0),
+      search:   z.string().optional(),
+      planTier: z.enum(["trial", "standard", "pro", "enterprise", ""]).default(""),
+      sortBy:   z.enum(["createdAt", "planTier", "totalCompletedRuns", "trialRunsRemaining"]).default("createdAt"),
+      sortDir:  z.enum(["asc", "desc"]).default("desc"),
+    }).optional())
+    .query(async ({ input }) => {
     const db = await getDb();
     if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR" });
-
-    return db.select({
-      id: users.id,
-      name: users.name,
-      email: users.email,
-      planTier: users.planTier,
-      trialRunsRemaining: users.trialRunsRemaining,
-      trialExpiresAt: users.trialExpiresAt,
-      monthlyRunsUsed: users.monthlyRunsUsed,
-      monthlyRunsLimit: users.monthlyRunsLimit,
-      totalCompletedRuns: users.totalCompletedRuns,
-      convertedAt: users.convertedAt,
-      createdAt: users.createdAt,
-    }).from(users).orderBy(sql`createdAt DESC`).limit(100);
+    const limit   = Math.min(input?.limit  ?? 25, 100);
+    const offset  = input?.offset  ?? 0;
+    const search  = input?.search?.trim();
+    const planFilter = input?.planTier ?? "";
+    const sortBy  = input?.sortBy  ?? "createdAt";
+    const sortDir = input?.sortDir ?? "desc";
+    const conds: ReturnType<typeof eq>[] = [];
+    if (search) conds.push(or(like(users.name, `%${search}%`), like(users.email, `%${search}%`)) as ReturnType<typeof eq>);
+    if (planFilter) conds.push(eq(users.planTier, planFilter as "trial" | "standard" | "pro" | "enterprise"));
+    const where = conds.length > 0 ? and(...conds) : undefined;
+    const sortCol = sortBy === "planTier" ? users.planTier
+      : sortBy === "totalCompletedRuns" ? users.totalCompletedRuns
+      : sortBy === "trialRunsRemaining" ? users.trialRunsRemaining
+      : users.createdAt;
+    const orderExpr = sortDir === "asc" ? asc(sortCol) : descOp(sortCol);
+    const [totalResult, rows] = await Promise.all([
+      db.select({ total: count() }).from(users).where(where),
+      db.select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        planTier: users.planTier,
+        trialRunsRemaining: users.trialRunsRemaining,
+        trialExpiresAt: users.trialExpiresAt,
+        monthlyRunsUsed: users.monthlyRunsUsed,
+        monthlyRunsLimit: users.monthlyRunsLimit,
+        totalCompletedRuns: users.totalCompletedRuns,
+        convertedAt: users.convertedAt,
+        createdAt: users.createdAt,
+      }).from(users).where(where).orderBy(orderExpr).limit(limit).offset(offset),
+    ]);
+    return { rows, total: totalResult[0]?.total ?? 0 };
   }),
 });
