@@ -121,7 +121,26 @@ export const dealScreenerRouter = router({
         pdfFileKey: z.string().optional(),
         pdfFileUrl: z.string().optional(),
         stripeSessionId: z.string().optional(), // link payment row to this deal run
-        councilMode: z.enum(["gcc", "global_vc", "india_pe"]).optional().default("global_vc"),
+        councilMode: z.enum(["gcc", "global_vc", "india_pe", "gcc_equities"]).optional().default("global_vc"),
+        signalPayload: z
+          .object({
+            strategy: z.enum(["FRIDAY_GAP", "NAV_DEPEG", "SPREAD_CAPTURE"]),
+            symbol: z.string().min(1).max(20),
+            sideHint: z.enum(["BUY", "SELL"]).optional(),
+            constituentQuotes: z.array(
+              z.object({
+                symbol: z.string(),
+                bid: z.number().optional(),
+                ask: z.number().optional(),
+                last: z.number().optional(),
+              }),
+            ),
+            kwtThursdayClose: z.number().positive().optional(),
+            kwtFridayClose:   z.number().positive().optional(),
+            thresholdBps:     z.number().int().min(1).max(500).optional(),
+            notes:            z.string().max(2000).optional(),
+          })
+          .optional(),
         sourceType: z.enum(["manual", "signal"]).optional().default("manual"),
         includeReport: z.boolean().optional().default(true),
         investorMode: z.boolean().optional().default(false),
@@ -702,7 +721,7 @@ export const dealScreenerRouter = router({
         confidenceScore:     z.number(),
         conditionsToProceed: z.array(z.string()),
         blockingIssues:      z.array(z.string()),
-        councilMode:         z.enum(["gcc", "global_vc", "india_pe"]).optional(),
+        councilMode:         z.enum(["gcc", "global_vc", "india_pe", "gcc_equities"]).optional(),
         patternContext:       z.enum(["invested_match", "passed_match"]).optional(),
         votes: z.array(z.object({
           personaId:   z.string(),

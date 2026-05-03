@@ -125,7 +125,7 @@ export const decisionUpgradeRouter = router({
       // For deal re-run
       dealMeta: z.object({
         dealName: z.string(),
-        councilMode: z.enum(["gcc", "global_vc", "india_pe"]).default("global_vc"),
+        councilMode: z.enum(["gcc", "global_vc", "india_pe", "gcc_equities"]).default("global_vc"),
       }).optional(),
     }))
     .mutation(async ({ ctx, input }) => {

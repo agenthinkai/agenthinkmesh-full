@@ -38,6 +38,10 @@ import {
   tokenUsage,
 } from "../drizzle/schema";
 import { TOKENS_PER_COUNCIL_RUN } from "./lib/stripePlans";
+import {
+  PERSONAS_GCC_EQUITIES,
+  DOMAIN_WEIGHTS_GCC_EQUITIES,
+} from "./lib/personas-gcc-equities";
 import { notifyOwner } from "./_core/notification";
 
 // invokeLLM uses BUILT_IN_FORGE_API — no Anthropic SDK needed
@@ -135,7 +139,7 @@ type PersonaResponse = z.infer<typeof PersonaResponseSchema>;
 
 // ── Persona definitions — v3.0 GCC-specific system prompts ───────────────────
 
-interface PersonaDef {
+export interface PersonaDef {
   id:           string;
   name:         string;
   role:         string;
@@ -611,14 +615,15 @@ Return ONLY valid JSON — no markdown, no preamble:
 ];
 
 // ── Council mode selector ─────────────────────────────────────────────────────
-export type CouncilMode = "gcc" | "global_vc" | "india_pe";
+export type CouncilMode = "gcc" | "global_vc" | "india_pe" | "gcc_equities";
 
 export function getPersonasForMode(mode: CouncilMode): PersonaDef[] {
   switch (mode) {
     case "global_vc": return PERSONAS_GLOBAL_VC;
-    case "india_pe":  return PERSONAS_INDIA_PE;
+    case "india_pe":    return PERSONAS_INDIA_PE;
+    case "gcc_equities": return PERSONAS_GCC_EQUITIES;
     case "gcc":
-    default:          return PERSONAS;
+    default:            return PERSONAS;
   }
 }
 
@@ -1005,6 +1010,21 @@ export async function runCouncil(
     vetoTriggered =
       inLegalVote?.vote === "HARD_NO" ||
       hardNoCount >= 4;
+  } else if (councilMode === "gcc_equities") {
+    const eqReg     = votes.find((v) => v.personaId === "GCC_EQ_REG");
+    const eqShariah = votes.find((v) => v.personaId === "GCC_EQ_SHARIAH");
+    if (eqReg?.vote === "HARD_NO") {
+      hardFlags.push("VETO_GCC_EQ_REG");
+      vetoTriggered = true;
+    }
+    if (eqShariah?.vote === "HARD_NO") {
+      hardFlags.push("VETO_GCC_EQ_SHARIAH");
+      vetoTriggered = true;
+    }
+    if (hardNoCount >= 3) {
+      hardFlags.push("HARD_NO_FLOOR_HIT");
+      vetoTriggered = true;
+    }
   }
 
   // Keep gccVetoTriggered as alias for backward compat
@@ -1065,6 +1085,7 @@ export async function runCouncil(
     DEVILS_ADVOCATE: 0.10, IN_DEVILS_ADVOCATE: 0.10, VC_DEVILS_ADVOCATE: 0.10,
     GCC_REG: 0.10, GCC_SHARIAH: 0.10, IN_LEGAL: 0.10, VC_LEGAL: 0.10,
     GEOPOLITICAL: 0.08, IN_ESG: 0.08,
+    ...DOMAIN_WEIGHTS_GCC_EQUITIES,
   };
   const DEFAULT_WEIGHT = 0.12;
 

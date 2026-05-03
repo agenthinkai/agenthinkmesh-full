@@ -1,0 +1,1 @@
+ALTER TABLE `deal_screenings` MODIFY COLUMN `councilMode` enum('gcc','global_vc','india_pe','gcc_equities') NOT NULL DEFAULT 'global_vc';

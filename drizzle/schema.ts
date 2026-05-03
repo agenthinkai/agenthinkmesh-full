@@ -903,7 +903,7 @@ export const dealScreenings = mysqlTable("deal_screenings", {
   icMemoGeneratedAt: timestamp("icMemoGeneratedAt"), // when memo was last generated
 
   // Council mode used for this screening
-  councilMode: mysqlEnum("councilMode", ["gcc", "global_vc", "india_pe"]).default("global_vc").notNull(),
+  councilMode: mysqlEnum("councilMode", ["gcc", "global_vc", "india_pe", "gcc_equities"]).default("global_vc").notNull(),
 
   // Investor Mode flag — when true, council uses upside-first framing
   investorMode: boolean("investorMode").notNull().default(false),
