@@ -47,6 +47,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "ForecastMesh",    icon: "📊", href: "/forecast",        color: "#FBBF24", bg: "rgba(251,191,36,0.08)"   },
   { label: "Knowledge Vault", icon: "🗄️", href: "/knowledge-vault", color: "#F59E0B", bg: "rgba(245,158,11,0.08)"   },
   { label: "Deal Screener",   icon: "⚖️", href: "/deals",           color: "#4ADE80", bg: "rgba(74,222,128,0.08)"   },
+  { label: "GCC Equities",    icon: "📈", href: "/gcc-equities",    color: "#F59E0B", bg: "rgba(245,158,11,0.08)"   },
   { label: "Procurement Eval", icon: "🏗️", href: "/procurement",    color: "#4ADE80", bg: "rgba(74,222,128,0.08)"   },
   { label: "Pitch Triage",    icon: "⚡",  href: "/pitch-triage",   color: "#a78bfa", bg: "rgba(167,139,250,0.08)"  },
   { label: "PitchMirror",     icon: "🪞",  href: "/pitchmirror",    color: "#c084fc", bg: "rgba(192,132,252,0.08)"  },
