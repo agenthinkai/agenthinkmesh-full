@@ -67,7 +67,7 @@ const COST_PER_RUN_USD    = parseFloat(process.env.COST_PER_RUN        ?? "0.18"
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-export type VoteType    = "HARD_YES" | "SOFT_YES" | "SOFT_NO" | "HARD_NO";
+export type VoteType    = "HARD_YES" | "SOFT_YES" | "SOFT_NO" | "HARD_NO" | "YES" | "NO";
 export type VerdictType = "APPROVED" | "APPROVED_WITH_CONDITIONS" | "REJECTED" | "VETOED" | "INSUFFICIENT_DATA";
 
 export interface PersonaVote {
@@ -133,7 +133,7 @@ export interface RunCouncilOptions {
 // ── Zod schema for each persona response ─────────────────────────────────────
 
 const PersonaResponseSchema = z.object({
-  vote:       z.enum(["HARD_YES", "SOFT_YES", "SOFT_NO", "HARD_NO"]),
+  vote:       z.enum(["HARD_YES", "SOFT_YES", "SOFT_NO", "HARD_NO", "YES", "NO"]),
   confidence: z.number().min(0).max(1),
   rationale:  z.string(),
   key_flags:  z.array(z.string()).default([]),
@@ -980,7 +980,9 @@ export async function runCouncil(
   for (const v of votes) {
     if      (v.vote === "HARD_YES") hardYesCount++;
     else if (v.vote === "SOFT_YES") softYesCount++;
+    else if (v.vote === "YES")      softYesCount++;  // gcc_equities non-veto YES → counts as SOFT_YES
     else if (v.vote === "SOFT_NO")  softNoCount++;
+    else if (v.vote === "NO")       softNoCount++;   // gcc_equities non-veto NO → counts as SOFT_NO
     else if (v.vote === "HARD_NO")  hardNoCount++;
   }
 
@@ -991,7 +993,7 @@ export async function runCouncil(
   let weightedYesScore = 0;
   let weightedNoScore  = 0;
   for (const v of votes) {
-    if (v.vote === "HARD_YES" || v.vote === "SOFT_YES") {
+    if (v.vote === "HARD_YES" || v.vote === "SOFT_YES" || v.vote === "YES") {
       weightedYesScore += v.weight * v.confidence;
     } else {
       weightedNoScore += v.weight * v.confidence;
@@ -1076,7 +1078,7 @@ export async function runCouncil(
   if (!vetoTriggered && yesCount === 7 && noCount === 3) {
     for (const priorityId of TIEBREAKER_PRIORITY) {
       const idx = workingVotes.findIndex(
-        (v) => v.personaId === priorityId && v.vote === "SOFT_NO"
+        (v) => v.personaId === priorityId && (v.vote === "SOFT_NO" || v.vote === "NO")
       );
       if (idx !== -1) {
         workingVotes[idx] = {
@@ -1118,7 +1120,7 @@ export async function runCouncil(
   let weightedAgentScore = 0;
   for (const v of workingVotes) {
     const dw = DOMAIN_WEIGHTS_VERDICT[v.personaId] ?? DEFAULT_WEIGHT;
-    const vs = v.vote === "HARD_YES" ? 1.0 : v.vote === "SOFT_YES" ? 0.7 : v.vote === "SOFT_NO" ? 0.3 : 0.0;
+    const vs = (v.vote === "HARD_YES" || v.vote === "YES") ? 1.0 : v.vote === "SOFT_YES" ? 0.7 : v.vote === "SOFT_NO" ? 0.3 : 0.0; // YES=1.0, NO/HARD_NO=0.0
     weightedAgentScore += dw * vs * v.confidence;
     totalDomainWeight  += dw;
   }

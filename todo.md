@@ -3732,3 +3732,16 @@
 - [x] Fix: client/src/pages/InsuranceRun.tsx — EventSource uses withCredentials:true, runId NaN guard before opening stream, retry with backoff (max 3), clear error messages
 - [x] Verified: startRun returns {runId:30007}, stream returns all 7 agents, NaN guard returns 400
 - [x] tsc: EXIT:0, Tests: 778/778 pass
+
+## GCC Equities Council — Patch 10 (03 May 2026)
+- [x] Patch 10A: Fix 8 non-veto seats (MACRO, QUANT, RISK, LIQUIDITY, DISCLOSURE, MICRO, TECHNICAL, FORENSIC) to output YES|NO only (removed HARD_YES|SOFT_YES|SOFT_NO|HARD_NO)
+- [x] Patch 10B: Fix 2 veto seats (GCC_EQ_SHARIAH, GCC_EQ_REG) to output YES|NO|HARD_NO (removed four-value enum)
+- [x] Patch 10C: SHARIAH default changed to YES on clean compliant-name payload (KFH, Boubyan, Warba with cash buy/sell)
+- [x] Patch 10C: REG default changed to YES on clean ordinary-course payload
+- [x] Patch 10D: VoteType extended to include "YES" | "NO" in addition to four-value enum
+- [x] Patch 10D: PersonaResponseSchema z.enum extended to accept "YES" | "NO" | "HARD_NO"
+- [x] Patch 10D: Vote counting loop — YES counts as softYesCount, NO counts as softNoCount
+- [x] Patch 10D: Weighted score loop — YES treated as positive (YES = 1.0 in domain-weighted score)
+- [x] Patch 10D: Tiebreaker loop — also flips NO votes (not just SOFT_NO)
+- [x] tsc --noEmit: EXIT:0
+- [x] Smoke test: SHARIAH voted YES on clean KFH payload ✓; KWT return 1.2465% confirmed reaching LLMs ✓; no Zod parse errors ✓
