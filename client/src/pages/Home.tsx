@@ -523,6 +523,25 @@ export default function Home() {
                         </div>
                       </button>
                     </Link>
+                    {/* Council of 10 — GCC Equities */}
+                    <Link href="/gcc-equities">
+                      <button className="group w-full text-left flex flex-col gap-3 p-5 rounded-2xl bg-gradient-to-br from-amber-600/15 to-amber-600/5 border border-amber-500/35 hover:border-amber-400/65 hover:from-amber-600/25 hover:to-amber-600/10 transition-all duration-200 shadow-lg shadow-amber-900/20 hover:-translate-y-0.5 relative">
+                        <div className="absolute -top-2.5 right-4 px-2 py-0.5 rounded-full bg-amber-500 text-[8px] font-bold uppercase tracking-widest text-black shadow">NEW</div>
+                        <div className="flex items-center justify-between">
+                          <div className="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center flex-shrink-0">
+                            <span className="text-lg">📈</span>
+                          </div>
+                          <span className="text-[9px] font-mono text-amber-400/70 uppercase tracking-widest px-2 py-0.5 rounded-full bg-amber-500/10 border border-amber-500/20">GCC Equities</span>
+                        </div>
+                        <div>
+                          <div className="text-sm font-semibold text-white mb-1">Council of 10 — GCC Equities</div>
+                          <div className="text-xs text-white/45 leading-relaxed">Trading signals, screened by ten lenses with two hard vetoes.</div>
+                        </div>
+                        <div className="text-xs font-medium text-amber-400 flex items-center gap-1 group-hover:gap-2 transition-all">
+                          Run GCC Equities Council <ArrowRight className="w-3 h-3" />
+                        </div>
+                      </button>
+                    </Link>
                     {/* PortfolioMesh */}
                     <Link href="/portfolio-mesh">
                       <button className="group w-full text-left flex flex-col gap-3 p-5 rounded-2xl bg-gradient-to-br from-amber-600/15 to-amber-600/5 border border-amber-500/35 hover:border-amber-400/65 hover:from-amber-600/25 hover:to-amber-600/10 transition-all duration-200 shadow-lg shadow-amber-900/20 hover:-translate-y-0.5">
