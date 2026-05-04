@@ -3834,3 +3834,10 @@
 - [x] Create smoke_are_offplan_high.mjs (Tier-2 developer, 20% progress, no escrow, 70/30 plan)
 - [x] tsc 0 errors
 - [x] Save checkpoint
+
+## UAE Real Estate Council — Quick Paste Mode
+- [x] Add extractPropertyDetails tRPC procedure (LLM extraction)
+- [x] Rebuild UaeRealEstateCouncil.tsx: Quick Paste default, Detected Details preview, structured toggle
+- [x] Guardrails: no hallucinated values, off-plan detection from text
+- [x] Typecheck 0 errors
+- [x] Smoke test extraction + council pipeline
