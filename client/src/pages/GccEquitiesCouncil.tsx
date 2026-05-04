@@ -327,6 +327,18 @@ function CouncilVerdictCard({ result }: { result: any }) {
           <div className="font-mono">
             {result.yesCount} YES · {result.noCount} NO
           </div>
+
+          {result.structuralNoCount > 0 && (
+            <div className="text-amber-700 text-xs mt-1 italic">
+              {result.structuralNoCount} of {result.noCount}{" "}
+              {result.noCount === 1 ? "NO is a" : "NOs are"} missing-data refusal
+              {result.structuralNoCount > 1 ? "s" : ""}
+              {result.structuralNoSeats?.[0]?.blockers?.[0] && (
+                <> ({result.structuralNoSeats[0].blockers[0].toLowerCase().replace(/_/g, " ")})</>
+              )}
+            </div>
+          )}
+
           {result.hardFlags?.length > 0 && (
             <div className="text-red-700 text-xs mt-1 font-mono">
               {result.hardFlags.join(" · ")}

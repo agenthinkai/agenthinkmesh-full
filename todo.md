@@ -3802,3 +3802,9 @@
 - [x] FORENSIC voted YES conf=1.0 — "no forensic flags in evidence" ✓
 - [x] No rationale contains "precedent" ✓
 - [x] hardFlags=[] ✓
+
+## GCC Equities Council — Patch 15 (04 May 2026)
+- [x] 15: Add structural-NO callout to verdict card in GccEquitiesCouncil.tsx
+- [x] Renders "1 of 1 NO is a missing-data refusal (market closed)" when structuralNoCount > 0
+- [x] Absent when structuralNoCount is 0 or undefined (Deal Screener unaffected)
+- [x] tsc --noEmit: EXIT:0
