@@ -82,6 +82,41 @@ interface PropertyExtractionResult {
   confidencePenalty:    number;
 }
 
+// ── Mesh Score ──────────────────────────────────────────────────────────────
+function computeMeshScore(result: ARECouncilResult): { score: number; interpretation: string } {
+  const total = result.agents.length || 7;
+  // Vote weights: BUY=3, NEGOTIATE=2, WAIT=1, AVOID=0
+  const rawVoteScore = (
+    result.buyCount * 3 +
+    result.negotiateCount * 2 +
+    result.waitCount * 1 +
+    result.avoidCount * 0
+  ) / (total * 3);
+
+  const confScore = result.confidenceScore;
+  // 70% votes, 30% confidence
+  let blended = rawVoteScore * 0.7 + confScore * 0.3;
+
+  if (result.guardrailApplied) blended = Math.max(0, blended - 0.06);
+  if (result.offPlanRisk?.riskLabel === "HIGH")   blended = Math.max(0, blended - 0.08);
+  if (result.offPlanRisk?.riskLabel === "MEDIUM") blended = Math.max(0, blended - 0.04);
+
+  let score = Math.round(blended * 100);
+  // Enforce decision alignment bands
+  if (result.decision === "BUY")       score = Math.max(75, Math.min(100, score));
+  if (result.decision === "NEGOTIATE") score = Math.max(60, Math.min(74,  score));
+  if (result.decision === "WAIT")      score = Math.max(45, Math.min(59,  score));
+  if (result.decision === "AVOID")     score = Math.max(0,  Math.min(44,  score));
+
+  const interpretation =
+    score >= 75 ? "Strong opportunity" :
+    score >= 60 ? "Solid but price-sensitive" :
+    score >= 45 ? "Mixed signals" :
+                  "High risk";
+
+  return { score, interpretation };
+}
+
 // ── Decision colours ──────────────────────────────────────────────────────────
 const DECISION_STYLE: Record<Decision, { bg: string; border: string; text: string; badge: string }> = {
   BUY:       { bg: "bg-emerald-50",  border: "border-emerald-600", text: "text-emerald-800", badge: "bg-emerald-600 text-white" },
@@ -303,7 +338,44 @@ function VerdictCard({
         </div>
       </div>
 
-      {/* ── 2. Recommended Action (CRITICAL — directly below decision) ── */}
+      {/* ── 2. Mesh Score ── */}
+      {(() => {
+        const { score, interpretation } = computeMeshScore(result);
+        const scoreColor =
+          score >= 75 ? "text-emerald-700" :
+          score >= 60 ? "text-sky-700" :
+          score >= 45 ? "text-amber-700" :
+                        "text-red-700";
+        const barColor =
+          score >= 75 ? "bg-emerald-500" :
+          score >= 60 ? "bg-sky-500" :
+          score >= 45 ? "bg-amber-500" :
+                        "bg-red-500";
+        return (
+          <div className="flex items-center justify-between gap-4 py-3 border-b border-slate-200">
+            <div>
+              <div className="text-xs uppercase tracking-widest text-slate-500 mb-0.5">Mesh Score</div>
+              <div className={`text-3xl font-black font-mono ${scoreColor}`}>
+                {score} <span className="text-lg font-semibold text-slate-400">/ 100</span>
+              </div>
+              <div className={`text-xs font-semibold mt-0.5 ${scoreColor}`}>{interpretation}</div>
+            </div>
+            <div className="flex-1 max-w-[160px]">
+              <div className="h-2 rounded-full bg-slate-200 overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all ${barColor}`}
+                  style={{ width: `${score}%` }}
+                />
+              </div>
+              <div className="flex justify-between text-[10px] text-slate-400 mt-0.5">
+                <span>0</span><span>50</span><span>100</span>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── 3. Recommended Action (CRITICAL — directly below decision) ── */}
       <div className={`rounded-lg border-2 p-4 ${
         result.decision === "BUY"       ? "bg-emerald-100 border-emerald-400" :
         result.decision === "NEGOTIATE" ? "bg-sky-100 border-sky-400" :
