@@ -648,8 +648,40 @@ function DetectedDetailsCard({
   const [editDraft, setEditDraft]     = useState("");
   const [editedKeys, setEditedKeys]   = useState<Set<string>>(new Set());
   const [flashKey, setFlashKey]       = useState<string | null>(null);
+  const [showNudge, setShowNudge]     = useState(false);
+
+  // Refs for each field row so we can scroll-focus the first missing one
+  const fieldRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   const hasCriticalMissing = extracted.missingCritical.length > 0;
+
+  // When critical fields change (user fills them), hide nudge automatically
+  useEffect(() => {
+    if (!hasCriticalMissing) setShowNudge(false);
+  }, [hasCriticalMissing]);
+
+  function handleRunClick() {
+    if (hasCriticalMissing && !showNudge) {
+      setShowNudge(true);
+      return;
+    }
+    setShowNudge(false);
+    onRunCouncil();
+  }
+
+  function handleAddMissingFields() {
+    setShowNudge(false);
+    // Focus + scroll to first missing critical field
+    const firstMissing = extracted.missingCritical[0];
+    if (firstMissing) {
+      const el = fieldRefs.current[firstMissing];
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        // Trigger inline edit on that field after scroll
+        setTimeout(() => el.click(), 200);
+      }
+    }
+  }
 
   // Determine raw value for editing (strip display formatting)
   function getRawForEdit(key: string): string {
@@ -745,18 +777,19 @@ function DetectedDetailsCard({
       {/* Field grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {rows.map((row) => (
-          <InlineFieldRow
-            key={row.key}
-            row={row}
-            isEditing={editingKey === row.key}
-            editDraft={editingKey === row.key ? editDraft : ""}
-            onEditDraftChange={setEditDraft}
-            onStartEdit={() => startEdit(row.key)}
-            onSave={() => saveEdit(row.key)}
-            onCancel={cancelEdit}
-            isEdited={editedKeys.has(row.key)}
-            flashKey={flashKey}
-          />
+          <div key={row.key} ref={(el) => { fieldRefs.current[row.key] = el; }}>
+            <InlineFieldRow
+              row={row}
+              isEditing={editingKey === row.key}
+              editDraft={editingKey === row.key ? editDraft : ""}
+              onEditDraftChange={setEditDraft}
+              onStartEdit={() => startEdit(row.key)}
+              onSave={() => saveEdit(row.key)}
+              onCancel={cancelEdit}
+              isEdited={editedKeys.has(row.key)}
+              flashKey={flashKey}
+            />
+          </div>
         ))}
       </div>
 
@@ -768,10 +801,44 @@ function DetectedDetailsCard({
         </div>
       )}
 
+      {/* Missing-field guardrail nudge */}
+      {showNudge && hasCriticalMissing && (
+        <div className="rounded-xl border-2 border-amber-400 bg-amber-50 px-4 py-3 space-y-3 animate-in fade-in duration-200">
+          <div className="flex items-start gap-2">
+            <span className="text-amber-500 text-base mt-0.5 shrink-0">⚠</span>
+            <div>
+              <div className="text-sm font-semibold text-amber-900">
+                Missing critical fields: {extracted.missingCritical.map(fieldLabel).join(", ")}.
+              </div>
+              <div className="text-xs text-amber-700 mt-0.5">
+                Add them for a higher-confidence result, or run anyway with a
+                {" "}{(extracted.confidencePenalty * 100).toFixed(0)}% confidence reduction.
+              </div>
+            </div>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <button
+              type="button"
+              onClick={handleAddMissingFields}
+              className="rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold text-sm px-4 py-2 transition-colors"
+            >
+              Add missing fields
+            </button>
+            <button
+              type="button"
+              onClick={() => { setShowNudge(false); onRunCouncil(); }}
+              className="rounded-lg border border-amber-400 bg-white hover:bg-amber-50 text-amber-800 font-medium text-sm px-4 py-2 transition-colors"
+            >
+              Run anyway
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex gap-3 flex-wrap pt-1">
         <button
-          onClick={onRunCouncil}
+          onClick={handleRunClick}
           disabled={isRunning || (extracted.community == null && extracted.developer == null && extracted.askingPriceAED == null)}
           className="flex-1 min-w-[160px] rounded-xl bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-semibold py-3 text-sm transition-colors"
         >
@@ -784,14 +851,6 @@ function DetectedDetailsCard({
           Edit in Structured Form
         </button>
       </div>
-
-      {hasCriticalMissing && (
-        <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
-          <strong>Missing critical fields:</strong> {extracted.missingCritical.map(fieldLabel).join(", ")}.
-          The council will still run but confidence scores will be reduced by {(extracted.confidencePenalty * 100).toFixed(0)}%.
-          Click any missing field above to enter a value, or use "Edit in Structured Form".
-        </div>
-      )}
     </div>
   );
 }
