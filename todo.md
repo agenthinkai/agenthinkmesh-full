@@ -3789,3 +3789,16 @@
 - [x] Smoke test: hardFlags=[] ✓
 - [x] Smoke test: yesCount=3 noCount=7 (FORENSIC regressed to NO — see note below)
 - Note: FORENSIC voted NO citing "lack of explicit data confirming absence of forensic red flags" — this is a prompt issue to address in patch 14
+
+## GCC Equities Council — Patch 14 (04 May 2026)
+- [x] 14A: Replace GCC_EQ_REG systemPrompt — YES is explicit DEFAULT; NO requires named concern; HARD_NO requires rule citation
+- [x] 14B: Replace GCC_EQ_FORENSIC systemPrompt — YES is DEFAULT on clean payload; NO only when specific flag surfaces
+- [x] 14C: Expand STRUCTURAL_BLOCKERS in councilEngine.ts (added WEEKEND_CLOSED, PRE_OPEN_BOOK_NOT_LIVE, NO_CURRENT_LIQUIDITY_DATA, UNKNOWN_BID_ASK_DEPTH, UNKNOWN_ORDER_QTY, WOULD_MOVE_MARKET_UNCERTAIN)
+- [x] 14D: Skip memory context for gcc_equities runs (break precedent loop while council is young)
+- [x] tsc --noEmit: EXIT:0
+- [x] Clean server restart applied
+- [x] Smoke test: VERDICT APPROVED, yesCount=8, noCount=2 (QUANT, MICRO)
+- [x] REG voted YES conf=1.0 — "no identified regulatory concerns" ✓
+- [x] FORENSIC voted YES conf=1.0 — "no forensic flags in evidence" ✓
+- [x] No rationale contains "precedent" ✓
+- [x] hardFlags=[] ✓
