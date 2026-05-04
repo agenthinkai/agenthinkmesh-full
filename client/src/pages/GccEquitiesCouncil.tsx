@@ -120,6 +120,9 @@ export default function GccEquitiesCouncil() {
           Ten specialised agents. Eight-vote floor. Two hard vetoes
           (Shariah · Regulatory). Submit a trading signal for council review.
         </p>
+        <div className="mt-3">
+          <MarketStatusBadge />
+        </div>
       </header>
 
       {/* ─ Strategy / target / side hint ──────────────────────────── */}
@@ -302,6 +305,58 @@ export default function GccEquitiesCouncil() {
   );
 }
 
+
+// ── Market-hours helpers (Patch 16) ─────────────────────────────────
+type MarketPhase =
+  | "OPEN"
+  | "PRE_OPEN"
+  | "OVERNIGHT_CLOSED"
+  | "AFTER_HOURS_CLOSED"
+  | "WEEKEND_CLOSED";
+
+function clientMarketPhase(now = new Date()): MarketPhase {
+  const kwt = new Date(now.getTime() + 3 * 3600 * 1000);
+  const dow = kwt.getUTCDay();
+  if (dow === 5 || dow === 6) return "WEEKEND_CLOSED";
+  const m = kwt.getUTCHours() * 60 + kwt.getUTCMinutes();
+  if (m < 510) return "OVERNIGHT_CLOSED";
+  if (m < 540) return "PRE_OPEN";
+  if (m < 750) return "OPEN";
+  return "AFTER_HOURS_CLOSED";
+}
+
+function MarketStatusBadge() {
+  const phase   = clientMarketPhase();
+  const isOpen  = phase === "OPEN";
+  const isPreOp = phase === "PRE_OPEN";
+
+  const palette =
+    isOpen   ? "bg-green-100 text-green-800 border-green-300" :
+    isPreOp  ? "bg-amber-100 text-amber-800 border-amber-300" :
+               "bg-slate-100 text-slate-700 border-slate-300";
+
+  const dot =
+    isOpen   ? "bg-green-500 animate-pulse" :
+    isPreOp  ? "bg-amber-500" :
+               "bg-slate-400";
+
+  const label = phase.replace(/_/g, " ");
+
+  const note =
+    isOpen   ? "All ten seats can fully evaluate." :
+    isPreOp  ? "Microstructure may have limited book depth." :
+               "Microstructure & Liquidity will structurally refuse without live data.";
+
+  return (
+    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-mono ${palette}`}>
+      <span className={`w-2 h-2 rounded-full ${dot}`} />
+      <span>BOURSA KUWAIT · {label}</span>
+      <span className="hidden md:inline text-[10px] opacity-70 ml-1 italic font-sans">
+        {note}
+      </span>
+    </div>
+  );
+}
 
 // ── Verdict card ────────────────────────────────────────────────────
 function CouncilVerdictCard({ result }: { result: any }) {

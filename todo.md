@@ -3808,3 +3808,10 @@
 - [x] Renders "1 of 1 NO is a missing-data refusal (market closed)" when structuralNoCount > 0
 - [x] Absent when structuralNoCount is 0 or undefined (Deal Screener unaffected)
 - [x] tsc --noEmit: EXIT:0
+
+## GCC Equities Council — Patch 16 (04 May 2026)
+- [x] 16A: Add clientMarketPhase() helper to GccEquitiesCouncil.tsx (KWT UTC+3, 5 phases)
+- [x] 16B: Add MarketStatusBadge component (green/amber/slate palette, pulsing dot when OPEN)
+- [x] 16C: Render MarketStatusBadge in page header below italic subtitle
+- [x] tsc --noEmit: EXIT:0
+- [x] Current phase at time of apply: OVERNIGHT_CLOSED (Monday 06:13 KWT) — badge shows slate palette
