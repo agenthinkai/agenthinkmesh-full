@@ -3868,3 +3868,14 @@
 - [ ] Add secondary CTAs: Analyze another property / Edit this property
 - [x] tsc 0 errors
 - [ ] Save checkpoint
+
+## Patch 20 — Inline Edit UX for Detected Details
+- [ ] Clickable field rows with hover ✎ icon
+- [ ] Inline edit state: auto-focus input, Save/Cancel buttons
+- [ ] Numeric → number input, text → text input, paymentPlan → textarea
+- [ ] Save updates local state only (no backend, no re-extraction)
+- [ ] Green flash on save (~300ms)
+- [ ] Missing field (!): allow direct input, remove missing state after value entered
+- [ ] Edited marker shown after save
+- [x] tsc 0 errors
+- [x] Checkpoint

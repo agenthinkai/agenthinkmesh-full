@@ -1,10 +1,10 @@
 // client/src/pages/UaeRealEstateCouncil.tsx
 //
-// UAE Real Estate Council V1.5 — Action Layer + Shareability
-// Adds: Recommended Action section, Download Summary button, secondary CTAs.
-// No agent logic / scoring changes.
+// UAE Real Estate Council V1.6 — Inline Edit UX
+// Adds: clickable field rows, auto-focus inline inputs, green flash on save,
+// (edited) marker, missing-field direct input. No backend changes.
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { trpc } from "@/lib/trpc";
 
 // ── Types (mirrors server/lib/uaeRealEstateEngine.ts) ─────────────────────────
@@ -491,37 +491,226 @@ function VerdictCard({
   );
 }
 
+// ── Inline-editable field row ─────────────────────────────────────────────────
+type FieldRowDef = {
+  key: string;
+  displayValue: string | null;
+  rawValue: string;
+  critical: boolean;
+  inputType: "text" | "number" | "textarea";
+};
+
+function InlineFieldRow({
+  row,
+  isEditing,
+  editDraft,
+  onEditDraftChange,
+  onStartEdit,
+  onSave,
+  onCancel,
+  isEdited,
+  flashKey,
+}: {
+  row: FieldRowDef;
+  isEditing: boolean;
+  editDraft: string;
+  onEditDraftChange: (v: string) => void;
+  onStartEdit: () => void;
+  onSave: () => void;
+  onCancel: () => void;
+  isEdited: boolean;
+  flashKey: string | null;
+}) {
+  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (isEditing) {
+      (inputRef.current as HTMLInputElement | null)?.focus();
+    }
+  }, [isEditing]);
+
+  const isFlashing = flashKey === row.key;
+  const isMissing  = row.displayValue == null;
+
+  const rowBg = isFlashing
+    ? "bg-emerald-50 border-emerald-400"
+    : isEditing
+    ? "bg-white border-sky-400 ring-1 ring-sky-300"
+    : isMissing
+    ? row.critical
+      ? "bg-amber-50 border-amber-300"
+      : "bg-slate-50 border-slate-200 opacity-60"
+    : "bg-slate-50 border-slate-200 hover:border-slate-400 hover:bg-white";
+
+  return (
+    <div
+      className={`group relative flex items-start gap-2 rounded-lg px-3 py-2 text-sm border transition-all duration-150 cursor-pointer ${rowBg}`}
+      onClick={() => { if (!isEditing) onStartEdit(); }}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => { if (e.key === "Enter" && !isEditing) onStartEdit(); }}
+      aria-label={`Edit ${fieldLabel(row.key)}`}
+    >
+      <div className="flex-1 min-w-0">
+        <div className="text-xs text-slate-500 uppercase tracking-wide flex items-center gap-1.5">
+          {fieldLabel(row.key)}
+          {isEdited && !isEditing && (
+            <span className="text-sky-500 font-normal normal-case tracking-normal text-[10px]">(edited)</span>
+          )}
+        </div>
+
+        {isEditing ? (
+          <div className="mt-1 space-y-1.5" onClick={(e) => e.stopPropagation()}>
+            {row.inputType === "textarea" ? (
+              <textarea
+                ref={inputRef as React.RefObject<HTMLTextAreaElement>}
+                value={editDraft}
+                onChange={e => onEditDraftChange(e.target.value)}
+                rows={3}
+                className="w-full rounded border border-sky-400 px-2 py-1 text-sm text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-400 resize-none"
+                onKeyDown={(e) => { if (e.key === "Escape") onCancel(); }}
+              />
+            ) : (
+              <input
+                ref={inputRef as React.RefObject<HTMLInputElement>}
+                type={row.inputType}
+                value={editDraft}
+                onChange={e => onEditDraftChange(e.target.value)}
+                className="w-full rounded border border-sky-400 px-2 py-1 text-sm text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-400"
+                onKeyDown={(e) => { if (e.key === "Enter") onSave(); if (e.key === "Escape") onCancel(); }}
+              />
+            )}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onSave}
+                className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded px-2.5 py-1 font-semibold transition-colors"
+              >
+                ✓ Save
+              </button>
+              <button
+                type="button"
+                onClick={onCancel}
+                className="text-xs border border-slate-300 bg-white hover:bg-slate-50 text-slate-600 rounded px-2.5 py-1 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : row.displayValue != null ? (
+          <div className="font-medium text-slate-800 truncate">{row.displayValue}</div>
+        ) : (
+          <div className={`italic text-xs mt-0.5 ${row.critical ? "text-amber-700 font-semibold" : "text-slate-400"}`}>
+            {row.critical ? "Not found — click to add" : "Not found — click to add"}
+          </div>
+        )}
+      </div>
+
+      {/* Right indicator */}
+      {!isEditing && (
+        <div className="shrink-0 mt-0.5 flex items-center gap-1">
+          {isFlashing ? (
+            <span className="text-emerald-500">✓</span>
+          ) : row.displayValue != null ? (
+            <>
+              <span className="text-emerald-500">✓</span>
+              <span className="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity text-xs">✎</span>
+            </>
+          ) : row.critical ? (
+            <>
+              <span className="text-amber-500">!</span>
+              <span className="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity text-xs">✎</span>
+            </>
+          ) : (
+            <span className="text-slate-300 opacity-0 group-hover:opacity-100 transition-opacity text-xs">✎</span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Detected Details Card ─────────────────────────────────────────────────────
 function DetectedDetailsCard({
   extracted,
   onRunCouncil,
   onEdit,
+  onFieldEdit,
   isRunning,
 }: {
   extracted: PropertyExtractionResult;
   onRunCouncil: () => void;
   onEdit: () => void;
+  onFieldEdit: (key: keyof PropertyExtractionResult, rawValue: string) => void;
   isRunning: boolean;
 }) {
+  const [editingKey, setEditingKey]   = useState<string | null>(null);
+  const [editDraft, setEditDraft]     = useState("");
+  const [editedKeys, setEditedKeys]   = useState<Set<string>>(new Set());
+  const [flashKey, setFlashKey]       = useState<string | null>(null);
+
   const hasCriticalMissing = extracted.missingCritical.length > 0;
 
-  const rows: Array<{ key: string; value: string | null; critical: boolean }> = [
-    { key: "propertyType",         value: extracted.propertyType,         critical: false },
-    { key: "assetClass",           value: extracted.assetClass,           critical: false },
-    { key: "emirate",              value: extracted.emirate,              critical: false },
-    { key: "community",            value: extracted.community,            critical: true  },
-    { key: "developer",            value: extracted.developer,            critical: true  },
-    { key: "tower",                value: extracted.tower,                critical: false },
-    { key: "askingPriceAED",       value: extracted.askingPriceAED != null ? `AED ${fmt(extracted.askingPriceAED)}` : null, critical: true },
-    { key: "areaSqft",             value: extracted.areaSqft != null ? `${fmt(extracted.areaSqft)} sqft` : null, critical: true },
-    { key: "ppsfAsking",           value: extracted.ppsfAsking != null ? `AED ${fmt(extracted.ppsfAsking)}/sqft` : null, critical: false },
-    { key: "ppsfComps",            value: extracted.ppsfComps != null ? `AED ${fmt(extracted.ppsfComps)}/sqft` : null, critical: false },
-    { key: "annualRentAED",        value: extracted.annualRentAED != null ? `AED ${fmt(extracted.annualRentAED)}/yr` : null, critical: false },
-    { key: "serviceChargePerSqft", value: extracted.serviceChargePerSqft != null ? `AED ${extracted.serviceChargePerSqft}/sqft/yr` : null, critical: false },
-    { key: "completionDate",       value: extracted.completionDate,       critical: false },
-    { key: "paymentPlan",          value: extracted.paymentPlan,          critical: false },
-    { key: "constructionProgress", value: extracted.constructionProgress != null ? `${extracted.constructionProgress}%` : null, critical: false },
-    { key: "escrowVerified",       value: extracted.escrowVerified != null ? (extracted.escrowVerified ? "Yes — RERA confirmed" : "No / not confirmed") : null, critical: false },
+  // Determine raw value for editing (strip display formatting)
+  function getRawForEdit(key: string): string {
+    switch (key) {
+      case "askingPriceAED":       return extracted.askingPriceAED != null ? String(extracted.askingPriceAED) : "";
+      case "areaSqft":             return extracted.areaSqft != null ? String(extracted.areaSqft) : "";
+      case "ppsfAsking":           return extracted.ppsfAsking != null ? String(extracted.ppsfAsking) : "";
+      case "ppsfComps":            return extracted.ppsfComps != null ? String(extracted.ppsfComps) : "";
+      case "annualRentAED":        return extracted.annualRentAED != null ? String(extracted.annualRentAED) : "";
+      case "serviceChargePerSqft": return extracted.serviceChargePerSqft != null ? String(extracted.serviceChargePerSqft) : "";
+      case "constructionProgress": return extracted.constructionProgress != null ? String(extracted.constructionProgress) : "";
+      case "escrowVerified":       return extracted.escrowVerified != null ? (extracted.escrowVerified ? "Yes — RERA confirmed" : "No / not confirmed") : "";
+      default: {
+        const v = extracted[key as keyof PropertyExtractionResult];
+        return v != null ? String(v) : "";
+      }
+    }
+  }
+
+  function getInputType(key: string): "text" | "number" | "textarea" {
+    if (["askingPriceAED", "areaSqft", "ppsfAsking", "ppsfComps", "annualRentAED", "serviceChargePerSqft", "constructionProgress"].includes(key)) return "number";
+    if (key === "paymentPlan") return "textarea";
+    return "text";
+  }
+
+  const startEdit = useCallback((key: string) => {
+    setEditingKey(key);
+    setEditDraft(getRawForEdit(key));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [extracted]);
+
+  function saveEdit(key: string) {
+    onFieldEdit(key as keyof PropertyExtractionResult, editDraft.trim());
+    setEditingKey(null);
+    setEditedKeys(prev => new Set(prev).add(key));
+    setFlashKey(key);
+    setTimeout(() => setFlashKey(null), 350);
+  }
+
+  function cancelEdit() {
+    setEditingKey(null);
+    setEditDraft("");
+  }
+
+  const rows: FieldRowDef[] = [
+    { key: "propertyType",         displayValue: extracted.propertyType,         rawValue: extracted.propertyType ?? "",         critical: false, inputType: "text" },
+    { key: "assetClass",           displayValue: extracted.assetClass,           rawValue: extracted.assetClass ?? "",           critical: false, inputType: "text" },
+    { key: "emirate",              displayValue: extracted.emirate,              rawValue: extracted.emirate ?? "",              critical: false, inputType: "text" },
+    { key: "community",            displayValue: extracted.community,            rawValue: extracted.community ?? "",            critical: true,  inputType: "text" },
+    { key: "developer",            displayValue: extracted.developer,            rawValue: extracted.developer ?? "",            critical: true,  inputType: "text" },
+    { key: "tower",                displayValue: extracted.tower,                rawValue: extracted.tower ?? "",                critical: false, inputType: "text" },
+    { key: "askingPriceAED",       displayValue: extracted.askingPriceAED != null ? `AED ${fmt(extracted.askingPriceAED)}` : null, rawValue: extracted.askingPriceAED != null ? String(extracted.askingPriceAED) : "", critical: true,  inputType: "number" },
+    { key: "areaSqft",             displayValue: extracted.areaSqft != null ? `${fmt(extracted.areaSqft)} sqft` : null,           rawValue: extracted.areaSqft != null ? String(extracted.areaSqft) : "",           critical: true,  inputType: "number" },
+    { key: "ppsfAsking",           displayValue: extracted.ppsfAsking != null ? `AED ${fmt(extracted.ppsfAsking)}/sqft` : null,   rawValue: extracted.ppsfAsking != null ? String(extracted.ppsfAsking) : "",   critical: false, inputType: "number" },
+    { key: "ppsfComps",            displayValue: extracted.ppsfComps != null ? `AED ${fmt(extracted.ppsfComps)}/sqft` : null,     rawValue: extracted.ppsfComps != null ? String(extracted.ppsfComps) : "",     critical: false, inputType: "number" },
+    { key: "annualRentAED",        displayValue: extracted.annualRentAED != null ? `AED ${fmt(extracted.annualRentAED)}/yr` : null, rawValue: extracted.annualRentAED != null ? String(extracted.annualRentAED) : "", critical: false, inputType: "number" },
+    { key: "serviceChargePerSqft", displayValue: extracted.serviceChargePerSqft != null ? `AED ${extracted.serviceChargePerSqft}/sqft/yr` : null, rawValue: extracted.serviceChargePerSqft != null ? String(extracted.serviceChargePerSqft) : "", critical: false, inputType: "number" },
+    { key: "completionDate",       displayValue: extracted.completionDate,       rawValue: extracted.completionDate ?? "",       critical: false, inputType: "text" },
+    { key: "paymentPlan",          displayValue: extracted.paymentPlan,          rawValue: extracted.paymentPlan ?? "",          critical: false, inputType: "textarea" },
+    { key: "constructionProgress", displayValue: extracted.constructionProgress != null ? `${extracted.constructionProgress}%` : null, rawValue: extracted.constructionProgress != null ? String(extracted.constructionProgress) : "", critical: false, inputType: "number" },
+    { key: "escrowVerified",       displayValue: extracted.escrowVerified != null ? (extracted.escrowVerified ? "Yes — RERA confirmed" : "No / not confirmed") : null, rawValue: extracted.escrowVerified != null ? (extracted.escrowVerified ? "Yes — RERA confirmed" : "No / not confirmed") : "", critical: false, inputType: "text" },
   ];
 
   return (
@@ -531,7 +720,7 @@ function DetectedDetailsCard({
         <div>
           <div className="text-xs uppercase tracking-widest text-slate-500 mb-0.5">Detected Details</div>
           <div className="text-sm text-slate-600">
-            Review extracted fields before running the council.
+            Click any field to edit inline.
             {hasCriticalMissing && (
               <span className="ml-2 text-amber-700 font-semibold">
                 {extracted.missingCritical.length} critical field{extracted.missingCritical.length > 1 ? "s" : ""} missing — confidence will be reduced.
@@ -555,34 +744,19 @@ function DetectedDetailsCard({
 
       {/* Field grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-        {rows.map(({ key, value, critical }) => (
-          <div
-            key={key}
-            className={`flex items-start gap-2 rounded-lg px-3 py-2 text-sm ${
-              value == null
-                ? critical
-                  ? "bg-amber-50 border border-amber-300"
-                  : "bg-slate-50 border border-slate-200 opacity-60"
-                : "bg-slate-50 border border-slate-200"
-            }`}
-          >
-            <div className="flex-1 min-w-0">
-              <div className="text-xs text-slate-500 uppercase tracking-wide">{fieldLabel(key)}</div>
-              {value != null ? (
-                <div className="font-medium text-slate-800 truncate">{value}</div>
-              ) : (
-                <div className={`italic text-xs mt-0.5 ${critical ? "text-amber-700 font-semibold" : "text-slate-400"}`}>
-                  {critical ? "Not found — required" : "Not found"}
-                </div>
-              )}
-            </div>
-            {value != null && (
-              <span className="text-emerald-500 mt-0.5 shrink-0">✓</span>
-            )}
-            {value == null && critical && (
-              <span className="text-amber-500 mt-0.5 shrink-0">!</span>
-            )}
-          </div>
+        {rows.map((row) => (
+          <InlineFieldRow
+            key={row.key}
+            row={row}
+            isEditing={editingKey === row.key}
+            editDraft={editingKey === row.key ? editDraft : ""}
+            onEditDraftChange={setEditDraft}
+            onStartEdit={() => startEdit(row.key)}
+            onSave={() => saveEdit(row.key)}
+            onCancel={cancelEdit}
+            isEdited={editedKeys.has(row.key)}
+            flashKey={flashKey}
+          />
         ))}
       </div>
 
@@ -615,7 +789,7 @@ function DetectedDetailsCard({
         <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2">
           <strong>Missing critical fields:</strong> {extracted.missingCritical.map(fieldLabel).join(", ")}.
           The council will still run but confidence scores will be reduced by {(extracted.confidencePenalty * 100).toFixed(0)}%.
-          Use "Edit in Structured Form" to fill them in manually.
+          Click any missing field above to enter a value, or use "Edit in Structured Form".
         </div>
       )}
     </div>
@@ -1109,6 +1283,27 @@ export default function UaeRealEstateCouncil() {
     setMode("extracted");
   }
 
+  // Apply inline field edits back to the extracted state
+  function handleFieldEdit(key: keyof PropertyExtractionResult, rawValue: string) {
+    if (!extracted) return;
+    const updated = { ...extracted } as Record<string, unknown>;
+    const numericKeys = ["askingPriceAED", "areaSqft", "ppsfAsking", "ppsfComps", "annualRentAED", "serviceChargePerSqft", "constructionProgress"];
+    if (numericKeys.includes(key as string)) {
+      const n = parseFloat(rawValue);
+      updated[key as string] = rawValue === "" ? null : isNaN(n) ? null : n;
+    } else if (key === "escrowVerified") {
+      updated[key] = rawValue === "" ? null : rawValue.toLowerCase().startsWith("y");
+    } else {
+      updated[key as string] = rawValue === "" ? null : rawValue;
+    }
+    // Recompute missingCritical
+    const criticalKeys = ["community", "developer", "askingPriceAED", "areaSqft"] as const;
+    const newMissing = criticalKeys.filter(k => updated[k] == null);
+    updated["missingCritical"] = newMissing;
+    updated["confidencePenalty"] = Math.min(0.4, newMissing.length * 0.1);
+    setExtracted(updated as unknown as PropertyExtractionResult);
+  }
+
   function handleRunCouncilFromExtracted() {
     if (!extracted) return;
     setCouncilError(null);
@@ -1204,6 +1399,7 @@ export default function UaeRealEstateCouncil() {
               extracted={extracted}
               onRunCouncil={handleRunCouncilFromExtracted}
               onEdit={handleEditInStructured}
+              onFieldEdit={handleFieldEdit}
               isRunning={council.isPending}
             />
 
