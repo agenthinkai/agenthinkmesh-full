@@ -13,7 +13,7 @@ interface NewsItem {
 }
 
 const cache = new Map<string, { fetchedAt: number; items: NewsItem[] }>();
-const CACHE_TTL_MS = 5 * 60 * 1000;
+const CACHE_TTL_MS = 60 * 1000;   // 60s — disclosures can land mid-session
 
 async function fetchWithTimeout(url: string, ms = 4000): Promise<Response | null> {
   const ctl   = new AbortController();
@@ -139,10 +139,16 @@ async function fetchKunaWire(ticker: string): Promise<NewsItem[]> {
   ];
 }
 
-export async function fetchDisclosures(ticker: string): Promise<NewsItem[]> {
+export async function fetchDisclosures(
+  ticker: string,
+  opts: { force?: boolean } = {},
+): Promise<NewsItem[]> {
   const cacheKey = ticker.toUpperCase();
   const hit      = cache.get(cacheKey);
-  if (hit && Date.now() - hit.fetchedAt < CACHE_TTL_MS) return hit.items;
+
+  if (!opts.force && hit && Date.now() - hit.fetchedAt < CACHE_TTL_MS) {
+    return hit.items;
+  }
 
   const [boursa, kuna] = await Promise.all([
     fetchBoursaDisclosures(ticker),

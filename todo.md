@@ -3855,3 +3855,9 @@
 - [x] tsc 0 errors
 - [x] Smoke test: DISCLOSURES section shows real items or correct empty
 - [x] Save checkpoint
+
+## Patch 18 — Cache TTL reduction + force-bypass flag
+- [x] Drop CACHE_TTL_MS from 5 min to 60s
+- [x] Add opts.force flag to fetchDisclosures signature
+- [x] tsc 0 errors
+- [x] Save checkpoint
