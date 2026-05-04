@@ -2084,7 +2084,7 @@
 - [ ] Add "Active Workflow: Procurement / Vendor Evaluation · Agents Loaded: 9" indicator to ProcurementScreener header
 - [ ] Verify /procurement route loads standalone without prior navigation state
 - [ ] Remove ambiguous labels — procurement clearly distinct from investment
-- [ ] Save checkpoint
+- [x] Save checkpoint
 
 ## Session P4 — Critical Discoverability Fix (Demo Blocker)
 
@@ -2092,7 +2092,7 @@
 - [ ] Add "Run Procurement Evaluation" primary CTA above the fold on Landing.tsx hero
 - [ ] Add Procurement as top-level SiteNav link (not inside Tools dropdown)
 - [ ] Verify /procurement loads standalone without prior state
-- [ ] Save checkpoint
+- [x] Save checkpoint
 
 ## Procurement Report Export (Demo Readiness)
 - [x] Build server/procurementPdf.ts — PDF generator from VendorEvaluationReport JSON
@@ -3824,7 +3824,7 @@
 - [x] Register /uae-realestate route in App.tsx and add nav entry
 - [x] tsc --noEmit: zero errors
 - [x] Smoke test: verify decision output with sample property payload
-- [ ] Save checkpoint
+- [x] Save checkpoint
 
 ## UAE Real Estate Council — Off-Plan UI + Risk Guardrail (post-348f0405)
 
@@ -3841,3 +3841,17 @@
 - [x] Guardrails: no hallucinated values, off-plan detection from text
 - [x] Typecheck 0 errors
 - [x] Smoke test extraction + council pipeline
+
+## Patch 17 — Boursa Kuwait Real Disclosure Endpoint
+- [x] Replace fetchBoursaDisclosures with confirmed data-api URL + SYMBOL_TO_DISPLAY_TICKER map
+- [x] Verify curl reachability from sandbox
+- [x] tsc 0 errors
+- [x] Smoke test: DISCLOSURES section shows real items or correct empty
+- [x] Save checkpoint
+
+## Patch 17 — Boursa Kuwait Real Disclosure Endpoint
+- [x] Replace fetchBoursaDisclosures with confirmed data-api URL + SYMBOL_TO_DISPLAY_TICKER map
+- [x] Verify curl reachability from sandbox
+- [x] tsc 0 errors
+- [x] Smoke test: DISCLOSURES section shows real items or correct empty
+- [x] Save checkpoint

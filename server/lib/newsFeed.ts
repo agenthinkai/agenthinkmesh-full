@@ -27,29 +27,96 @@ async function fetchWithTimeout(url: string, ms = 4000): Promise<Response | null
   }
 }
 
-// Boursa Kuwait disclosure portal — best-effort URL; update if portal changes.
-async function fetchBoursaDisclosures(ticker: string): Promise<NewsItem[]> {
-  const url =
-    `https://www.boursakuwait.com.kw/api/disclosures` +
-    `?symbol=${encodeURIComponent(ticker)}&lang=en&limit=10`;
+// ---------------------------------------------------------------------------
+// Boursa Kuwait — confirmed public endpoint (Patch 17, 2026-05-04)
+// Returns the full day's disclosures for ALL companies; we filter client-side.
+// ---------------------------------------------------------------------------
 
-  const res = await fetchWithTimeout(url, 4000);
+// Map our internal symbols to Boursa Kuwait's DisplayTicker codes.
+// Add entries as you confirm them on the live feed. Unmapped symbols fall back
+// to the symbol itself (case-insensitive).
+const SYMBOL_TO_DISPLAY_TICKER: Record<string, string> = {
+  KFH:        "KFIN",
+  NBK:        "NBKK",
+  ZAIN:       "ZAIN",
+  WARBABANK:  "WARBA",
+  GBK:        "GBK",
+  MABANEE:    "MABANEE",
+  NIND:       "NIND",
+  ABK:        "ABK",
+  ALTIJARIA:  "TIJARA",
+  BOURSA:     "BURS",
+  BOUBYAN:    "BOUBYAN",
+  MUNTAZAHAT: "MUNTAZAHAT",
+  // Verify these against actual feed data — DisplayTicker values are sometimes
+  // 3–4 letter codes that don't match our symbol. If a known-disclosed name
+  // returns empty, log the raw feed and update this map.
+};
+
+interface BoursaItem {
+  Title?:          string;
+  DisplayTicker?:  string;
+  Stk?:            string;
+  Url?:            string;
+  NewsId?:         string;
+  PostedDate?:     string;
+  EventStartDate?: string;
+  TitleTypeDesc?:  string;
+  FalseNews?:      number;
+}
+
+// Parse Boursa's compact timestamp format: "20260504082704" → "2026-05-04T08:27:04Z"
+function parseBoursaTimestamp(ts?: string): string {
+  if (!ts || ts.length < 8) return new Date().toISOString();
+  const y  = ts.slice(0, 4);
+  const mo = ts.slice(4, 6);
+  const d  = ts.slice(6, 8);
+  const h  = ts.length >= 10 ? ts.slice(8, 10)  : "00";
+  const mi = ts.length >= 12 ? ts.slice(10, 12) : "00";
+  const s  = ts.length >= 14 ? ts.slice(12, 14) : "00";
+  return `${y}-${mo}-${d}T${h}:${mi}:${s}Z`;
+}
+
+async function fetchBoursaDisclosures(ticker: string): Promise<NewsItem[]> {
+  // Fetch the entire day's feed (all companies) — no per-symbol filter exists.
+  const url =
+    `https://www.boursakuwait.com.kw/data-api/client-services` +
+    `?RT=3515&AT=0&L=E`;
+
+  const res = await fetchWithTimeout(url, 5000);
   if (!res || !res.ok) return [];
 
+  let feed: BoursaItem[] = [];
   try {
-    const data  = await res.json();
-    const items = data.items ?? data.disclosures ?? [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    return (items as any[]).slice(0, 5).map((x) => ({
-      source:   "Boursa Kuwait",
-      ts:       x.publishedAt ?? x.timestamp ?? new Date().toISOString(),
-      headline: x.title ?? x.headline ?? "(no headline)",
-      url:      x.url,
-      ticker,
-    }));
+    feed = await res.json();
   } catch {
     return [];
   }
+
+  if (!Array.isArray(feed)) return [];
+
+  // Translate our symbol to Boursa's DisplayTicker.
+  const targetDisplay = (
+    SYMBOL_TO_DISPLAY_TICKER[ticker.toUpperCase()] ?? ticker
+  ).toUpperCase();
+
+  const matches = feed.filter(
+    (it) =>
+      it &&
+      // Filter on DisplayTicker (case-insensitive)
+      (it.DisplayTicker ?? "").toUpperCase() === targetDisplay &&
+      // Skip items flagged as false news
+      it.FalseNews !== 1,
+  );
+
+  return matches.slice(0, 5).map((it) => ({
+    source:   "Boursa Kuwait",
+    ts:       parseBoursaTimestamp(it.PostedDate ?? it.EventStartDate),
+    headline: [it.TitleTypeDesc, it.Title].filter(Boolean).join(" — ") ||
+              "(no headline)",
+    url:      it.Url,
+    ticker,
+  }));
 }
 
 // KUNA wire — returns HTML, not JSON; stub until HTML parsing is added.
