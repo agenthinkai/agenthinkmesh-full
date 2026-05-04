@@ -908,7 +908,14 @@ export async function runCouncil(
   let memoryContext     = "";
   let memoryContextUsed = false;
   let similarDecisions: Array<{ taskDescription: string; finalVerdict: string | null; similarity: number; }> = [];
-  if (!skipMemory) {
+
+  // [PATCH 14D] For gcc_equities, skip memory context entirely to prevent the
+  // self-defeating precedent loop where structural/data-availability rejections
+  // (e.g. Sunday smoke tests) poison future merit-based evaluations.
+  // Restore filtered version once the memory store has real diverse flow.
+  const skipMemoryForMode = councilMode === "gcc_equities";
+
+  if (!skipMemory && !skipMemoryForMode) {
     try {
       const similar = await findSimilarDecisions(dealText, 3, taskDomain);
       if (similar.length > 0) {
@@ -1045,21 +1052,30 @@ export async function runCouncil(
 
   // [PATCH 11B] Structural NOs — seats that voted NO because data was unavailable,
   // not because the trade is bad. Informational only; tally is unchanged.
-  const STRUCTURAL_BLOCKERS = [
+  // [PATCH 14C] Expanded to include AFTER_HOURS_CLOSED and related market-state tags
+  // so RISK and MICRO are correctly classified when they cite these blockers.
+  const STRUCTURAL_BLOCKER_TAGS = [
     "MARKET_CLOSED",
+    "AFTER_HOURS_CLOSED",
+    "WEEKEND_CLOSED",
+    "PRE_OPEN_BOOK_NOT_LIVE",
     "NEWS_FEED_UNAVAILABLE",
     "NO_BID_ASK",
     "NO_BID_ASK_DATA",
+    "NO_CURRENT_LIQUIDITY_DATA",
+    "UNKNOWN_BID_ASK_DEPTH",
+    "UNKNOWN_ORDER_QTY",
+    "WOULD_MOVE_MARKET_UNCERTAIN",
     "NO_MACRO_TAPE",
     "NO_EARNINGS_DATA",
     "INSUFFICIENT_CONTEXT",
-    "AFTER_HOURS_CLOSED",
   ];
+
   const structuralNoSeats = votes.filter(
     (v) =>
       (v.vote === "NO" || v.vote === "SOFT_NO") &&
       Array.isArray(v.blockers) &&
-      v.blockers.some((b) => STRUCTURAL_BLOCKERS.includes(b)),
+      v.blockers.some((b) => STRUCTURAL_BLOCKER_TAGS.includes(b)),
   );
 
   // Hard flags — mode-aware veto detection
