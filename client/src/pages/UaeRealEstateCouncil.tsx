@@ -1,6 +1,6 @@
 // client/src/pages/UaeRealEstateCouncil.tsx
 //
-// UAE Real Estate Council V1.6 — Inline Edit UX
+// UAE Real Estate Council V1.8 — Public Polish
 // Adds: clickable field rows, auto-focus inline inputs, green flash on save,
 // (edited) marker, missing-field direct input. No backend changes.
 
@@ -240,7 +240,7 @@ function buildSummaryText(result: ARECouncilResult): string {
     result.strategicView,
     "",
     "═══════════════════════════════════════════════════",
-    "  AgenThinkMesh · UAE Real Estate Council V1.5",
+    "  AgenThinkMesh · UAE Real Estate Council V1.8",
     "  For discussion purposes only. Not financial advice.",
     "═══════════════════════════════════════════════════",
   );
@@ -1488,17 +1488,28 @@ export default function UaeRealEstateCouncil() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
-  return (
+   return (
     <div className="min-h-screen bg-slate-50">
+      {/* ── Public Top Nav ── */}
+      <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-slate-200">
+        <div className="max-w-4xl mx-auto px-4 h-12 flex items-center justify-between">
+          <span className="text-sm font-semibold text-slate-800 tracking-tight">AgenThink Mesh</span>
+          <div className="flex items-center gap-5">
+            <a href="/" className="text-xs text-slate-600 hover:text-sky-600 transition-colors font-medium">UAE Real Estate</a>
+            <a href="/home#examples" className="text-xs text-slate-600 hover:text-sky-600 transition-colors">Examples</a>
+            <a href="/contact" className="text-xs text-slate-600 hover:text-sky-600 transition-colors">Contact</a>
+            <a href="/home" className="text-xs bg-sky-600 hover:bg-sky-700 text-white px-3 py-1.5 rounded-md transition-colors font-medium">Open Dashboard</a>
+          </div>
+        </div>
+      </nav>
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
-
         {/* ── Header ── */}
         <header className="border-b border-slate-200 pb-5">
           <div className="text-xs uppercase tracking-widest text-slate-500">
             AgenThink Mesh · Real Estate Division
           </div>
           <h1 className="text-3xl font-serif mt-1 text-slate-900">
-            UAE Real Estate Council <em className="text-sky-600">V1.5</em>
+            UAE Real Estate Council <em className="text-sky-600">V1.8</em>
           </h1>
           <p className="text-sm text-slate-600 mt-2 italic">
             Seven specialised agents. Decision-first output: BUY · WAIT · NEGOTIATE · AVOID.
