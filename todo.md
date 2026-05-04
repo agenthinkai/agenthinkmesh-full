@@ -1355,7 +1355,7 @@
 - [ ] Wire FORGE_MODEL_IDS map to Manus Forge API model identifiers
 - [ ] TypeScript check — zero errors
 - [ ] All tests passing
-- [ ] Checkpoint
+- [x] Checkpoint
 
 ## Session Mar 29 2026 — Stripe Subscription Plans
 
@@ -1413,7 +1413,7 @@
 - [ ] UI: Match existing DealScreener design system exactly
 - [ ] TypeScript check — zero errors
 - [ ] Tests for comparison engine, ranking, tie-breaking, failure handling
-- [ ] Checkpoint
+- [x] Checkpoint
 
 ## Session Mar 29 2026 — Deal Comparison Mode V2.1
 
@@ -1447,7 +1447,7 @@
 - [ ] UI: Format full ranked report as plain text for clipboard (verdict, scores, agreements, risk flags, tradeoffs)
 - [ ] UI: Show "Copied!" toast feedback after clipboard write
 - [ ] TypeScript check — 0 errors
-- [ ] Checkpoint
+- [x] Checkpoint
 
 ## Session — Guided Deal Intake Form (Layman UX)
 - [ ] Replace raw memo textarea with guided 5-step plain-English form on Deal Screener
@@ -3861,3 +3861,10 @@
 - [x] Add opts.force flag to fetchDisclosures signature
 - [x] tsc 0 errors
 - [x] Save checkpoint
+
+## Patch 19 — UAE RE Council Action Layer + Shareability
+- [ ] Add Recommended Action section below Decision block
+- [ ] Add Download Summary button (text export, copy to clipboard)
+- [ ] Add secondary CTAs: Analyze another property / Edit this property
+- [x] tsc 0 errors
+- [ ] Save checkpoint

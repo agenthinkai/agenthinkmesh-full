@@ -1,8 +1,8 @@
 // client/src/pages/UaeRealEstateCouncil.tsx
 //
-// UAE Real Estate Council V1.4 — Quick Paste Mode (default) + Structured Mode toggle
-// Decision-first: BUY / WAIT / NEGOTIATE / AVOID
-// All 8 output sections rendered inline (no redirects, no new pages).
+// UAE Real Estate Council V1.5 — Action Layer + Shareability
+// Adds: Recommended Action section, Download Summary button, secondary CTAs.
+// No agent logic / scoring changes.
 
 import { useState } from "react";
 import { trpc } from "@/lib/trpc";
@@ -123,19 +123,147 @@ function fieldLabel(key: string): string {
   return map[key] ?? key;
 }
 
+// ── Recommended Action logic ──────────────────────────────────────────────────
+function getRecommendedActions(result: ARECouncilResult): string[] {
+  const { decision, entryRange } = result;
+  const ideal = fmt(entryRange.idealEntry);
+  const low   = fmt(entryRange.fairValueLow);
+  const high  = fmt(entryRange.fairValueHigh);
+
+  switch (decision) {
+    case "BUY":
+      return [
+        `Proceed with acquisition near ideal entry price (AED ${ideal})`,
+        "Verify escrow registration and finalise contract terms before transfer",
+      ];
+    case "NEGOTIATE":
+      return [
+        `Target entry AED ${low}–${high} (ideal: AED ${ideal}); use pricing gap vs comps as leverage`,
+        "Confirm seller motivation and timeline before submitting revised offer",
+      ];
+    case "WAIT":
+      return [
+        "Monitor price movement or construction progress before committing",
+        "Re-evaluate once the key uncertainty identified above reduces",
+      ];
+    case "AVOID":
+      return [
+        "Do not proceed under current conditions",
+        "Reassess only if pricing or material risk factors change significantly",
+      ];
+  }
+}
+
+// ── Download Summary ──────────────────────────────────────────────────────────
+function buildSummaryText(result: ARECouncilResult): string {
+  const ts = new Date().toLocaleString("en-AE", { timeZone: "Asia/Dubai" });
+  const actions = getRecommendedActions(result);
+  const lines: string[] = [
+    "═══════════════════════════════════════════════════",
+    "  UAE REAL ESTATE COUNCIL — SUMMARY",
+    `  Generated: ${ts} (GST)`,
+    "═══════════════════════════════════════════════════",
+    "",
+    `DECISION:     ${result.decision}`,
+    `CONFIDENCE:   ${result.confidenceLevel} (${(result.confidenceScore * 100).toFixed(0)}%)`,
+    `VOTES:        ${result.buyCount} BUY · ${result.negotiateCount} NEG · ${result.waitCount} WAIT · ${result.avoidCount} AVOID`,
+    "",
+    "─── IDEAL ENTRY PRICE ───────────────────────────",
+    `  Ideal Entry:  AED ${fmt(result.entryRange.idealEntry)}`,
+    `  Fair Range:   AED ${fmt(result.entryRange.fairValueLow)} – AED ${fmt(result.entryRange.fairValueHigh)}`,
+    `  Reasoning:    ${result.entryRange.reasoning}`,
+    "",
+    "─── TOP SIGNALS ─────────────────────────────────",
+    ...result.topSignals.map(s => `  ↑ ${s}`),
+    "",
+    "─── KEY RISK ────────────────────────────────────",
+    `  [${result.keyRiskLabel.replace(/_/g, " ")}] ${result.keyRisk}`,
+    "",
+    "─── RECOMMENDED ACTION ──────────────────────────",
+    ...actions.map(a => `  • ${a}`),
+    "",
+  ];
+
+  if (result.offPlanRisk) {
+    lines.push(
+      `─── OFF-PLAN RISK SUMMARY [${result.offPlanRisk.riskLabel}] ──────────`,
+      `  Payment Risk: ${result.offPlanRisk.paymentRisk}`,
+      `  Delay Risk:   ${result.offPlanRisk.delayRisk}`,
+      `  Exit Risk:    ${result.offPlanRisk.exitRisk}`,
+      `  Mitigation:   ${result.offPlanRisk.mitigation}`,
+      "",
+    );
+  }
+
+  lines.push(
+    "─── INVESTMENT THESIS ───────────────────────────",
+    result.investmentThesis,
+    "",
+    "─── STRATEGIC VIEW ──────────────────────────────",
+    result.strategicView,
+    "",
+    "═══════════════════════════════════════════════════",
+    "  AgenThinkMesh · UAE Real Estate Council V1.5",
+    "  For discussion purposes only. Not financial advice.",
+    "═══════════════════════════════════════════════════",
+  );
+
+  return lines.join("\n");
+}
+
+function downloadSummary(result: ARECouncilResult) {
+  const text = buildSummaryText(result);
+  const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `UAE_RE_Council_${result.decision}_${Date.now()}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+async function copySummary(result: ARECouncilResult): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(buildSummaryText(result));
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 // ── Verdict card ──────────────────────────────────────────────────────────────
-function VerdictCard({ result }: { result: ARECouncilResult }) {
+function VerdictCard({
+  result,
+  onAnalyzeAnother,
+}: {
+  result: ARECouncilResult;
+  onAnalyzeAnother: () => void;
+}) {
   const [agentsOpen, setAgentsOpen] = useState(false);
+  const [copyLabel, setCopyLabel]   = useState<"Copy Summary" | "Copied!">("Copy Summary");
   const style = DECISION_STYLE[result.decision];
 
   const confColor =
     result.confidenceLevel === "HIGH"   ? "text-emerald-700" :
     result.confidenceLevel === "MEDIUM" ? "text-amber-700"   : "text-red-700";
 
+  const actions = getRecommendedActions(result);
+
+  async function handleCopy() {
+    const ok = await copySummary(result);
+    if (ok) {
+      setCopyLabel("Copied!");
+      setTimeout(() => setCopyLabel("Copy Summary"), 2000);
+    }
+  }
+
   return (
     <div className={`rounded-xl border-2 ${style.border} ${style.bg} p-6 space-y-5`}>
-      {/* ── 1. Decision ── */}
-      <div className="flex items-start justify-between gap-4">
+
+      {/* ── 1. Decision + Share buttons ── */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <div className="text-xs uppercase tracking-widest text-slate-500 mb-1">Council Decision</div>
           <div className={`text-5xl font-black font-mono ${style.text}`}>{result.decision}</div>
@@ -145,20 +273,62 @@ function VerdictCard({ result }: { result: ARECouncilResult }) {
             </div>
           )}
         </div>
-        <div className="text-right text-sm space-y-1">
-          <div className="font-mono text-slate-700">
-            {result.buyCount} BUY · {result.negotiateCount} NEG · {result.waitCount} WAIT · {result.avoidCount} AVOID
+        <div className="flex flex-col items-end gap-2">
+          <div className="text-right text-sm space-y-1">
+            <div className="font-mono text-slate-700">
+              {result.buyCount} BUY · {result.negotiateCount} NEG · {result.waitCount} WAIT · {result.avoidCount} AVOID
+            </div>
+            <div className={`text-xs font-semibold ${confColor}`}>
+              Confidence: {result.confidenceLevel} ({(result.confidenceScore * 100).toFixed(0)}%)
+            </div>
+            <div className="text-xs text-slate-500">
+              {(result.durationMs / 1000).toFixed(1)}s · {result.agents.length} agents
+            </div>
           </div>
-          <div className={`text-xs font-semibold ${confColor}`}>
-            Confidence: {result.confidenceLevel} ({(result.confidenceScore * 100).toFixed(0)}%)
-          </div>
-          <div className="text-xs text-slate-500">
-            {(result.durationMs / 1000).toFixed(1)}s · {result.agents.length} agents
+          {/* Share buttons */}
+          <div className="flex gap-2 mt-1">
+            <button
+              onClick={handleCopy}
+              className="text-xs border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded-lg px-3 py-1.5 transition-colors font-medium"
+            >
+              {copyLabel}
+            </button>
+            <button
+              onClick={() => downloadSummary(result)}
+              className="text-xs border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 rounded-lg px-3 py-1.5 transition-colors font-medium"
+            >
+              ↓ Download Summary
+            </button>
           </div>
         </div>
       </div>
 
-      {/* ── 2. Top Signals ── */}
+      {/* ── 2. Recommended Action (CRITICAL — directly below decision) ── */}
+      <div className={`rounded-lg border-2 p-4 ${
+        result.decision === "BUY"       ? "bg-emerald-100 border-emerald-400" :
+        result.decision === "NEGOTIATE" ? "bg-sky-100 border-sky-400" :
+        result.decision === "WAIT"      ? "bg-amber-100 border-amber-400" :
+                                          "bg-red-100 border-red-400"
+      }`}>
+        <div className="text-xs uppercase tracking-widest text-slate-600 mb-2 font-semibold">
+          Recommended Action
+        </div>
+        <ul className="space-y-1.5">
+          {actions.map((action, i) => (
+            <li key={i} className="flex items-start gap-2 text-sm text-slate-800 font-medium">
+              <span className={`mt-0.5 shrink-0 font-bold ${
+                result.decision === "BUY"       ? "text-emerald-700" :
+                result.decision === "NEGOTIATE" ? "text-sky-700" :
+                result.decision === "WAIT"      ? "text-amber-700" :
+                                                  "text-red-700"
+              }`}>→</span>
+              <span>{action}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* ── 3. Top Signals ── */}
       {result.topSignals.length > 0 && (
         <div>
           <div className="text-xs uppercase tracking-widest text-slate-500 mb-2">Top Signals</div>
@@ -173,7 +343,7 @@ function VerdictCard({ result }: { result: ARECouncilResult }) {
         </div>
       )}
 
-      {/* ── 3. Key Risk ── */}
+      {/* ── 4. Key Risk ── */}
       <div>
         <div className="text-xs uppercase tracking-widest text-slate-500 mb-1">Key Risk</div>
         <div className="flex items-start gap-2">
@@ -187,13 +357,13 @@ function VerdictCard({ result }: { result: ARECouncilResult }) {
         </div>
       </div>
 
-      {/* ── 4. Investment Thesis ── */}
+      {/* ── 5. Investment Thesis ── */}
       <div>
         <div className="text-xs uppercase tracking-widest text-slate-500 mb-1">Investment Thesis</div>
         <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-line">{result.investmentThesis}</p>
       </div>
 
-      {/* ── 5. Entry Range ── */}
+      {/* ── 6. Entry Range ── */}
       <div className="bg-white/70 rounded-lg border border-slate-200 p-4">
         <div className="text-xs uppercase tracking-widest text-slate-500 mb-2">Suggested Entry Range</div>
         <div className="grid grid-cols-3 gap-3 text-center mb-2">
@@ -213,13 +383,13 @@ function VerdictCard({ result }: { result: ARECouncilResult }) {
         <p className="text-xs text-slate-500 italic text-center">{result.entryRange.reasoning}</p>
       </div>
 
-      {/* ── 6. Strategic View ── */}
+      {/* ── 7. Strategic View ── */}
       <div>
         <div className="text-xs uppercase tracking-widest text-slate-500 mb-1">Strategic View</div>
         <p className="text-sm text-slate-600 italic leading-relaxed">{result.strategicView}</p>
       </div>
 
-      {/* ── 7. Off-Plan Risk Summary ── */}
+      {/* ── 8. Off-Plan Risk Summary ── */}
       {result.offPlanRisk && (
         <div className={`rounded-lg border p-4 ${
           result.offPlanRisk.riskLabel === "HIGH"   ? "bg-red-50 border-red-300" :
@@ -243,11 +413,12 @@ function VerdictCard({ result }: { result: ARECouncilResult }) {
         </div>
       )}
 
-      {/* ── 8. Agent Breakdown (collapsed) ── */}
+      {/* ── 9. Agent Breakdown (collapsed) ── */}
       <div>
         <button
+          type="button"
           onClick={() => setAgentsOpen(v => !v)}
-          className="flex items-center gap-2 text-xs uppercase tracking-widest text-slate-500 hover:text-slate-800 transition-colors"
+          className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1 transition-colors"
         >
           <span>{agentsOpen ? "▾" : "▸"}</span>
           Agent Breakdown ({result.agents.length} seats)
@@ -299,6 +470,23 @@ function VerdictCard({ result }: { result: ARECouncilResult }) {
           Silent fails: {result.silentFails.join(", ")}
         </div>
       )}
+
+      {/* ── 10. Secondary CTAs ── */}
+      <div className="border-t border-current/10 pt-4 flex gap-3 flex-wrap">
+        <button
+          type="button"
+          onClick={onAnalyzeAnother}
+          className="rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-semibold py-2.5 px-5 text-sm transition-colors"
+        >
+          Analyze another property →
+        </button>
+        <button
+          onClick={() => downloadSummary(result)}
+          className="rounded-xl border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-medium py-2.5 px-5 text-sm transition-colors"
+        >
+          ↓ Download Summary
+        </button>
+      </div>
     </div>
   );
 }
@@ -762,43 +950,22 @@ function StructuredForm({ prefill, onBack, onResult }: StructuredFormProps) {
             />
           </label>
           <div className="block">
-            <span className="text-xs uppercase tracking-wider text-slate-500">Implied PPSF</span>
+            <span className="text-xs uppercase tracking-wider text-slate-500">PPSF (calculated)</span>
             <div className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-mono text-slate-600">
-              {ppsfCalc ? `AED ${ppsfCalc.toLocaleString()}` : "—"}
+              {ppsfCalc ? `AED ${fmt(ppsfCalc)}/sqft` : "—"}
             </div>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <label className="block">
-            <span className="text-xs uppercase tracking-wider text-slate-500">Comp PPSF — RERA/DLD (AED)</span>
+            <span className="text-xs uppercase tracking-wider text-slate-500">Comp PPSF (DLD)</span>
             <input
               value={ppsfComps}
               onChange={e => setPpsfComps(e.target.value)}
-              placeholder="e.g. 2500 (leave blank if unknown)"
+              placeholder="e.g. 2500"
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
           </label>
-          {ppsfCalc && ppsfComps && (
-            <div className="block">
-              <span className="text-xs uppercase tracking-wider text-slate-500">Premium to Comps</span>
-              <div className={`mt-1 w-full rounded-lg border px-3 py-2 text-sm font-mono ${
-                ppsfCalc > parseFloat(ppsfComps) * 1.05
-                  ? "border-red-300 bg-red-50 text-red-700"
-                  : ppsfCalc < parseFloat(ppsfComps) * 0.95
-                  ? "border-emerald-300 bg-emerald-50 text-emerald-700"
-                  : "border-slate-200 bg-slate-50 text-slate-600"
-              }`}>
-                {(((ppsfCalc - parseFloat(ppsfComps)) / parseFloat(ppsfComps)) * 100).toFixed(1)}%
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Rental economics */}
-      <section className="bg-white rounded-xl border border-slate-200 p-5 space-y-4">
-        <h2 className="text-xs uppercase tracking-widest text-slate-500 font-semibold">Rental Economics</h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <label className="block">
             <span className="text-xs uppercase tracking-wider text-slate-500">Annual Rent (AED)</span>
             <input
@@ -817,13 +984,12 @@ function StructuredForm({ prefill, onBack, onResult }: StructuredFormProps) {
               className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
           </label>
-          <div className="block">
-            <span className="text-xs uppercase tracking-wider text-slate-500">Gross Yield</span>
-            <div className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-mono text-slate-600">
-              {grossYieldCalc ? `${grossYieldCalc}%` : "—"}
-            </div>
-          </div>
         </div>
+        {grossYieldCalc && (
+          <div className="text-xs text-slate-500 font-mono">
+            Gross yield: <span className="text-emerald-700 font-bold">{grossYieldCalc}%</span>
+          </div>
+        )}
       </section>
 
       {/* Off-plan specifics (conditional) */}
@@ -947,8 +1113,6 @@ export default function UaeRealEstateCouncil() {
     if (!extracted) return;
     setCouncilError(null);
 
-    // Build the best possible request from extracted fields
-    // Fall back to sensible defaults for required fields if missing
     const asking = extracted.askingPriceAED ?? 0;
     const area   = extracted.areaSqft ?? 0;
 
@@ -987,6 +1151,15 @@ export default function UaeRealEstateCouncil() {
     setMode(extracted ? "extracted" : "paste");
   }
 
+  function handleAnalyzeAnother() {
+    setResult(null);
+    setExtracted(null);
+    setRawPastedText("");
+    setCouncilError(null);
+    setMode("paste");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
@@ -997,7 +1170,7 @@ export default function UaeRealEstateCouncil() {
             AgenThink Mesh · Real Estate Division
           </div>
           <h1 className="text-3xl font-serif mt-1 text-slate-900">
-            UAE Real Estate Council <em className="text-sky-600">V1.4</em>
+            UAE Real Estate Council <em className="text-sky-600">V1.5</em>
           </h1>
           <p className="text-sm text-slate-600 mt-2 italic">
             Seven specialised agents. Decision-first output: BUY · WAIT · NEGOTIATE · AVOID.
@@ -1060,7 +1233,10 @@ export default function UaeRealEstateCouncil() {
         {/* ── Verdict ── */}
         {result && (
           <div id="are-verdict">
-            <VerdictCard result={result} />
+            <VerdictCard
+              result={result}
+              onAnalyzeAnother={handleAnalyzeAnother}
+            />
           </div>
         )}
 
