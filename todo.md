@@ -3825,3 +3825,12 @@
 - [x] tsc --noEmit: zero errors
 - [x] Smoke test: verify decision output with sample property payload
 - [ ] Save checkpoint
+
+## UAE Real Estate Council — Off-Plan UI + Risk Guardrail (post-348f0405)
+
+- [x] Add Off-Plan Risk Summary collapsible section to verdict card (UaeRealEstateCouncil.tsx)
+- [x] Add Entry Range display to verdict card (UaeRealEstateCouncil.tsx)
+- [x] Add HIGH-risk guardrail: downgrade BUY → WAIT when offPlanRisk.riskLabel === HIGH
+- [x] Create smoke_are_offplan_high.mjs (Tier-2 developer, 20% progress, no escrow, 70/30 plan)
+- [x] tsc 0 errors
+- [x] Save checkpoint

@@ -447,7 +447,11 @@ export async function runARECouncil(req: ARESignalRequest): Promise<ARECouncilRe
     : 0;
 
   // Confidence guardrail: LOW confidence → downgrade BUY → WAIT
-  const guardrailApplied = rawDecision === "BUY" && avgConfidence < 0.5;
+  const lowConfidenceGuardrail = rawDecision === "BUY" && avgConfidence < 0.5;
+  // Off-plan HIGH-risk guardrail: BUY → WAIT when Payment & Delivery Risk agent returns HIGH
+  const pdrAgent = agentResults.find(a => a.personaId === "ARE_PAYMENT_DELIVERY_RISK");
+  const highOffPlanRisk = isOffPlan && rawDecision === "BUY" && pdrAgent?.label === "HIGH";
+  const guardrailApplied = lowConfidenceGuardrail || highOffPlanRisk;
   const decision = guardrailApplied ? "WAIT" : rawDecision;
 
   // Confidence level
