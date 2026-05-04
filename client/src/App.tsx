@@ -163,8 +163,10 @@ function Router() {
   return (
     <Suspense fallback={<PageLoader />}>
     <Switch>
-      {/* Public landing page */}
-      <Route path="/" component={Home} />
+      {/* UAE Real Estate Council — public root, no auth required */}
+      <Route path="/">{() => <UaeRealEstateCouncil />}</Route>
+      {/* Old landing pages */}
+      <Route path="/home" component={Home} />
       <Route path="/platform" component={Landing} />
 
       {/* 3-Screen MVP — core user journey */}
@@ -249,8 +251,8 @@ function Router() {
       <Route path="/deals">{() => <MeshSidebar><DealScreener /></MeshSidebar>}</Route>
       {/* Council of 10 — GCC Equities */}
       <Route path="/gcc-equities">{() => <MeshSidebar><GccEquitiesCouncil /></MeshSidebar>}</Route>
-      {/* UAE Real Estate Council V1.3 */}
-      <Route path="/uae-realestate">{() => <MeshSidebar><UaeRealEstateCouncil /></MeshSidebar>}</Route>
+      {/* UAE Real Estate Council — also accessible at /uae-realestate */}
+      <Route path="/uae-realestate">{() => <UaeRealEstateCouncil />}</Route>
       {/* Procurement — Vendor Evaluation Engine */}
       <Route path="/procurement" component={ProcurementScreener} />
       <Route path="/contacts" component={Contacts} />
