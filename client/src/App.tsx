@@ -73,6 +73,7 @@ const AdminDemoRequests = lazy(() => import("./pages/AdminDemoRequests"));
 const Upgrade = lazy(() => import("./pages/Upgrade"));
 const DealScreener = lazy(() => import("./pages/DealScreener"));
 const GccEquitiesCouncil = lazy(() => import("./pages/GccEquitiesCouncil"));
+const UaeRealEstateCouncil = lazy(() => import("./pages/UaeRealEstateCouncil"));
 const PitchTriage = lazy(() => import("./pages/PitchTriage"));
 const ProcurementScreener = lazy(() => import("./pages/ProcurementScreener"));
 const Contacts = lazy(() => import("./pages/Contacts"));
@@ -248,6 +249,8 @@ function Router() {
       <Route path="/deals">{() => <MeshSidebar><DealScreener /></MeshSidebar>}</Route>
       {/* Council of 10 — GCC Equities */}
       <Route path="/gcc-equities">{() => <MeshSidebar><GccEquitiesCouncil /></MeshSidebar>}</Route>
+      {/* UAE Real Estate Council V1.3 */}
+      <Route path="/uae-realestate">{() => <MeshSidebar><UaeRealEstateCouncil /></MeshSidebar>}</Route>
       {/* Procurement — Vendor Evaluation Engine */}
       <Route path="/procurement" component={ProcurementScreener} />
       <Route path="/contacts" component={Contacts} />

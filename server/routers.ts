@@ -26,6 +26,7 @@ import { knowledgeVaultRouter } from "./routers/knowledgeVault";
 import { selfLearningRouter } from "./routers/selfLearning";
 import { pitchRouter } from "./routers/pitch";
 import { cmkRouter } from "./routers/cmk";
+import { uaeRealestateRouter } from "./routers/uaeRealestate";
 import { demoRouter } from "./routers/demo";
 import { fleetRouter } from "./routers/founderFleet";
 import { treasuryRouter } from "./routers/treasury";
@@ -3432,6 +3433,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
   pitch: pitchRouter,
   contacts: contactsRouter,
   tracker: trackerRouter,
+  uaeRealestate: uaeRealestateRouter,
   // ── ETF Partner CRMM ────────────────────────────────────────────────────────
   partner: router({
     // List all partner institutions (admin or public read)

@@ -40,6 +40,7 @@ const NAV_ITEMS: NavItem[] = [
   { path: "/pitch-triage", icon: "📋", label: "Evaluate" },
   { path: "/deals", icon: "📁", label: "Pipeline" },
   { path: "/gcc-equities", icon: "📈", label: "GCC Equities", badge: "NEW" },
+  { path: "/uae-realestate", icon: "🏢", label: "UAE Real Estate", badge: "NEW" },
   { path: "/mesh-intelligence", icon: "📊", label: "Intelligence" },
   { path: "/admin/usage", icon: "⚙️", label: "Admin", adminOnly: true },
 ];

@@ -2074,7 +2074,7 @@
 - [ ] Enhance consensus layer: conflicting scores, highest-risk dimensions, decision rationale
 - [ ] Add Top Decision Drivers section (3-5 items) to Vendor Evaluation Report
 - [ ] Update ProcurementScreener.tsx to render Top Decision Drivers and INSUFFICIENT DATA state
-- [ ] Save checkpoint
+- [x] Save checkpoint
 
 ## Session P3 — Procurement Discoverability Fix (Critical, Pre-Demo)
 
@@ -3815,3 +3815,13 @@
 - [x] 16C: Render MarketStatusBadge in page header below italic subtitle
 - [x] tsc --noEmit: EXIT:0
 - [x] Current phase at time of apply: OVERNIGHT_CLOSED (Monday 06:13 KWT) — badge shows slate palette
+
+## UAE Real Estate Council V1.3 (new module)
+- [x] Create server/lib/personas-uae-realestate.ts (7 agents: Market Cycle, Location, Pricing, Rental Yield, Developer, Payment & Delivery Risk, Risk)
+- [x] Create server/lib/uaeRealEstateEngine.ts (off-plan protocol, confidence guardrail, entry-range logic, BUY/WAIT/NEGOTIATE/AVOID verdict)
+- [x] Add tRPC procedure uaeRealestate.run in server/routers/uaeRealestate.ts
+- [x] Build client/src/pages/UaeRealEstateCouncil.tsx (intake form + verdict card with all 8 output sections)
+- [x] Register /uae-realestate route in App.tsx and add nav entry
+- [x] tsc --noEmit: zero errors
+- [x] Smoke test: verify decision output with sample property payload
+- [ ] Save checkpoint
