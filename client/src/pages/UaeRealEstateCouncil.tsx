@@ -193,6 +193,7 @@ function getRecommendedActions(result: ARECouncilResult): string[] {
 function buildSummaryText(result: ARECouncilResult): string {
   const ts = new Date().toLocaleString("en-AE", { timeZone: "Asia/Dubai" });
   const actions = getRecommendedActions(result);
+  const { score, interpretation } = computeMeshScore(result);
   const lines: string[] = [
     "═══════════════════════════════════════════════════",
     "  UAE REAL ESTATE COUNCIL — SUMMARY",
@@ -202,6 +203,7 @@ function buildSummaryText(result: ARECouncilResult): string {
     `DECISION:     ${result.decision}`,
     `CONFIDENCE:   ${result.confidenceLevel} (${(result.confidenceScore * 100).toFixed(0)}%)`,
     `VOTES:        ${result.buyCount} BUY · ${result.negotiateCount} NEG · ${result.waitCount} WAIT · ${result.avoidCount} AVOID`,
+    `MESH SCORE:   ${score} / 100 — ${interpretation}`,
     "",
     "─── IDEAL ENTRY PRICE ───────────────────────────",
     `  Ideal Entry:  AED ${fmt(result.entryRange.idealEntry)}`,
