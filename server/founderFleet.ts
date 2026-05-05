@@ -1319,6 +1319,20 @@ export async function resumeInterruptedRuns(): Promise<void> {
 
   for (const run of interrupted) {
     console.log(`[FleetOrchestrator] Resuming interrupted run ${run.id} (status: ${run.status})`);
+    // FIX: Reset orphaned 'running' evals → 'queued' so they are retried on resume.
+    // Previously, evals set to 'running' before a server restart were permanently
+    // skipped because submitToMesh only loads 'queued' evals. This one-liner
+    // promotes them back to the queue so they are processed in the next pass.
+    const resetResult = await db
+      .update(founderAgentEvaluations)
+      .set({ status: "queued", updatedAt: Date.now() })
+      .where(
+        and(
+          eq(founderAgentEvaluations.runId, run.id),
+          eq(founderAgentEvaluations.status, "running"),
+        ),
+      );
+    console.log(`[FleetOrchestrator] Run ${run.id}: reset ${(resetResult as { rowsAffected?: number }).rowsAffected ?? 0} orphaned 'running' evals → 'queued'`);
     runFleet(run.id).catch((err) =>
       console.error(`[FleetOrchestrator] Resume of run ${run.id} failed:`, err)
     );

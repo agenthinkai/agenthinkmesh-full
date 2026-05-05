@@ -42,7 +42,7 @@ import { runDailyFleet } from "./jobs/founderFleetScheduler";
 import { runFleet, runFleetPhase, type FleetPhase } from "./founderFleet";
 import { sendGraphEmail } from "./graphEmail";
 import { getDb } from "./db";
-import { fleetConfig as fleetConfigTable, founderAgentRuns } from "../drizzle/schema";
+import { fleetConfig as fleetConfigTable, founderAgentRuns, founderAgentEvaluations } from "../drizzle/schema";
 import { eq, and, desc } from "drizzle-orm";
 
 const router = Router();
@@ -68,7 +68,39 @@ router.post("/fleet-trigger", async (req: Request, res: Response) => {
   const timestamp = new Date().toISOString();
   console.log(`[FleetTrigger] External trigger received at ${timestamp}`);
 
-  const { mode, action, phase } = req.body as { mode?: string; action?: string; phase?: string };
+  const { mode, action, phase, runId: bodyRunId } = req.body as { mode?: string; action?: string; phase?: string; runId?: number };
+
+  // ── Special action: resume-run — resume a specific run by ID ────────────────
+  // POST body: { action: "resume-run", runId: 660001 }
+  // Resets orphaned 'running' evals → 'queued' then calls runFleet(runId).
+  if (action === "resume-run") {
+    if (!bodyRunId || typeof bodyRunId !== "number") {
+      res.status(400).json({ error: "Missing or invalid runId" });
+      return;
+    }
+    const db = await getDb();
+    if (!db) { res.status(503).json({ error: "DB unavailable" }); return; }
+    // Reset orphaned 'running' evals → 'queued'
+    const resetResult = await db
+      .update(founderAgentEvaluations)
+      .set({ status: "queued", updatedAt: Date.now() })
+      .where(and(eq(founderAgentEvaluations.runId, bodyRunId), eq(founderAgentEvaluations.status, "running")));
+    const resetCount = (resetResult as { rowsAffected?: number }).rowsAffected ?? 0;
+    console.log(`[FleetTrigger] resume-run #${bodyRunId}: reset ${resetCount} 'running' evals → 'queued'`);
+    // Set run status to evaluating so runFleet resumes from eval phase
+    await db.update(founderAgentRuns).set({ status: "evaluating" }).where(eq(founderAgentRuns.id, bodyRunId));
+    // Determine gccMode from the run's fleet_mode
+    const [runRow] = await db.select({ fleetMode: founderAgentRuns.fleetMode })
+      .from(founderAgentRuns).where(eq(founderAgentRuns.id, bodyRunId)).limit(1);
+    const isGcc = runRow?.fleetMode === "gcc";
+    const ideasPerDomain = isGcc ? 20 : 40;
+    // Fire and forget — return immediately
+    res.json({ status: "triggered", runId: bodyRunId, resetCount, timestamp });
+    runFleet(bodyRunId, { gccMode: isGcc, bypassCostGuard: true, ideasPerDomain }).catch((err: unknown) => {
+      console.error(`[FleetTrigger] resume-run #${bodyRunId} error:`, (err as Error)?.message);
+    });
+    return;
+  }
 
   // ── Special action: test-email ─────────────────────────────────────────────
   if (action === "test-email") {
