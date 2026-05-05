@@ -122,6 +122,7 @@ interface DecisionIntegrityData {
   riskLevel: "LOW" | "MEDIUM" | "HIGH";
   agentsRun: number;
   agentContributions: AgentContribution[];
+  disagreementCount?: number;
 }
 
 // ── Tier 0 University Signal type ───────────────────────────────────────────────────────────────
@@ -309,6 +310,48 @@ function VoteBadge({ vote }: { vote: VoteType }) {
     }}>
       {config.label}
     </span>
+  );
+}
+
+// ── DisagreementBadge ────────────────────────────────────────────────────────
+function DisagreementBadge({ count }: { count: number }) {
+  const _MONO = "'JetBrains Mono', 'Fira Code', monospace";
+  const _AMBER = "#ffa502";
+  const _MUTED = "rgba(255,255,255,0.35)";
+  const isHigh = count >= 3;
+  const label = count === 0 ? "Consensus aligned" : `Disagreement: ${count} agent${count === 1 ? "" : "s"}`;
+  const color = count === 0 ? "rgba(0,255,135,0.7)" : isHigh ? _AMBER : _MUTED;
+  const borderColor = count === 0 ? "rgba(0,255,135,0.25)" : isHigh ? `${_AMBER}55` : "rgba(255,255,255,0.12)";
+  const bg = count === 0 ? "rgba(0,255,135,0.06)" : isHigh ? `${_AMBER}12` : "rgba(255,255,255,0.04)";
+  function handleClick() {
+    if (count === 0) return;
+    window.dispatchEvent(new CustomEvent("expand-decision-integrity"));
+    setTimeout(() => {
+      const el = document.getElementById("decision-integrity-section");
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50);
+  }
+  return (
+    <button
+      onClick={handleClick}
+      title={count === 0 ? "All agents aligned with verdict" : `${count} agent${count === 1 ? "" : "s"} voted against the final verdict direction — click to view Decision Integrity`}
+      style={{
+        fontFamily: _MONO,
+        fontSize: 9,
+        fontWeight: 700,
+        letterSpacing: "0.08em",
+        color,
+        background: bg,
+        border: `1px solid ${borderColor}`,
+        borderRadius: 3,
+        padding: "3px 8px",
+        cursor: count === 0 ? "default" : "pointer",
+        transition: "opacity 0.15s",
+        whiteSpace: "nowrap",
+      }}
+    >
+      {isHigh ? "⚠ " : ""}{label.toUpperCase()}
+    </button>
   );
 }
 
@@ -566,6 +609,11 @@ function VoteCard({ vote, result }: { vote: PersonaVote; result?: CouncilResult 
 // ── DecisionIntegritySection ───────────────────────────────────────────────────────────────────────────
 function DecisionIntegritySection({ di }: { di: DecisionIntegrityData }) {
   const [open, setOpen] = useState(false);
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener("expand-decision-integrity", handler);
+    return () => window.removeEventListener("expand-decision-integrity", handler);
+  }, []);
   const MONO = "'JetBrains Mono', 'Fira Code', monospace";
   const BORDER = "rgba(255,255,255,0.07)";
   const ACCENT = "#4a9eff";
@@ -579,7 +627,7 @@ function DecisionIntegritySection({ di }: { di: DecisionIntegrityData }) {
     c === "HIGH" ? GREEN : c === "MEDIUM" ? ACCENT : "rgba(255,255,255,0.35)";
 
   return (
-    <div style={{
+    <div id="decision-integrity-section" style={{
       marginBottom: 16,
       border: `1px solid ${BORDER}`,
       borderRadius: 8,
@@ -932,7 +980,12 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext }: { 
                 }}>CONFIDENCE: {confidenceLabel}</span>
             </div>
           </div>
-          <VerdictBadge verdict={result.verdict} />
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
+            <VerdictBadge verdict={result.verdict} />
+            {result.decisionIntegrity != null && (
+              <DisagreementBadge count={result.decisionIntegrity.disagreementCount ?? 0} />
+            )}
+          </div>
         </div>
       </div>
       {/* University Signal Badge — shown only when a Tier 0 signal was detected */}

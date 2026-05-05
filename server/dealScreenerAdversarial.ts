@@ -43,6 +43,7 @@ export interface DecisionIntegrity {
   riskLevel:         RiskLevel;
   agentsRun:         number;
   agentContributions: AgentContribution[];
+  disagreementCount: number;  // agents whose vote direction differs from final verdict
 }
 
 export interface AgentContribution {
@@ -306,6 +307,7 @@ function buildDecisionIntegrity(
   agentsRun: number,
   vetoResult: VetoCheckResult,
   contributions: AgentContribution[],
+  verdict: string,
 ): DecisionIntegrity {
   const challengerIds = new Set(CHALLENGER_IDS[mode] ?? []);
   const proposerIds   = new Set(PROPOSER_IDS[mode]   ?? []);
@@ -341,6 +343,16 @@ function buildDecisionIntegrity(
   );
   const unresolvedObjection = challengerHardNos.length > 0 && proposerHardYes.length === 0;
 
+  // Disagreement count: agents whose vote direction differs from final verdict direction
+  const verdictPositive = verdict === "APPROVED" || verdict === "APPROVED_WITH_CONDITIONS";
+  const verdictNegative = verdict === "REJECTED" || verdict === "VETOED";
+  const disagreementCount = votes.filter((v) => {
+    const votePositive = v.vote === "HARD_YES" || v.vote === "YES" || v.vote === "SOFT_YES";
+    const voteNegative = v.vote === "SOFT_NO" || v.vote === "HARD_NO";
+    if (verdictPositive) return voteNegative;
+    if (verdictNegative) return votePositive;
+    return false; // INSUFFICIENT_DATA: no disagreement counted
+  }).length;
   return {
     challengesRaised,
     survivingClaims,
@@ -350,6 +362,7 @@ function buildDecisionIntegrity(
     riskLevel,
     agentsRun,
     agentContributions:  contributions,
+    disagreementCount,
   };
 }
 
@@ -445,6 +458,7 @@ export async function runAdversarialCouncil(
     agentsRun,
     vetoResult,
     contributions,
+    finalResult.verdict,
   );
 
   return {
