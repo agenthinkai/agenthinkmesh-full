@@ -66,6 +66,19 @@ const CHALLENGER_IDS: Record<string, string[]> = {
   india_pe:  ["IN_SKEPTIC", "IN_LEGAL", "IN_DEVILS_ADVOCATE"],
 };
 
+/**
+ * Agents that can trigger a solo veto (legal, compliance, regulatory, shariah).
+ * The Skeptic and Contrarian are NOT in this set — they require 2+ HARD_NOs.
+ */
+const HARD_VETO_AGENTS: Record<string, string[]> = {
+  gcc:       ["GCC_REG", "GCC_SHARIAH"],
+  global_vc: ["VC_LEGAL"],
+  india_pe:  ["IN_LEGAL"],
+  gcc_equities: ["GCC_EQ_REG", "GCC_EQ_SHARIAH"],
+// Intentionally excluded: SKEPTIC, VC_SKEPTIC, IN_SKEPTIC, DEVILS_ADVOCATE, VC_CONTRARIAN
+// These agents create unresolved objections and reduce confidence but cannot veto alone.
+};
+
 const PROPOSER_IDS: Record<string, string[]> = {
   gcc:       ["ANALYST", "CFO", "MACRO", "GCC_CONSUMER"],
   global_vc: ["VC_THESIS", "VC_FOUNDER", "VC_PRODUCT", "VC_CFO", "VC_MARKET"],
@@ -201,12 +214,11 @@ function checkExtendedVeto(
     };
   }
 
-  // Extended veto: challenger HARD_NO with high-confidence blocker
+  // Extended veto rule 1: 2+ challenger agents vote HARD_NO with high confidence
   const challengerIds = new Set(CHALLENGER_IDS[mode] ?? []);
   const challengerHardNos = votes.filter(
     (v) => challengerIds.has(v.personaId) && v.vote === "HARD_NO" && v.confidence >= 0.75
   );
-
   if (challengerHardNos.length >= 2) {
     const primary = challengerHardNos[0];
     return {
@@ -215,17 +227,21 @@ function checkExtendedVeto(
       forceVerdict: "VETOED",
     };
   }
-
-  // Single high-confidence challenger HARD_NO with explicit blocker
-  if (challengerHardNos.length === 1 && challengerHardNos[0].blockers.length > 0 && challengerHardNos[0].confidence >= 0.9) {
-    const v = challengerHardNos[0];
+  // Extended veto rule 2: a HARD_VETO_AGENT (legal/compliance/shariah/regulatory) votes HARD_NO
+  // The Skeptic and Contrarian are NOT in this set — they require 2+ HARD_NOs to veto.
+  const hardVetoAgentIds = new Set(HARD_VETO_AGENTS[mode] ?? []);
+  const hardVetoHardNo = votes.find(
+    (v) => hardVetoAgentIds.has(v.personaId) && v.vote === "HARD_NO" && v.confidence >= 0.8
+  );
+  if (hardVetoHardNo) {
     return {
       triggered: true,
-      reason: `${v.personaName}: ${v.blockers[0]}`,
+      reason: `${hardVetoHardNo.personaName}: ${hardVetoHardNo.blockers[0] ?? hardVetoHardNo.rationale.split(".")[0]}`,
       forceVerdict: "VETOED",
     };
   }
-
+  // A single Skeptic/Contrarian HARD_NO creates an unresolved objection but does NOT veto alone.
+  // It is captured in Decision Integrity and reduces confidence, but forceVerdict stays null.
   return { triggered: false, reason: null, forceVerdict: null };
 }
 
