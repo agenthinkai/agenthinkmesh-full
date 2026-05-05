@@ -123,6 +123,7 @@ interface DecisionIntegrityData {
   agentsRun: number;
   agentContributions: AgentContribution[];
   disagreementCount?: number;
+  runtimeMs?: number;
 }
 
 // ── Tier 0 University Signal type ───────────────────────────────────────────────────────────────
@@ -758,7 +759,7 @@ function DecisionIntegritySection({ di }: { di: DecisionIntegrityData }) {
 
           {/* Footer stats */}
           <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.3)", borderTop: `1px solid ${BORDER}`, paddingTop: 10 }}>
-            {di.agentsRun} agent{di.agentsRun !== 1 ? "s" : ""} ran &nbsp;·&nbsp;
+            Council ran {di.agentsRun} agent{di.agentsRun !== 1 ? "s" : ""}{di.runtimeMs ? ` in ${(di.runtimeMs / 1000).toFixed(1)}s` : ""} &nbsp;·&nbsp;
             {di.unresolvedObjection ? <span style={{ color: AMBER }}> unresolved objection</span> : " all objections addressed"}
           </div>
         </div>

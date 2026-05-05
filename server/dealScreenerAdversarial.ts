@@ -44,6 +44,7 @@ export interface DecisionIntegrity {
   agentsRun:         number;
   agentContributions: AgentContribution[];
   disagreementCount: number;  // agents whose vote direction differs from final verdict
+  runtimeMs:         number;       // total council wall-clock time in ms
 }
 
 export interface AgentContribution {
@@ -308,6 +309,7 @@ function buildDecisionIntegrity(
   vetoResult: VetoCheckResult,
   contributions: AgentContribution[],
   verdict: string,
+  runtimeMs: number,
 ): DecisionIntegrity {
   const challengerIds = new Set(CHALLENGER_IDS[mode] ?? []);
   const proposerIds   = new Set(PROPOSER_IDS[mode]   ?? []);
@@ -363,6 +365,7 @@ function buildDecisionIntegrity(
     agentsRun,
     agentContributions:  contributions,
     disagreementCount,
+    runtimeMs,
   };
 }
 
@@ -382,6 +385,7 @@ export async function runAdversarialCouncil(
   const phase1PersonaIds   = initialSubset ?? allPersonas.map((p) => p.id);
   const phase1ChallengerIds = challengerIds.filter((id) => phase1PersonaIds.includes(id));
 
+  const councilStartMs = Date.now();
   console.log(`[AdversarialCouncil] Phase 1 | Risk: ${initialRisk} | Agents: ${phase1PersonaIds.length}/${allPersonas.length} | Mode: ${mode}`);
 
   const phase1Result = await runCouncil(dealText, {
@@ -434,6 +438,7 @@ export async function runAdversarialCouncil(
     console.log(`[AdversarialCouncil] No escalation | Risk: ${finalRisk} | Agents: ${agentsRun}`);
   }
 
+  const runtimeMs = Date.now() - councilStartMs;
   // ── Step 3: Extended Veto check on final merged result ───────────────────
   const vetoResult = checkExtendedVeto(finalResult.votes, finalResult.gccVetoTriggered, mode);
   if (vetoResult.triggered && vetoResult.forceVerdict) {
@@ -459,6 +464,7 @@ export async function runAdversarialCouncil(
     vetoResult,
     contributions,
     finalResult.verdict,
+    runtimeMs,
   );
 
   return {
