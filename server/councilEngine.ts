@@ -133,6 +133,8 @@ export interface RunCouncilOptions {
   signalPayload?: SignalRequest; // optional — gcc_equities only; drives buildEvidenceBlob
   /** Deal Screener adversarial layer: agent IDs that receive challenger-mode wrapper instruction */
   challengerAgentIds?: string[];
+  /** Deal Screener adversarial layer: when set, only these agent IDs run (true dynamic scaling) */
+  activePersonaIds?: string[];
 }
 
 // ── Zod schema for each persona response ─────────────────────────────────────
@@ -879,7 +881,10 @@ export async function runCouncil(
     bypassCostGuard = false,
   } = options;
 
-  const activePersonas = getPersonasForMode(councilMode);
+  const _allPersonas = getPersonasForMode(councilMode);
+  const activePersonas = options.activePersonaIds
+    ? _allPersonas.filter((p) => options.activePersonaIds!.includes(p.id))
+    : _allPersonas;
   // investorMode already destructured above — do not redeclare
   // ── Token guard — check balance before running ─────────────────────────────
   if (!skipMemory && userId) {

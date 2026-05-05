@@ -2,11 +2,12 @@
  * dealScreenerAdversarial.ts
  *
  * Adversarial Consensus + Dynamic Scaling layer for the Deal Screener.
- * Wraps runCouncil() — does NOT modify councilEngine.ts logic.
+ * Wraps runCouncil() — minimal additive changes to councilEngine.ts only.
  *
  * Features:
  *   1. Veto Mechanism      — extended veto beyond existing gccVetoTriggered
- *   2. Dynamic Scaling     — LOW/MEDIUM/HIGH risk → 4/6/10 agents
+ *   2. Dynamic Scaling     — Phase 1: LOW/MEDIUM/HIGH → 4/6/10 agents
+ *                            Phase 2: second-stage escalation if base result shows material risk
  *   3. Challenger–Prover   — challenger agent IDs passed to councilEngine wrapper
  *   4. Contribution Track  — per-run in-memory agent contribution scoring
  *   5. Decision Integrity  — structured output for UI (challenges, surviving claims, veto reason)
@@ -85,10 +86,9 @@ const MEDIUM_AGENT_IDS: Record<string, string[]> = {
   india_pe:  ["IN_MARKET", "IN_MACRO"],
 };
 
-// ── 1. Risk Estimator ─────────────────────────────────────────────────────────
+// ── 1. Risk Estimator (input completeness only) ───────────────────────────────
 
 export function estimateRiskLevel(dealText: string): RiskLevel {
-  const text = dealText.toLowerCase();
   let score = 0;
 
   // Missing critical fields
@@ -137,7 +137,44 @@ export function getAgentSubset(
   return null;
 }
 
-// ── 3. Extended Veto Logic ────────────────────────────────────────────────────
+// ── 3. Second-stage Escalation Check ─────────────────────────────────────────
+
+/**
+ * Checks whether the Phase 1 council result warrants escalation to HIGH risk.
+ * Separates "input completeness" (estimateRiskLevel) from "decision risk".
+ * A well-written but fundamentally bad deal escalates here, not in estimateRiskLevel.
+ */
+function shouldEscalate(result: CouncilResult, dealText: string): boolean {
+  // 1. High hard-no count
+  if (result.hardNoCount >= 3) return true;
+
+  // 2. Veto triggered by base council
+  if (result.gccVetoTriggered) return true;
+
+  // 3. Compliance / regulatory HARD_NO in votes
+  const complianceHardNo = result.votes.some(
+    (v) => v.vote === "HARD_NO" &&
+      /(regulatory|compliance|license|legal|sanction|permit)/i.test(v.rationale)
+  );
+  if (complianceHardNo) return true;
+
+  // 4. Runway < 6 months signal in deal text
+  const runwayMatch = dealText.match(/(\d+)\s*month[s]?\s*(runway|of\s*runway|remaining)/i);
+  if (runwayMatch && parseInt(runwayMatch[1]) < 6) return true;
+
+  // 5. Extreme valuation multiple signal (e.g. "50x revenue")
+  if (/(\d{2,3})x\s*(revenue|arr|mrr|multiple)/i.test(dealText)) return true;
+
+  // 6. Unresolved critical objection: multiple HARD_NOs with zero HARD_YES anywhere
+  // Requires at least 2 HARD_NOs to avoid escalating borderline deals with a single dissenter
+  const hardNos    = result.votes.filter((v) => v.vote === "HARD_NO");
+  const hardYes    = result.votes.filter((v) => v.vote === "HARD_YES");
+  if (hardNos.length >= 2 && hardYes.length === 0) return true;
+
+  return false;
+}
+
+// ── 4. Extended Veto Logic ────────────────────────────────────────────────────
 
 interface VetoCheckResult {
   triggered: boolean;
@@ -192,7 +229,7 @@ function checkExtendedVeto(
   return { triggered: false, reason: null, forceVerdict: null };
 }
 
-// ── 4. Agent Contribution Tracking ───────────────────────────────────────────
+// ── 5. Agent Contribution Tracking ───────────────────────────────────────────
 
 function computeContributions(
   votes: PersonaVote[],
@@ -244,7 +281,7 @@ function computeContributions(
   });
 }
 
-// ── 5. Decision Integrity Builder ─────────────────────────────────────────────
+// ── 6. Decision Integrity Builder ─────────────────────────────────────────────
 
 function buildDecisionIntegrity(
   votes: PersonaVote[],
@@ -268,7 +305,7 @@ function buildDecisionIntegrity(
       objection: v.blockers[0] ?? v.rationale.split(".")[0] + ".",
     }));
 
-  // Surviving claims: top 3 proposer agents with HARD_YES or SOFT_YES and conditions
+  // Surviving claims: top 3 proposer agents with HARD_YES or SOFT_YES
   const survivingClaims: AdversarialClaim[] = votes
     .filter((v) => proposerIds.has(v.personaId) && (v.vote === "HARD_YES" || v.vote === "SOFT_YES"))
     .sort((a, b) => b.confidence - a.confidence)
@@ -307,74 +344,95 @@ export async function runAdversarialCouncil(
   options: RunCouncilOptions = {},
 ): Promise<AdversarialCouncilResult> {
   const mode = options.councilMode ?? "gcc";
+  const allPersonas    = getPersonasForMode(mode);
+  const challengerIds  = CHALLENGER_IDS[mode] ?? [];
 
-  // ── Step 1: Estimate risk level ───────────────────────────────────────────
-  const riskLevel = estimateRiskLevel(dealText);
-  console.log(`[AdversarialCouncil] Risk level: ${riskLevel} | Mode: ${mode}`);
+  // ── Phase 1: Initial risk estimate + scaled first run ────────────────────
+  const initialRisk        = estimateRiskLevel(dealText);
+  const initialSubset      = getAgentSubset(mode, initialRisk);
+  const phase1PersonaIds   = initialSubset ?? allPersonas.map((p) => p.id);
+  const phase1ChallengerIds = challengerIds.filter((id) => phase1PersonaIds.includes(id));
 
-  // ── Step 2: Dynamic scaling — filter personas if LOW/MEDIUM risk ──────────
-  const agentSubset = getAgentSubset(mode, riskLevel);
-  const allPersonas = getPersonasForMode(mode);
-  const activePersonas = agentSubset
-    ? allPersonas.filter((p) => agentSubset.includes(p.id))
-    : allPersonas;
-  const agentsRun = activePersonas.length;
+  console.log(`[AdversarialCouncil] Phase 1 | Risk: ${initialRisk} | Agents: ${phase1PersonaIds.length}/${allPersonas.length} | Mode: ${mode}`);
 
-  console.log(`[AdversarialCouncil] Running ${agentsRun}/${allPersonas.length} agents`);
-
-  // ── Step 3: Challenger–Prover — pass challenger IDs to councilEngine ──────
-  const challengerIds = CHALLENGER_IDS[mode] ?? [];
-  // Only inject challenger mode for agents that are actually running
-  const activeChallengerIds = challengerIds.filter(
-    (id) => activePersonas.some((p) => p.id === id)
-  );
-
-  // For dynamic scaling: temporarily override activePersonas by filtering
-  // We achieve this by passing a custom councilMode that maps to the subset.
-  // Since we can't filter inside runCouncil, we call runCouncil normally and
-  // accept that it runs the full set — but for LOW/MEDIUM we run it with
-  // skipMemory=false and let the result stand. The latency gain comes from
-  // the challenger injection reducing per-agent token usage.
-  //
-  // NOTE: True agent-count reduction requires exporting callPersona from
-  // councilEngine. For now, dynamic scaling is implemented as risk-aware
-  // post-filtering of the contribution output, with the full council still
-  // running. The latency benefit is ~0% for LOW/MEDIUM but the output is
-  // cleaner. A future iteration can export callPersona to enable true scaling.
-
-  const baseResult = await runCouncil(dealText, {
+  const phase1Result = await runCouncil(dealText, {
     ...options,
-    challengerAgentIds: activeChallengerIds,
+    activePersonaIds:   phase1PersonaIds,
+    challengerAgentIds: phase1ChallengerIds,
   });
 
-  // ── Step 4: Extended Veto check ───────────────────────────────────────────
-  const vetoResult = checkExtendedVeto(baseResult.votes, baseResult.gccVetoTriggered, mode);
+  // ── Phase 2: Second-stage escalation check ───────────────────────────────
+  const escalate = shouldEscalate(phase1Result, dealText);
+  let finalResult: CouncilResult = phase1Result;
+  let finalRisk: RiskLevel       = initialRisk;
+  let agentsRun                  = phase1PersonaIds.length;
+
+  if (escalate && initialRisk !== "HIGH") {
+    // Run the remaining agents that were skipped in Phase 1
+    const remainingIds = allPersonas
+      .map((p) => p.id)
+      .filter((id) => !phase1PersonaIds.includes(id));
+
+    if (remainingIds.length > 0) {
+      console.log(`[AdversarialCouncil] ESCALATING to HIGH | Running ${remainingIds.length} additional agents`);
+      const remainingChallengerIds = challengerIds.filter((id) => remainingIds.includes(id));
+
+      const phase2Result = await runCouncil(dealText, {
+        ...options,
+        activePersonaIds:   remainingIds,
+        challengerAgentIds: remainingChallengerIds,
+        skipMemory:         true, // avoid double-persisting to memory
+      });
+
+      // Merge votes from both phases
+      const mergedVotes = [...phase1Result.votes, ...phase2Result.votes];
+      agentsRun = mergedVotes.length;
+
+      finalResult = {
+        ...phase1Result,
+        votes:           mergedVotes,
+        hardNoCount:     mergedVotes.filter((v) => v.vote === "HARD_NO").length,
+        noCount:         mergedVotes.filter((v) => v.vote === "HARD_NO" || v.vote === "SOFT_NO" || v.vote === "NO").length,
+        yesCount:        mergedVotes.filter((v) => v.vote === "HARD_YES" || v.vote === "SOFT_YES" || v.vote === "YES").length,
+        gccVetoTriggered: phase1Result.gccVetoTriggered || phase2Result.gccVetoTriggered,
+        // Keep phase1 verdict — it was computed on core agents with full context
+      };
+    }
+
+    finalRisk = "HIGH";
+    console.log(`[AdversarialCouncil] Escalated | Total agents: ${agentsRun}`);
+  } else {
+    console.log(`[AdversarialCouncil] No escalation | Risk: ${finalRisk} | Agents: ${agentsRun}`);
+  }
+
+  // ── Step 3: Extended Veto check on final merged result ───────────────────
+  const vetoResult = checkExtendedVeto(finalResult.votes, finalResult.gccVetoTriggered, mode);
   if (vetoResult.triggered && vetoResult.forceVerdict) {
-    (baseResult as any).verdict = vetoResult.forceVerdict;
-    (baseResult as any).gccVetoTriggered = true;
+    (finalResult as any).verdict = vetoResult.forceVerdict;
+    (finalResult as any).gccVetoTriggered = true;
     console.log(`[AdversarialCouncil] Extended veto triggered: ${vetoResult.reason}`);
   }
 
-  // ── Step 5: Agent contribution tracking ──────────────────────────────────
+  // ── Step 4: Agent contribution tracking ──────────────────────────────────
   const contributions = computeContributions(
-    baseResult.votes,
+    finalResult.votes,
     challengerIds,
-    baseResult.tiebreakerSwingAgent,
+    finalResult.tiebreakerSwingAgent,
     vetoResult.triggered,
   );
 
-  // ── Step 6: Build Decision Integrity section ──────────────────────────────
+  // ── Step 5: Build Decision Integrity section ──────────────────────────────
   const decisionIntegrity = buildDecisionIntegrity(
-    baseResult.votes,
+    finalResult.votes,
     mode,
-    riskLevel,
+    finalRisk,
     agentsRun,
     vetoResult,
     contributions,
   );
 
   return {
-    ...baseResult,
+    ...finalResult,
     decisionIntegrity,
   };
 }
