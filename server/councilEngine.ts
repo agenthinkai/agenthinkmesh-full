@@ -1244,8 +1244,13 @@ export async function runCouncil(
   } else if (finalScore >= 0.60) {
     verdict = "APPROVED_WITH_CONDITIONS";
   } else if (finalScore >= 0.40) {
-    // CONDITIONAL / NEEDS WORK — map to APPROVED_WITH_CONDITIONS with strong conditions
-    verdict = tiebreakerTriggered ? "APPROVED_WITH_CONDITIONS" : "REJECTED";
+    // CONDITIONAL / NEEDS WORK — resolve to APPROVED_WITH_CONDITIONS when signals are balanced:
+    // no veto, hardNoCount <= 1, and positive/conditional votes >= negative votes.
+    // Otherwise REJECTED.
+    const positiveVotes = workingVotes.filter((v) => v.vote === "HARD_YES" || v.vote === "YES" || v.vote === "SOFT_YES").length;
+    const negativeVotes = workingVotes.filter((v) => v.vote === "SOFT_NO" || v.vote === "HARD_NO").length;
+    const isBalancedMixed = !gccVetoTriggered && hardNoCount <= 1 && positiveVotes >= negativeVotes;
+    verdict = (tiebreakerTriggered || isBalancedMixed) ? "APPROVED_WITH_CONDITIONS" : "REJECTED";
   } else {
     verdict = "REJECTED";
   }
