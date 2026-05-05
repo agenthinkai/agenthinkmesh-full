@@ -950,14 +950,16 @@ export default function FounderFleet() {
                                 >
                                   {getRunStatusLabel(r.status, r.completed, r.totalIdeas)}
                                 </span>
-                                {r.status === "failed" && r.completed > 0 && (
+                                {/* Recover Run: show for failed partial runs OR completed runs below 80% threshold */}
+                                {((r.status === "failed" && r.completed > 0) ||
+                                  (r.status === "completed" && r.completed < r.totalIdeas * 0.8)) && (
                                   <button
                                     onClick={() => resumeRunMut.mutate({ runId: r.id })}
                                     disabled={resumeRunMut.isPending}
                                     className="inline-flex items-center gap-0.5 rounded px-1.5 py-0.5 text-xs font-medium bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/20 transition-colors disabled:opacity-50"
-                                    title={`Resume run #${r.id} — re-queue ${r.totalIdeas - r.completed} missing evaluations`}
+                                    title={`Recover run #${r.id} — re-queue ${r.totalIdeas - r.completed} missing evaluations`}
                                   >
-                                    ▶ Resume
+                                    ↺ Recover
                                   </button>
                                 )}
                               </div>

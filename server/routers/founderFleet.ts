@@ -494,51 +494,51 @@ export const fleetRouter = router({
     return { byMode, totalEvaluations, lastUpdated: Date.now() };
   }),
 
-  // ── Resume a partial run (status=failed, completed>0) ───────────────────────
+  // ── Resume a partial/failed run by ID (Recover Run button) ────────────────
+  // Accepts: failed, completed (partial), evaluating, pitching, researching
   resumeRun: adminProcedure
     .input(z.object({ runId: z.number() }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
-      // Validate: run must exist and be a partial failure
+      // Validate: run must exist and be in a recoverable state
       const [runRow] = await db.select().from(founderAgentRuns)
         .where(eq(founderAgentRuns.id, input.runId)).limit(1);
       if (!runRow) throw new TRPCError({ code: "NOT_FOUND", message: "Run not found" });
-      if (runRow.status !== "failed") throw new TRPCError({ code: "BAD_REQUEST", message: "Run is not in failed state" });
-      if ((runRow.completed ?? 0) === 0) throw new TRPCError({ code: "BAD_REQUEST", message: "Run has no completed evaluations — use a fresh run" });
+      const recoverableStatuses = ["failed", "completed", "evaluating", "pitching", "researching"];
+      if (!recoverableStatuses.includes(runRow.status)) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Run status '${runRow.status}' is not recoverable` });
+      }
 
-      // Reset run to pitching so runFleet resumes from the evaluation phase
+      // Reset run to evaluating so runFleet resumes from the evaluation phase
       await db.update(founderAgentRuns)
-        .set({ status: "pitching", completedAt: null })
+        .set({ status: "evaluating", completedAt: null })
         .where(eq(founderAgentRuns.id, input.runId));
 
-      // Mark any orphaned 'running' evals as failed so they get re-queued
-      const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
+      // Reset orphaned 'running' evals → 'queued' so they are retried
+      // (consistent with resumeInterruptedRuns() and pre-run cleanup fix)
       await db.update(founderAgentEvaluations)
-        .set({
-          status: "failed",
-          errorMessage: `Orphaned — re-queued by resumeRun at ${new Date().toISOString()}`,
-          updatedAt: Date.now(),
-        })
+        .set({ status: "queued", updatedAt: Date.now() })
         .where(and(
           eq(founderAgentEvaluations.runId, input.runId),
           eq(founderAgentEvaluations.status, "running"),
-          sql`${founderAgentEvaluations.updatedAt} < ${tenMinutesAgo}`,
         ));
 
-      // Count queued (non-completed) evaluations
+      // Count queued evaluations that will be retried
       const [countRow] = await db
         .select({ cnt: sql<number>`COUNT(*)` })
         .from(founderAgentEvaluations)
         .where(and(
           eq(founderAgentEvaluations.runId, input.runId),
-          sql`${founderAgentEvaluations.status} != 'completed'`,
+          eq(founderAgentEvaluations.status, "queued"),
         ));
       const queued = Number(countRow?.cnt ?? 0);
 
       // Re-launch fleet orchestration in background — it will resume from current DB state
-      runFleet(input.runId, { bypassCostGuard: true }).catch((err) =>
+      const isGcc = runRow.fleetMode === "gcc";
+      const ideasPerDomain = isGcc ? 20 : 40;
+      runFleet(input.runId, { gccMode: isGcc, bypassCostGuard: true, ideasPerDomain }).catch((err) =>
         console.error(`[FleetRouter] ResumeRun ${input.runId} failed:`, err)
       );
 

@@ -422,12 +422,13 @@ async function runSingleFleetMode(
   let runId = -1;
 
   try {
-    // ── Pre-run cleanup: mark orphaned 'running' evals (>10 min old) as failed ──
+    // ── Pre-run cleanup: reset orphaned 'running' evals (>10 min old) → 'queued' ──
+    // Changed from 'failed' to 'queued' so interrupted evals are retried rather than
+    // silently discarded. This mirrors the same fix applied in resumeInterruptedRuns().
     const tenMinutesAgo = Date.now() - 10 * 60 * 1000;
     const cleanupResult = await db.update(founderAgentEvaluations)
       .set({
-        status: "failed",
-        errorMessage: `Orphaned — cleaned up before new ${config.fleetMode} run at ${new Date().toISOString()}`,
+        status: "queued",
         updatedAt: Date.now(),
       })
       .where(and(
@@ -436,7 +437,7 @@ async function runSingleFleetMode(
       ));
     const cleanedCount = (cleanupResult as unknown as [{ affectedRows: number }])[0]?.affectedRows ?? 0;
     if (cleanedCount > 0) {
-      console.log(`[FounderFleet] Cleaned up ${cleanedCount} orphaned evaluations before ${config.fleetMode} run`);
+      console.log(`[FounderFleet] Reset ${cleanedCount} orphaned 'running' evals → 'queued' before ${config.fleetMode} run`);
     }
 
     // COST GUARD 1: Hard daily cap — max 1 run per fleet mode per calendar day.
@@ -574,19 +575,20 @@ async function runSingleFleetMode(
     console.log(`[FounderFleet] ${config.fleetMode} run #${runId} final status: ${runRow?.status ?? "unknown"}`);
 
     // ── Partial ratio check ───────────────────────────────────────────────
-    // If the run completed but fewer than 50% of ideas were evaluated,
+    // If the run completed but fewer than 80% of ideas were evaluated,
     // treat it as a partial run: notify owner but still count it as completed.
+    // Threshold raised from 50% → 80% to catch partial runs earlier.
     if (success) {
       const completedCount = runRow?.completed ?? 0;
       const totalIdeasCount = runRow?.totalIdeas ?? targetIdeas;
-      if (completedCount < totalIdeasCount * 0.5) {
+      if (completedCount < totalIdeasCount * 0.8) {
         console.warn(
           `[FounderFleet] ${config.fleetMode} run #${runId} is PARTIAL — ` +
-          `${completedCount}/${totalIdeasCount} evaluations (<50%)`
+          `${completedCount}/${totalIdeasCount} evaluations (<80%)`
         );
         notifyOwner({
           title:   `Fleet partial run — ${config.fleetMode} run #${runId}`,
-          content: `${config.fleetMode} run #${runId} completed but only ${completedCount}/${totalIdeasCount} evaluations finished (<50%).\nThis may indicate a rate-limit or timeout issue mid-run.\nRuns remaining: ${config.runsRemaining}`,
+          content: `${config.fleetMode} run #${runId} completed but only ${completedCount}/${totalIdeasCount} evaluations finished (<80%).\nThis may indicate a rate-limit or timeout issue mid-run.\nRuns remaining: ${config.runsRemaining}`,
         }).catch(() => {});
       }
     }
