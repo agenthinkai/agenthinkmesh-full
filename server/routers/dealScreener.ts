@@ -11,6 +11,7 @@ import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { dealScreenings, dealScreeningRateLimit, dealComparisons, dealScreenerPayments, signalDeals, userSignalPrefs } from "../../drizzle/schema";
 import { runCouncil } from "../councilEngine";
+import { runAdversarialCouncil } from "../dealScreenerAdversarial";
 import { generateCfoDeepDivePdf, type CouncilSummaryInput } from "../cfoDeepDivePdf";
 import { generateICMemoPdf, type ICMemoInput } from "../icMemoPdf";
 import { runComparison } from "../comparisonEngine";
@@ -154,7 +155,7 @@ export const dealScreenerRouter = router({
       // Owner bypass — skip rate limit and payment entirely
       if (isOwner(ctx.user.email)) {
         const ownerDealId = randomUUID();
-        const ownerResult = await runCouncil(input.dealText, { userId: undefined, councilMode: input.councilMode, investorMode: input.investorMode, signalPayload: input.signalPayload });
+        const ownerResult = await runAdversarialCouncil(input.dealText, { userId: undefined, councilMode: input.councilMode, investorMode: input.investorMode, signalPayload: input.signalPayload });
         await db.insert(dealScreenings).values({
           dealId: ownerDealId,
           userId: ctx.user.id,
@@ -187,7 +188,7 @@ export const dealScreenerRouter = router({
         try { ownerIcReport = await generateSingleDealICReport(input.dealName, input.dealText, ownerResult); } catch {}
         const ownerTier0 = detectTier0Signal(input.dealText, input.dealName);
         const ownerAre = runRealityAlignment(input.dealText, ownerResult);
-        return { dealId: ownerDealId, dealName: input.dealName, ...ownerResult, investorMode: input.investorMode ?? false, icReport: ownerIcReport, universitySignal: ownerTier0, realityAlignment: ownerAre };
+        return { dealId: ownerDealId, dealName: input.dealName, ...ownerResult, investorMode: input.investorMode ?? false, icReport: ownerIcReport, universitySignal: ownerTier0, realityAlignment: ownerAre, decisionIntegrity: ownerResult.decisionIntegrity ?? null };
       }
 
       // Rate limit check (plan-based daily limit)
@@ -339,14 +340,15 @@ export const dealScreenerRouter = router({
         };
       }
 
-      // ── Layer 2: Full Council ────────────────────────────────────────────────────────────────────────
-      // Run the council engine — skip subscription token guard for pay-per-run sessions
-      const result = await runCouncil(input.dealText, {
+      // ── Layer 2: Full Council (Adversarial) ─────────────────────────────────
+      // Run the adversarial council engine — skip subscription token guard for pay-per-run sessions
+      const result = await runAdversarialCouncil(input.dealText, {
         userId: skipTokenGuard ? undefined : ctx.user.id,
         councilMode: input.councilMode,
         investorMode: input.investorMode,
         signalPayload: input.signalPayload,
       });
+      const decisionIntegrity = result.decisionIntegrity;
       // Persist to database
       await db.insert(dealScreenings).values({
         userId: ctx.user.id,
@@ -438,6 +440,7 @@ export const dealScreenerRouter = router({
         duplicate: false,
         triage: triageResult,
         realityAlignment,
+        decisionIntegrity: decisionIntegrity ?? null,
       };
     }),
 

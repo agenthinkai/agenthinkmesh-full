@@ -21,6 +21,7 @@ import { eq } from "drizzle-orm";
 import { getDb } from "./db";
 import { dealScreenings } from "../drizzle/schema";
 import { runCouncil } from "./councilEngine";
+import { runAdversarialCouncil } from "./dealScreenerAdversarial";
 import { generateSingleDealICReport } from "./icReportEngine";
 import { detectTier0Signal } from "./tier0Signals";
 import { runTriage } from "./triageEngine";
@@ -65,6 +66,8 @@ export interface ScreeningResult {
   realityAlignment: RealityAlignmentResult | null;
   /** Debug log for the Reality Alignment Engine */
   debugLog: RealityAlignmentResult["debugLog"] | null;
+  /** Adversarial layer — Decision Integrity section (Deal Screener only) */
+  decisionIntegrity: object | null;
 }
 
 /**
@@ -117,6 +120,7 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
           universitySignal: null,
           realityAlignment: null,
           debugLog: null,
+          decisionIntegrity: null,
         };
       }
     }
@@ -170,6 +174,7 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
       universitySignal: null,
       realityAlignment: null,
       debugLog: null,
+      decisionIntegrity: null,
     };
   }
 
@@ -178,11 +183,12 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
     .then((params) => runMonteCarloSimulation(params))
     .catch((err) => { console.error("[runScreeningPipeline][MonteCarlo] Failed:", err); return null; });
 
-  const result = await runCouncil(dealText, {
+  const result = await runAdversarialCouncil(dealText, {
     userId: userId ?? undefined,
     councilMode,
     investorMode,
   });
+  const decisionIntegrity = result.decisionIntegrity;
 
   // ── Layer 2.5: Reality Alignment Engine ────────────────────────────────────
   const realityAlignment = runRealityAlignment(dealText, result);
@@ -272,5 +278,6 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
     universitySignal,
     realityAlignment,
     debugLog: realityAlignment.debugLog,
+    decisionIntegrity: decisionIntegrity ?? null,
   };
 }

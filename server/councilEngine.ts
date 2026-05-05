@@ -131,6 +131,8 @@ export interface RunCouncilOptions {
   investorMode?: boolean; // when true, agents balance upside vs risk and answer "what would make this a winning investment?"
   bypassCostGuard?: boolean; // when true, skip rate/spend guard (fleet runs only)
   signalPayload?: SignalRequest; // optional — gcc_equities only; drives buildEvidenceBlob
+  /** Deal Screener adversarial layer: agent IDs that receive challenger-mode wrapper instruction */
+  challengerAgentIds?: string[];
 }
 
 // ── Zod schema for each persona response ─────────────────────────────────────
@@ -769,6 +771,7 @@ async function callPersona(
   dealText: string,
   memoryContext: string,
   investorMode: boolean = false,
+  challengerMode: boolean = false,
 ): Promise<Omit<PersonaVote, "weight">> {
   const contextualDeal = memoryContext
     ? `${memoryContext}\n\n---\n\nDEAL MEMO TO EVALUATE:\n${dealText}`
@@ -778,7 +781,12 @@ async function callPersona(
     ? `\n\nINVESTOR MODE ACTIVE: Balance upside vs risk. Before voting, explicitly answer: "What would make this a winning investment?" Include this in your rationale.`
     : "";
 
-  const userMessage = `${contextualDeal}${investorModeInstruction}\n\nProvide your vote and analysis as strict JSON only.`;
+  // Challenger-mode wrapper: injected by Deal Screener adversarial layer — does NOT modify systemPrompt
+  const challengerInstruction = challengerMode
+    ? `\n\nCHALLENGER MODE ACTIVE: You are in adversarial review. Explicitly attempt to (1) invalidate the core assumptions, (2) flag any missing or unverifiable data, and (3) identify internal contradictions in the deal thesis. State your objections concisely in your rationale.`
+    : "";
+
+  const userMessage = `${contextualDeal}${investorModeInstruction}${challengerInstruction}\n\nProvide your vote and analysis as strict JSON only.`;
 
   // [FIX 4] Hard 30s timeout per agent
   const timeoutPromise = new Promise<never>((_, reject) =>
@@ -972,9 +980,10 @@ export async function runCouncil(
     }
   }
 
-  // Run all 10 personas in parallel
+  // Run all personas in parallel (challenger wrapper injected per-agent when challengerAgentIds is set)
+  const challengerSet = new Set(options.challengerAgentIds ?? []);
   const results = await Promise.allSettled(
-    activePersonas.map((p) => callPersona(p, augmentedDealText, memoryContext, investorMode))
+    activePersonas.map((p) => callPersona(p, augmentedDealText, memoryContext, investorMode, challengerSet.has(p.id)))
   );
 
   const votes: PersonaVote[] = results.map((r, i) => {

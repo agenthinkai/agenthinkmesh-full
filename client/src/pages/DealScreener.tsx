@@ -86,11 +86,42 @@ interface CouncilResult {
   duplicate?: boolean;
   triage?: { decision: string; confidence: number; reason: string; durationMs: number; } | null;
   realityAlignment?: RealityAlignmentResult | null;
+  decisionIntegrity?: DecisionIntegrityData | null;
   finalScore?: number;
   consensusQuality?: number;
   investorMode?: boolean;
   createdAt?: Date | string | null;
   dealTextPreview?: string | null;
+}
+
+// ── Decision Integrity type (Adversarial Council) ──────────────────────────────────────────────
+interface AdversarialChallenge {
+  agentId: string;
+  agentName: string;
+  objection: string;
+}
+interface AdversarialClaim {
+  agentId: string;
+  agentName: string;
+  claim: string;
+}
+interface AgentContribution {
+  agentId: string;
+  agentName: string;
+  contribution: "HIGH" | "MEDIUM" | "LOW";
+  newSignal: boolean;
+  influencedDecision: boolean;
+  triggeredChallenge: boolean;
+}
+interface DecisionIntegrityData {
+  challengesRaised: AdversarialChallenge[];
+  survivingClaims: AdversarialClaim[];
+  vetoTriggered: boolean;
+  vetoReason: string | null;
+  unresolvedObjection: boolean;
+  riskLevel: "LOW" | "MEDIUM" | "HIGH";
+  agentsRun: number;
+  agentContributions: AgentContribution[];
 }
 
 // ── Tier 0 University Signal type ───────────────────────────────────────────────────────────────
@@ -532,8 +563,163 @@ function VoteCard({ vote, result }: { vote: PersonaVote; result?: CouncilResult 
     </div>
   );
 }
+// ── DecisionIntegritySection ───────────────────────────────────────────────────────────────────────────
+function DecisionIntegritySection({ di }: { di: DecisionIntegrityData }) {
+  const [open, setOpen] = useState(false);
+  const MONO = "'JetBrains Mono', 'Fira Code', monospace";
+  const BORDER = "rgba(255,255,255,0.07)";
+  const ACCENT = "#4a9eff";
+  const GREEN = "#00ff87";
+  const RED = "#ff4757";
+  const AMBER = "#ffa502";
+  const PURPLE = "#a855f7";
 
-// ── PersonaLoadingGrid ────────────────────────────────────────────────────────
+  const riskColor = di.riskLevel === "HIGH" ? RED : di.riskLevel === "MEDIUM" ? AMBER : GREEN;
+  const contribColor = (c: "HIGH" | "MEDIUM" | "LOW") =>
+    c === "HIGH" ? GREEN : c === "MEDIUM" ? ACCENT : "rgba(255,255,255,0.35)";
+
+  return (
+    <div style={{
+      marginBottom: 16,
+      border: `1px solid ${BORDER}`,
+      borderRadius: 8,
+      overflow: "hidden",
+    }}>
+      {/* Header — always visible, click to toggle */}
+      <button
+        onClick={() => setOpen((v) => !v)}
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          padding: "10px 14px",
+          background: "rgba(255,255,255,0.03)",
+          border: "none",
+          cursor: "pointer",
+          color: "rgba(255,255,255,0.7)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <span style={{ fontFamily: MONO, fontSize: 11, letterSpacing: "0.08em", color: ACCENT }}>DECISION INTEGRITY</span>
+          <span style={{
+            fontFamily: MONO, fontSize: 10,
+            padding: "2px 7px",
+            borderRadius: 4,
+            background: `${riskColor}18`,
+            border: `1px solid ${riskColor}55`,
+            color: riskColor,
+          }}>{di.riskLevel} RISK</span>
+          {di.vetoTriggered && (
+            <span style={{ fontFamily: MONO, fontSize: 10, color: RED }}>🚫 VETO</span>
+          )}
+          {di.unresolvedObjection && !di.vetoTriggered && (
+            <span style={{ fontFamily: MONO, fontSize: 10, color: AMBER }}>⚠ UNRESOLVED</span>
+          )}
+          <span style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.35)" }}>
+            {di.challengesRaised.length} challenge{di.challengesRaised.length !== 1 ? "s" : ""} · {di.survivingClaims.length} surviving claim{di.survivingClaims.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+        <span style={{ fontFamily: MONO, fontSize: 11, color: "rgba(255,255,255,0.4)" }}>{open ? "▲" : "▼"}</span>
+      </button>
+
+      {/* Expanded body */}
+      {open && (
+        <div style={{ padding: "14px 16px", display: "flex", flexDirection: "column", gap: 16 }}>
+
+          {/* Veto reason */}
+          {di.vetoTriggered && di.vetoReason && (
+            <div style={{
+              padding: "10px 14px",
+              background: "rgba(255,71,87,0.08)",
+              border: `1px solid ${RED}44`,
+              borderRadius: 6,
+            }}>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: RED, marginBottom: 4, letterSpacing: "0.06em" }}>VETO REASON</div>
+              <div style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", lineHeight: 1.5 }}>{di.vetoReason}</div>
+            </div>
+          )}
+
+          {/* Challenges raised */}
+          {di.challengesRaised.length > 0 && (
+            <div>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: RED, marginBottom: 8, letterSpacing: "0.06em" }}>CHALLENGES RAISED</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {di.challengesRaised.map((c, i) => (
+                  <div key={i} style={{
+                    padding: "8px 12px",
+                    background: "rgba(255,71,87,0.05)",
+                    border: `1px solid rgba(255,71,87,0.2)`,
+                    borderRadius: 5,
+                  }}>
+                    <span style={{ fontFamily: MONO, fontSize: 10, color: RED, marginRight: 8 }}>{c.agentName}</span>
+                    <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)" }}>{c.objection}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Surviving claims */}
+          {di.survivingClaims.length > 0 && (
+            <div>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: GREEN, marginBottom: 8, letterSpacing: "0.06em" }}>SURVIVING CLAIMS</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {di.survivingClaims.map((c, i) => (
+                  <div key={i} style={{
+                    padding: "8px 12px",
+                    background: "rgba(0,255,135,0.04)",
+                    border: `1px solid rgba(0,255,135,0.18)`,
+                    borderRadius: 5,
+                  }}>
+                    <span style={{ fontFamily: MONO, fontSize: 10, color: GREEN, marginRight: 8 }}>{c.agentName}</span>
+                    <span style={{ fontSize: 12, color: "rgba(255,255,255,0.7)" }}>{c.claim}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Agent contributions */}
+          {di.agentContributions.length > 0 && (
+            <div>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: ACCENT, marginBottom: 8, letterSpacing: "0.06em" }}>AGENT CONTRIBUTIONS</div>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                {di.agentContributions.map((a, i) => (
+                  <div key={i} style={{
+                    padding: "4px 10px",
+                    borderRadius: 4,
+                    background: `${contribColor(a.contribution)}10`,
+                    border: `1px solid ${contribColor(a.contribution)}30`,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}>
+                    <span style={{ fontFamily: MONO, fontSize: 10, color: contribColor(a.contribution) }}>{a.agentName}</span>
+                    {a.influencedDecision && <span title="Influenced final decision" style={{ fontSize: 10 }}>⚡</span>}
+                    {a.newSignal && <span title="Raised unique signal" style={{ fontSize: 10 }}>🔍</span>}
+                    {a.triggeredChallenge && <span title="Triggered challenge" style={{ fontSize: 10 }}>⚔</span>}
+                  </div>
+                ))}
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: "rgba(255,255,255,0.25)", marginTop: 6 }}>
+                ⚡ influenced decision &nbsp;·&nbsp; 🔍 unique signal &nbsp;·&nbsp; ⚔ triggered challenge
+              </div>
+            </div>
+          )}
+
+          {/* Footer stats */}
+          <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,255,255,0.3)", borderTop: `1px solid ${BORDER}`, paddingTop: 10 }}>
+            {di.agentsRun} agent{di.agentsRun !== 1 ? "s" : ""} ran &nbsp;·&nbsp;
+            {di.unresolvedObjection ? <span style={{ color: AMBER }}> unresolved objection</span> : " all objections addressed"}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+// ── DecisionIntegritySection ───────────────────────────────────────────────────────────────
+// ── PersonaLoadingGrid ───────────────────────────────────────────────────────────────
 function PersonaLoadingGrid({ councilMode = "gcc" }: { councilMode?: CouncilModeType }) {
   const personaOrder = PERSONA_ORDERS[councilMode] ?? PERSONA_ORDERS.gcc;
   const [active, setActive] = useState(0);
@@ -1267,6 +1453,11 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
             <span style={{ fontFamily: MONO, fontSize: 10, color: AMBER }}>· ⚡ Agent conflict detected</span>
           )}
         </div>
+      )}
+
+      {/* Decision Integrity — collapsed by default */}
+      {result.decisionIntegrity && (
+        <DecisionIntegritySection di={result.decisionIntegrity} />
       )}
 
       {/* Special banners */}
