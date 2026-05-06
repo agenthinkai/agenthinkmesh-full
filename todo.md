@@ -3931,3 +3931,19 @@
 - [x] QA: Sidebar active state on Governance highlighted correctly
 - [x] QA: Prospect Mode badge visible in Governance header when active
 - [x] Checkpoint saved and production deploy triggered
+
+## Session — SADO Phase A.6 (2026-05-06)
+- [x] TASK 1: SADOAuditTrail PDF export — added Section 3 (Active Governance Policies table)
+- [x] TASK 1: SADOAuditTrail PDF export — added Section 4 (Transfer Events Evaluated from DB)
+- [x] TASK 1: SADOAuditTrail PDF export — added Section 5 (Override Requests Submitted)
+- [x] TASK 1: Override requests show title, description, status badge, and timestamp; empty state shows "No override requests submitted during this session."
+- [x] TASK 1: Narrative flow label added to header: Discovery → Classification → Policy Evaluation → Intercept/Escalation → Override Request → Audit Evidence
+- [x] TASK 1: Prospect name and organization appear in PDF header when Prospect Mode is active
+- [x] TASK 1: OVERRIDE_REQUESTED added to action filter dropdown in Audit Trail UI
+- [x] TASK 1: checkPage() helper added to prevent content overflow across pages
+- [x] QA: tsc EXIT:0 confirmed
+- [x] QA: All 7 SADO routes return HTTP 200
+- [x] QA: No console errors on SADO pages
+- [x] QA: PDF export dialog pre-fills prospect name from Prospect Mode
+- [x] QA: PDF download confirmed in browser download history
+- [x] Checkpoint saved and production deploy triggered
