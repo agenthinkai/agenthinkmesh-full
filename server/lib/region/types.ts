@@ -41,7 +41,7 @@ export const REGION_CONFIG: Record<RegionProfile, RegionSettings> = {
     models: {
       default:   "claude-sonnet-4-5",
       debate:    "claude-opus-4-5",
-      streaming: "claude-haiku-3-5",
+      streaming: "claude-haiku-4-5-20251001",
     },
     searchProviders: ["SEC", "FINRA", "Reuters", "Bloomberg"],
     vault: "global_vault",

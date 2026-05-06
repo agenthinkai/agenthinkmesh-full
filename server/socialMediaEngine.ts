@@ -84,7 +84,7 @@ async function runArabicLocalizer(
   // Agent 1: Dialect Analyst
   onEvent({ type: "agent_start", agentId: "dialect_analyst", agentName: "Dialect Analyst" });
   const dialectResp = await invokeLLM({ // Social AI streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -130,7 +130,7 @@ Return JSON:
   // Agent 2: Gulf Copywriter
   onEvent({ type: "agent_start", agentId: "gulf_copywriter", agentName: "Gulf Copywriter" });
   const copyResp = await invokeLLM({ // Social AI streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -181,7 +181,7 @@ Generate one version per dialect: ${dialects.join(", ")}`,
   // Agent 3: Quality Checker
   onEvent({ type: "agent_start", agentId: "quality_checker", agentName: "Quality Checker" });
   const qcResp = await invokeLLM({ // Social AI streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -241,7 +241,7 @@ async function runCrossPublisher(
   // Agent 1: Content Strategist
   onEvent({ type: "agent_start", agentId: "content_strategist", agentName: "Content Strategist" });
   const stratResp = await invokeLLM({ // Social AI streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -286,7 +286,7 @@ Return JSON with platform-specific strategy:
   // Agent 2: Platform Formatter
   onEvent({ type: "agent_start", agentId: "platform_formatter", agentName: "Platform Formatter" });
   const formatResp = await invokeLLM({ // Social AI streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -338,7 +338,7 @@ Generate one formatted post for each platform: ${platforms.join(", ")}`,
   // Agent 3: Publishing Scheduler
   onEvent({ type: "agent_start", agentId: "publishing_scheduler", agentName: "Publishing Scheduler" });
   const schedResp = await invokeLLM({ // Social AI streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -402,7 +402,7 @@ async function runBrandSafety(
   // Agent 1: Content Scanner
   onEvent({ type: "agent_start", agentId: "content_scanner", agentName: "Content Scanner" });
   const scanResp = await invokeLLM({ // Social AI streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -452,7 +452,7 @@ Return JSON:
   // Agent 2: Shariah Compliance Checker
   onEvent({ type: "agent_start", agentId: "shariah_checker", agentName: "Shariah Compliance Checker" });
   const shariahResp = await invokeLLM({ // Social AI streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -505,7 +505,7 @@ Return JSON:
   // Agent 3: Final Decision Agent
   onEvent({ type: "agent_start", agentId: "safety_decision", agentName: "Safety Decision Agent" });
   const decisionResp = await invokeLLM({ // Social AI streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -587,7 +587,7 @@ async function runInfluencerDiscovery(
   );
 
   const matchResp = await invokeLLM({ // Social AI streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -647,7 +647,7 @@ Return JSON:
   // Agent 2: Campaign Brief Generator
   onEvent({ type: "agent_start", agentId: "campaign_brief", agentName: "Campaign Brief Generator" });
   const briefResp = await invokeLLM({ // Social AI streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -730,7 +730,7 @@ Boycott ${config.brandName}! They don't care about customers
   // Agent 1: Sentiment Analyzer
   onEvent({ type: "agent_start", agentId: "sentiment_analyzer", agentName: "Sentiment Analyzer" });
   const sentimentResp = await invokeLLM({ // Social AI streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -779,7 +779,7 @@ Return JSON:
   // Agent 2: Crisis Classifier
   onEvent({ type: "agent_start", agentId: "crisis_classifier", agentName: "Crisis Classifier" });
   const classifyResp = await invokeLLM({ // Social AI streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -826,7 +826,7 @@ Return JSON:
   // Agent 3: Response Strategist
   onEvent({ type: "agent_start", agentId: "response_strategist", agentName: "Response Strategist" });
   const responseResp = await invokeLLM({ // Social AI streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",

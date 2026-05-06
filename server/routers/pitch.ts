@@ -562,7 +562,7 @@ Format: {"label": "complete"|"partial"|"insufficient", "reasoning": "<specific m
         reasoning: string;
         fallback: boolean;
       };
-      const MODEL = isDeep ? "claude-sonnet-4-5" : "claude-haiku-3-5";
+      const MODEL = isDeep ? "claude-sonnet-4-5" : "claude-haiku-4-5-20251001";
       const MAX_TOKENS = isDeep ? 300 : 120;
       // ── Deep mode: 55 s AbortController + Promise.allSettled for partial results ──────────
       const deepAbortController = isDeep ? new AbortController() : null;

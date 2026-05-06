@@ -144,7 +144,7 @@ async function runAnalyzer(config: AdmeshRunConfig, bb: Blackboard): Promise<unk
     .join("\n\n");
 
   const resp = await invokeLLM({ // AdMesh streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -191,7 +191,7 @@ Return a JSON object with:
 
 async function runStrategist(config: AdmeshRunConfig, bb: Blackboard): Promise<unknown> {
   const resp = await invokeLLM({ // AdMesh streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -251,7 +251,7 @@ Create a creative strategy brief. Return JSON:
 
 async function runCopywriter(config: AdmeshRunConfig, bb: Blackboard): Promise<unknown> {
   const resp = await invokeLLM({ // AdMesh streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -339,7 +339,7 @@ Rules:
 
 async function runScoring(config: AdmeshRunConfig, bb: Blackboard): Promise<unknown> {
   const resp = await invokeLLM({ // AdMesh streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -436,7 +436,7 @@ async function runVideoProducer(config: AdmeshRunConfig, bb: Blackboard): Promis
   }
 
   const resp = await invokeLLM({ // AdMesh streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
@@ -522,7 +522,7 @@ async function runPerformance(config: AdmeshRunConfig, bb: Blackboard): Promise<
   const cpm = config.performanceCPM ?? benchmarks.avgCPM;
 
   const resp = await invokeLLM({ // AdMesh streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       {
         role: "system",
