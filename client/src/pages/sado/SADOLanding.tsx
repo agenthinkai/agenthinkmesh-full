@@ -168,6 +168,58 @@ export default function SADOLanding() {
         </div>
       </div>
 
+      {/* What to Expect */}
+      <div className="border-b border-border bg-slate-50/60">
+        <div className="max-w-5xl mx-auto px-6 py-12">
+          <div className="mb-8">
+            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+              Demo walkthrough
+            </p>
+            <h2 className="text-2xl font-bold text-foreground">What to expect</h2>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {([
+              {
+                step: "01",
+                title: "Run Demo",
+                description: "Watch the agent mesh discover systems, classify risk, and trigger governance checks.",
+                href: "/sado/command-centre",
+                accent: "border-blue-200 bg-white",
+                numColor: "text-blue-500",
+              },
+              {
+                step: "02",
+                title: "Explore Governance",
+                description: "Review residency rules, transfer controls, override requests, and escalation paths.",
+                href: "/sado/governance",
+                accent: "border-emerald-200 bg-white",
+                numColor: "text-emerald-600",
+              },
+              {
+                step: "03",
+                title: "Export Audit Report",
+                description: "Generate an executive or CISO-ready PDF showing the full compliance trail.",
+                href: "/sado/audit-trail",
+                accent: "border-amber-200 bg-white",
+                numColor: "text-amber-600",
+              },
+            ] as const).map(({ step, title, description, href, accent, numColor }) => (
+              <Link key={step} href={href}>
+                <div className={`group rounded-xl border ${accent} p-6 cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 h-full`}>
+                  <div className={`text-3xl font-bold tabular-nums mb-3 ${numColor} opacity-60`}>{step}</div>
+                  <h3 className="font-semibold text-foreground mb-2 text-base">{title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+                  <div className={`flex items-center gap-1 mt-4 text-xs font-medium ${numColor} opacity-0 group-hover:opacity-100 transition-opacity`}>
+                    Go <ArrowRight className="w-3 h-3" />
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      </div>
+
       {/* Capability Pillars */}
       <div className="max-w-5xl mx-auto px-6 py-14">
         <div className="mb-8">

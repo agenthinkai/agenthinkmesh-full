@@ -3989,3 +3989,13 @@
 - [x] QA: Narration card verified at Step 5 — "PII Detector: Detecting personally identifiable information..."
 - [x] QA: No console errors
 - [x] Checkpoint saved and production deploy triggered
+
+## Session — SADO Phase A.11 (2026-05-06)
+- [x] TASK: "What to Expect" 3-step section added to SADOLanding between hero and Capability Pillars
+- [x] TASK: Step 01 Run Demo (blue), 02 Explore Governance (emerald), 03 Export Audit Report (amber)
+- [x] TASK: Each card links to /sado/command-centre, /sado/governance, /sado/audit-trail
+- [x] TASK: Hover reveals "Go →" in accent colour; responsive 1-col mobile / 3-col desktop
+- [x] QA: tsc EXIT:0 confirmed
+- [x] QA: /sado verified in browser — section renders correctly below hero
+- [x] QA: No console errors
+- [x] Checkpoint saved and production deploy triggered
