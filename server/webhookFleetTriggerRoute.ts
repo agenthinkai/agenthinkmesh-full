@@ -18,9 +18,10 @@
  *   - Uses bypassCostGuard: true (same as the cron)
  *
  * Special actions (via body.action):
- *   "env-check"   — Reports presence/absence of critical env vars (no secrets exposed)
- *   "resume-run"  — Resumes a specific run by ID (body.runId required)
- *   "test-email"  — Sends a test email to farouq@agenthink.ai via Graph API
+ *   "env-check"    — Reports presence/absence of critical env vars (no secrets exposed)
+ *   "resume-run"   — Resumes a specific run by ID (body.runId required)
+ *   "test-email"   — Sends a test email to farouq@agenthink.ai via Graph API
+ *   "daily-trend"  — Returns 14-day daily eval breakdown as CSV (fleet_mode, day, evals, avg_score)
  *
  * Added: 2026-04-29 — Fix for HTTP 403 caused by Manus reverse-proxy blocking
  *   /api/scheduled/* routes before requests reach the Express app.
@@ -31,7 +32,7 @@ import { runFleet } from "./founderFleet";
 import { sendGraphEmail } from "./graphEmail";
 import { getDb } from "./db";
 import { fleetConfig as fleetConfigTable, founderAgentRuns, founderAgentEvaluations } from "../drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql, gte } from "drizzle-orm";
 
 const router = Router();
 
@@ -68,6 +69,51 @@ router.post("/fleet-trigger", async (req: Request, res: Response) => {
     };
     console.log("[WebhookFleetTrigger] env-check:", JSON.stringify(envReport));
     res.json({ action: "env-check", timestamp, env: envReport });
+    return;
+  }
+
+  // ── Special action: daily-trend — 14-day daily eval breakdown as CSV ──────
+  if (action === "daily-trend") {
+    const db = await getDb();
+    if (!db) {
+      res.status(500).json({ action: "daily-trend", error: "DB unavailable" });
+      return;
+    }
+    // createdAt is stored as bigint (ms epoch). Convert to DATE for grouping.
+    // DATE_TRUNC is PostgreSQL; TiDB/MySQL uses DATE(FROM_UNIXTIME(created_at/1000)).
+    const cutoff = Date.now() - 14 * 24 * 60 * 60 * 1000;
+    type TrendRow = { fleet_mode: string; day: string; evals: number; avg_score: number };
+    const rows: TrendRow[] = await db.select({
+      fleet_mode: founderAgentEvaluations.fleetMode,
+      day:        sql<string>`DATE(FROM_UNIXTIME(${founderAgentEvaluations.createdAt} / 1000))`,
+      evals:      sql<number>`COUNT(*)`,
+      avg_score:  sql<number>`ROUND(AVG(${founderAgentEvaluations.finalScore}), 4)`,
+    })
+      .from(founderAgentEvaluations)
+      .where(
+        and(
+          eq(founderAgentEvaluations.status, "completed"),
+          gte(founderAgentEvaluations.createdAt, cutoff),
+        )
+      )
+      .groupBy(
+        founderAgentEvaluations.fleetMode,
+        sql`DATE(FROM_UNIXTIME(${founderAgentEvaluations.createdAt} / 1000))`,
+      )
+      .orderBy(
+        sql`DATE(FROM_UNIXTIME(${founderAgentEvaluations.createdAt} / 1000))`,
+        founderAgentEvaluations.fleetMode,
+      ) as TrendRow[];
+    // Build CSV
+    const csvLines = ["fleet_mode,day,evals,avg_score"];
+    for (const r of rows) {
+      csvLines.push(`${r.fleet_mode},${r.day},${r.evals},${r.avg_score}`);
+    }
+    const csv = csvLines.join("\n");
+    console.log(`[WebhookFleetTrigger] daily-trend: ${rows.length} rows returned`);
+    res.setHeader("Content-Type", "text/csv");
+    res.setHeader("Content-Disposition", 'attachment; filename="fleet_daily_trend.csv"');
+    res.send(csv);
     return;
   }
 
