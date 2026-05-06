@@ -35,6 +35,7 @@ import {
   Info,
   Lock,
   ChevronDown,
+  Download,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useProspectMode, useProspectFromUrl } from "@/hooks/useProspectMode";
@@ -273,6 +274,165 @@ function OverrideDialog({ policy, alertId, onClose, initialReason = "" }: Overri
   );
 }
 
+// ── Governance Summary PDF export ────────────────────────────────────────────
+async function exportGovernanceSummaryPDF(prospect: { prospectName: string; organization: string; tagline?: string } | null) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const W = 210;
+  const margin = 18;
+  const contentW = W - margin * 2;
+  let y = 0;
+
+  // ── Helpers ──
+  const wrap = (text: string, maxW: number, fontSize: number): string[] => {
+    doc.setFontSize(fontSize);
+    return doc.splitTextToSize(text, maxW);
+  };
+  const ensureSpace = (needed: number) => {
+    if (y + needed > 275) {
+      doc.addPage();
+      y = 18;
+    }
+  };
+
+  // ── Header band ──
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, W, 36, "F");
+  doc.setFontSize(9);
+  doc.setTextColor(100, 116, 139);
+  doc.text("SADO — SOVEREIGN AUTONOMOUS DATA OPERATIONS", margin, 12);
+  doc.setFontSize(16);
+  doc.setTextColor(248, 250, 252);
+  doc.text("Governance Policy Summary", margin, 23);
+  if (prospect) {
+    const label = prospect.prospectName
+      ? `Prepared for ${prospect.prospectName}${prospect.organization && prospect.organization !== prospect.prospectName ? " — " + prospect.organization : ""}`
+      : "Prepared for Prospect";
+    doc.setFontSize(8);
+    doc.setTextColor(96, 165, 250);
+    doc.text(label, margin, 31);
+  }
+  y = 44;
+
+  // ── Narrative flow ──
+  doc.setFontSize(7.5);
+  doc.setTextColor(100, 116, 139);
+  doc.text("Policy Evaluation Flow: Discovery → Classification → Policy Check → Intercept/Escalate → Override → Audit Evidence", margin, y);
+  y += 8;
+
+  // ── Divider ──
+  doc.setDrawColor(51, 65, 85);
+  doc.line(margin, y, W - margin, y);
+  y += 6;
+
+  // ── Policy cards ──
+  const ACTION_COLORS: Record<string, [number, number, number]> = {
+    INTERCEPT: [239, 68, 68],
+    ESCALATE:  [245, 158, 11],
+    ALLOW:     [52, 211, 153],
+  };
+  const RISK_COLORS: Record<string, [number, number, number]> = {
+    HIGH:   [239, 68, 68],
+    MEDIUM: [245, 158, 11],
+    LOW:    [52, 211, 153],
+  };
+
+  POLICY_CARDS.forEach((p, idx) => {
+    ensureSpace(60);
+
+    // Card number + title
+    doc.setFontSize(8);
+    doc.setTextColor(100, 116, 139);
+    doc.text(`POLICY ${String(idx + 1).padStart(2, "0")}`, margin, y);
+    y += 5;
+
+    doc.setFontSize(11);
+    doc.setTextColor(248, 250, 252);
+    doc.text(p.name, margin, y);
+
+    // Action badge (right-aligned)
+    const [ar, ag, ab] = ACTION_COLORS[p.action] ?? [100, 116, 139];
+    doc.setFillColor(ar, ag, ab);
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(7);
+    const badgeW = 22;
+    doc.roundedRect(W - margin - badgeW, y - 5, badgeW, 6, 1, 1, "F");
+    doc.text(p.action, W - margin - badgeW / 2, y - 0.5, { align: "center" });
+    y += 5;
+
+    // Jurisdiction + Risk
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184);
+    const [rr, rg, rb] = RISK_COLORS[p.riskLevel] ?? [100, 116, 139];
+    doc.setTextColor(rr, rg, rb);
+    doc.text(`${p.jurisdictionLabel}  ·  Risk: ${p.riskLevel}`, margin, y);
+    y += 5;
+
+    // Regulation
+    doc.setFontSize(7.5);
+    doc.setTextColor(148, 163, 184);
+    doc.text(`Regulation: ${p.regulation}`, margin, y);
+    y += 4;
+
+    // Classifications
+    doc.text(`Classifications: ${p.classificationsCovered.join(", ")}`, margin, y);
+    y += 4;
+
+    // Legal basis
+    doc.text(`Legal basis: ${p.legalBasis}`, margin, y);
+    y += 5;
+
+    // Summary
+    doc.setFontSize(7.5);
+    doc.setTextColor(203, 213, 225);
+    const summaryLines = wrap(p.summary, contentW, 7.5);
+    ensureSpace(summaryLines.length * 4 + 4);
+    doc.text(summaryLines, margin, y);
+    y += summaryLines.length * 4 + 2;
+
+    // Technical control
+    doc.setFontSize(7);
+    doc.setTextColor(100, 116, 139);
+    const ctrlLines = wrap(`Technical control: ${p.technicalControl}`, contentW, 7);
+    ensureSpace(ctrlLines.length * 3.5 + 4);
+    doc.text(ctrlLines, margin, y);
+    y += ctrlLines.length * 3.5 + 3;
+
+    // Excerpt box
+    ensureSpace(30);
+    doc.setFillColor(22, 30, 46);
+    doc.setDrawColor(51, 65, 85);
+    const excerptLines = wrap(p.excerpt, contentW - 8, 7);
+    const boxH = excerptLines.length * 3.5 + 10;
+    doc.roundedRect(margin, y, contentW, boxH, 2, 2, "FD");
+    doc.setFontSize(6.5);
+    doc.setTextColor(100, 116, 139);
+    doc.text(p.excerptSource, margin + 4, y + 5);
+    doc.setFontSize(7);
+    doc.setTextColor(148, 163, 184);
+    doc.text(excerptLines, margin + 4, y + 9);
+    y += boxH + 6;
+
+    // Divider between cards
+    if (idx < POLICY_CARDS.length - 1) {
+      doc.setDrawColor(30, 41, 59);
+      doc.line(margin, y, W - margin, y);
+      y += 6;
+    }
+  });
+
+  // ── Footer ──
+  const now = new Date();
+  const footerY = 287;
+  doc.setFontSize(7);
+  doc.setTextColor(71, 85, 105);
+  doc.text(`Generated by SADO Governance Engine  ·  ${now.toUTCString()}`, margin, footerY);
+  doc.text(`CONFIDENTIAL — For authorised review only`, W - margin, footerY, { align: "right" });
+
+  const ts = now.toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  doc.save(`SADO_Governance_Summary_${ts}.pdf`);
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function SADOGovernance() {
   useProspectFromUrl();
@@ -284,6 +444,16 @@ export default function SADOGovernance() {
     policy: typeof POLICY_CARDS[number];
     alertId: number;
   } | null>(null);
+
+  const [exporting, setExporting] = useState(false);
+  const handleExportGovernancePDF = async () => {
+    setExporting(true);
+    try {
+      await exportGovernanceSummaryPDF(prospect);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   // Per-card excerpt expand state
   const [expandedExcerpts, setExpandedExcerpts] = useState<Record<string, boolean>>({});
@@ -326,6 +496,16 @@ export default function SADOGovernance() {
               <span className="text-xs text-blue-300">{prospect.prospectName}</span>
             </div>
           )}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExportGovernancePDF}
+            disabled={exporting}
+            className="h-7 text-xs bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white gap-1.5"
+          >
+            <Download className="w-3 h-3" />
+            {exporting ? "Generating…" : "Export Governance Summary"}
+          </Button>
         </div>
       </div>
 

@@ -4047,3 +4047,11 @@
 - [x] QA: tsc EXIT:0
 - [x] QA: Governance page loads cleanly, excerpts expand/collapse independently
 - [x] Checkpoint saved
+
+## Session — SADO Phase A.18 (2026-05-06)
+- [x] TASK: Add exportGovernanceSummaryPDF function to SADOGovernance (jsPDF, all 4 policies, regulation excerpts, prospect header)
+- [x] TASK: Add Export Governance Summary button to Governance page header
+- [x] TASK: Add exporting state and handleExportGovernancePDF handler
+- [x] QA: tsc EXIT:0
+- [x] QA: Governance page loads cleanly, Export button visible in header
+- [x] Checkpoint saved
