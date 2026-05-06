@@ -14,13 +14,42 @@ import { Badge } from "@/components/ui/badge";
 import { Building2, UserCheck, X, Briefcase, Link2, Check } from "lucide-react";
 import { type ProspectInfo } from "@/hooks/useProspectMode";
 
-const QUICK_PICKS: Array<{ name: string; org: string }> = [
-  { name: "STC",                   org: "Saudi Telecom Company" },
-  { name: "ADNOC Digital",         org: "Abu Dhabi National Oil Company" },
-  { name: "Kuwait Finance House",  org: "Kuwait Finance House" },
-  { name: "Core42",                org: "Core42 (G42 Group)" },
-  { name: "G42",                   org: "G42 Group" },
-  { name: "Ministry of Health",    org: "Ministry of Health" },
+const QUICK_PICKS: Array<{ name: string; org: string; tagline: string }> = [
+  {
+    name: "STC",
+    org: "Saudi Telecom Company",
+    tagline: "Sovereign data engineering control layer for regulated telecom workloads",
+  },
+  {
+    name: "ADNOC Digital",
+    org: "Abu Dhabi National Oil Company",
+    tagline: "Governed analytics migration for enterprise energy data",
+  },
+  {
+    name: "Kuwait Finance House",
+    org: "Kuwait Finance House",
+    tagline: "Data residency and classification governance for Islamic finance operations",
+  },
+  {
+    name: "Core42",
+    org: "Core42 (G42 Group)",
+    tagline: "Sovereign AI infrastructure governance for national cloud workloads",
+  },
+  {
+    name: "G42",
+    org: "G42 Group",
+    tagline: "Enterprise data sovereignty and compliance layer for AI-driven operations",
+  },
+  {
+    name: "Ministry of Health",
+    org: "Ministry of Health",
+    tagline: "Compliant health data governance and cross-border transfer control",
+  },
+  {
+    name: "Alghanim",
+    org: "Alghanim Industries",
+    tagline: "Enterprise data governance and audit control for diversified operations",
+  },
 ];
 
 interface ProspectModalProps {
@@ -73,9 +102,10 @@ export default function ProspectModal({
     }
   }, [open, current]);
 
-  function applyQuickPick(pick: { name: string; org: string }) {
+  function applyQuickPick(pick: { name: string; org: string; tagline: string }) {
     setName(pick.name);
     setOrg(pick.org);
+    setTagline(pick.tagline);
   }
 
   function handleSave() {

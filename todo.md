@@ -4069,3 +4069,12 @@
 - [x] All three fields persisted to localStorage synchronously before first render (no flash)
 - [x] Updated ProspectModal handleCopyLink to include org= and tagline= in generated URL when set (org= omitted when equal to prospect name to keep URLs clean)
 - [x] tsc EXIT:0. Only useProspectMode.ts and ProspectModal.tsx modified.
+
+## Session — SADO Phase A.21 (2026-05-06)
+- [x] Updated QUICK_PICKS type to include tagline field
+- [x] Added default taglines to all 6 existing quick-pick accounts (STC, ADNOC Digital, Kuwait Finance House, Core42, G42, Ministry of Health)
+- [x] Added Alghanim Industries as a 7th quick-pick entry with tagline
+- [x] Updated applyQuickPick to also call setTagline, populating all three fields on click
+- [x] Manual editing of any field remains fully functional after quick-pick selection
+- [x] Copy shareable link now immediately includes all three params after a quick-pick
+- [x] Only ProspectModal.tsx modified. tsc EXIT:0.
