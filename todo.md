@@ -3947,3 +3947,16 @@
 - [x] QA: PDF export dialog pre-fills prospect name from Prospect Mode
 - [x] QA: PDF download confirmed in browser download history
 - [x] Checkpoint saved and production deploy triggered
+
+## Session — SADO Phase A.7 (2026-05-06)
+- [x] TASK: Added SectionToggles type to SADOAuditTrail.tsx
+- [x] TASK: Added sections param to exportGovernancePDF — each of sections 3-6 and footer wrapped in if(sections.X)
+- [x] TASK: Added sections state (all true by default) and toggleSection helper to SADOAuditTrail component
+- [x] TASK: Extended Personalise Report dialog with 5 checkboxes and "Tailor the report..." helper line
+- [x] TASK: Moved riskColor/actionColor maps outside section 3 if-block to fix scope issue
+- [x] TASK: Fixed sColor spread type annotation
+- [x] QA: tsc EXIT:0 confirmed
+- [x] QA: All 7 SADO routes return HTTP 200
+- [x] QA: No console errors
+- [x] QA: Dialog shows all 5 checkboxes, all checked by default
+- [x] Checkpoint saved and production deploy triggered
