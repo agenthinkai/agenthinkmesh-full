@@ -3960,3 +3960,13 @@
 - [x] QA: No console errors
 - [x] QA: Dialog shows all 5 checkboxes, all checked by default
 - [x] Checkpoint saved and production deploy triggered
+
+## Session — SADO Phase A.8 (2026-05-06)
+- [x] TASK: Added Executive Summary preset button (auditTrail:false, governanceSummary:true, transferEvents:false, overrideRequests:true, generationFooter:true)
+- [x] TASK: Added Full CISO Report preset button (all sections true)
+- [x] TASK: Preset buttons sit above checkbox group with enterprise-grade ghost styling
+- [x] QA: tsc EXIT:0 confirmed
+- [x] QA: Executive Summary preset verified — auditTrail:unchecked, governanceSummary:checked, transferEvents:unchecked, overrideRequests:checked, generationFooter:checked
+- [x] QA: Manual checkbox toggling still works after preset
+- [x] QA: No console errors
+- [x] Checkpoint saved and production deploy triggered

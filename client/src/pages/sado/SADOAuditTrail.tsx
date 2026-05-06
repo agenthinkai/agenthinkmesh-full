@@ -614,7 +614,38 @@ export default function SADOAuditTrail() {
           {/* Section toggles */}
           <div className="pt-3 border-t border-slate-700/60">
             <p className="text-xs font-medium text-slate-300 mb-1">Report sections</p>
-            <p className="text-xs text-slate-500 mb-2.5">Tailor the report for executive, CISO, or compliance review.</p>
+            <p className="text-xs text-slate-500 mb-2">Tailor the report for executive, CISO, or compliance review.</p>
+
+            {/* Preset buttons */}
+            <div className="flex gap-2 mb-3">
+              <button
+                type="button"
+                onClick={() => setSections({
+                  auditTrail: false,
+                  governanceSummary: true,
+                  transferEvents: false,
+                  overrideRequests: true,
+                  generationFooter: true,
+                })}
+                className="flex-1 text-xs px-2.5 py-1.5 rounded border border-slate-600 bg-slate-800/60 text-slate-300 hover:border-blue-500/60 hover:text-blue-300 hover:bg-blue-500/8 transition-colors"
+              >
+                Executive Summary
+              </button>
+              <button
+                type="button"
+                onClick={() => setSections({
+                  auditTrail: true,
+                  governanceSummary: true,
+                  transferEvents: true,
+                  overrideRequests: true,
+                  generationFooter: true,
+                })}
+                className="flex-1 text-xs px-2.5 py-1.5 rounded border border-slate-600 bg-slate-800/60 text-slate-300 hover:border-blue-500/60 hover:text-blue-300 hover:bg-blue-500/8 transition-colors"
+              >
+                Full CISO Report
+              </button>
+            </div>
+
             <div className="space-y-2">
               {([
                 { key: "auditTrail"       as const, label: "Include Audit Trail Entries" },
