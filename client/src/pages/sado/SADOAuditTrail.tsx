@@ -112,7 +112,21 @@ type SectionToggles = {
   transferEvents: boolean;
   overrideRequests: boolean;
   generationFooter: boolean;
+  demoNarrative: boolean;
 };
+
+// ── Demo narration steps (mirrors Command Centre AGENT_NARRATION) ─────────────
+const DEMO_NARRATIVE_STEPS = [
+  { step: 1, agent: "Discovery Agent",       narration: "Scanning connected enterprise systems and identifying available data sources across the organisation." },
+  { step: 2, agent: "Classification Agent",  narration: "Classifying sensitive fields, PII, and business-critical relationships within discovered schemas." },
+  { step: 3, agent: "Lineage Agent",         narration: "Tracing data lineage paths across systems, schemas, and transformation layers." },
+  { step: 4, agent: "Knowledge Graph Agent", narration: "Building a live relationship map across systems, schemas, and entities for contextual governance." },
+  { step: 5, agent: "Governance Agent",      narration: "Checking residency, classification, and transfer rules against GCC policy constraints (PDPL SA, CITRA KW, NESA UAE)." },
+  { step: 6, agent: "Sovereignty Agent",     narration: "Enforcing data sovereignty boundaries and blocking non-compliant cross-border transfers." },
+  { step: 7, agent: "Escalation Agent",      narration: "Flagging policy conflicts and preparing human approval paths for operator review." },
+  { step: 8, agent: "Audit Agent",           narration: "Recording every decision, transfer event, and override request for compliance review." },
+  { step: 9, agent: "Reporting Agent",       narration: "Compiling governance evidence, audit entries, and compliance metrics into this report." },
+] as const;
 
 async function exportGovernancePDF(params: {
   auditRows: AuditRow[];
@@ -463,6 +477,52 @@ async function exportGovernancePDF(params: {
 
   } // end section 6
 
+  // ── Section 7: Demo Narrative ─────────────────────────────────────────────
+  if (params.sections.demoNarrative) {
+  checkPage(20);
+  sectionHeader("7. DEMO NARRATIVE — AGENT JOURNEY");
+
+  // Narrative flow subtitle
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "italic");
+  doc.setTextColor(100, 116, 139);
+  doc.text(
+    "Discovery  →  Classification  →  Lineage  →  Knowledge Graph  →  Policy Evaluation  →  Sovereignty  →  Escalation  →  Audit  →  Reporting",
+    margin, y
+  );
+  y += 8;
+
+  DEMO_NARRATIVE_STEPS.forEach((item, i) => {
+    checkPage(12);
+    const bg = i % 2 === 0 ? [255, 255, 255] : [248, 250, 252];
+    doc.setFillColor(bg[0], bg[1], bg[2]);
+    doc.rect(margin, y, contentW, 10, "F");
+
+    // Step number circle
+    doc.setFillColor(15, 118, 110);
+    doc.circle(margin + 5, y + 5, 3, "F");
+    doc.setFontSize(6.5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(255, 255, 255);
+    doc.text(String(item.step), margin + 5, y + 5.8, { align: "center" });
+
+    // Agent name
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 23, 42);
+    doc.text(item.agent, margin + 12, y + 4.5);
+
+    // Narration text
+    doc.setFontSize(6.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(71, 85, 105);
+    const narLines = doc.splitTextToSize(item.narration, contentW - 16);
+    doc.text(narLines, margin + 12, y + 8.5);
+    y += 10;
+  });
+  y += 4;
+  } // end section 7
+
   // ── Footer (on last page) ─────────────────────────────────────────────────
   if (params.sections.generationFooter) {
   const footerY = 287;
@@ -493,6 +553,7 @@ export default function SADOAuditTrail() {
     transferEvents: true,
     overrideRequests: true,
     generationFooter: true,
+    demoNarrative: true,
   });
 
   function toggleSection(key: keyof SectionToggles) {
@@ -624,13 +685,15 @@ export default function SADOAuditTrail() {
                 sections.governanceSummary &&
                 !sections.transferEvents &&
                 sections.overrideRequests &&
-                sections.generationFooter;
+                sections.generationFooter &&
+                !sections.demoNarrative;
               const isFullCISO =
                 sections.auditTrail &&
                 sections.governanceSummary &&
                 sections.transferEvents &&
                 sections.overrideRequests &&
-                sections.generationFooter;
+                sections.generationFooter &&
+                sections.demoNarrative;
               const activeClass = "flex-1 text-xs px-2.5 py-1.5 rounded border border-blue-500 bg-blue-500/15 text-blue-300 font-medium transition-colors";
               const inactiveClass = "flex-1 text-xs px-2.5 py-1.5 rounded border border-slate-600 bg-slate-800/60 text-slate-300 hover:border-blue-500/60 hover:text-blue-300 hover:bg-blue-500/8 transition-colors";
               return (
@@ -643,6 +706,7 @@ export default function SADOAuditTrail() {
                       transferEvents: false,
                       overrideRequests: true,
                       generationFooter: true,
+                      demoNarrative: false,
                     })}
                     className={isExecSummary ? activeClass : inactiveClass}
                   >
@@ -656,6 +720,7 @@ export default function SADOAuditTrail() {
                       transferEvents: true,
                       overrideRequests: true,
                       generationFooter: true,
+                      demoNarrative: true,
                     })}
                     className={isFullCISO ? activeClass : inactiveClass}
                   >
@@ -671,6 +736,7 @@ export default function SADOAuditTrail() {
                 { key: "governanceSummary" as const, label: "Include Governance Summary" },
                 { key: "transferEvents"   as const, label: "Include Transfer Events" },
                 { key: "overrideRequests" as const, label: "Include Override Requests" },
+                { key: "demoNarrative"    as const, label: "Include Demo Narrative" },
                 { key: "generationFooter" as const, label: "Include Generation Footer" },
               ]).map(({ key, label }) => (
                 <div key={key} className="flex items-center gap-2">
