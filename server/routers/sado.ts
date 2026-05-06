@@ -443,6 +443,53 @@ export const sadoRouter = router({
       return { ok: true, status: newStatus };
     }),
 
+  // ── Request Override ─────────────────────────────────────────────────────────
+  // Operator requests an override for a governance rule / alert.
+  // Creates an escalation entry + writes to audit trail.
+  requestOverride: publicProcedure
+    .input(z.object({
+      alertId:    z.number(),
+      ruleId:     z.string(),
+      regulation: z.string(),
+      reason:     z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new Error("DB unavailable");
+      const now = Date.now();
+      const tid = traceId();
+
+      // Create escalation entry
+      await db.insert(sadoEscalations).values({
+        agentName: "GovernanceAgent",
+        title: `Override request: ${input.ruleId}`,
+        description: input.reason
+          ? `Operator requested override for rule ${input.regulation}. Reason: ${input.reason}`
+          : `Operator requested override for rule ${input.regulation}.`,
+        confidence: 1.0,
+        recommendedAction: "Review the override request. Approve only if a valid legal basis or business justification is provided.",
+        status: "pending",
+        traceId: tid,
+        createdAt: now,
+      });
+
+      // Write to audit trail
+      await db.insert(sadoAuditTrail).values({
+        timestamp: now,
+        actor: "operator",
+        agentName: "GovernanceAgent",
+        action: "OVERRIDE_REQUESTED",
+        entity: input.ruleId,
+        confidence: 1.0,
+        result: "pending",
+        severity: "HIGH",
+        traceId: tid,
+        details: input.reason ?? `Override requested for governance rule ${input.ruleId}`,
+      });
+
+      return { ok: true, traceId: tid };
+    }),
+
   // ── Reset demo ──────────────────────────────────────────────────────────────
   resetDemo: publicProcedure.mutation(async () => {
     const db = await getDb();

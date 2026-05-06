@@ -3915,3 +3915,19 @@
 - [x] TASK 2: No console errors on SADO pages
 - [x] TASK 2: tsc EXIT:0 confirmed
 - [x] TASK 2: Checkpoint saved and production deploy triggered
+
+## Session — SADO Phase A.5 (2026-05-06)
+- [x] TASK 1: SADOGovernance — 4 static policy cards (PDPL SA, CITRA KW, NESA UAE, Internal Policy)
+- [x] TASK 1: Policy cards include: name, jurisdiction badge, regulation, rule summary, classifications covered, technical control, legal basis, risk level, last-evaluated label
+- [x] TASK 1: Visual hierarchy — INTERCEPT (red), ESCALATE (amber), ALLOW (green)
+- [x] TASK 1: Request Override CTA on INTERCEPT/ESCALATE cards (ALLOW cards have no CTA)
+- [x] TASK 1: Live transfer events section — shows DB alerts with description, recommended action, and per-event Request Override CTA
+- [x] TASK 2: sado.requestOverride mutation added to server/routers/sado.ts — creates escalation entry + audit trail entry
+- [x] TASK 2: Override dialog — policy summary, amber warning, optional reason textarea, Submit/Cancel
+- [x] TASK 2: Override request verified in Escalation Queue (appears as "Override request: PDPL_SA_ART29_001")
+- [x] TASK 2: Audit trail entry written with action OVERRIDE_REQUESTED, severity HIGH
+- [x] QA: tsc EXIT:0 confirmed
+- [x] QA: All 7 SADO routes verified (no 404s, no console errors)
+- [x] QA: Sidebar active state on Governance highlighted correctly
+- [x] QA: Prospect Mode badge visible in Governance header when active
+- [x] Checkpoint saved and production deploy triggered
