@@ -339,12 +339,12 @@ function Router() {
       <Route path="/gcc-ic" component={GccIcDemo} />
 
       {/* SADO — Sovereign AI Data Operations */}
-      <Route path="/sado" component={SADOCommandCentre} />
-      <Route path="/sado/discovery" component={SADODiscovery} />
-      <Route path="/sado/graph" component={SADOKnowledgeGraph} />
-      <Route path="/sado/governance" component={SADOGovernance} />
-      <Route path="/sado/escalations" component={SADOEscalations} />
-      <Route path="/sado/audit" component={SADOAuditTrail} />
+      <Route path="/sado">{() => <MeshSidebar><SADOCommandCentre /></MeshSidebar>}</Route>
+      <Route path="/sado/discovery">{() => <MeshSidebar><SADODiscovery /></MeshSidebar>}</Route>
+      <Route path="/sado/graph">{() => <MeshSidebar><SADOKnowledgeGraph /></MeshSidebar>}</Route>
+      <Route path="/sado/governance">{() => <MeshSidebar><SADOGovernance /></MeshSidebar>}</Route>
+      <Route path="/sado/escalations">{() => <MeshSidebar><SADOEscalations /></MeshSidebar>}</Route>
+      <Route path="/sado/audit">{() => <MeshSidebar><SADOAuditTrail /></MeshSidebar>}</Route>
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

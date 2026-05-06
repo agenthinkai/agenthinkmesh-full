@@ -229,24 +229,69 @@ export const sadoRouter = router({
 
   // ── Knowledge graph ─────────────────────────────────────────────────────────
   getKnowledgeGraph: publicProcedure.query(async () => {
-    // Static graph definition — matches the synthetic schema
-    return {
-      nodes: [
-        { id: "customer",   label: "Customer",   type: "entity",       count: 4200000, color: "#3b82f6", x: 300, y: 200 },
-        { id: "employee",   label: "Employee",   type: "entity",       count: 18400,   color: "#8b5cf6", x: 700, y: 200 },
-        { id: "invoice",    label: "Invoice",    type: "entity",       count: 9200000, color: "#06b6d4", x: 300, y: 500 },
-        { id: "department", label: "Department", type: "reference",    count: 42,      color: "#f59e0b", x: 700, y: 500 },
-        { id: "payment",    label: "Payment",    type: "transaction",  count: 8700000, color: "#10b981", x: 100, y: 350 },
-        { id: "location",   label: "Location",   type: "reference",    count: 18,      color: "#ef4444", x: 500, y: 350 },
-      ],
-      edges: [
-        { id: "e1", source: "customer",   target: "invoice",    label: "HAS",          count: 9200000 },
-        { id: "e2", source: "invoice",    target: "customer",   label: "LINKED_TO",    count: 9200000 },
-        { id: "e3", source: "employee",   target: "department", label: "BELONGS_TO",   count: 18400   },
-        { id: "e4", source: "customer",   target: "location",   label: "LOCATED_IN",   count: 4200000 },
-        { id: "e5", source: "invoice",    target: "payment",    label: "SETTLED_BY",   count: 8700000 },
-      ],
+    const db = await getDb();
+    if (!db) {
+      // Static fallback if DB unavailable
+      return {
+        nodes: [
+          { id: "customer", label: "Customer", type: "entity", count: 4200000, color: "#3b82f6", x: 300, y: 200 },
+          { id: "employee", label: "Employee", type: "entity", count: 18400,   color: "#8b5cf6", x: 700, y: 200 },
+          { id: "invoice",  label: "Invoice",  type: "entity", count: 9200000, color: "#06b6d4", x: 300, y: 500 },
+        ],
+        edges: [
+          { id: "e1", source: "customer", target: "invoice", label: "HAS", count: 9200000 },
+        ],
+      };
+    }
+    let sources = await db.select().from(sadoSources).orderBy(sadoSources.id);
+    if (sources.length === 0) {
+      await seedSadoData(db);
+      sources = await db.select().from(sadoSources).orderBy(sadoSources.id);
+    }
+    const allColumns = await db.select().from(sadoColumns).orderBy(sadoColumns.sourceId, sadoColumns.id);
+
+    const SOURCE_COLORS: Record<string, string> = {
+      oracle: "#f97316", sap: "#3b82f6", sqlserver: "#8b5cf6",
     };
+    const CLASS_COLORS: Record<string, string> = {
+      PII: "#ef4444", SENSITIVE: "#f59e0b", INTERNAL: "#64748b", PUBLIC: "#10b981",
+    };
+
+    type GraphNode = { id: string; label: string; type: string; count: number; color: string; x: number; y: number };
+    type GraphEdge = { id: string; source: string; target: string; label: string; count: number };
+    const nodes: GraphNode[] = [];
+    const edges: GraphEdge[] = [];
+
+    const sourceXStep = 420;
+    const sourceY = 80;
+
+    sources.forEach((src, si) => {
+      const srcX = 200 + si * sourceXStep;
+      const srcId = `src_${src.id}`;
+      nodes.push({ id: srcId, label: src.name, type: "source", count: src.rowCount, color: SOURCE_COLORS[src.type] ?? "#94a3b8", x: srcX, y: sourceY });
+
+      const tableId = `tbl_${src.id}`;
+      nodes.push({ id: tableId, label: `${src.schema}.${src.table}`, type: "table", count: src.rowCount, color: "#1e40af", x: srcX, y: sourceY + 160 });
+      edges.push({ id: `e_src_tbl_${src.id}`, source: srcId, target: tableId, label: "CONTAINS", count: src.rowCount });
+
+      const cols = allColumns.filter(c => c.sourceId === src.id);
+      const highlighted = cols.filter(c => c.classification === "PII" || c.classification === "SENSITIVE").slice(0, 4);
+      highlighted.forEach((col, ci) => {
+        const colId = `col_${col.id}`;
+        const colX = srcX + (ci - (highlighted.length - 1) / 2) * 140;
+        nodes.push({ id: colId, label: col.columnName, type: "column", count: 0, color: CLASS_COLORS[col.classification] ?? "#64748b", x: colX, y: sourceY + 320 });
+        edges.push({ id: `e_tbl_col_${col.id}`, source: tableId, target: colId, label: col.classification, count: 0 });
+      });
+    });
+
+    // Cross-source FK: billing.customer_id → crm.customers
+    const crmSrc = sources.find(s => s.type === "oracle");
+    const billingSrc = sources.find(s => s.type === "sqlserver");
+    if (crmSrc && billingSrc) {
+      edges.push({ id: "e_cross_billing_crm", source: `tbl_${billingSrc.id}`, target: `tbl_${crmSrc.id}`, label: "REFERENCES", count: billingSrc.rowCount });
+    }
+
+    return { nodes, edges };
   }),
 
   // ── Governance alerts ───────────────────────────────────────────────────────

@@ -3879,3 +3879,13 @@
 - [ ] Edited marker shown after save
 - [x] tsc 0 errors
 - [x] Checkpoint
+
+## Session — SADO Phase A.1 Improvements
+
+- [x] TASK 1: Add SADO nav entry to MeshSidebar with active state for /sado/* routes (NEW badge, shield icon)
+- [x] TASK 1: Wrap all SADO routes in MeshSidebar layout in App.tsx so sidebar is visible on all /sado/* pages
+- [x] TASK 2: Replace static getKnowledgeGraph with live data-driven implementation (source nodes -> table nodes -> PII/SENSITIVE column nodes, cross-source FK edge)
+- [x] TASK 2: Static fallback retained if DB unavailable
+- [x] TASK 3: Add Export PDF button to SADOAuditTrail.tsx using jsPDF (client-side, no new deps)
+- [x] TASK 3: PDF includes header, summary counts, governance status, audit trail table, footer
+- [x] tsc EXIT:0 confirmed after each task

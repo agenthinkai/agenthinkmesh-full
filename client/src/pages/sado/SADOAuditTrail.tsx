@@ -2,9 +2,10 @@ import { useState } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowLeft, Lock, Activity, AlertTriangle, CheckCircle2, XCircle, Info } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Lock, Activity, AlertTriangle, CheckCircle2, XCircle, Info, Download } from "lucide-react";
 
 const SEVERITY_CONFIG: Record<string, { color: string; icon: React.ReactNode }> = {
   HIGH:   { color: "bg-red-500/10 text-red-400 border-red-500/20",       icon: <AlertTriangle className="w-3 h-3" /> },
@@ -20,16 +21,226 @@ const RESULT_ICON: Record<string, React.ReactNode> = {
   allowed:     <CheckCircle2 className="w-3.5 h-3.5 text-blue-400" />,
 };
 
+// ── PDF export (client-side, jsPDF) ──────────────────────────────────────────
+type AuditRow = {
+  agentName: string | null;
+  action: string;
+  entity: string | null;
+  severity: string | null;
+  result: string | null;
+  confidence: number | null;
+  timestamp: number | null;
+  traceId: string | null;
+  details: string | null;
+};
+
+async function exportGovernancePDF(params: {
+  auditRows: AuditRow[];
+  sourcesCount: number;
+  entitiesCount: number;
+  piiCount: number;
+  governanceCount: number;
+  escalationsCount: number;
+}) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  const pageW = 210;
+  const margin = 18;
+  const contentW = pageW - margin * 2;
+  let y = 0;
+
+  // Header
+  doc.setFillColor(15, 23, 42);
+  doc.rect(0, 0, pageW, 28, "F");
+  doc.setFontSize(14);
+  doc.setTextColor(255, 255, 255);
+  doc.setFont("helvetica", "bold");
+  doc.text("SADO Governance Audit Report", margin, 12);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(148, 163, 184);
+  doc.text("Software-Defined Data Operations  ·  Sovereign AI Platform", margin, 19);
+  const now = new Date();
+  doc.text(`Generated: ${now.toUTCString()}`, pageW - margin, 19, { align: "right" });
+  y = 36;
+
+  // Summary counts
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(30, 41, 59);
+  doc.text("DISCOVERY & GOVERNANCE SUMMARY", margin, y);
+  y += 5;
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.3);
+  doc.line(margin, y, pageW - margin, y);
+  y += 6;
+
+  const summaryItems = [
+    { label: "Discovered Sources",    value: String(params.sourcesCount) },
+    { label: "Mapped Entities",       value: String(params.entitiesCount) },
+    { label: "PII / Sensitive Cols",  value: String(params.piiCount) },
+    { label: "Governance Checks",     value: String(params.governanceCount) },
+    { label: "Escalations",           value: String(params.escalationsCount) },
+    { label: "Audit Events",          value: String(params.auditRows.length) },
+  ];
+  const colW = contentW / 3;
+  summaryItems.forEach((item, i) => {
+    const col = i % 3;
+    const row = Math.floor(i / 3);
+    const x = margin + col * colW;
+    const itemY = y + row * 18;
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(x, itemY - 3, colW - 4, 14, 2, 2, "F");
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(15, 118, 110);
+    doc.text(item.value, x + 4, itemY + 6);
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 116, 139);
+    doc.text(item.label, x + 4, itemY + 11);
+  });
+  y += Math.ceil(summaryItems.length / 3) * 18 + 8;
+
+  // Governance status
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(30, 41, 59);
+  doc.text("GOVERNANCE STATUS", margin, y);
+  y += 5;
+  doc.line(margin, y, pageW - margin, y);
+  y += 6;
+
+  const interceptedCount = params.auditRows.filter(r => r.result === "intercepted").length;
+  const allowedCount = params.auditRows.filter(r => r.result === "allowed").length;
+  const escalatedCount = params.auditRows.filter(r => r.result === "escalated").length;
+
+  const statusItems: Array<{ label: string; value: string; color: [number, number, number] }> = [
+    { label: "Transfers Intercepted", value: String(interceptedCount), color: [239, 68, 68] },
+    { label: "Transfers Allowed",     value: String(allowedCount),     color: [16, 185, 129] },
+    { label: "Escalated to Human",    value: String(escalatedCount),   color: [245, 158, 11] },
+  ];
+  statusItems.forEach((item, i) => {
+    const x = margin + i * (contentW / 3);
+    doc.setFillColor(248, 250, 252);
+    doc.roundedRect(x, y - 3, contentW / 3 - 4, 14, 2, 2, "F");
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...item.color);
+    doc.text(item.value, x + 4, y + 6);
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 116, 139);
+    doc.text(item.label, x + 4, y + 11);
+  });
+  y += 22;
+
+  // Audit trail table
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(30, 41, 59);
+  doc.text("RECENT AUDIT TRAIL (last 20 entries)", margin, y);
+  y += 5;
+  doc.line(margin, y, pageW - margin, y);
+  y += 5;
+
+  // Table header
+  doc.setFillColor(241, 245, 249);
+  doc.rect(margin, y, contentW, 7, "F");
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(71, 85, 105);
+  doc.text("TIMESTAMP",  margin + 2,   y + 5);
+  doc.text("AGENT",      margin + 36,  y + 5);
+  doc.text("ACTION",     margin + 72,  y + 5);
+  doc.text("ENTITY",     margin + 108, y + 5);
+  doc.text("SEV",        margin + 152, y + 5);
+  doc.text("RESULT",     margin + 163, y + 5);
+  y += 7;
+
+  const sevColor: Record<string, [number, number, number]> = {
+    HIGH: [239, 68, 68], MEDIUM: [245, 158, 11], LOW: [59, 130, 246], INFO: [100, 116, 139],
+  };
+  const resColor: Record<string, [number, number, number]> = {
+    success: [16, 185, 129], intercepted: [239, 68, 68], escalated: [245, 158, 11], allowed: [59, 130, 246],
+  };
+
+  params.auditRows.slice(0, 20).forEach((row, i) => {
+    if (y > 270) { doc.addPage(); y = 20; }
+    const bg = i % 2 === 0 ? [255, 255, 255] : [248, 250, 252];
+    doc.setFillColor(bg[0], bg[1], bg[2]);
+    doc.rect(margin, y, contentW, 7, "F");
+    doc.setFontSize(6.5);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(51, 65, 85);
+    const ts = row.timestamp ? new Date(row.timestamp).toLocaleString() : "—";
+    doc.text(ts.slice(0, 18),                     margin + 2,   y + 5);
+    doc.text((row.agentName ?? "").slice(0, 20),   margin + 36,  y + 5);
+    doc.text((row.action ?? "").slice(0, 22),      margin + 72,  y + 5);
+    doc.text((row.entity ?? "").slice(0, 24),      margin + 108, y + 5);
+    doc.setTextColor(...(sevColor[row.severity ?? "INFO"] ?? sevColor.INFO));
+    doc.text((row.severity ?? "INFO").slice(0, 6), margin + 152, y + 5);
+    doc.setTextColor(...(resColor[row.result ?? "success"] ?? resColor.success));
+    doc.text((row.result ?? "—").slice(0, 12),     margin + 163, y + 5);
+    y += 7;
+  });
+
+  // Footer
+  const footerY = 287;
+  doc.setDrawColor(203, 213, 225);
+  doc.setLineWidth(0.3);
+  doc.line(margin, footerY - 3, pageW - margin, footerY - 3);
+  doc.setFontSize(7);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(148, 163, 184);
+  doc.text("Generated by SADO — Software-Defined Data Operations", margin, footerY);
+  doc.text("CONFIDENTIAL — For authorized personnel only", pageW - margin, footerY, { align: "right" });
+
+  doc.save(`SADO_Governance_Audit_${now.toISOString().slice(0, 10)}.pdf`);
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
 export default function SADOAuditTrail() {
   const [severityFilter, setSeverityFilter] = useState("all");
   const [actionFilter, setActionFilter] = useState("all");
+  const [exporting, setExporting] = useState(false);
 
   const auditQ = trpc.sado.getAuditTrail.useQuery({
     limit: 50,
     severityFilter: severityFilter !== "all" ? severityFilter : undefined,
     actionFilter: actionFilter !== "all" ? actionFilter : undefined,
   });
-  const rows = auditQ.data ?? [];
+  const sourcesQ      = trpc.sado.getSources.useQuery();
+  const governanceQ   = trpc.sado.getGovernanceAlerts.useQuery();
+  const escalationsQ  = trpc.sado.getEscalations.useQuery();
+
+  const rows          = auditQ.data ?? [];
+  const sources       = sourcesQ.data ?? [];
+  const govAlerts     = governanceQ.data ?? [];
+  const escalations   = escalationsQ.data ?? [];
+
+  // Compute PII/sensitive column count from source data
+  const piiCount = sources.reduce((acc, s) => {
+    const cols = (s as { columns?: Array<{ classification: string }> }).columns ?? [];
+    return acc + cols.filter(c => c.classification === "PII" || c.classification === "SENSITIVE").length;
+  }, 0);
+
+  async function handleExportPDF() {
+    setExporting(true);
+    try {
+      await exportGovernancePDF({
+        auditRows: rows,
+        sourcesCount: sources.length,
+        entitiesCount: sources.length,
+        piiCount,
+        governanceCount: govAlerts.length,
+        escalationsCount: escalations.length,
+      });
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[oklch(0.10_0.02_255)] text-slate-100">
@@ -49,6 +260,16 @@ export default function SADOAuditTrail() {
             <Badge variant="outline" className="text-xs bg-slate-800 border-slate-700 text-slate-300">
               {rows.length} entries
             </Badge>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExportPDF}
+              disabled={exporting || rows.length === 0}
+              className="h-7 text-xs bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700 hover:text-white gap-1.5"
+            >
+              <Download className="w-3 h-3" />
+              {exporting ? "Generating…" : "Export PDF"}
+            </Button>
           </div>
         </div>
       </div>

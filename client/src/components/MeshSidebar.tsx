@@ -42,6 +42,7 @@ const NAV_ITEMS: NavItem[] = [
   { path: "/gcc-equities", icon: "📈", label: "GCC Equities", badge: "NEW" },
   { path: "/uae-realestate", icon: "🏢", label: "UAE Real Estate", badge: "NEW" },
   { path: "/mesh-intelligence", icon: "📊", label: "Intelligence" },
+  { path: "/sado", icon: "🛡️", label: "SADO", badge: "NEW" },
   { path: "/admin/usage", icon: "⚙️", label: "Admin", adminOnly: true },
 ];
 
