@@ -343,9 +343,13 @@ function Router() {
       <Route path="/sado">{() => <MeshSidebar><SADOLanding /></MeshSidebar>}</Route>
       <Route path="/sado/command-centre">{() => <MeshSidebar><SADOCommandCentre /></MeshSidebar>}</Route>
       <Route path="/sado/discovery">{() => <MeshSidebar><SADODiscovery /></MeshSidebar>}</Route>
+      <Route path="/sado/knowledge-graph">{() => <MeshSidebar><SADOKnowledgeGraph /></MeshSidebar>}</Route>
+      {/* Legacy alias */}
       <Route path="/sado/graph">{() => <MeshSidebar><SADOKnowledgeGraph /></MeshSidebar>}</Route>
       <Route path="/sado/governance">{() => <MeshSidebar><SADOGovernance /></MeshSidebar>}</Route>
       <Route path="/sado/escalations">{() => <MeshSidebar><SADOEscalations /></MeshSidebar>}</Route>
+      <Route path="/sado/audit-trail">{() => <MeshSidebar><SADOAuditTrail /></MeshSidebar>}</Route>
+      {/* Legacy alias */}
       <Route path="/sado/audit">{() => <MeshSidebar><SADOAuditTrail /></MeshSidebar>}</Route>
 
       {/* Fallback */}

@@ -1,7 +1,10 @@
+import { useState } from "react";
 import { Link } from "wouter";
-import { Shield, Database, GitBranch, FileCheck, ArrowRight, Lock, Users, Globe, BookLock } from "lucide-react";
+import { Shield, Database, GitBranch, FileCheck, ArrowRight, Lock, Users, Globe, BookLock, Briefcase, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useProspectMode } from "@/hooks/useProspectMode";
+import ProspectModal from "@/components/sado/ProspectModal";
 
 const PILLARS = [
   {
@@ -19,7 +22,7 @@ const PILLARS = [
     title: "Knowledge Graph",
     description:
       "Discovered entities and relationships are mapped into a live semantic graph. Source systems, business entities, and sensitive data fields are linked and queryable in real time.",
-    href: "/sado/graph",
+    href: "/sado/knowledge-graph",
     color: "text-violet-600",
     bg: "bg-violet-50",
     border: "border-violet-100",
@@ -39,7 +42,7 @@ const PILLARS = [
     title: "Audit & Escalation Control",
     description:
       "Every agent action, governance decision, and schema change is written to an append-only audit trail. Escalations surface in a human-reviewed queue with confidence scoring.",
-    href: "/sado/audit",
+    href: "/sado/audit-trail",
     color: "text-amber-600",
     bg: "bg-amber-50",
     border: "border-amber-100",
@@ -54,26 +57,81 @@ const SAFETY_BADGES = [
 ];
 
 export default function SADOLanding() {
+  const { prospect, displayLabel, saveProspect, clearProspect } = useProspectMode();
+  const [modalOpen, setModalOpen] = useState(false);
+
   return (
     <div className="min-h-screen bg-background">
+      <ProspectModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        current={prospect}
+        onSave={saveProspect}
+        onClear={clearProspect}
+      />
+
       {/* Hero */}
       <div className="border-b border-border bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
         <div className="max-w-5xl mx-auto px-6 py-16">
-          {/* Product badge */}
-          <div className="flex items-center gap-2 mb-6">
-            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold tracking-wide uppercase">
-              <Shield className="w-3 h-3" />
-              SADO · Phase A
+          {/* Product badge row */}
+          <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold tracking-wide uppercase">
+                <Shield className="w-3 h-3" />
+                SADO · Phase A
+              </div>
+              <Badge variant="outline" className="text-xs text-muted-foreground">
+                Enterprise MVP
+              </Badge>
             </div>
-            <Badge variant="outline" className="text-xs text-muted-foreground">
-              Enterprise MVP
-            </Badge>
+
+            {/* Prospect mode controls */}
+            <div className="flex items-center gap-2">
+              {prospect ? (
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-600/10 border border-blue-500/30 text-blue-700 text-xs font-medium">
+                    <Briefcase className="w-3 h-3 text-blue-500" />
+                    Prepared for {prospect.prospectName}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setModalOpen(true)}
+                    className="text-xs text-slate-500 hover:text-slate-700 underline underline-offset-2"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={clearProspect}
+                    className="text-slate-400 hover:text-red-500 transition-colors"
+                    title="Clear Prospect Mode"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setModalOpen(true)}
+                  className="gap-1.5 text-xs border-slate-300 text-slate-600 hover:border-blue-400 hover:text-blue-700 bg-white"
+                >
+                  <Briefcase className="w-3 h-3" />
+                  Prepare for Prospect
+                </Button>
+              )}
+            </div>
           </div>
 
           <h1 className="text-4xl font-bold text-foreground tracking-tight mb-4 leading-tight">
             Sovereign Autonomous<br />
             <span className="text-blue-600">Data Operations</span>
           </h1>
+
+          {/* Prospect tagline or default subtitle */}
+          {prospect?.tagline ? (
+            <p className="text-base text-blue-700 font-medium mb-2">{prospect.tagline}</p>
+          ) : null}
           <p className="text-lg text-muted-foreground max-w-2xl mb-8 leading-relaxed">
             GCC-native AI readiness, data governance, and autonomous data operations platform.
             Discover your data estate, enforce residency policy, and maintain a complete audit trail —
@@ -101,7 +159,7 @@ export default function SADOLanding() {
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/sado/audit">
+            <Link href="/sado/audit-trail">
               <Button size="lg" variant="outline" className="gap-2 bg-white">
                 View Audit Trail
               </Button>

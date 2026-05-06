@@ -3902,3 +3902,16 @@
 ## Session — SADO Phase A.3 (2026-05-06)
 - [x] TASK 1: SADO expandable sub-menu in MeshSidebar (7 child links, parent+child active states)
 - [x] TASK 2: Reset Demo button in SADOCommandCentre (clears localStorage flag, resets demoLog/demoStep, disabled during run)
+
+## Session — SADO Phase A.4 (2026-05-06)
+- [x] TASK 1: useProspectMode hook (localStorage key sado_prospect, ProspectInfo shape)
+- [x] TASK 1: ProspectModal component (quick-picks, 3 fields, preview pill, Clear Prospect Mode)
+- [x] TASK 1: SADOLanding — Prepare for Prospect button top-right, hero prospect badge, Edit/Clear controls
+- [x] TASK 1: SADOCommandCentre — header subtitle "Prepared for [Prospect]", top-right prospect badge, Prepare for Prospect ghost button
+- [x] TASK 1: SADOAuditTrail — prospect badge in header, PDF export auto-fills prospect name + org
+- [x] TASK 2: Fix route mismatches — /sado/audit-trail and /sado/knowledge-graph now canonical; legacy /sado/audit and /sado/graph aliases retained
+- [x] TASK 2: All 7 SADO routes verified in browser (no 404s)
+- [x] TASK 2: Sidebar active states verified (Knowledge Graph, Audit Trail highlight correctly)
+- [x] TASK 2: No console errors on SADO pages
+- [x] TASK 2: tsc EXIT:0 confirmed
+- [x] TASK 2: Checkpoint saved and production deploy triggered

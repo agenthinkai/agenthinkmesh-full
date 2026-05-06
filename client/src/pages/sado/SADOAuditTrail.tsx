@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Lock, Activity, AlertTriangle, CheckCircle2, XCircle, Info, Download, Building2 } from "lucide-react";
+import { ArrowLeft, Lock, Activity, AlertTriangle, CheckCircle2, XCircle, Info, Download, Building2, Briefcase } from "lucide-react";
+import { useProspectMode } from "@/hooks/useProspectMode";
 
 const SEVERITY_CONFIG: Record<string, { color: string; icon: React.ReactNode }> = {
   HIGH:   { color: "bg-red-500/10 text-red-400 border-red-500/20",       icon: <AlertTriangle className="w-3 h-3" /> },
@@ -45,6 +46,7 @@ async function exportGovernancePDF(params: {
   governanceCount: number;
   escalationsCount: number;
   prospectName?: string;
+  organization?: string;
 }) {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -66,10 +68,12 @@ async function exportGovernancePDF(params: {
   doc.setTextColor(148, 163, 184);
   doc.text("Software-Defined Data Operations  ·  Sovereign AI Platform", margin, 18);
   const now = new Date();
-  const prospectLine = params.prospectName?.trim()
-    ? `Prepared for: ${params.prospectName.trim()}`
+  const prospectLabel = params.prospectName?.trim()
+    ? params.organization?.trim()
+      ? `Prepared for: ${params.prospectName.trim()} · ${params.organization.trim()}`
+      : `Prepared for: ${params.prospectName.trim()}`
     : "Prepared for: Enterprise Stakeholder";
-  doc.text(prospectLine, margin, 24);
+  doc.text(prospectLabel, margin, 24);
   doc.text(`Generated: ${now.toUTCString()}`, pageW - margin, 24, { align: "right" });
   y = 36;
 
@@ -214,7 +218,10 @@ export default function SADOAuditTrail() {
   const [actionFilter, setActionFilter] = useState("all");
   const [exporting, setExporting] = useState(false);
   const [showProspectModal, setShowProspectModal] = useState(false);
-  const [prospectName, setProspectName] = useState("");
+  const [prospectOverride, setProspectOverride] = useState("");
+
+  // Prospect mode — auto-fill from localStorage
+  const { prospect } = useProspectMode();
 
   const auditQ = trpc.sado.getAuditTrail.useQuery({
     limit: 50,
@@ -237,6 +244,8 @@ export default function SADOAuditTrail() {
   }, 0);
 
   function handleExportPDF() {
+    // Pre-fill with prospect mode value if set
+    setProspectOverride(prospect?.prospectName ?? "");
     setShowProspectModal(true);
   }
 
@@ -251,18 +260,19 @@ export default function SADOAuditTrail() {
         piiCount,
         governanceCount: govAlerts.length,
         escalationsCount: escalations.length,
-        prospectName,
+        prospectName: prospectOverride || prospect?.prospectName,
+        organization: prospect?.organization,
       });
     } finally {
       setExporting(false);
     }
   }
 
-  const PROSPECT_EXAMPLES = ["STC", "ADNOC Digital", "Kuwait Finance House", "Core42"];
+  const PROSPECT_EXAMPLES = ["STC", "ADNOC Digital", "Kuwait Finance House", "Core42", "G42", "Ministry of Health"];
 
   return (
     <>
-    {/* Prospect name modal */}
+    {/* Prospect name modal for PDF */}
     <Dialog open={showProspectModal} onOpenChange={setShowProspectModal}>
       <DialogContent className="bg-[oklch(0.14_0.03_255)] border-slate-700 text-slate-100 max-w-sm">
         <DialogHeader>
@@ -274,8 +284,8 @@ export default function SADOAuditTrail() {
         <div className="space-y-3 py-2">
           <Label className="text-xs text-slate-400">Prepared for</Label>
           <Input
-            value={prospectName}
-            onChange={e => setProspectName(e.target.value)}
+            value={prospectOverride}
+            onChange={e => setProspectOverride(e.target.value)}
             placeholder="e.g. ADNOC Digital"
             className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 text-sm"
             onKeyDown={e => { if (e.key === "Enter") handleConfirmExport(); }}
@@ -286,13 +296,23 @@ export default function SADOAuditTrail() {
               <button
                 key={ex}
                 type="button"
-                onClick={() => setProspectName(ex)}
-                className="text-xs px-2 py-0.5 rounded border border-slate-700 text-slate-400 hover:border-blue-500 hover:text-blue-300 transition-colors bg-slate-800"
+                onClick={() => setProspectOverride(ex)}
+                className={`text-xs px-2 py-0.5 rounded border transition-colors bg-slate-800 ${
+                  prospectOverride === ex
+                    ? "border-blue-500 text-blue-300"
+                    : "border-slate-700 text-slate-400 hover:border-blue-500 hover:text-blue-300"
+                }`}
               >
                 {ex}
               </button>
             ))}
           </div>
+          {prospect?.prospectName && prospectOverride !== prospect.prospectName && (
+            <p className="text-xs text-blue-400/70">
+              Prospect mode active: <span className="font-medium">{prospect.prospectName}</span>
+              {" "}— <button type="button" className="underline" onClick={() => setProspectOverride(prospect.prospectName)}>use it</button>
+            </p>
+          )}
           <p className="text-xs text-slate-500">Leave blank to use "Enterprise Stakeholder".</p>
         </div>
         <DialogFooter className="gap-2">
@@ -307,6 +327,7 @@ export default function SADOAuditTrail() {
         </DialogFooter>
       </DialogContent>
     </Dialog>
+
     <div className="min-h-screen bg-[oklch(0.10_0.02_255)] text-slate-100">
       <div className="border-b border-slate-800 bg-[oklch(0.12_0.03_255)]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-3">
@@ -321,6 +342,13 @@ export default function SADOAuditTrail() {
             <p className="text-xs text-slate-400">Append-only · OpenTelemetry trace IDs · Immutable log</p>
           </div>
           <div className="ml-auto flex items-center gap-2">
+            {/* Prospect mode indicator in audit header */}
+            {prospect && (
+              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-blue-500/20 bg-blue-500/8 text-blue-400 text-xs">
+                <Briefcase className="w-3 h-3" />
+                {prospect.prospectName}
+              </div>
+            )}
             <Badge variant="outline" className="text-xs bg-slate-800 border-slate-700 text-slate-300">
               {rows.length} entries
             </Badge>

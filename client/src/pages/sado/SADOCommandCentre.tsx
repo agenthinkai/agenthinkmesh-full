@@ -8,9 +8,11 @@ import { Progress } from "@/components/ui/progress";
 import {
   Activity, AlertTriangle, CheckCircle2, Clock, Database,
   GitBranch, Play, RefreshCw, Shield, Zap, ChevronRight,
-  Eye, Lock, Network
+  Eye, Lock, Network, Briefcase
 } from "lucide-react";
 import { toast } from "sonner";
+import { useProspectMode } from "@/hooks/useProspectMode";
+import ProspectModal from "@/components/sado/ProspectModal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type AgentStatus = "idle" | "running" | "completed" | "escalated" | "error";
@@ -48,7 +50,10 @@ export default function SADOCommandCentre() {
   const [demoRunning, setDemoRunning] = useState(false);
   const [demoStep, setDemoStep] = useState(0);
   const [demoLog, setDemoLog] = useState<string[]>([]);
+  const [prospectModalOpen, setProspectModalOpen] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
+
+  const { prospect, saveProspect, clearProspect } = useProspectMode();
 
   const agentsQ = trpc.sado.getAgents.useQuery(undefined, { refetchInterval: demoRunning ? 1500 : 10000 });
   const escalationsQ = trpc.sado.getEscalations.useQuery();
@@ -111,21 +116,61 @@ export default function SADOCommandCentre() {
 
   const progress = steps.length > 0 ? Math.round((demoStep / steps.length) * 100) : 0;
 
+  // Subtitle: prospect tagline > prospect name > default
+  const headerSubtitle = prospect
+    ? prospect.tagline
+      ? prospect.tagline
+      : `Prepared for ${prospect.prospectName}`
+    : "Sovereign AI Data Operations — Phase A Demo";
+
   return (
     <div className="min-h-screen bg-[oklch(0.10_0.02_255)] text-slate-100">
+      <ProspectModal
+        open={prospectModalOpen}
+        onOpenChange={setProspectModalOpen}
+        current={prospect}
+        onSave={saveProspect}
+        onClear={clearProspect}
+      />
+
       {/* ── Header ── */}
       <div className="border-b border-slate-800 bg-[oklch(0.12_0.03_255)]">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
               <Activity className="w-4 h-4 text-white" />
             </div>
             <div>
               <h1 className="text-lg font-semibold text-white tracking-tight">SADO Command Centre</h1>
-              <p className="text-xs text-slate-400">Sovereign AI Data Operations — Phase A Demo</p>
+              <p className={`text-xs transition-colors ${prospect ? "text-blue-400" : "text-slate-400"}`}>
+                {headerSubtitle}
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Prospect badge / button */}
+            {prospect ? (
+              <button
+                type="button"
+                onClick={() => setProspectModalOpen(true)}
+                className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-blue-500/30 bg-blue-500/10 text-blue-300 text-xs hover:border-blue-400 hover:bg-blue-500/20 transition-colors"
+                title="Edit prospect mode"
+              >
+                <Briefcase className="w-3 h-3" />
+                {prospect.prospectName}
+              </button>
+            ) : (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setProspectModalOpen(true)}
+                className="text-xs text-slate-400 hover:text-blue-300 hover:bg-blue-500/10 gap-1.5 px-2"
+              >
+                <Briefcase className="w-3 h-3" /> Prepare for Prospect
+              </Button>
+            )}
+
             <div className="flex items-center gap-1.5 text-xs text-emerald-400">
               <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
               System Operational
@@ -279,10 +324,10 @@ export default function SADOCommandCentre() {
             <CardContent className="px-4 pb-4 space-y-2">
               {[
                 { href: "/sado/discovery",   icon: <Database className="w-4 h-4" />,       label: "Discovery Layer",     sub: "Sources · Columns · PII classification" },
-                { href: "/sado/graph",        icon: <Network className="w-4 h-4" />,        label: "Knowledge Graph",     sub: "Entity relationships · 6 nodes · 5 edges" },
+                { href: "/sado/knowledge-graph", icon: <Network className="w-4 h-4" />,        label: "Knowledge Graph",     sub: "Entity relationships · 6 nodes · 5 edges" },
                 { href: "/sado/governance",   icon: <Shield className="w-4 h-4" />,         label: "Governance",          sub: "PDPL SA · CITRA KW · Transfer alerts" },
                 { href: "/sado/escalations",  icon: <AlertTriangle className="w-4 h-4" />,  label: "Escalation Queue",    sub: `${pendingEscalations || 2} pending human review` },
-                { href: "/sado/audit",        icon: <Lock className="w-4 h-4" />,           label: "Audit Trail",         sub: "Append-only · OpenTelemetry trace IDs" },
+                { href: "/sado/audit-trail",   icon: <Lock className="w-4 h-4" />,           label: "Audit Trail",         sub: "Append-only · OpenTelemetry trace IDs" },
               ].map(n => (
                 <Link key={n.href} href={n.href}>
                   <div className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-800 cursor-pointer transition-colors group">
