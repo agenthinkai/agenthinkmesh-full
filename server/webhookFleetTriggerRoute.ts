@@ -18,7 +18,9 @@
  *   - Uses bypassCostGuard: true (same as the cron)
  *
  * Special actions (via body.action):
- *   "test-email" — Sends a test email to farouq@agenthink.ai via Graph API
+ *   "env-check"   — Reports presence/absence of critical env vars (no secrets exposed)
+ *   "resume-run"  — Resumes a specific run by ID (body.runId required)
+ *   "test-email"  — Sends a test email to farouq@agenthink.ai via Graph API
  *
  * Added: 2026-04-29 — Fix for HTTP 403 caused by Manus reverse-proxy blocking
  *   /api/scheduled/* routes before requests reach the Express app.
@@ -28,7 +30,7 @@ import { runDailyFleet } from "./jobs/founderFleetScheduler";
 import { runFleet } from "./founderFleet";
 import { sendGraphEmail } from "./graphEmail";
 import { getDb } from "./db";
-import { fleetConfig as fleetConfigTable, founderAgentRuns } from "../drizzle/schema";
+import { fleetConfig as fleetConfigTable, founderAgentRuns, founderAgentEvaluations } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 
 const router = Router();
@@ -45,7 +47,57 @@ router.post("/fleet-trigger", async (req: Request, res: Response) => {
   const timestamp = new Date().toISOString();
   console.log(`[WebhookFleetTrigger] External trigger received at ${timestamp}`);
 
-  const { mode, action } = req.body as { mode?: string; action?: string };
+  const { mode, action, runId: bodyRunId } = req.body as { mode?: string; action?: string; runId?: number };
+
+  // ── Special action: env-check — report presence of critical env vars ──────
+  if (action === "env-check") {
+    const forgeKey     = process.env.BUILT_IN_FORGE_API_KEY ?? "";
+    const anthropicKey = process.env.ANTHROPIC_API_KEY ?? "";
+    const dbUrl        = process.env.DATABASE_URL ?? "";
+    const envReport = {
+      BUILT_IN_FORGE_API_KEY: forgeKey.length > 0
+        ? "SET (non-empty)"
+        : ("BUILT_IN_FORGE_API_KEY" in process.env ? "SET (empty)" : "MISSING"),
+      ANTHROPIC_API_KEY: anthropicKey.length > 0
+        ? "SET (non-empty)"
+        : ("ANTHROPIC_API_KEY" in process.env ? "SET (empty)" : "MISSING"),
+      DATABASE_URL:      dbUrl.length > 0 ? "SET (non-empty)" : "MISSING",
+      MS_CLIENT_ID:      (process.env.MS_CLIENT_ID     ?? "").length > 0 ? "SET (non-empty)" : "MISSING",
+      MS_CLIENT_SECRET:  (process.env.MS_CLIENT_SECRET ?? "").length > 0 ? "SET (non-empty)" : "MISSING",
+      MS_TENANT_ID:      (process.env.MS_TENANT_ID     ?? "").length > 0 ? "SET (non-empty)" : "MISSING",
+    };
+    console.log("[WebhookFleetTrigger] env-check:", JSON.stringify(envReport));
+    res.json({ action: "env-check", timestamp, env: envReport });
+    return;
+  }
+
+  // ── Special action: resume-run — resume a specific run by ID ─────────────
+  if (action === "resume-run") {
+    if (!bodyRunId || typeof bodyRunId !== "number") {
+      res.status(400).json({ error: "Missing or invalid runId" });
+      return;
+    }
+    const db = await getDb();
+    if (!db) { res.status(503).json({ error: "DB unavailable" }); return; }
+    // Reset orphaned 'running' evals → 'queued'
+    const resetResult = await db
+      .update(founderAgentEvaluations)
+      .set({ status: "queued", updatedAt: Date.now() })
+      .where(and(eq(founderAgentEvaluations.runId, bodyRunId), eq(founderAgentEvaluations.status, "running")));
+    const resetCount = (resetResult as { rowsAffected?: number }).rowsAffected ?? 0;
+    console.log(`[WebhookFleetTrigger] resume-run #${bodyRunId}: reset ${resetCount} 'running' evals → 'queued'`);
+    // Set run status to evaluating so runFleet resumes from eval phase
+    await db.update(founderAgentRuns).set({ status: "evaluating" }).where(eq(founderAgentRuns.id, bodyRunId));
+    const [runRow] = await db.select({ fleetMode: founderAgentRuns.fleetMode })
+      .from(founderAgentRuns).where(eq(founderAgentRuns.id, bodyRunId)).limit(1);
+    const isGcc = runRow?.fleetMode === "gcc";
+    const ideasPerDomain = isGcc ? 20 : 40;
+    res.json({ status: "triggered", runId: bodyRunId, resetCount, timestamp });
+    runFleet(bodyRunId, { gccMode: isGcc, bypassCostGuard: true, ideasPerDomain }).catch((err: unknown) => {
+      console.error(`[WebhookFleetTrigger] resume-run #${bodyRunId} error:`, (err as Error)?.message);
+    });
+    return;
+  }
 
   // ── Special action: test-email ─────────────────────────────────────────────
   if (action === "test-email") {
