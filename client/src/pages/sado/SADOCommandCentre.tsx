@@ -45,6 +45,46 @@ const AGENT_ICONS: Record<string, React.ReactNode> = {
   GovernanceAgent:      <Shield className="w-5 h-5" />,
 };
 
+// ── Narration copy ──────────────────────────────────────────────────────────
+const AGENT_NARRATION: Record<string, { title: string; body: string }> = {
+  SchemaExtractorAgent: {
+    title: "Discovery Agent",
+    body: "Scanning connected enterprise systems and identifying available data sources.",
+  },
+  SemanticMapperAgent: {
+    title: "SemanticMapper",
+    body: "Classifying sensitive fields, PII, and business-critical relationships across schemas.",
+  },
+  PIIDetectorAgent: {
+    title: "PII Detector",
+    body: "Detecting personally identifiable information and applying sensitivity labels.",
+  },
+  SchemaDriftAgent: {
+    title: "Schema Drift Agent",
+    body: "Comparing current schema fingerprints against baseline to surface structural changes.",
+  },
+  SQLRewriteAgent: {
+    title: "SQL Rewrite Agent",
+    body: "Rewriting cross-border queries to comply with residency and classification constraints.",
+  },
+  GovernanceAgent: {
+    title: "Governance Agent",
+    body: "Checking residency, classification, and transfer rules against GCC policy constraints.",
+  },
+  KnowledgeGraphAgent: {
+    title: "KnowledgeGraph Agent",
+    body: "Building a live relationship map across systems, schemas, and entities.",
+  },
+  EscalationAgent: {
+    title: "Escalation Agent",
+    body: "Flagging policy conflicts and preparing human approval paths.",
+  },
+  AuditAgent: {
+    title: "Audit Agent",
+    body: "Recording every decision, transfer event, and override for compliance review.",
+  },
+};
+
 // ── Demo step runner ──────────────────────────────────────────────────────────
 export default function SADOCommandCentre() {
   const [demoRunning, setDemoRunning] = useState(false);
@@ -216,16 +256,38 @@ export default function SADOCommandCentre() {
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-        {/* ── Demo progress bar ── */}
-        {demoRunning && (
-          <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm text-blue-300 font-medium">Demo Cycle Running — Step {demoStep} of {steps.length}</span>
-              <span className="text-xs text-blue-400">{progress}%</span>
+        {/* ── Demo progress bar + narration card ── */}
+        {demoRunning && (() => {
+          const currentStep = steps[demoStep - 1];
+          const narration = currentStep
+            ? (AGENT_NARRATION[currentStep.agentName] ?? {
+                title: currentStep.agentName.replace("Agent", " Agent"),
+                body: currentStep.message,
+              })
+            : null;
+          return (
+            <div className="space-y-3">
+              {/* Progress bar */}
+              <div className="rounded-lg border border-blue-500/30 bg-blue-500/5 p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm text-blue-300 font-medium">Demo Cycle Running — Step {demoStep} of {steps.length}</span>
+                  <span className="text-xs text-blue-400">{progress}%</span>
+                </div>
+                <Progress value={progress} className="h-1.5 bg-slate-800" />
+              </div>
+              {/* Narration card */}
+              {narration && (
+                <div className="rounded-lg border border-slate-700/60 bg-[oklch(0.13_0.025_255)]/80 px-4 py-3 flex items-start gap-3">
+                  <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shrink-0" />
+                  <div>
+                    <span className="text-xs font-semibold text-slate-300 mr-2">{narration.title}</span>
+                    <span className="text-xs text-slate-400">{narration.body}</span>
+                  </div>
+                </div>
+              )}
             </div>
-            <Progress value={progress} className="h-1.5 bg-slate-800" />
-          </div>
-        )}
+          );
+        })()}
 
         {/* ── KPI row ── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">

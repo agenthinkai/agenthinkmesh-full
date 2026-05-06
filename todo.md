@@ -3979,3 +3979,13 @@
 - [x] QA: Browser console verified — active/inactive states correct for all three scenarios
 - [x] QA: No console errors
 - [x] Checkpoint saved and production deploy triggered
+
+## Session — SADO Phase A.10 (2026-05-06)
+- [x] TASK: AGENT_NARRATION map added to SADOCommandCentre (9 agents with title + body copy)
+- [x] TASK: Narration card renders below progress bar during demo run, hidden when idle
+- [x] TASK: Card shows pulsing blue dot, agent title (semibold), and plain-English body text
+- [x] TASK: Falls back to agentName + step message for any unmapped agent name
+- [x] QA: tsc EXIT:0 confirmed
+- [x] QA: Narration card verified at Step 5 — "PII Detector: Detecting personally identifiable information..."
+- [x] QA: No console errors
+- [x] Checkpoint saved and production deploy triggered
