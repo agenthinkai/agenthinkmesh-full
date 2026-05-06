@@ -34,6 +34,7 @@ import {
   ArrowRight,
   Info,
   Lock,
+  ChevronDown,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useProspectMode, useProspectFromUrl } from "@/hooks/useProspectMode";
@@ -57,6 +58,8 @@ const POLICY_CARDS = [
     legalBasis: "Saudi PDPL Article 29 — Cross-border Transfer Restrictions",
     lastEvaluated: "Live — evaluated on every transfer event",
     riskLevel: "HIGH",
+    excerptSource: "Saudi PDPL — Article 29 (Cross-Border Data Transfer)",
+    excerpt: "Article 29: The Controller shall not transfer Personal Data outside the Kingdom, or allow access thereto from outside the Kingdom, unless the transfer is necessary for the performance of an obligation under an international agreement to which the Kingdom is a party, or is necessary to protect the public interest, or the Data Subject has consented to the transfer, or the transfer is to a country that provides an adequate level of protection for Personal Data as determined by SDAIA, or the Controller has implemented appropriate safeguards to protect the Personal Data in accordance with the standards issued by SDAIA.",
   },
   {
     id: "CITRA_KW_DATA_RESIDENCY_001",
@@ -74,6 +77,8 @@ const POLICY_CARDS = [
     legalBasis: "CITRA Decree No. 20/2014 — Telecommunications Data Residency",
     lastEvaluated: "Live — evaluated on every transfer event",
     riskLevel: "HIGH",
+    excerptSource: "CITRA Decree No. 20/2014 — Article 14 (Data Localisation)",
+    excerpt: "Article 14: Licensed telecommunications operators shall ensure that all subscriber data, call records, and network traffic data generated within the State of Kuwait are stored and processed on servers physically located within Kuwait. Transfer of such data to servers located outside Kuwait is prohibited except where the operator has filed a prior notification with CITRA and obtained written approval. Any approved cross-border transfer must be subject to contractual safeguards ensuring equivalent protection to that provided under Kuwaiti law.",
   },
   {
     id: "NESA_UAE_CLOUD_001",
@@ -91,6 +96,8 @@ const POLICY_CARDS = [
     legalBasis: "UAE NESA IAS v3.0 — Cloud and Data Centre Security Standards",
     lastEvaluated: "Live — evaluated on every transfer event",
     riskLevel: "MEDIUM",
+    excerptSource: "UAE NESA IAS v3.0 — Control Domain 9: Cloud Security",
+    excerpt: "Control 9.4 (Data Sovereignty): Entities classified as Critical National Infrastructure (CNI) operators shall ensure that sensitive and confidential data is processed and stored exclusively on UAE-sovereign cloud infrastructure approved by NESA. Any proposed migration of sensitive data to non-UAE cloud regions must be preceded by a formal NESA Cloud Security Assessment (CSA) and receive written clearance from the entity's designated CISO. Transfers without prior CSA clearance constitute a reportable security incident under the UAE Cybersecurity Law.",
   },
   {
     id: "INTERNAL_POLICY_001",
@@ -108,6 +115,8 @@ const POLICY_CARDS = [
     legalBasis: "Internal Enterprise Data Governance Policy v2.1 — Section 4.2",
     lastEvaluated: "Live — evaluated on every transfer event",
     riskLevel: "LOW",
+    excerptSource: "Internal Enterprise Data Governance Policy v2.1 — Section 4.2 (Intra-UAE Transfers)",
+    excerpt: "Section 4.2: Non-PII operational data classified as INTERNAL or PUBLIC may be transferred freely between approved UAE-hosted infrastructure providers (Azure UAE North, G42 Cloud Abu Dhabi) without prior approval, provided that (a) the data does not contain personal identifiers, financial account data, or health records; (b) the transfer is logged to the enterprise audit trail within 24 hours; and (c) the receiving system is registered in the enterprise data asset inventory. All transfers under this section are subject to annual review by the Data Governance Committee.",
   },
 ] as const;
 
@@ -276,6 +285,11 @@ export default function SADOGovernance() {
     alertId: number;
   } | null>(null);
 
+  // Per-card excerpt expand state
+  const [expandedExcerpts, setExpandedExcerpts] = useState<Record<string, boolean>>({});
+  const toggleExcerpt = (id: string) =>
+    setExpandedExcerpts(prev => ({ ...prev, [id]: !prev[id] }));
+
   // Build prospect-aware pre-fill reason
   const prospectReason = prospect
     ? prospect.prospectName
@@ -426,6 +440,33 @@ export default function SADOGovernance() {
                           {matchingAlert.action}
                         </span>
                       </>
+                    )}
+                  </div>
+
+                  {/* Regulation excerpt — collapsible */}
+                  <div className="mb-3">
+                    <button
+                      type="button"
+                      onClick={() => toggleExcerpt(policy.id)}
+                      className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors w-full text-left"
+                    >
+                      <ChevronDown
+                        className={`w-3 h-3 flex-shrink-0 transition-transform duration-200 ${
+                          expandedExcerpts[policy.id] ? "rotate-180" : ""
+                        }`}
+                      />
+                      <span>View regulation excerpt</span>
+                    </button>
+                    {expandedExcerpts[policy.id] && (
+                      <div className="mt-2 rounded-lg border border-slate-700/60 bg-slate-900/50 p-3">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <FileText className="w-3 h-3 text-slate-500 flex-shrink-0" />
+                          <span className="text-xs text-slate-500 font-medium">{policy.excerptSource}</span>
+                        </div>
+                        <p className="text-xs text-slate-400 leading-relaxed font-mono">
+                          {policy.excerpt}
+                        </p>
+                      </div>
                     )}
                   </div>
 

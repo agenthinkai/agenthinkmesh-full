@@ -4040,3 +4040,10 @@
 - [x] QA: /sado?prospect=Kuwait+Finance+House shows correct badge on first render (no flash)
 - [x] QA: /sado/command-centre?prospect=STC activates Prospect Mode correctly
 - [x] Checkpoint saved
+
+## Session — SADO Phase A.16 (2026-05-06)
+- [x] TASK: Add regulation excerpt data (PDPL SA Art.29, CITRA KW Decree 20/2014, NESA UAE, Internal v2.1) to GOVERNANCE_POLICIES array
+- [x] TASK: Add per-card expandedExcerpt state and collapsible panel with chevron indicator
+- [x] QA: tsc EXIT:0
+- [x] QA: Governance page loads cleanly, excerpts expand/collapse independently
+- [x] Checkpoint saved
