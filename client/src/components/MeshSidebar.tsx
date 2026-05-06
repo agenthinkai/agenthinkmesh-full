@@ -33,6 +33,7 @@ interface NavItem {
   exact?: boolean;
   adminOnly?: boolean;
   badge?: string;  // short pill text, e.g. "NEW"
+  subItems?: { path: string; label: string }[];
 }
 
 const NAV_ITEMS: NavItem[] = [
@@ -42,7 +43,21 @@ const NAV_ITEMS: NavItem[] = [
   { path: "/gcc-equities", icon: "📈", label: "GCC Equities", badge: "NEW" },
   { path: "/uae-realestate", icon: "🏢", label: "UAE Real Estate", badge: "NEW" },
   { path: "/mesh-intelligence", icon: "📊", label: "Intelligence" },
-  { path: "/sado", icon: "🛡️", label: "SADO", badge: "NEW" },
+  {
+    path: "/sado",
+    icon: "🛡️",
+    label: "SADO",
+    badge: "NEW",
+    subItems: [
+      { path: "/sado",                 label: "Overview" },
+      { path: "/sado/command-centre",  label: "Command Centre" },
+      { path: "/sado/discovery",       label: "Discovery Layer" },
+      { path: "/sado/knowledge-graph", label: "Knowledge Graph" },
+      { path: "/sado/governance",      label: "Governance" },
+      { path: "/sado/escalations",     label: "Escalations" },
+      { path: "/sado/audit-trail",     label: "Audit Trail" },
+    ],
+  },
   { path: "/admin/usage", icon: "⚙️", label: "Admin", adminOnly: true },
 ];
 
@@ -70,6 +85,10 @@ interface MeshSidebarProps {
 export default function MeshSidebar({ children }: MeshSidebarProps) {
   const [collapsed, setCollapsed] = useState(() => {
     try { return localStorage.getItem("mesh_sidebar_collapsed") === "1"; } catch { return false; }
+  });
+  const [sadoOpen, setSadoOpen] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return window.location.pathname.startsWith("/sado");
   });
   const [location] = useLocation();
   const isMobile = useIsMobile();
@@ -230,6 +249,85 @@ export default function MeshSidebar({ children }: MeshSidebarProps) {
         <nav style={{ flex: 1, padding: "8px 0", overflowY: "auto" }}>
           {navItems.filter((item) => !item.adminOnly || user?.role === "admin").map((item) => {
             const active = isActive(item.path, location, item.exact);
+            const hasSub = !collapsed && item.subItems && item.subItems.length > 0;
+            const isExpanded = hasSub && sadoOpen;
+
+            if (hasSub) {
+              // Expandable parent row (SADO)
+              return (
+                <div key={item.path}>
+                  <div
+                    title={collapsed ? item.label : undefined}
+                    onClick={() => setSadoOpen((o) => !o)}
+                    style={{
+                      display: "flex", alignItems: "center",
+                      gap: 10, padding: "10px 14px",
+                      margin: "2px 6px", borderRadius: 8,
+                      cursor: "pointer",
+                      background: active ? ACCENT_BG : "transparent",
+                      borderLeft: active ? `3px solid ${ACCENT}` : "3px solid transparent",
+                      color: active ? ACCENT : TEXT,
+                      fontWeight: active ? 600 : 400,
+                      fontSize: 13,
+                      transition: "background 0.12s, color 0.12s",
+                      userSelect: "none",
+                    }}
+                  >
+                    <span style={{ fontSize: 16, flexShrink: 0 }}>{item.icon}</span>
+                    <span style={{ flex: 1 }}>{item.label}</span>
+                    {item.badge && (
+                      <span style={{
+                        fontSize: 9, fontWeight: 700, letterSpacing: "0.05em",
+                        padding: "1px 5px", borderRadius: 4,
+                        background: "rgba(245,158,11,0.18)", color: "#f59e0b",
+                        flexShrink: 0,
+                      }}>{item.badge}</span>
+                    )}
+                    <span style={{
+                      fontSize: 10, color: MUTED, marginLeft: 2, flexShrink: 0,
+                      transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)",
+                      transition: "transform 0.15s",
+                      display: "inline-block",
+                    }}>›</span>
+                  </div>
+                  {/* Sub-items */}
+                  {isExpanded && (
+                    <div style={{ paddingLeft: 8, paddingBottom: 4 }}>
+                      {item.subItems!.map((sub) => {
+                        const subActive = location === sub.path;
+                        return (
+                          <Link key={sub.path} href={sub.path}>
+                            <div
+                              style={{
+                                display: "flex", alignItems: "center",
+                                gap: 8, padding: "7px 14px 7px 28px",
+                                margin: "1px 6px", borderRadius: 6,
+                                cursor: "pointer",
+                                background: subActive ? ACCENT_BG : "transparent",
+                                borderLeft: subActive ? `2px solid ${ACCENT}` : "2px solid transparent",
+                                color: subActive ? ACCENT : MUTED,
+                                fontWeight: subActive ? 600 : 400,
+                                fontSize: 12,
+                                transition: "background 0.1s, color 0.1s",
+                              }}
+                            >
+                              <span style={{
+                                width: 4, height: 4, borderRadius: "50%",
+                                background: subActive ? ACCENT : MUTED,
+                                flexShrink: 0,
+                              }} />
+                              {sub.label}
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              );
+            }
+
+            // Regular nav item
             return (
               <Link key={item.path} href={item.path}>
                 <div

@@ -134,17 +134,25 @@ export default function SADOCommandCentre() {
               size="sm"
               variant="outline"
               className="text-xs border-slate-700 text-slate-300 hover:bg-slate-800"
+              disabled={demoRunning}
               onClick={() => {
+                // Clear localStorage demo-completion flag so Knowledge Graph resets to pre-animation state
+                try { localStorage.removeItem("sado_demo_completed"); } catch { /* noop */ }
+                // Reset local demo UI state
+                setDemoRunning(false);
+                setDemoStep(0);
+                setDemoLog([]);
+                // Reset DB agent statuses and re-seed
                 resetDemo.mutateAsync().then(() => {
                   utils.sado.getAgents.invalidate();
                   utils.sado.getGovernanceAlerts.invalidate();
                   utils.sado.getEscalations.invalidate();
                   utils.sado.getAuditTrail.invalidate();
-                  toast.success("Demo reset.");
+                  toast.success("Demo reset — ready to run again.");
                 });
               }}
             >
-              <RefreshCw className="w-3 h-3 mr-1" /> Reset
+              <RefreshCw className="w-3 h-3 mr-1" /> Reset Demo
             </Button>
             <Button
               size="sm"

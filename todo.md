@@ -3898,3 +3898,7 @@
 - [x] "Discovery graph generated from live metadata" status label on graph
 - [x] Prospect name modal on PDF export (quick-pick: STC, ADNOC Digital, Kuwait Finance House, Core42)
 - [x] PDF header shows "Prepared for: [Prospect Name]" or "Enterprise Stakeholder" if blank
+
+## Session — SADO Phase A.3 (2026-05-06)
+- [x] TASK 1: SADO expandable sub-menu in MeshSidebar (7 child links, parent+child active states)
+- [x] TASK 2: Reset Demo button in SADOCommandCentre (clears localStorage flag, resets demoLog/demoStep, disabled during run)
