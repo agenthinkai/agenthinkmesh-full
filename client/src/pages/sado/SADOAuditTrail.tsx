@@ -139,6 +139,8 @@ async function exportGovernancePDF(params: {
   overrideRequests: OverrideRequest[];
   prospectName?: string;
   organization?: string;
+  tagline?: string;
+  presetName?: string;
   sections: SectionToggles;
 }) {
   const { jsPDF } = await import("jspdf");
@@ -148,8 +150,9 @@ async function exportGovernancePDF(params: {
   const margin = 18;
   const contentW = pageW - margin * 2;
   let y = 0;
+  const now = new Date();
 
-  // ── Helper: check page overflow and add new page ──────────────────────────
+  // ── Helper: check page overflow and add new page ────────────────────────
   function checkPage(needed = 10) {
     if (y + needed > 278) {
       doc.addPage();
@@ -157,7 +160,7 @@ async function exportGovernancePDF(params: {
     }
   }
 
-  // ── Helper: section header ────────────────────────────────────────────────
+  // ── Helper: section header ───────────────────────────────────────────────────────
   function sectionHeader(title: string) {
     checkPage(12);
     doc.setFontSize(9);
@@ -171,7 +174,117 @@ async function exportGovernancePDF(params: {
     y += 6;
   }
 
-  // ── Page 1: Header ────────────────────────────────────────────────────────
+  // ── Cover page (only when Prospect Mode is active) ────────────────────────
+  if (params.prospectName?.trim()) {
+    // Full dark background
+    doc.setFillColor(10, 15, 30);
+    doc.rect(0, 0, pageW, 297, "F");
+
+    // Top accent bar
+    doc.setFillColor(37, 99, 235); // blue-600
+    doc.rect(0, 0, pageW, 3, "F");
+
+    // SADO wordmark
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(59, 130, 246); // blue-400
+    doc.text("SADO", margin, 20);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 116, 139);
+    doc.text("Sovereign Autonomous Data Operations", margin + 14, 20);
+
+    // Horizontal rule
+    doc.setDrawColor(30, 41, 59);
+    doc.setLineWidth(0.4);
+    doc.line(margin, 26, pageW - margin, 26);
+
+    // Report type label
+    const reportTypeLabel = params.presetName ?? "Governance Audit Report";
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 116, 139);
+    doc.text(reportTypeLabel.toUpperCase(), margin, 42);
+
+    // Prospect name (large)
+    doc.setFontSize(28);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(241, 245, 249);
+    const nameLines = doc.splitTextToSize(params.prospectName.trim(), contentW);
+    doc.text(nameLines, margin, 58);
+    const nameBlockH = nameLines.length * 10;
+
+    // Organisation
+    if (params.organization?.trim()) {
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(148, 163, 184);
+      doc.text(params.organization.trim(), margin, 58 + nameBlockH + 2);
+    }
+
+    // Tagline
+    if (params.tagline?.trim()) {
+      const tagY = 58 + nameBlockH + (params.organization?.trim() ? 14 : 6);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(71, 85, 105);
+      const tagLines = doc.splitTextToSize(params.tagline.trim(), contentW);
+      doc.text(tagLines, margin, tagY);
+    }
+
+    // Divider before narrative flow
+    const midY = 160;
+    doc.setDrawColor(30, 41, 59);
+    doc.setLineWidth(0.4);
+    doc.line(margin, midY, pageW - margin, midY);
+
+    // Narrative flow label
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(71, 85, 105);
+    doc.text("NARRATIVE FLOW", margin, midY + 8);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(100, 116, 139);
+    const flowSteps = [
+      "Discovery",
+      "Classification",
+      "Policy Evaluation",
+      "Intercept / Escalation",
+      "Override Request",
+      "Audit Evidence",
+    ];
+    let flowX = margin;
+    const flowY = midY + 18;
+    flowSteps.forEach((step, idx) => {
+      doc.setTextColor(148, 163, 184);
+      doc.setFont("helvetica", "bold");
+      doc.text(step, flowX, flowY);
+      const stepW = doc.getTextWidth(step);
+      if (idx < flowSteps.length - 1) {
+        doc.setTextColor(51, 65, 85);
+        doc.setFont("helvetica", "normal");
+        doc.text("  →  ", flowX + stepW, flowY);
+        flowX += stepW + doc.getTextWidth("  →  ");
+      }
+    });
+
+    // Bottom metadata strip
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 268, pageW, 29, "F");
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Generated: ${now.toLocaleString()}`, margin, 280);
+    doc.text("CONFIDENTIAL — For authorized personnel only", pageW - margin, 280, { align: "right" });
+    doc.setTextColor(51, 65, 85);
+    doc.text("AgenThinkMesh  ·  SADO GCC Compliance Platform", margin, 288);
+
+    // Start report content on a new page
+    doc.addPage();
+  }
+
+  // ── Report header (page 1 of report content) ─────────────────────────────────
   doc.setFillColor(15, 23, 42);
   doc.rect(0, 0, pageW, 28, "F");
   doc.setFontSize(14);
@@ -182,7 +295,6 @@ async function exportGovernancePDF(params: {
   doc.setFont("helvetica", "normal");
   doc.setTextColor(148, 163, 184);
   doc.text("Sovereign Autonomous Data Operations  ·  GCC Compliance Platform", margin, 18);
-  const now = new Date();
   const prospectLabel = params.prospectName?.trim()
     ? params.organization?.trim()
       ? `Prepared for: ${params.prospectName.trim()} · ${params.organization.trim()}`
@@ -622,6 +734,26 @@ export default function SADOAuditTrail() {
         })),
         prospectName: prospectOverride || prospect?.prospectName,
         organization: prospect?.organization,
+        tagline: prospect?.tagline,
+        presetName: (() => {
+          const isExecSummary =
+            !sections.auditTrail &&
+            sections.governanceSummary &&
+            !sections.transferEvents &&
+            sections.overrideRequests &&
+            sections.generationFooter &&
+            !sections.demoNarrative;
+          const isFullCISO =
+            sections.auditTrail &&
+            sections.governanceSummary &&
+            sections.transferEvents &&
+            sections.overrideRequests &&
+            sections.generationFooter &&
+            sections.demoNarrative;
+          if (isExecSummary) return "Executive Summary";
+          if (isFullCISO)    return "Full CISO Report";
+          return "Governance Audit Report";
+        })(),
       });
     } finally {
       setExporting(false);

@@ -4078,3 +4078,13 @@
 - [x] Manual editing of any field remains fully functional after quick-pick selection
 - [x] Copy shareable link now immediately includes all three params after a quick-pick
 - [x] Only ProspectModal.tsx modified. tsc EXIT:0.
+
+## Session — SADO Phase A.22 (2026-05-06)
+- [x] Added tagline and presetName params to exportGovernancePDF function signature
+- [x] Cover page prepended as page 1 when Prospect Mode is active (prospectName is set)
+- [x] Cover page includes: blue accent bar, SADO wordmark, report type label (preset name), large prospect name, organisation, tagline, narrative flow steps, bottom metadata strip with generation date and confidentiality notice
+- [x] Existing report header and sections follow on a new page after the cover
+- [x] When Prospect Mode is off, PDF behavior is unchanged (no cover page)
+- [x] presetName derived at call site from current section toggles (Executive Summary / Full CISO Report / Governance Audit Report)
+- [x] tagline passed from prospect?.tagline
+- [x] Only SADOAuditTrail.tsx modified. tsc EXIT:0.
