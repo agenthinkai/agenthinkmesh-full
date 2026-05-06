@@ -1917,3 +1917,6 @@ export const fleetConfig = mysqlTable("fleet_config", {
 });
 export type FleetConfig = typeof fleetConfig.$inferSelect;
 export type InsertFleetConfig = typeof fleetConfig.$inferInsert;
+
+// ── SADO Phase A ─────────────────────────────────────────────────────────────
+export * from "./sadoSchema";

@@ -109,6 +109,12 @@ const GccIcDemo = lazy(() => import("./pages/GccIcDemo"));
 const Demos = lazy(() => import("./pages/Demos"));
 const FounderFleet = lazy(() => import("./pages/FounderFleet"));
 const SecurityKeysPage = lazy(() => import("./pages/SecurityKeysPage"));
+const SADOCommandCentre = lazy(() => import("./pages/sado/SADOCommandCentre"));
+const SADODiscovery = lazy(() => import("./pages/sado/SADODiscovery"));
+const SADOKnowledgeGraph = lazy(() => import("./pages/sado/SADOKnowledgeGraph"));
+const SADOGovernance = lazy(() => import("./pages/sado/SADOGovernance"));
+const SADOEscalations = lazy(() => import("./pages/sado/SADOEscalations"));
+const SADOAuditTrail = lazy(() => import("./pages/sado/SADOAuditTrail"));
 
 // ── Page-level loading fallback ───────────────────────────────────────────────
 function PageLoader() {
@@ -331,6 +337,14 @@ function Router() {
       <Route path="/jp-ic" component={JpIcDemo} />
       <Route path="/us-ic" component={UsIcDemo} />
       <Route path="/gcc-ic" component={GccIcDemo} />
+
+      {/* SADO — Sovereign AI Data Operations */}
+      <Route path="/sado" component={SADOCommandCentre} />
+      <Route path="/sado/discovery" component={SADODiscovery} />
+      <Route path="/sado/graph" component={SADOKnowledgeGraph} />
+      <Route path="/sado/governance" component={SADOGovernance} />
+      <Route path="/sado/escalations" component={SADOEscalations} />
+      <Route path="/sado/audit" component={SADOAuditTrail} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />
