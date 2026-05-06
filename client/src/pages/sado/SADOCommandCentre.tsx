@@ -133,6 +133,42 @@ export default function SADOCommandCentre() {
     if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
   }, [demoLog]);
 
+  // ── Keyboard shortcuts ───────────────────────────────────────────────────────
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      // Ignore when typing in an input / textarea / select, or when a dialog is open
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if ((e.target as HTMLElement).isContentEditable) return;
+      // Ignore if a dialog overlay is present
+      if (document.querySelector('[role="dialog"]')) return;
+
+      if (e.code === "Space" && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        if (!demoRunning) runDemo();
+      }
+      if ((e.key === "r" || e.key === "R") && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (!demoRunning) {
+          try { localStorage.removeItem("sado_demo_completed"); } catch { /* noop */ }
+          setDemoRunning(false);
+          setDemoCompleted(false);
+          setDemoStep(0);
+          setDemoLog([]);
+          resetDemo.mutateAsync().then(() => {
+            utils.sado.getAgents.invalidate();
+            utils.sado.getGovernanceAlerts.invalidate();
+            utils.sado.getEscalations.invalidate();
+            utils.sado.getAuditTrail.invalidate();
+            toast.success("Demo reset — ready to run again.");
+          });
+        }
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [demoRunning]);
+
   async function runDemo() {
     if (demoRunning) return;
     setDemoRunning(true);
@@ -236,6 +272,7 @@ export default function SADOCommandCentre() {
               variant="outline"
               className="text-xs border-slate-700 text-slate-300 hover:bg-slate-800"
               disabled={demoRunning}
+              title="Reset Demo [R]"
               onClick={() => {
                 // Clear localStorage demo-completion flag so Knowledge Graph resets to pre-animation state
                 try { localStorage.removeItem("sado_demo_completed"); } catch { /* noop */ }
@@ -255,6 +292,7 @@ export default function SADOCommandCentre() {
               }}
             >
               <RefreshCw className="w-3 h-3 mr-1" /> Reset Demo
+              <span className="ml-1 text-slate-500 font-mono text-[10px]">[R]</span>
             </Button>
             {/* Demo Speed segmented control */}
             <div
@@ -284,11 +322,12 @@ export default function SADOCommandCentre() {
               className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
               onClick={runDemo}
               disabled={demoRunning}
+              title="Run Demo [Space]"
             >
               {demoRunning ? (
                 <><Activity className="w-3 h-3 mr-1 animate-spin" /> Running…</>
               ) : (
-                <><Play className="w-3 h-3 mr-1" /> Run Demo</>
+                <><Play className="w-3 h-3 mr-1" /> Run Demo <span className="ml-1 text-blue-300/60 font-mono text-[10px]">[Space]</span></>
               )}
             </Button>
           </div>
@@ -319,8 +358,13 @@ export default function SADOCommandCentre() {
               {narration && (
                 <div className="rounded-lg border border-slate-700/60 bg-[oklch(0.13_0.025_255)]/80 px-4 py-3 flex items-start gap-3">
                   <div className="mt-0.5 w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shrink-0" />
-                  <div>
-                    <span className="text-xs font-semibold text-slate-300 mr-2">{narration.title}</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-xs font-semibold text-slate-300">{narration.title}</span>
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-700/60 text-slate-400 border border-slate-600/40 tabular-nums">
+                        Step {demoStep}/{steps.length}
+                      </span>
+                    </div>
                     <span className="text-xs text-slate-400">{narration.body}</span>
                   </div>
                 </div>

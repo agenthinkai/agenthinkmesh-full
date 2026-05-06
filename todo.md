@@ -4055,3 +4055,9 @@
 - [x] QA: tsc EXIT:0
 - [x] QA: Governance page loads cleanly, Export button visible in header
 - [x] Checkpoint saved
+
+## Session — SADO Phase A.19 (2026-05-06)
+- [x] Keyboard shortcuts in SADOCommandCentre: Space = Run Demo, R = Reset Demo (useEffect keydown listener, guards for input focus and open dialogs)
+- [x] Shortcut hint badges on Run Demo [Space] and Reset Demo [R] buttons
+- [x] Step count badge in narration card: "Step N/M" pill next to agent title
+- [x] Copy shareable link button in ProspectModal: copies /sado?prospect=<name>, shows Copied! confirmation for 2s

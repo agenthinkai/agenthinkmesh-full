@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Building2, UserCheck, X, Briefcase } from "lucide-react";
+import { Building2, UserCheck, X, Briefcase, Link2, Check } from "lucide-react";
 import { type ProspectInfo } from "@/hooks/useProspectMode";
 
 const QUICK_PICKS: Array<{ name: string; org: string }> = [
@@ -34,9 +34,28 @@ interface ProspectModalProps {
 export default function ProspectModal({
   open, onOpenChange, current, onSave, onClear,
 }: ProspectModalProps) {
-  const [name, setName]     = useState(current?.prospectName ?? "");
-  const [org, setOrg]       = useState(current?.organization ?? "");
-  const [tagline, setTagline] = useState(current?.tagline ?? "");
+  const [name, setName]         = useState(current?.prospectName ?? "");
+  const [org, setOrg]           = useState(current?.organization ?? "");
+  const [tagline, setTagline]   = useState(current?.tagline ?? "");
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  function handleCopyLink() {
+    const url = `${window.location.origin}/sado?prospect=${encodeURIComponent(name.trim())}`;
+    navigator.clipboard.writeText(url).then(() => {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    }).catch(() => {
+      // Fallback for browsers that block clipboard without HTTPS
+      const el = document.createElement("textarea");
+      el.value = url;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    });
+  }
 
   // Sync form when modal opens with existing values
   useEffect(() => {
@@ -146,12 +165,30 @@ export default function ProspectModal({
 
         {/* Preview pill */}
         {name.trim() && (
-          <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2.5 flex items-center gap-2">
-            <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
-            <div className="text-xs text-blue-300 leading-relaxed">
-              Command Centre will show: <span className="font-medium text-blue-200">Prepared for {name.trim()}</span>
-              {tagline.trim() && <span className="text-blue-400"> · {tagline.trim()}</span>}
+          <div className="space-y-2">
+            <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2.5 flex items-center gap-2">
+              <div className="w-1.5 h-1.5 rounded-full bg-blue-400 shrink-0" />
+              <div className="text-xs text-blue-300 leading-relaxed">
+                Command Centre will show: <span className="font-medium text-blue-200">Prepared for {name.trim()}</span>
+                {tagline.trim() && <span className="text-blue-400"> · {tagline.trim()}</span>}
+              </div>
             </div>
+            {/* Copy shareable link */}
+            <button
+              type="button"
+              onClick={handleCopyLink}
+              className={`w-full flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-md border text-xs transition-all ${
+                linkCopied
+                  ? "border-emerald-500/40 bg-emerald-500/10 text-emerald-300"
+                  : "border-slate-600 bg-slate-800/60 text-slate-400 hover:border-blue-500/50 hover:text-blue-300 hover:bg-blue-500/5"
+              }`}
+            >
+              {linkCopied ? (
+                <><Check className="w-3 h-3" /> Copied!</>
+              ) : (
+                <><Link2 className="w-3 h-3" /> Copy shareable link</>
+              )}
+            </button>
           </div>
         )}
 
