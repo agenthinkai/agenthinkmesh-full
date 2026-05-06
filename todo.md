@@ -4020,3 +4020,14 @@
 - [x] QA: Textarea remains editable after pre-fill
 - [x] QA: No unrelated files changed
 - [x] Checkpoint saved
+
+## Session — SADO Phase A.14 (2026-05-06)
+- [x] TASK: DemoSpeed type (slow/normal/fast) and SPEED_MULTIPLIER map defined above component
+- [x] TASK: demoSpeed state initialised from localStorage key sado_demo_speed, defaults to normal
+- [x] TASK: Segmented control (Slow / Normal / Fast) rendered between Reset Demo and Run Demo buttons; active segment highlighted blue; disabled (opacity-50 pointer-events-none) while demo is running
+- [x] TASK: Speed multiplier applied to step duration in runDemo loop
+- [x] TASK: localStorage persisted on each speed change
+- [x] QA: tsc EXIT:0 confirmed
+- [x] QA: Segmented control visible in header with Normal pre-selected
+- [x] QA: Only SADOCommandCentre.tsx modified
+- [x] Checkpoint saved

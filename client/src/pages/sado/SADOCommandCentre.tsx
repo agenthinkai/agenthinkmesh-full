@@ -85,12 +85,25 @@ const AGENT_NARRATION: Record<string, { title: string; body: string }> = {
   },
 };
 
-// ── Demo step runner ──────────────────────────────────────────────────────────
+// ── Speed config ───────────────────────────────────────────────────────────
+type DemoSpeed = "slow" | "normal" | "fast";
+const SPEED_MULTIPLIER: Record<DemoSpeed, number> = { slow: 1.5, normal: 1, fast: 0.5 };
+const SPEED_LABELS: { value: DemoSpeed; label: string }[] = [
+  { value: "slow",   label: "Slow" },
+  { value: "normal", label: "Normal" },
+  { value: "fast",   label: "Fast" },
+];
+const LS_SPEED_KEY = "sado_demo_speed";
+
+// ── Demo step runner ───────────────────────────────────────────────────────────
 export default function SADOCommandCentre() {
   const [demoRunning, setDemoRunning] = useState(false);
   const [demoCompleted, setDemoCompleted] = useState(false);
   const [demoStep, setDemoStep] = useState(0);
   const [demoLog, setDemoLog] = useState<string[]>([]);
+  const [demoSpeed, setDemoSpeed] = useState<DemoSpeed>(() => {
+    try { return (localStorage.getItem(LS_SPEED_KEY) as DemoSpeed) || "normal"; } catch { return "normal"; }
+  });
   const [prospectModalOpen, setProspectModalOpen] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -140,7 +153,7 @@ export default function SADOCommandCentre() {
       await applyStep.mutateAsync({ step: s.step, agentName: s.agentName, action: s.action, message: s.message });
       await utils.sado.getAgents.invalidate();
 
-      await new Promise(r => setTimeout(r, s.duration));
+      await new Promise(r => setTimeout(r, Math.round(s.duration * SPEED_MULTIPLIER[demoSpeed])));
     }
 
     // Final invalidate
@@ -242,6 +255,29 @@ export default function SADOCommandCentre() {
             >
               <RefreshCw className="w-3 h-3 mr-1" /> Reset Demo
             </Button>
+            {/* Demo Speed segmented control */}
+            <div
+              className={`flex items-center gap-0 rounded-md border border-slate-700 overflow-hidden text-xs ${demoRunning ? "opacity-50 pointer-events-none" : ""}`}
+              title="Demo speed — applies to next step"
+            >
+              {SPEED_LABELS.map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => {
+                    setDemoSpeed(value);
+                    try { localStorage.setItem(LS_SPEED_KEY, value); } catch { /* noop */ }
+                  }}
+                  className={`px-2.5 py-1 transition-colors ${
+                    demoSpeed === value
+                      ? "bg-blue-600 text-white font-medium"
+                      : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+
             <Button
               size="sm"
               className="text-xs bg-blue-600 hover:bg-blue-700 text-white"
