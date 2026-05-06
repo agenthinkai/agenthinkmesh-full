@@ -3999,3 +3999,14 @@
 - [x] QA: /sado verified in browser — section renders correctly below hero
 - [x] QA: No console errors
 - [x] Checkpoint saved and production deploy triggered
+
+## Session — SADO Phase A.12 (2026-05-06)
+- [x] TASK: demoCompleted boolean state added to SADOCommandCentre
+- [x] TASK: Demo Complete card renders after runDemo() finishes (demoCompleted=true, demoRunning=false)
+- [x] TASK: Card shows CheckCircle2 icon, title, description, 4 metric tiles, Open Audit Trail CTA
+- [x] TASK: Reset Demo clears demoCompleted=false so card hides correctly
+- [x] TASK: Metrics: Events Discovered (3), PII Fields Classified (6), Transfers Blocked (live), Audit Entries (demoLog.length=11)
+- [x] QA: tsc EXIT:0 confirmed
+- [x] QA: Demo Complete card verified in browser — all 4 metrics correct, Open Audit Trail CTA present
+- [x] QA: No console errors
+- [x] Checkpoint saved and production deploy triggered

@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Activity, AlertTriangle, CheckCircle2, Clock, Database,
   GitBranch, Play, RefreshCw, Shield, Zap, ChevronRight,
-  Eye, Lock, Network, Briefcase
+  Eye, Lock, Network, Briefcase, FileCheck
 } from "lucide-react";
 import { toast } from "sonner";
 import { useProspectMode } from "@/hooks/useProspectMode";
@@ -88,6 +88,7 @@ const AGENT_NARRATION: Record<string, { title: string; body: string }> = {
 // ── Demo step runner ──────────────────────────────────────────────────────────
 export default function SADOCommandCentre() {
   const [demoRunning, setDemoRunning] = useState(false);
+  const [demoCompleted, setDemoCompleted] = useState(false);
   const [demoStep, setDemoStep] = useState(0);
   const [demoLog, setDemoLog] = useState<string[]>([]);
   const [prospectModalOpen, setProspectModalOpen] = useState(false);
@@ -149,6 +150,7 @@ export default function SADOCommandCentre() {
 
     setDemoRunning(false);
     setDemoStep(0);
+    setDemoCompleted(true);
     // Signal knowledge graph to trigger animated reveal
     localStorage.setItem("sado_demo_completed", Date.now().toString());
     toast.success("Demo cycle complete — all 6 agents executed.");
@@ -225,6 +227,7 @@ export default function SADOCommandCentre() {
                 try { localStorage.removeItem("sado_demo_completed"); } catch { /* noop */ }
                 // Reset local demo UI state
                 setDemoRunning(false);
+                setDemoCompleted(false);
                 setDemoStep(0);
                 setDemoLog([]);
                 // Reset DB agent statuses and re-seed
@@ -285,6 +288,54 @@ export default function SADOCommandCentre() {
                   </div>
                 </div>
               )}
+            </div>
+          );
+        })()}
+
+        {/* ── Demo Complete summary card ── */}
+        {demoCompleted && !demoRunning && (() => {
+          const auditCount = demoLog.length;
+          const piiCount = 6; // seeded value from demo data
+          const transfersBlocked = intercepted || 2;
+          const sourcesDiscovered = 3;
+          return (
+            <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-5">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-lg bg-emerald-500/15 border border-emerald-500/30 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold text-emerald-300">Demo Complete</h3>
+                    <p className="text-xs text-slate-400 mt-0.5 max-w-lg">
+                      SADO completed discovery, classification, governance evaluation, and audit evidence generation.
+                    </p>
+                  </div>
+                </div>
+                <Link href="/sado/audit-trail">
+                  <Button
+                    size="sm"
+                    className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shrink-0"
+                  >
+                    <FileCheck className="w-3.5 h-3.5" /> Open Audit Trail
+                  </Button>
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">
+                {[
+                  { label: "Events Discovered",   value: String(sourcesDiscovered), sub: "Connected source systems",       color: "text-blue-400" },
+                  { label: "PII Fields Classified", value: String(piiCount),          sub: "Sensitivity labels applied",     color: "text-purple-400" },
+                  { label: "Transfers Blocked",    value: String(transfersBlocked),   sub: "PDPL SA · CITRA KW",            color: "text-red-400" },
+                  { label: "Audit Entries",         value: String(auditCount),         sub: "Append-only trace records",     color: "text-emerald-400" },
+                ].map(m => (
+                  <div key={m.label} className="rounded-lg border border-slate-700/50 bg-[oklch(0.14_0.03_255)] p-3">
+                    <div className={`text-xl font-bold tabular-nums ${m.color}`}>{m.value}</div>
+                    <div className="text-xs text-slate-300 font-medium mt-0.5">{m.label}</div>
+                    <div className="text-xs text-slate-500 mt-0.5">{m.sub}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           );
         })()}
