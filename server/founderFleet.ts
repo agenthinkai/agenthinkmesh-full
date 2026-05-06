@@ -23,7 +23,7 @@ import { runCouncil } from "./councilEngine";
 import { encryptWithMasterKey, decryptWithMasterKey } from "./cmk";
 
 // ── Model constants ────────────────────────────────────────────────────────────
-const HAIKU  = "claude-haiku-3-5";
+const HAIKU  = "claude-haiku-4-5-20251001";
 const SONNET = "claude-sonnet-4-5";
 
 // ── Domain definitions ────────────────────────────────────────────────────────

@@ -167,7 +167,7 @@ async function runInsuranceAgent(
     .join("\n");
 
   const response = await invokeLLM({ // Insurance streaming: haiku for speed
-    model: "claude-haiku-3-5",
+    model: "claude-haiku-4-5-20251001",
     messages: [
       { role: "system", content: systemPrompt },
       {

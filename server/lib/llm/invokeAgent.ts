@@ -13,7 +13,7 @@
  * Model mapping (Global / Anthropic):
  *   default   → claude-sonnet-4-5  (standard agent tasks)
  *   debate    → claude-opus-4-5    (council / adversarial reasoning)
- *   streaming → claude-haiku-3-5   (real-time / high-volume calls)
+ *   streaming → claude-haiku-4-5-20251001   (real-time / high-volume calls)
  *
  * All responses are normalised to AgentLLMResponse:
  *   { content: string, model: string, region: RegionProfile }
@@ -80,7 +80,7 @@ export class ChinaRegionNotEnabledError extends Error {
 const GLOBAL_MODELS: Record<ModelRole, string> = {
   default:   "claude-sonnet-4-5",
   debate:    "claude-opus-4-5",
-  streaming: "claude-haiku-3-5",
+  streaming: "claude-haiku-4-5-20251001",
 };
 
 // ── China model map (stubbed — not active) ────────────────────────────────────

@@ -102,11 +102,11 @@ describe("invokeAgent — Unified LLM Adapter", () => {
     delete process.env.CHINA_LLM;
   });
 
-  it("Global model map: default=claude-sonnet-4-5, debate=claude-opus-4-5, streaming=claude-haiku-3-5", async () => {
+  it("Global model map: default=claude-sonnet-4-5, debate=claude-opus-4-5, streaming=claude-haiku-4-5-20251001", async () => {
     const { resolveModel } = await import("./lib/region/modelRouter");
     expect(resolveModel("Global", "default")).toBe("claude-sonnet-4-5");
     expect(resolveModel("Global", "debate")).toBe("claude-opus-4-5");
-    expect(resolveModel("Global", "streaming")).toBe("claude-haiku-3-5");
+    expect(resolveModel("Global", "streaming")).toBe("claude-haiku-4-5-20251001");
   });
 });
 
@@ -290,7 +290,7 @@ describe("REGION_CONFIG + Model Router", () => {
     const { REGION_CONFIG } = await import("./lib/region/types");
     expect(REGION_CONFIG.Global.models.default).toBe("claude-sonnet-4-5");
     expect(REGION_CONFIG.Global.models.debate).toBe("claude-opus-4-5");
-    expect(REGION_CONFIG.Global.models.streaming).toBe("claude-haiku-3-5");
+    expect(REGION_CONFIG.Global.models.streaming).toBe("claude-haiku-4-5-20251001");
   });
 
   it("China models are DashScope/DeepSeek/Qianfan models", async () => {
