@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { Shield, Database, GitBranch, FileCheck, ArrowRight, Lock, Users, Globe, BookLock, Briefcase, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useProspectMode } from "@/hooks/useProspectMode";
+import { useProspectMode, useProspectFromUrl } from "@/hooks/useProspectMode";
 import ProspectModal from "@/components/sado/ProspectModal";
 
 const PILLARS = [
@@ -57,6 +57,7 @@ const SAFETY_BADGES = [
 ];
 
 export default function SADOLanding() {
+  useProspectFromUrl();
   const { prospect, displayLabel, saveProspect, clearProspect } = useProspectMode();
   const [modalOpen, setModalOpen] = useState(false);
 

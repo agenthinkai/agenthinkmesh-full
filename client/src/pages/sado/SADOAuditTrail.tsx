@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Lock, Activity, AlertTriangle, CheckCircle2, XCircle, Info, Download, Building2, Briefcase } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useProspectMode } from "@/hooks/useProspectMode";
+import { useProspectMode, useProspectFromUrl } from "@/hooks/useProspectMode";
 
 const SEVERITY_CONFIG: Record<string, { color: string; icon: React.ReactNode }> = {
   HIGH:   { color: "bg-red-500/10 text-red-400 border-red-500/20",       icon: <AlertTriangle className="w-3 h-3" /> },
@@ -500,6 +500,7 @@ export default function SADOAuditTrail() {
   }
 
   // Prospect mode — auto-fill from localStorage
+  useProspectFromUrl();
   const { prospect } = useProspectMode();
 
   const auditQ       = trpc.sado.getAuditTrail.useQuery({

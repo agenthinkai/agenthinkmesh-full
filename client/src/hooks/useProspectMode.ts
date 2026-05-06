@@ -3,7 +3,7 @@
  * Key: sado_prospect
  * Shape: { prospectName: string; organization: string; tagline: string }
  */
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 
 export interface ProspectInfo {
   prospectName: string;
@@ -54,4 +54,27 @@ export function useProspectMode() {
     : null;
 
   return { prospect, displayLabel, saveProspect, clearProspect };
+}
+
+/**
+ * useProspectFromUrl — call this in any SADO page component.
+ * Reads ?prospect= (and optionally ?org=) from the URL.
+ * Writes to localStorage synchronously so the initial render already
+ * picks up the correct prospect (avoids a one-frame flash of stale data).
+ * Does nothing if the param is absent.
+ */
+export function useProspectFromUrl() {
+  // Runs synchronously on every call (before first render).
+  // Writing to localStorage here means readStorage() in useProspectMode
+  // picks up the URL-supplied value on the very first render.
+  // Idempotent: if ?prospect= is absent, nothing changes.
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const name = params.get("prospect");
+    if (name) {
+      const org = params.get("org") || name;
+      const info: ProspectInfo = { prospectName: name, organization: org, tagline: "" };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(info));
+    }
+  } catch { /* noop */ }
 }

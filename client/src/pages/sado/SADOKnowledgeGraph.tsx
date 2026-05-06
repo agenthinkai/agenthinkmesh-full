@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
+import { useProspectFromUrl } from "@/hooks/useProspectMode";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -202,6 +203,7 @@ const PHASE_LABEL: Record<AnimPhase, string> = {
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function SADOKnowledgeGraph() {
+  useProspectFromUrl();
   const graphQ = trpc.sado.getKnowledgeGraph.useQuery();
   const graph = graphQ.data;
 

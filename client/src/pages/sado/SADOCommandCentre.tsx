@@ -11,7 +11,7 @@ import {
   Eye, Lock, Network, Briefcase, FileCheck
 } from "lucide-react";
 import { toast } from "sonner";
-import { useProspectMode } from "@/hooks/useProspectMode";
+import { useProspectMode, useProspectFromUrl } from "@/hooks/useProspectMode";
 import ProspectModal from "@/components/sado/ProspectModal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -97,6 +97,7 @@ const LS_SPEED_KEY = "sado_demo_speed";
 
 // ── Demo step runner ───────────────────────────────────────────────────────────
 export default function SADOCommandCentre() {
+  useProspectFromUrl();
   const [demoRunning, setDemoRunning] = useState(false);
   const [demoCompleted, setDemoCompleted] = useState(false);
   const [demoStep, setDemoStep] = useState(0);

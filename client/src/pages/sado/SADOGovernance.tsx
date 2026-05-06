@@ -36,7 +36,7 @@ import {
   Lock,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useProspectMode } from "@/hooks/useProspectMode";
+import { useProspectMode, useProspectFromUrl } from "@/hooks/useProspectMode";
 
 // ── Static policy definitions ─────────────────────────────────────────────────
 // These represent the governance framework — independent of live transfer events.
@@ -266,6 +266,7 @@ function OverrideDialog({ policy, alertId, onClose, initialReason = "" }: Overri
 
 // ── Main page ─────────────────────────────────────────────────────────────────
 export default function SADOGovernance() {
+  useProspectFromUrl();
   const { prospect } = useProspectMode();
   const alertsQ = trpc.sado.getGovernanceAlerts.useQuery();
   const alerts = alertsQ.data ?? [];

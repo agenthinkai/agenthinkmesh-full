@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Link } from "wouter";
+import { useProspectFromUrl } from "@/hooks/useProspectMode";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +15,7 @@ const PRIORITY_COLOR: Record<string, string> = {
 };
 
 export default function SADOEscalations() {
+  useProspectFromUrl();
   const [resolving, setResolving] = useState<number | null>(null);
   const escalationsQ = trpc.sado.getEscalations.useQuery();
   const resolveM = trpc.sado.resolveEscalation.useMutation();

@@ -4031,3 +4031,12 @@
 - [x] QA: Segmented control visible in header with Normal pre-selected
 - [x] QA: Only SADOCommandCentre.tsx modified
 - [x] Checkpoint saved
+
+## Session — SADO Phase A.15 (2026-05-06)
+- [x] TASK: useProspectFromUrl hook — reads ?prospect= (and optional ?org=) synchronously before first render, writes to localStorage so initial render shows correct prospect
+- [x] TASK: Wired into all 7 SADO pages (SADOLanding, SADOCommandCentre, SADOGovernance, SADOAuditTrail, SADODiscovery, SADOEscalations, SADOKnowledgeGraph)
+- [x] TASK: Supports ?org= override param; falls back to prospect name if absent
+- [x] QA: tsc EXIT:0 confirmed
+- [x] QA: /sado?prospect=Kuwait+Finance+House shows correct badge on first render (no flash)
+- [x] QA: /sado/command-centre?prospect=STC activates Prospect Mode correctly
+- [x] Checkpoint saved

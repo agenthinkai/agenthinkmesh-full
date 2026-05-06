@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { useProspectFromUrl } from "@/hooks/useProspectMode";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,6 +36,7 @@ type SourceWithColumns = {
 };
 
 export default function SADODiscovery() {
+  useProspectFromUrl();
   const sourcesQ = trpc.sado.getSources.useQuery();
   const sources: SourceWithColumns[] = (sourcesQ.data as SourceWithColumns[]) ?? [];
 
