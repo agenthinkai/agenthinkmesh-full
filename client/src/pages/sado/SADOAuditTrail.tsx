@@ -5,7 +5,10 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { ArrowLeft, Lock, Activity, AlertTriangle, CheckCircle2, XCircle, Info, Download } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ArrowLeft, Lock, Activity, AlertTriangle, CheckCircle2, XCircle, Info, Download, Building2 } from "lucide-react";
 
 const SEVERITY_CONFIG: Record<string, { color: string; icon: React.ReactNode }> = {
   HIGH:   { color: "bg-red-500/10 text-red-400 border-red-500/20",       icon: <AlertTriangle className="w-3 h-3" /> },
@@ -41,6 +44,7 @@ async function exportGovernancePDF(params: {
   piiCount: number;
   governanceCount: number;
   escalationsCount: number;
+  prospectName?: string;
 }) {
   const { jsPDF } = await import("jspdf");
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
@@ -56,13 +60,17 @@ async function exportGovernancePDF(params: {
   doc.setFontSize(14);
   doc.setTextColor(255, 255, 255);
   doc.setFont("helvetica", "bold");
-  doc.text("SADO Governance Audit Report", margin, 12);
+  doc.text("SADO Governance Audit Report", margin, 11);
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.setTextColor(148, 163, 184);
-  doc.text("Software-Defined Data Operations  ·  Sovereign AI Platform", margin, 19);
+  doc.text("Software-Defined Data Operations  ·  Sovereign AI Platform", margin, 18);
   const now = new Date();
-  doc.text(`Generated: ${now.toUTCString()}`, pageW - margin, 19, { align: "right" });
+  const prospectLine = params.prospectName?.trim()
+    ? `Prepared for: ${params.prospectName.trim()}`
+    : "Prepared for: Enterprise Stakeholder";
+  doc.text(prospectLine, margin, 24);
+  doc.text(`Generated: ${now.toUTCString()}`, pageW - margin, 24, { align: "right" });
   y = 36;
 
   // Summary counts
@@ -205,6 +213,8 @@ export default function SADOAuditTrail() {
   const [severityFilter, setSeverityFilter] = useState("all");
   const [actionFilter, setActionFilter] = useState("all");
   const [exporting, setExporting] = useState(false);
+  const [showProspectModal, setShowProspectModal] = useState(false);
+  const [prospectName, setProspectName] = useState("");
 
   const auditQ = trpc.sado.getAuditTrail.useQuery({
     limit: 50,
@@ -226,7 +236,12 @@ export default function SADOAuditTrail() {
     return acc + cols.filter(c => c.classification === "PII" || c.classification === "SENSITIVE").length;
   }, 0);
 
-  async function handleExportPDF() {
+  function handleExportPDF() {
+    setShowProspectModal(true);
+  }
+
+  async function handleConfirmExport() {
+    setShowProspectModal(false);
     setExporting(true);
     try {
       await exportGovernancePDF({
@@ -236,13 +251,62 @@ export default function SADOAuditTrail() {
         piiCount,
         governanceCount: govAlerts.length,
         escalationsCount: escalations.length,
+        prospectName,
       });
     } finally {
       setExporting(false);
     }
   }
 
+  const PROSPECT_EXAMPLES = ["STC", "ADNOC Digital", "Kuwait Finance House", "Core42"];
+
   return (
+    <>
+    {/* Prospect name modal */}
+    <Dialog open={showProspectModal} onOpenChange={setShowProspectModal}>
+      <DialogContent className="bg-[oklch(0.14_0.03_255)] border-slate-700 text-slate-100 max-w-sm">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2 text-white">
+            <Building2 className="w-4 h-4 text-blue-400" />
+            Personalise Report
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3 py-2">
+          <Label className="text-xs text-slate-400">Prepared for</Label>
+          <Input
+            value={prospectName}
+            onChange={e => setProspectName(e.target.value)}
+            placeholder="e.g. ADNOC Digital"
+            className="bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 text-sm"
+            onKeyDown={e => { if (e.key === "Enter") handleConfirmExport(); }}
+            autoFocus
+          />
+          <div className="flex flex-wrap gap-1.5 pt-1">
+            {PROSPECT_EXAMPLES.map(ex => (
+              <button
+                key={ex}
+                type="button"
+                onClick={() => setProspectName(ex)}
+                className="text-xs px-2 py-0.5 rounded border border-slate-700 text-slate-400 hover:border-blue-500 hover:text-blue-300 transition-colors bg-slate-800"
+              >
+                {ex}
+              </button>
+            ))}
+          </div>
+          <p className="text-xs text-slate-500">Leave blank to use "Enterprise Stakeholder".</p>
+        </div>
+        <DialogFooter className="gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowProspectModal(false)}
+            className="border-slate-700 text-slate-400 hover:bg-slate-800">
+            Cancel
+          </Button>
+          <Button size="sm" onClick={handleConfirmExport}
+            className="bg-blue-600 hover:bg-blue-500 text-white">
+            <Download className="w-3 h-3 mr-1" /> Download PDF
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
     <div className="min-h-screen bg-[oklch(0.10_0.02_255)] text-slate-100">
       <div className="border-b border-slate-800 bg-[oklch(0.12_0.03_255)]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-3">
@@ -347,5 +411,6 @@ export default function SADOAuditTrail() {
         </Card>
       </div>
     </div>
+    </>
   );
 }

@@ -1,0 +1,170 @@
+import { Link } from "wouter";
+import { Shield, Database, GitBranch, FileCheck, ArrowRight, Lock, Users, Globe, BookLock } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+
+const PILLARS = [
+  {
+    icon: Database,
+    title: "Discovery Layer",
+    description:
+      "MCP-compatible connectors scan source systems — ERP, CRM, data warehouses — and automatically extract schemas, classify columns, and detect PII across your enterprise data estate.",
+    href: "/sado/discovery",
+    color: "text-blue-600",
+    bg: "bg-blue-50",
+    border: "border-blue-100",
+  },
+  {
+    icon: GitBranch,
+    title: "Knowledge Graph",
+    description:
+      "Discovered entities and relationships are mapped into a live semantic graph. Source systems, business entities, and sensitive data fields are linked and queryable in real time.",
+    href: "/sado/graph",
+    color: "text-violet-600",
+    bg: "bg-violet-50",
+    border: "border-violet-100",
+  },
+  {
+    icon: Globe,
+    title: "Governance Engine",
+    description:
+      "A GCC-native policy engine enforces PDPL, CITRA, and NESA residency rules. Cross-border data transfers are intercepted, logged, and escalated before they leave the jurisdiction.",
+    href: "/sado/governance",
+    color: "text-emerald-600",
+    bg: "bg-emerald-50",
+    border: "border-emerald-100",
+  },
+  {
+    icon: FileCheck,
+    title: "Audit & Escalation Control",
+    description:
+      "Every agent action, governance decision, and schema change is written to an append-only audit trail. Escalations surface in a human-reviewed queue with confidence scoring.",
+    href: "/sado/audit",
+    color: "text-amber-600",
+    bg: "bg-amber-50",
+    border: "border-amber-100",
+  },
+];
+
+const SAFETY_BADGES = [
+  { icon: Lock, label: "Read-only source access" },
+  { icon: Users, label: "Human-in-the-loop approvals" },
+  { icon: Globe, label: "GCC residency policy engine" },
+  { icon: BookLock, label: "Append-only audit trail" },
+];
+
+export default function SADOLanding() {
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Hero */}
+      <div className="border-b border-border bg-gradient-to-br from-slate-50 via-white to-blue-50/30">
+        <div className="max-w-5xl mx-auto px-6 py-16">
+          {/* Product badge */}
+          <div className="flex items-center gap-2 mb-6">
+            <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-100 text-blue-700 text-xs font-semibold tracking-wide uppercase">
+              <Shield className="w-3 h-3" />
+              SADO · Phase A
+            </div>
+            <Badge variant="outline" className="text-xs text-muted-foreground">
+              Enterprise MVP
+            </Badge>
+          </div>
+
+          <h1 className="text-4xl font-bold text-foreground tracking-tight mb-4 leading-tight">
+            Sovereign Autonomous<br />
+            <span className="text-blue-600">Data Operations</span>
+          </h1>
+          <p className="text-lg text-muted-foreground max-w-2xl mb-8 leading-relaxed">
+            GCC-native AI readiness, data governance, and autonomous data operations platform.
+            Discover your data estate, enforce residency policy, and maintain a complete audit trail —
+            without exposing source systems or bypassing human oversight.
+          </p>
+
+          {/* Safety badges */}
+          <div className="flex flex-wrap gap-2 mb-10">
+            {SAFETY_BADGES.map(({ icon: Icon, label }) => (
+              <div
+                key={label}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-border text-sm text-foreground shadow-sm"
+              >
+                <Icon className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
+
+          {/* CTAs */}
+          <div className="flex flex-wrap gap-3">
+            <Link href="/sado/command-centre">
+              <Button size="lg" className="gap-2">
+                Start Demo
+                <ArrowRight className="w-4 h-4" />
+              </Button>
+            </Link>
+            <Link href="/sado/audit">
+              <Button size="lg" variant="outline" className="gap-2 bg-white">
+                View Audit Trail
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Capability Pillars */}
+      <div className="max-w-5xl mx-auto px-6 py-14">
+        <div className="mb-8">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+            Platform Capabilities
+          </p>
+          <h2 className="text-2xl font-bold text-foreground">Four capability pillars</h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+          {PILLARS.map(({ icon: Icon, title, description, href, color, bg, border }) => (
+            <Link key={title} href={href}>
+              <div
+                className={`group rounded-xl border ${border} ${bg} p-6 cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5`}
+              >
+                <div className={`inline-flex items-center justify-center w-10 h-10 rounded-lg bg-white border ${border} mb-4 shadow-sm`}>
+                  <Icon className={`w-5 h-5 ${color}`} />
+                </div>
+                <h3 className="font-semibold text-foreground mb-2 text-base">{title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+                <div className={`flex items-center gap-1 mt-4 text-xs font-medium ${color} opacity-0 group-hover:opacity-100 transition-opacity`}>
+                  Explore <ArrowRight className="w-3 h-3" />
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* Architecture note */}
+      <div className="max-w-5xl mx-auto px-6 pb-16">
+        <div className="rounded-xl border border-border bg-slate-50 p-6">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center shadow-sm">
+              <Shield className="w-4 h-4 text-blue-600" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-foreground mb-1 text-sm">Sovereign-ready architecture</h3>
+              <p className="text-sm text-muted-foreground leading-relaxed">
+                SADO is designed for GCC enterprise deployment. All agent activity is logged, all governance
+                decisions are explainable, and all source system access is read-only. The platform is
+                deployable on-premises or in a sovereign cloud region with no dependency on external AI APIs
+                in production mode.
+              </p>
+              <div className="flex flex-wrap gap-2 mt-3">
+                {["Python · FastAPI", "PostgreSQL · Neo4j", "OpenTelemetry", "MCP connectors", "Kubernetes-ready"].map(t => (
+                  <span key={t} className="px-2 py-0.5 rounded bg-white border border-border text-xs text-muted-foreground">
+                    {t}
+                  </span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

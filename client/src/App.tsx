@@ -109,6 +109,7 @@ const GccIcDemo = lazy(() => import("./pages/GccIcDemo"));
 const Demos = lazy(() => import("./pages/Demos"));
 const FounderFleet = lazy(() => import("./pages/FounderFleet"));
 const SecurityKeysPage = lazy(() => import("./pages/SecurityKeysPage"));
+const SADOLanding = lazy(() => import("./pages/sado/SADOLanding"));
 const SADOCommandCentre = lazy(() => import("./pages/sado/SADOCommandCentre"));
 const SADODiscovery = lazy(() => import("./pages/sado/SADODiscovery"));
 const SADOKnowledgeGraph = lazy(() => import("./pages/sado/SADOKnowledgeGraph"));
@@ -339,7 +340,8 @@ function Router() {
       <Route path="/gcc-ic" component={GccIcDemo} />
 
       {/* SADO — Sovereign AI Data Operations */}
-      <Route path="/sado">{() => <MeshSidebar><SADOCommandCentre /></MeshSidebar>}</Route>
+      <Route path="/sado">{() => <MeshSidebar><SADOLanding /></MeshSidebar>}</Route>
+      <Route path="/sado/command-centre">{() => <MeshSidebar><SADOCommandCentre /></MeshSidebar>}</Route>
       <Route path="/sado/discovery">{() => <MeshSidebar><SADODiscovery /></MeshSidebar>}</Route>
       <Route path="/sado/graph">{() => <MeshSidebar><SADOKnowledgeGraph /></MeshSidebar>}</Route>
       <Route path="/sado/governance">{() => <MeshSidebar><SADOGovernance /></MeshSidebar>}</Route>

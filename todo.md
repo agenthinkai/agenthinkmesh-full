@@ -3889,3 +3889,12 @@
 - [x] TASK 3: Add Export PDF button to SADOAuditTrail.tsx using jsPDF (client-side, no new deps)
 - [x] TASK 3: PDF includes header, summary counts, governance status, audit trail table, footer
 - [x] tsc EXIT:0 confirmed after each task
+
+## SADO Phase A.2 (2026-05-06)
+- [x] SADO landing/overview page at /sado (four pillars, safety badges, CTAs)
+- [x] /sado/command-centre route added; /sado now shows overview
+- [x] Knowledge Graph wired to live getSources + sadoColumns data
+- [x] Three-phase animated node/edge reveal triggered by demo completion (localStorage signal)
+- [x] "Discovery graph generated from live metadata" status label on graph
+- [x] Prospect name modal on PDF export (quick-pick: STC, ADNOC Digital, Kuwait Finance House, Core42)
+- [x] PDF header shows "Prepared for: [Prospect Name]" or "Enterprise Stakeholder" if blank

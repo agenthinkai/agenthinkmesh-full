@@ -104,6 +104,8 @@ export default function SADOCommandCentre() {
 
     setDemoRunning(false);
     setDemoStep(0);
+    // Signal knowledge graph to trigger animated reveal
+    localStorage.setItem("sado_demo_completed", Date.now().toString());
     toast.success("Demo cycle complete — all 6 agents executed.");
   }
 
