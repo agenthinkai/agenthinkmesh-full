@@ -617,34 +617,52 @@ export default function SADOAuditTrail() {
             <p className="text-xs text-slate-500 mb-2">Tailor the report for executive, CISO, or compliance review.</p>
 
             {/* Preset buttons */}
-            <div className="flex gap-2 mb-3">
-              <button
-                type="button"
-                onClick={() => setSections({
-                  auditTrail: false,
-                  governanceSummary: true,
-                  transferEvents: false,
-                  overrideRequests: true,
-                  generationFooter: true,
-                })}
-                className="flex-1 text-xs px-2.5 py-1.5 rounded border border-slate-600 bg-slate-800/60 text-slate-300 hover:border-blue-500/60 hover:text-blue-300 hover:bg-blue-500/8 transition-colors"
-              >
-                Executive Summary
-              </button>
-              <button
-                type="button"
-                onClick={() => setSections({
-                  auditTrail: true,
-                  governanceSummary: true,
-                  transferEvents: true,
-                  overrideRequests: true,
-                  generationFooter: true,
-                })}
-                className="flex-1 text-xs px-2.5 py-1.5 rounded border border-slate-600 bg-slate-800/60 text-slate-300 hover:border-blue-500/60 hover:text-blue-300 hover:bg-blue-500/8 transition-colors"
-              >
-                Full CISO Report
-              </button>
-            </div>
+            {(() => {
+              const isExecSummary =
+                !sections.auditTrail &&
+                sections.governanceSummary &&
+                !sections.transferEvents &&
+                sections.overrideRequests &&
+                sections.generationFooter;
+              const isFullCISO =
+                sections.auditTrail &&
+                sections.governanceSummary &&
+                sections.transferEvents &&
+                sections.overrideRequests &&
+                sections.generationFooter;
+              const activeClass = "flex-1 text-xs px-2.5 py-1.5 rounded border border-blue-500 bg-blue-500/15 text-blue-300 font-medium transition-colors";
+              const inactiveClass = "flex-1 text-xs px-2.5 py-1.5 rounded border border-slate-600 bg-slate-800/60 text-slate-300 hover:border-blue-500/60 hover:text-blue-300 hover:bg-blue-500/8 transition-colors";
+              return (
+                <div className="flex gap-2 mb-3">
+                  <button
+                    type="button"
+                    onClick={() => setSections({
+                      auditTrail: false,
+                      governanceSummary: true,
+                      transferEvents: false,
+                      overrideRequests: true,
+                      generationFooter: true,
+                    })}
+                    className={isExecSummary ? activeClass : inactiveClass}
+                  >
+                    Executive Summary
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSections({
+                      auditTrail: true,
+                      governanceSummary: true,
+                      transferEvents: true,
+                      overrideRequests: true,
+                      generationFooter: true,
+                    })}
+                    className={isFullCISO ? activeClass : inactiveClass}
+                  >
+                    Full CISO Report
+                  </button>
+                </div>
+              );
+            })()}
 
             <div className="space-y-2">
               {([

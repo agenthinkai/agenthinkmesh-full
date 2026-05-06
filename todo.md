@@ -3970,3 +3970,12 @@
 - [x] QA: Manual checkbox toggling still works after preset
 - [x] QA: No console errors
 - [x] Checkpoint saved and production deploy triggered
+
+## Session — SADO Phase A.9 (2026-05-06)
+- [x] TASK: Active preset indicator — Full CISO Report highlights when all sections checked (default)
+- [x] TASK: Active preset indicator — Executive Summary highlights only for its exact state
+- [x] TASK: Neither preset highlighted for custom manual checkbox combinations
+- [x] QA: tsc EXIT:0 confirmed
+- [x] QA: Browser console verified — active/inactive states correct for all three scenarios
+- [x] QA: No console errors
+- [x] Checkpoint saved and production deploy triggered
