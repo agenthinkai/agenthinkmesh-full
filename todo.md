@@ -4061,3 +4061,11 @@
 - [x] Shortcut hint badges on Run Demo [Space] and Reset Demo [R] buttons
 - [x] Step count badge in narration card: "Step N/M" pill next to agent title
 - [x] Copy shareable link button in ProspectModal: copies /sado?prospect=<name>, shows Copied! confirmation for 2s
+
+## Session — SADO Phase A.20 (2026-05-06)
+- [x] Extended useProspectFromUrl to parse org= and tagline= query params alongside prospect=
+- [x] org= sets organisation field (falls back to prospect= value if absent)
+- [x] tagline= sets demo subtitle/tagline field (empty string if absent)
+- [x] All three fields persisted to localStorage synchronously before first render (no flash)
+- [x] Updated ProspectModal handleCopyLink to include org= and tagline= in generated URL when set (org= omitted when equal to prospect name to keep URLs clean)
+- [x] tsc EXIT:0. Only useProspectMode.ts and ProspectModal.tsx modified.

@@ -58,10 +58,18 @@ export function useProspectMode() {
 
 /**
  * useProspectFromUrl — call this in any SADO page component.
- * Reads ?prospect= (and optionally ?org=) from the URL.
+ * Reads ?prospect=, ?org=, and ?tagline= from the URL.
  * Writes to localStorage synchronously so the initial render already
  * picks up the correct prospect (avoids a one-frame flash of stale data).
- * Does nothing if the param is absent.
+ * Does nothing if ?prospect= is absent.
+ *
+ * Supported params:
+ *   prospect= — prospect / company short name (required to activate)
+ *   org=      — full organisation name (falls back to prospect= value)
+ *   tagline=  — demo subtitle / tagline override (optional)
+ *
+ * Example:
+ *   /sado?prospect=STC&org=Saudi+Telecom+Company&tagline=Sovereign+Data+Engineering+Control+Layer
  */
 export function useProspectFromUrl() {
   // Runs synchronously on every call (before first render).
@@ -72,8 +80,9 @@ export function useProspectFromUrl() {
     const params = new URLSearchParams(window.location.search);
     const name = params.get("prospect");
     if (name) {
-      const org = params.get("org") || name;
-      const info: ProspectInfo = { prospectName: name, organization: org, tagline: "" };
+      const org     = params.get("org")     || name;
+      const tagline = params.get("tagline") || "";
+      const info: ProspectInfo = { prospectName: name, organization: org, tagline };
       localStorage.setItem(STORAGE_KEY, JSON.stringify(info));
     }
   } catch { /* noop */ }

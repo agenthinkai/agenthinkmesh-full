@@ -40,7 +40,14 @@ export default function ProspectModal({
   const [linkCopied, setLinkCopied] = useState(false);
 
   function handleCopyLink() {
-    const url = `${window.location.origin}/sado?prospect=${encodeURIComponent(name.trim())}`;
+    const base = `${window.location.origin}/sado`;
+    const params = new URLSearchParams();
+    params.set("prospect", name.trim());
+    // Only include org= if it's set and differs from the prospect name (avoids redundancy)
+    if (org.trim() && org.trim() !== name.trim()) params.set("org", org.trim());
+    // Only include tagline= if it's set
+    if (tagline.trim()) params.set("tagline", tagline.trim());
+    const url = `${base}?${params.toString()}`;
     navigator.clipboard.writeText(url).then(() => {
       setLinkCopied(true);
       setTimeout(() => setLinkCopied(false), 2000);
