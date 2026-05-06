@@ -4010,3 +4010,13 @@
 - [x] QA: Demo Complete card verified in browser — all 4 metrics correct, Open Audit Trail CTA present
 - [x] QA: No console errors
 - [x] Checkpoint saved and production deploy triggered
+
+## Session — SADO Phase A.13 (2026-05-06)
+- [x] TASK: OverrideDialog accepts initialReason prop (optional, defaults to empty string)
+- [x] TASK: SADOGovernance builds prospectReason from useProspectMode — uses prospectName if set, falls back to "prospect team", empty string if no prospect
+- [x] TASK: initialReason prop passed to OverrideDialog render call
+- [x] QA: tsc EXIT:0 confirmed
+- [x] QA: Override dialog opens with "Requested by ADNOC Digital — analytics workload migration to eu-central-1 for governed enterprise data review." pre-filled
+- [x] QA: Textarea remains editable after pre-fill
+- [x] QA: No unrelated files changed
+- [x] Checkpoint saved

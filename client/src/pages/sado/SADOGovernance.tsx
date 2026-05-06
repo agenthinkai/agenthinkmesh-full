@@ -158,10 +158,11 @@ interface OverrideDialogProps {
   policy: typeof POLICY_CARDS[number] | null;
   alertId: number;
   onClose: () => void;
+  initialReason?: string;
 }
 
-function OverrideDialog({ policy, alertId, onClose }: OverrideDialogProps) {
-  const [reason, setReason] = useState("");
+function OverrideDialog({ policy, alertId, onClose, initialReason = "" }: OverrideDialogProps) {
+  const [reason, setReason] = useState(initialReason);
   const [submitted, setSubmitted] = useState(false);
   const overrideM = trpc.sado.requestOverride.useMutation();
   const utils = trpc.useUtils();
@@ -273,6 +274,13 @@ export default function SADOGovernance() {
     policy: typeof POLICY_CARDS[number];
     alertId: number;
   } | null>(null);
+
+  // Build prospect-aware pre-fill reason
+  const prospectReason = prospect
+    ? prospect.prospectName
+      ? `Requested by ${prospect.prospectName} — analytics workload migration to eu-central-1 for governed enterprise data review.`
+      : "Requested by prospect team — analytics workload migration to eu-central-1 for governed enterprise data review."
+    : "";
 
   const intercepted = alerts.filter(a => a.action === "INTERCEPTED");
   const allowed     = alerts.filter(a => a.action === "ALLOWED");
@@ -584,6 +592,7 @@ export default function SADOGovernance() {
           policy={overrideTarget.policy}
           alertId={overrideTarget.alertId}
           onClose={() => setOverrideTarget(null)}
+          initialReason={prospectReason}
         />
       )}
     </div>
