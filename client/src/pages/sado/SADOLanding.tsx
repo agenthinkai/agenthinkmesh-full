@@ -96,24 +96,37 @@ export default function SADOLanding() {
     }
   };
 
-  // Page title + meta description
+   // Page title + meta description + Open Graph tags
   useEffect(() => {
     const prospectPart = prospect?.prospectName ? `${prospect.prospectName} · ` : "";
-    document.title = `SADO · ${prospectPart}Sovereign Autonomous Data Operations`;
+    const pageTitle = `SADO · ${prospectPart}Sovereign Autonomous Data Operations`;
+    const pageDesc = "Sovereign Autonomous Data Operations for regulated GCC enterprise data engineering, governance, audit, and escalation workflows.";
 
-    let metaDesc = document.querySelector<HTMLMetaElement>('meta[name="description"]');
-    if (!metaDesc) {
-      metaDesc = document.createElement("meta");
-      metaDesc.name = "description";
-      document.head.appendChild(metaDesc);
+    document.title = pageTitle;
+
+    // Helper: upsert a <meta> tag by attribute selector
+    function upsertMeta(attr: string, value: string, content: string): HTMLMetaElement {
+      let el = document.querySelector<HTMLMetaElement>(`meta[${attr}="${value}"]`);
+      if (!el) {
+        el = document.createElement("meta");
+        el.setAttribute(attr, value);
+        document.head.appendChild(el);
+      }
+      el.content = content;
+      return el;
     }
-    metaDesc.content =
-      "Sovereign Autonomous Data Operations for regulated GCC enterprise data engineering, governance, audit, and escalation workflows.";
+
+    upsertMeta("name",     "description",    pageDesc);
+    upsertMeta("property", "og:title",        pageTitle);
+    upsertMeta("property", "og:description",  pageDesc);
+    upsertMeta("property", "og:type",         "website");
 
     return () => {
       document.title = "AgenThinkMesh";
-      const desc = document.querySelector<HTMLMetaElement>('meta[name="description"]');
-      if (desc) desc.remove();
+      ["meta[name=\"description\"]", "meta[property=\"og:title\"]",
+       "meta[property=\"og:description\"]", "meta[property=\"og:type\"]"].forEach(sel => {
+        document.querySelector(sel)?.remove();
+      });
     };
   }, [prospect?.prospectName]);
 

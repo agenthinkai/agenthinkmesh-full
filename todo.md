@@ -4219,3 +4219,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] SADOKnowledgeGraph: Added document.title = "SADO · [ProspectName · ]Knowledge Graph" useEffect.
 - [x] SADOEscalations: Added useEffect import + document.title = "SADO · [ProspectName · ]Escalations" useEffect.
 - [x] Fixed duplicate variable names (agentsQQ, auditQQ) introduced by edit tool. tsc EXIT:0.
+
+## Session — SADO Phase A.63 (2026-05-07)
+- [x] SADOLanding: Extended metadata useEffect to inject og:title, og:description, og:type via upsertMeta helper. Prospect-aware og:title mirrors document.title pattern. Cleanup removes all four meta tags on unmount. No new dependencies. tsc EXIT:0.
