@@ -4201,3 +4201,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.59 (2026-05-07)
 - [x] SADOLanding: Added Copy link button beside active prospect pill. Copies window.location.href (includes prospect/org/tagline params). navigator.clipboard primary path with execCommand fallback. Three-state feedback: idle (Link2 icon + "Copy link"), copied (Check icon + "Copied" in emerald, 2 s), failed (Link2 + "Copy failed" in red, 2 s). Only shown when Prospect Mode is active. Link2 + Check icons imported. tsc EXIT:0.
+
+## Session — SADO Phase A.60 (2026-05-07)
+- [x] SADOCommandCentre: Added Copy link button to Demo Complete card CTA row. Visible only when Prospect Mode is active. Same three-state pattern as A.59 (idle/copied/failed, 2s reset). copyState + copyProspectLink added. Link2 + Check icons added to Lucide import. Only SADOCommandCentre.tsx modified. tsc EXIT:0.

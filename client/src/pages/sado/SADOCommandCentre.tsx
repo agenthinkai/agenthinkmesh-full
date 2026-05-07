@@ -10,7 +10,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Activity, AlertTriangle, CheckCircle2, Clock, Database,
   GitBranch, Play, RefreshCw, Shield, Zap, ChevronRight,
-  Eye, Lock, Network, Briefcase, FileCheck, ArrowLeft, HelpCircle
+  Eye, Lock, Network, Briefcase, FileCheck, ArrowLeft, HelpCircle, Link2, Check
 } from "lucide-react";
 import { toast } from "sonner";
 import { useProspectMode, useProspectFromUrl, buildProspectQuery } from "@/hooks/useProspectMode";
@@ -108,7 +108,24 @@ export default function SADOCommandCentre() {
     try { return (localStorage.getItem(LS_SPEED_KEY) as DemoSpeed) || "normal"; } catch { return "normal"; }
   });
   const [prospectModalOpen, setProspectModalOpen] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const logRef = useRef<HTMLDivElement>(null);
+
+  const copyProspectLink = () => {
+    const url = window.location.href;
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url)
+        .then(() => { setCopyState("copied"); setTimeout(() => setCopyState("idle"), 2000); })
+        .catch(() => { setCopyState("failed"); setTimeout(() => setCopyState("idle"), 2000); });
+    } else {
+      try {
+        const el = document.createElement("textarea");
+        el.value = url; el.style.position = "fixed"; el.style.opacity = "0";
+        document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el);
+        setCopyState("copied"); setTimeout(() => setCopyState("idle"), 2000);
+      } catch { setCopyState("failed"); setTimeout(() => setCopyState("idle"), 2000); }
+    }
+  };
 
   const { prospect, saveProspect, clearProspect } = useProspectMode();
 
@@ -468,6 +485,22 @@ export default function SADOCommandCentre() {
                       <FileCheck className="w-3.5 h-3.5" /> Open Audit Trail
                     </Button>
                   </Link>
+                  {prospect && (
+                    <button
+                      type="button"
+                      onClick={copyProspectLink}
+                      title="Copy shareable prospect link"
+                      className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-400 transition-colors"
+                    >
+                      {copyState === "copied" ? (
+                        <><Check className="w-3 h-3 text-emerald-400" /><span className="text-emerald-400">Copied</span></>
+                      ) : copyState === "failed" ? (
+                        <><Link2 className="w-3 h-3" /><span className="text-red-400">Copy failed</span></>
+                      ) : (
+                        <><Link2 className="w-3 h-3" /><span>Copy link</span></>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
 
