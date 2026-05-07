@@ -3,7 +3,7 @@ import { Link } from "wouter";
 import { Shield, Database, GitBranch, FileCheck, ArrowRight, Lock, Users, Globe, BookLock, Briefcase, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useProspectMode, useProspectFromUrl } from "@/hooks/useProspectMode";
+import { useProspectMode, useProspectFromUrl, buildProspectQuery } from "@/hooks/useProspectMode";
 import ProspectModal from "@/components/sado/ProspectModal";
 
 const PILLARS = [
@@ -154,13 +154,13 @@ export default function SADOLanding() {
 
           {/* CTAs */}
           <div className="flex flex-wrap gap-3">
-            <Link href="/sado/command-centre">
+            <Link href={`/sado/command-centre${buildProspectQuery(prospect)}`}>
               <Button size="lg" className="gap-2">
                 Start Demo
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>
-            <Link href="/sado/audit-trail">
+            <Link href={`/sado/audit-trail${buildProspectQuery(prospect)}`}>
               <Button size="lg" variant="outline" className="gap-2 bg-white">
                 View Audit Trail
               </Button>
@@ -206,7 +206,7 @@ export default function SADOLanding() {
                 numColor: "text-amber-600",
               },
             ] as const).map(({ step, title, description, href, accent, numColor }) => (
-              <Link key={step} href={href}>
+              <Link key={step} href={`${href}${buildProspectQuery(prospect)}`}>
                 <div className={`group rounded-xl border ${accent} p-6 cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 h-full`}>
                   <div className={`text-3xl font-bold tabular-nums mb-3 ${numColor} opacity-60`}>{step}</div>
                   <h3 className="font-semibold text-foreground mb-2 text-base">{title}</h3>
@@ -232,7 +232,7 @@ export default function SADOLanding() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           {PILLARS.map(({ icon: Icon, title, description, href, color, bg, border }) => (
-            <Link key={title} href={href}>
+            <Link key={title} href={`${href}${buildProspectQuery(prospect)}`}>
               <div
                 className={`group rounded-xl border ${border} ${bg} p-6 cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5`}
               >

@@ -4104,3 +4104,11 @@
 - [x] When Prospect Mode is off, all links are unchanged (buildProspectQuery returns "")
 - [x] Uses URLSearchParams — no manual string concatenation
 - [x] Files changed: useProspectMode.ts, SADOCommandCentre.tsx, SADOGovernance.tsx. tsc EXIT:0.
+
+## Session — SADO Phase A.26 (2026-05-07)
+- [x] Imported buildProspectQuery in SADOLanding.tsx
+- [x] Primary CTAs: "Start Demo" → /sado/command-centre and "View Audit Trail" → /sado/audit-trail now append prospect params
+- [x] "What to Expect" cards (Run Demo, Explore Governance, Export Audit Report) now append prospect params
+- [x] Four Capability Pillar cards (Discovery, Knowledge Graph, Governance, Audit) now append prospect params
+- [x] When Prospect Mode is off, all hrefs are unchanged
+- [x] Only SADOLanding.tsx modified. tsc EXIT:0.
