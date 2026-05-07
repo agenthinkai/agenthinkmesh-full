@@ -9,6 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Lock, Activity, AlertTriangle, CheckCircle2, XCircle, Info, Download, Building2, Briefcase, Shield } from "lucide-react";
+import ProspectQRDialog from "@/components/sado/ProspectQRDialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProspectMode, useProspectFromUrl, buildProspectQuery } from "@/hooks/useProspectMode";
 
@@ -679,6 +680,24 @@ export default function SADOAuditTrail() {
   // Prospect mode — auto-fill from localStorage
   useProspectFromUrl();
   const { prospect } = useProspectMode();
+  const [qrOpen, setQrOpen] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const copyProspectLink = () => {
+    const url = window.location.href;
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url)
+        .then(() => { setCopyState("copied"); setTimeout(() => setCopyState("idle"), 2000); })
+        .catch(() => { setCopyState("failed"); setTimeout(() => setCopyState("idle"), 2000); });
+    } else {
+      try {
+        const el = document.createElement("textarea"); el.value = url;
+        el.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(el);
+        el.select(); document.execCommand("copy"); document.body.removeChild(el);
+        setCopyState("copied"); setTimeout(() => setCopyState("idle"), 2000);
+      } catch { setCopyState("failed"); setTimeout(() => setCopyState("idle"), 2000); }
+    }
+  };
+
 
   // Dynamic page title + OG tags
   useEffect(() => {
@@ -961,9 +980,20 @@ export default function SADOAuditTrail() {
           <div className="ml-auto flex items-center gap-2">
             {/* Prospect mode indicator in audit header */}
             {prospect && (
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20">
-                <Shield className="w-3 h-3 text-blue-400" />
-                <span className="text-xs text-blue-300">{prospect.prospectName}</span>
+              <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20">
+                  <Shield className="w-3 h-3 text-blue-400" />
+                  <span className="text-xs text-blue-300">{prospect.prospectName}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setQrOpen(true)}
+                  title="Show QR code for this prospect link"
+                  className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-400 transition-colors"
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
+                  <span>QR</span>
+                </button>
               </div>
             )}
             <Badge variant="outline" className="text-xs bg-slate-800 border-slate-700 text-slate-300">
@@ -1056,6 +1086,15 @@ export default function SADOAuditTrail() {
           </CardContent>
         </Card>
       </div>
+      <ProspectQRDialog
+        open={qrOpen}
+        onClose={() => setQrOpen(false)}
+        prospectName={prospect?.prospectName ?? ""}
+        prospectOrg={prospect?.organization}
+        qrValue={window.location.href}
+        copyState={copyState}
+        onCopy={copyProspectLink}
+      />
     </div>
     </>
   );

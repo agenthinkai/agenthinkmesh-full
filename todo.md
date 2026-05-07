@@ -4267,3 +4267,9 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Replaced inline QR dialog markup in SADOCommandCentre.tsx with <ProspectQRDialog />
 - [x] Removed orphaned QR markup remnants from both files
 - [x] Fixed null-safety on prospect props. tsc EXIT:0.
+
+## Session — SADO Phase A.71 (2026-05-07)
+- [x] Added ProspectQRDialog to SADOGovernance.tsx (import, qrOpen, copyState, Show QR button, dialog)
+- [x] Added ProspectQRDialog to SADOAuditTrail.tsx (import, qrOpen, copyState, Show QR button, dialog)
+- [x] Added ProspectQRDialog to SADODiscovery.tsx (import, qrOpen, copyState, Show QR button, dialog; added useState)
+- [x] tsc EXIT:0
