@@ -4142,3 +4142,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.32 (2026-05-07)
 - [x] SADOCommandCentre: wrapped speed segmented control in Tooltip/TooltipTrigger/TooltipContent showing "Fast: ~15 s · Normal: ~30 s · Slow: ~60 s" on hover. Added Tooltip import. tsc EXIT:0.
+
+## Session — SADO Phase A.33 (2026-05-07)
+- [x] SADOCommandCentre: extended headerSubtitle fallback to "Prepared for {name} · {org}" when org is non-empty and differs from name; tagline still takes priority. tsc EXIT:0.

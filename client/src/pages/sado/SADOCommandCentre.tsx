@@ -209,11 +209,13 @@ export default function SADOCommandCentre() {
 
   const progress = steps.length > 0 ? Math.round((demoStep / steps.length) * 100) : 0;
 
-  // Subtitle: prospect tagline > prospect name > default
+  // Subtitle: prospect tagline > "Prepared for {name} · {org}" (org only when non-empty and differs) > default
   const headerSubtitle = prospect
     ? prospect.tagline
       ? prospect.tagline
-      : `Prepared for ${prospect.prospectName}`
+      : prospect.organization && prospect.organization !== prospect.prospectName
+        ? `Prepared for ${prospect.prospectName} \u00b7 ${prospect.organization}`
+        : `Prepared for ${prospect.prospectName}`
     : "Sovereign AI Data Operations — Phase A Demo";
 
   return (
