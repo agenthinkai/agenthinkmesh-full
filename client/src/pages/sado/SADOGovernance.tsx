@@ -571,8 +571,22 @@ export default function SADOGovernance() {
     };
   }, [prospect?.prospectName]);
 
-  const alertsQ = trpc.sado.getGovernanceAlerts.useQuery();
+  const alertsQ = trpc.sado.getGovernanceAlerts.useQuery(undefined, { refetchInterval: 15000 });
   const alerts = alertsQ.data ?? [];
+  // Last synced freshness ticker
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  function relativeTimeGov(ts: number): string {
+    if (!ts) return "";
+    const diff = Math.floor((Date.now() - ts) / 60_000);
+    if (diff < 1) return "Updated just now";
+    if (diff === 1) return "Updated 1 min ago";
+    return `Updated ${diff} min ago`;
+  }
+  const govSyncLabel = alertsQ.dataUpdatedAt > 0 ? relativeTimeGov(alertsQ.dataUpdatedAt) : "";
 
   const [overrideTarget, setOverrideTarget] = useState<{
     policy: typeof POLICY_CARDS[number];
@@ -640,6 +654,7 @@ export default function SADOGovernance() {
           <div className="flex-1">
             <h1 className="text-base font-semibold text-white">Governance Engine</h1>
             <p className="text-xs text-slate-400">GCC data residency · PDPL SA · CITRA KW · NESA UAE · Transfer interception</p>
+            {govSyncLabel && <p className="text-xs text-slate-600 mt-0.5">{govSyncLabel}</p>}
           </div>
           {prospect && (
             <div className="flex items-center gap-1.5">

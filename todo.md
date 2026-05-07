@@ -4285,3 +4285,4 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Phase A.67 OG image — sado-og-preview.png (1200x630) placed in client/public/
 
 - [x] Phase A.76 — Refetch indicator on Command Centre live counters (isFetching pulsing dot on KPI cards)
+- [x] A.77: Added "Last synced N min ago" freshness line to SADOGovernance and SADOAuditTrail page headers. Uses 30s ticker + relativeTime helper derived from dataUpdatedAt. alertsQ/auditQ now poll every 15s. tsc EXIT:0.

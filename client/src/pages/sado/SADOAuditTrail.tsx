@@ -711,10 +711,25 @@ export default function SADOAuditTrail() {
     limit: 50,
     severityFilter: severityFilter !== "all" ? severityFilter : undefined,
     actionFilter: actionFilter !== "all" ? actionFilter : undefined,
-  });
+  }, { refetchInterval: 15000 });
   const sourcesQ      = trpc.sado.getSources.useQuery();
   const governanceQ   = trpc.sado.getGovernanceAlerts.useQuery();
   const escalationsQ  = trpc.sado.getEscalations.useQuery();
+
+  // Last synced freshness ticker
+  const [, setTickAudit] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTickAudit(t => t + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+  function relativeTimeAudit(ts: number): string {
+    if (!ts) return "";
+    const diff = Math.floor((Date.now() - ts) / 60_000);
+    if (diff < 1) return "Updated just now";
+    if (diff === 1) return "Updated 1 min ago";
+    return `Updated ${diff} min ago`;
+  }
+  const auditSyncLabel = auditQ.dataUpdatedAt > 0 ? relativeTimeAudit(auditQ.dataUpdatedAt) : "";
 
   const rows          = auditQ.data ?? [];
   const sources       = sourcesQ.data ?? [];
@@ -962,6 +977,7 @@ export default function SADOAuditTrail() {
           <div>
             <h1 className="text-base font-semibold text-white">Audit Trail</h1>
             <p className="text-xs text-slate-400">Append-only · OpenTelemetry trace IDs · Immutable log</p>
+            {auditSyncLabel && <p className="text-xs text-slate-600 mt-0.5">{auditSyncLabel}</p>}
           </div>
           <div className="ml-auto flex items-center gap-2">
             {/* Prospect mode indicator in audit header */}
