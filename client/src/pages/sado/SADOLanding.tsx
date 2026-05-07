@@ -204,6 +204,17 @@ export default function SADOLanding() {
               </Button>
             </Link>
           </div>
+
+          {/* Prospect Mode quick-launch */}
+          {!prospect && (
+            <button
+              type="button"
+              onClick={() => setModalOpen(true)}
+              className="mt-4 text-sm text-slate-400 hover:text-slate-600 transition-colors underline-offset-2 hover:underline"
+            >
+              Personalise for prospect →
+            </button>
+          )}
         </div>
       </div>
 

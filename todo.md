@@ -4189,3 +4189,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.53 (2026-05-07)
 - [x] SADOLanding: PILLAR_BADGES now uses three-state logic — null (loading → "Live status"), undefined (zero count → badge hidden), string (non-zero → badge shown). All four pillar badges suppressed when counts are zero. tsc EXIT:0.
+
+## Session — SADO Phase A.55 (2026-05-07)
+- [x] SADOLanding: Added "Personalise for prospect →" ghost link beneath hero CTAs. Visible only when Prospect Mode is off. Clicking it opens the existing ProspectModal (reuses modalOpen state). No new dependencies. tsc EXIT:0.
