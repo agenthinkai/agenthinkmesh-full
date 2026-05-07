@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useProspectMode, useProspectFromUrl, buildProspectQuery } from "@/hooks/useProspectMode";
+import { useProspectCopyLink } from "@/hooks/useProspectCopyLink";
 import ProspectQRDialog from "@/components/sado/ProspectQRDialog";
 import ProspectModal from "@/components/sado/ProspectModal";
 
@@ -109,25 +110,9 @@ export default function SADOCommandCentre() {
     try { return (localStorage.getItem(LS_SPEED_KEY) as DemoSpeed) || "normal"; } catch { return "normal"; }
   });
   const [prospectModalOpen, setProspectModalOpen] = useState(false);
-  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
-  const [qrOpen, setQrOpen] = useState(false);
   const logRef = useRef<HTMLDivElement>(null);
-
-  const copyProspectLink = () => {
-    const url = window.location.href;
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(url)
-        .then(() => { setCopyState("copied"); setTimeout(() => setCopyState("idle"), 2000); })
-        .catch(() => { setCopyState("failed"); setTimeout(() => setCopyState("idle"), 2000); });
-    } else {
-      try {
-        const el = document.createElement("textarea");
-        el.value = url; el.style.position = "fixed"; el.style.opacity = "0";
-        document.body.appendChild(el); el.select(); document.execCommand("copy"); document.body.removeChild(el);
-        setCopyState("copied"); setTimeout(() => setCopyState("idle"), 2000);
-      } catch { setCopyState("failed"); setTimeout(() => setCopyState("idle"), 2000); }
-    }
-  };
+  const { copyState, copyLink: copyProspectLink } = useProspectCopyLink();
+  const [qrOpen, setQrOpen] = useState(false);
 
   const { prospect, saveProspect, clearProspect } = useProspectMode();
 

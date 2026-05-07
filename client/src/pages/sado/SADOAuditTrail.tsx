@@ -12,6 +12,7 @@ import { ArrowLeft, Lock, Activity, AlertTriangle, CheckCircle2, XCircle, Info, 
 import ProspectQRDialog from "@/components/sado/ProspectQRDialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProspectMode, useProspectFromUrl, buildProspectQuery } from "@/hooks/useProspectMode";
+import { useProspectCopyLink } from "@/hooks/useProspectCopyLink";
 
 const SEVERITY_CONFIG: Record<string, { color: string; icon: React.ReactNode }> = {
   HIGH:   { color: "bg-red-500/10 text-red-400 border-red-500/20",       icon: <AlertTriangle className="w-3 h-3" /> },
@@ -681,22 +682,7 @@ export default function SADOAuditTrail() {
   useProspectFromUrl();
   const { prospect } = useProspectMode();
   const [qrOpen, setQrOpen] = useState(false);
-  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
-  const copyProspectLink = () => {
-    const url = window.location.href;
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(url)
-        .then(() => { setCopyState("copied"); setTimeout(() => setCopyState("idle"), 2000); })
-        .catch(() => { setCopyState("failed"); setTimeout(() => setCopyState("idle"), 2000); });
-    } else {
-      try {
-        const el = document.createElement("textarea"); el.value = url;
-        el.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(el);
-        el.select(); document.execCommand("copy"); document.body.removeChild(el);
-        setCopyState("copied"); setTimeout(() => setCopyState("idle"), 2000);
-      } catch { setCopyState("failed"); setTimeout(() => setCopyState("idle"), 2000); }
-    }
-  };
+  const { copyState, copyLink: copyProspectLink } = useProspectCopyLink();
 
 
   // Dynamic page title + OG tags

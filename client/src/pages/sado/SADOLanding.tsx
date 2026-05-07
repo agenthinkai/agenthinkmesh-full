@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useProspectMode, useProspectFromUrl, buildProspectQuery } from "@/hooks/useProspectMode";
+import { useProspectCopyLink } from "@/hooks/useProspectCopyLink";
 import ProspectModal from "@/components/sado/ProspectModal";
 import { trpc } from "@/lib/trpc";
 
@@ -63,40 +64,8 @@ export default function SADOLanding() {
   useProspectFromUrl();
   const { prospect, displayLabel, saveProspect, clearProspect } = useProspectMode();
   const [modalOpen, setModalOpen] = useState(false);
-  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const { copyState, copyLink: copyProspectLink } = useProspectCopyLink();
   const [qrOpen, setQrOpen] = useState(false);
-
-  const copyProspectLink = () => {
-    const url = window.location.href;
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(url)
-        .then(() => {
-          setCopyState("copied");
-          setTimeout(() => setCopyState("idle"), 2000);
-        })
-        .catch(() => {
-          setCopyState("failed");
-          setTimeout(() => setCopyState("idle"), 2000);
-        });
-    } else {
-      // Fallback: execCommand
-      try {
-        const el = document.createElement("textarea");
-        el.value = url;
-        el.style.position = "fixed";
-        el.style.opacity = "0";
-        document.body.appendChild(el);
-        el.select();
-        document.execCommand("copy");
-        document.body.removeChild(el);
-        setCopyState("copied");
-        setTimeout(() => setCopyState("idle"), 2000);
-      } catch {
-        setCopyState("failed");
-        setTimeout(() => setCopyState("idle"), 2000);
-      }
-    }
-  };
 
    // Page title + meta description + Open Graph tags
   useEffect(() => {

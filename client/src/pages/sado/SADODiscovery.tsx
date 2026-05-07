@@ -1,6 +1,7 @@
 import { Link } from "wouter";
 import { useEffect, useState } from "react";
 import { useProspectFromUrl, useProspectMode, buildProspectQuery } from "@/hooks/useProspectMode";
+import { useProspectCopyLink } from "@/hooks/useProspectCopyLink";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -41,22 +42,7 @@ export default function SADODiscovery() {
   useProspectFromUrl();
   const { prospect } = useProspectMode();
   const [qrOpen, setQrOpen] = useState(false);
-  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
-  const copyProspectLink = () => {
-    const url = window.location.href;
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(url)
-        .then(() => { setCopyState("copied"); setTimeout(() => setCopyState("idle"), 2000); })
-        .catch(() => { setCopyState("failed"); setTimeout(() => setCopyState("idle"), 2000); });
-    } else {
-      try {
-        const el = document.createElement("textarea"); el.value = url;
-        el.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(el);
-        el.select(); document.execCommand("copy"); document.body.removeChild(el);
-        setCopyState("copied"); setTimeout(() => setCopyState("idle"), 2000);
-      } catch { setCopyState("failed"); setTimeout(() => setCopyState("idle"), 2000); }
-    }
-  };
+  const { copyState, copyLink: copyProspectLink } = useProspectCopyLink();
 
 
   // Dynamic page title + OG tags

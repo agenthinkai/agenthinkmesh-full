@@ -42,6 +42,7 @@ import {
 import ProspectQRDialog from "@/components/sado/ProspectQRDialog";
 import { toast } from "sonner";
 import { useProspectMode, useProspectFromUrl, buildProspectQuery } from "@/hooks/useProspectMode";
+import { useProspectCopyLink } from "@/hooks/useProspectCopyLink";
 
 // ── Static policy definitions ─────────────────────────────────────────────────
 // These represent the governance framework — independent of live transfer events.
@@ -545,22 +546,7 @@ export default function SADOGovernance() {
   useProspectFromUrl();
   const { prospect } = useProspectMode();
   const [qrOpen, setQrOpen] = useState(false);
-  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
-  const copyProspectLink = () => {
-    const url = window.location.href;
-    if (navigator.clipboard?.writeText) {
-      navigator.clipboard.writeText(url)
-        .then(() => { setCopyState("copied"); setTimeout(() => setCopyState("idle"), 2000); })
-        .catch(() => { setCopyState("failed"); setTimeout(() => setCopyState("idle"), 2000); });
-    } else {
-      try {
-        const el = document.createElement("textarea"); el.value = url;
-        el.style.cssText = "position:fixed;opacity:0"; document.body.appendChild(el);
-        el.select(); document.execCommand("copy"); document.body.removeChild(el);
-        setCopyState("copied"); setTimeout(() => setCopyState("idle"), 2000);
-      } catch { setCopyState("failed"); setTimeout(() => setCopyState("idle"), 2000); }
-    }
-  };
+  const { copyState, copyLink: copyProspectLink } = useProspectCopyLink();
 
 
   // Dynamic page title + OG tags

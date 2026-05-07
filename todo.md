@@ -4273,3 +4273,5 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Added ProspectQRDialog to SADOAuditTrail.tsx (import, qrOpen, copyState, Show QR button, dialog)
 - [x] Added ProspectQRDialog to SADODiscovery.tsx (import, qrOpen, copyState, Show QR button, dialog; added useState)
 - [x] tsc EXIT:0
+
+- [x] Phase A.72 — useProspectCopyLink shared hook (extracted from 5 pages)
