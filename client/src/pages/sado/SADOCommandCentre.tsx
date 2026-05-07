@@ -138,9 +138,13 @@ export default function SADOCommandCentre() {
     };
   }, [prospect?.prospectName]);
   const agentsQ = trpc.sado.getAgents.useQuery(undefined, { refetchInterval: demoRunning ? 1500 : 10000 });
-  const escalationsQ = trpc.sado.getEscalations.useQuery();
-  const governanceQ = trpc.sado.getGovernanceAlerts.useQuery();
+  const escalationsQ = trpc.sado.getEscalations.useQuery(undefined, { refetchInterval: 15000 });
+  const governanceQ = trpc.sado.getGovernanceAlerts.useQuery(undefined, { refetchInterval: 15000 });
   const stepsQ = trpc.sado.getDemoCycleSteps.useQuery();
+  // Refetch indicators — only truthy during background refetch (not initial load)
+  const agentsFetching = agentsQ.isFetching && agentsQ.dataUpdatedAt > 0;
+  const escalFetching  = escalationsQ.isFetching && escalationsQ.dataUpdatedAt > 0;
+  const govFetching    = governanceQ.isFetching && governanceQ.dataUpdatedAt > 0;
   const applyStep = trpc.sado.applyDemoStep.useMutation();
   const resetDemo = trpc.sado.resetDemo.useMutation();
   const utils = trpc.useUtils();
@@ -544,15 +548,18 @@ export default function SADOCommandCentre() {
         {/* ── KPI row ── */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: "Sources Discovered",  value: "3",              sub: "Oracle CRM · SAP HR · SQL Server", icon: <Database className="w-4 h-4 text-blue-400" />,    color: "text-blue-400" },
-            { label: "Columns Classified",  value: "20",             sub: "6 PII/SENSITIVE detected",         icon: <Eye className="w-4 h-4 text-purple-400" />,       color: "text-purple-400" },
-            { label: "Transfers Blocked",   value: String(intercepted || 2), sub: "PDPL SA · CITRA KW",       icon: <Shield className="w-4 h-4 text-red-400" />,       color: "text-red-400" },
-            { label: "Escalations Pending", value: String(pendingEscalations || 2), sub: "Awaiting operator review",  icon: <AlertTriangle className="w-4 h-4 text-amber-400" />, color: "text-amber-400" },
+            { label: "Sources Discovered",  value: "3",              sub: "Oracle CRM · SAP HR · SQL Server", icon: <Database className="w-4 h-4 text-blue-400" />,    color: "text-blue-400",   fetching: agentsFetching },
+            { label: "Columns Classified",  value: "20",             sub: "6 PII/SENSITIVE detected",         icon: <Eye className="w-4 h-4 text-purple-400" />,       color: "text-purple-400", fetching: govFetching },
+            { label: "Transfers Blocked",   value: String(intercepted || 2), sub: "PDPL SA · CITRA KW",       icon: <Shield className="w-4 h-4 text-red-400" />,       color: "text-red-400",    fetching: govFetching },
+            { label: "Escalations Pending", value: String(pendingEscalations || 2), sub: "Awaiting operator review",  icon: <AlertTriangle className="w-4 h-4 text-amber-400" />, color: "text-amber-400", fetching: escalFetching },
           ].map(k => (
             <Card key={k.label} className="bg-[oklch(0.14_0.03_255)] border-slate-800">
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs text-slate-400">{k.label}</span>
+                  <span className="text-xs text-slate-400 flex items-center gap-1">
+                    {k.label}
+                    {k.fetching && <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse inline-block" title="Refreshing…" />}
+                  </span>
                   {k.icon}
                 </div>
                 <div className={`text-2xl font-bold ${k.color}`}>{k.value}</div>

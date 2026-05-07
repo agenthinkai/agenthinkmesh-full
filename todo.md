@@ -4283,3 +4283,5 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Phase A.67 — og:image and og:image:alt tags on SADO landing metadata useEffect
 
 - [x] Phase A.67 OG image — sado-og-preview.png (1200x630) placed in client/public/
+
+- [x] Phase A.76 — Refetch indicator on Command Centre live counters (isFetching pulsing dot on KPI cards)
