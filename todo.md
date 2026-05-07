@@ -4204,3 +4204,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.60 (2026-05-07)
 - [x] SADOCommandCentre: Added Copy link button to Demo Complete card CTA row. Visible only when Prospect Mode is active. Same three-state pattern as A.59 (idle/copied/failed, 2s reset). copyState + copyProspectLink added. Link2 + Check icons added to Lucide import. Only SADOCommandCentre.tsx modified. tsc EXIT:0.
+
+## Session — SADO Phase A.54 (2026-05-07)
+- [x] SADOLanding: Added "Updated N min ago" timestamp beneath Four capability pillars heading. Driven by Math.max of dataUpdatedAt across all five live queries. relativeTime() helper returns "Updated just now" / "Updated 1 min ago" / "Updated N min ago". Ticker useEffect recalculates every 30 s. Hidden until first successful fetch. Only SADOLanding.tsx modified. tsc EXIT:0.

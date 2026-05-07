@@ -113,11 +113,36 @@ export default function SADOLanding() {
   }, [prospect]);
 
   // Live status queries for pillar badges
-  const { data: graphData } = trpc.sado.getKnowledgeGraph.useQuery(undefined, { refetchInterval: 30_000 });
-  const { data: sources } = trpc.sado.getSources.useQuery(undefined, { refetchInterval: 30_000 });
-  const { data: govAlerts } = trpc.sado.getGovernanceAlerts.useQuery(undefined, { refetchInterval: 30_000 });
-  const { data: escalations } = trpc.sado.getEscalations.useQuery(undefined, { refetchInterval: 30_000 });
-  const { data: auditRows } = trpc.sado.getAuditTrail.useQuery({ limit: 200 }, { refetchInterval: 30_000 });
+  const { data: graphData, dataUpdatedAt: graphUpdatedAt } = trpc.sado.getKnowledgeGraph.useQuery(undefined, { refetchInterval: 30_000 });
+  const { data: sources, dataUpdatedAt: sourcesUpdatedAt } = trpc.sado.getSources.useQuery(undefined, { refetchInterval: 30_000 });
+  const { data: govAlerts, dataUpdatedAt: govUpdatedAt } = trpc.sado.getGovernanceAlerts.useQuery(undefined, { refetchInterval: 30_000 });
+  const { data: escalations, dataUpdatedAt: escalationsUpdatedAt } = trpc.sado.getEscalations.useQuery(undefined, { refetchInterval: 30_000 });
+  const { data: auditRows, dataUpdatedAt: auditUpdatedAt } = trpc.sado.getAuditTrail.useQuery({ limit: 200 }, { refetchInterval: 30_000 });
+
+  // Derive the latest successful refresh timestamp across all live queries
+  const latestRefresh = Math.max(
+    graphUpdatedAt ?? 0,
+    sourcesUpdatedAt ?? 0,
+    govUpdatedAt ?? 0,
+    escalationsUpdatedAt ?? 0,
+    auditUpdatedAt ?? 0,
+  ) || null;
+
+  // Relative time label — recalculated every 30 s so it stays current without a reload
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  const relativeTime = (ts: number | null): string => {
+    if (!ts) return "";
+    const diffMs = Date.now() - ts;
+    const mins = Math.floor(diffMs / 60_000);
+    if (mins < 1) return "Updated just now";
+    if (mins === 1) return "Updated 1 min ago";
+    return `Updated ${mins} min ago`;
+  };
 
   const graphNodeCount = graphData?.nodes?.length ?? null;
   const graphEdgeCount = graphData?.edges?.length ?? null;
@@ -374,6 +399,9 @@ export default function SADOLanding() {
             Platform Capabilities
           </p>
           <h2 className="text-2xl font-bold text-foreground">Four capability pillars</h2>
+          {latestRefresh ? (
+            <p className="text-xs text-muted-foreground mt-1">{relativeTime(latestRefresh)}</p>
+          ) : null}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
