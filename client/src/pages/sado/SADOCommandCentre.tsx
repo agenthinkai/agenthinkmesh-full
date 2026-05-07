@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -300,27 +301,33 @@ export default function SADOCommandCentre() {
               <span className="ml-1 text-slate-500 font-mono text-[10px]">[R]</span>
             </Button>
             {/* Demo Speed segmented control */}
-            <div
-              className={`flex items-center gap-0 rounded-md border border-slate-700 overflow-hidden text-xs ${demoRunning ? "opacity-50 pointer-events-none" : ""}`}
-              title="Demo speed — applies to next step"
-            >
-              {SPEED_LABELS.map(({ value, label }) => (
-                <button
-                  key={value}
-                  onClick={() => {
-                    setDemoSpeed(value);
-                    try { localStorage.setItem(LS_SPEED_KEY, value); } catch { /* noop */ }
-                  }}
-                  className={`px-2.5 py-1 transition-colors ${
-                    demoSpeed === value
-                      ? "bg-blue-600 text-white font-medium"
-                      : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
-                  }`}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div
+                  className={`flex items-center gap-0 rounded-md border border-slate-700 overflow-hidden text-xs ${demoRunning ? "opacity-50 pointer-events-none" : ""}`}
                 >
-                  {label}
-                </button>
-              ))}
-            </div>
+                  {SPEED_LABELS.map(({ value, label }) => (
+                    <button
+                      key={value}
+                      onClick={() => {
+                        setDemoSpeed(value);
+                        try { localStorage.setItem(LS_SPEED_KEY, value); } catch { /* noop */ }
+                      }}
+                      className={`px-2.5 py-1 transition-colors ${
+                        demoSpeed === value
+                          ? "bg-blue-600 text-white font-medium"
+                          : "bg-slate-900 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="text-xs bg-slate-800 border-slate-700 text-slate-300">
+                Fast: ~15 s · Normal: ~30 s · Slow: ~60 s
+              </TooltipContent>
+            </Tooltip>
 
             <Button
               size="sm"

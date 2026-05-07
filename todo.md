@@ -4139,3 +4139,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.31 (2026-05-07)
 - [x] SADOAuditTrail: updated prospect pill from Briefcase/custom to Shield + blue-300 text, matching all other SADO pages exactly. tsc EXIT:0.
+
+## Session — SADO Phase A.32 (2026-05-07)
+- [x] SADOCommandCentre: wrapped speed segmented control in Tooltip/TooltipTrigger/TooltipContent showing "Fast: ~15 s · Normal: ~30 s · Slow: ~60 s" on hover. Added Tooltip import. tsc EXIT:0.
