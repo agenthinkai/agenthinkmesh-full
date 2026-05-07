@@ -4183,3 +4183,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.51 (2026-05-07)
 - [x] SADOLanding: added live "N sources scanned" badge to Discovery Layer pillar card using trpc.sado.getSources (refetch 30s). Fallback "Live status" while loading. tsc EXIT:0.
+
+## Session — SADO Phase A.52 (2026-05-07)
+- [x] SADOLanding: added live "N nodes · N edges" badge to Knowledge Graph pillar card using trpc.sado.getKnowledgeGraph (refetch 30s). All four pillar cards now have live status badges. tsc EXIT:0.
