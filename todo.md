@@ -4136,3 +4136,6 @@ A.30 — CommandCentre back link:
 - [x] SADOCommandCentre: added ArrowLeft import + back link → /sado${buildProspectQuery(prospect)}
 
 Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADODiscovery.tsx, SADOKnowledgeGraph.tsx, SADOCommandCentre.tsx. tsc EXIT:0.
+
+## Session — SADO Phase A.31 (2026-05-07)
+- [x] SADOAuditTrail: updated prospect pill from Briefcase/custom to Shield + blue-300 text, matching all other SADO pages exactly. tsc EXIT:0.

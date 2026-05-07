@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowLeft, Lock, Activity, AlertTriangle, CheckCircle2, XCircle, Info, Download, Building2, Briefcase } from "lucide-react";
+import { ArrowLeft, Lock, Activity, AlertTriangle, CheckCircle2, XCircle, Info, Download, Building2, Briefcase, Shield } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useProspectMode, useProspectFromUrl, buildProspectQuery } from "@/hooks/useProspectMode";
 
@@ -922,9 +922,9 @@ export default function SADOAuditTrail() {
           <div className="ml-auto flex items-center gap-2">
             {/* Prospect mode indicator in audit header */}
             {prospect && (
-              <div className="flex items-center gap-1.5 px-2 py-0.5 rounded border border-blue-500/20 bg-blue-500/8 text-blue-400 text-xs">
-                <Briefcase className="w-3 h-3" />
-                {prospect.prospectName}
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20">
+                <Shield className="w-3 h-3 text-blue-400" />
+                <span className="text-xs text-blue-300">{prospect.prospectName}</span>
               </div>
             )}
             <Badge variant="outline" className="text-xs bg-slate-800 border-slate-700 text-slate-300">
