@@ -56,6 +56,7 @@ const NAV_ITEMS: NavItem[] = [
       { path: "/sado/governance",      label: "Governance" },
       { path: "/sado/escalations",     label: "Escalations" },
       { path: "/sado/audit-trail",     label: "Audit Trail" },
+      { path: "/sado/consensus",         label: "Consensus Engine" },
     ],
   },
   { path: "/admin/usage", icon: "⚙️", label: "Admin", adminOnly: true },
