@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useProspectMode, useProspectFromUrl, buildProspectQuery } from "@/hooks/useProspectMode";
 import ProspectModal from "@/components/sado/ProspectModal";
+import { trpc } from "@/lib/trpc";
 
 const PILLARS = [
   {
@@ -60,6 +61,26 @@ export default function SADOLanding() {
   useProspectFromUrl();
   const { prospect, displayLabel, saveProspect, clearProspect } = useProspectMode();
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Live status queries for pillar badges
+  const { data: govAlerts } = trpc.sado.getGovernanceAlerts.useQuery(undefined, { refetchInterval: 30_000 });
+  const { data: escalations } = trpc.sado.getEscalations.useQuery(undefined, { refetchInterval: 30_000 });
+  const { data: auditRows } = trpc.sado.getAuditTrail.useQuery({ limit: 200 }, { refetchInterval: 30_000 });
+
+  const pendingCount = escalations?.filter(e => e.status === "pending").length ?? null;
+  const auditCount = auditRows?.length ?? null;
+  const govAlertsCount = govAlerts?.length ?? null;
+
+  const PILLAR_BADGES: Record<string, string | null | undefined> = {
+    "Discovery Layer": undefined, // no live count
+    "Knowledge Graph": undefined, // no live count
+    "Governance Engine":
+      govAlertsCount !== null ? `${govAlertsCount} transfer${govAlertsCount !== 1 ? "s" : ""} evaluated` : null,
+    "Audit & Escalation Control":
+      pendingCount !== null
+        ? `${pendingCount} pending · ${auditCount ?? "…"} entries`
+        : null,
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -231,22 +252,32 @@ export default function SADOLanding() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          {PILLARS.map(({ icon: Icon, title, description, href, color, bg, border }) => (
-            <Link key={title} href={`${href}${buildProspectQuery(prospect)}`}>
-              <div
-                className={`group rounded-xl border ${border} ${bg} p-6 cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5`}
-              >
-                <div className={`inline-flex items-center justify-center w-10 h-10 rounded-lg bg-white border ${border} mb-4 shadow-sm`}>
-                  <Icon className={`w-5 h-5 ${color}`} />
+          {PILLARS.map(({ icon: Icon, title, description, href, color, bg, border }) => {
+            const badge = PILLAR_BADGES[title];
+            return (
+              <Link key={title} href={`${href}${buildProspectQuery(prospect)}`}>
+                <div
+                  className={`group rounded-xl border ${border} ${bg} p-6 cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5`}
+                >
+                  <div className="flex items-start justify-between mb-4">
+                    <div className={`inline-flex items-center justify-center w-10 h-10 rounded-lg bg-white border ${border} shadow-sm`}>
+                      <Icon className={`w-5 h-5 ${color}`} />
+                    </div>
+                    {badge !== undefined && (
+                      <span className="text-[10px] font-medium text-muted-foreground bg-white/80 border border-border px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                        {badge ?? "Live status"}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="font-semibold text-foreground mb-2 text-base">{title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
+                  <div className={`flex items-center gap-1 mt-4 text-xs font-medium ${color} opacity-0 group-hover:opacity-100 transition-opacity`}>
+                    Explore <ArrowRight className="w-3 h-3" />
+                  </div>
                 </div>
-                <h3 className="font-semibold text-foreground mb-2 text-base">{title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
-                <div className={`flex items-center gap-1 mt-4 text-xs font-medium ${color} opacity-0 group-hover:opacity-100 transition-opacity`}>
-                  Explore <ArrowRight className="w-3 h-3" />
-                </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </div>
 

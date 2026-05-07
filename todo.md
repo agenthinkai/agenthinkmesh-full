@@ -4177,3 +4177,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.44 (2026-05-07)
 - [x] SADOGovernance: added ? Popover keyboard shortcut legend to header (E → Export Governance Summary), matching Command Centre pattern. Added HelpCircle + Popover imports. tsc EXIT:0.
+
+## Session — SADO Phase A.50 (2026-05-07)
+- [x] SADOLanding: added live status badges to Governance Engine and Audit & Escalation Control pillar cards. Uses trpc.sado.getGovernanceAlerts, getEscalations, getAuditTrail (refetch 30s). Badges show "N transfers evaluated" and "N pending · N entries". Discovery Layer and Knowledge Graph show no badge (undefined). tsc EXIT:0.
