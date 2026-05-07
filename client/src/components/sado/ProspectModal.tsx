@@ -145,13 +145,16 @@ export default function ProspectModal({
                 key={p.name}
                 type="button"
                 onClick={() => applyQuickPick(p)}
-                className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
+                className={`text-left text-xs px-2.5 py-1.5 rounded-md border transition-colors ${
                   name === p.name
                     ? "border-blue-500 bg-blue-500/15 text-blue-300"
                     : "border-slate-700 bg-slate-800/60 text-slate-400 hover:border-blue-500/60 hover:text-blue-300"
                 }`}
               >
-                {p.name}
+                <span className="block font-medium">{p.name}</span>
+                {p.org && p.org !== p.name && (
+                  <span className="block text-[10px] text-slate-500 mt-0.5 leading-tight">{p.org}</span>
+                )}
               </button>
             ))}
           </div>
