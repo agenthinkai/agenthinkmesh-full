@@ -4088,3 +4088,11 @@
 - [x] presetName derived at call site from current section toggles (Executive Summary / Full CISO Report / Governance Audit Report)
 - [x] tagline passed from prospect?.tagline
 - [x] Only SADOAuditTrail.tsx modified. tsc EXIT:0.
+
+## Session — SADO Phase A.23 (2026-05-07)
+- [x] Added cover page to exportGovernanceSummaryPDF when Prospect Mode is active
+- [x] Cover page matches Audit Trail styling: dark background, blue accent bar, SADO wordmark, GOVERNANCE SUMMARY label, large prospect name, organisation, tagline, narrative flow, bottom metadata strip
+- [x] Moved now = new Date() to top of function to avoid duplicate declaration in footer
+- [x] Existing header band and policy cards begin on a new page after the cover
+- [x] When Prospect Mode is off, PDF behaviour is unchanged
+- [x] Only SADOGovernance.tsx modified. tsc EXIT:0.

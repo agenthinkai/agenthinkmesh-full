@@ -295,6 +295,108 @@ async function exportGovernanceSummaryPDF(prospect: { prospectName: string; orga
     }
   };
 
+  // ── Cover page (only when Prospect Mode is active) ──────────────────────
+  const now = new Date();
+  if (prospect?.prospectName?.trim()) {
+    // Full dark background
+    doc.setFillColor(10, 15, 30);
+    doc.rect(0, 0, W, 297, "F");
+
+    // Top accent bar
+    doc.setFillColor(37, 99, 235);
+    doc.rect(0, 0, W, 3, "F");
+
+    // SADO wordmark
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(59, 130, 246);
+    doc.text("SADO", margin, 20);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 116, 139);
+    doc.text("Sovereign Autonomous Data Operations", margin + 14, 20);
+
+    // Horizontal rule
+    doc.setDrawColor(30, 41, 59);
+    doc.setLineWidth(0.4);
+    doc.line(margin, 26, W - margin, 26);
+
+    // Report type label
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(100, 116, 139);
+    doc.text("GOVERNANCE SUMMARY", margin, 42);
+
+    // Prospect name (large)
+    doc.setFontSize(28);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(241, 245, 249);
+    const nameLines = doc.splitTextToSize(prospect.prospectName.trim(), contentW);
+    doc.text(nameLines, margin, 58);
+    const nameBlockH = nameLines.length * 10;
+
+    // Organisation
+    if (prospect.organization?.trim() && prospect.organization !== prospect.prospectName) {
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(148, 163, 184);
+      doc.text(prospect.organization.trim(), margin, 58 + nameBlockH + 2);
+    }
+
+    // Tagline
+    if (prospect.tagline?.trim()) {
+      const tagY = 58 + nameBlockH + (prospect.organization?.trim() && prospect.organization !== prospect.prospectName ? 14 : 6);
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "italic");
+      doc.setTextColor(71, 85, 105);
+      const tagLines = doc.splitTextToSize(prospect.tagline.trim(), contentW);
+      doc.text(tagLines, margin, tagY);
+    }
+
+    // Divider before narrative flow
+    const midY = 160;
+    doc.setDrawColor(30, 41, 59);
+    doc.setLineWidth(0.4);
+    doc.line(margin, midY, W - margin, midY);
+
+    // Narrative flow label
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(71, 85, 105);
+    doc.text("NARRATIVE FLOW", margin, midY + 8);
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    const flowSteps = ["Discovery", "Classification", "Policy Evaluation", "Intercept / Escalation", "Override Request", "Audit Evidence"];
+    let flowX = margin;
+    const flowY = midY + 18;
+    flowSteps.forEach((step, idx) => {
+      doc.setTextColor(148, 163, 184);
+      doc.setFont("helvetica", "bold");
+      doc.text(step, flowX, flowY);
+      const stepW = doc.getTextWidth(step);
+      if (idx < flowSteps.length - 1) {
+        doc.setTextColor(51, 65, 85);
+        doc.setFont("helvetica", "normal");
+        doc.text("  →  ", flowX + stepW, flowY);
+        flowX += stepW + doc.getTextWidth("  →  ");
+      }
+    });
+
+    // Bottom metadata strip
+    doc.setFillColor(15, 23, 42);
+    doc.rect(0, 268, W, 29, "F");
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "normal");
+    doc.setTextColor(71, 85, 105);
+    doc.text(`Generated: ${now.toLocaleString()}`, margin, 280);
+    doc.text("CONFIDENTIAL — For authorised personnel only", W - margin, 280, { align: "right" });
+    doc.setTextColor(51, 65, 85);
+    doc.text("AgenThinkMesh  ·  SADO GCC Compliance Platform", margin, 288);
+
+    // Start report content on a new page
+    doc.addPage();
+  }
+
   // ── Header band ──
   doc.setFillColor(15, 23, 42);
   doc.rect(0, 0, W, 36, "F");
@@ -422,7 +524,6 @@ async function exportGovernanceSummaryPDF(prospect: { prospectName: string; orga
   });
 
   // ── Footer ──
-  const now = new Date();
   const footerY = 287;
   doc.setFontSize(7);
   doc.setTextColor(71, 85, 105);
