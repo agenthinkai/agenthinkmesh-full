@@ -120,11 +120,11 @@ export default function SADOLanding() {
   }, [prospect]);
 
   // Live status queries for pillar badges
-  const { data: graphData, dataUpdatedAt: graphUpdatedAt } = trpc.sado.getKnowledgeGraph.useQuery(undefined, { refetchInterval: 30_000 });
-  const { data: sources, dataUpdatedAt: sourcesUpdatedAt } = trpc.sado.getSources.useQuery(undefined, { refetchInterval: 30_000 });
-  const { data: govAlerts, dataUpdatedAt: govUpdatedAt } = trpc.sado.getGovernanceAlerts.useQuery(undefined, { refetchInterval: 30_000 });
-  const { data: escalations, dataUpdatedAt: escalationsUpdatedAt } = trpc.sado.getEscalations.useQuery(undefined, { refetchInterval: 30_000 });
-  const { data: auditRows, dataUpdatedAt: auditUpdatedAt } = trpc.sado.getAuditTrail.useQuery({ limit: 200 }, { refetchInterval: 30_000 });
+  const { data: graphData, dataUpdatedAt: graphUpdatedAt, isFetching: graphFetching } = trpc.sado.getKnowledgeGraph.useQuery(undefined, { refetchInterval: 30_000 });
+  const { data: sources, dataUpdatedAt: sourcesUpdatedAt, isFetching: sourcesFetching } = trpc.sado.getSources.useQuery(undefined, { refetchInterval: 30_000 });
+  const { data: govAlerts, dataUpdatedAt: govUpdatedAt, isFetching: govFetching } = trpc.sado.getGovernanceAlerts.useQuery(undefined, { refetchInterval: 30_000 });
+  const { data: escalations, dataUpdatedAt: escalationsUpdatedAt, isFetching: escalationsFetching } = trpc.sado.getEscalations.useQuery(undefined, { refetchInterval: 30_000 });
+  const { data: auditRows, dataUpdatedAt: auditUpdatedAt, isFetching: auditFetching } = trpc.sado.getAuditTrail.useQuery({ limit: 200 }, { refetchInterval: 30_000 });
 
   // Derive the latest successful refresh timestamp across all live queries
   const latestRefresh = Math.max(
@@ -179,6 +179,13 @@ export default function SADOLanding() {
         : (pendingCount ?? 0) > 0 || (auditCount ?? 0) > 0
           ? `${pendingCount ?? 0} pending · ${auditCount ?? 0} entries`
           : undefined,
+  };
+  // Per-pillar background refetch indicator
+  const PILLAR_FETCHING: Record<string, boolean> = {
+    "Discovery Layer": sourcesFetching,
+    "Knowledge Graph": graphFetching,
+    "Governance Engine": govFetching,
+    "Audit & Escalation Control": escalationsFetching || auditFetching,
   };
 
   return (
@@ -444,7 +451,10 @@ export default function SADOLanding() {
                       <Icon className={`w-5 h-5 ${color}`} />
                     </div>
                     {badge !== undefined && (
-                      <span className="text-[10px] font-medium text-muted-foreground bg-white/80 border border-border px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                      <span className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground bg-white/80 border border-border px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                        {PILLAR_FETCHING[title] && (
+                          <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse inline-block" title="Refreshing…" />
+                        )}
                         {badge ?? "Live status"}
                       </span>
                     )}
