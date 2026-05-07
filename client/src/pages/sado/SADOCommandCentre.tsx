@@ -379,6 +379,9 @@ export default function SADOCommandCentre() {
                         Step {demoStep}/{steps.length}
                       </span>
                     </div>
+                    {prospect?.prospectName && (
+                      <span className="block text-[10px] text-slate-500 mb-1">for {prospect.prospectName}</span>
+                    )}
                     <span className="text-xs text-slate-400">{narration.body}</span>
                   </div>
                 </div>

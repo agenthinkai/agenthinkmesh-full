@@ -4159,3 +4159,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] SADOGovernance: added useEffect + E keyboard shortcut (same guard as Space/R in CommandCentre) + [E] hint label on Export Governance Summary button.
 - [x] SADOAuditTrail: added useEffect + E keyboard shortcut (guards: no input/dialog, rows.length > 0) + [E] hint label on Export PDF button.
 - tsc EXIT:0.
+
+## Session — SADO Phase A.39 (2026-05-07)
+- [x] SADOCommandCentre: added "for {prospectName}" muted text-[10px] text-slate-500 line beneath agent title in narration card when Prospect Mode is active. tsc EXIT:0.
