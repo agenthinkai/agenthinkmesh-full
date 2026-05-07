@@ -58,6 +58,7 @@ interface ScenarioMeta {
   confidence: string;
   reason: string;
   rationaleChain: { step: number; label: string; detail: string }[];
+  policyThresholds: { policy: string; threshold: string; result: "BREACHED" | "ESCALATE" | "PASSED"; risk: "High" | "Medium" | "Low" }[];
   audit: {
     consensusId: string;
     timestamp: string;
@@ -216,6 +217,11 @@ const SCENARIO_A: ScenarioMeta = {
     { step: 4, label: "Override path available",                detail: "Operator may submit an override request with SDAIA approval documentation and SCC evidence. Override routed to Governance Engine queue." },
     { step: 5, label: "Audit evidence generated",               detail: "Consensus record CGE-2024-0047 written to immutable audit trail. OpenTelemetry trace ID attached. Evidence package available for regulatory submission." },
   ],
+  policyThresholds: [
+    { policy: "PDPL SA Article 29",               threshold: "Cross-border personal data transfer",              result: "BREACHED", risk: "High"   },
+    { policy: "Internal Residency Policy v2.1",   threshold: "Customer PII must remain in approved regions",     result: "BREACHED", risk: "High"   },
+    { policy: "Auditability Control",              threshold: "External analytics copy requires immutable evidence", result: "PASSED",   risk: "Medium" },
+  ],
   audit: {
     consensusId: "CGE-2024-0047",
     timestamp: "2024-11-14T09:23:41Z",
@@ -247,6 +253,11 @@ const SCENARIO_B: ScenarioMeta = {
     { step: 3, label: "Legal basis requires verification",        detail: "Fraud analytics routing requires explicit CITRA cross-border approval. No standing approval on file for Singapore. Legal gap identified by Compliance Counsel." },
     { step: 4, label: "Human approval path activated",            detail: "6/10 agents recommend ESCALATE. Routed to Compliance Officer queue with 4-hour SLA. Enhanced monitoring controls applied during review window." },
     { step: 5, label: "Audit evidence generated",                 detail: "Consensus record CGE-2024-0089 written to immutable audit trail. OpenTelemetry trace ID attached. Escalation ticket #ESC-2024-0089 created." },
+  ],
+  policyThresholds: [
+    { policy: "CITRA Kuwait Data Governance",       threshold: "Payment metadata export review",                   result: "ESCALATE", risk: "High"   },
+    { policy: "Financial Crime Monitoring Policy", threshold: "Counterparty risk signals require human review",      result: "ESCALATE", risk: "High"   },
+    { policy: "Enhanced Encryption Control",       threshold: "Tokenised metadata routing permitted under controls", result: "PASSED",   risk: "Medium" },
   ],
   audit: {
     consensusId: "CGE-2024-0089",
@@ -467,6 +478,55 @@ export default function SADOConsensus() {
               <span className="font-semibold text-slate-300">Reason: </span>
               {scenario.reason}
             </p>
+          </div>
+        </section>
+
+        {/* ── 2b. Policy thresholds evaluated ─────────────────────────────── */}
+        <section>
+          <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-3">
+            Policy Thresholds Evaluated
+            <span className="ml-2 font-normal text-slate-600 normal-case tracking-normal">— static demo · architecture preview</span>
+          </p>
+          <div className="rounded-xl border border-slate-700 bg-[oklch(0.13_0.03_255)] overflow-hidden">
+            {/* Table header */}
+            <div className="grid grid-cols-12 gap-2 px-4 py-2 border-b border-slate-800 bg-slate-900/40">
+              <p className="col-span-4 text-[10px] font-semibold uppercase tracking-widest text-slate-600">Policy</p>
+              <p className="col-span-4 text-[10px] font-semibold uppercase tracking-widest text-slate-600">Threshold</p>
+              <p className="col-span-2 text-[10px] font-semibold uppercase tracking-widest text-slate-600">Result</p>
+              <p className="col-span-2 text-[10px] font-semibold uppercase tracking-widest text-slate-600">Risk</p>
+            </div>
+            {/* Table rows */}
+            {scenario.policyThresholds.map(({ policy, threshold, result, risk }) => {
+              const resultStyle =
+                result === "BREACHED"  ? "bg-red-500/10 text-red-400 border-red-500/20" :
+                result === "ESCALATE"  ? "bg-amber-500/10 text-amber-400 border-amber-500/20" :
+                                         "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+              const resultIcon =
+                result === "BREACHED"  ? <XCircle className="w-3 h-3" /> :
+                result === "ESCALATE"  ? <AlertTriangle className="w-3 h-3" /> :
+                                         <CheckCircle2 className="w-3 h-3" />;
+              const resultLabel =
+                result === "BREACHED"  ? "Breached" :
+                result === "ESCALATE"  ? "Escalate" :
+                                         "Passed";
+              const riskStyle =
+                risk === "High"   ? "text-red-400" :
+                risk === "Medium" ? "text-amber-400" :
+                                    "text-emerald-400";
+              return (
+                <div key={policy} className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-slate-800/60 last:border-0 items-center">
+                  <p className="col-span-4 text-xs font-semibold text-slate-200 leading-snug">{policy}</p>
+                  <p className="col-span-4 text-xs text-slate-400 leading-snug">{threshold}</p>
+                  <div className="col-span-2">
+                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-bold tracking-wide ${resultStyle}`}>
+                      {resultIcon}
+                      {resultLabel}
+                    </span>
+                  </div>
+                  <p className={`col-span-2 text-xs font-semibold ${riskStyle}`}>{risk}</p>
+                </div>
+              );
+            })}
           </div>
         </section>
 
