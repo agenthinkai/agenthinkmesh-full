@@ -18,11 +18,26 @@ export default function SADOEscalations() {
   useProspectFromUrl();
   const { prospect } = useProspectMode();
 
-  // Dynamic page title
+  // Dynamic page title + OG tags
   useEffect(() => {
     const p = prospect?.prospectName ? `${prospect.prospectName} · ` : "";
-    document.title = `SADO · ${p}Escalations`;
-    return () => { document.title = "AgenThinkMesh"; };
+    const pageTitle = `SADO · ${p}Escalations`;
+    const pageDesc = "SADO Escalations: real-time triage of critical data incidents, human-in-the-loop override requests, and resolution tracking for GCC-regulated operations.";
+    document.title = pageTitle;
+    function upsertMeta(attr: string, val: string, content: string) {
+      let el = document.querySelector<HTMLMetaElement>(`meta[${attr}="${val}"]`);
+      if (!el) { el = document.createElement("meta"); el.setAttribute(attr, val); document.head.appendChild(el); }
+      el.content = content;
+    }
+    upsertMeta("name",     "description",   pageDesc);
+    upsertMeta("property", "og:title",       pageTitle);
+    upsertMeta("property", "og:description", pageDesc);
+    upsertMeta("property", "og:type",        "website");
+    upsertMeta("property", "og:url",         window.location.href);
+    return () => {
+      document.title = "AgenThinkMesh";
+      ["meta[name=\"description\"]","meta[property=\"og:title\"]","meta[property=\"og:description\"]","meta[property=\"og:type\"]","meta[property=\"og:url\"]"].forEach(s => document.querySelector(s)?.remove());
+    };
   }, [prospect?.prospectName]);
 
   const [resolving, setResolving] = useState<number | null>(null);

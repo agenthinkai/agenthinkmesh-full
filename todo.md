@@ -4225,3 +4225,12 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.64 (2026-05-07)
 - [x] SADOLanding: Added upsertMeta("property", "og:url", window.location.href) to metadata useEffect. Cleanup removes meta[property="og:url"] on unmount. No new dependencies. tsc EXIT:0.
+
+## Session — SADO Phase A.65 (2026-05-07)
+- [x] SADOCommandCentre: Extended title useEffect with upsertMeta + og:title/description/type/url + meta[name=description]. Page-specific copy.
+- [x] SADOGovernance: Same pattern. Page-specific copy.
+- [x] SADOAuditTrail: Same pattern. Page-specific copy.
+- [x] SADODiscovery: Same pattern. Page-specific copy.
+- [x] SADOKnowledgeGraph: Same pattern. Page-specific copy.
+- [x] SADOEscalations: Same pattern. Page-specific copy.
+- [x] Fixed agentsQQ → agentsQ in SADOCommandCentre (re-introduced by edit). tsc EXIT:0.

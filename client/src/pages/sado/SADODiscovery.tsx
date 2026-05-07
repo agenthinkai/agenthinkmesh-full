@@ -40,11 +40,26 @@ export default function SADODiscovery() {
   useProspectFromUrl();
   const { prospect } = useProspectMode();
 
-  // Dynamic page title
+  // Dynamic page title + OG tags
   useEffect(() => {
     const p = prospect?.prospectName ? `${prospect.prospectName} · ` : "";
-    document.title = `SADO · ${p}Discovery`;
-    return () => { document.title = "AgenThinkMesh"; };
+    const pageTitle = `SADO · ${p}Discovery`;
+    const pageDesc = "SADO Discovery: autonomous data source ingestion, schema profiling, and lineage mapping for GCC enterprise data pipelines.";
+    document.title = pageTitle;
+    function upsertMeta(attr: string, val: string, content: string) {
+      let el = document.querySelector<HTMLMetaElement>(`meta[${attr}="${val}"]`);
+      if (!el) { el = document.createElement("meta"); el.setAttribute(attr, val); document.head.appendChild(el); }
+      el.content = content;
+    }
+    upsertMeta("name",     "description",   pageDesc);
+    upsertMeta("property", "og:title",       pageTitle);
+    upsertMeta("property", "og:description", pageDesc);
+    upsertMeta("property", "og:type",        "website");
+    upsertMeta("property", "og:url",         window.location.href);
+    return () => {
+      document.title = "AgenThinkMesh";
+      ["meta[name=\"description\"]","meta[property=\"og:title\"]","meta[property=\"og:description\"]","meta[property=\"og:type\"]","meta[property=\"og:url\"]"].forEach(s => document.querySelector(s)?.remove());
+    };
   }, [prospect?.prospectName]);
 
   const sourcesQ = trpc.sado.getSources.useQuery();

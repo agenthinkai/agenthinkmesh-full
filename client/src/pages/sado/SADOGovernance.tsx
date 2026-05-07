@@ -544,11 +544,26 @@ export default function SADOGovernance() {
   useProspectFromUrl();
   const { prospect } = useProspectMode();
 
-  // Dynamic page title
+  // Dynamic page title + OG tags
   useEffect(() => {
     const p = prospect?.prospectName ? `${prospect.prospectName} · ` : "";
-    document.title = `SADO · ${p}Governance`;
-    return () => { document.title = "AgenThinkMesh"; };
+    const pageTitle = `SADO · ${p}Governance`;
+    const pageDesc = "SADO Governance: live policy evaluation, cross-border data transfer controls, and override workflows for GCC-regulated enterprise data.";
+    document.title = pageTitle;
+    function upsertMeta(attr: string, val: string, content: string) {
+      let el = document.querySelector<HTMLMetaElement>(`meta[${attr}="${val}"]`);
+      if (!el) { el = document.createElement("meta"); el.setAttribute(attr, val); document.head.appendChild(el); }
+      el.content = content;
+    }
+    upsertMeta("name",     "description",   pageDesc);
+    upsertMeta("property", "og:title",       pageTitle);
+    upsertMeta("property", "og:description", pageDesc);
+    upsertMeta("property", "og:type",        "website");
+    upsertMeta("property", "og:url",         window.location.href);
+    return () => {
+      document.title = "AgenThinkMesh";
+      ["meta[name=\"description\"]","meta[property=\"og:title\"]","meta[property=\"og:description\"]","meta[property=\"og:type\"]","meta[property=\"og:url\"]"].forEach(s => document.querySelector(s)?.remove());
+    };
   }, [prospect?.prospectName]);
 
   const alertsQ = trpc.sado.getGovernanceAlerts.useQuery();

@@ -129,13 +129,27 @@ export default function SADOCommandCentre() {
 
   const { prospect, saveProspect, clearProspect } = useProspectMode();
 
-  // Dynamic page title
+  // Dynamic page title + OG tags
   useEffect(() => {
     const p = prospect?.prospectName ? `${prospect.prospectName} · ` : "";
-    document.title = `SADO · ${p}Command Centre`;
-    return () => { document.title = "AgenThinkMesh"; };
+    const pageTitle = `SADO · ${p}Command Centre`;
+    const pageDesc = "Live SADO Command Centre: orchestrate the autonomous data engineering demo across GCC-regulated enterprise systems.";
+    document.title = pageTitle;
+    function upsertMeta(attr: string, val: string, content: string) {
+      let el = document.querySelector<HTMLMetaElement>(`meta[${attr}="${val}"]`);
+      if (!el) { el = document.createElement("meta"); el.setAttribute(attr, val); document.head.appendChild(el); }
+      el.content = content;
+    }
+    upsertMeta("name",     "description",   pageDesc);
+    upsertMeta("property", "og:title",       pageTitle);
+    upsertMeta("property", "og:description", pageDesc);
+    upsertMeta("property", "og:type",        "website");
+    upsertMeta("property", "og:url",         window.location.href);
+    return () => {
+      document.title = "AgenThinkMesh";
+      ["meta[name=\"description\"]","meta[property=\"og:title\"]","meta[property=\"og:description\"]","meta[property=\"og:type\"]","meta[property=\"og:url\"]"].forEach(s => document.querySelector(s)?.remove());
+    };
   }, [prospect?.prospectName]);
-
   const agentsQ = trpc.sado.getAgents.useQuery(undefined, { refetchInterval: demoRunning ? 1500 : 10000 });
   const escalationsQ = trpc.sado.getEscalations.useQuery();
   const governanceQ = trpc.sado.getGovernanceAlerts.useQuery();
