@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { Shield, Database,  GitBranch, FileCheck, ArrowRight, Lock, Users, Globe, BookLock, Briefcase, X, HelpCircle} from "lucide-react";
+import { Shield, Database,  GitBranch, FileCheck, ArrowRight, Lock, Users, Globe, BookLock, Briefcase, X, HelpCircle, Link2, Check} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -62,6 +62,39 @@ export default function SADOLanding() {
   useProspectFromUrl();
   const { prospect, displayLabel, saveProspect, clearProspect } = useProspectMode();
   const [modalOpen, setModalOpen] = useState(false);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+
+  const copyProspectLink = () => {
+    const url = window.location.href;
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url)
+        .then(() => {
+          setCopyState("copied");
+          setTimeout(() => setCopyState("idle"), 2000);
+        })
+        .catch(() => {
+          setCopyState("failed");
+          setTimeout(() => setCopyState("idle"), 2000);
+        });
+    } else {
+      // Fallback: execCommand
+      try {
+        const el = document.createElement("textarea");
+        el.value = url;
+        el.style.position = "fixed";
+        el.style.opacity = "0";
+        document.body.appendChild(el);
+        el.select();
+        document.execCommand("copy");
+        document.body.removeChild(el);
+        setCopyState("copied");
+        setTimeout(() => setCopyState("idle"), 2000);
+      } catch {
+        setCopyState("failed");
+        setTimeout(() => setCopyState("idle"), 2000);
+      }
+    }
+  };
 
   // Keyboard shortcut: P → open ProspectModal (same guard pattern as other SADO pages)
   useEffect(() => {
@@ -187,6 +220,20 @@ export default function SADOLanding() {
                     className="text-xs text-slate-500 hover:text-slate-700 underline underline-offset-2"
                   >
                     Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={copyProspectLink}
+                    title="Copy shareable prospect link"
+                    className="flex items-center gap-1 text-xs text-slate-400 hover:text-blue-600 transition-colors"
+                  >
+                    {copyState === "copied" ? (
+                      <><Check className="w-3 h-3 text-emerald-500" /><span className="text-emerald-500">Copied</span></>
+                    ) : copyState === "failed" ? (
+                      <><Link2 className="w-3 h-3" /><span className="text-red-400">Copy failed</span></>
+                    ) : (
+                      <><Link2 className="w-3 h-3" /><span>Copy link</span></>
+                    )}
                   </button>
                   <button
                     type="button"
