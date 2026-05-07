@@ -38,7 +38,7 @@ import {
   Download,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useProspectMode, useProspectFromUrl } from "@/hooks/useProspectMode";
+import { useProspectMode, useProspectFromUrl, buildProspectQuery } from "@/hooks/useProspectMode";
 
 // ── Static policy definitions ─────────────────────────────────────────────────
 // These represent the governance framework — independent of live transfer events.
@@ -894,13 +894,13 @@ export default function SADOGovernance() {
 
         {/* ── Navigation ───────────────────────────────────────────────────── */}
         <div className="flex items-center justify-between pt-2 border-t border-slate-800">
-          <Link href="/sado/escalations">
+          <Link href={`/sado/escalations${buildProspectQuery(prospect)}`}>
             <Button variant="outline" size="sm" className="text-xs border-slate-700 text-slate-400 hover:bg-slate-800 gap-1">
               <AlertTriangle className="w-3 h-3 text-amber-400" />
               View Escalation Queue
             </Button>
           </Link>
-          <Link href="/sado/audit-trail">
+          <Link href={`/sado/audit-trail${buildProspectQuery(prospect)}`}>
             <Button variant="outline" size="sm" className="text-xs border-slate-700 text-slate-400 hover:bg-slate-800 gap-1">
               <Lock className="w-3 h-3 text-blue-400" />
               View Audit Trail

@@ -4096,3 +4096,11 @@
 - [x] Existing header band and policy cards begin on a new page after the cover
 - [x] When Prospect Mode is off, PDF behaviour is unchanged
 - [x] Only SADOGovernance.tsx modified. tsc EXIT:0.
+
+## Session — SADO Phase A.24 (2026-05-07)
+- [x] Added buildProspectQuery(prospect) helper to useProspectMode.ts — returns ?prospect=…&org=…&tagline=… or "" when inactive
+- [x] SADOCommandCentre: "Open Audit Trail" CTA and all 5 Explore Modules nav links now append prospect query params
+- [x] SADOGovernance: "View Escalation Queue" and "View Audit Trail" bottom CTAs now append prospect query params
+- [x] When Prospect Mode is off, all links are unchanged (buildProspectQuery returns "")
+- [x] Uses URLSearchParams — no manual string concatenation
+- [x] Files changed: useProspectMode.ts, SADOCommandCentre.tsx, SADOGovernance.tsx. tsc EXIT:0.

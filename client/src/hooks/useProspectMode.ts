@@ -57,6 +57,29 @@ export function useProspectMode() {
 }
 
 /**
+ * buildProspectQuery — returns a URL query string (including leading "?") that
+ * encodes the current prospect context, or an empty string when no prospect is
+ * active.  Use this to append context to internal SADO navigation links so the
+ * prospect mode survives page transitions.
+ *
+ * Usage:
+ *   const qs = buildProspectQuery(prospect);
+ *   <Link href={`/sado/audit-trail${qs}`}>
+ */
+export function buildProspectQuery(prospect: ProspectInfo | null): string {
+  if (!prospect?.prospectName?.trim()) return "";
+  const p = new URLSearchParams();
+  p.set("prospect", prospect.prospectName);
+  if (prospect.organization && prospect.organization !== prospect.prospectName) {
+    p.set("org", prospect.organization);
+  }
+  if (prospect.tagline?.trim()) {
+    p.set("tagline", prospect.tagline);
+  }
+  return `?${p.toString()}`;
+}
+
+/**
  * useProspectFromUrl — call this in any SADO page component.
  * Reads ?prospect=, ?org=, and ?tagline= from the URL.
  * Writes to localStorage synchronously so the initial render already

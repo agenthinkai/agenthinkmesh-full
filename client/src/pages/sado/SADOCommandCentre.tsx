@@ -11,7 +11,7 @@ import {
   Eye, Lock, Network, Briefcase, FileCheck
 } from "lucide-react";
 import { toast } from "sonner";
-import { useProspectMode, useProspectFromUrl } from "@/hooks/useProspectMode";
+import { useProspectMode, useProspectFromUrl, buildProspectQuery } from "@/hooks/useProspectMode";
 import ProspectModal from "@/components/sado/ProspectModal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -393,7 +393,7 @@ export default function SADOCommandCentre() {
                     </p>
                   </div>
                 </div>
-                <Link href="/sado/audit-trail">
+                <Link href={`/sado/audit-trail${buildProspectQuery(prospect)}`}>
                   <Button
                     size="sm"
                     className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shrink-0"
@@ -523,7 +523,7 @@ export default function SADOCommandCentre() {
                 { href: "/sado/escalations",  icon: <AlertTriangle className="w-4 h-4" />,  label: "Escalation Queue",    sub: `${pendingEscalations || 2} pending human review` },
                 { href: "/sado/audit-trail",   icon: <Lock className="w-4 h-4" />,           label: "Audit Trail",         sub: "Append-only · OpenTelemetry trace IDs" },
               ].map(n => (
-                <Link key={n.href} href={n.href}>
+                <Link key={n.href} href={`${n.href}${buildProspectQuery(prospect)}`}>
                   <div className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-slate-800 cursor-pointer transition-colors group">
                     <div className="text-slate-500 group-hover:text-blue-400 transition-colors">{n.icon}</div>
                     <div className="flex-1 min-w-0">
