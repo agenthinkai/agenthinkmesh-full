@@ -442,7 +442,7 @@ export default function SADOCommandCentre() {
                     <CheckCircle2 className="w-5 h-5 text-emerald-400" />
                   </div>
                   <div>
-                    <h3 className="text-sm font-semibold text-emerald-300">Demo Complete</h3>
+                    <h3 className="text-sm font-semibold text-emerald-300">{prospect?.prospectName ? `Demo complete for ${prospect.prospectName}` : "Demo Complete"}</h3>
                     <p className="text-xs text-slate-400 mt-0.5 max-w-lg">
                       SADO completed discovery, classification, governance evaluation, and audit evidence generation.
                     </p>

@@ -4165,3 +4165,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.41 (2026-05-07)
 - [x] SADOCommandCentre: added HelpCircle ? button with Popover shortcut legend (Space/R/E) to header controls. Dark institutional styling, closes on outside click. tsc EXIT:0.
+
+## Session — SADO Phase A.43 (2026-05-07)
+- [x] SADOCommandCentre: Demo Complete headline now reads "Demo complete for {prospectName}" when Prospect Mode is active, falls back to "Demo Complete" otherwise. tsc EXIT:0.
