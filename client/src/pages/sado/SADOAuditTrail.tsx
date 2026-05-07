@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
@@ -706,6 +706,23 @@ export default function SADOAuditTrail() {
     setShowProspectModal(true);
   }
 
+  // Keyboard shortcut: E → Export PDF
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if ((e.target as HTMLElement).isContentEditable) return;
+      if (document.querySelector('[role="dialog"]')) return;
+      if ((e.key === "e" || e.key === "E") && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        if (!exporting && rows.length > 0) handleExportPDF();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exporting, rows.length]);
+
   async function handleConfirmExport() {
     setShowProspectModal(false);
     setExporting(true);
@@ -939,6 +956,7 @@ export default function SADOAuditTrail() {
             >
               <Download className="w-3 h-3" />
               {exporting ? "Generating…" : "Export PDF"}
+              {!exporting && rows.length > 0 && <span className="ml-1 text-slate-500 font-mono text-[10px]">[E]</span>}
             </Button>
           </div>
         </div>

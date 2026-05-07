@@ -4154,3 +4154,8 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.40 (2026-05-07)
 - [x] ProspectModal: extended preview pill to show org (text-[10px] text-slate-400) beneath prospect name when org differs from name, and tagline in italic blue below that. tsc EXIT:0.
+
+## Session — SADO Phase A.38 (2026-05-07)
+- [x] SADOGovernance: added useEffect + E keyboard shortcut (same guard as Space/R in CommandCentre) + [E] hint label on Export Governance Summary button.
+- [x] SADOAuditTrail: added useEffect + E keyboard shortcut (guards: no input/dialog, rows.length > 0) + [E] hint label on Export PDF button.
+- tsc EXIT:0.

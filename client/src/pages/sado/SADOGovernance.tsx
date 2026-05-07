@@ -7,7 +7,7 @@
  *  - Visual hierarchy: ALLOWED (calm/green), INTERCEPTED (serious/red), ESCALATED (amber)
  *  - Request Override CTA → creates escalation + audit trail entry via sado.requestOverride
  */
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
@@ -559,6 +559,23 @@ export default function SADOGovernance() {
     }
   };
 
+  // Keyboard shortcut: E → Export Governance Summary
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if ((e.target as HTMLElement).isContentEditable) return;
+      if (document.querySelector('[role="dialog"]')) return;
+      if ((e.key === "e" || e.key === "E") && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        e.preventDefault();
+        if (!exporting) handleExportGovernancePDF();
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [exporting]);
+
   // Per-card excerpt expand state
   const [expandedExcerpts, setExpandedExcerpts] = useState<Record<string, boolean>>({});
   const toggleExcerpt = (id: string) =>
@@ -609,6 +626,7 @@ export default function SADOGovernance() {
           >
             <Download className="w-3 h-3" />
             {exporting ? "Generating…" : "Export Governance Summary"}
+            {!exporting && <span className="ml-1 text-slate-500 font-mono text-[10px]">[E]</span>}
           </Button>
         </div>
       </div>
