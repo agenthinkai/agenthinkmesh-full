@@ -92,12 +92,16 @@ export default function SADOLanding() {
     upsertMeta("property", "og:description",  pageDesc);
     upsertMeta("property", "og:type",         "website");
     upsertMeta("property", "og:url",           window.location.href);
+    upsertMeta("property", "og:image",         `${window.location.origin}/sado-og-preview.png`);
+    upsertMeta("property", "og:image:alt",     "SADO — Sovereign Autonomous Data Operations");
 
     return () => {
       document.title = "AgenThinkMesh";
       ["meta[name=\"description\"]", "meta[property=\"og:title\"]",
        "meta[property=\"og:description\"]", "meta[property=\"og:type\"]",
-       "meta[property=\"og:url\"]"].forEach(sel => {
+       "meta[property=\"og:url\"]",
+       "meta[property=\"og:image\"]",
+       "meta[property=\"og:image:alt\"]"].forEach(sel => {
         document.querySelector(sel)?.remove();
       });
     };

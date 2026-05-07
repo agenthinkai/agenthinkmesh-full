@@ -4279,3 +4279,5 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Phase A.73 — ProspectQRDialog + useProspectCopyLink added to SADOKnowledgeGraph.tsx and SADOEscalations.tsx
 
 - [x] Phase A.62 — Refetch indicator (spinning dot) on SADO landing pillar badges
+
+- [x] Phase A.67 — og:image and og:image:alt tags on SADO landing metadata useEffect
