@@ -4195,3 +4195,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.57 (2026-05-07)
 - [x] SADOLanding: Added P keyboard shortcut to open ProspectModal. Guards: input/textarea/select/contenteditable focus, open dialog, Prospect Mode already active. [P] hint kbd tag added beside ghost link. useEffect added; useEffect import added. tsc EXIT:0.
+
+## Session — SADO Phase A.58 (2026-05-07)
+- [x] SADOLanding: Added ? Popover shortcut legend to hero controls. Shows P → Personalise for prospect. Visible only when Prospect Mode is off (same condition as ghost link and P shortcut). Light theme styling (bg-white, slate borders) matching page tone. Popover + HelpCircle imported. tsc EXIT:0.
