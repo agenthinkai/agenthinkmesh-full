@@ -4174,3 +4174,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.47 (2026-05-07)
 - [x] SADOCommandCentre: added "View Governance" secondary outline CTA button alongside "Open Audit Trail" in Demo Complete card. Uses buildProspectQuery for prospect context passthrough. tsc EXIT:0.
+
+## Session — SADO Phase A.44 (2026-05-07)
+- [x] SADOGovernance: added ? Popover keyboard shortcut legend to header (E → Export Governance Summary), matching Command Centre pattern. Added HelpCircle + Popover imports. tsc EXIT:0.

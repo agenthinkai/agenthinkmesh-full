@@ -12,6 +12,7 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
@@ -36,6 +37,7 @@ import {
   Lock,
   ChevronDown,
   Download,
+  HelpCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useProspectMode, useProspectFromUrl, buildProspectQuery } from "@/hooks/useProspectMode";
@@ -628,6 +630,31 @@ export default function SADOGovernance() {
             {exporting ? "Generating…" : "Export Governance Summary"}
             {!exporting && <span className="ml-1 text-slate-500 font-mono text-[10px]">[E]</span>}
           </Button>
+          {/* Keyboard shortcut legend */}
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                className="w-6 h-6 rounded-full flex items-center justify-center text-slate-500 hover:text-slate-300 hover:bg-slate-700/50 transition-colors"
+                title="Keyboard shortcuts"
+              >
+                <HelpCircle className="w-3.5 h-3.5" />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              side="bottom"
+              align="end"
+              className="w-56 p-3 bg-slate-900 border border-slate-700 shadow-xl rounded-lg"
+            >
+              <p className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider mb-2">Keyboard Shortcuts</p>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <kbd className="px-1.5 py-0.5 rounded bg-slate-700 border border-slate-600 text-slate-200 font-mono text-[10px]">E</kbd>
+                  <span className="text-xs text-slate-400">Export Governance Summary</span>
+                </div>
+              </div>
+              <p className="text-[10px] text-slate-600 mt-2.5 leading-tight">Shortcuts disabled while typing or dialogs are open</p>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
