@@ -4151,3 +4151,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.37 (2026-05-07)
 - [x] ProspectModal: updated quick-pick buttons to show full org name as muted text-[10px] subtitle beneath the prospect name when org differs from name. text-left alignment added. tsc EXIT:0.
+
+## Session — SADO Phase A.40 (2026-05-07)
+- [x] ProspectModal: extended preview pill to show org (text-[10px] text-slate-400) beneath prospect name when org differs from name, and tagline in italic blue below that. tsc EXIT:0.
