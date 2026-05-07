@@ -4240,3 +4240,9 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Added QrCode icon + Show QR button beside Copy link in SADOLanding.tsx (visible only when Prospect Mode active)
 - [x] QR dialog: fixed overlay, dark SADO styling, prospect name/org header, 192px QRCodeSVG, Copy link button with copied/idle states
 - [x] Dialog placed outside ternary to avoid JSX parse errors. tsc EXIT:0.
+
+## Session — SADO Phase A.68 (2026-05-07)
+- [x] Switched QRCodeSVG → QRCodeCanvas with useRef<HTMLCanvasElement> to enable canvas.toDataURL export
+- [x] Added downloadQR() handler: slugifies prospect name, triggers anchor download as sado-{slug}-demo-qr.png
+- [x] Added Download PNG button beside Copy link inside QR dialog (flex-1 split layout)
+- [x] No new dependencies. tsc EXIT:0.

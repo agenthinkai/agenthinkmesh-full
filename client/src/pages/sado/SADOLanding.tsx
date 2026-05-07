@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { Shield, Database,  GitBranch, FileCheck, ArrowRight, Lock, Users, Globe, BookLock, Briefcase, X, HelpCircle, Link2, Check, QrCode} from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
+import { QRCodeCanvas } from "qrcode.react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -65,6 +65,18 @@ export default function SADOLanding() {
   const [modalOpen, setModalOpen] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
   const [qrOpen, setQrOpen] = useState(false);
+  const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  const downloadQR = () => {
+    const canvas = qrCanvasRef.current;
+    if (!canvas) return;
+    const slug = (prospect?.prospectName ?? "prospect")
+      .toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    const link = document.createElement("a");
+    link.download = `sado-${slug}-demo-qr.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
 
   const copyProspectLink = () => {
     const url = window.location.href;
@@ -355,19 +367,29 @@ export default function SADOLanding() {
                   )}
                 </div>
                 <div className="flex justify-center p-3 bg-white rounded-xl mb-4">
-                  <QRCodeSVG value={window.location.href} size={192} />
+                  <QRCodeCanvas ref={qrCanvasRef} value={window.location.href} size={192} />
                 </div>
-                <button
-                  type="button"
-                  onClick={copyProspectLink}
-                  className="w-full flex items-center justify-center gap-2 py-2 rounded-lg border border-slate-600 text-xs text-slate-300 hover:border-blue-500 hover:text-blue-300 transition-colors"
-                >
-                  {copyState === "copied" ? (
-                    <><Check className="w-3.5 h-3.5 text-emerald-400" /><span className="text-emerald-400">Copied</span></>
-                  ) : (
-                    <><Link2 className="w-3.5 h-3.5" /><span>Copy link</span></>
-                  )}
-                </button>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={copyProspectLink}
+                    className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border border-slate-600 text-xs text-slate-300 hover:border-blue-500 hover:text-blue-300 transition-colors"
+                  >
+                    {copyState === "copied" ? (
+                      <><Check className="w-3.5 h-3.5 text-emerald-400" /><span className="text-emerald-400">Copied</span></>
+                    ) : (
+                      <><Link2 className="w-3.5 h-3.5" /><span>Copy link</span></>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={downloadQR}
+                    className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border border-slate-600 text-xs text-slate-300 hover:border-emerald-500 hover:text-emerald-300 transition-colors"
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>Download PNG</span>
+                  </button>
+                </div>
               </div>
             </div>
           )}
