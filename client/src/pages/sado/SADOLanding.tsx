@@ -90,9 +90,9 @@ export default function SADOLanding() {
             <div className="flex items-center gap-2">
               {prospect ? (
                 <div className="flex items-center gap-2">
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-600/10 border border-blue-500/30 text-blue-700 text-xs font-medium">
-                    <Briefcase className="w-3 h-3 text-blue-500" />
-                    Prepared for {prospect.prospectName}
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-900/40 border border-blue-500/30 text-blue-300 text-xs font-medium">
+                    <Shield className="w-3 h-3 text-blue-400" />
+                    Prospect Mode · {prospect.prospectName}{prospect.organization && prospect.organization !== prospect.prospectName ? ` · ${prospect.organization}` : ""}
                   </div>
                   <button
                     type="button"

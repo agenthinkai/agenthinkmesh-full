@@ -4145,3 +4145,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.33 (2026-05-07)
 - [x] SADOCommandCentre: extended headerSubtitle fallback to "Prepared for {name} · {org}" when org is non-empty and differs from name; tagline still takes priority. tsc EXIT:0.
+
+## Session — SADO Phase A.34 (2026-05-07)
+- [x] SADOLanding: updated prospect pill from Briefcase/blue-700 to Shield/blue-300/bg-blue-900/40 style matching all other SADO pages. Pill now shows "Prospect Mode · {name} · {org}" when org differs from name. tsc EXIT:0.
