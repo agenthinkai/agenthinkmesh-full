@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ArrowLeft, Lock, Activity, AlertTriangle, CheckCircle2, XCircle, Info, Download, Building2, Briefcase } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
-import { useProspectMode, useProspectFromUrl } from "@/hooks/useProspectMode";
+import { useProspectMode, useProspectFromUrl, buildProspectQuery } from "@/hooks/useProspectMode";
 
 const SEVERITY_CONFIG: Record<string, { color: string; icon: React.ReactNode }> = {
   HIGH:   { color: "bg-red-500/10 text-red-400 border-red-500/20",       icon: <AlertTriangle className="w-3 h-3" /> },
@@ -905,7 +905,7 @@ export default function SADOAuditTrail() {
     <div className="min-h-screen bg-[oklch(0.10_0.02_255)] text-slate-100">
       <div className="border-b border-slate-800 bg-[oklch(0.12_0.03_255)]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-3">
-          <Link href="/sado">
+          <Link href={`/sado${buildProspectQuery(prospect)}`}>
             <button className="text-slate-400 hover:text-white transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </button>

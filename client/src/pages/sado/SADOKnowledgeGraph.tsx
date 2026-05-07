@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
-import { useProspectFromUrl } from "@/hooks/useProspectMode";
+import { useProspectFromUrl, useProspectMode, buildProspectQuery } from "@/hooks/useProspectMode";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -204,6 +204,7 @@ const PHASE_LABEL: Record<AnimPhase, string> = {
 // ── Main component ────────────────────────────────────────────────────────────
 export default function SADOKnowledgeGraph() {
   useProspectFromUrl();
+  const { prospect } = useProspectMode();
   const graphQ = trpc.sado.getKnowledgeGraph.useQuery();
   const graph = graphQ.data;
 
@@ -296,7 +297,7 @@ export default function SADOKnowledgeGraph() {
       {/* Header */}
       <div className="border-b border-slate-800 bg-[oklch(0.12_0.03_255)]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-3 flex-wrap gap-y-2">
-          <Link href="/sado">
+          <Link href={`/sado${buildProspectQuery(prospect)}`}>
             <button className="text-slate-400 hover:text-white transition-colors">
               <ArrowLeft className="w-4 h-4" />
             </button>

@@ -4112,3 +4112,11 @@
 - [x] Four Capability Pillar cards (Discovery, Knowledge Graph, Governance, Audit) now append prospect params
 - [x] When Prospect Mode is off, all hrefs are unchanged
 - [x] Only SADOLanding.tsx modified. tsc EXIT:0.
+
+## Session — SADO Phase A.27 (2026-05-07)
+- [x] SADOGovernance: back ArrowLeft link → /sado${buildProspectQuery(prospect)}
+- [x] SADOAuditTrail: imported buildProspectQuery, back link updated
+- [x] SADOEscalations: imported useProspectMode + buildProspectQuery, added prospect state, back link updated
+- [x] SADODiscovery: imported useProspectMode + buildProspectQuery, added prospect state, back link updated
+- [x] SADOKnowledgeGraph: imported useProspectMode + buildProspectQuery, added prospect state, back link updated
+- [x] When Prospect Mode is off, all back links remain /sado unchanged. tsc EXIT:0.
