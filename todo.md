@@ -4192,3 +4192,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.55 (2026-05-07)
 - [x] SADOLanding: Added "Personalise for prospect →" ghost link beneath hero CTAs. Visible only when Prospect Mode is off. Clicking it opens the existing ProspectModal (reuses modalOpen state). No new dependencies. tsc EXIT:0.
+
+## Session — SADO Phase A.57 (2026-05-07)
+- [x] SADOLanding: Added P keyboard shortcut to open ProspectModal. Guards: input/textarea/select/contenteditable focus, open dialog, Prospect Mode already active. [P] hint kbd tag added beside ghost link. useEffect added; useEffect import added. tsc EXIT:0.

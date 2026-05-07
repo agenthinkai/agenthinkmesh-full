@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { Shield, Database, GitBranch, FileCheck, ArrowRight, Lock, Users, Globe, BookLock, Briefcase, X } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
@@ -61,6 +61,22 @@ export default function SADOLanding() {
   useProspectFromUrl();
   const { prospect, displayLabel, saveProspect, clearProspect } = useProspectMode();
   const [modalOpen, setModalOpen] = useState(false);
+
+  // Keyboard shortcut: P → open ProspectModal (same guard pattern as other SADO pages)
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key !== "p" && e.key !== "P") return;
+      const tag = (e.target as HTMLElement).tagName;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(tag)) return;
+      if ((e.target as HTMLElement).isContentEditable) return;
+      if (document.querySelector('[role="dialog"]')) return;
+      if (prospect) return; // already active — header controls handle it
+      e.preventDefault();
+      setModalOpen(true);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [prospect]);
 
   // Live status queries for pillar badges
   const { data: graphData } = trpc.sado.getKnowledgeGraph.useQuery(undefined, { refetchInterval: 30_000 });
@@ -213,6 +229,7 @@ export default function SADOLanding() {
               className="mt-4 text-sm text-slate-400 hover:text-slate-600 transition-colors underline-offset-2 hover:underline"
             >
               Personalise for prospect →
+              <kbd className="ml-1.5 inline-flex items-center px-1 py-0.5 rounded text-[10px] font-mono border border-slate-300 text-slate-400 bg-transparent leading-none">[P]</kbd>
             </button>
           )}
         </div>
