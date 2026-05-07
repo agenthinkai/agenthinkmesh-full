@@ -4222,3 +4222,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.63 (2026-05-07)
 - [x] SADOLanding: Extended metadata useEffect to inject og:title, og:description, og:type via upsertMeta helper. Prospect-aware og:title mirrors document.title pattern. Cleanup removes all four meta tags on unmount. No new dependencies. tsc EXIT:0.
+
+## Session — SADO Phase A.64 (2026-05-07)
+- [x] SADOLanding: Added upsertMeta("property", "og:url", window.location.href) to metadata useEffect. Cleanup removes meta[property="og:url"] on unmount. No new dependencies. tsc EXIT:0.
