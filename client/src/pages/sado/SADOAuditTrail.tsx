@@ -649,7 +649,11 @@ async function exportGovernancePDF(params: {
 
   } // end footer
 
-  doc.save(`SADO_Governance_Audit_${now.toISOString().slice(0, 10)}.pdf`);
+  const dateSlice = now.toISOString().slice(0, 10);
+  const prospectSlug = params.prospectName?.trim()
+    ? `_${params.prospectName.trim().replace(/[^a-zA-Z0-9]+/g, "_").replace(/^_|_$/g, "")}`
+    : "";
+  doc.save(`SADO_Audit${prospectSlug}_${dateSlice}.pdf`);
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────

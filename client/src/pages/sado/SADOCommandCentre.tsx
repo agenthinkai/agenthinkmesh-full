@@ -8,7 +8,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Activity, AlertTriangle, CheckCircle2, Clock, Database,
   GitBranch, Play, RefreshCw, Shield, Zap, ChevronRight,
-  Eye, Lock, Network, Briefcase, FileCheck
+  Eye, Lock, Network, Briefcase, FileCheck, ArrowLeft
 } from "lucide-react";
 import { toast } from "sonner";
 import { useProspectMode, useProspectFromUrl, buildProspectQuery } from "@/hooks/useProspectMode";
@@ -229,6 +229,11 @@ export default function SADOCommandCentre() {
       <div className="border-b border-slate-800 bg-[oklch(0.12_0.03_255)]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4 flex-wrap">
           <div className="flex items-center gap-3">
+            <Link href={`/sado${buildProspectQuery(prospect)}`}>
+              <button className="text-slate-500 hover:text-slate-300 transition-colors" title="Back to SADO overview">
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            </Link>
             <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shrink-0">
               <Activity className="w-4 h-4 text-white" />
             </div>

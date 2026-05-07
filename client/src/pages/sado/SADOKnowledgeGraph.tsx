@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, Network, Database, Users, FileText,
-  Building2, CreditCard, MapPin, Play, CheckCircle2
+  Building2, CreditCard, MapPin, Play, CheckCircle2, Shield
 } from "lucide-react";
 import {
   ReactFlow, Background, Controls, MiniMap,
@@ -307,6 +307,12 @@ export default function SADOKnowledgeGraph() {
             <h1 className="text-base font-semibold text-white">Knowledge Graph</h1>
             <p className="text-xs text-slate-400">Entity relationships · Semantic mapping · Lineage</p>
           </div>
+          {prospect && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20">
+              <Shield className="w-3 h-3 text-blue-400" />
+              <span className="text-xs text-blue-300">{prospect.prospectName}</span>
+            </div>
+          )}
           <div className="ml-auto flex items-center gap-3 flex-wrap">
             {/* Phase status */}
             <div className={`flex items-center gap-1.5 text-xs px-3 py-1 rounded-full border transition-all ${

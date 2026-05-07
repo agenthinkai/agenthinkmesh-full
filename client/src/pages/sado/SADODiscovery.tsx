@@ -3,7 +3,7 @@ import { useProspectFromUrl, useProspectMode, buildProspectQuery } from "@/hooks
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Database, Eye, Lock, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, Database, Eye, Lock, CheckCircle2, Shield } from "lucide-react";
 
 const CLASSIFICATION_COLOR: Record<string, string> = {
   PII:       "bg-red-500/10 text-red-400 border-red-500/20",
@@ -56,10 +56,16 @@ export default function SADODiscovery() {
             </button>
           </Link>
           <Database className="w-5 h-5 text-blue-400" />
-          <div>
+          <div className="flex-1">
             <h1 className="text-base font-semibold text-white">Discovery Layer</h1>
             <p className="text-xs text-slate-400">Schema extraction · Semantic mapping · PII classification</p>
           </div>
+          {prospect && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20">
+              <Shield className="w-3 h-3 text-blue-400" />
+              <span className="text-xs text-blue-300">{prospect.prospectName}</span>
+            </div>
+          )}
         </div>
       </div>
 

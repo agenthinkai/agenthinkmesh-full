@@ -4120,3 +4120,19 @@
 - [x] SADODiscovery: imported useProspectMode + buildProspectQuery, added prospect state, back link updated
 - [x] SADOKnowledgeGraph: imported useProspectMode + buildProspectQuery, added prospect state, back link updated
 - [x] When Prospect Mode is off, all back links remain /sado unchanged. tsc EXIT:0.
+
+## Session — SADO Phases A.28 + A.29 + A.30 (2026-05-07)
+
+A.28 — PDF filename personalisation:
+- [x] SADOAuditTrail: filename → SADO_Audit_{ProspectSlug}_{date}.pdf when prospect active
+- [x] SADOGovernance: filename → SADO_Governance_Summary_{ProspectSlug}_{date}.pdf when prospect active
+
+A.29 — Prospect Mode pill on remaining headers:
+- [x] SADOEscalations: added Shield import + blue prospect pill in header
+- [x] SADODiscovery: added Shield import + blue prospect pill in header
+- [x] SADOKnowledgeGraph: added Shield import + blue prospect pill in header
+
+A.30 — CommandCentre back link:
+- [x] SADOCommandCentre: added ArrowLeft import + back link → /sado${buildProspectQuery(prospect)}
+
+Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADODiscovery.tsx, SADOKnowledgeGraph.tsx, SADOCommandCentre.tsx. tsc EXIT:0.

@@ -5,7 +5,7 @@ import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, AlertTriangle, CheckCircle2, Clock, User } from "lucide-react";
+import { ArrowLeft, AlertTriangle, CheckCircle2, Clock, User, Shield } from "lucide-react";
 import { toast } from "sonner";
 
 const PRIORITY_COLOR: Record<string, string> = {
@@ -49,9 +49,15 @@ export default function SADOEscalations() {
             <p className="text-xs text-slate-400">Human-in-the-loop review · Low-confidence decisions</p>
           </div>
           {pending.length > 0 && (
-            <Badge variant="outline" className="ml-auto text-xs bg-amber-500/10 border-amber-500/20 text-amber-400">
+            <Badge variant="outline" className="text-xs bg-amber-500/10 border-amber-500/20 text-amber-400">
               {pending.length} pending
             </Badge>
+          )}
+          {prospect && (
+            <div className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20">
+              <Shield className="w-3 h-3 text-blue-400" />
+              <span className="text-xs text-blue-300">{prospect.prospectName}</span>
+            </div>
           )}
         </div>
       </div>
