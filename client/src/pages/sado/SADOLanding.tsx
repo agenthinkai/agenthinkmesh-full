@@ -63,16 +63,19 @@ export default function SADOLanding() {
   const [modalOpen, setModalOpen] = useState(false);
 
   // Live status queries for pillar badges
+  const { data: sources } = trpc.sado.getSources.useQuery(undefined, { refetchInterval: 30_000 });
   const { data: govAlerts } = trpc.sado.getGovernanceAlerts.useQuery(undefined, { refetchInterval: 30_000 });
   const { data: escalations } = trpc.sado.getEscalations.useQuery(undefined, { refetchInterval: 30_000 });
   const { data: auditRows } = trpc.sado.getAuditTrail.useQuery({ limit: 200 }, { refetchInterval: 30_000 });
 
+  const sourcesCount = sources?.length ?? null;
   const pendingCount = escalations?.filter(e => e.status === "pending").length ?? null;
   const auditCount = auditRows?.length ?? null;
   const govAlertsCount = govAlerts?.length ?? null;
 
   const PILLAR_BADGES: Record<string, string | null | undefined> = {
-    "Discovery Layer": undefined, // no live count
+    "Discovery Layer":
+      sourcesCount !== null ? `${sourcesCount} source${sourcesCount !== 1 ? "s" : ""} scanned` : null,
     "Knowledge Graph": undefined, // no live count
     "Governance Engine":
       govAlertsCount !== null ? `${govAlertsCount} transfer${govAlertsCount !== 1 ? "s" : ""} evaluated` : null,
