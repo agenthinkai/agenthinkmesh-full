@@ -450,14 +450,25 @@ export default function SADOCommandCentre() {
                     </p>
                   </div>
                 </div>
-                <Link href={`/sado/audit-trail${buildProspectQuery(prospect)}`}>
-                  <Button
-                    size="sm"
-                    className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5 shrink-0"
-                  >
-                    <FileCheck className="w-3.5 h-3.5" /> Open Audit Trail
-                  </Button>
-                </Link>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Link href={`/sado/governance${buildProspectQuery(prospect)}`}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="text-xs border-slate-600 text-slate-300 hover:bg-slate-800 hover:text-slate-100 gap-1.5 bg-transparent"
+                    >
+                      <Shield className="w-3.5 h-3.5" /> View Governance
+                    </Button>
+                  </Link>
+                  <Link href={`/sado/audit-trail${buildProspectQuery(prospect)}`}>
+                    <Button
+                      size="sm"
+                      className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white gap-1.5"
+                    >
+                      <FileCheck className="w-3.5 h-3.5" /> Open Audit Trail
+                    </Button>
+                  </Link>
+                </div>
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-5">

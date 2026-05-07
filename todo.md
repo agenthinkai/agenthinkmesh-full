@@ -4171,3 +4171,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.45 (2026-05-07)
 - [x] SADOCommandCentre: Demo Complete card body copy now reads "SADO completed the full sovereign data engineering control loop for {name} — {tagline}." when Prospect Mode is active and tagline is set. Falls back to generic copy otherwise. tsc EXIT:0.
+
+## Session — SADO Phase A.47 (2026-05-07)
+- [x] SADOCommandCentre: added "View Governance" secondary outline CTA button alongside "Open Audit Trail" in Demo Complete card. Uses buildProspectQuery for prospect context passthrough. tsc EXIT:0.
