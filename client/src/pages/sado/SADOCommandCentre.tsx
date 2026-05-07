@@ -444,7 +444,9 @@ export default function SADOCommandCentre() {
                   <div>
                     <h3 className="text-sm font-semibold text-emerald-300">{prospect?.prospectName ? `Demo complete for ${prospect.prospectName}` : "Demo Complete"}</h3>
                     <p className="text-xs text-slate-400 mt-0.5 max-w-lg">
-                      SADO completed discovery, classification, governance evaluation, and audit evidence generation.
+                      {prospect?.prospectName && prospect.tagline
+                        ? `SADO completed the full sovereign data engineering control loop for ${prospect.prospectName} — ${prospect.tagline}.`
+                        : "SADO completed discovery, classification, governance evaluation, and audit evidence generation."}
                     </p>
                   </div>
                 </div>

@@ -4168,3 +4168,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.43 (2026-05-07)
 - [x] SADOCommandCentre: Demo Complete headline now reads "Demo complete for {prospectName}" when Prospect Mode is active, falls back to "Demo Complete" otherwise. tsc EXIT:0.
+
+## Session — SADO Phase A.45 (2026-05-07)
+- [x] SADOCommandCentre: Demo Complete card body copy now reads "SADO completed the full sovereign data engineering control loop for {name} — {tagline}." when Prospect Mode is active and tagline is set. Falls back to generic copy otherwise. tsc EXIT:0.
