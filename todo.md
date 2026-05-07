@@ -4260,3 +4260,10 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Wrapped Copy link button in fragment and added Show QR button in Demo Complete card
 - [x] Added dark fixed-overlay QR dialog with prospect name/org, 192px QR, Copy link + Download PNG
 - [x] Fixed dialog placement (inside root div). tsc EXIT:0.
+
+## Session — SADO Phase A.70 (2026-05-07)
+- [x] Created client/src/components/sado/ProspectQRDialog.tsx (shared QR dialog component)
+- [x] Replaced inline QR dialog markup in SADOLanding.tsx with <ProspectQRDialog />
+- [x] Replaced inline QR dialog markup in SADOCommandCentre.tsx with <ProspectQRDialog />
+- [x] Removed orphaned QR markup remnants from both files
+- [x] Fixed null-safety on prospect props. tsc EXIT:0.
