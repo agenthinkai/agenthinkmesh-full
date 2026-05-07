@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import { useProspectMode, useProspectFromUrl, buildProspectQuery } from "@/hooks/useProspectMode";
+import { QRCodeCanvas } from "qrcode.react";
 import ProspectModal from "@/components/sado/ProspectModal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -109,7 +110,20 @@ export default function SADOCommandCentre() {
   });
   const [prospectModalOpen, setProspectModalOpen] = useState(false);
   const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
+  const [qrOpen, setQrOpen] = useState(false);
+  const qrCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const logRef = useRef<HTMLDivElement>(null);
+
+  const downloadQR = () => {
+    const canvas = qrCanvasRef.current;
+    if (!canvas) return;
+    const slug = (prospect?.prospectName ?? "prospect")
+      .toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    const link = document.createElement("a");
+    link.download = `sado-${slug}-demo-qr.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  };
 
   const copyProspectLink = () => {
     const url = window.location.href;
@@ -507,20 +521,31 @@ export default function SADOCommandCentre() {
                     </Button>
                   </Link>
                   {prospect && (
-                    <button
-                      type="button"
-                      onClick={copyProspectLink}
-                      title="Copy shareable prospect link"
-                      className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-400 transition-colors"
-                    >
-                      {copyState === "copied" ? (
-                        <><Check className="w-3 h-3 text-emerald-400" /><span className="text-emerald-400">Copied</span></>
-                      ) : copyState === "failed" ? (
-                        <><Link2 className="w-3 h-3" /><span className="text-red-400">Copy failed</span></>
-                      ) : (
-                        <><Link2 className="w-3 h-3" /><span>Copy link</span></>
-                      )}
-                    </button>
+                    <>
+                      <button
+                        type="button"
+                        onClick={copyProspectLink}
+                        title="Copy shareable prospect link"
+                        className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-400 transition-colors"
+                      >
+                        {copyState === "copied" ? (
+                          <><Check className="w-3 h-3 text-emerald-400" /><span className="text-emerald-400">Copied</span></>
+                        ) : copyState === "failed" ? (
+                          <><Link2 className="w-3 h-3" /><span className="text-red-400">Copy failed</span></>
+                        ) : (
+                          <><Link2 className="w-3 h-3" /><span>Copy link</span></>
+                        )}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setQrOpen(true)}
+                        title="Show QR code for this prospect link"
+                        className="flex items-center gap-1 text-xs text-slate-500 hover:text-blue-400 transition-colors"
+                      >
+                        <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="3" height="3"/></svg>
+                        <span>Show QR</span>
+                      </button>
+                    </>
                   )}
                 </div>
               </div>
@@ -660,6 +685,57 @@ export default function SADOCommandCentre() {
           </Card>
         </div>
       </div>
+      {/* ── QR dialog ── */}
+      {qrOpen && prospect && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setQrOpen(false)}
+        >
+          <div
+            className="relative bg-[oklch(0.14_0.03_255)] border border-slate-700 rounded-2xl p-6 shadow-2xl w-72"
+            onClick={e => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setQrOpen(false)}
+              className="absolute top-3 right-3 text-slate-500 hover:text-white transition-colors"
+            >
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+            <div className="mb-3">
+              <div className="text-xs font-semibold text-blue-300 uppercase tracking-wide">Prospect Link</div>
+              <div className="text-sm font-bold text-white mt-0.5">{prospect.prospectName}</div>
+              {prospect.organization && prospect.organization !== prospect.prospectName && (
+                <div className="text-xs text-slate-400">{prospect.organization}</div>
+              )}
+            </div>
+            <div className="flex justify-center p-3 bg-white rounded-xl mb-4">
+              <QRCodeCanvas ref={qrCanvasRef} value={window.location.href} size={192} />
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={copyProspectLink}
+                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border border-slate-600 text-xs text-slate-300 hover:border-blue-500 hover:text-blue-300 transition-colors"
+              >
+                {copyState === "copied" ? (
+                  <><Check className="w-3.5 h-3.5 text-emerald-400" /><span className="text-emerald-400">Copied</span></>
+                ) : (
+                  <><Link2 className="w-3.5 h-3.5" /><span>Copy link</span></>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={downloadQR}
+                className="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border border-slate-600 text-xs text-slate-300 hover:border-emerald-500 hover:text-emerald-300 transition-colors"
+              >
+                <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span>Download PNG</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -4246,3 +4246,17 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Added downloadQR() handler: slugifies prospect name, triggers anchor download as sado-{slug}-demo-qr.png
 - [x] Added Download PNG button beside Copy link inside QR dialog (flex-1 split layout)
 - [x] No new dependencies. tsc EXIT:0.
+
+## Session — SADO Phase A.69 (2026-05-07)
+- [x] Added QRCodeCanvas import from qrcode.react to SADOCommandCentre.tsx
+- [x] Added qrOpen state, qrCanvasRef, downloadQR handler (slug-based filename)
+- [x] Wrapped Copy link button in <> fragment and added Show QR button beside it in Demo Complete card
+- [x] Added dark fixed-overlay QR dialog with prospect name/org, 192px QR, Copy link + Download PNG buttons
+- [x] Fixed dialog placement (inside root div). tsc EXIT:0.
+
+## Session — SADO Phase A.69 (2026-05-07)
+- [x] Added QRCodeCanvas import from qrcode.react to SADOCommandCentre.tsx
+- [x] Added qrOpen state, qrCanvasRef, downloadQR handler (slug-based filename)
+- [x] Wrapped Copy link button in fragment and added Show QR button in Demo Complete card
+- [x] Added dark fixed-overlay QR dialog with prospect name/org, 192px QR, Copy link + Download PNG
+- [x] Fixed dialog placement (inside root div). tsc EXIT:0.
