@@ -3,13 +3,14 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import {
   Activity, AlertTriangle, CheckCircle2, Clock, Database,
   GitBranch, Play, RefreshCw, Shield, Zap, ChevronRight,
-  Eye, Lock, Network, Briefcase, FileCheck, ArrowLeft
+  Eye, Lock, Network, Briefcase, FileCheck, ArrowLeft, HelpCircle
 } from "lucide-react";
 import { toast } from "sonner";
 import { useProspectMode, useProspectFromUrl, buildProspectQuery } from "@/hooks/useProspectMode";
@@ -344,6 +345,43 @@ export default function SADOCommandCentre() {
                 <><Play className="w-3 h-3 mr-1" /> Run Demo <span className="ml-1 text-blue-300/60 font-mono text-[10px]">[Space]</span></>
               )}
             </Button>
+            {/* Keyboard shortcut legend */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="w-6 h-6 flex items-center justify-center rounded-full border border-slate-700 bg-slate-800/60 text-slate-500 hover:text-slate-300 hover:border-slate-600 hover:bg-slate-700/60 transition-colors text-xs font-semibold"
+                  title="Keyboard shortcuts"
+                  aria-label="Keyboard shortcuts"
+                >
+                  <HelpCircle className="w-3.5 h-3.5" />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent
+                side="bottom"
+                align="end"
+                className="w-64 p-0 bg-[oklch(0.13_0.025_255)] border border-slate-700/60 shadow-xl rounded-lg overflow-hidden"
+              >
+                <div className="px-3 py-2 border-b border-slate-700/60">
+                  <span className="text-[11px] font-semibold text-slate-300 tracking-wide uppercase">Keyboard Shortcuts</span>
+                </div>
+                <div className="px-3 py-2 space-y-1.5">
+                  {[
+                    { key: "Space", label: "Run Demo" },
+                    { key: "R", label: "Reset Demo" },
+                    { key: "E", label: "Export Report" },
+                  ].map(({ key, label }) => (
+                    <div key={key} className="flex items-center justify-between">
+                      <span className="text-xs text-slate-400">{label}</span>
+                      <kbd className="px-1.5 py-0.5 rounded border border-slate-600 bg-slate-800 text-slate-300 font-mono text-[10px]">{key}</kbd>
+                    </div>
+                  ))}
+                </div>
+                <div className="px-3 py-1.5 border-t border-slate-700/60 bg-slate-800/40">
+                  <span className="text-[9px] text-slate-600">Shortcuts disabled while typing or dialogs are open</span>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
         </div>
       </div>

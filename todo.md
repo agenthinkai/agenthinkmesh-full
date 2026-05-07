@@ -4162,3 +4162,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.39 (2026-05-07)
 - [x] SADOCommandCentre: added "for {prospectName}" muted text-[10px] text-slate-500 line beneath agent title in narration card when Prospect Mode is active. tsc EXIT:0.
+
+## Session — SADO Phase A.41 (2026-05-07)
+- [x] SADOCommandCentre: added HelpCircle ? button with Popover shortcut legend (Space/R/E) to header controls. Dark institutional styling, closes on outside click. tsc EXIT:0.
