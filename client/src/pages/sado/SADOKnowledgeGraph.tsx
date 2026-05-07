@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "wouter";
 import { useProspectFromUrl, useProspectMode, buildProspectQuery } from "@/hooks/useProspectMode";
+import { useProspectCopyLink } from "@/hooks/useProspectCopyLink";
+import ProspectQRDialog from "@/components/sado/ProspectQRDialog";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   ArrowLeft, Network, Database, Users, FileText,
-  Building2, CreditCard, MapPin, Play, CheckCircle2, Shield
+  Building2, CreditCard, MapPin, Play, CheckCircle2, Shield, QrCode
 } from "lucide-react";
 import {
   ReactFlow, Background, Controls, MiniMap,
@@ -40,6 +42,7 @@ function SourceNode({ data }: { data: { label: string; tables: number; revealed:
       </div>
       <div className="text-xs text-slate-400">{data.tables} tables discovered</div>
     </div>
+
   );
 }
 
@@ -205,6 +208,8 @@ const PHASE_LABEL: Record<AnimPhase, string> = {
 export default function SADOKnowledgeGraph() {
   useProspectFromUrl();
   const { prospect } = useProspectMode();
+  const { copyState, copyLink: copyProspectLink } = useProspectCopyLink();
+  const [qrOpen, setQrOpen] = useState(false);
 
   // Dynamic page title + OG tags
   useEffect(() => {
@@ -316,6 +321,7 @@ export default function SADOKnowledgeGraph() {
   const isAnimating = animPhase === "phase1" || animPhase === "phase2" || animPhase === "phase3";
 
   return (
+    <>
     <div className="min-h-screen bg-[oklch(0.10_0.02_255)] text-slate-100 flex flex-col">
       {/* Header */}
       <div className="border-b border-slate-800 bg-[oklch(0.12_0.03_255)]">
@@ -331,9 +337,20 @@ export default function SADOKnowledgeGraph() {
             <p className="text-xs text-slate-400">Entity relationships · Semantic mapping · Lineage</p>
           </div>
           {prospect && (
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20">
-              <Shield className="w-3 h-3 text-blue-400" />
-              <span className="text-xs text-blue-300">{prospect.prospectName}</span>
+            <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20">
+                <Shield className="w-3 h-3 text-blue-400" />
+                <span className="text-xs text-blue-300">{prospect.prospectName}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQrOpen(true)}
+                className="p-1 rounded text-slate-400 hover:text-blue-300 hover:bg-blue-500/10 transition-colors"
+                title="Show QR code for this page"
+                aria-label="Show QR code"
+              >
+                <QrCode className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
           <div className="ml-auto flex items-center gap-3 flex-wrap">
@@ -426,5 +443,17 @@ export default function SADOKnowledgeGraph() {
         </div>
       </div>
     </div>
+
+    {/* Prospect QR Dialog */}
+    <ProspectQRDialog
+      open={qrOpen && !!prospect}
+      onClose={() => setQrOpen(false)}
+      prospectName={prospect?.prospectName ?? ""}
+      prospectOrg={prospect?.organization ?? ""}
+      qrValue={typeof window !== "undefined" ? window.location.href : ""}
+      copyState={copyState}
+      onCopy={copyProspectLink}
+    />
+    </>
   );
 }

@@ -4275,3 +4275,5 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] tsc EXIT:0
 
 - [x] Phase A.72 — useProspectCopyLink shared hook (extracted from 5 pages)
+
+- [x] Phase A.73 — ProspectQRDialog + useProspectCopyLink added to SADOKnowledgeGraph.tsx and SADOEscalations.tsx

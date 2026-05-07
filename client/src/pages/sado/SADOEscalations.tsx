@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useProspectFromUrl, useProspectMode, buildProspectQuery } from "@/hooks/useProspectMode";
+import { useProspectCopyLink } from "@/hooks/useProspectCopyLink";
+import ProspectQRDialog from "@/components/sado/ProspectQRDialog";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, AlertTriangle, CheckCircle2, Clock, User, Shield } from "lucide-react";
+import { ArrowLeft, AlertTriangle, CheckCircle2, Clock, User, Shield, QrCode } from "lucide-react";
 import { toast } from "sonner";
 
 const PRIORITY_COLOR: Record<string, string> = {
@@ -17,6 +19,8 @@ const PRIORITY_COLOR: Record<string, string> = {
 export default function SADOEscalations() {
   useProspectFromUrl();
   const { prospect } = useProspectMode();
+  const { copyState, copyLink: copyProspectLink } = useProspectCopyLink();
+  const [qrOpen, setQrOpen] = useState(false);
 
   // Dynamic page title + OG tags
   useEffect(() => {
@@ -58,6 +62,7 @@ export default function SADOEscalations() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-[oklch(0.10_0.02_255)] text-slate-100">
       <div className="border-b border-slate-800 bg-[oklch(0.12_0.03_255)]">
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center gap-3">
@@ -77,9 +82,20 @@ export default function SADOEscalations() {
             </Badge>
           )}
           {prospect && (
-            <div className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20">
-              <Shield className="w-3 h-3 text-blue-400" />
-              <span className="text-xs text-blue-300">{prospect.prospectName}</span>
+            <div className="ml-auto flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-blue-500/10 border border-blue-500/20">
+                <Shield className="w-3 h-3 text-blue-400" />
+                <span className="text-xs text-blue-300">{prospect.prospectName}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setQrOpen(true)}
+                className="p-1 rounded text-slate-400 hover:text-blue-300 hover:bg-blue-500/10 transition-colors"
+                title="Show QR code for this page"
+                aria-label="Show QR code"
+              >
+                <QrCode className="w-3.5 h-3.5" />
+              </button>
             </div>
           )}
         </div>
@@ -192,5 +208,17 @@ export default function SADOEscalations() {
         )}
       </div>
     </div>
+
+    {/* Prospect QR Dialog */}
+    <ProspectQRDialog
+      open={qrOpen && !!prospect}
+      onClose={() => setQrOpen(false)}
+      prospectName={prospect?.prospectName ?? ""}
+      prospectOrg={prospect?.organization ?? ""}
+      qrValue={typeof window !== "undefined" ? window.location.href : ""}
+      copyState={copyState}
+      onCopy={copyProspectLink}
+    />
+    </>
   );
 }
