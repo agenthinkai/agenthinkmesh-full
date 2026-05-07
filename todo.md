@@ -4186,3 +4186,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.52 (2026-05-07)
 - [x] SADOLanding: added live "N nodes · N edges" badge to Knowledge Graph pillar card using trpc.sado.getKnowledgeGraph (refetch 30s). All four pillar cards now have live status badges. tsc EXIT:0.
+
+## Session — SADO Phase A.53 (2026-05-07)
+- [x] SADOLanding: PILLAR_BADGES now uses three-state logic — null (loading → "Live status"), undefined (zero count → badge hidden), string (non-zero → badge shown). All four pillar badges suppressed when counts are zero. tsc EXIT:0.

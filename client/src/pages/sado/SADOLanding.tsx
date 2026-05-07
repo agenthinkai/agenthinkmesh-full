@@ -77,18 +77,26 @@ export default function SADOLanding() {
   const govAlertsCount = govAlerts?.length ?? null;
 
   const PILLAR_BADGES: Record<string, string | null | undefined> = {
+    // null  → data loading (show "Live status" fallback)
+    // undefined → data loaded but count is zero (hide badge entirely)
+    // string → show badge with live count
     "Discovery Layer":
-      sourcesCount !== null ? `${sourcesCount} source${sourcesCount !== 1 ? "s" : ""} scanned` : null,
+      sourcesCount === null ? null
+        : sourcesCount > 0 ? `${sourcesCount} source${sourcesCount !== 1 ? "s" : ""} scanned`
+        : undefined,
     "Knowledge Graph":
-      graphNodeCount !== null
-        ? `${graphNodeCount} node${graphNodeCount !== 1 ? "s" : ""} · ${graphEdgeCount ?? "…"} edge${graphEdgeCount !== 1 ? "s" : ""}`
-        : null,
+      graphNodeCount === null ? null
+        : graphNodeCount > 0 ? `${graphNodeCount} node${graphNodeCount !== 1 ? "s" : ""} · ${graphEdgeCount ?? 0} edge${(graphEdgeCount ?? 0) !== 1 ? "s" : ""}`
+        : undefined,
     "Governance Engine":
-      govAlertsCount !== null ? `${govAlertsCount} transfer${govAlertsCount !== 1 ? "s" : ""} evaluated` : null,
+      govAlertsCount === null ? null
+        : govAlertsCount > 0 ? `${govAlertsCount} transfer${govAlertsCount !== 1 ? "s" : ""} evaluated`
+        : undefined,
     "Audit & Escalation Control":
-      pendingCount !== null
-        ? `${pendingCount} pending · ${auditCount ?? "…"} entries`
-        : null,
+      pendingCount === null && auditCount === null ? null
+        : (pendingCount ?? 0) > 0 || (auditCount ?? 0) > 0
+          ? `${pendingCount ?? 0} pending · ${auditCount ?? 0} entries`
+          : undefined,
   };
 
   return (
