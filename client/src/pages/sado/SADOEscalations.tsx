@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "wouter";
 import { useProspectFromUrl, useProspectMode, buildProspectQuery } from "@/hooks/useProspectMode";
 import { trpc } from "@/lib/trpc";
@@ -17,6 +17,14 @@ const PRIORITY_COLOR: Record<string, string> = {
 export default function SADOEscalations() {
   useProspectFromUrl();
   const { prospect } = useProspectMode();
+
+  // Dynamic page title
+  useEffect(() => {
+    const p = prospect?.prospectName ? `${prospect.prospectName} · ` : "";
+    document.title = `SADO · ${p}Escalations`;
+    return () => { document.title = "AgenThinkMesh"; };
+  }, [prospect?.prospectName]);
+
   const [resolving, setResolving] = useState<number | null>(null);
   const escalationsQ = trpc.sado.getEscalations.useQuery();
   const resolveM = trpc.sado.resolveEscalation.useMutation();

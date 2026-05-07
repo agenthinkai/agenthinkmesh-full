@@ -1,4 +1,5 @@
 import { Link } from "wouter";
+import { useEffect } from "react";
 import { useProspectFromUrl, useProspectMode, buildProspectQuery } from "@/hooks/useProspectMode";
 import { trpc } from "@/lib/trpc";
 import { Badge } from "@/components/ui/badge";
@@ -38,6 +39,14 @@ type SourceWithColumns = {
 export default function SADODiscovery() {
   useProspectFromUrl();
   const { prospect } = useProspectMode();
+
+  // Dynamic page title
+  useEffect(() => {
+    const p = prospect?.prospectName ? `${prospect.prospectName} · ` : "";
+    document.title = `SADO · ${p}Discovery`;
+    return () => { document.title = "AgenThinkMesh"; };
+  }, [prospect?.prospectName]);
+
   const sourcesQ = trpc.sado.getSources.useQuery();
   const sources: SourceWithColumns[] = (sourcesQ.data as SourceWithColumns[]) ?? [];
 

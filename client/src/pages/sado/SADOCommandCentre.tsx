@@ -129,6 +129,13 @@ export default function SADOCommandCentre() {
 
   const { prospect, saveProspect, clearProspect } = useProspectMode();
 
+  // Dynamic page title
+  useEffect(() => {
+    const p = prospect?.prospectName ? `${prospect.prospectName} · ` : "";
+    document.title = `SADO · ${p}Command Centre`;
+    return () => { document.title = "AgenThinkMesh"; };
+  }, [prospect?.prospectName]);
+
   const agentsQ = trpc.sado.getAgents.useQuery(undefined, { refetchInterval: demoRunning ? 1500 : 10000 });
   const escalationsQ = trpc.sado.getEscalations.useQuery();
   const governanceQ = trpc.sado.getGovernanceAlerts.useQuery();

@@ -4210,3 +4210,12 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Session — SADO Phase A.56 (2026-05-07)
 - [x] SADOLanding: Added useEffect to set document.title = "SADO · [ProspectName · ]Sovereign Autonomous Data Operations" and inject/update <meta name="description"> on mount. Cleanup restores "AgenThinkMesh" title and removes the meta tag on unmount. Re-runs when prospect.prospectName changes. No new dependencies. tsc EXIT:0.
+
+## Session — SADO Phase A.61 (2026-05-07)
+- [x] SADOCommandCentre: Added document.title = "SADO · [ProspectName · ]Command Centre" useEffect, cleanup restores "AgenThinkMesh".
+- [x] SADOGovernance: Added document.title = "SADO · [ProspectName · ]Governance" useEffect.
+- [x] SADOAuditTrail: Added document.title = "SADO · [ProspectName · ]Audit Trail" useEffect.
+- [x] SADODiscovery: Added useEffect import + document.title = "SADO · [ProspectName · ]Discovery" useEffect.
+- [x] SADOKnowledgeGraph: Added document.title = "SADO · [ProspectName · ]Knowledge Graph" useEffect.
+- [x] SADOEscalations: Added useEffect import + document.title = "SADO · [ProspectName · ]Escalations" useEffect.
+- [x] Fixed duplicate variable names (agentsQQ, auditQQ) introduced by edit tool. tsc EXIT:0.

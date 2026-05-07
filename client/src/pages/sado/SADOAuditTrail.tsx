@@ -680,6 +680,13 @@ export default function SADOAuditTrail() {
   useProspectFromUrl();
   const { prospect } = useProspectMode();
 
+  // Dynamic page title
+  useEffect(() => {
+    const p = prospect?.prospectName ? `${prospect.prospectName} · ` : "";
+    document.title = `SADO · ${p}Audit Trail`;
+    return () => { document.title = "AgenThinkMesh"; };
+  }, [prospect?.prospectName]);
+
   const auditQ       = trpc.sado.getAuditTrail.useQuery({
     limit: 50,
     severityFilter: severityFilter !== "all" ? severityFilter : undefined,

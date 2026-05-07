@@ -205,6 +205,14 @@ const PHASE_LABEL: Record<AnimPhase, string> = {
 export default function SADOKnowledgeGraph() {
   useProspectFromUrl();
   const { prospect } = useProspectMode();
+
+  // Dynamic page title
+  useEffect(() => {
+    const p = prospect?.prospectName ? `${prospect.prospectName} · ` : "";
+    document.title = `SADO · ${p}Knowledge Graph`;
+    return () => { document.title = "AgenThinkMesh"; };
+  }, [prospect?.prospectName]);
+
   const graphQ = trpc.sado.getKnowledgeGraph.useQuery();
   const graph = graphQ.data;
 

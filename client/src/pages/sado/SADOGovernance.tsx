@@ -543,6 +543,14 @@ async function exportGovernanceSummaryPDF(prospect: { prospectName: string; orga
 export default function SADOGovernance() {
   useProspectFromUrl();
   const { prospect } = useProspectMode();
+
+  // Dynamic page title
+  useEffect(() => {
+    const p = prospect?.prospectName ? `${prospect.prospectName} · ` : "";
+    document.title = `SADO · ${p}Governance`;
+    return () => { document.title = "AgenThinkMesh"; };
+  }, [prospect?.prospectName]);
+
   const alertsQ = trpc.sado.getGovernanceAlerts.useQuery();
   const alerts = alertsQ.data ?? [];
 
