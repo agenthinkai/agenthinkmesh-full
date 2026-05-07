@@ -4281,3 +4281,5 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Phase A.62 — Refetch indicator (spinning dot) on SADO landing pillar badges
 
 - [x] Phase A.67 — og:image and og:image:alt tags on SADO landing metadata useEffect
+
+- [x] Phase A.67 OG image — sado-og-preview.png (1200x630) placed in client/public/
