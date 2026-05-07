@@ -4234,3 +4234,9 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] SADOKnowledgeGraph: Same pattern. Page-specific copy.
 - [x] SADOEscalations: Same pattern. Page-specific copy.
 - [x] Fixed agentsQQ → agentsQ in SADOCommandCentre (re-introduced by edit). tsc EXIT:0.
+
+## Session — SADO Phase A.66 (2026-05-07)
+- [x] Installed qrcode.react 4.2.0 (lightweight QR package)
+- [x] Added QrCode icon + Show QR button beside Copy link in SADOLanding.tsx (visible only when Prospect Mode active)
+- [x] QR dialog: fixed overlay, dark SADO styling, prospect name/org header, 192px QRCodeSVG, Copy link button with copied/idle states
+- [x] Dialog placed outside ternary to avoid JSX parse errors. tsc EXIT:0.

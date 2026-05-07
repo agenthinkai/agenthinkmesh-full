@@ -82,6 +82,7 @@
     "pdfkit": "^0.17.2",
     "pptx2json": "^0.0.10",
     "pptxgenjs": "^4.0.1",
+    "qrcode.react": "^4.2.0",
     "react": "^19.2.1",
     "react-day-picker": "^9.11.1",
     "react-dom": "^19.2.1",
