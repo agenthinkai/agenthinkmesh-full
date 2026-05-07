@@ -4286,3 +4286,4 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 - [x] Phase A.76 — Refetch indicator on Command Centre live counters (isFetching pulsing dot on KPI cards)
 - [x] A.77: Added "Last synced N min ago" freshness line to SADOGovernance and SADOAuditTrail page headers. Uses 30s ticker + relativeTime helper derived from dataUpdatedAt. alertsQ/auditQ now poll every 15s. tsc EXIT:0.
+- [x] B.1: Added Consensus Governance Engine concept section to SADOLanding.tsx. Dark bg-[oklch(0.10_0.02_255)] section between Capability Pillars and Architecture note. Includes section header with amber "architecture preview" badge, 4-step decision flow (Data Event → 10-Agent Review → Consensus Decision → Audit Evidence), 10 agent chips in a 5-col grid (each with number, emoji icon, name, per-agent accent colour), and a footer note. No new dependencies. tsc EXIT:0.

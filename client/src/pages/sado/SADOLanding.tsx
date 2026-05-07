@@ -475,6 +475,84 @@ export default function SADOLanding() {
         </div>
       </div>
 
+      {/* Consensus Governance Engine */}
+      <div className="border-t border-border bg-[oklch(0.10_0.02_255)]">
+        <div className="max-w-5xl mx-auto px-6 py-14">
+
+          {/* Section header */}
+          <div className="mb-10">
+            <p className="text-xs font-semibold uppercase tracking-widest text-blue-400/70 mb-1">
+              Strategic Governance Layer
+            </p>
+            <h2 className="text-2xl font-bold text-white">Consensus Governance Engine</h2>
+            <p className="text-sm text-slate-400 mt-2 max-w-2xl leading-relaxed">
+              High-risk data decisions are evaluated by a council of ten specialist AI agents before
+              enforcement. Each agent contributes an independent perspective — from legal residency
+              to red-team challenge — and the council reaches a weighted consensus before any
+              transfer is approved, blocked, or escalated.
+            </p>
+            <span className="inline-flex items-center gap-1.5 mt-3 px-2.5 py-1 rounded-full border border-amber-500/25 bg-amber-500/8 text-xs text-amber-400 font-medium">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400/70 inline-block" />
+              Strategic layer — architecture preview
+            </span>
+          </div>
+
+          {/* Decision flow */}
+          <div className="flex flex-wrap items-center gap-2 mb-10">
+            {([
+              { label: "Data Event",        color: "border-slate-700 bg-slate-800/60 text-slate-300" },
+              { label: "→",                 color: "text-slate-600",                                  arrow: true },
+              { label: "10-Agent Review",   color: "border-blue-500/30 bg-blue-500/8 text-blue-300" },
+              { label: "→",                 color: "text-slate-600",                                  arrow: true },
+              { label: "Consensus Decision",color: "border-emerald-500/30 bg-emerald-500/8 text-emerald-300" },
+              { label: "→",                 color: "text-slate-600",                                  arrow: true },
+              { label: "Audit Evidence",    color: "border-violet-500/30 bg-violet-500/8 text-violet-300" },
+            ] as { label: string; color: string; arrow?: boolean }[]).map(({ label, color, arrow }, i) =>
+              arrow ? (
+                <span key={i} className={`text-lg font-light ${color}`}>{label}</span>
+              ) : (
+                <span key={i} className={`px-3 py-1 rounded-lg border text-xs font-semibold tracking-wide ${color}`}>
+                  {label}
+                </span>
+              )
+            )}
+          </div>
+
+          {/* Agent chips grid */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+            {([
+              { num: "01", name: "Data Residency Judge",      icon: "⚖",  accent: "border-blue-500/25   bg-blue-500/6   text-blue-300"    },
+              { num: "02", name: "Privacy Officer",           icon: "🔒", accent: "border-violet-500/25 bg-violet-500/6 text-violet-300"  },
+              { num: "03", name: "Security Architect",        icon: "🛡",  accent: "border-slate-500/25  bg-slate-500/6  text-slate-300"   },
+              { num: "04", name: "Compliance Counsel",        icon: "📋", accent: "border-emerald-500/25 bg-emerald-500/6 text-emerald-300" },
+              { num: "05", name: "Risk Quant",                icon: "📊", accent: "border-amber-500/25  bg-amber-500/6  text-amber-300"   },
+              { num: "06", name: "Cloud Sovereignty Analyst", icon: "☁",  accent: "border-cyan-500/25   bg-cyan-500/6   text-cyan-300"    },
+              { num: "07", name: "Lineage Auditor",           icon: "🔗", accent: "border-indigo-500/25 bg-indigo-500/6 text-indigo-300"  },
+              { num: "08", name: "Business Impact Assessor", icon: "💼", accent: "border-orange-500/25 bg-orange-500/6 text-orange-300"  },
+              { num: "09", name: "Red-Team Challenger",       icon: "⚡", accent: "border-red-500/25    bg-red-500/6    text-red-300"     },
+              { num: "10", name: "Final Arbiter",             icon: "✦",  accent: "border-yellow-500/25 bg-yellow-500/6 text-yellow-300"  },
+            ] as { num: string; name: string; icon: string; accent: string }[]).map(({ num, name, icon, accent }) => (
+              <div
+                key={num}
+                className={`rounded-xl border ${accent} p-3.5 flex flex-col gap-1.5 select-none`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-bold tabular-nums text-slate-600">{num}</span>
+                  <span className="text-base leading-none" role="img" aria-label={name}>{icon}</span>
+                </div>
+                <p className="text-[11px] font-semibold text-slate-200 leading-snug">{name}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer note */}
+          <p className="text-xs text-slate-600 mt-6 leading-relaxed max-w-xl">
+            Each agent votes independently. The Final Arbiter synthesises all ten perspectives into
+            a single enforceable decision with a full rationale chain written to the audit trail.
+          </p>
+        </div>
+      </div>
+
       {/* Architecture note */}
       <div className="max-w-5xl mx-auto px-6 pb-16">
         <div className="rounded-xl border border-border bg-slate-50 p-6">
