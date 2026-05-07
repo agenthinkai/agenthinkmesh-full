@@ -545,11 +545,19 @@ export default function SADOLanding() {
             ))}
           </div>
 
-          {/* Footer note */}
-          <p className="text-xs text-slate-600 mt-6 leading-relaxed max-w-xl">
-            Each agent votes independently. The Final Arbiter synthesises all ten perspectives into
-            a single enforceable decision with a full rationale chain written to the audit trail.
-          </p>
+          {/* Footer note + CTA */}
+          <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
+            <p className="text-xs text-slate-600 leading-relaxed max-w-xl">
+              Each agent votes independently. The Final Arbiter synthesises all ten perspectives into
+              a single enforceable decision with a full rationale chain written to the audit trail.
+            </p>
+            <Link href={`/sado/consensus${buildProspectQuery(prospect)}`}>
+              <button className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg border border-blue-500/30 bg-blue-500/8 text-xs font-semibold text-blue-300 hover:text-blue-200 hover:border-blue-500/50 transition-colors flex-shrink-0">
+                Explore the council
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </Link>
+          </div>
         </div>
       </div>
 
