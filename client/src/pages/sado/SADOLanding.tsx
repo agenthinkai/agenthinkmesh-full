@@ -96,6 +96,27 @@ export default function SADOLanding() {
     }
   };
 
+  // Page title + meta description
+  useEffect(() => {
+    const prospectPart = prospect?.prospectName ? `${prospect.prospectName} · ` : "";
+    document.title = `SADO · ${prospectPart}Sovereign Autonomous Data Operations`;
+
+    let metaDesc = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+    if (!metaDesc) {
+      metaDesc = document.createElement("meta");
+      metaDesc.name = "description";
+      document.head.appendChild(metaDesc);
+    }
+    metaDesc.content =
+      "Sovereign Autonomous Data Operations for regulated GCC enterprise data engineering, governance, audit, and escalation workflows.";
+
+    return () => {
+      document.title = "AgenThinkMesh";
+      const desc = document.querySelector<HTMLMetaElement>('meta[name="description"]');
+      if (desc) desc.remove();
+    };
+  }, [prospect?.prospectName]);
+
   // Keyboard shortcut: P → open ProspectModal (same guard pattern as other SADO pages)
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
