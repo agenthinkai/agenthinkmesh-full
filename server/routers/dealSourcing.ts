@@ -1165,4 +1165,37 @@ export const dealSourcingRouter = router({
         total: verdictFiltered.length,
       };
     }),
+
+  /**
+   * DS.6 — Clear all ignored leads.
+   * Permanently deletes every row in deal_sources where status = 'ignored'.
+   * Does NOT touch sourced / triaged / promoted / screened rows.
+   * Does NOT touch deal_screenings records.
+   */
+  clearIgnoredLeads: protectedProcedure
+    .mutation(async () => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      // Count first so we can return a meaningful result
+      const rows = await db
+        .select({ id: dealSources.id })
+        .from(dealSources)
+        .where(eq(dealSources.status, "ignored"));
+
+      const count = rows.length;
+
+      if (count > 0) {
+        await db
+          .delete(dealSources)
+          .where(eq(dealSources.status, "ignored"));
+      }
+
+      return {
+        cleared: count,
+        message: count === 0
+          ? "No ignored leads to clear."
+          : `Cleared ${count} ignored lead${count !== 1 ? "s" : ""}.`,
+      };
+    }),
 });

@@ -706,6 +706,15 @@ export default function DealSourcing() {
     onError: (e) => toast.error("Bulk screening failed", { description: e.message }),
   });
 
+  const clearIgnoredMut = trpc.dealSourcing.clearIgnoredLeads.useMutation({
+    onSuccess: (data) => {
+      toast.success("Ignored leads cleared", { description: data.message });
+      leadsQ.refetch();
+      agentStatsQ.refetch();
+    },
+    onError: (e) => toast.error("Clear failed", { description: e.message }),
+  });
+
   const handleTriage = useCallback((id: number) => {
     setTriagingId(id);
     triageMut.mutate({ ids: [id], autoPromoteTop: 0 });
@@ -741,6 +750,13 @@ export default function DealSourcing() {
   // Unique sectors/regions for screened filters
   const screenedSectors = Array.from(new Set(screenedLeads.map((l) => l.sector).filter(Boolean))) as string[];
   const screenedRegions = Array.from(new Set(screenedLeads.map((l) => l.region).filter(Boolean))) as string[];
+
+  const handleClearIgnored = useCallback(() => {
+    const count = leads.filter((l) => l.status === "ignored").length;
+    if (count === 0) return;
+    const confirmed = window.confirm(`Clear ${count} ignored lead${count !== 1 ? "s" : ""}? This cannot be undone.`);
+    if (confirmed) clearIgnoredMut.mutate();
+  }, [leads, clearIgnoredMut]);
 
   // Screened verdict breakdown
   const screenedStats = {
@@ -1016,6 +1032,25 @@ export default function DealSourcing() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Clear Ignored button */}
+            {stats.ignored > 0 && (
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-3 text-xs text-slate-500 hover:text-red-400 hover:bg-red-900/20 border border-slate-700/40 hover:border-red-700/40"
+                  onClick={handleClearIgnored}
+                  disabled={clearIgnoredMut.isPending}
+                >
+                  {clearIgnoredMut.isPending
+                    ? <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                    : <EyeOff className="w-3 h-3 mr-1.5" />
+                  }
+                  Clear Ignored ({stats.ignored})
+                </Button>
+              </div>
+            )}
 
             {/* Lead list */}
             <div className="space-y-2">
