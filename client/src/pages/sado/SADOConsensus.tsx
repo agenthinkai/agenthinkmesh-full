@@ -39,13 +39,15 @@ interface AgentVote {
   rationaleA: string;
   voteB: Vote;
   rationaleB: string;
+  voteC: Vote;
+  rationaleC: string;
   accent: string;
   nameColor: string;
   icon: string;
 }
 
 interface ScenarioMeta {
-  id: "A" | "B";
+  id: "A" | "B" | "C";
   name: string;
   source: string;
   destination: string;
@@ -111,6 +113,8 @@ const COUNCIL: AgentVote[] = [
     rationaleA: "Destination is Frankfurt (EU), outside the SDAIA-approved transfer list. No adequacy decision exists between KSA and Germany. Transfer must be blocked pending SDAIA approval.",
     voteB: "ESCALATE",
     rationaleB: "Kuwait CITRA permits SWIFT payment metadata transfer to MAS-regulated jurisdictions under enhanced controls. Residency risk is moderate — escalation for human review is appropriate.",
+    voteC: "ALLOW",
+    rationaleC: "UAE sovereign cloud zone satisfies NESA data localisation requirements. In-country processing with no cross-border movement. Residency obligation fully met.",
     accent: "border-blue-500/25 bg-blue-500/6", nameColor: "text-blue-300", icon: "⚖",
   },
   {
@@ -120,6 +124,8 @@ const COUNCIL: AgentVote[] = [
     rationaleA: "Customer behavioural PII lacks contractual safeguards (SCCs) with the Frankfurt processor. Consent was not collected for cross-border analytics replication.",
     voteB: "ESCALATE",
     rationaleB: "SWIFT metadata does not constitute personal data under PDPL KW Article 2. Counterparty risk signals are institutional, not individual. Privacy risk is low; escalation sufficient.",
+    voteC: "ALLOW",
+    rationaleC: "Tokenised financial telemetry contains no direct identifiers. Internal Tokenisation Policy v2.1 compliance confirmed. No privacy risk — ALLOW.",
     accent: "border-violet-500/25 bg-violet-500/6", nameColor: "text-violet-300", icon: "🔒",
   },
   {
@@ -129,6 +135,8 @@ const COUNCIL: AgentVote[] = [
     rationaleA: "Replication channel uses TLS 1.2 without customer-managed keys. Encryption key custody would transfer outside sovereign control. Remediation required before transfer.",
     voteB: "ESCALATE",
     rationaleB: "SWIFT network uses ISO 20022 with end-to-end encryption. Key custody remains with the originating institution. Security posture is acceptable under enhanced monitoring.",
+    voteC: "ALLOW",
+    rationaleC: "UAE sovereign cloud zone uses customer-managed BYOK with HSM. Encryption key custody remains within UAE jurisdiction. Security posture is fully compliant.",
     accent: "border-slate-500/25 bg-slate-500/6", nameColor: "text-slate-300", icon: "🛡",
   },
   {
@@ -138,6 +146,8 @@ const COUNCIL: AgentVote[] = [
     rationaleA: "No Article 29 exception applies. Transfer for analytics replication is not necessary for performance of an international obligation. Legal basis absent.",
     voteB: "INTERCEPT",
     rationaleB: "Fraud analytics routing requires explicit CITRA approval for cross-border data movement. No standing approval exists for Singapore destination. Legal basis requires verification.",
+    voteC: "ALLOW",
+    rationaleC: "Internal model optimisation is an approved analytics use case under Model Optimisation Governance policy. No cross-border transfer. Legal basis confirmed.",
     accent: "border-emerald-500/25 bg-emerald-500/6", nameColor: "text-emerald-300", icon: "📋",
   },
   {
@@ -147,6 +157,8 @@ const COUNCIL: AgentVote[] = [
     rationaleA: "Estimated regulatory exposure: SAR 5–20M under PDPL SA. Reputational risk score: 8.4/10. Expected value of proceeding is negative. Block recommended.",
     voteB: "ESCALATE",
     rationaleB: "Regulatory exposure is KWD 50–200K (moderate). Fraud analytics delay risk: 2.3× increase in undetected transaction fraud. Expected value of escalation exceeds hard block.",
+    voteC: "ALLOW",
+    rationaleC: "Regulatory exposure: near-zero (in-country sovereign cloud). Operational benefit of model optimisation is high. Expected value of allowing is strongly positive.",
     accent: "border-amber-500/25 bg-amber-500/6", nameColor: "text-amber-300", icon: "📊",
   },
   {
@@ -156,6 +168,8 @@ const COUNCIL: AgentVote[] = [
     rationaleA: "Frankfurt region is operated by AWS EU (not a GCC-sovereign operator). No NESA cloud security assessment on file for this destination. Transfer not cleared.",
     voteB: "ESCALATE",
     rationaleB: "Singapore MAS TRM guidelines are recognised by CITRA as equivalent controls. AWS AP-SOUTHEAST-1 has MAS-approved cloud certification. Sovereignty risk is manageable.",
+    voteC: "ALLOW",
+    rationaleC: "Destination is UAE sovereign cloud zone (NESA-certified). Cloud operator is UAE-domiciled. Full sovereignty compliance confirmed — no cross-border cloud risk.",
     accent: "border-cyan-500/25 bg-cyan-500/6", nameColor: "text-cyan-300", icon: "☁",
   },
   {
@@ -165,6 +179,8 @@ const COUNCIL: AgentVote[] = [
     rationaleA: "Lineage graph shows 3 upstream PII joins not reflected in the transfer manifest. Incomplete lineage means audit trail would be non-compliant. Block until manifest is corrected.",
     voteB: "ESCALATE",
     rationaleB: "SWIFT message lineage is complete and traceable to originating bank. Counterparty risk signal lineage has 1 unresolved upstream join — escalation for review before routing.",
+    voteC: "ALLOW",
+    rationaleC: "Tokenised telemetry lineage is fully traced from source system to model training pipeline. No upstream PII joins. Audit trail is complete and immutable.",
     accent: "border-indigo-500/25 bg-indigo-500/6", nameColor: "text-indigo-300", icon: "🔗",
   },
   {
@@ -174,6 +190,8 @@ const COUNCIL: AgentVote[] = [
     rationaleA: "Analytics workload is time-sensitive (quarterly reporting). Blocking has a 3-day operational impact. Recommend escalation to explore a federated query alternative that avoids replication.",
     voteB: "ESCALATE",
     rationaleB: "Fraud analytics delay has direct financial impact: estimated USD 1.2M in undetected fraud per 24-hour delay. Escalation with enhanced controls is the optimal risk-adjusted path.",
+    voteC: "ALLOW",
+    rationaleC: "Model optimisation improves fraud detection accuracy by an estimated 12%. Operational benefit is high. No blocking impact — ALLOW with standard audit logging.",
     accent: "border-orange-500/25 bg-orange-500/6", nameColor: "text-orange-300", icon: "💼",
   },
   {
@@ -183,6 +201,8 @@ const COUNCIL: AgentVote[] = [
     rationaleA: "Majority INTERCEPT is sound, but the absence of a federated alternative creates a business deadlock. Escalation to explore privacy-preserving computation (PPC) is warranted before hard block.",
     voteB: "ALLOW",
     rationaleB: "SWIFT fraud analytics is a legitimate financial crime prevention use case. MAS-regulated destination with full audit trail. Majority ESCALATE is overly cautious — ALLOW under standard monitoring.",
+    voteC: "ESCALATE",
+    rationaleC: "Tokenised telemetry is low-risk, but model training pipelines can inadvertently reconstruct identifiers. Recommend enhanced monitoring controls as a precaution before full ALLOW.",
     accent: "border-red-500/25 bg-red-500/6", nameColor: "text-red-300", icon: "⚡",
   },
   {
@@ -192,6 +212,8 @@ const COUNCIL: AgentVote[] = [
     rationaleA: "8/10 agents identify hard regulatory blockers. The 2 ESCALATE votes raise valid operational concerns but do not override the legal and residency violations. Decision: INTERCEPT. Override path open via Governance Engine.",
     voteB: "ESCALATE",
     rationaleB: "6/10 agents recommend ESCALATE. 3 INTERCEPT votes flag real but manageable risks (legal basis, lineage gap). 1 ALLOW vote is noted but insufficient. Decision: ESCALATE — route to human approval with enhanced controls.",
+    voteC: "ALLOW",
+    rationaleC: "7/10 agents confirm full policy compliance. 2 ESCALATE votes (Business Impact Assessor, Red-Team Challenger) raise valid but non-blocking concerns. Decision: ALLOW under standard audit logging and enhanced monitoring controls.",
     accent: "border-yellow-500/25 bg-yellow-500/6", nameColor: "text-yellow-300", icon: "✦",
   },
 ];
@@ -271,6 +293,43 @@ const SCENARIO_B: ScenarioMeta = {
   },
 };
 
+const SCENARIO_C: ScenarioMeta = {
+  id: "C",
+  name: "Regulated analytics safe-zone routing",
+  source: "UAE",
+  destination: "UAE sovereign cloud zone",
+  classification: "Tokenised financial telemetry + non-identifying operational metrics",
+  requestedAction: "Internal model optimisation",
+  deliberationTime: "534 ms",
+  finalDecision: "ALLOW",
+  interceptCount: 1,
+  escalateCount: 2,
+  allowCount: 7,
+  confidence: "88%",
+  reason: "Tokenisation, in-country processing, and approved sovereign-cloud controls satisfy all policy thresholds. Transfer permitted under standard audit logging and enhanced monitoring.",
+  rationaleChain: [
+    { step: 1, label: "Tokenisation compliance confirmed",        detail: "Source data: tokenised financial telemetry. No direct identifiers detected. Internal Tokenisation Policy v2.1 compliance verified by Privacy Officer." },
+    { step: 2, label: "In-country sovereign cloud verified",      detail: "Destination is UAE sovereign cloud zone (NESA-certified). Cloud operator is UAE-domiciled. No cross-border data movement. Residency obligation fully met." },
+    { step: 3, label: "Approved analytics use case confirmed",    detail: "Internal model optimisation is an approved use case under Model Optimisation Governance policy. Legal basis confirmed by Compliance Counsel." },
+    { step: 4, label: "Enhanced monitoring controls applied",     detail: "Red-Team Challenger raised a precautionary flag on model training pipelines. Enhanced monitoring controls applied as a precaution. No hard block warranted." },
+    { step: 5, label: "Audit evidence generated",                 detail: "Consensus record CGE-2024-0112 written to immutable audit trail. OpenTelemetry trace ID attached. ALLOW decision logged with full rationale chain." },
+  ],
+  policyThresholds: [
+    { policy: "UAE NESA Cloud Security",          threshold: "Sovereign-zone processing control",                   result: "PASSED",   risk: "Medium" },
+    { policy: "Internal Tokenisation Policy v2.1", threshold: "No direct identifiers in telemetry",                  result: "PASSED",   risk: "Low"    },
+    { policy: "Model Optimisation Governance",    threshold: "Approved internal analytics use case",                result: "PASSED",   risk: "Medium" },
+  ],
+  audit: {
+    consensusId: "CGE-2024-0112",
+    timestamp: "2024-11-14T14:09:27Z",
+    voteBreakdown: "1 INTERCEPT · 2 ESCALATE · 7 ALLOW",
+    traceId: "otel-trace-5c8d1e4f-2a6b-4c9d-c3e4-f5a6b7c8d9e0",
+    majorityRationale: "Transfer permitted: tokenised telemetry with no direct identifiers, in-country sovereign cloud processing, and approved analytics use case. All three policy thresholds passed. Standard audit logging and enhanced monitoring controls applied.",
+    minorityOpinion: "2 agents (Business Impact Assessor, Red-Team Challenger) recommended ESCALATE citing model training pipeline re-identification risk. 1 agent (Compliance Counsel) recommended INTERCEPT pending explicit governance sign-off. Minority positions noted in audit record.",
+    overridePath: "Not required — ALLOW decision is final. Enhanced monitoring active for 90-day review window.",
+  },
+};
+
 // ── Comparison strip data ─────────────────────────────────────────────────────
 const COMPARISON = [
   {
@@ -289,6 +348,14 @@ const COMPARISON = [
     verdict: "ESCALATE" as Vote,
     reason: "Payment-risk uncertainty requires human approval before routing.",
   },
+  {
+    id: "C" as const,
+    label: "Scenario C",
+    name: "Regulated analytics safe-zone",
+    route: "UAE → UAE sovereign cloud",
+    verdict: "ALLOW" as Vote,
+    reason: "Tokenisation + in-country sovereign cloud satisfy all policy thresholds.",
+  },
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -297,9 +364,8 @@ export default function SADOConsensus() {
   const { prospect } = useProspectMode();
   const [qrOpen, setQrOpen] = useState(false);
   const { copyState, copyLink: copyProspectLink } = useProspectCopyLink();
-  const [activeScenario, setActiveScenario] = useState<"A" | "B">("A");
-
-  const scenario = activeScenario === "A" ? SCENARIO_A : SCENARIO_B;
+  const [activeScenario, setActiveScenario] = useState<"A" | "B" | "C">("A");
+  const scenario = activeScenario === "A" ? SCENARIO_A : activeScenario === "B" ? SCENARIO_B : SCENARIO_C;
   const vc = VOTE_CONFIG[scenario.finalDecision];
 
   // Dynamic page title + OG tags
@@ -538,9 +604,9 @@ export default function SADOConsensus() {
             <span className="ml-2 font-normal text-slate-600 normal-case tracking-normal">(Scenario {activeScenario})</span>
           </p>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {COUNCIL.map(({ num, name, role, voteA, rationaleA, voteB, rationaleB, accent, nameColor, icon }) => {
-              const vote = activeScenario === "A" ? voteA : voteB;
-              const rationale = activeScenario === "A" ? rationaleA : rationaleB;
+            {COUNCIL.map(({ num, name, role, voteA, rationaleA, voteB, rationaleB, voteC, rationaleC, accent, nameColor, icon }) => {
+              const vote: Vote = activeScenario === "A" ? voteA : activeScenario === "B" ? voteB : voteC;
+              const rationale = activeScenario === "A" ? rationaleA : activeScenario === "B" ? rationaleB : rationaleC;
               const cvc = VOTE_CONFIG[vote];
               return (
                 <div key={num} className={`rounded-xl border ${accent} p-4`}>
