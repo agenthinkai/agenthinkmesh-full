@@ -922,4 +922,55 @@ export const dealSourcingRouter = router({
           : `Re-triaged ${succeeded}/${sourced.length} leads (${failed} failed).`,
       };
     }),
+
+  /**
+   * Re-triage a single lead in-place.
+   * Works for sourced, triaged, and promoted statuses.
+   * Updates triage_score, triage_reasoning, and status based on autoPromoteThreshold.
+   */
+  reTriageLead: protectedProcedure
+    .input(z.object({
+      id: z.number().int(),
+      autoPromoteThreshold: z.number().int().min(0).max(100).default(60),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+      const [lead] = await db.select().from(dealSources).where(eq(dealSources.id, input.id)).limit(1);
+      if (!lead) throw new TRPCError({ code: "NOT_FOUND", message: "Lead not found" });
+      if (lead.status === "screened" || lead.status === "ignored") {
+        throw new TRPCError({ code: "BAD_REQUEST", message: `Cannot re-triage a lead with status '${lead.status}'.` });
+      }
+      const candidate: GeneratedCandidate = {
+        companyName: lead.companyName,
+        sector: lead.sector ?? "Unknown",
+        region: lead.region ?? "Unknown",
+        summary: lead.rawInput.slice(0, 300),
+        relevanceReason: lead.sourceLabel ?? "Sourced candidate",
+        rawInput: lead.rawInput,
+      };
+      const result = await runQuickTriage(candidate);
+      const autoPromote = result.triageScore >= input.autoPromoteThreshold;
+      // Only downgrade from promoted → triaged if score dropped below threshold
+      const newStatus = autoPromote ? "promoted" : (lead.status === "promoted" ? "triaged" : lead.status === "sourced" ? "triaged" : lead.status);
+      await db
+        .update(dealSources)
+        .set({
+          triageScore: String(result.triageScore),
+          triageReasoning: JSON.stringify({
+            agents: result.agents,
+            recommendation: result.recommendation,
+            summary: result.triageReasoning,
+          }),
+          status: newStatus,
+        })
+        .where(eq(dealSources.id, input.id));
+      return {
+        id: input.id,
+        triageScore: result.triageScore,
+        recommendation: result.recommendation,
+        newStatus,
+        message: `Re-triaged ${lead.companyName}: score ${result.triageScore}, status → ${newStatus}.`,
+      };
+    }),
 });

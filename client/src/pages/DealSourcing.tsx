@@ -116,20 +116,22 @@ function relativeTime(d: Date | string | number) {
 
 // ── Lead Row ──────────────────────────────────────────────────────────────────
 
-function LeadRow({ lead, onTriage, onPromote, onIgnore, triageLoading, promoteLoading, ignoreLoading }: {
+function LeadRow({ lead, onTriage, onPromote, onIgnore, onReTriageLead, triageLoading, promoteLoading, ignoreLoading, reTriageLeadLoading }: {
   lead: Lead;
   onTriage: (id: number) => void;
   onPromote: (id: number) => void;
   onIgnore: (id: number) => void;
+  onReTriageLead: (id: number) => void;
   triageLoading: boolean;
   promoteLoading: boolean;
   ignoreLoading: boolean;
+  reTriageLeadLoading: boolean;
 }) {
   const [expanded, setExpanded] = useState(false);
-
   const canTriage = lead.status === "sourced";
   const canPromote = lead.status === "triaged" || lead.status === "promoted";
   const canIgnore = lead.status !== "screened" && lead.status !== "ignored";
+  const canReTriageLead = lead.status === "sourced" || lead.status === "triaged" || lead.status === "promoted";
 
   return (
     <div className="border border-slate-700/50 rounded-lg bg-slate-800/40 hover:bg-slate-800/60 transition-colors">
@@ -166,6 +168,19 @@ function LeadRow({ lead, onTriage, onPromote, onIgnore, triageLoading, promoteLo
             >
               {triageLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <BarChart2 className="w-3 h-3" />}
               <span className="ml-1">Triage</span>
+            </Button>
+          )}
+          {canReTriageLead && (
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7 px-2.5 text-xs border-slate-600/60 text-slate-400 hover:border-blue-600/50 hover:text-blue-300 hover:bg-blue-900/20"
+              onClick={() => onReTriageLead(lead.id)}
+              disabled={reTriageLeadLoading}
+              title="Re-run quick triage for this lead"
+            >
+              {reTriageLeadLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+              <span className="ml-1">Re-triage</span>
             </Button>
           )}
           {canPromote && (
@@ -309,6 +324,16 @@ export default function DealSourcing() {
     onError: (e) => { toast.error("Error", { description: e.message }); setIgnoringId(null); },
   });
 
+  const [reTriageLeadId, setReTriageLeadId] = useState<number | null>(null);
+  const reTriageLeadMut = trpc.dealSourcing.reTriageLead.useMutation({
+    onSuccess: (data) => {
+      toast.success("Re-triage complete", { description: data.message });
+      setReTriageLeadId(null);
+      leadsQ.refetch();
+      agentStatsQ.refetch();
+    },
+    onError: (e) => { toast.error("Re-triage failed", { description: e.message }); setReTriageLeadId(null); },
+  });
   const reTriageMut = trpc.dealSourcing.reTriageSourced.useMutation({
     onSuccess: (data) => {
       toast.success("Re-triage complete", { description: data.message });
@@ -609,9 +634,14 @@ export default function DealSourcing() {
               onTriage={handleTriage}
               onPromote={handlePromote}
               onIgnore={handleIgnore}
+              onReTriageLead={(id) => {
+                setReTriageLeadId(id);
+                reTriageLeadMut.mutate({ id, autoPromoteThreshold: promoteThreshold });
+              }}
               triageLoading={triagingId === lead.id}
               promoteLoading={promotingId === lead.id}
               ignoreLoading={ignoringId === lead.id}
+              reTriageLeadLoading={reTriageLeadId === lead.id && reTriageLeadMut.isPending}
             />
           ))}
         </div>
