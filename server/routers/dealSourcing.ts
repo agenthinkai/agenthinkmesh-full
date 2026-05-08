@@ -393,7 +393,15 @@ export const dealSourcingRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
       const perAgent = Math.max(1, Math.floor(input.count / input.sourceTypes.length));
-      const allCandidates: Array<GeneratedCandidate & { sourceType: "seeded_test" | "manual" | "pattern_match" | "public_signal" }> = [];
+      const allCandidates: Array<GeneratedCandidate & { sourceType: "seeded_test" | "manual" | "pattern_match" | "public_signal"; _agentLabel?: string }> = [];
+
+      // DS.10: Named agent label mapping
+      const AGENT_LABEL_MAP: Record<string, string> = {
+        seeded_test: "GCC Signals",
+        public_signal: "Public Filings",
+        pattern_match: "Pattern Match",
+        manual: "Manual Seed",
+      };
 
       // Run source agents in parallel
       const agentPromises = input.sourceTypes.map(async (sourceType) => {
@@ -416,12 +424,12 @@ export const dealSourcingRouter = router({
         if (r.status === "fulfilled") allCandidates.push(...r.value);
       }
 
-      // Also run sector thesis agent for remaining slots
+      // Also run sector thesis agent for remaining slots — labelled "Founder Network"
       const remaining = input.count - allCandidates.length;
       if (remaining > 0 && input.sourceTypes.length > 0) {
         try {
           const thesisCandidates = await runSectorThesisAgent(Math.min(remaining, 5));
-          allCandidates.push(...thesisCandidates.map((c) => ({ ...c, sourceType: "public_signal" as const })));
+          allCandidates.push(...thesisCandidates.map((c) => ({ ...c, sourceType: "public_signal" as const, _agentLabel: "Founder Network" })));
         } catch (err) {
           console.error("[DealSourcing] Sector thesis agent failed:", err);
         }
@@ -454,7 +462,7 @@ export const dealSourcingRouter = router({
             companyName: candidate.companyName,
             sector: candidate.sector,
             region: candidate.region,
-            sourceLabel: "TEST CANDIDATE",
+            sourceLabel: candidate._agentLabel ?? AGENT_LABEL_MAP[candidate.sourceType] ?? "TEST CANDIDATE",
             status: "sourced",
           });
           if (result.insertId) inserted.push(result.insertId);
@@ -846,6 +854,7 @@ export const dealSourcingRouter = router({
     const allLeads = await db
       .select({
         sourceLabel: dealSources.sourceLabel,
+        sourceType: dealSources.sourceType,
         status: dealSources.status,
         createdAt: dealSources.createdAt,
       })
@@ -854,6 +863,14 @@ export const dealSourcingRouter = router({
 
     const AGENT_LABELS = ["GCC Signals", "Public Filings", "Founder Network", "Pattern Match"] as const;
     type AgentLabel = typeof AGENT_LABELS[number];
+
+    // DS.10: Fall-back mapping for legacy rows stamped "TEST CANDIDATE"
+    const SOURCE_TYPE_FALLBACK: Record<string, AgentLabel> = {
+      seeded_test: "GCC Signals",
+      public_signal: "Public Filings",
+      pattern_match: "Pattern Match",
+      manual: "GCC Signals",
+    };
 
     const stats: Record<AgentLabel, {
       agent: AgentLabel;
@@ -870,7 +887,12 @@ export const dealSourcingRouter = router({
     };
 
     for (const lead of allLeads) {
-      const key = (lead.sourceLabel ?? "Pattern Match") as AgentLabel;
+      // Use named label if it's one of the 4 known agents; otherwise fall back to sourceType mapping
+      const rawLabel = lead.sourceLabel ?? "";
+      const isNamedAgent = (AGENT_LABELS as readonly string[]).includes(rawLabel);
+      const key: AgentLabel = isNamedAgent
+        ? (rawLabel as AgentLabel)
+        : (SOURCE_TYPE_FALLBACK[lead.sourceType ?? ""] ?? "Pattern Match");
       if (!stats[key]) continue;
       stats[key].total++;
       if (lead.status === "promoted") stats[key].promoted++;
