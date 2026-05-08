@@ -1026,4 +1026,143 @@ export const dealSourcingRouter = router({
         message: `Re-triaged ${lead.companyName}: score ${result.triageScore}, status → ${newStatus}.`,
       };
     }),
+
+  /**
+   * DS.12 — List all screened leads with full council verdict details.
+   * Joins deal_sources with deal_screenings to return conditions, blocking issues,
+   * votes, confidence, and special flags for operator review.
+   */
+  listScreenedLeads: protectedProcedure
+    .input(
+      z.object({
+        sector: z.string().optional(),
+        region: z.string().optional(),
+        verdict: z.enum(["APPROVED", "APPROVED_WITH_CONDITIONS", "REJECTED", "VETOED", "INSUFFICIENT_DATA", "all"]).default("all"),
+        limit: z.number().int().min(1).max(200).default(100),
+        offset: z.number().int().min(0).default(0),
+      })
+    )
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      // Fetch all screened leads
+      const sources = await db
+        .select()
+        .from(dealSources)
+        .where(eq(dealSources.status, "screened"))
+        .orderBy(desc(dealSources.createdAt))
+        .limit(input.limit)
+        .offset(input.offset);
+
+      // Apply sector/region filters in JS
+      const filtered = sources.filter((l) => {
+        if (input.sector && l.sector !== input.sector) return false;
+        if (input.region && l.region !== input.region) return false;
+        return true;
+      });
+
+      // Fetch full screening records for all screened leads that have a fullEvalId
+      const evalIds = filtered.filter((l) => l.fullEvalId != null).map((l) => l.fullEvalId!);
+      const screeningMap: Record<number, {
+        verdict: string;
+        yesCount: number;
+        noCount: number;
+        hardYesCount: number;
+        softYesCount: number;
+        softNoCount: number;
+        hardNoCount: number;
+        confidenceScore: string;
+        gccVetoTriggered: boolean;
+        tiebreakerTriggered: boolean;
+        tiebreakerSwingAgent: string | null;
+        conditionsToProceed: string;
+        blockingIssues: string;
+        votes: string;
+        createdAt: Date;
+      }> = {};
+
+      if (evalIds.length > 0) {
+        const screenings = await db
+          .select({
+            id: dealScreenings.id,
+            verdict: dealScreenings.verdict,
+            yesCount: dealScreenings.yesCount,
+            noCount: dealScreenings.noCount,
+            hardYesCount: dealScreenings.hardYesCount,
+            softYesCount: dealScreenings.softYesCount,
+            softNoCount: dealScreenings.softNoCount,
+            hardNoCount: dealScreenings.hardNoCount,
+            confidenceScore: dealScreenings.confidenceScore,
+            gccVetoTriggered: dealScreenings.gccVetoTriggered,
+            tiebreakerTriggered: dealScreenings.tiebreakerTriggered,
+            tiebreakerSwingAgent: dealScreenings.tiebreakerSwingAgent,
+            conditionsToProceed: dealScreenings.conditionsToProceed,
+            blockingIssues: dealScreenings.blockingIssues,
+            votes: dealScreenings.votes,
+            createdAt: dealScreenings.createdAt,
+          })
+          .from(dealScreenings)
+          .where(inArray(dealScreenings.id, evalIds));
+        for (const s of screenings) {
+          screeningMap[s.id] = s;
+        }
+      }
+
+      const leads = filtered.map((l) => {
+        const screening = l.fullEvalId ? (screeningMap[l.fullEvalId] ?? null) : null;
+        const triageReasoning = l.triageReasoning
+          ? (() => { try { return JSON.parse(l.triageReasoning!); } catch { return null; } })()
+          : null;
+
+        let conditionsToProceed: string[] = [];
+        let blockingIssues: string[] = [];
+        let votes: unknown[] = [];
+        if (screening) {
+          try { conditionsToProceed = JSON.parse(screening.conditionsToProceed); } catch { conditionsToProceed = []; }
+          try { blockingIssues = JSON.parse(screening.blockingIssues); } catch { blockingIssues = []; }
+          try { votes = JSON.parse(screening.votes); } catch { votes = []; }
+        }
+
+        return {
+          id: l.id,
+          companyName: l.companyName,
+          sector: l.sector,
+          region: l.region,
+          sourceType: l.sourceType,
+          sourceLabel: l.sourceLabel,
+          rawInput: l.rawInput,
+          triageScore: l.triageScore ? Number(l.triageScore) : null,
+          triageReasoning,
+          createdAt: l.createdAt,
+          fullEvalId: l.fullEvalId,
+          // Full council data
+          verdict: screening?.verdict ?? null,
+          yesCount: screening?.yesCount ?? null,
+          noCount: screening?.noCount ?? null,
+          hardYesCount: screening?.hardYesCount ?? null,
+          softYesCount: screening?.softYesCount ?? null,
+          softNoCount: screening?.softNoCount ?? null,
+          hardNoCount: screening?.hardNoCount ?? null,
+          confidenceScore: screening?.confidenceScore ?? null,
+          gccVetoTriggered: screening?.gccVetoTriggered ?? false,
+          tiebreakerTriggered: screening?.tiebreakerTriggered ?? false,
+          tiebreakerSwingAgent: screening?.tiebreakerSwingAgent ?? null,
+          conditionsToProceed,
+          blockingIssues,
+          votes,
+          screenedAt: screening?.createdAt ?? null,
+        };
+      });
+
+      // Apply verdict filter after joining
+      const verdictFiltered = input.verdict === "all"
+        ? leads
+        : leads.filter((l) => l.verdict === input.verdict);
+
+      return {
+        leads: verdictFiltered,
+        total: verdictFiltered.length,
+      };
+    }),
 });

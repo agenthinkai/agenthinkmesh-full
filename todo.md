@@ -4312,3 +4312,4 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] DS.9 — Fix bulkPromoteToScreener: Promise.allSettled parallel batches (concurrency=5), no limit cap, full summary returned
 - [x] DS.11 — Add deduplication in generateLeads: normalize company name, skip existing, return duplicateSkipped count in toast
 - [x] DS.10 — Fix Sourcing Agents panel: stamp named labels (GCC Signals, Public Filings, Pattern Match, Founder Network) in generateLeads; fall back to sourceType mapping in agentStats for legacy "TEST CANDIDATE" rows
+- [x] DS.12 — Screened Leads View: added listScreenedLeads tRPC procedure (joins deal_sources + deal_screenings), Screened Leads tab in DealSourcing.tsx with verdict breakdown strip, filters (verdict/sector/region), compact ScreenedLeadRow with expandable detail (triage reasoning, full council verdict, conditions, blocking issues, screening record ID)

@@ -22,12 +22,18 @@ import {
   XCircle,
   Clock,
   Filter,
+  ShieldCheck,
+  AlertOctagon,
+  FileText,
+  Info,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type SourceStatus = "sourced" | "triaged" | "promoted" | "screened" | "ignored" | "all";
 type SourceType = "seeded_test" | "manual" | "pattern_match" | "public_signal" | "all";
+type VerdictFilter = "APPROVED" | "APPROVED_WITH_CONDITIONS" | "REJECTED" | "VETOED" | "INSUFFICIENT_DATA" | "all";
+type ActiveTab = "pipeline" | "screened";
 
 interface TriageAgent {
   agentName: string;
@@ -64,6 +70,36 @@ interface Lead {
   createdAt: Date | string | number;
 }
 
+interface ScreenedLead {
+  id: number;
+  companyName: string;
+  sector: string | null;
+  region: string | null;
+  sourceType: string;
+  sourceLabel: string | null;
+  rawInput: string;
+  triageScore: number | null;
+  triageReasoning: TriageReasoning | null;
+  createdAt: number;
+  fullEvalId: number | null;
+  // Full council data
+  verdict: string | null;
+  yesCount: number | null;
+  noCount: number | null;
+  hardYesCount: number | null;
+  softYesCount: number | null;
+  softNoCount: number | null;
+  hardNoCount: number | null;
+  confidenceScore: string | null;
+  gccVetoTriggered: boolean;
+  tiebreakerTriggered: boolean;
+  tiebreakerSwingAgent: string | null;
+  conditionsToProceed: string[];
+  blockingIssues: string[];
+  votes: unknown[];
+  screenedAt: Date | string | null;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function statusBadge(status: string) {
@@ -93,6 +129,15 @@ function verdictBadge(verdict: string) {
   );
 }
 
+function verdictIcon(verdict: string | null) {
+  if (!verdict) return <Info className="w-3.5 h-3.5 text-slate-500" />;
+  if (verdict === "APPROVED") return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />;
+  if (verdict === "APPROVED_WITH_CONDITIONS") return <ShieldCheck className="w-3.5 h-3.5 text-teal-400" />;
+  if (verdict === "VETOED") return <AlertOctagon className="w-3.5 h-3.5 text-red-300" />;
+  if (verdict === "REJECTED") return <XCircle className="w-3.5 h-3.5 text-red-400" />;
+  return <AlertTriangle className="w-3.5 h-3.5 text-slate-400" />;
+}
+
 function recommendationIcon(rec: string) {
   if (rec === "PROMOTE") return <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />;
   if (rec === "WATCH") return <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />;
@@ -104,8 +149,9 @@ function triageScoreColor(score: number) {
   if (score >= 45) return "text-amber-400";
   return "text-red-400";
 }
+
 function relativeTime(d: Date | string | number) {
-  const ms = Date.now() - new Date(typeof d === 'number' ? d : String(d)).getTime();
+  const ms = Date.now() - new Date(typeof d === "number" ? d : String(d)).getTime();
   const min = Math.floor(ms / 60000);
   if (min < 1) return "just now";
   if (min < 60) return `${min}m ago`;
@@ -114,7 +160,14 @@ function relativeTime(d: Date | string | number) {
   return `${Math.floor(hr / 24)}d ago`;
 }
 
-// ── Lead Row ──────────────────────────────────────────────────────────────────
+function confidencePct(score: string | null): string {
+  if (!score) return "—";
+  const n = parseFloat(score);
+  if (isNaN(n)) return "—";
+  return `${Math.round(n * 100)}%`;
+}
+
+// ── Lead Row (Pipeline) ───────────────────────────────────────────────────────
 
 function LeadRow({ lead, onTriage, onPromote, onIgnore, onReTriageLead, triageLoading, promoteLoading, ignoreLoading, reTriageLeadLoading }: {
   lead: Lead;
@@ -256,10 +309,211 @@ function LeadRow({ lead, onTriage, onPromote, onIgnore, onReTriageLead, triageLo
                 <span className="text-xs text-slate-400">
                   {lead.councilVerdict.yesCount} YES · {lead.councilVerdict.noCount} NO
                 </span>
-                <span className="text-xs text-slate-400">
-                  Confidence: {(Number(lead.councilVerdict.confidenceScore) * 100).toFixed(0)}%
+                <span className="text-xs text-slate-500">
+                  Confidence: {confidencePct(lead.councilVerdict.confidenceScore)}
                 </span>
               </div>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Screened Lead Row ─────────────────────────────────────────────────────────
+
+function ScreenedLeadRow({ lead }: { lead: ScreenedLead }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const triageAgents = lead.triageReasoning?.agents ?? [];
+  const hasConditions = lead.conditionsToProceed.length > 0;
+  const hasBlocking = lead.blockingIssues.length > 0;
+
+  return (
+    <div className="border border-slate-700/50 rounded-lg bg-slate-800/40 hover:bg-slate-800/60 transition-colors">
+      {/* Compact table row */}
+      <div className="flex items-start gap-3 px-4 py-3">
+        <div className="flex-1 min-w-0">
+          {/* Row 1: Company + verdict + score */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1.5">
+              {verdictIcon(lead.verdict)}
+              <span className="font-semibold text-slate-100 text-sm">{lead.companyName}</span>
+            </div>
+            {lead.verdict && verdictBadge(lead.verdict)}
+            {lead.triageScore !== null && (
+              <span className={`text-xs font-mono font-semibold ${triageScoreColor(lead.triageScore)}`}>
+                T:{lead.triageScore}
+              </span>
+            )}
+            {lead.gccVetoTriggered && (
+              <Badge className="bg-red-900/60 text-red-300 text-xs px-1.5 py-0.5">GCC VETO</Badge>
+            )}
+            {lead.tiebreakerTriggered && (
+              <Badge className="bg-purple-900/60 text-purple-300 text-xs px-1.5 py-0.5">TIEBREAKER</Badge>
+            )}
+          </div>
+
+          {/* Row 2: Metadata */}
+          <div className="flex items-center gap-3 mt-1 text-xs text-slate-500 flex-wrap">
+            {lead.sector && <span className="flex items-center gap-1"><Layers className="w-3 h-3" />{lead.sector}</span>}
+            {lead.region && <span className="flex items-center gap-1"><Globe className="w-3 h-3" />{lead.region}</span>}
+            {lead.yesCount !== null && lead.noCount !== null && (
+              <span className="flex items-center gap-1">
+                <span className="text-emerald-500">{lead.yesCount}Y</span>
+                <span className="text-slate-600">·</span>
+                <span className="text-red-500">{lead.noCount}N</span>
+              </span>
+            )}
+            {lead.confidenceScore && (
+              <span className="flex items-center gap-1 text-slate-400">
+                {confidencePct(lead.confidenceScore)} conf
+              </span>
+            )}
+            {lead.sourceLabel && (
+              <span className="flex items-center gap-1 text-slate-600">
+                via {lead.sourceLabel}
+              </span>
+            )}
+            <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{relativeTime(lead.createdAt)}</span>
+            {lead.screenedAt && (
+              <span className="flex items-center gap-1 text-slate-600">
+                screened {relativeTime(lead.screenedAt)}
+              </span>
+            )}
+          </div>
+
+          {/* Row 3: Conditions / blocking summary (inline preview) */}
+          {(hasConditions || hasBlocking) && (
+            <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+              {hasBlocking && (
+                <span className="text-xs text-red-400 flex items-center gap-1">
+                  <XCircle className="w-3 h-3" />
+                  {lead.blockingIssues.length} blocking issue{lead.blockingIssues.length !== 1 ? "s" : ""}
+                </span>
+              )}
+              {hasConditions && (
+                <span className="text-xs text-teal-400 flex items-center gap-1">
+                  <ShieldCheck className="w-3 h-3" />
+                  {lead.conditionsToProceed.length} condition{lead.conditionsToProceed.length !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+          )}
+        </div>
+
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 px-2 text-xs text-slate-500 hover:text-slate-300 shrink-0 mt-0.5"
+          onClick={() => setExpanded((p) => !p)}
+        >
+          {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+        </Button>
+      </div>
+
+      {/* Expanded detail */}
+      {expanded && (
+        <div className="px-4 pb-4 space-y-4 border-t border-slate-700/40 pt-3">
+
+          {/* Raw input */}
+          <div>
+            <p className="text-xs text-slate-500 mb-1 uppercase tracking-wide">Source Input</p>
+            <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{lead.rawInput}</p>
+          </div>
+
+          {/* Triage reasoning */}
+          {triageAgents.length > 0 && (
+            <div>
+              <p className="text-xs text-slate-500 mb-2 uppercase tracking-wide">Quick Triage Reasoning</p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {triageAgents.map((a) => (
+                  <div key={a.agentName} className="bg-slate-900/60 rounded p-2.5 border border-slate-700/40">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-slate-200">{a.agentName}</span>
+                      <div className="flex items-center gap-1">
+                        {recommendationIcon(a.recommendation)}
+                        <span className={`text-xs font-mono font-semibold ${triageScoreColor(a.score)}`}>{a.score}</span>
+                      </div>
+                    </div>
+                    <p className="text-xs text-slate-400 leading-relaxed">{a.reasoning}</p>
+                  </div>
+                ))}
+              </div>
+              {lead.triageReasoning?.summary && (
+                <p className="text-xs text-slate-400 mt-2 italic">{lead.triageReasoning.summary}</p>
+              )}
+            </div>
+          )}
+
+          {/* Full council verdict summary */}
+          {lead.verdict && (
+            <div>
+              <p className="text-xs text-slate-500 mb-2 uppercase tracking-wide">Full Council Verdict Summary</p>
+              <div className="bg-slate-900/60 rounded-lg border border-slate-700/40 p-3 space-y-2">
+                <div className="flex items-center gap-3 flex-wrap">
+                  {verdictBadge(lead.verdict)}
+                  <span className="text-xs text-slate-300">
+                    {lead.yesCount} YES · {lead.noCount} NO
+                    {lead.hardYesCount ? ` (${lead.hardYesCount} hard YES)` : ""}
+                    {lead.hardNoCount ? ` · ${lead.hardNoCount} hard NO` : ""}
+                  </span>
+                  <span className="text-xs text-slate-400">
+                    Confidence: {confidencePct(lead.confidenceScore)}
+                  </span>
+                </div>
+                {lead.gccVetoTriggered && (
+                  <p className="text-xs text-red-400 flex items-center gap-1">
+                    <AlertOctagon className="w-3 h-3" />
+                    GCC Veto triggered — regional compliance block
+                  </p>
+                )}
+                {lead.tiebreakerTriggered && lead.tiebreakerSwingAgent && (
+                  <p className="text-xs text-purple-400 flex items-center gap-1">
+                    <AlertTriangle className="w-3 h-3" />
+                    Tiebreaker resolved by: {lead.tiebreakerSwingAgent}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Conditions to proceed */}
+          {hasConditions && (
+            <div>
+              <p className="text-xs text-slate-500 mb-1.5 uppercase tracking-wide">Conditions to Proceed</p>
+              <ul className="space-y-1">
+                {lead.conditionsToProceed.map((c, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs text-teal-300">
+                    <ShieldCheck className="w-3 h-3 mt-0.5 shrink-0 text-teal-500" />
+                    <span>{c}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Blocking issues */}
+          {hasBlocking && (
+            <div>
+              <p className="text-xs text-slate-500 mb-1.5 uppercase tracking-wide">Blocking Issues</p>
+              <ul className="space-y-1">
+                {lead.blockingIssues.map((b, i) => (
+                  <li key={i} className="flex items-start gap-2 text-xs text-red-400">
+                    <XCircle className="w-3 h-3 mt-0.5 shrink-0 text-red-500" />
+                    <span>{b}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Decision Integrity note */}
+          {lead.fullEvalId && (
+            <div className="flex items-center gap-2 text-xs text-slate-600 border-t border-slate-700/30 pt-2">
+              <FileText className="w-3 h-3" />
+              <span>Full screening record ID: {lead.fullEvalId} — open Deal Screener to view per-persona votes</span>
             </div>
           )}
         </div>
@@ -271,11 +525,19 @@ function LeadRow({ lead, onTriage, onPromote, onIgnore, onReTriageLead, triageLo
 // ── Main Page ─────────────────────────────────────────────────────────────────
 
 export default function DealSourcing() {
-  // Filters
+  // Tab state
+  const [activeTab, setActiveTab] = useState<ActiveTab>("pipeline");
+
+  // Pipeline filters
   const [statusFilter, setStatusFilter] = useState<SourceStatus>("all");
   const [sourceTypeFilter, setSourceTypeFilter] = useState<SourceType>("all");
   const [sectorFilter, setSectorFilter] = useState("all");
   const [regionFilter, setRegionFilter] = useState("all");
+
+  // Screened leads filters
+  const [screenedVerdictFilter, setScreenedVerdictFilter] = useState<VerdictFilter>("all");
+  const [screenedSectorFilter, setScreenedSectorFilter] = useState("all");
+  const [screenedRegionFilter, setScreenedRegionFilter] = useState("all");
 
   // Auto-promote threshold (0–100, default 60)
   const [promoteThreshold, setPromoteThreshold] = useState(60);
@@ -291,7 +553,18 @@ export default function DealSourcing() {
     { refetchInterval: 30000 }
   );
 
+  const screenedQ = trpc.dealSourcing.listScreenedLeads.useQuery(
+    {
+      verdict: screenedVerdictFilter,
+      sector: screenedSectorFilter === "all" ? undefined : screenedSectorFilter,
+      region: screenedRegionFilter === "all" ? undefined : screenedRegionFilter,
+      limit: 100,
+    },
+    { refetchInterval: 30000 }
+  );
+
   const agentStatsQ = trpc.dealSourcing.agentStats.useQuery(undefined, { refetchInterval: 30000 });
+
   // Mutations
   const generateMut = trpc.dealSourcing.generateLeads.useMutation({
     onSuccess: (data) => {
@@ -318,6 +591,7 @@ export default function DealSourcing() {
       toast.success("Council complete", { description: data.message });
       setPromotingId(null);
       leadsQ.refetch();
+      screenedQ.refetch();
     },
     onError: (e) => { toast.error("Promotion failed", { description: e.message }); setPromotingId(null); },
   });
@@ -357,6 +631,7 @@ export default function DealSourcing() {
     onSuccess: (data) => {
       toast.success("Bulk screening complete", { description: data.message });
       leadsQ.refetch();
+      screenedQ.refetch();
     },
     onError: (e) => toast.error("Bulk screening failed", { description: e.message }),
   });
@@ -377,6 +652,7 @@ export default function DealSourcing() {
   }, [ignoreMut]);
 
   const leads = (leadsQ.data?.leads ?? []) as Lead[];
+  const screenedLeads = (screenedQ.data?.leads ?? []) as ScreenedLead[];
 
   // Stats
   const stats = {
@@ -388,9 +664,22 @@ export default function DealSourcing() {
     ignored: leads.filter((l) => l.status === "ignored").length,
   };
 
-  // Unique sectors/regions for filters
+  // Unique sectors/regions for pipeline filters
   const sectors = Array.from(new Set(leads.map((l) => l.sector).filter(Boolean))) as string[];
   const regions = Array.from(new Set(leads.map((l) => l.region).filter(Boolean))) as string[];
+
+  // Unique sectors/regions for screened filters
+  const screenedSectors = Array.from(new Set(screenedLeads.map((l) => l.sector).filter(Boolean))) as string[];
+  const screenedRegions = Array.from(new Set(screenedLeads.map((l) => l.region).filter(Boolean))) as string[];
+
+  // Screened verdict breakdown
+  const screenedStats = {
+    approved: screenedLeads.filter((l) => l.verdict === "APPROVED").length,
+    approvedWithConditions: screenedLeads.filter((l) => l.verdict === "APPROVED_WITH_CONDITIONS").length,
+    rejected: screenedLeads.filter((l) => l.verdict === "REJECTED").length,
+    vetoed: screenedLeads.filter((l) => l.verdict === "VETOED").length,
+    insufficientData: screenedLeads.filter((l) => l.verdict === "INSUFFICIENT_DATA").length,
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -413,7 +702,7 @@ export default function DealSourcing() {
               size="sm"
               variant="outline"
               className="border-slate-600 text-slate-300 hover:bg-slate-800"
-              onClick={() => leadsQ.refetch()}
+              onClick={() => { leadsQ.refetch(); screenedQ.refetch(); agentStatsQ.refetch(); }}
               disabled={leadsQ.isFetching}
             >
               <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${leadsQ.isFetching ? "animate-spin" : ""}`} />
@@ -472,7 +761,17 @@ export default function DealSourcing() {
             { label: "Screened", value: stats.screened, color: "text-emerald-400" },
             { label: "Ignored", value: stats.ignored, color: "text-red-400" },
           ].map((s) => (
-            <Card key={s.label} className="bg-slate-800/50 border-slate-700/50">
+            <Card
+              key={s.label}
+              className={`border-slate-700/50 cursor-pointer transition-colors ${
+                s.label === "Screened" && activeTab === "screened"
+                  ? "bg-emerald-900/20 border-emerald-700/40"
+                  : "bg-slate-800/50 hover:bg-slate-800/70"
+              }`}
+              onClick={() => {
+                if (s.label === "Screened") setActiveTab("screened");
+              }}
+            >
               <CardContent className="p-3 text-center">
                 <p className={`text-xl font-bold font-mono ${s.color}`}>{s.value}</p>
                 <p className="text-xs text-slate-500 mt-0.5">{s.label}</p>
@@ -506,7 +805,7 @@ export default function DealSourcing() {
                     }`}>{a.hitRate}%</span>
                   </div>
                   {/* Progress bar */}
-                  <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+                  <div className="h-1 bg-slate-700/60 rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all ${
                         a.hitRate >= 50 ? "bg-emerald-500" : a.hitRate >= 25 ? "bg-amber-500" : "bg-slate-600"
@@ -536,118 +835,279 @@ export default function DealSourcing() {
           </CardContent>
         </Card>
 
-        {/* Filters */}
-        <Card className="bg-slate-800/40 border-slate-700/50">
-          <CardHeader className="pb-2 pt-3 px-4">
-            <CardTitle className="text-sm text-slate-300 flex items-center gap-1.5">
-              <Filter className="w-3.5 h-3.5" />
-              Filters
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="px-4 pb-3">
-            <div className="flex flex-wrap gap-2">
-              <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as SourceStatus)}>
-                <SelectTrigger className="h-8 w-36 text-xs bg-slate-900/60 border-slate-600 text-slate-300">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
-                  {["all", "sourced", "triaged", "promoted", "screened", "ignored"].map((s) => (
-                    <SelectItem key={s} value={s} className="text-xs capitalize">{s === "all" ? "All Statuses" : s}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              <Select value={sourceTypeFilter} onValueChange={(v) => setSourceTypeFilter(v as SourceType)}>
-                <SelectTrigger className="h-8 w-40 text-xs bg-slate-900/60 border-slate-600 text-slate-300">
-                  <SelectValue placeholder="Source Type" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
-                  <SelectItem value="all" className="text-xs">All Sources</SelectItem>
-                  <SelectItem value="seeded_test" className="text-xs">Seeded Test</SelectItem>
-                  <SelectItem value="pattern_match" className="text-xs">Pattern Match</SelectItem>
-                  <SelectItem value="public_signal" className="text-xs">Public Signal</SelectItem>
-                  <SelectItem value="manual" className="text-xs">Manual</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {sectors.length > 0 && (
-                <Select value={sectorFilter} onValueChange={setSectorFilter}>
-                  <SelectTrigger className="h-8 w-44 text-xs bg-slate-900/60 border-slate-600 text-slate-300">
-                    <SelectValue placeholder="Sector" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
-                    <SelectItem value="all" className="text-xs">All Sectors</SelectItem>
-                    {sectors.map((s) => <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
-
-              {/* Auto-promote threshold control */}
-              <div className="flex items-center gap-1.5 h-8 bg-slate-900/60 border border-slate-600 rounded-md px-2.5">
-                <span className="text-xs text-slate-400 whitespace-nowrap">Auto-promote</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={100}
-                  value={promoteThreshold}
-                  onChange={(e) => {
-                    const v = Math.max(0, Math.min(100, Number(e.target.value)));
-                    setPromoteThreshold(isNaN(v) ? 60 : v);
-                  }}
-                  className="w-10 text-xs font-mono text-amber-300 bg-transparent border-none outline-none text-center"
-                />
-                <span className="text-xs text-slate-500">+</span>
-              </div>
-              {regions.length > 0 && (
-                <Select value={regionFilter} onValueChange={setRegionFilter}>
-                  <SelectTrigger className="h-8 w-40 text-xs bg-slate-900/60 border-slate-600 text-slate-300">
-                    <SelectValue placeholder="Region" />
-                  </SelectTrigger>
-                  <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
-                    <SelectItem value="all" className="text-xs">All Regions</SelectItem>
-                    {regions.map((r) => <SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Lead list */}
-        <div className="space-y-2">
-          {leadsQ.isLoading && (
-            <div className="flex items-center justify-center py-16 text-slate-500">
-              <Loader2 className="w-5 h-5 animate-spin mr-2" />
-              Loading leads...
-            </div>
-          )}
-
-          {!leadsQ.isLoading && leads.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <Zap className="w-8 h-8 text-slate-600 mb-3" />
-              <p className="text-slate-400 font-medium">No leads yet</p>
-              <p className="text-slate-500 text-sm mt-1">Click "Generate Leads" to run the sourcing agents.</p>
-            </div>
-          )}
-
-          {leads.map((lead) => (
-            <LeadRow
-              key={lead.id}
-              lead={lead}
-              onTriage={handleTriage}
-              onPromote={handlePromote}
-              onIgnore={handleIgnore}
-              onReTriageLead={(id) => {
-                setReTriageLeadId(id);
-                reTriageLeadMut.mutate({ id, autoPromoteThreshold: promoteThreshold });
-              }}
-              triageLoading={triagingId === lead.id}
-              promoteLoading={promotingId === lead.id}
-              ignoreLoading={ignoringId === lead.id}
-              reTriageLeadLoading={reTriageLeadId === lead.id && reTriageLeadMut.isPending}
-            />
-          ))}
+        {/* Tab switcher */}
+        <div className="flex items-center gap-1 border-b border-slate-700/50">
+          <button
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px ${
+              activeTab === "pipeline"
+                ? "border-amber-500 text-amber-300"
+                : "border-transparent text-slate-500 hover:text-slate-300"
+            }`}
+            onClick={() => setActiveTab("pipeline")}
+          >
+            Pipeline
+          </button>
+          <button
+            className={`px-4 py-2 text-sm font-medium transition-colors border-b-2 -mb-px flex items-center gap-1.5 ${
+              activeTab === "screened"
+                ? "border-emerald-500 text-emerald-300"
+                : "border-transparent text-slate-500 hover:text-slate-300"
+            }`}
+            onClick={() => setActiveTab("screened")}
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            Screened Leads
+            {screenedQ.data && screenedQ.data.total > 0 && (
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-mono ${
+                activeTab === "screened" ? "bg-emerald-900/60 text-emerald-300" : "bg-slate-700 text-slate-400"
+              }`}>
+                {screenedQ.data.total}
+              </span>
+            )}
+          </button>
         </div>
+
+        {/* ── PIPELINE TAB ─────────────────────────────────────────────────────── */}
+        {activeTab === "pipeline" && (
+          <>
+            {/* Filters */}
+            <Card className="bg-slate-800/40 border-slate-700/50">
+              <CardHeader className="pb-2 pt-3 px-4">
+                <CardTitle className="text-sm text-slate-300 flex items-center gap-1.5">
+                  <Filter className="w-3.5 h-3.5" />
+                  Filters
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <div className="flex flex-wrap gap-2">
+                  <Select value={statusFilter} onValueChange={(v) => setStatusFilter(v as SourceStatus)}>
+                    <SelectTrigger className="h-8 w-36 text-xs bg-slate-900/60 border-slate-600 text-slate-300">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
+                      {["all", "sourced", "triaged", "promoted", "screened", "ignored"].map((s) => (
+                        <SelectItem key={s} value={s} className="text-xs capitalize">{s === "all" ? "All Statuses" : s}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <Select value={sourceTypeFilter} onValueChange={(v) => setSourceTypeFilter(v as SourceType)}>
+                    <SelectTrigger className="h-8 w-40 text-xs bg-slate-900/60 border-slate-600 text-slate-300">
+                      <SelectValue placeholder="Source Type" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
+                      <SelectItem value="all" className="text-xs">All Sources</SelectItem>
+                      <SelectItem value="seeded_test" className="text-xs">Seeded Test</SelectItem>
+                      <SelectItem value="pattern_match" className="text-xs">Pattern Match</SelectItem>
+                      <SelectItem value="public_signal" className="text-xs">Public Signal</SelectItem>
+                      <SelectItem value="manual" className="text-xs">Manual</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {sectors.length > 0 && (
+                    <Select value={sectorFilter} onValueChange={setSectorFilter}>
+                      <SelectTrigger className="h-8 w-44 text-xs bg-slate-900/60 border-slate-600 text-slate-300">
+                        <SelectValue placeholder="Sector" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
+                        <SelectItem value="all" className="text-xs">All Sectors</SelectItem>
+                        {sectors.map((s) => <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {/* Auto-promote threshold control */}
+                  <div className="flex items-center gap-1.5 h-8 bg-slate-900/60 border border-slate-600 rounded-md px-2.5">
+                    <span className="text-xs text-slate-400 whitespace-nowrap">Auto-promote</span>
+                    <input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={promoteThreshold}
+                      onChange={(e) => {
+                        const v = Math.max(0, Math.min(100, Number(e.target.value)));
+                        setPromoteThreshold(isNaN(v) ? 60 : v);
+                      }}
+                      className="w-10 text-xs font-mono text-amber-300 bg-transparent border-none outline-none text-center"
+                    />
+                    <span className="text-xs text-slate-500">+</span>
+                  </div>
+                  {regions.length > 0 && (
+                    <Select value={regionFilter} onValueChange={setRegionFilter}>
+                      <SelectTrigger className="h-8 w-40 text-xs bg-slate-900/60 border-slate-600 text-slate-300">
+                        <SelectValue placeholder="Region" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
+                        <SelectItem value="all" className="text-xs">All Regions</SelectItem>
+                        {regions.map((r) => <SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Lead list */}
+            <div className="space-y-2">
+              {leadsQ.isLoading && (
+                <div className="flex items-center justify-center py-16 text-slate-500">
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  Loading leads...
+                </div>
+              )}
+
+              {!leadsQ.isLoading && leads.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <Zap className="w-8 h-8 text-slate-600 mb-3" />
+                  <p className="text-slate-400 font-medium">No leads yet</p>
+                  <p className="text-slate-500 text-sm mt-1">Click "Generate Leads" to run the sourcing agents.</p>
+                </div>
+              )}
+
+              {leads.map((lead) => (
+                <LeadRow
+                  key={lead.id}
+                  lead={lead}
+                  onTriage={handleTriage}
+                  onPromote={handlePromote}
+                  onIgnore={handleIgnore}
+                  onReTriageLead={(id) => {
+                    setReTriageLeadId(id);
+                    reTriageLeadMut.mutate({ id, autoPromoteThreshold: promoteThreshold });
+                  }}
+                  triageLoading={triagingId === lead.id}
+                  promoteLoading={promotingId === lead.id}
+                  ignoreLoading={ignoringId === lead.id}
+                  reTriageLeadLoading={reTriageLeadId === lead.id && reTriageLeadMut.isPending}
+                />
+              ))}
+            </div>
+          </>
+        )}
+
+        {/* ── SCREENED LEADS TAB ────────────────────────────────────────────────── */}
+        {activeTab === "screened" && (
+          <>
+            {/* Verdict breakdown strip */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+              {[
+                { label: "Approved", value: screenedStats.approved, color: "text-emerald-400", verdict: "APPROVED" as VerdictFilter },
+                { label: "With Conditions", value: screenedStats.approvedWithConditions, color: "text-teal-400", verdict: "APPROVED_WITH_CONDITIONS" as VerdictFilter },
+                { label: "Rejected", value: screenedStats.rejected, color: "text-red-400", verdict: "REJECTED" as VerdictFilter },
+                { label: "Vetoed", value: screenedStats.vetoed, color: "text-red-300", verdict: "VETOED" as VerdictFilter },
+                { label: "Insufficient Data", value: screenedStats.insufficientData, color: "text-slate-400", verdict: "INSUFFICIENT_DATA" as VerdictFilter },
+              ].map((s) => (
+                <Card
+                  key={s.label}
+                  className={`border-slate-700/50 cursor-pointer transition-colors ${
+                    screenedVerdictFilter === s.verdict
+                      ? "bg-slate-700/60 border-slate-500/60"
+                      : "bg-slate-800/50 hover:bg-slate-800/70"
+                  }`}
+                  onClick={() => setScreenedVerdictFilter(screenedVerdictFilter === s.verdict ? "all" : s.verdict)}
+                >
+                  <CardContent className="p-3 text-center">
+                    <p className={`text-xl font-bold font-mono ${s.color}`}>{s.value}</p>
+                    <p className="text-xs text-slate-500 mt-0.5 leading-tight">{s.label}</p>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Screened filters */}
+            <Card className="bg-slate-800/40 border-slate-700/50">
+              <CardHeader className="pb-2 pt-3 px-4">
+                <CardTitle className="text-sm text-slate-300 flex items-center gap-1.5">
+                  <Filter className="w-3.5 h-3.5" />
+                  Filters
+                  {screenedVerdictFilter !== "all" && (
+                    <Badge className="bg-slate-700 text-slate-300 text-xs px-2 py-0.5 ml-1">
+                      {screenedVerdictFilter.replace(/_/g, " ")}
+                      <button
+                        className="ml-1 text-slate-400 hover:text-slate-200"
+                        onClick={() => setScreenedVerdictFilter("all")}
+                      >×</button>
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <div className="flex flex-wrap gap-2">
+                  <Select value={screenedVerdictFilter} onValueChange={(v) => setScreenedVerdictFilter(v as VerdictFilter)}>
+                    <SelectTrigger className="h-8 w-48 text-xs bg-slate-900/60 border-slate-600 text-slate-300">
+                      <SelectValue placeholder="Verdict" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
+                      <SelectItem value="all" className="text-xs">All Verdicts</SelectItem>
+                      <SelectItem value="APPROVED" className="text-xs">Approved</SelectItem>
+                      <SelectItem value="APPROVED_WITH_CONDITIONS" className="text-xs">Approved with Conditions</SelectItem>
+                      <SelectItem value="REJECTED" className="text-xs">Rejected</SelectItem>
+                      <SelectItem value="VETOED" className="text-xs">Vetoed</SelectItem>
+                      <SelectItem value="INSUFFICIENT_DATA" className="text-xs">Insufficient Data</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {screenedSectors.length > 0 && (
+                    <Select value={screenedSectorFilter} onValueChange={setScreenedSectorFilter}>
+                      <SelectTrigger className="h-8 w-44 text-xs bg-slate-900/60 border-slate-600 text-slate-300">
+                        <SelectValue placeholder="Sector" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
+                        <SelectItem value="all" className="text-xs">All Sectors</SelectItem>
+                        {screenedSectors.map((s) => <SelectItem key={s} value={s} className="text-xs">{s}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
+
+                  {screenedRegions.length > 0 && (
+                    <Select value={screenedRegionFilter} onValueChange={setScreenedRegionFilter}>
+                      <SelectTrigger className="h-8 w-40 text-xs bg-slate-900/60 border-slate-600 text-slate-300">
+                        <SelectValue placeholder="Region" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-slate-900 border-slate-700 text-slate-200">
+                        <SelectItem value="all" className="text-xs">All Regions</SelectItem>
+                        {screenedRegions.map((r) => <SelectItem key={r} value={r} className="text-xs">{r}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Screened lead list */}
+            <div className="space-y-2">
+              {screenedQ.isLoading && (
+                <div className="flex items-center justify-center py-16 text-slate-500">
+                  <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                  Loading screened leads...
+                </div>
+              )}
+
+              {!screenedQ.isLoading && screenedLeads.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <ShieldCheck className="w-8 h-8 text-slate-600 mb-3" />
+                  <p className="text-slate-400 font-medium">No screened leads yet</p>
+                  <p className="text-slate-500 text-sm mt-1">
+                    Promote leads through the pipeline and run the full council to see results here.
+                  </p>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="mt-4 border-slate-600 text-slate-300 hover:bg-slate-800"
+                    onClick={() => setActiveTab("pipeline")}
+                  >
+                    <ArrowRight className="w-3.5 h-3.5 mr-1.5" />
+                    Go to Pipeline
+                  </Button>
+                </div>
+              )}
+
+              {screenedLeads.map((lead) => (
+                <ScreenedLeadRow key={lead.id} lead={lead} />
+              ))}
+            </div>
+          </>
+        )}
 
         {/* Pipeline guide */}
         <Separator className="bg-slate-700/40" />
