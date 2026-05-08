@@ -1,0 +1,190 @@
+{
+  "query": "SELECT id, company_name, source_type, sector, triage_score, status, full_eval_id FROM deal_sources ORDER BY triage_score DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT id, company_name, source_type, sector, triage_score, status, full_eval_id FROM deal_sources ORDER BY triage_score DESC;",
+  "rows": [
+    {
+      "id": "22",
+      "company_name": "TEST CANDIDATE: GovFlow Solutions",
+      "source_type": "seeded_test",
+      "sector": "B2B SaaS",
+      "triage_score": "72.00",
+      "status": "promoted",
+      "full_eval_id": "NULL"
+    },
+    {
+      "id": "26",
+      "company_name": "TEST CANDIDATE: InfraMonitor 360",
+      "source_type": "seeded_test",
+      "sector": "Sovereign Infrastructure",
+      "triage_score": "69.00",
+      "status": "promoted",
+      "full_eval_id": "NULL"
+    },
+    {
+      "id": "30",
+      "company_name": "PetroFinTech",
+      "source_type": "pattern_match",
+      "sector": "Fintech",
+      "triage_score": "68.00",
+      "status": "promoted",
+      "full_eval_id": "NULL"
+    },
+    {
+      "id": "24",
+      "company_name": "TEST CANDIDATE: PetroSecure AI",
+      "source_type": "seeded_test",
+      "sector": "Sovereign Infrastructure",
+      "triage_score": "67.00",
+      "status": "promoted",
+      "full_eval_id": "NULL"
+    },
+    {
+      "id": "28",
+      "company_name": "GovSecure Solutions",
+      "source_type": "pattern_match",
+      "sector": "Compliance/governance",
+      "triage_score": "66.00",
+      "status": "promoted",
+      "full_eval_id": "NULL"
+    },
+    {
+      "id": "23",
+      "company_name": "TEST CANDIDATE: HalalCertify Pro",
+      "source_type": "seeded_test",
+      "sector": "Compliance/Governance",
+      "triage_score": "66.00",
+      "status": "promoted",
+      "full_eval_id": "NULL"
+    },
+    {
+      "id": "34",
+      "company_name": "TEST CANDIDATE: GovFlow Solutions",
+      "source_type": "public_signal",
+      "sector": "Compliance/Governance",
+      "triage_score": "66.00",
+      "status": "screened",
+      "full_eval_id": "1440009"
+    },
+    {
+      "id": "27",
+      "company_name": "NEXUS AI",
+      "source_type": "pattern_match",
+      "sector": "AI infra",
+      "triage_score": "65.00",
+      "status": "promoted",
+      "full_eval_id": "NULL"
+    },
+    {
+      "id": "40",
+      "company_name": "CloudSovereign AI",
+      "source_type": "public_signal",
+      "sector": "Cloud Infrastructure",
+      "triage_score": "65.00",
+      "status": "screened",
+      "full_eval_id": "1440006"
+    },
+    {
+      "id": "25",
+      "company_name": "TEST CANDIDATE: RemitFlow X",
+      "source_type": "seeded_test",
+      "sector": "Fintech",
+      "triage_score": "63.00",
+      "status": "promoted",
+      "full_eval_id": "NULL"
+    },
+    {
+      "id": "29",
+      "company_name": "GulfConnect ERP",
+      "source_type": "pattern_match",
+      "sector": "B2B SaaS",
+      "triage_score": "63.00",
+      "status": "promoted",
+      "full_eval_id": "NULL"
+    },
+    {
+      "id": "35",
+      "company_name": "TEST CANDIDATE: GulfPay Connect",
+      "source_type": "public_signal",
+      "sector": "Fintech",
+      "triage_score": "62.00",
+      "status": "screened",
+      "full_eval_id": "1440008"
+    },
+    {
+      "id": "21",
+      "company_name": "TEST CANDIDATE: DataGuard AI",
+      "source_type": "seeded_test",
+      "sector": "AI Infrastructure",
+      "triage_score": "62.00",
+      "status": "promoted",
+      "full_eval_id": "NULL"
+    },
+    {
+      "id": "33",
+      "company_name": "TEST CANDIDATE: NeuralNet GCC",
+      "source_type": "public_signal",
+      "sector": "AI Infrastructure",
+      "triage_score": "62.00",
+      "status": "screened",
+      "full_eval_id": "1440010"
+    },
+    {
+      "id": "31",
+      "company_name": "DesertGrid Solutions",
+      "source_type": "pattern_match",
+      "sector": "Sovereign infrastructure",
+      "triage_score": "61.00",
+      "status": "promoted",
+      "full_eval_id": "NULL"
+    },
+    {
+      "id": "32",
+      "company_name": "SecurePath Governance",
+      "source_type": "pattern_match",
+      "sector": "Compliance/governance",
+      "triage_score": "61.00",
+      "status": "promoted",
+      "full_eval_id": "NULL"
+    },
+    {
+      "id": "38",
+      "company_name": "TEST CANDIDATE: DataGuard Pro",
+      "source_type": "public_signal",
+      "sector": "Compliance/Governance",
+      "triage_score": "60.00",
+      "status": "screened",
+      "full_eval_id": "1440007"
+    },
+    {
+      "id": "36",
+      "company_name": "TEST CANDIDATE: SmartCity Grid AI",
+      "source_type": "public_signal",
+      "sector": "Sovereign Infrastructure",
+      "triage_score": "58.00",
+      "status": "triaged",
+      "full_eval_id": "NULL"
+    },
+    {
+      "id": "37",
+      "company_name": "TEST CANDIDATE: AuraGov Tech",
+      "source_type": "public_signal",
+      "sector": "GCC Enterprise",
+      "triage_score": "57.00",
+      "status": "triaged",
+      "full_eval_id": "NULL"
+    },
+    {
+      "id": "39",
+      "company_name": "ShariahConnect",
+      "source_type": "public_signal",
+      "sector": "Fintech",
+      "triage_score": "57.00",
+      "status": "triaged",
+      "full_eval_id": "NULL"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcompany_name\tsource_type\tsector\ttriage_score\tstatus\tfull_eval_id\n22\tTEST CANDIDATE: GovFlow Solutions\tseeded_test\tB2B SaaS\t72.00\tpromoted\tNULL\n26\tTEST CANDIDATE: InfraMonitor 360\tseeded_test\tSovereign Infrastructure\t69.00\tpromoted\tNULL\n30\tPetroFinTech\tpattern_match\tFintech\t68.00\tpromoted\tNULL\n24\tTEST CANDIDATE: PetroSecure AI\tseeded_test\tSovereign Infrastructure\t67.00\tpromoted\tNULL\n28\tGovSecure Solutions\tpattern_match\tCompliance/governance\t66.00\tpromoted\tNULL\n23\tTEST CANDIDATE: HalalCertify Pro\tseeded_test\tCompliance/Governance\t66.00\tpromoted\tNULL\n34\tTEST CANDIDATE: GovFlow Solutions\tpublic_signal\tCompliance/Governance\t66.00\tscreened\t1440009\n27\tNEXUS AI\tpattern_match\tAI infra\t65.00\tpromoted\tNULL\n40\tCloudSovereign AI\tpublic_signal\tCloud Infrastructure\t65.00\tscreened\t1440006\n25\tTEST CANDIDATE: RemitFlow X\tseeded_test\tFintech\t63.00\tpromoted\tNULL\n29\tGulfConnect ERP\tpattern_match\tB2B SaaS\t63.00\tpromoted\tNULL\n35\tTEST CANDIDATE: GulfPay Connect\tpublic_signal\tFintech\t62.00\tscreened\t1440008\n21\tTEST CANDIDATE: DataGuard AI\tseeded_test\tAI Infrastructure\t62.00\tpromoted\tNULL\n33\tTEST CANDIDATE: NeuralNet GCC\tpublic_signal\tAI Infrastructure\t62.00\tscreened\t1440010\n31\tDesertGrid Solutions\tpattern_match\tSovereign infrastructure\t61.00\tpromoted\tNULL\n32\tSecurePath Governance\tpattern_match\tCompliance/governance\t61.00\tpromoted\tNULL\n38\tTEST CANDIDATE: DataGuard Pro\tpublic_signal\tCompliance/Governance\t60.00\tscreened\t1440007\n36\tTEST CANDIDATE: SmartCity Grid AI\tpublic_signal\tSovereign Infrastructure\t58.00\ttriaged\tNULL\n37\tTEST CANDIDATE: AuraGov Tech\tpublic_signal\tGCC Enterprise\t57.00\ttriaged\tNULL\n39\tShariahConnect\tpublic_signal\tFintech\t57.00\ttriaged\tNULL\n",
+  "stderr": "",
+  "execution_time_ms": 1907
+}

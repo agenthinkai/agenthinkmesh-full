@@ -1,0 +1,46 @@
+{
+  "query": "SELECT id, company_name, sector, region, source_type, status, triage_score FROM deal_sources ORDER BY CAST(triage_score AS DECIMAL) ASC LIMIT 4;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT id, company_name, sector, region, source_type, status, triage_score FROM deal_sources ORDER BY CAST(triage_score AS DECIMAL) ASC LIMIT 4;",
+  "rows": [
+    {
+      "id": "37",
+      "company_name": "TEST CANDIDATE: AuraGov Tech",
+      "sector": "GCC Enterprise",
+      "region": "Oman",
+      "source_type": "public_signal",
+      "status": "triaged",
+      "triage_score": "57.00"
+    },
+    {
+      "id": "39",
+      "company_name": "ShariahConnect",
+      "sector": "Fintech",
+      "region": "GCC",
+      "source_type": "public_signal",
+      "status": "triaged",
+      "triage_score": "57.00"
+    },
+    {
+      "id": "31",
+      "company_name": "DesertGrid Solutions",
+      "sector": "Sovereign infrastructure",
+      "region": "Oman",
+      "source_type": "pattern_match",
+      "status": "triaged",
+      "triage_score": "59.00"
+    },
+    {
+      "id": "36",
+      "company_name": "TEST CANDIDATE: SmartCity Grid AI",
+      "sector": "Sovereign Infrastructure",
+      "region": "Qatar",
+      "source_type": "public_signal",
+      "status": "triaged",
+      "triage_score": "59.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcompany_name\tsector\tregion\tsource_type\tstatus\ttriage_score\n37\tTEST CANDIDATE: AuraGov Tech\tGCC Enterprise\tOman\tpublic_signal\ttriaged\t57.00\n39\tShariahConnect\tFintech\tGCC\tpublic_signal\ttriaged\t57.00\n31\tDesertGrid Solutions\tSovereign infrastructure\tOman\tpattern_match\ttriaged\t59.00\n36\tTEST CANDIDATE: SmartCity Grid AI\tSovereign Infrastructure\tQatar\tpublic_signal\ttriaged\t59.00\n",
+  "stderr": "",
+  "execution_time_ms": 1915
+}

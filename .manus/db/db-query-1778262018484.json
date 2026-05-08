@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, company_name, status, triage_score FROM deal_sources WHERE id = 31;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT id, company_name, status, triage_score FROM deal_sources WHERE id = 31;",
+  "rows": [
+    {
+      "id": "31",
+      "company_name": "DesertGrid Solutions",
+      "status": "promoted",
+      "triage_score": "61.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcompany_name\tstatus\ttriage_score\n31\tDesertGrid Solutions\tpromoted\t61.00\n",
+  "stderr": "",
+  "execution_time_ms": 1914
+}

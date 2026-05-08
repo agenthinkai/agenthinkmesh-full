@@ -1,0 +1,16 @@
+{
+  "query": "SELECT id, company_name, status, triage_score FROM deal_sources WHERE company_name LIKE '%SmartCity%';",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT id, company_name, status, triage_score FROM deal_sources WHERE company_name LIKE '%SmartCity%';",
+  "rows": [
+    {
+      "id": "36",
+      "company_name": "TEST CANDIDATE: SmartCity Grid AI",
+      "status": "triaged",
+      "triage_score": "58.00"
+    }
+  ],
+  "messages": [],
+  "stdout": "id\tcompany_name\tstatus\ttriage_score\n36\tTEST CANDIDATE: SmartCity Grid AI\ttriaged\t58.00\n",
+  "stderr": "",
+  "execution_time_ms": 1981
+}

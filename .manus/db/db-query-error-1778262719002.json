@@ -1,0 +1,8 @@
+{
+  "query": "SELECT ds.company_name, ds.triage_score, ds.status, dsc.verdict, dsc.confidence_score, dsc.created_at FROM deal_sources ds JOIN deal_screenings dsc ON ds.full_eval_id = dsc.id WHERE ds.status = 'screened' ORDER BY ds.triage_score DESC;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT ds.company_name, ds.triage_score, ds.status, dsc.verdict, dsc.confidence_score, dsc.created_at FROM deal_sources ds JOIN deal_screenings dsc ON ds.full_eval_id = dsc.id WHERE ds.status = 'screened' ORDER BY ds.triage_score DESC;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'dsc.confidence_score' in 'field list'"
+  ]
+}
