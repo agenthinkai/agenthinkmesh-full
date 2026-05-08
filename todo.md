@@ -4293,3 +4293,12 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] B.6: Added reactive "Policy Thresholds Evaluated" mini-table to SADOConsensus.tsx. ScenarioMeta interface extended with policyThresholds field. Scenario A: PDPL SA Art.29 (BREACHED/High), Internal Residency Policy v2.1 (BREACHED/High), Auditability Control (PASSED/Medium). Scenario B: CITRA Kuwait Data Governance (ESCALATE/High), Financial Crime Monitoring Policy (ESCALATE/High), Enhanced Encryption Control (PASSED/Medium). Table updates reactively on scenario switch. Colour-coded badges: red=BREACHED, amber=ESCALATE, emerald=PASSED. Placed between Consensus Result and Council of Ten sections. tsc EXIT:0. Only SADOConsensus.tsx modified.
 - [x] B.5: Added footer CTA section to SADOConsensus.tsx. Heading: "Want to see the Council evaluate your own data estate?". Body copy invites live walkthrough. Primary button "Request live demo" links to /contact (prospect-query-aware). Secondary button "Copy prospect link" uses useProspectCopyLink with copied/idle state toggle. Copy icon added to lucide-react import. tsc EXIT:0. Only SADOConsensus.tsx modified.
 - [x] B.8: Added Scenario C (UAE->UAE sovereign cloud, ALLOW 7/10 88%) to SADOConsensus.tsx. Extended ScenarioMeta.id and AgentVote types to include C. Added voteC/rationaleC to all 10 COUNCIL agents. Added SCENARIO_C data block with full rationaleChain (5 steps), policyThresholds (3 PASSED rows: UAE NESA Cloud Security, Internal Tokenisation Policy v2.1, Model Optimisation Governance), and audit evidence (CGE-2024-0112). Extended COMPARISON strip with Scenario C card. Updated activeScenario state type to A|B|C and scenario selector ternary. Fixed COUNCIL.map destructuring to include voteC/rationaleC. tsc EXIT:0. Only SADOConsensus.tsx modified.
+
+- [x] Phase B.1 — Consensus Governance Engine concept section on SADOLanding
+- [x] Phase B.2 — SADOConsensus.tsx dedicated page at /sado/consensus
+- [x] Phase B.3 — Consensus Engine added to SADO sidebar nav
+- [x] Phase B.4 — Second scenario (KW→Singapore SWIFT, ESCALATE 6/10) on SADOConsensus
+- [x] Phase B.5 — Request live demo CTA footer on SADOConsensus
+- [x] Phase B.6 — Policy Thresholds mini-table on SADOConsensus
+- [x] Phase B.8 — Third scenario (UAE→UAE sovereign cloud, ALLOW 7/10) on SADOConsensus
+- [x] Deal Sourcing Fleet — deal_sources table, dealSourcing tRPC router, DealSourcing.tsx page, /deal-sourcing route, sidebar nav entry, vitest tests

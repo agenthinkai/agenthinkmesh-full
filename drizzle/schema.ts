@@ -1918,5 +1918,28 @@ export const fleetConfig = mysqlTable("fleet_config", {
 export type FleetConfig = typeof fleetConfig.$inferSelect;
 export type InsertFleetConfig = typeof fleetConfig.$inferInsert;
 
-// ── SADO Phase A ─────────────────────────────────────────────────────────────
+// ── Deal Sourcing Test Fleet ────────────────────────────────────────────────
+export const dealSources = mysqlTable("deal_sources", {
+  id:              int("id").primaryKey().autoincrement(),
+  sourceType:      mysqlEnum("source_type", ["seeded_test", "manual", "pattern_match", "public_signal"]).notNull(),
+  rawInput:        text("raw_input").notNull(),
+  companyName:     varchar("company_name", { length: 255 }).notNull(),
+  sector:          varchar("sector", { length: 100 }),
+  region:          varchar("region", { length: 100 }),
+  sourceLabel:     varchar("source_label", { length: 100 }),
+  triageScore:     decimal("triage_score", { precision: 5, scale: 2 }),
+  triageReasoning: text("triage_reasoning"),
+  fullEvalId:      int("full_eval_id"),
+  status:          mysqlEnum("status", ["sourced", "triaged", "promoted", "screened", "ignored"]).notNull().default("sourced"),
+  createdAt:       bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  dflStatusIdx:  index("dfl_status_idx").on(table.status),
+  dflSectorIdx:  index("dfl_sector_idx").on(table.sector),
+  dflSourceIdx:  index("dfl_source_idx").on(table.sourceType),
+  dflCreatedIdx: index("dfl_created_idx").on(table.createdAt),
+}));
+export type DealSource = typeof dealSources.$inferSelect;
+export type InsertDealSource = typeof dealSources.$inferInsert;
+
+// ── SADO Phase A ─────────────────────────────────────────────────────
 export * from "./sadoSchema";
