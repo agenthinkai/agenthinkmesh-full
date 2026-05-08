@@ -306,6 +306,14 @@ export default function DealSourcing() {
     onError: (e) => { toast.error("Error", { description: e.message }); setIgnoringId(null); },
   });
 
+  const reTriageMut = trpc.dealSourcing.reTriageSourced.useMutation({
+    onSuccess: (data) => {
+      toast.success("Re-triage complete", { description: data.message });
+      leadsQ.refetch();
+      agentStatsQ.refetch();
+    },
+    onError: (e) => toast.error("Re-triage failed", { description: e.message }),
+  });
   const bulkTriageMut = trpc.dealSourcing.runTriage.useMutation({
     onSuccess: (data) => {
       toast.success("Bulk triage complete", { description: data.message });
@@ -389,6 +397,17 @@ export default function DealSourcing() {
             >
               {bulkTriageMut.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <BarChart2 className="w-3.5 h-3.5 mr-1.5" />}
               Triage All ({stats.sourced})
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="border-blue-600/40 text-blue-400 hover:bg-blue-900/20"
+              onClick={() => reTriageMut.mutate({ limit: 50 })}
+              disabled={reTriageMut.isPending || stats.sourced === 0}
+              title={stats.sourced === 0 ? "No sourced leads pending triage" : `Re-triage ${stats.sourced} sourced lead${stats.sourced !== 1 ? "s" : ""}`}
+            >
+              {reTriageMut.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5 mr-1.5" />}
+              Re-triage Sourced
             </Button>
             <Button
               size="sm"

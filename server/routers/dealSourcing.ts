@@ -852,4 +852,66 @@ export const dealSourcingRouter = router({
         : 0,
     }));
   }),
+
+  /**
+   * Re-triage all leads that are still in 'sourced' status.
+   * Useful when a bulk triage run missed some leads.
+   * Does NOT re-triage already triaged/promoted/screened/ignored leads.
+   */
+  reTriageSourced: protectedProcedure
+    .input(z.object({ limit: z.number().int().min(1).max(50).default(50) }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      const sourced = await db
+        .select()
+        .from(dealSources)
+        .where(eq(dealSources.status, "sourced"))
+        .orderBy(desc(dealSources.createdAt))
+        .limit(input.limit);
+
+      if (sourced.length === 0) {
+        return { processed: 0, succeeded: 0, failed: 0, message: "No sourced leads pending triage." };
+      }
+
+      let succeeded = 0;
+      let failed = 0;
+
+      for (const lead of sourced) {
+        try {
+          const candidate = {
+            companyName: lead.companyName,
+            sector: lead.sector ?? "Unknown",
+            region: lead.region ?? "Unknown",
+            summary: lead.rawInput.slice(0, 200),
+            relevanceReason: "",
+            rawInput: lead.rawInput,
+          };
+          const result = await runQuickTriage(candidate);
+          const autoPromote = result.triageScore >= 60;
+          await db
+            .update(dealSources)
+            .set({
+              status: autoPromote ? "promoted" : "triaged",
+              triageScore: String(result.triageScore),
+              triageReasoning: JSON.stringify(result),
+            })
+            .where(eq(dealSources.id, lead.id));
+          succeeded++;
+        } catch (err) {
+          console.error(`[DealSourcing] reTriageSourced failed for lead ${lead.id}:`, err);
+          failed++;
+        }
+      }
+
+      return {
+        processed: sourced.length,
+        succeeded,
+        failed,
+        message: failed === 0
+          ? `Re-triaged ${succeeded} sourced lead${succeeded !== 1 ? "s" : ""}.`
+          : `Re-triaged ${succeeded}/${sourced.length} leads (${failed} failed).`,
+      };
+    }),
 });
