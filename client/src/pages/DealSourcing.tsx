@@ -273,6 +273,7 @@ export default function DealSourcing() {
     { refetchInterval: 30000 }
   );
 
+  const agentStatsQ = trpc.dealSourcing.agentStats.useQuery(undefined, { refetchInterval: 30000 });
   // Mutations
   const generateMut = trpc.dealSourcing.generateLeads.useMutation({
     onSuccess: (data) => {
@@ -429,6 +430,61 @@ export default function DealSourcing() {
             </Card>
           ))}
         </div>
+
+        {/* Sourcing Agents Panel */}
+        <Card className="bg-slate-900/60 border-slate-700/50">
+          <CardHeader className="pb-2 pt-3 px-4">
+            <CardTitle className="text-sm text-slate-300 flex items-center gap-1.5">
+              <Zap className="w-3.5 h-3.5 text-amber-400" />
+              Sourcing Agents
+              <span className="text-xs text-slate-500 font-normal ml-1">— operator visibility</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="px-4 pb-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+              {(agentStatsQ.data ?? [
+                { agent: "GCC Signals", total: 0, promoted: 0, screened: 0, ignored: 0, hitRate: 0, lastRun: null },
+                { agent: "Public Filings", total: 0, promoted: 0, screened: 0, ignored: 0, hitRate: 0, lastRun: null },
+                { agent: "Founder Network", total: 0, promoted: 0, screened: 0, ignored: 0, hitRate: 0, lastRun: null },
+                { agent: "Pattern Match", total: 0, promoted: 0, screened: 0, ignored: 0, hitRate: 0, lastRun: null },
+              ]).map((a) => (
+                <div key={a.agent} className="bg-slate-800/60 border border-slate-700/40 rounded-lg p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-200">{a.agent}</span>
+                    <span className={`text-xs font-mono font-bold ${
+                      a.hitRate >= 50 ? "text-emerald-400" : a.hitRate >= 25 ? "text-amber-400" : "text-slate-500"
+                    }`}>{a.hitRate}%</span>
+                  </div>
+                  {/* Progress bar */}
+                  <div className="w-full h-1 bg-slate-700 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        a.hitRate >= 50 ? "bg-emerald-500" : a.hitRate >= 25 ? "bg-amber-500" : "bg-slate-600"
+                      }`}
+                      style={{ width: `${Math.min(a.hitRate, 100)}%` }}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 text-xs">
+                    <span className="text-slate-500">Generated</span>
+                    <span className="text-slate-300 font-mono text-right">{a.total}</span>
+                    <span className="text-slate-500">Promoted</span>
+                    <span className="text-amber-400 font-mono text-right">{a.promoted}</span>
+                    <span className="text-slate-500">Screened</span>
+                    <span className="text-emerald-400 font-mono text-right">{a.screened}</span>
+                    <span className="text-slate-500">Ignored</span>
+                    <span className="text-red-400 font-mono text-right">{a.ignored}</span>
+                  </div>
+                  {a.lastRun && (
+                    <p className="text-xs text-slate-600 flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {relativeTime(a.lastRun)}
+                    </p>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Filters */}
         <Card className="bg-slate-800/40 border-slate-700/50">

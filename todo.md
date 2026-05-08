@@ -4302,3 +4302,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Phase B.6 — Policy Thresholds mini-table on SADOConsensus
 - [x] Phase B.8 — Third scenario (UAE→UAE sovereign cloud, ALLOW 7/10) on SADOConsensus
 - [x] Deal Sourcing Fleet — deal_sources table, dealSourcing tRPC router, DealSourcing.tsx page, /deal-sourcing route, sidebar nav entry, vitest tests
+
+- [x] DS.2 Sourcing Agents Panel — agentStats tRPC query + 4-agent panel with hit-rate progress bar, per-agent counts, last-run timestamp on /deal-sourcing
+- [x] Deal Sourcing Pipeline Validation — full generate→triage→promote→council loop validated live (20 leads, 5 promoted, 5 screened: 3 APPROVED WITH CONDITIONS, 1 REJECTED, 1 VETOED)

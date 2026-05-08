@@ -799,4 +799,57 @@ export const dealSourcingRouter = router({
         message: `Processed ${results.length} leads through full council.`,
       };
     }),
+
+  /**
+   * Aggregate per-agent stats from the deal_sources table.
+   * Counts leads, promoted, ignored, and screened per sourceLabel.
+   */
+  agentStats: protectedProcedure.query(async () => {
+    const db = await getDb();
+    if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+    const allLeads = await db
+      .select({
+        sourceLabel: dealSources.sourceLabel,
+        status: dealSources.status,
+        createdAt: dealSources.createdAt,
+      })
+      .from(dealSources)
+      .orderBy(desc(dealSources.createdAt));
+
+    const AGENT_LABELS = ["GCC Signals", "Public Filings", "Founder Network", "Pattern Match"] as const;
+    type AgentLabel = typeof AGENT_LABELS[number];
+
+    const stats: Record<AgentLabel, {
+      agent: AgentLabel;
+      total: number;
+      promoted: number;
+      screened: number;
+      ignored: number;
+      lastRun: number | null;
+    }> = {
+      "GCC Signals": { agent: "GCC Signals", total: 0, promoted: 0, screened: 0, ignored: 0, lastRun: null },
+      "Public Filings": { agent: "Public Filings", total: 0, promoted: 0, screened: 0, ignored: 0, lastRun: null },
+      "Founder Network": { agent: "Founder Network", total: 0, promoted: 0, screened: 0, ignored: 0, lastRun: null },
+      "Pattern Match": { agent: "Pattern Match", total: 0, promoted: 0, screened: 0, ignored: 0, lastRun: null },
+    };
+
+    for (const lead of allLeads) {
+      const key = (lead.sourceLabel ?? "Pattern Match") as AgentLabel;
+      if (!stats[key]) continue;
+      stats[key].total++;
+      if (lead.status === "promoted") stats[key].promoted++;
+      if (lead.status === "screened") stats[key].screened++;
+      if (lead.status === "ignored") stats[key].ignored++;
+      if (stats[key].lastRun === null) {
+        stats[key].lastRun = typeof lead.createdAt === "number" ? lead.createdAt : Number(lead.createdAt);
+      }
+    }
+
+    return AGENT_LABELS.map((label) => ({
+      ...stats[label],
+      hitRate: stats[label].total > 0
+        ? Math.round(((stats[label].promoted + stats[label].screened) / stats[label].total) * 100)
+        : 0,
+    }));
+  }),
 });
