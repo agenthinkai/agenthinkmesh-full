@@ -295,7 +295,10 @@ export default function DealSourcing() {
   // Mutations
   const generateMut = trpc.dealSourcing.generateLeads.useMutation({
     onSuccess: (data) => {
-      toast.success("Leads generated", { description: data.message });
+      const desc = data.duplicateSkipped && data.duplicateSkipped > 0
+        ? `${data.message}`
+        : data.message;
+      toast.success("Leads generated", { description: desc });
       leadsQ.refetch();
     },
     onError: (e) => toast.error("Generation failed", { description: e.message }),
@@ -441,7 +444,7 @@ export default function DealSourcing() {
               size="sm"
               variant="outline"
               className="border-amber-700/50 text-amber-300 hover:bg-amber-900/30"
-              onClick={() => bulkPromoteMut.mutate({ limit: 5 })}
+              onClick={() => bulkPromoteMut.mutate({ concurrency: 5 })}
               disabled={bulkPromoteMut.isPending || stats.promoted === 0}
             >
               {bulkPromoteMut.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <ArrowRight className="w-3.5 h-3.5 mr-1.5" />}

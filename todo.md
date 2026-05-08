@@ -4308,3 +4308,6 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] DS.3 Re-triage Sourced — reTriageSourced tRPC mutation + Re-triage Sourced button (disabled when 0 sourced leads, partial-success handling, agentStats refetch on complete)
 - [x] DS.4 Triage Threshold Control — autoPromoteThreshold param added to runTriage and reTriageSourced router procedures; compact number input (default 60, range 0-100) added to Filters strip; both Triage All and Re-triage Sourced mutations pass the live threshold value
 - [x] DS.7 Per-Lead Re-triage — reTriageLead tRPC mutation added (works for sourced/triaged/promoted, blocked for screened/ignored, uses autoPromoteThreshold); Re-triage button added to each LeadRow (compact slate style, row-level loading spinner, agentStats refetch on success, passes live promoteThreshold)
+
+- [x] DS.9 — Fix bulkPromoteToScreener: Promise.allSettled parallel batches (concurrency=5), no limit cap, full summary returned
+- [x] DS.11 — Add deduplication in generateLeads: normalize company name, skip existing, return duplicateSkipped count in toast

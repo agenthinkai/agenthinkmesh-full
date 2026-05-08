@@ -427,9 +427,26 @@ export const dealSourcingRouter = router({
         }
       }
 
+      // DS.11: Deduplication — fetch existing company names and build a normalised set
+      const normalize = (name: string) =>
+        name.toLowerCase().trim().replace(/[^a-z0-9\s]/g, "").replace(/\s+/g, " ");
+
+      const existingRows = await db
+        .select({ companyName: dealSources.companyName })
+        .from(dealSources);
+      const existingNormalized = new Set(existingRows.map((r) => normalize(r.companyName)));
+
       // Persist to DB
       const inserted: number[] = [];
+      let duplicateSkipped = 0;
       for (const candidate of allCandidates.slice(0, input.count)) {
+        const normalizedName = normalize(candidate.companyName);
+        if (existingNormalized.has(normalizedName)) {
+          duplicateSkipped++;
+          continue;
+        }
+        // Add to set immediately to prevent duplicates within the same batch
+        existingNormalized.add(normalizedName);
         try {
           const [result] = await db.insert(dealSources).values({
             sourceType: candidate.sourceType,
@@ -449,7 +466,10 @@ export const dealSourcingRouter = router({
       return {
         generated: allCandidates.length,
         inserted: inserted.length,
-        message: `Generated ${allCandidates.length} TEST CANDIDATE leads and persisted ${inserted.length} to database.`,
+        duplicateSkipped,
+        message: `Generated ${allCandidates.length} TEST CANDIDATE leads, inserted ${inserted.length}${
+          duplicateSkipped > 0 ? `, skipped ${duplicateSkipped} duplicate${duplicateSkipped !== 1 ? "s" : ""}` : ""
+        }.`,
       };
     }),
 
@@ -723,85 +743,96 @@ export const dealSourcingRouter = router({
     }),
 
   /**
-   * Bulk promote all "promoted" status leads to the full council.
-   * Processes up to 5 at a time to avoid timeout.
+   * Bulk promote ALL "promoted" status leads to the full council.
+   * Uses controlled concurrency (default 5 parallel) via Promise.allSettled.
+   * One failed lead does not block the rest.
    */
   bulkPromoteToScreener: protectedProcedure
-    .input(z.object({ limit: z.number().int().min(1).max(10).default(5) }))
+    .input(z.object({ concurrency: z.number().int().min(1).max(10).default(5) }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
 
+      // Fetch ALL promoted leads — no limit cap
       const leads = await db
         .select()
         .from(dealSources)
         .where(eq(dealSources.status, "promoted"))
-        .orderBy(desc(dealSources.createdAt))
-        .limit(input.limit);
+        .orderBy(desc(dealSources.createdAt));
 
       if (leads.length === 0) {
-        return { processed: 0, message: "No promoted leads found." };
+        return { total: 0, succeeded: 0, failed: 0, skipped: 0, message: "No promoted leads found." };
       }
 
       const results: Array<{ id: number; verdict: string; success: boolean }> = [];
+      const { concurrency } = input;
 
-      for (const lead of leads) {
-        try {
-          const dealText = `${lead.rawInput}\n\nCompany: ${lead.companyName}\nSector: ${lead.sector ?? "Unknown"}\nRegion: ${lead.region ?? "Unknown"}\n[TEST CANDIDATE — Deal Sourcing Fleet]`;
-
-          const councilResult = await runCouncil(dealText, {
-            userId: ctx.user.id,
-            skipMemory: true,
-            bypassCostGuard: true,
-            councilMode: "gcc",
-          });
-
-          const dealId = randomUUID();
-          await db.insert(dealScreenings).values({
-            userId: ctx.user.id,
-            dealId,
-            dealName: `[FLEET] ${lead.companyName}`,
-            dealTextPreview: lead.rawInput.slice(0, 200),
-            verdict: councilResult.verdict,
-            yesCount: councilResult.yesCount,
-            noCount: councilResult.noCount,
-            hardYesCount: councilResult.hardYesCount ?? 0,
-            softYesCount: councilResult.softYesCount ?? 0,
-            softNoCount: councilResult.softNoCount ?? 0,
-            hardNoCount: councilResult.hardNoCount ?? 0,
-            confidenceScore: String(councilResult.confidenceScore ?? 0),
-            gccVetoTriggered: councilResult.gccVetoTriggered ?? false,
-            tiebreakerTriggered: councilResult.tiebreakerTriggered ?? false,
-            tiebreakerSwingAgent: councilResult.tiebreakerSwingAgent ?? null,
-            conditionsToProceed: JSON.stringify(councilResult.conditionsToProceed ?? []),
-            blockingIssues: JSON.stringify(councilResult.blockingIssues ?? []),
-            votes: JSON.stringify(councilResult.votes ?? []),
-            sourceType: "manual",
-          });
-
-          const [screening] = await db
-            .select({ id: dealScreenings.id })
-            .from(dealScreenings)
-            .where(eq(dealScreenings.dealId, dealId))
-            .limit(1);
-
-          await db
-            .update(dealSources)
-            .set({ status: "screened", fullEvalId: screening?.id ?? null })
-            .where(eq(dealSources.id, lead.id));
-
-          results.push({ id: lead.id, verdict: councilResult.verdict, success: true });
-        } catch (err) {
-          console.error(`[DealSourcing] Bulk promote failed for lead ${lead.id}:`, err);
-          results.push({ id: lead.id, verdict: "ERROR", success: false });
+      // Process in controlled-concurrency batches
+      for (let i = 0; i < leads.length; i += concurrency) {
+        const batch = leads.slice(i, i + concurrency);
+        const batchResults = await Promise.allSettled(
+          batch.map(async (lead) => {
+            const dealText = `${lead.rawInput}\n\nCompany: ${lead.companyName}\nSector: ${lead.sector ?? "Unknown"}\nRegion: ${lead.region ?? "Unknown"}\n[TEST CANDIDATE — Deal Sourcing Fleet]`;
+            const councilResult = await runCouncil(dealText, {
+              userId: ctx.user.id,
+              skipMemory: true,
+              bypassCostGuard: true,
+              councilMode: "gcc",
+            });
+            const dealId = randomUUID();
+            await db.insert(dealScreenings).values({
+              userId: ctx.user.id,
+              dealId,
+              dealName: `[FLEET] ${lead.companyName}`,
+              dealTextPreview: lead.rawInput.slice(0, 200),
+              verdict: councilResult.verdict,
+              yesCount: councilResult.yesCount,
+              noCount: councilResult.noCount,
+              hardYesCount: councilResult.hardYesCount ?? 0,
+              softYesCount: councilResult.softYesCount ?? 0,
+              softNoCount: councilResult.softNoCount ?? 0,
+              hardNoCount: councilResult.hardNoCount ?? 0,
+              confidenceScore: String(councilResult.confidenceScore ?? 0),
+              gccVetoTriggered: councilResult.gccVetoTriggered ?? false,
+              tiebreakerTriggered: councilResult.tiebreakerTriggered ?? false,
+              tiebreakerSwingAgent: councilResult.tiebreakerSwingAgent ?? null,
+              conditionsToProceed: JSON.stringify(councilResult.conditionsToProceed ?? []),
+              blockingIssues: JSON.stringify(councilResult.blockingIssues ?? []),
+              votes: JSON.stringify(councilResult.votes ?? []),
+              sourceType: "manual",
+            });
+            const [screening] = await db
+              .select({ id: dealScreenings.id })
+              .from(dealScreenings)
+              .where(eq(dealScreenings.dealId, dealId))
+              .limit(1);
+            await db
+              .update(dealSources)
+              .set({ status: "screened", fullEvalId: screening?.id ?? null })
+              .where(eq(dealSources.id, lead.id));
+            return { id: lead.id, verdict: councilResult.verdict, success: true };
+          })
+        );
+        for (let j = 0; j < batchResults.length; j++) {
+          const r = batchResults[j];
+          if (r.status === "fulfilled") {
+            results.push(r.value);
+          } else {
+            console.error(`[DealSourcing] Bulk promote failed for lead ${batch[j].id}:`, r.reason);
+            results.push({ id: batch[j].id, verdict: "ERROR", success: false });
+          }
         }
       }
 
+      const succeeded = results.filter((r) => r.success).length;
+      const failed = results.filter((r) => !r.success).length;
       return {
-        processed: results.length,
-        succeeded: results.filter((r) => r.success).length,
+        total: leads.length,
+        succeeded,
+        failed,
+        skipped: 0,
         results,
-        message: `Processed ${results.length} leads through full council.`,
+        message: `Screened ${succeeded}/${leads.length} promoted leads through full council.${failed > 0 ? ` ${failed} failed.` : ""}`,
       };
     }),
 
