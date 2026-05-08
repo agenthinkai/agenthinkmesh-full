@@ -4306,3 +4306,4 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] DS.2 Sourcing Agents Panel — agentStats tRPC query + 4-agent panel with hit-rate progress bar, per-agent counts, last-run timestamp on /deal-sourcing
 - [x] Deal Sourcing Pipeline Validation — full generate→triage→promote→council loop validated live (20 leads, 5 promoted, 5 screened: 3 APPROVED WITH CONDITIONS, 1 REJECTED, 1 VETOED)
 - [x] DS.3 Re-triage Sourced — reTriageSourced tRPC mutation + Re-triage Sourced button (disabled when 0 sourced leads, partial-success handling, agentStats refetch on complete)
+- [x] DS.4 Triage Threshold Control — autoPromoteThreshold param added to runTriage and reTriageSourced router procedures; compact number input (default 60, range 0-100) added to Filters strip; both Triage All and Re-triage Sourced mutations pass the live threshold value

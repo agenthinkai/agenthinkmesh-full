@@ -492,6 +492,7 @@ export const dealSourcingRouter = router({
       z.object({
         ids: z.array(z.number().int()).optional(), // if omitted, triage all "sourced" leads
         autoPromoteTop: z.number().int().min(0).max(20).default(5),
+        autoPromoteThreshold: z.number().int().min(0).max(100).default(60),
       })
     )
     .mutation(async ({ ctx, input }) => {
@@ -548,7 +549,11 @@ export const dealSourcingRouter = router({
 
       // Auto-promote top N
       const sorted = [...triageResults].sort((a, b) => b.score - a.score);
-      const toPromote = sorted.slice(0, input.autoPromoteTop).filter((r) => r.recommendation !== "IGNORE");
+      // If threshold is set, promote all leads at or above it; otherwise fall back to top-N
+      const byThreshold = triageResults.filter((r) => r.score >= input.autoPromoteThreshold && r.recommendation !== "IGNORE");
+      const toPromote = byThreshold.length > 0
+        ? byThreshold
+        : sorted.slice(0, input.autoPromoteTop).filter((r) => r.recommendation !== "IGNORE");
 
       if (toPromote.length > 0) {
         await db
@@ -859,7 +864,10 @@ export const dealSourcingRouter = router({
    * Does NOT re-triage already triaged/promoted/screened/ignored leads.
    */
   reTriageSourced: protectedProcedure
-    .input(z.object({ limit: z.number().int().min(1).max(50).default(50) }))
+    .input(z.object({
+      limit: z.number().int().min(1).max(50).default(50),
+      autoPromoteThreshold: z.number().int().min(0).max(100).default(60),
+    }))
     .mutation(async ({ input }) => {
       const db = await getDb();
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
@@ -889,7 +897,7 @@ export const dealSourcingRouter = router({
             rawInput: lead.rawInput,
           };
           const result = await runQuickTriage(candidate);
-          const autoPromote = result.triageScore >= 60;
+          const autoPromote = result.triageScore >= input.autoPromoteThreshold;
           await db
             .update(dealSources)
             .set({

@@ -262,6 +262,9 @@ export default function DealSourcing() {
   const [sectorFilter, setSectorFilter] = useState("all");
   const [regionFilter, setRegionFilter] = useState("all");
 
+  // Auto-promote threshold (0–100, default 60)
+  const [promoteThreshold, setPromoteThreshold] = useState(60);
+
   // Per-row loading state
   const [triagingId, setTriagingId] = useState<number | null>(null);
   const [promotingId, setPromotingId] = useState<number | null>(null);
@@ -392,7 +395,7 @@ export default function DealSourcing() {
               size="sm"
               variant="outline"
               className="border-blue-700/50 text-blue-300 hover:bg-blue-900/30"
-              onClick={() => bulkTriageMut.mutate({ autoPromoteTop: 5 })}
+              onClick={() => bulkTriageMut.mutate({ autoPromoteTop: 5, autoPromoteThreshold: promoteThreshold })}
               disabled={bulkTriageMut.isPending || stats.sourced === 0}
             >
               {bulkTriageMut.isPending ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <BarChart2 className="w-3.5 h-3.5 mr-1.5" />}
@@ -402,7 +405,7 @@ export default function DealSourcing() {
               size="sm"
               variant="outline"
               className="border-blue-600/40 text-blue-400 hover:bg-blue-900/20"
-              onClick={() => reTriageMut.mutate({ limit: 50 })}
+              onClick={() => reTriageMut.mutate({ limit: 50, autoPromoteThreshold: promoteThreshold })}
               disabled={reTriageMut.isPending || stats.sourced === 0}
               title={stats.sourced === 0 ? "No sourced leads pending triage" : `Re-triage ${stats.sourced} sourced lead${stats.sourced !== 1 ? "s" : ""}`}
             >
@@ -551,6 +554,22 @@ export default function DealSourcing() {
                 </Select>
               )}
 
+              {/* Auto-promote threshold control */}
+              <div className="flex items-center gap-1.5 h-8 bg-slate-900/60 border border-slate-600 rounded-md px-2.5">
+                <span className="text-xs text-slate-400 whitespace-nowrap">Auto-promote</span>
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  value={promoteThreshold}
+                  onChange={(e) => {
+                    const v = Math.max(0, Math.min(100, Number(e.target.value)));
+                    setPromoteThreshold(isNaN(v) ? 60 : v);
+                  }}
+                  className="w-10 text-xs font-mono text-amber-300 bg-transparent border-none outline-none text-center"
+                />
+                <span className="text-xs text-slate-500">+</span>
+              </div>
               {regions.length > 0 && (
                 <Select value={regionFilter} onValueChange={setRegionFilter}>
                   <SelectTrigger className="h-8 w-40 text-xs bg-slate-900/60 border-slate-600 text-slate-300">
