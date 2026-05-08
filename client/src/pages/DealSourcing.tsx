@@ -26,6 +26,7 @@ import {
   AlertOctagon,
   FileText,
   Info,
+  Download,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -165,6 +166,75 @@ function confidencePct(score: string | null): string {
   const n = parseFloat(score);
   if (isNaN(n)) return "—";
   return `${Math.round(n * 100)}%`;
+}
+
+// ── CSV Export Utility ───────────────────────────────────────────────────────
+
+function csvCell(value: string | number | null | undefined): string {
+  if (value === null || value === undefined) return "";
+  const s = String(value);
+  // Escape double-quotes, wrap in quotes if contains comma, quote, or newline
+  if (s.includes('"') || s.includes(',') || s.includes('\n') || s.includes('\r')) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+function formatDateForCSV(d: Date | string | number | null | undefined): string {
+  if (!d) return "";
+  try {
+    return new Date(typeof d === "number" ? d : String(d)).toISOString();
+  } catch {
+    return "";
+  }
+}
+
+function exportScreenedLeadsCSV(leads: ScreenedLead[]): void {
+  const headers = [
+    "company",
+    "sector",
+    "region",
+    "triage_score",
+    "full_council_verdict",
+    "confidence",
+    "yes_votes",
+    "no_votes",
+    "hard_no_count",
+    "conditions_count",
+    "blocking_issues_count",
+    "source_agent",
+    "created_at",
+    "screened_at",
+  ];
+
+  const rows = leads.map((l) => [
+    csvCell(l.companyName),
+    csvCell(l.sector),
+    csvCell(l.region),
+    csvCell(l.triageScore),
+    csvCell(l.verdict),
+    csvCell(l.confidenceScore ? String(Math.round(parseFloat(l.confidenceScore) * 100)) + "%" : ""),
+    csvCell(l.yesCount),
+    csvCell(l.noCount),
+    csvCell(l.hardNoCount),
+    csvCell(l.conditionsToProceed.length),
+    csvCell(l.blockingIssues.length),
+    csvCell(l.sourceLabel ?? l.sourceType),
+    csvCell(formatDateForCSV(l.createdAt)),
+    csvCell(formatDateForCSV(l.screenedAt)),
+  ]);
+
+  const csvContent = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+  const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const ts = new Date().toISOString().replace(/[:.]/g, "-").slice(0, 19);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `deal_sourcing_screened_leads_${ts}.csv`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
 }
 
 // ── Lead Row (Pipeline) ───────────────────────────────────────────────────────
@@ -1073,6 +1143,26 @@ export default function DealSourcing() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* Export CSV button */}
+            {screenedLeads.length > 0 && (
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="border-emerald-700/50 text-emerald-300 hover:bg-emerald-900/30"
+                  onClick={() => {
+                    exportScreenedLeadsCSV(screenedLeads);
+                    toast.success("CSV exported", {
+                      description: `${screenedLeads.length} lead${screenedLeads.length !== 1 ? "s" : ""} exported to deal_sourcing_screened_leads_*.csv`,
+                    });
+                  }}
+                >
+                  <Download className="w-3.5 h-3.5 mr-1.5" />
+                  Export CSV ({screenedLeads.length})
+                </Button>
+              </div>
+            )}
 
             {/* Screened lead list */}
             <div className="space-y-2">
