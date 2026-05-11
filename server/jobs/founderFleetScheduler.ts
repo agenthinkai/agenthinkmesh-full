@@ -42,7 +42,7 @@ import cron from "node-cron";
 import { runFleet, resumeInterruptedRuns } from "../founderFleet";
 import { getDb } from "../db";
 import { founderAgentRuns, fleetConfig, founderAgentEvaluations } from "../../drizzle/schema";
-import { eq, and, avg, sql, sum, gte, count } from "drizzle-orm";
+import { eq, and, ne, avg, sql, sum, gte, count } from "drizzle-orm";
 import { notifyOwner } from "../_core/notification";
 import { sendGraphEmail } from "../graphEmail";
 
@@ -443,12 +443,17 @@ async function runSingleFleetMode(
     // COST GUARD 1: Hard daily cap — max 1 run per fleet mode per calendar day.
     // EMERGENCY COST FIX (2026-05-03): Reduced from 2 → 1. No automatic retries.
     const DAILY_RUN_CAP = 1;
+    // Exclude failed runs from the cap count so that a failed run does not
+    // permanently lock out retries for the rest of the day.
+    // NOTE: A run that fails after consuming real LLM budget is NOT counted here.
+    // See issue #7 (Cost guard ignores partial-failure costs) for follow-up.
     const [todayRunCount] = await db
       .select({ n: count() })
       .from(founderAgentRuns)
       .where(and(
         eq(founderAgentRuns.fleetMode, config.fleetMode),
         eq(founderAgentRuns.runDate, today),
+        ne(founderAgentRuns.status, "failed"),
       ));
     const runsToday = Number(todayRunCount?.n ?? 0);
     if (runsToday >= DAILY_RUN_CAP) {
@@ -773,12 +778,23 @@ export function startFounderFleetScheduler(): void {
     console.warn("[FounderFleet] Resume on startup failed:", (err as Error)?.message)
   );
 
-  // Daily at 06:00 Asia/Kuwait (= 03:00 UTC)
-  cron.schedule("0 3 * * *", () => {
-    runDailyFleet().catch((err: unknown) =>
-      console.error("[FounderFleet] Cron run error:", (err as Error)?.message)
-    );
-  }, { timezone: "UTC" });
+  // ── In-process cron DISABLED (2026-05-07) ──────────────────────────────────
+  // The Manus-platform scheduled task at ~00:00 UTC (03:00 KWT) is the canonical
+  // trigger, hitting POST /api/scheduled/fleet-trigger. Running a second cron
+  // here at 03:00 UTC (06:00 KWT) created a daily cap race: after DAILY_RUN_CAP
+  // was reduced from 2 → 1 on 2026-05-03, the Manus cron always consumed the
+  // single daily slot first, and this node-cron always hit the cap and emitted a
+  // failure notification. Disabled to eliminate the conflict.
+  //
+  // runDailyFleet() and runSingleFleetMode() remain exported and are still called
+  // by the /api/scheduled/fleet-trigger HTTP endpoint.
+  //
+  // To re-enable, uncomment the block below and remove the Manus platform task:
+  // cron.schedule("0 3 * * *", () => {
+  //   runDailyFleet().catch((err: unknown) =>
+  //     console.error("[FounderFleet] Cron run error:", (err as Error)?.message)
+  //   );
+  // }, { timezone: "UTC" });
 
-  console.log("[FounderFleet] Daily scheduler registered — fires at 06:00 KWT (03:00 UTC)");
+  console.log("[FounderFleet] Startup complete — in-process daily cron is DISABLED; canonical trigger is Manus-platform scheduled task at 00:00 UTC");
 }
