@@ -538,6 +538,60 @@ export const sadoRouter = router({
       };
     }),
 
+  // ── Arabic Refinement v1.1: Tenant policy + signed audit ─────────────────────
+  getArabicPolicy: protectedProcedure
+    .input(z.object({ tenantId: z.string().default("default") }))
+    .query(async ({ input }) => {
+      const { loadPolicy } = await import("../arabicRefinementAudit");
+      return loadPolicy(input.tenantId);
+    }),
+
+  saveArabicPolicy: protectedProcedure
+    .input(z.object({
+      tenantId: z.string().default("default"),
+      dialectLlmFallbackThreshold: z.number().int().min(0).max(100).optional(),
+      encodingIssuesReviewCutoff: z.number().int().min(0).max(20).optional(),
+      piiSeverityOverrides: z.record(z.string(), z.enum(["HIGH", "MEDIUM", "LOW"])).optional(),
+      llmFallbackEnabled: z.boolean().optional(),
+      auditStorageAdapter: z.enum(["local", "s3"]).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const { upsertPolicy } = await import("../arabicRefinementAudit");
+      const { tenantId, ...updates } = input;
+      return upsertPolicy(tenantId, updates as Parameters<typeof upsertPolicy>[1]);
+    }),
+
+  storeSignedAudit: protectedProcedure
+    .input(z.object({
+      tenantId: z.string().default("default"),
+      payloadJson: z.string().max(64000),
+    }))
+    .mutation(async ({ input }) => {
+      const { loadPolicy, signAuditRecord, getStorageAdapter } = await import("../arabicRefinementAudit");
+      const policy = await loadPolicy(input.tenantId);
+      const pubKey = policy.signingPublicKey ?? "";
+      const signed = await signAuditRecord(input.tenantId, input.payloadJson, pubKey);
+      const adapter = getStorageAdapter(policy.auditStorageAdapter);
+      let parsed: { trace_id?: string } = {};
+      try { parsed = JSON.parse(input.payloadJson); } catch { /* ignore */ }
+      const traceId = parsed.trace_id ?? `trace-${Date.now()}`;
+      const location = await adapter.save(traceId, JSON.stringify(signed), "application/json");
+      return { signed, location, traceId };
+    }),
+
+  verifyAuditRecord: publicProcedure
+    .input(z.object({
+      payload: z.string(),
+      signature: z.string(),
+      publicKey: z.string(),
+      signedAt: z.string(),
+      schemaVersion: z.literal("1.1"),
+    }))
+    .mutation(async ({ input }) => {
+      const { verifySignedAuditRecord } = await import("../arabicRefinementAudit");
+      return verifySignedAuditRecord(input);
+    }),
+
   // ── Reset demo ──────────────────────────────────────────────────────────────
   resetDemo: publicProcedure.mutation(async () => {
     const db = await getDb();

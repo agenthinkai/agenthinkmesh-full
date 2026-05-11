@@ -673,6 +673,13 @@
       "when": 1778232778459,
       "tag": "0095_furry_rachel_grey",
       "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "5",
+      "when": 1778500974484,
+      "tag": "0096_kind_polaris",
+      "breakpoints": true
     }
   ]
 }

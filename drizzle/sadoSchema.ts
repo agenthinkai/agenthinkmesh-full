@@ -106,3 +106,21 @@ export const sadoAuditTrail = mysqlTable("sado_audit_trail", {
   traceId: varchar("trace_id", { length: 64 }).notNull(),
   details: text("details"),
 });
+// ── Arabic Refinement Tenant Policy (v1.1) ────────────────────────────────────
+// One row per tenant. Defaults match v1.0 hardcoded constants.
+// signing_private_key stores the base64-encoded ed25519 private key (DER PKCS8).
+export const arabicRefinementPolicy = mysqlTable("arabic_refinement_policy", {
+  id:                          int("id").primaryKey().autoincrement(),
+  tenantId:                    varchar("tenant_id", { length: 64 }).notNull().unique(),
+  dialectLlmFallbackThreshold: int("dialect_llm_fallback_threshold").notNull().default(40),
+  encodingIssuesReviewCutoff:  int("encoding_issues_review_cutoff").notNull().default(3),
+  piiSeverityOverrides:        text("pii_severity_overrides"),
+  llmFallbackEnabled:          boolean("llm_fallback_enabled").notNull().default(true),
+  auditStorageAdapter:         varchar("audit_storage_adapter", { length: 20 }).notNull().default("local"),
+  signingPrivateKey:           text("signing_private_key"),
+  signingPublicKey:            text("signing_public_key"),
+  createdAt:                   bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt:                   bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type ArabicRefinementPolicy = typeof arabicRefinementPolicy.$inferSelect;
+export type InsertArabicRefinementPolicy = typeof arabicRefinementPolicy.$inferInsert;
