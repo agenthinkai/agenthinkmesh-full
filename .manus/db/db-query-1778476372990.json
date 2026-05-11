@@ -1,0 +1,26 @@
+{
+  "query": "SELECT fleet_mode, active, runs_completed, runs_remaining, last_run_at, last_run_score FROM fleet_config ORDER BY fleet_mode;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT fleet_mode, active, runs_completed, runs_remaining, last_run_at, last_run_score FROM fleet_config ORDER BY fleet_mode;",
+  "rows": [
+    {
+      "fleet_mode": "gcc",
+      "active": "1",
+      "runs_completed": "8",
+      "runs_remaining": "22",
+      "last_run_at": "1778285210607",
+      "last_run_score": "51.81"
+    },
+    {
+      "fleet_mode": "global",
+      "active": "1",
+      "runs_completed": "5",
+      "runs_remaining": "25",
+      "last_run_at": "1778285210608",
+      "last_run_score": "51.31"
+    }
+  ],
+  "messages": [],
+  "stdout": "fleet_mode\tactive\truns_completed\truns_remaining\tlast_run_at\tlast_run_score\ngcc\t1\t8\t22\t1778285210607\t51.81\nglobal\t1\t5\t25\t1778285210608\t51.31\n",
+  "stderr": "",
+  "execution_time_ms": 1894
+}

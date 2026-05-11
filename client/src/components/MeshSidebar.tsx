@@ -58,6 +58,7 @@ const NAV_ITEMS: NavItem[] = [
       { path: "/sado/escalations",     label: "Escalations" },
       { path: "/sado/audit-trail",     label: "Audit Trail" },
       { path: "/sado/consensus",         label: "Consensus Engine" },
+      { path: "/sado-arabic",              label: "Arabic Refinement" },
     ],
   },
   { path: "/admin/usage", icon: "⚙️", label: "Admin", adminOnly: true },
@@ -90,7 +91,8 @@ export default function MeshSidebar({ children }: MeshSidebarProps) {
   });
   const [sadoOpen, setSadoOpen] = useState(() => {
     if (typeof window === "undefined") return false;
-    return window.location.pathname.startsWith("/sado");
+    const p = window.location.pathname;
+    return p.startsWith("/sado") || p.startsWith("/sado-arabic");
   });
   const [location] = useLocation();
   const isMobile = useIsMobile();

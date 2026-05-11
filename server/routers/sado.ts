@@ -15,6 +15,7 @@
 import { z } from "zod";
 import { desc, eq, and, or, like } from "drizzle-orm";
 import { publicProcedure, protectedProcedure, router } from "../_core/trpc";
+import { invokeLLM } from "../_core/llm";
 import { getDb } from "../db";
 import {
   sadoAgents,
@@ -488,6 +489,53 @@ export const sadoRouter = router({
       });
 
       return { ok: true, traceId: tid };
+    }),
+
+  // ── Arabic dialect LLM fallback ─────────────────────────────────────────────
+  // Called only when lexical confidence < 40 and deployment mode != sovereign.
+  dialectFallback: protectedProcedure
+    .input(z.object({ text: z.string().max(1200) }))
+    .mutation(async ({ input }) => {
+      const response = await invokeLLM({
+        messages: [
+          {
+            role: "system",
+            content:
+              "You are an Arabic dialect classifier. Given a text snippet, identify the primary Arabic dialect." +
+              " Respond ONLY with a JSON object with these exact keys: primary (string key), primaryName (human-readable string), confidence (integer 0-100)." +
+              " Valid primary keys: khaleeji_saudi, khaleeji_emirati, khaleeji_kuwaiti, khaleeji_generic, msa, unclassified.",
+          },
+          { role: "user", content: input.text },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "dialect_result",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                primary:     { type: "string" },
+                primaryName: { type: "string" },
+                confidence:  { type: "integer" },
+              },
+              required: ["primary", "primaryName", "confidence"],
+              additionalProperties: false,
+            },
+          },
+        },
+      });
+      const raw = response?.choices?.[0]?.message?.content ?? "{}";
+      const parsed = JSON.parse(typeof raw === "string" ? raw : JSON.stringify(raw)) as {
+        primary: string;
+        primaryName: string;
+        confidence: number;
+      };
+      return {
+        primary: parsed.primary ?? "unclassified",
+        primaryName: parsed.primaryName ?? "Unclassified",
+        confidence: typeof parsed.confidence === "number" ? parsed.confidence : 0,
+      };
     }),
 
   // ── Reset demo ──────────────────────────────────────────────────────────────

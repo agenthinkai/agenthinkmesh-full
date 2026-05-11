@@ -1,0 +1,8 @@
+{
+  "query": "SELECT fleet_mode, active, runs_completed, runs_remaining, last_run_at, last_run_score, last_run_status FROM fleet_config ORDER BY fleet_mode;",
+  "command": "mysql --batch --raw --column-names --default-character-set=utf8mb4 --host gateway02.us-east-1.prod.aws.tidbcloud.com --port 4000 --user 2dg2iR9orw75o4J.0aefcec34322 --database 7EnctkaNppkKLbjFfnH6YY --execute SELECT fleet_mode, active, runs_completed, runs_remaining, last_run_at, last_run_score, last_run_status FROM fleet_config ORDER BY fleet_mode;",
+  "returncode": 1,
+  "logs": [
+    "ERROR 1054 (42S22) at line 1: Unknown column 'last_run_status' in 'field list'"
+  ]
+}

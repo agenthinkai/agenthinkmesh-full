@@ -118,6 +118,7 @@ const SADOGovernance = lazy(() => import("./pages/sado/SADOGovernance"));
 const SADOEscalations = lazy(() => import("./pages/sado/SADOEscalations"));
 const SADOAuditTrail = lazy(() => import("./pages/sado/SADOAuditTrail"));
 const SADOConsensus  = lazy(() => import("./pages/sado/SADOConsensus"));
+const SADOArabicRefinement = lazy(() => import("./pages/sado/SadoArabicRefinement"));
 
 // ── Page-level loading fallback ───────────────────────────────────────────────
 function PageLoader() {
@@ -355,6 +356,7 @@ function Router() {
       {/* Legacy alias */}
       <Route path="/sado/audit">{() => <MeshSidebar><SADOAuditTrail /></MeshSidebar>}</Route>
       <Route path="/sado/consensus">{() => <MeshSidebar><SADOConsensus /></MeshSidebar>}</Route>
+      <Route path="/sado-arabic">{() => <MeshSidebar><SADOArabicRefinement /></MeshSidebar>}</Route>
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />
