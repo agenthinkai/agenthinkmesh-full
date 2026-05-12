@@ -4317,3 +4317,4 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] DS.6 — Clear Ignored Leads: added clearIgnoredLeads tRPC mutation (deletes all status=ignored rows, returns cleared count); added Clear Ignored button on Pipeline tab (shown only when ignored > 0, subtle ghost style, window.confirm gate, toast on success, refreshes leads + agentStats)
 - [x] SADO Arabic Refinement — port reference JSX to /sado-arabic with TS types, tRPC dialectFallback, and vitest suite
 - [x] SADO Arabic Refinement v1.1 — Batch CSV, Tenant Policy, Signed Audit (ed25519 + LocalFile/S3 adapters)
+- [x] Council of 10 — public standalone page at /council: storage proxy installed, /council route (public, no auth, no sidebar), OG meta tags (og:title/description/image/type + twitter:card), 18 vitest tests (fingerprint determinism, all 5 verdict levels, share fallback, privacy), TypeScript 0 errors, 858 tests passing

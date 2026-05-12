@@ -42,6 +42,7 @@ import graphEmailWebhookRouter from "../graphEmailWebhookRoute";
 import { startGraphSubscriptionJob } from "../jobs/graphSubscription";
 import { startFounderFleetScheduler } from "../jobs/founderFleetScheduler";
 import { startSelfPingJob } from "../jobs/selfPingJob";
+import { registerStorageProxy } from "./storageProxy";
 
 // ── Startup assertions — fail fast on missing critical env vars ──────────────
 // These checks run before any route handlers are registered.
@@ -111,6 +112,8 @@ async function startServer() {
     next();
   });
 
+  // Storage proxy — serves /manus-storage/{key} via signed Forge URLs
+  registerStorageProxy(app);
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
   // Force Majeure Contract Agent (must be before generic /api/agents catch-all)

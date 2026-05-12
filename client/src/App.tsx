@@ -119,6 +119,7 @@ const SADOEscalations = lazy(() => import("./pages/sado/SADOEscalations"));
 const SADOAuditTrail = lazy(() => import("./pages/sado/SADOAuditTrail"));
 const SADOConsensus  = lazy(() => import("./pages/sado/SADOConsensus"));
 const SADOArabicRefinement = lazy(() => import("./pages/sado/SadoArabicRefinement"));
+const CouncilOf10 = lazy(() => import("./pages/CouncilOf10"));
 
 // ── Page-level loading fallback ───────────────────────────────────────────────
 function PageLoader() {
@@ -357,6 +358,9 @@ function Router() {
       <Route path="/sado/audit">{() => <MeshSidebar><SADOAuditTrail /></MeshSidebar>}</Route>
       <Route path="/sado/consensus">{() => <MeshSidebar><SADOConsensus /></MeshSidebar>}</Route>
       <Route path="/sado-arabic">{() => <MeshSidebar><SADOArabicRefinement /></MeshSidebar>}</Route>
+
+      {/* Council of 10 — public standalone reflective decision companion */}
+      <Route path="/council">{() => <CouncilOf10 />}</Route>
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />
