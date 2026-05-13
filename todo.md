@@ -4334,3 +4334,7 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Tests: language signal submission — stores only language/email/timestamp, never question (strict schema test)
 - [x] TypeScript: 0 errors
 - [x] All v1.1 tests still pass (902 passed, 1 pre-existing LLM quota failure in contacts.test.ts)
+
+## Council of 10 — Cloudflare Web Analytics
+
+> **DROPPED** — Parked pending Lightbox meeting (May 28, 2026). See references/council-declined-items.md.
