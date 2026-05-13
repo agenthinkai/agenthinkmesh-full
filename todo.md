@@ -4318,3 +4318,19 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] SADO Arabic Refinement — port reference JSX to /sado-arabic with TS types, tRPC dialectFallback, and vitest suite
 - [x] SADO Arabic Refinement v1.1 — Batch CSV, Tenant Policy, Signed Audit (ed25519 + LocalFile/S3 adapters)
 - [x] Council of 10 — public standalone page at /council: storage proxy installed, /council route (public, no auth, no sidebar), OG meta tags (og:title/description/image/type + twitter:card), 18 vitest tests (fingerprint determinism, all 5 verdict levels, share fallback, privacy), TypeScript 0 errors, 858 tests passing
+
+## Council of 10 v1.2
+
+- [x] Install franc-min for client-side language detection (replaced with custom Unicode script detector, <3KB gzipped)
+- [x] Add council_language_signals table to DB schema and push migration
+- [x] Add tRPC procedure: council.submitLanguageSignal (stores language, email, timestamp only)
+- [x] Implement isHeavyCategory(question) — keyword/pattern matching, 8 categories
+- [x] Implement sensitive-category redirect screen with helplines and Go back button
+- [x] Implement voice input via Web Speech API — mic button, interim transcripts, privacy notice
+- [x] Implement language detection at submission — custom Unicode detector, 0.80 threshold
+- [x] Implement non-English redirect screen with email signal form
+- [x] Tests: isHeavyCategory — 25 phrases across 8 categories, 6 false-positive guards
+- [x] Tests: language detection — English pass, Arabic/CJK/Devanagari/Tamil detection, low-confidence default
+- [x] Tests: language signal submission — stores only language/email/timestamp, never question (strict schema test)
+- [x] TypeScript: 0 errors
+- [x] All v1.1 tests still pass (902 passed, 1 pre-existing LLM quota failure in contacts.test.ts)

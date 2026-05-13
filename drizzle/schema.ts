@@ -1943,3 +1943,18 @@ export type InsertDealSource = typeof dealSources.$inferInsert;
 
 // ── SADO Phase A ─────────────────────────────────────────────────────
 export * from "./sadoSchema";
+
+// ── Council of 10 — Language Signals ─────────────────────────────────────────
+// Stores ONLY: selected language, optional email, timestamp.
+// The question that triggered the redirect is NEVER stored here.
+export const councilLanguageSignals = mysqlTable("council_language_signals", {
+  id:        int("id").autoincrement().primaryKey(),
+  language:  varchar("language", { length: 64 }).notNull(),  // e.g. "Arabic", "Tamil", "Other: Swahili"
+  email:     varchar("email", { length: 255 }),               // nullable — user may skip
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  clsLangIdx:    index("cls_lang_idx").on(table.language),
+  clsCreatedIdx: index("cls_created_idx").on(table.createdAt),
+}));
+export type CouncilLanguageSignal = typeof councilLanguageSignals.$inferSelect;
+export type InsertCouncilLanguageSignal = typeof councilLanguageSignals.$inferInsert;

@@ -38,6 +38,7 @@ import { trackerRouter } from "./routers/tracker";
 import { portfolioMeshRouter } from "./routers/portfolioMesh";
 import { adminProvisionRouter } from "./routers/adminProvision";
 import { decisionUpgradeRouter } from "./routers/decisionUpgrade";
+import { councilRouter } from "./routers/council";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
 import { eq, desc, asc, gte, lte, sql, and, like, or, isNull, lt, count } from "drizzle-orm";
@@ -117,6 +118,7 @@ export const appRouter = router({
   system: systemRouter,
   adminProvision: adminProvisionRouter,
   decisionUpgrade: decisionUpgradeRouter,
+  council: councilRouter,
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   auth: router({

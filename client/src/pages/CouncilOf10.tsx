@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Scale, Eye, Heart, TrendingUp, AlertTriangle, Clock, Shield, Users,
   Compass, Sparkles, ArrowRight, RotateCcw, Share2, Loader2,
   CheckCircle2, XCircle, MinusCircle, MessageSquare, Check,
+  Mic, MicOff, Globe, Phone, Mail,
 } from 'lucide-react';
+import { trpc } from '@/lib/trpc';
 
 // ============================================================
 // TYPES
@@ -11,7 +13,7 @@ import {
 
 type VoteEnum = 'HARD_YES' | 'SOFT_YES' | 'THINK' | 'SOFT_NO' | 'HARD_NO';
 type VerdictLevel = 'HARD_YES' | 'SOFT_YES' | 'THINK' | 'SOFT_NO' | 'HARD_NO';
-type DeliberationPhase = 'input' | 'deliberating' | 'verdict';
+type DeliberationPhase = 'input' | 'deliberating' | 'verdict' | 'heavy' | 'language';
 type AgentColor = 'cyan' | 'amber' | 'slate' | 'emerald' | 'rose' | 'pink' | 'indigo' | 'teal' | 'violet' | 'orange';
 
 interface CouncilMember {
@@ -274,6 +276,70 @@ const JUDGE_BANK: Record<VerdictLevel, string[]> = {
 };
 
 // ============================================================
+// LANGUAGE DETECTION — Unicode script ranges, no external library
+// Detects Arabic, CJK (Mandarin), Devanagari (Hindi), Tamil
+// Returns { lang: string; confidence: number }
+// ============================================================
+
+export interface LangResult {
+  lang: 'arabic' | 'cjk' | 'devanagari' | 'tamil' | 'english';
+  confidence: number;
+}
+
+export function detectLanguage(text: string): LangResult {
+  if (!text || text.trim().length < 3) return { lang: 'english', confidence: 0 };
+  const chars = Array.from(text.trim());
+  const total = chars.length;
+  let arabic = 0, cjk = 0, devanagari = 0, tamil = 0;
+  for (const ch of chars) {
+    const cp = ch.codePointAt(0) ?? 0;
+    if ((cp >= 0x0600 && cp <= 0x06FF) || (cp >= 0x0750 && cp <= 0x077F) || (cp >= 0xFB50 && cp <= 0xFDFF) || (cp >= 0xFE70 && cp <= 0xFEFF)) arabic++;
+    else if ((cp >= 0x4E00 && cp <= 0x9FFF) || (cp >= 0x3400 && cp <= 0x4DBF) || (cp >= 0x20000 && cp <= 0x2A6DF) || (cp >= 0x3040 && cp <= 0x30FF)) cjk++;
+    else if (cp >= 0x0900 && cp <= 0x097F) devanagari++;
+    else if (cp >= 0x0B80 && cp <= 0x0BFF) tamil++;
+  }
+  const counts: [LangResult['lang'], number][] = [
+    ['arabic', arabic], ['cjk', cjk], ['devanagari', devanagari], ['tamil', tamil],
+  ];
+  const [topLang, topCount] = counts.reduce((a, b) => b[1] > a[1] ? b : a);
+  const confidence = topCount / total;
+  if (confidence >= 0.80) return { lang: topLang, confidence };
+  return { lang: 'english', confidence: 0 };
+}
+
+// ============================================================
+// SENSITIVE CATEGORY DETECTION
+// ============================================================
+
+const HEAVY_PATTERNS: RegExp[] = [
+  // Divorce / ending marriage
+  /\bdivorc/i, /\bending my marriage\b/i, /\bleave my (husband|wife|spouse|partner)\b/i,
+  /\bseparate from my (husband|wife|spouse)\b/i, /\bsplit from my (husband|wife|spouse)\b/i,
+  // Custody / children
+  /\bcustody\b/i, /\btake (my |the )?child(ren)?\b/i, /\babandon(ing)? (my |the )?child(ren)?\b/i,
+  /\bminor.{0,10}welfare\b/i,
+  // Self-harm / suicide
+  /\bkill myself\b/i, /\bsuicid/i, /\bend my life\b/i, /\bwant to die\b/i,
+  /\bshould i die\b/i, /\bhurt(ing)? myself\b/i, /\bself.harm\b/i, /\bself harm\b/i,
+  /\btake my (own )?life\b/i, /\bno reason to live\b/i,
+  // Abuse
+  /\babuse/i, /\bhits me\b/i, /\bhurts me\b/i, /\bbeats me\b/i,
+  /\bphysically (hurt|harm|abuse)/i, /\bsexually (abuse|assault)/i,
+  // Terminal / end-of-life
+  /\bterminal(ly)?\b/i, /\bend.of.life\b/i, /\bpalliative\b/i,
+  /\bdying (of|from)\b/i, /\blife.limiting\b/i,
+  // Financial crisis
+  /\bbankrupt/i, /\bforeclosur/i, /\bdebt collapse\b/i, /\bcan.t pay (my )?debt/i,
+  /\blosing (my |the )?house\b/i, /\bfinancial ruin\b/i,
+  // Crime / criminal
+  /\breport(ing)? (a |the )?crime\b/i,  /\bcriminal (charge|charges|allegation|case)\b/i,  /\bpress charges\b/i, /\bgo to (the )?police\b/i,
+];
+
+export function isHeavyCategory(question: string): boolean {
+  return HEAVY_PATTERNS.some(p => p.test(question));
+}
+
+// ============================================================
 // DETERMINISTIC ENGINE
 // ============================================================
 
@@ -382,6 +448,71 @@ export default function CouncilOf10() {
   const [verdict, setVerdict] = useState<VerdictLevel | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
+  // Voice input state
+  const [isListening, setIsListening] = useState(false);
+  const [speechSupported, setSpeechSupported] = useState(false);
+  const [showMicNotice, setShowMicNotice] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recognitionRef = useRef<any>(null);
+
+  // Language redirect state
+  const [detectedLang, setDetectedLang] = useState<string>('');
+  const [langEmail, setLangEmail] = useState('');
+  const [langChoice, setLangChoice] = useState('Arabic');
+  const [langOther, setLangOther] = useState('');
+  const [langSubmitted, setLangSubmitted] = useState(false);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const submitSignal = (trpc as any).council.submitLanguageSignal.useMutation();
+
+  // Check Web Speech API support on mount
+  useEffect(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w = window as any;
+    setSpeechSupported(!!(w.SpeechRecognition || w.webkitSpeechRecognition));
+  }, []);
+
+  const startListening = useCallback(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const w = window as any;
+    const SR = w.SpeechRecognition || w.webkitSpeechRecognition;
+    if (!SR) return;
+
+    // Show one-time privacy notice
+    const seen = sessionStorage.getItem('council_mic_notice_seen');
+    if (!seen) {
+      setShowMicNotice(true);
+      sessionStorage.setItem('council_mic_notice_seen', '1');
+    }
+
+    const rec = new SR();
+    rec.continuous = true;
+    rec.interimResults = true;
+    rec.lang = navigator.language || 'en-US';
+
+    let finalText = question;
+    rec.onresult = (event: { resultIndex: number; results: { isFinal: boolean; [k: number]: { transcript: string } }[] }) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const t = event.results[i][0].transcript;
+        if (event.results[i].isFinal) { finalText += t; }
+        else { interim = t; }
+      }
+      setQuestion(finalText + interim);
+    };
+    rec.onend = () => { setIsListening(false); setQuestion(finalText); };
+    rec.onerror = () => { setIsListening(false); };
+
+    recognitionRef.current = rec;
+    rec.start();
+    setIsListening(true);
+  }, [question]);
+
+  const stopListening = useCallback(() => {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  }, []);
+
   const samples = [
     'Should I quit my job to start a company?',
     'Should I have a difficult conversation with my brother?',
@@ -392,7 +523,28 @@ export default function CouncilOf10() {
 
   const run = () => {
     if (!question.trim()) return;
-    const { results: built, verdict: finalVerdict } = buildVerdicts(question.trim());
+    const q = question.trim();
+
+    // SCOPE 3: language detection FIRST
+    const langResult = detectLanguage(q);
+    if (langResult.lang !== 'english' && langResult.confidence >= 0.80) {
+      const langNames: Record<string, string> = { arabic: 'Arabic', cjk: 'Mandarin', devanagari: 'Hindi', tamil: 'Tamil' };
+      setDetectedLang(langNames[langResult.lang] || 'Other');
+      setLangChoice(langNames[langResult.lang] || 'Other');
+      setLangEmail('');
+      setLangOther('');
+      setLangSubmitted(false);
+      setPhase('language');
+      return;
+    }
+
+    // SCOPE 1: sensitive category check SECOND
+    if (isHeavyCategory(q)) {
+      setPhase('heavy');
+      return;
+    }
+
+    const { results: built, verdict: finalVerdict } = buildVerdicts(q);
     setResults(built);
     setPhase('deliberating');
     setActiveIdx(0);
@@ -413,6 +565,15 @@ export default function CouncilOf10() {
     setResults([]);
     setActiveIdx(-1);
     setVerdict(null);
+    setDetectedLang('');
+    setLangEmail('');
+    setLangSubmitted(false);
+  };
+
+  const handleLangSignal = async () => {
+    const lang = langChoice === 'Other' ? (langOther.trim() || 'Other') : langChoice;
+    await submitSignal.mutateAsync({ language: lang, email: langEmail.trim() || undefined });
+    setLangSubmitted(true);
   };
 
   const share = async () => {
@@ -504,7 +665,23 @@ export default function CouncilOf10() {
                   className="w-full bg-transparent text-slate-100 placeholder-slate-600 p-4 sm:p-5 outline-none resize-none text-base leading-relaxed"
                 />
                 <div className="flex items-center justify-between gap-3 p-2 pt-1 flex-wrap">
-                  <div className="text-[11px] text-slate-500 px-2 font-mono">{question.length} chars</div>
+                  <div className="flex items-center gap-2">
+                    <div className="text-[11px] text-slate-500 px-2 font-mono">{question.length} chars</div>
+                    {speechSupported && (
+                      <button
+                        onClick={isListening ? stopListening : startListening}
+                        title={isListening ? 'Stop recording' : 'Speak your question'}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs transition-all border ${
+                          isListening
+                            ? 'bg-rose-500/20 border-rose-500/40 text-rose-300 animate-pulse'
+                            : 'bg-slate-800/60 border-slate-700 text-slate-400 hover:text-slate-200 hover:border-slate-600'
+                        }`}
+                      >
+                        {isListening ? <MicOff className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
+                        {isListening ? 'Stop' : 'Speak'}
+                      </button>
+                    )}
+                  </div>
                   <button
                     onClick={run}
                     disabled={!question.trim()}
@@ -514,6 +691,13 @@ export default function CouncilOf10() {
                     <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
+                {showMicNotice && (
+                  <div className="mx-4 mb-3 mt-1 flex items-start gap-2 text-[11px] text-slate-500 bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2">
+                    <Mic className="w-3 h-3 mt-0.5 flex-shrink-0 text-slate-600" />
+                    <span>Voice input is processed entirely in your browser. No audio is sent to any server.</span>
+                    <button onClick={() => setShowMicNotice(false)} className="ml-auto text-slate-600 hover:text-slate-400 flex-shrink-0">✕</button>
+                  </div>
+                )}
               </div>
 
               <div className="mt-5">
@@ -546,6 +730,147 @@ export default function CouncilOf10() {
                   );
                 })}
               </div>
+            </div>
+          </div>
+        )}
+
+        {phase === 'heavy' && (
+          <div className="max-w-2xl mx-auto pt-8 sm:pt-16">
+            <div className="bg-slate-900/60 border border-amber-700/40 rounded-xl p-6 sm:p-8 shadow-2xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-amber-500/20 border border-amber-500/40 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-amber-400" />
+                </div>
+                <div>
+                  <div className="font-semibold text-slate-100 text-base">This question needs more than a council</div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">The topic you raised involves real-world complexity that a thinking tool cannot address safely.</div>
+                </div>
+              </div>
+              <p className="text-sm text-slate-300 leading-relaxed mb-6">
+                The Council of 10 is a decision-thinking tool. For questions involving personal safety, legal matters, medical situations, or family crises, please speak with a qualified professional.
+              </p>
+              <div className="space-y-3 mb-6">
+                <div className="text-[11px] uppercase tracking-widest text-slate-500 mb-2">If you need to talk to someone now</div>
+                <a href="https://www.befrienders.org" target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-colors group">
+                  <Phone className="w-4 h-4 text-cyan-400 flex-shrink-0" />
+                  <div>
+                    <div className="text-sm text-slate-200 font-medium group-hover:text-white">Befrienders Worldwide</div>
+                    <div className="text-[11px] text-slate-500">International emotional support — befrienders.org</div>
+                  </div>
+                </a>
+                <a href="https://www.iasp.info/resources/Crisis_Centres/" target="_blank" rel="noopener noreferrer"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg bg-slate-900/60 border border-slate-800 hover:border-slate-700 transition-colors group">
+                  <Globe className="w-4 h-4 text-indigo-400 flex-shrink-0" />
+                  <div>
+                    <div className="text-sm text-slate-200 font-medium group-hover:text-white">IASP Crisis Centres Directory</div>
+                    <div className="text-[11px] text-slate-500">Find a crisis centre in your country — iasp.info</div>
+                  </div>
+                </a>
+              </div>
+              <button
+                onClick={reset}
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-700 hover:bg-slate-900 text-slate-300 text-sm transition-colors"
+              >
+                <RotateCcw className="w-3 h-3" />
+                Go back
+              </button>
+            </div>
+          </div>
+        )}
+
+        {phase === 'language' && (
+          <div className="max-w-2xl mx-auto pt-8 sm:pt-16">
+            <div className="bg-slate-900/60 border border-indigo-700/40 rounded-xl p-6 sm:p-8 shadow-2xl">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-10 h-10 rounded-lg bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center flex-shrink-0">
+                  <Globe className="w-5 h-5 text-indigo-400" />
+                </div>
+                <div>
+                  <div className="font-semibold text-slate-100 text-base">The Council speaks English for now</div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">We detected your question may be in {detectedLang || 'another language'}.</div>
+                </div>
+              </div>
+
+              {!langSubmitted ? (
+                <>
+                  <p className="text-sm text-slate-300 leading-relaxed mb-5">
+                    The Council of 10 currently deliberates in English. We are building support for more languages — your signal helps us prioritise.
+                  </p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-[11px] uppercase tracking-widest text-slate-500 mb-2 block">Your language</label>
+                      <div className="flex flex-wrap gap-2">
+                        {['Arabic', 'Mandarin', 'Hindi', 'Tamil', 'Other'].map(l => (
+                          <button
+                            key={l}
+                            onClick={() => setLangChoice(l)}
+                            className={`px-3 py-1.5 rounded-full text-xs border transition-colors ${
+                              langChoice === l
+                                ? 'bg-indigo-500/30 border-indigo-500/60 text-indigo-200'
+                                : 'bg-slate-900/40 border-slate-700 text-slate-400 hover:border-slate-600'
+                            }`}
+                          >
+                            {l}
+                          </button>
+                        ))}
+                      </div>
+                      {langChoice === 'Other' && (
+                        <input
+                          value={langOther}
+                          onChange={e => setLangOther(e.target.value)}
+                          placeholder="Which language?"
+                          className="mt-2 w-full bg-slate-900/60 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 outline-none focus:border-indigo-500/60"
+                        />
+                      )}
+                    </div>
+                    <div>
+                      <label className="text-[11px] uppercase tracking-widest text-slate-500 mb-2 block">Email (optional — we will notify you when your language is ready)</label>
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-slate-600 flex-shrink-0" />
+                        <input
+                          type="email"
+                          value={langEmail}
+                          onChange={e => setLangEmail(e.target.value)}
+                          placeholder="you@example.com"
+                          className="flex-1 bg-slate-900/60 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 placeholder-slate-600 outline-none focus:border-indigo-500/60"
+                        />
+                      </div>
+                      <div className="text-[10px] text-slate-600 mt-1.5 ml-6">Your question is never stored. Only your language preference and email are saved.</div>
+                    </div>
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <button
+                        onClick={handleLangSignal}
+                        disabled={submitSignal.isPending}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-medium transition-colors disabled:opacity-50"
+                      >
+                        {submitSignal.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Check className="w-3 h-3" />}
+                        Send signal
+                      </button>
+                      <button
+                        onClick={reset}
+                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-700 hover:bg-slate-900 text-slate-300 text-sm transition-colors"
+                      >
+                        <RotateCcw className="w-3 h-3" />
+                        Go back
+                      </button>
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="text-center py-6">
+                  <CheckCircle2 className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
+                  <div className="text-slate-200 font-medium mb-1">Signal received — thank you</div>
+                  <div className="text-sm text-slate-500 mb-5">We will prioritise {langChoice === 'Other' ? (langOther || 'your language') : langChoice} support based on demand.</div>
+                  <button
+                    onClick={reset}
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-700 hover:bg-slate-900 text-slate-300 text-sm transition-colors"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Ask a question in English
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         )}
