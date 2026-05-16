@@ -1958,3 +1958,27 @@ export const councilLanguageSignals = mysqlTable("council_language_signals", {
 }));
 export type CouncilLanguageSignal = typeof councilLanguageSignals.$inferSelect;
 export type InsertCouncilLanguageSignal = typeof councilLanguageSignals.$inferInsert;
+
+// ── DeepSeek Eval Observability — Inference Log ───────────────────────────────
+// Append-only log of every LLM call made by the eval router.
+// Stores provider/model/token/cost/latency metadata only.
+// Question text and agent rationale are NEVER stored here.
+export const evalInferenceLog = mysqlTable("eval_inference_log", {
+  id:               int("id").autoincrement().primaryKey(),
+  sessionId:        varchar("session_id", { length: 64 }).notNull(),
+  personaId:        varchar("persona_id", { length: 64 }).notNull(),
+  provider:         varchar("provider", { length: 32 }).notNull(),   // "deepseek" | "claude"
+  model:            varchar("model", { length: 64 }).notNull(),
+  inputTokens:      int("input_tokens"),
+  outputTokens:     int("output_tokens"),
+  estimatedCostUsd: decimal("estimated_cost_usd", { precision: 10, scale: 6 }),
+  latencyMs:        int("latency_ms"),
+  retryCount:       int("retry_count").notNull().default(0),
+  escalationReason: varchar("escalation_reason", { length: 64 }),    // null | "low_confidence" | "malformed_json" | "deepseek_unavailable"
+  fallbackUsed:     tinyint("fallback_used").notNull().default(0),   // 0 = no fallback, 1 = fell back to Claude
+  createdAt:        bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  eilSessionIdx:  index("eil_session_idx").on(table.sessionId),
+  eilProviderIdx: index("eil_provider_idx").on(table.provider),
+  eilCreatedIdx:  index("eil_created_idx").on(table.createdAt),
+}));

@@ -19,6 +19,7 @@
  */
 
 import { invokeLLM } from "./_core/llm";
+import { routeEvalCall } from "./lib/llm/evalRouter";
 import Stripe from "stripe";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -774,6 +775,7 @@ async function callPersona(
   memoryContext: string,
   investorMode: boolean = false,
   challengerMode: boolean = false,
+  sessionId: string = "unknown",
 ): Promise<Omit<PersonaVote, "weight">> {
   const contextualDeal = memoryContext
     ? `${memoryContext}\n\n---\n\nDEAL MEMO TO EVALUATE:\n${dealText}`
@@ -796,16 +798,20 @@ async function callPersona(
   );
 
   try {
-    const llmResponse = await Promise.race([
-      invokeLLM({
-        messages: [
-          { role: "system", content: persona.systemPrompt },
-          { role: "user",   content: userMessage },
-        ],
-        max_tokens: 2048,
-      }),
+    const routerResult = await Promise.race([
+      routeEvalCall(
+        {
+          messages: [
+            { role: "system", content: persona.systemPrompt },
+            { role: "user",   content: userMessage },
+          ],
+          max_tokens: 2048,
+        },
+        { sessionId, personaId: persona.id },
+      ),
       timeoutPromise,
     ]);
+    const llmResponse = routerResult.invokeResult;
 
     const content = llmResponse.choices[0]?.message?.content;
     if (typeof content !== "string") throw new Error("Non-text response");
@@ -988,7 +994,7 @@ export async function runCouncil(
   // Run all personas in parallel (challenger wrapper injected per-agent when challengerAgentIds is set)
   const challengerSet = new Set(options.challengerAgentIds ?? []);
   const results = await Promise.allSettled(
-    activePersonas.map((p) => callPersona(p, augmentedDealText, memoryContext, investorMode, challengerSet.has(p.id)))
+    activePersonas.map((p) => callPersona(p, augmentedDealText, memoryContext, investorMode, challengerSet.has(p.id), sessionId))
   );
 
   const votes: PersonaVote[] = results.map((r, i) => {

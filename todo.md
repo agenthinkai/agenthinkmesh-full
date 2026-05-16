@@ -4338,3 +4338,15 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 ## Council of 10 — Cloudflare Web Analytics
 
 > **DROPPED** — Parked pending Lightbox meeting (May 28, 2026). See references/council-declined-items.md.
+
+## DeepSeek-First Eval Infrastructure
+
+- [ ] Add DEEPSEEK_API_KEY, DEEPSEEK_BASE_URL, ENABLE_DEEPSEEK_ROUTING, AGENTHINK_DEFAULT_EVAL_MODEL, AGENTHINK_STRONG_EVAL_MODEL, AGENTHINK_FALLBACK_MODEL to env.ts
+- [ ] Add evalInferenceLog table to drizzle/schema.ts and push migration
+- [ ] Create server/lib/llm/deepseekProvider.ts (OpenAI-compatible DeepSeek client)
+- [ ] Create server/lib/llm/evalRouter.ts (Flash → Pro escalation → Claude fallback)
+- [ ] Create server/lib/llm/evalObservability.ts (fire-and-forget log writer)
+- [ ] Wire evalRouter into councilEngine.ts at single invokeLLM call site (feature-flagged)
+- [ ] Tests: deepseekProvider, evalRouter routing, observability, councilEngine flag
+- [ ] TypeScript: 0 errors
+- [ ] All existing tests still passing
