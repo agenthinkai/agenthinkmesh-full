@@ -310,6 +310,24 @@ function QAPanel({ route }: { route: string }) {
 
 // ── Main component ────────────────────────────────────────────────────────────
 export default function VoiceDemoAgent() {
+  // Read optional prospect context from URL params (?prospect=stc&org=STC&narration=...)
+  const searchParams = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : new URLSearchParams("");
+  const prospectOrg = searchParams.get("org") ?? null;
+  const prospectNarration = searchParams.get("narration") ?? null;
+
+  // If a prospect narration override is provided, patch Step 1 title/narration
+  const ACTIVE_STEPS: DemoStep[] = prospectNarration
+    ? STEPS.map((s) =>
+        s.id === 1
+          ? {
+              ...s,
+              subtitle: prospectOrg ? `Tailored for ${prospectOrg}` : s.subtitle,
+              narration: decodeURIComponent(prospectNarration),
+            }
+          : s
+      )
+    : STEPS;
+
   const [currentStep, setCurrentStep] = useState(0);
   const [speechAvailable, setSpeechAvailable] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
@@ -332,7 +350,7 @@ export default function VoiceDemoAgent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const step = STEPS[currentStep];
+  const step = ACTIVE_STEPS[currentStep];
 
   const speak = useCallback((text: string) => {
     if (!speechAvailable) return;
@@ -344,7 +362,7 @@ export default function VoiceDemoAgent() {
     utter.onstart = () => setIsSpeaking(true);
     utter.onend = () => {
       setIsSpeaking(false);
-      if (autoAdvance && currentStep < STEPS.length - 1) {
+      if (autoAdvance && currentStep < ACTIVE_STEPS.length - 1) {
         setTimeout(() => advanceStep(), 1200);
       }
     };
@@ -359,7 +377,7 @@ export default function VoiceDemoAgent() {
 
   const advanceStep = useCallback(() => {
     stopSpeech();
-    const next = Math.min(currentStep + 1, STEPS.length - 1);
+    const next = Math.min(currentStep + 1, ACTIVE_STEPS.length - 1);
     setCurrentStep(next);
     logEvent.mutate({ event: "step_advanced", route, step: next + 1 });
     trackEvent("voice_demo_step", { step: next + 1, route });
@@ -413,7 +431,7 @@ export default function VoiceDemoAgent() {
 
       {/* Progress bar */}
       <div style={{ height: 3, background: BORDER }}>
-        <div style={{ height: "100%", background: `linear-gradient(90deg, ${CYAN}, #6366f1)`, width: `${((currentStep + 1) / STEPS.length) * 100}%`, transition: "width 0.4s ease" }} />
+        <div style={{ height: "100%", background: `linear-gradient(90deg, ${CYAN}, #6366f1)`, width: `${((currentStep + 1) / ACTIVE_STEPS.length) * 100}%`, transition: "width 0.4s ease" }} />
       </div>
 
       {/* Step counter */}
@@ -433,7 +451,7 @@ export default function VoiceDemoAgent() {
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "32px 24px" }}>
         {/* Step header */}
         <div style={{ marginBottom: 32 }}>
-          <div style={{ fontSize: 11, color: MUTED, fontFamily: MONO, marginBottom: 8 }}>STEP {step.id} OF {STEPS.length}</div>
+          <div style={{ fontSize: 11, color: MUTED, fontFamily: MONO, marginBottom: 8 }}>STEP {step.id} OF {ACTIVE_STEPS.length}</div>
           <h1 style={{ fontSize: 32, fontWeight: 800, color: WHITE, lineHeight: 1.15, marginBottom: 8, letterSpacing: "-0.03em" }}>{step.title}</h1>
           <p style={{ fontSize: 15, color: CYAN, fontFamily: MONO }}>{step.subtitle}</p>
         </div>
@@ -465,7 +483,7 @@ export default function VoiceDemoAgent() {
             ← Previous
           </button>
 
-          {currentStep < STEPS.length - 1 ? (
+          {currentStep < ACTIVE_STEPS.length - 1 ? (
             <button
               onClick={advanceStep}
               style={{ background: `linear-gradient(135deg, ${CYAN}, #6366f1)`, border: "none", borderRadius: 8, padding: "10px 28px", color: "#0a1220", fontSize: 14, fontWeight: 700, cursor: "pointer" }}
