@@ -319,16 +319,46 @@ function MobileDrawer({ open, onClose, currentPath, isAuthenticated, user, logou
                 </a>
               ))}
               {user?.role === "admin" && (
-                <a
-                  href="/admin/usage"
-                  onClick={onClose}
-                  style={{
-                    display: "block", padding: "9px 4px",
-                    fontSize: 13, color: "#F59E0B", textDecoration: "none",
-                  }}
-                >
-                  ⚡ Usage Dashboard →
-                </a>
+                <>
+                  <a
+                    href="/admin/usage"
+                    onClick={onClose}
+                    style={{
+                      display: "block", padding: "9px 4px",
+                      fontSize: 13, color: "#F59E0B", textDecoration: "none",
+                    }}
+                  >
+                    ⚡ Usage Dashboard →
+                  </a>
+                  {/* Prospect Demos — internal only, hidden from external visitors */}
+                  <div style={{ borderTop: "1px solid rgba(56,189,248,0.10)", marginTop: 6, paddingTop: 6 }}>
+                    <div style={{ padding: "4px 4px 2px", fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.08em" }}>Prospect Demos</div>
+                    {[
+                      { label: "STC", href: "/demo/stc" },
+                      { label: "Tencent", href: "/demo/tencent" },
+                      { label: "NBK Capital", href: "/demo/nbk" },
+                      { label: "Core42", href: "/demo/core42" },
+                      { label: "ADNOC", href: "/demo/adnoc" },
+                      { label: "KIA", href: "/demo/kia" },
+                      { label: "Kamco", href: "/demo/kamco" },
+                    ].map(item => (
+                      <a
+                        key={item.href}
+                        href={item.href}
+                        onClick={onClose}
+                        style={{
+                          display: "block", padding: "7px 4px 7px 12px",
+                          fontSize: 12, color: CYAN, textDecoration: "none",
+                          transition: "color 0.15s",
+                        }}
+                        onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.color = WHITE; }}
+                        onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.color = CYAN; }}
+                      >
+                        → {item.label}
+                      </a>
+                    ))}
+                  </div>
+                </>
               )}
               <button
                 onClick={() => { onClose(); logout(); }}
@@ -906,15 +936,41 @@ export default function SiteNav({ isLandingPage = false }: SiteNavProps) {
                         </a>
                       ))}
                       {user?.role === "admin" && (
-                        <a
-                          href="/admin/usage"
-                          onClick={() => setDropOpen(false)}
-                          style={{ display: "block", padding: "10px 16px", fontSize: 13, color: "#F59E0B", textDecoration: "none", transition: "background 0.15s", borderTop: "1px solid rgba(245,158,11,0.12)" }}
-                          onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(245,158,11,0.08)"; }}
-                          onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
-                        >
-                          ⚡ Usage Dashboard
-                        </a>
+                        <>
+                          <a
+                            href="/admin/usage"
+                            onClick={() => setDropOpen(false)}
+                            style={{ display: "block", padding: "10px 16px", fontSize: 13, color: "#F59E0B", textDecoration: "none", transition: "background 0.15s", borderTop: "1px solid rgba(245,158,11,0.12)" }}
+                            onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(245,158,11,0.08)"; }}
+                            onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
+                          >
+                            ⚡ Usage Dashboard
+                          </a>
+                          {/* Prospect Demos — internal only, hidden from external visitors */}
+                          <div style={{ borderTop: "1px solid rgba(56,189,248,0.10)", marginTop: 2, paddingTop: 4 }}>
+                            <div style={{ padding: "5px 16px 3px", fontSize: 10, color: MUTED, textTransform: "uppercase", letterSpacing: "0.08em" }}>Prospect Demos</div>
+                            {[
+                              { label: "STC", href: "/demo/stc" },
+                              { label: "Tencent", href: "/demo/tencent" },
+                              { label: "NBK Capital", href: "/demo/nbk" },
+                              { label: "Core42", href: "/demo/core42" },
+                              { label: "ADNOC", href: "/demo/adnoc" },
+                              { label: "KIA", href: "/demo/kia" },
+                              { label: "Kamco", href: "/demo/kamco" },
+                            ].map(item => (
+                              <a
+                                key={item.href}
+                                href={item.href}
+                                onClick={() => setDropOpen(false)}
+                                style={{ display: "block", padding: "7px 16px 7px 24px", fontSize: 12, color: CYAN, textDecoration: "none", transition: "background 0.15s" }}
+                                onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.background = "rgba(56,189,248,0.08)"; }}
+                                onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.background = "transparent"; }}
+                              >
+                                → {item.label}
+                              </a>
+                            ))}
+                          </div>
+                        </>
                       )}
                       <button
                         onClick={() => { setDropOpen(false); logout(); }}

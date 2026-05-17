@@ -4414,15 +4414,22 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] D.1a-6: TypeScript check + tests for D.1a
 
 ## D.1b — Prospect Demo Routes (Batch 1: May 23 / Batch 2: May 26)
-- [ ] D.1b-1: prospectConfigs.ts — single config file with all 7 prospects (ProspectConfig interface)
-- [ ] D.1b-2: Update ProspectDemoPage to consume new ProspectConfig schema (voice demo context handoff)
-- [ ] D.1b-3: Update VoiceDemoAgent to accept prospectSlug + openingNarration context
-- [ ] D.1b-4: /demo/stc page (Batch 1)
-- [ ] D.1b-5: /demo/tencent page (Batch 1)
-- [ ] D.1b-6: /demo/nbk page (Batch 1)
-- [ ] D.1b-7: Register Batch 1 routes in App.tsx
-- [ ] D.1b-8: TypeScript check + tests for Batch 1
-- [ ] D.1b-9: /demo/core42 page (Batch 2 — hold)
-- [ ] D.1b-10: /demo/adnoc page (Batch 2 — hold)
-- [ ] D.1b-11: /demo/kia page (Batch 2 — hold)
-- [ ] D.1b-12: /demo/kamco page (Batch 2 — hold)
+- [x] D.1b-1: prospectConfigs.ts — single config file with all 7 prospects (ProspectConfig interface)
+- [x] D.1b-2: Update ProspectDemoPage to consume new ProspectConfig schema (voice demo context handoff)
+- [x] D.1b-3: Update VoiceDemoAgent to accept prospectSlug + openingNarration context
+- [x] D.1b-4: /demo/stc page (Batch 1)
+- [x] D.1b-5: /demo/tencent page (Batch 1)
+- [x] D.1b-6: /demo/nbk page (Batch 1)
+- [x] D.1b-7: Register Batch 1 routes in App.tsx
+- [x] D.1b-8: TypeScript check + tests for Batch 1
+- [x] D.1b-9: /demo/core42 page (Batch 2)
+- [x] D.1b-10: /demo/adnoc page (Batch 2)
+- [x] D.1b-11: /demo/kia page (Batch 2)
+- [x] D.1b-12: /demo/kamco page (Batch 2)
+
+## D.1b Batch 2 (2026-05-17)
+- [x] /demo/core42 — Sovereign AI infrastructure page
+- [x] /demo/adnoc — Industrial AI decisions page
+- [x] /demo/kia — Sovereign portfolio rebalance page
+- [x] /demo/kamco — Sukuk allocation page
+- [x] Auth-gated Prospect Demos dropdown in SiteNav (admin/owner only, hide Markaz+Alghanim)

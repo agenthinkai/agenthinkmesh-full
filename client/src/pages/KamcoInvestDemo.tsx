@@ -1,0 +1,6 @@
+import ProspectPage from "./ProspectPage";
+import { PROSPECT_CONFIGS } from "@/config/prospectConfigs";
+
+export default function KamcoInvestDemo() {
+  return <ProspectPage config={PROSPECT_CONFIGS.kamco} />;
+}

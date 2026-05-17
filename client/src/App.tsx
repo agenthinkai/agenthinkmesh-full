@@ -117,10 +117,15 @@ const Demos = lazy(() => import("./pages/Demos"));
 const VoiceDemoAgent = lazy(() => import("./pages/VoiceDemoAgent"));
 const DemoGuide = lazy(() => import("./pages/DemoGuide"));
 const FounderFleet = lazy(() => import("./pages/FounderFleet"));
-// D.1b Batch 1 — /demo/* prospect pages (Batch 2 routes NOT wired until approved)
+// D.1b Batch 1 — /demo/* prospect pages
 const StcDemo = lazy(() => import("./pages/StcDemo"));
 const TencentDemo = lazy(() => import("./pages/TencentDemo"));
 const NbkCapitalDemo = lazy(() => import("./pages/NbkCapitalDemo"));
+// D.1b Batch 2 — /demo/* prospect pages (approved 2026-05-17)
+const Core42Demo = lazy(() => import("./pages/Core42Demo"));
+const AdnocDemo = lazy(() => import("./pages/AdnocDemo"));
+const KiaCapitalDemo = lazy(() => import("./pages/KiaCapitalDemo"));
+const KamcoInvestDemo = lazy(() => import("./pages/KamcoInvestDemo"));
 const SecurityKeysPage = lazy(() => import("./pages/SecurityKeysPage"));
 const SADOLanding = lazy(() => import("./pages/sado/SADOLanding"));
 const SADOCommandCentre = lazy(() => import("./pages/sado/SADOCommandCentre"));
@@ -366,7 +371,11 @@ function Router() {
       <Route path="/demo/stc" component={StcDemo} />
       <Route path="/demo/tencent" component={TencentDemo} />
       <Route path="/demo/nbk" component={NbkCapitalDemo} />
-      {/* Batch 2 routes: /demo/core42, /demo/adnoc, /demo/kia, /demo/kamco — NOT wired until approved */}
+      {/* D.1b Batch 2 — /demo/* prospect routes (wired 2026-05-17) */}
+      <Route path="/demo/core42" component={Core42Demo} />
+      <Route path="/demo/adnoc" component={AdnocDemo} />
+      <Route path="/demo/kia" component={KiaCapitalDemo} />
+      <Route path="/demo/kamco" component={KamcoInvestDemo} />
       {/* Guided demo + reference */}
       <Route path="/voice-demo" component={VoiceDemoAgent} />
       <Route path="/demo-guide" component={DemoGuide} />
