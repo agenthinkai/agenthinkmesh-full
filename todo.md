@@ -4396,3 +4396,19 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] CW: Warm-up metrics: loaded entries, skipped, duration
 - [x] CW: Tests for warm-up logic
 - [x] CW: TypeScript 0 errors, all tests passing
+
+## Prospect Demo Pages (2026-05-17)
+- [ ] /markaz — Markaz REIT rebalance, Shariah+concentration+macro council
+- [ ] /kamco — Kamco Sukuk allocation, yield+risk+tax council
+- [ ] /nbk — NBK Capital PE screening, valuation+macro+challenger council
+- [ ] /kia — KIA sovereign rebalance, macro+risk+challenger+concentration council
+- [ ] /alghanim — Alghanim M&A screening, valuation+concentration+ESG council
+- [ ] Register all 5 routes in App.tsx
+
+## D.1a — VoiceDemoAgent + /voice-demo + /demo-guide (target: May 23)
+- [x] D.1a-1: voiceDemo tRPC router (Q&A classifier 14 categories + lead capture via MS Graph email)
+- [x] D.1a-2: VoiceDemoAgent.tsx — 8-step guided flow, SpeechSynthesis + text fallback, analytics events
+- [x] D.1a-3: /demo-guide page — companion reference
+- [x] D.1a-4: AgenThink-branded auth modal wrapper (no provider swap)
+- [x] D.1a-5: Register /voice-demo and /demo-guide routes in App.tsx
+- [x] D.1a-6: TypeScript check + tests for D.1a

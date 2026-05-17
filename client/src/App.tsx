@@ -108,7 +108,14 @@ const SgIcDemo = lazy(() => import("./pages/SgIcDemo"));
 const JpIcDemo = lazy(() => import("./pages/JpIcDemo"));
 const UsIcDemo = lazy(() => import("./pages/UsIcDemo"));
 const GccIcDemo = lazy(() => import("./pages/GccIcDemo"));
+const MarkazDemo = lazy(() => import("./pages/MarkazDemo"));
+const KamcoDemo = lazy(() => import("./pages/KamcoDemo"));
+const NbkDemo = lazy(() => import("./pages/NbkDemo"));
+const KiaDemo = lazy(() => import("./pages/KiaDemo"));
+const AlghanimDemo = lazy(() => import("./pages/AlghanimDemo"));
 const Demos = lazy(() => import("./pages/Demos"));
+const VoiceDemoAgent = lazy(() => import("./pages/VoiceDemoAgent"));
+const DemoGuide = lazy(() => import("./pages/DemoGuide"));
 const FounderFleet = lazy(() => import("./pages/FounderFleet"));
 const SecurityKeysPage = lazy(() => import("./pages/SecurityKeysPage"));
 const SADOLanding = lazy(() => import("./pages/sado/SADOLanding"));
@@ -345,6 +352,15 @@ function Router() {
       <Route path="/jp-ic" component={JpIcDemo} />
       <Route path="/us-ic" component={UsIcDemo} />
       <Route path="/gcc-ic" component={GccIcDemo} />
+      {/* Prospect-specific demo pages */}
+      <Route path="/markaz" component={MarkazDemo} />
+      <Route path="/kamco" component={KamcoDemo} />
+      <Route path="/nbk" component={NbkDemo} />
+      <Route path="/kia" component={KiaDemo} />
+      <Route path="/alghanim" component={AlghanimDemo} />
+      {/* Guided demo + reference */}
+      <Route path="/voice-demo" component={VoiceDemoAgent} />
+      <Route path="/demo-guide" component={DemoGuide} />
 
       {/* SADO — Sovereign AI Data Operations */}
       <Route path="/sado">{() => <MeshSidebar><SADOLanding /></MeshSidebar>}</Route>
