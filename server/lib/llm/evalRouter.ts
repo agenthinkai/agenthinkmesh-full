@@ -3,16 +3,18 @@
  *
  * Routing strategy (when ENABLE_DEEPSEEK_ROUTING=true):
  *
- *   1. DeepSeek Flash (deepseek-chat) — primary production path
- *   2. DeepSeek Pro (deepseek-reasoner) — escalation on:
+ *   1. EvalCache (LRU, 30-min TTL) — check before any LLM call
+ *   2. DeepSeek Flash (deepseek-chat) — primary production path
+ *   3. DeepSeek Pro (deepseek-reasoner) — escalation on:
  *        • malformed JSON response
  *        • parsed confidence < CONFIDENCE_ESCALATION_THRESHOLD
- *   3. Claude via invokeLLM() — emergency fallback on:
+ *   4. Claude via invokeLLM() — emergency fallback on:
  *        • DeepSeek API unavailable (network error, 5xx)
  *        • Both Flash and Pro attempts exhausted
  *
  * When ENABLE_DEEPSEEK_ROUTING=false (default):
  *   → passes through directly to invokeLLM() — zero behaviour change.
+ *   → Cache is still checked/populated on this path.
  *
  * This file is the ONLY entry point for LLM calls in councilEngine.ts.
  * deepseekProvider.ts and evalObservability.ts are internal to this module.
@@ -26,6 +28,11 @@ import {
   DeepSeekKeyMissingError,
 } from "./deepseekProvider";
 import { logEvalCall } from "./evalObservability";
+import {
+  buildEvalCacheKey,
+  evalCacheGet,
+  evalCacheSet,
+} from "./evalCache";
 import type { Message } from "../../_core/llm";
 
 // ── Config ────────────────────────────────────────────────────────────────────
@@ -59,6 +66,8 @@ export interface EvalRouterResult {
   retryCount: number;
   /** Wall-clock latency of the winning call in ms */
   latencyMs: number;
+  /** True if this result was served from the in-process LRU cache */
+  fromCache?: boolean;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -140,6 +149,14 @@ export async function routeEvalCall(
     personaId: "unknown",
   },
 ): Promise<EvalRouterResult> {
+  // ── P4: Cache check — before any LLM call ─────────────────────────────────
+  const messages = params.messages as Array<{ role: string; content: string }>;
+  const cacheKey = buildEvalCacheKey(messages, context.personaId);
+  const cached = evalCacheGet(cacheKey);
+  if (cached) {
+    return { ...cached, fromCache: true, latencyMs: 0 };
+  }
+
   // ── Fast path: feature flag off → existing Claude/Forge path ─────────────
   if (!ENV.enableDeepseekRouting) {
     const t0 = Date.now();
@@ -158,7 +175,7 @@ export async function routeEvalCall(
       escalationReason: null,
       fallbackUsed: false,
     });
-    return {
+    const result: EvalRouterResult = {
       invokeResult,
       provider: "claude",
       model,
@@ -167,10 +184,12 @@ export async function routeEvalCall(
       retryCount: 0,
       latencyMs,
     };
+    evalCacheSet(cacheKey, result);
+    return result;
   }
 
   // ── DeepSeek path ─────────────────────────────────────────────────────────
-  const messages = params.messages as Message[];
+  const deepseekMessages = params.messages as Message[];
   let retryCount = 0;
   let escalationReason: EscalationReason = null;
 
@@ -178,7 +197,7 @@ export async function routeEvalCall(
   try {
     const t0 = Date.now();
     const flashResult = await callDeepSeek({
-      messages,
+      messages: deepseekMessages,
       model: ENV.defaultEvalModel,
       maxTokens: params.max_tokens ?? params.maxTokens ?? 2048,
       signal: timeoutSignal(DEEPSEEK_TIMEOUT_MS),
@@ -206,7 +225,7 @@ export async function routeEvalCall(
         escalationReason: null,
         fallbackUsed: false,
       });
-      return {
+      const result: EvalRouterResult = {
         invokeResult: wrapAsInvokeResult(flashResult.content, flashResult.model),
         provider: "deepseek",
         model: flashResult.model,
@@ -215,6 +234,8 @@ export async function routeEvalCall(
         retryCount: 0,
         latencyMs,
       };
+      evalCacheSet(cacheKey, result);
+      return result;
     }
 
     // Escalation needed
@@ -230,7 +251,7 @@ export async function routeEvalCall(
     // Step 2: Try DeepSeek Pro (escalation)
     const t1 = Date.now();
     const proResult = await callDeepSeek({
-      messages,
+      messages: deepseekMessages,
       model: ENV.strongEvalModel,
       maxTokens: params.max_tokens ?? params.maxTokens ?? 2048,
       signal: timeoutSignal(DEEPSEEK_TIMEOUT_MS),
@@ -249,7 +270,7 @@ export async function routeEvalCall(
       escalationReason,
       fallbackUsed: false,
     });
-    return {
+    const proRouterResult: EvalRouterResult = {
       invokeResult: wrapAsInvokeResult(proResult.content, proResult.model),
       provider: "deepseek",
       model: proResult.model,
@@ -258,6 +279,8 @@ export async function routeEvalCall(
       retryCount,
       latencyMs: proLatencyMs,
     };
+    evalCacheSet(cacheKey, proRouterResult);
+    return proRouterResult;
   } catch (err) {
     // DeepSeek unavailable (network error, 5xx, key missing, timeout)
     const isKeyMissing = err instanceof DeepSeekKeyMissingError;
@@ -305,7 +328,7 @@ export async function routeEvalCall(
     fallbackUsed: true,
   });
 
-  return {
+  const fallbackRouterResult: EvalRouterResult = {
     invokeResult: fallbackResult,
     provider: "claude",
     model: fallbackModel,
@@ -314,4 +337,7 @@ export async function routeEvalCall(
     retryCount,
     latencyMs: fallbackLatencyMs,
   };
+  // Do NOT cache fallback results — they indicate degraded state
+  // (DeepSeek unavailable). We want the next call to retry DeepSeek.
+  return fallbackRouterResult;
 }

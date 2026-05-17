@@ -20,6 +20,7 @@
 
 import { invokeLLM } from "./_core/llm";
 import { routeEvalCall } from "./lib/llm/evalRouter";
+import { trimMemoryContext, compressDealText } from "./lib/promptCompressor";
 import Stripe from "stripe";
 import { eq, sql } from "drizzle-orm";
 import { z } from "zod";
@@ -777,9 +778,15 @@ async function callPersona(
   challengerMode: boolean = false,
   sessionId: string = "unknown",
 ): Promise<Omit<PersonaVote, "weight">> {
-  const contextualDeal = memoryContext
-    ? `${memoryContext}\n\n---\n\nDEAL MEMO TO EVALUATE:\n${dealText}`
-    : `Here is the deal memo to evaluate:\n\n${dealText}`;
+  // P3: Compress inputs before message construction
+  const compressedMemory = trimMemoryContext(memoryContext);
+  const compressedDeal   = compressDealText(dealText);
+  const contextualDeal = compressedMemory
+    ? `${compressedMemory}\n\n---\n\nDEAL MEMO TO EVALUATE:\n${compressedDeal}`
+    : `Here is the deal memo to evaluate:\n\n${compressedDeal}`;
+
+
+
 
   const investorModeInstruction = investorMode
     ? `\n\nINVESTOR MODE ACTIVE: Balance upside vs risk. Before voting, explicitly answer: "What would make this a winning investment?" Include this in your rationale.`

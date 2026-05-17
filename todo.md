@@ -4359,3 +4359,17 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] P2: Async fleet execution confirmed — fleet.start dispatches runFleet() in background; returns runId immediately (pre-existing correct pattern)
 - [x] P2: 16 new tests in server/throughput.p1p2.test.ts (P1 constants + P2 async dispatch)
 - [x] P1/P2: TypeScript 0 errors, 942 tests passing, 1 pre-existing skip
+
+## P4 — Eval Caching (2026-05-17)
+- [x] P4: evalCache.ts — in-process LRU (max 500 entries, 30-min TTL), sha256 cache key
+- [x] P4: Cache key = sha256(normalized messages JSON + personaId)
+- [x] P4: Wire cache check/store into routeEvalCall (before DeepSeek/Claude dispatch)
+- [x] P4: Skip caching on error responses; log cache hits/misses
+- [x] P4: Tests — 24 tests in server/lib/llm/evalCache.test.ts (hit, miss, TTL expiry, mode separation, no error caching)
+- [x] P4: TypeScript 0 errors, 993 tests passing
+
+## P3 — Prompt/Context Compression (2026-05-17)
+- [x] P3: promptCompressor.ts — trimMemoryContext (budget 1500 chars), compressDealText (whitespace collapse, boilerplate strip, 8000 char budget)
+- [x] P3: Wired into councilEngine.ts callPersona before message construction
+- [x] P3: Tests — 27 tests in server/lib/promptCompressor.test.ts (compression, token budget, no semantic loss)
+- [x] P3: TypeScript 0 errors, 993 tests passing
