@@ -137,7 +137,7 @@ export default function MeshSidebar({ children }: MeshSidebarProps) {
     return (
       <div style={{ display: "flex", flexDirection: "column", minHeight: "100vh", background: BG }}>
         {/* Page content */}
-        <div style={{ flex: 1, paddingBottom: 64, overflowY: "auto" }}>
+        <div data-mesh-content style={{ flex: 1, paddingBottom: 64, overflowY: "auto" }}>
           {children}
         </div>
         {/* Bottom nav */}
@@ -438,7 +438,7 @@ export default function MeshSidebar({ children }: MeshSidebarProps) {
       </aside>
 
       {/* Main content */}
-      <main style={{ flex: 1, minWidth: 0, overflowX: "hidden", background: BG }}>
+      <main data-mesh-content style={{ flex: 1, minWidth: 0, overflowX: "hidden", background: BG }}>
         {children}
       </main>
     </div>

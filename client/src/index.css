@@ -179,6 +179,106 @@
   input[type="radio"]:not(:disabled) {
     @apply cursor-pointer;
   }
+
+  /* ── MeshSidebar dark-content overrides ────────────────────────────────────
+   * Scoped to [data-mesh-content] so light-themed standalone pages
+   * (UaeRealEstateCouncil, Home, ProspectPage, etc.) are NOT affected.
+   * These rules fire only inside the dark MeshSidebar shell.
+   * ──────────────────────────────────────────────────────────────────────── */
+
+  /* Form elements inside MeshSidebar get dark backgrounds automatically */
+  [data-mesh-content] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  [data-mesh-content] select,
+  [data-mesh-content] textarea {
+    background-color: var(--card);
+    color: var(--foreground);
+    border-color: oklch(1 0 0 / 14%);
+  }
+  [data-mesh-content] input:not([type="checkbox"]):not([type="radio"]):not([type="range"])::placeholder,
+  [data-mesh-content] textarea::placeholder {
+    color: var(--muted-foreground);
+  }
+  /* Light background classes -> dark equivalents inside MeshSidebar */
+  [data-mesh-content] .bg-white {
+    background-color: var(--card) !important;
+    color: var(--card-foreground);
+  }
+  [data-mesh-content] .bg-slate-50 {
+    background-color: oklch(0.19 0.05 255) !important;
+  }
+  [data-mesh-content] .bg-slate-100 {
+    background-color: oklch(0.22 0.055 255) !important;
+  }
+  [data-mesh-content] .bg-gray-50 {
+    background-color: oklch(0.19 0.05 255) !important;
+  }
+  [data-mesh-content] .bg-gray-100 {
+    background-color: oklch(0.22 0.055 255) !important;
+  }
+  [data-mesh-content] .text-slate-900,
+  [data-mesh-content] .text-gray-900 {
+    color: var(--foreground) !important;
+  }
+  [data-mesh-content] .text-slate-800,
+  [data-mesh-content] .text-gray-800 {
+    color: oklch(0.87 0.006 255) !important;
+  }
+  [data-mesh-content] .text-slate-700,
+  [data-mesh-content] .text-gray-700 {
+    color: oklch(0.75 0.01 255) !important;
+  }
+  [data-mesh-content] .text-slate-600,
+  [data-mesh-content] .text-gray-600 {
+    color: oklch(0.65 0.015 255) !important;
+  }
+  [data-mesh-content] .border-slate-200,
+  [data-mesh-content] .border-gray-200 {
+    border-color: oklch(1 0 0 / 10%) !important;
+  }
+  [data-mesh-content] .border-slate-300,
+  [data-mesh-content] .border-gray-300 {
+    border-color: oklch(1 0 0 / 14%) !important;
+  }
+  /* Semantic light backgrounds -> dark equivalents inside MeshSidebar */
+  [data-mesh-content] .bg-amber-50 {
+    background-color: oklch(0.22 0.04 85) !important;
+  }
+  [data-mesh-content] .bg-yellow-50 {
+    background-color: oklch(0.22 0.04 85) !important;
+  }
+  [data-mesh-content] .bg-red-50 {
+    background-color: oklch(0.20 0.04 20) !important;
+  }
+  [data-mesh-content] .bg-green-50 {
+    background-color: oklch(0.20 0.04 145) !important;
+  }
+  [data-mesh-content] .bg-blue-50 {
+    background-color: oklch(0.20 0.04 255) !important;
+  }
+  [data-mesh-content] .text-amber-800 {
+    color: oklch(0.82 0.12 85) !important;
+  }
+  [data-mesh-content] .text-red-800 {
+    color: oklch(0.82 0.12 20) !important;
+  }
+  [data-mesh-content] .text-green-800 {
+    color: oklch(0.82 0.12 145) !important;
+  }
+  [data-mesh-content] .text-blue-800 {
+    color: oklch(0.82 0.10 255) !important;
+  }
+  [data-mesh-content] .text-red-700 {
+    color: oklch(0.75 0.14 20) !important;
+  }
+  [data-mesh-content] .border-amber-300 {
+    border-color: oklch(0.75 0.12 85 / 40%) !important;
+  }
+  [data-mesh-content] .border-red-300 {
+    border-color: oklch(0.75 0.12 20 / 40%) !important;
+  }
+  [data-mesh-content] .border-green-300 {
+    border-color: oklch(0.75 0.12 145 / 40%) !important;
+  }
 }
 
 @layer components {
