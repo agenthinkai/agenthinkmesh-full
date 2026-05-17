@@ -4373,3 +4373,12 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] P3: Wired into councilEngine.ts callPersona before message construction
 - [x] P3: Tests — 27 tests in server/lib/promptCompressor.test.ts (compression, token budget, no semantic loss)
 - [x] P3: TypeScript 0 errors, 993 tests passing
+
+## P5/P6 — Observability Aggregation (2026-05-17)
+- [x] P5/P6: Add fromCache column to eval_inference_log schema + migration
+- [x] P5/P6: Log fromCache=true hits in evalObservability (skip cost/latency for cache hits)
+- [x] P5/P6: server/routers/adminEvalStats.ts — admin.evalStats tRPC query
+- [x] P5/P6: Aggregations: daily totals, provider/model breakdown, p95 latency, escalation breakdown, cache hit rate
+- [x] P5/P6: Wire adminEvalStats into appRouter in routers.ts
+- [x] P5/P6: Tests for aggregation logic and admin gate
+- [x] P5/P6: TypeScript 0 errors, all tests passing

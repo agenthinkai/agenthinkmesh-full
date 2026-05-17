@@ -1976,6 +1976,7 @@ export const evalInferenceLog = mysqlTable("eval_inference_log", {
   retryCount:       int("retry_count").notNull().default(0),
   escalationReason: varchar("escalation_reason", { length: 64 }),    // null | "low_confidence" | "malformed_json" | "deepseek_unavailable"
   fallbackUsed:     tinyint("fallback_used").notNull().default(0),   // 0 = no fallback, 1 = fell back to Claude
+  fromCache:        tinyint("from_cache").notNull().default(0),        // 1 = served from in-process LRU cache (P4)
   createdAt:        bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 }, (table) => ({
   eilSessionIdx:  index("eil_session_idx").on(table.sessionId),

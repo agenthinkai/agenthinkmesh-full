@@ -154,6 +154,17 @@ export async function routeEvalCall(
   const cacheKey = buildEvalCacheKey(messages, context.personaId);
   const cached = evalCacheGet(cacheKey);
   if (cached) {
+    // Log the cache hit so P5/P6 aggregations can compute hit rate
+    logEvalCall({
+      sessionId: context.sessionId,
+      personaId: context.personaId,
+      provider:  cached.provider,
+      model:     cached.model,
+      retryCount: 0,
+      escalationReason: null,
+      fallbackUsed: false,
+      fromCache: true,
+    });
     return { ...cached, fromCache: true, latencyMs: 0 };
   }
 

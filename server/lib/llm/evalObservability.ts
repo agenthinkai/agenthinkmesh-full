@@ -5,8 +5,12 @@
  * Never throws — all errors are swallowed with a console.warn.
  *
  * Stores: provider, model, token counts, estimated cost, latency,
- *         escalation reason, retry count, fallback flag.
+ *         escalation reason, retry count, fallback flag, fromCache flag.
  * NEVER stores: question text, agent rationale, deal content.
+ *
+ * P4 addition: fromCache=true rows have estimatedCostUsd=0 and latencyMs=0
+ * since no LLM call was made. This is intentional — it keeps cost aggregations
+ * accurate (cache hits don't incur API cost).
  */
 
 import { getDb } from "../../db";
@@ -44,12 +48,16 @@ export interface EvalCallLogEntry {
   retryCount?: number;
   escalationReason?: string | null;
   fallbackUsed?: boolean;
+  fromCache?: boolean;  // P4: true when served from in-process LRU cache
 }
 
 /**
  * logEvalCall — append one row to eval_inference_log.
  *
  * Safe to call without await. Never throws.
+ *
+ * Cache hit rows: estimatedCostUsd="0.000000", latencyMs=0, inputTokens=null,
+ * outputTokens=null. This keeps cost aggregations accurate.
  */
 export function logEvalCall(entry: EvalCallLogEntry): void {
   const {
@@ -63,10 +71,13 @@ export function logEvalCall(entry: EvalCallLogEntry): void {
     retryCount = 0,
     escalationReason = null,
     fallbackUsed = false,
+    fromCache = false,
   } = entry;
 
-  const estimatedCostUsd = estimateCost(model, inputTokens, outputTokens)
-    .toFixed(6);
+  // Cache hits have zero cost — no tokens consumed
+  const estimatedCostUsd = fromCache
+    ? "0.000000"
+    : estimateCost(model, inputTokens, outputTokens).toFixed(6);
 
   // Fire-and-forget — intentionally not awaited
   (async () => {
@@ -78,13 +89,14 @@ export function logEvalCall(entry: EvalCallLogEntry): void {
         personaId,
         provider,
         model,
-        inputTokens: inputTokens || null,
-        outputTokens: outputTokens || null,
+        inputTokens:      fromCache ? null : (inputTokens || null),
+        outputTokens:     fromCache ? null : (outputTokens || null),
         estimatedCostUsd,
-        latencyMs: latencyMs ?? null,
+        latencyMs:        fromCache ? 0 : (latencyMs ?? null),
         retryCount,
         escalationReason: escalationReason ?? null,
-        fallbackUsed: fallbackUsed ? 1 : 0,
+        fallbackUsed:     fallbackUsed ? 1 : 0,
+        fromCache:        fromCache ? 1 : 0,
       });
     } catch (err) {
       console.warn("[EvalObservability] Log write failed (non-fatal):", err);

@@ -37,6 +37,7 @@ import { contactsRouter } from "./routers/contacts";
 import { trackerRouter } from "./routers/tracker";
 import { portfolioMeshRouter } from "./routers/portfolioMesh";
 import { adminProvisionRouter } from "./routers/adminProvision";
+import { adminEvalStatsRouter } from "./routers/adminEvalStats";
 import { decisionUpgradeRouter } from "./routers/decisionUpgrade";
 import { councilRouter } from "./routers/council";
 import { storagePut } from "./storage";
@@ -117,6 +118,7 @@ export const appRouter = router({
   fleet: fleetRouter,
   system: systemRouter,
   adminProvision: adminProvisionRouter,
+  adminEvalStats: adminEvalStatsRouter,
   decisionUpgrade: decisionUpgradeRouter,
   council: councilRouter,
 

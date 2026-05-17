@@ -1,0 +1,1 @@
+ALTER TABLE `eval_inference_log` ADD `from_cache` tinyint DEFAULT 0 NOT NULL;
