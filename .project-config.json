@@ -1,0 +1,62 @@
+{
+  "build_command": "pnpm run build",
+  "capabilities": [
+    "db",
+    "server",
+    "user"
+  ],
+  "dev_command": "pnpm run dev",
+  "env_vars": {
+    "DATABASE_URL": "mysql://2dg2iR9orw75o4J.0aefcec34322:80xOj7x5daM6EuXxoq0H@gateway02.us-east-1.prod.aws.tidbcloud.com:4000/7EnctkaNppkKLbjFfnH6YY?ssl={\"rejectUnauthorized\":true}"
+  },
+  "experiments": null,
+  "git_remote": {
+    "repo_url": "s3://vida-prod-gitrepo/webdev-git/310519663268376562/7EnctkaNppkKLbjFfnH6YY",
+    "access_key_id": "ASIAZV3A2ECZEXNBUG26",
+    "secret_access_key": "KbXxlLn5bgMoVU9T3EzGl3R7+ajNeVz9nI2s6Sny",
+    "session_token": "IQoJb3JpZ2luX2VjENj//////////wEaCXVzLWVhc3QtMSJHMEUCIQCf9ci2qv7GWgxCnE01YXYSOuzneRuoLyOq+4ITmC01GgIgSj8bE7FCxEY9ySB5rxhPt/8zKy3xa3bgsI7lsdNsZkAq/wMIof//////////ARAEGgw2NjUzODYwOTg4NjYiDIgMfLZnQKDMxH3tgCrTA1aT40/UFLJmCZTBm3FxxWFHOqEauifZSyneHlF8+eyoECSsnPn7EPLo+3jsQr9bAYJZ6nXX7jISjC0LjBeLXL4ZUIAjjtgHOXPWih9yn6VoFdMxB5kzWWQmunq0hVtjDSzlSsL3y76sAjT9hRXKPcoWBPPGM/ehHY3ADZXq7nZ4JN/HvrGNq2JXB56Qo9gzHIoYEyGCFpJ6oG/3mptGpNUZ0tgL+zPnqv3jhsPyA8v3brpBBNT/RqE2smbCk9xzKhLPxAS5vEWxRBHhNhnReYwWAdZIgJLlewsGXRUnMMEBiHInjnlGNgDk/3sD9rrxPkOtE4HUPmXQAAkLGHSj5mfDLg982+YlMWzESutZLrjh4TlAqRup138R59iLQhnth7KNJJb8f2MUd0fvd2HQG9zPaXKtpPWi+jaLz23Tu28xZKkxDRUPBQrEUsQccOff20sv8nvJ1VYpG80FbYRjJHkNVhOEedDaBUz5PJvj1um9po925Bb3maMyfE/O5MHn3jhUkj5V3x1yQ4hDVlbOjZwQCoiI/LO+OreWGoKCBvR1oAXRS9+afr6SXeDqx3vWxSR+xw+S9McercwteNqAH5jucayeAewCDPTV0cIyjNl3QP+CMNXfpdAGOp0BEY4qRmkvgTL3iwXe7wpmOP3JE6hBK8bhee+ksGJ/1Mgj6RrzWIeisVbR8p94qjjYkQV2J3tZmbtjvjyCOBafAoHOfuNAcahMw404YEP1q1UluAMudvOiLJQY2rHnceFsnxhqNReZbmu6CL2ZyVrW/nLbnIjArCekwD1diHRs1TuoavgSTTkJp10d/Fgpm2PxT+UhOIT7EY9L23gQqg==",
+    "expiration": "2026-05-17T19:35:49.000Z"
+  },
+  "name": "agenthinkmesh-full",
+  "path": "/home/ubuntu/agenthinkmesh-full",
+  "port": 3000,
+  "secrets": {
+    "ANTHROPIC_API_KEY": "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",
+    "BUILT_IN_FORGE_API_KEY": "YGSRpWVB6DRpUyFnrBqUst",
+    "BUILT_IN_FORGE_API_URL": "https://forge.manus.ai",
+    "DAILY_API_SPEND_CAP": "50",
+    "DATA_ENCRYPTION_KEY": "02dd526d5cc8b00f9ab24957aa1ed647760cd64dc2d11473264db3e561355d01",
+    "DEEPSEEK_API_KEY": "sk-56e46f6fe8784c248954fb83aab7d326",
+    "ENABLE_DEEPSEEK_ROUTING": "true",
+    "ENABLE_INTERNAL_SCREEN_API": "true",
+    "ENCRYPTION_MASTER_KEY": "02dd526d5cc8b00f9ab24957aa1ed647760cd64dc2d11473264db3e561355d01",
+    "FLEET_COST_ALERT_THRESHOLD_USD": "50",
+    "GOOGLE_API_KEY": "AIzaSyBq3cW11rxl8MzRAdBMCFmE5gDvKVVCU24",
+    "JWT_SECRET": "5xAu9Ei7PTaPEWSHdzzWj3",
+    "MAX_RUNS_PER_HOUR": "50",
+    "MS_CLIENT_ID": "1513f312-7259-4e67-b81d-5846d4d96c74",
+    "MS_CLIENT_SECRET": "X9I8Q~HvRuMw21N6kpYeKdy01lrq4C6VJqcEaaaN",
+    "MS_TENANT_ID": "4e3c81c1-6864-4c56-af1b-30a2f16f84d4",
+    "NEWS_API_KEY": "8086f306b8a79d96c287bffd26e003a8",
+    "OAUTH_SERVER_URL": "https://api.manus.im",
+    "OWNER_NAME": "Farouq Sultan",
+    "OWNER_OPEN_ID": "oYGdZuwudwZqvkpodoMS68",
+    "RESEND_API_KEY": "re_VGaCr3LG_8A7U9QP4rMTN16JkfM1bVzN3",
+    "SCHEDULER_SECRET": "4522d778f3950053f080f61badc7b398305eef63c26645d0ee6c8b4393909124",
+    "STRIPE_SECRET_KEY": "sk_test_51TGyWXCIRokJUXHXPFp5fWfAxTJK69IiXGDjk5EE98GgJnHxbhgopkEbNtKK0JS4AxgRBf2tEnB25hHClgUM7LX700mrYfVmAc",
+    "STRIPE_WEBHOOK_SECRET": "whsec_GSIKZd5eH3D6CXVH5DeljrNDvNb6AeGt",
+    "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
+    "VITE_ANALYTICS_WEBSITE_ID": "6c709480-4a3f-4343-ab5a-d0a9313395d0",
+    "VITE_APP_ID": "7EnctkaNppkKLbjFfnH6YY",
+    "VITE_APP_LOGO": "https://files.manuscdn.com/user_upload_by_module/web_dev_logo/310519663268376562/GdphcKmkuDeKbgeo.png",
+    "VITE_APP_TITLE": "AgenThinkMesh",
+    "VITE_FRONTEND_FORGE_API_KEY": "gQuWfxn55oRqetwbezKLyr",
+    "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
+    "VITE_OAUTH_PORTAL_URL": "https://manus.im",
+    "VITE_STRIPE_PUBLISHABLE_KEY": "pk_test_51TGyWXCIRokJUXHXrlygqcDB4bH2Vv6W4vuITsExUXyCnupRoOFhD4ORR0x38fJ5frNwDL1UijVPumlx3BAFhJFM00rKZ8ecWF",
+    "VITE_WEB3FORMS_ACCESS_KEY": "41145ea1-d563-42fb-9062-8e97e5d4b9b9",
+    "WEB3FORMS_ACCESS_KEY": "41145ea1-d563-42fb-9062-8e97e5d4b9b9"
+  },
+  "template_id": "web-db-user",
+  "test_command": "pnpm test"
+}

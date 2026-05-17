@@ -10,14 +10,16 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// ── Hoist mockInvokeLLM so it is available inside the hoisted vi.mock() call ─
-const { mockInvokeLLM } = vi.hoisted(() => {
-  return { mockInvokeLLM: vi.fn() };
+// ── Hoist mockRouteEvalCall so it is available inside the hoisted vi.mock() call ─
+// councilEngine.ts now calls routeEvalCall() (evalRouter) instead of invokeLLM() directly.
+// We mock routeEvalCall at the module level so tests never hit the real API.
+const { mockRouteEvalCall } = vi.hoisted(() => {
+  return { mockRouteEvalCall: vi.fn() };
 });
 
-// ── Mock the LLM helper at module level ───────────────────────────────────────
-vi.mock("./_core/llm", () => ({
-  invokeLLM: mockInvokeLLM,
+// ── Mock the eval router at module level ──────────────────────────────────────
+vi.mock("./lib/llm/evalRouter", () => ({
+  routeEvalCall: mockRouteEvalCall,
 }));
 
 // Import AFTER the mock is registered
@@ -74,7 +76,7 @@ function setVotesWithOverrides(
 
 // ── Setup: reset mock before each test ───────────────────────────────────────
 beforeEach(() => {
-  mockInvokeLLM.mockReset();
+  mockRouteEvalCall.mockReset();
 });
 
 // ── Helper: wire mockInvokeLLM to return votes in sequence ───────────────────
@@ -82,9 +84,19 @@ function wireMockVotes(
   votes: ("HARD_YES" | "SOFT_YES" | "SOFT_NO" | "HARD_NO")[]
 ) {
   let callIndex = 0;
-  mockInvokeLLM.mockImplementation(() => {
+  // routeEvalCall returns EvalRouterResult: { invokeResult, provider, model, ... }
+  // councilEngine.ts reads result.invokeResult from the returned object.
+  mockRouteEvalCall.mockImplementation(() => {
     const vote = votes[callIndex++] ?? "HARD_YES";
-    return Promise.resolve(makeLLMResponse(vote));
+    return Promise.resolve({
+      invokeResult: makeLLMResponse(vote),
+      provider: "deepseek" as const,
+      model: "deepseek-chat",
+      escalationReason: null,
+      fallbackUsed: false,
+      retryCount: 0,
+      latencyMs: 100,
+    });
   });
 }
 
