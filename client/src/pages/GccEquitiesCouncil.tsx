@@ -109,14 +109,14 @@ export default function GccEquitiesCouncil() {
     <div className="max-w-5xl mx-auto p-6 space-y-6">
 
       {/* ─ Header ─────────────────────────────────────────────────── */}
-      <header className="border-b border-amber-200 pb-4">
+      <header className="border-b border-amber-700/40 pb-4">
         <div className="text-xs uppercase tracking-widest text-amber-700">
           AgenThink Mesh · Markets Division
         </div>
-        <h1 className="text-3xl font-serif mt-1 text-slate-900">
+        <h1 className="text-3xl font-serif mt-1 text-slate-100">
           Council of 10 — <em className="text-amber-600">GCC Equities</em>
         </h1>
-        <p className="text-sm text-slate-600 mt-2 italic">
+        <p className="text-sm text-slate-400 mt-2 italic">
           Ten specialised agents. Eight-vote floor. Two hard vetoes
           (Shariah · Regulatory). Submit a trading signal for council review.
         </p>
@@ -128,13 +128,13 @@ export default function GccEquitiesCouncil() {
       {/* ─ Strategy / target / side hint ──────────────────────────── */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <label className="block">
-          <span className="text-xs uppercase tracking-wider text-slate-500">
+          <span className="text-xs uppercase tracking-wider text-slate-400">
             Strategy
           </span>
           <select
             value={strategy}
             onChange={(e) => setStrategy(e.target.value as Strategy)}
-            className="mt-1 block w-full border rounded px-3 py-2 bg-white"
+            className="mt-1 block w-full border rounded px-3 py-2 bg-[#1a2035] text-slate-200"
           >
             <option value="FRIDAY_GAP">Friday Gap</option>
             <option value="NAV_DEPEG">NAV De-peg</option>
@@ -143,19 +143,19 @@ export default function GccEquitiesCouncil() {
         </label>
 
         <label className="block">
-          <span className="text-xs uppercase tracking-wider text-slate-500">
+          <span className="text-xs uppercase tracking-wider text-slate-400">
             Target Symbol
           </span>
           <input
             value={symbol}
             onChange={(e) => setSymbol(e.target.value)}
-            className="mt-1 block w-full border rounded px-3 py-2 font-mono"
+            className="mt-1 block w-full border border-slate-600 rounded px-3 py-2 font-mono bg-[#1a2035] text-slate-200"
             placeholder="KFH"
           />
         </label>
 
         <label className="block">
-          <span className="text-xs uppercase tracking-wider text-slate-500">
+          <span className="text-xs uppercase tracking-wider text-slate-400">
             Side Hint
           </span>
           <select
@@ -163,7 +163,7 @@ export default function GccEquitiesCouncil() {
             onChange={(e) =>
               setSideHint(e.target.value as "BUY" | "SELL" | "")
             }
-            className="mt-1 block w-full border rounded px-3 py-2 bg-white"
+            className="mt-1 block w-full border rounded px-3 py-2 bg-[#1a2035] text-slate-200"
           >
             <option value="">— none —</option>
             <option value="BUY">Buy</option>
@@ -174,37 +174,37 @@ export default function GccEquitiesCouncil() {
 
       {/* ─ Friday Gap inputs (shown only for that strategy) ───────── */}
       {strategy === "FRIDAY_GAP" && (
-        <section className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-amber-50 border border-amber-200 p-4 rounded">
+        <section className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-[#1e1a0e] border border-amber-700/40 p-4 rounded">
           <label className="block">
-            <span className="text-xs uppercase tracking-wider text-slate-600">
+            <span className="text-xs uppercase tracking-wider text-slate-300">
               KWT Thursday Close (USD)
             </span>
             <input
               value={kwtThu}
               onChange={(e) => setKwtThu(e.target.value)}
-              className="mt-1 block w-full border rounded px-3 py-2 font-mono"
+              className="mt-1 block w-full border border-slate-600 rounded px-3 py-2 font-mono bg-[#1a2035] text-slate-200"
               placeholder="36.10"
             />
           </label>
           <label className="block">
-            <span className="text-xs uppercase tracking-wider text-slate-600">
+            <span className="text-xs uppercase tracking-wider text-slate-300">
               KWT Friday Close (USD)
             </span>
             <input
               value={kwtFri}
               onChange={(e) => setKwtFri(e.target.value)}
-              className="mt-1 block w-full border rounded px-3 py-2 font-mono"
+              className="mt-1 block w-full border border-slate-600 rounded px-3 py-2 font-mono bg-[#1a2035] text-slate-200"
               placeholder="36.55"
             />
           </label>
           <label className="block">
-            <span className="text-xs uppercase tracking-wider text-slate-600">
+            <span className="text-xs uppercase tracking-wider text-slate-300">
               Threshold (bps)
             </span>
             <input
               value={thresholdBps}
               onChange={(e) => setThresholdBps(e.target.value)}
-              className="mt-1 block w-full border rounded px-3 py-2 font-mono"
+              className="mt-1 block w-full border border-slate-600 rounded px-3 py-2 font-mono bg-[#1a2035] text-slate-200"
               placeholder="15"
             />
           </label>
@@ -216,34 +216,34 @@ export default function GccEquitiesCouncil() {
         <h2 className="text-sm uppercase tracking-wider text-slate-500 mb-2">
           Constituent Quotes (KWD) — leave blank to skip a name
         </h2>
-        <div className="overflow-x-auto border rounded">
+        <div className="overflow-x-auto border border-slate-700 rounded">
           <table className="w-full text-sm">
-            <thead className="bg-slate-50">
+            <thead className="bg-[#1a2035]">
               <tr>
-                <th className="text-left p-2 font-medium text-slate-700">
+                <th className="text-left p-2 font-medium text-slate-300">
                   Symbol
                 </th>
-                <th className="text-left p-2 font-medium text-slate-700">
+                <th className="text-left p-2 font-medium text-slate-300">
                   Bid
                 </th>
-                <th className="text-left p-2 font-medium text-slate-700">
+                <th className="text-left p-2 font-medium text-slate-300">
                   Ask
                 </th>
-                <th className="text-left p-2 font-medium text-slate-700">
+                <th className="text-left p-2 font-medium text-slate-300">
                   Last
                 </th>
               </tr>
             </thead>
             <tbody>
               {quotes.map((q, i) => (
-                <tr key={q.symbol} className="border-t">
-                  <td className="p-2 font-mono text-slate-900">{q.symbol}</td>
+                <tr key={q.symbol} className="border-t border-slate-700">
+                  <td className="p-2 font-mono text-slate-100">{q.symbol}</td>
                   {(["bid", "ask", "last"] as const).map((f) => (
                     <td key={f} className="p-2">
                       <input
                         value={q[f]}
                         onChange={(e) => updateQuote(i, f, e.target.value)}
-                        className="w-24 border rounded px-2 py-1 font-mono text-xs"
+                        className="w-24 border border-slate-600 rounded px-2 py-1 font-mono text-xs bg-[#1a2035] text-slate-200"
                       />
                     </td>
                   ))}
@@ -257,14 +257,14 @@ export default function GccEquitiesCouncil() {
       {/* ─ Macro tape ────────────────────────────────────────────── */}
       <section>
         <label className="block">
-          <span className="text-xs uppercase tracking-wider text-slate-500">
+          <span className="text-xs uppercase tracking-wider text-slate-400">
             Macro Tape (Friday global close)
           </span>
           <textarea
             value={macroTape}
             onChange={(e) => setMacroTape(e.target.value)}
             rows={2}
-            className="mt-1 block w-full border rounded px-3 py-2 font-mono text-xs"
+            className="mt-1 block w-full border border-slate-600 rounded px-3 py-2 font-mono text-xs bg-[#1a2035] text-slate-200"
             placeholder="S&P 500 +X%, Brent +Y%, DXY ±Z%, GCC headlines..."
           />
         </label>
@@ -272,14 +272,14 @@ export default function GccEquitiesCouncil() {
       {/* ─ Analyst notes ──────────────────────────────────────────── */}
       <section>
         <label className="block">
-          <span className="text-xs uppercase tracking-wider text-slate-500">
+          <span className="text-xs uppercase tracking-wider text-slate-400">
             Analyst Notes (optional)
           </span>
           <textarea
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             rows={3}
-            className="mt-1 block w-full border rounded px-3 py-2"
+            className="mt-1 block w-full border border-slate-600 rounded px-3 py-2 bg-[#1a2035] text-slate-200"
             placeholder="Context the council should consider — recent news, prior positioning, etc."
           />
         </label>
@@ -290,7 +290,7 @@ export default function GccEquitiesCouncil() {
         <button
           onClick={onSubmit}
           disabled={screen.isPending}
-          className="bg-slate-900 text-amber-200 px-6 py-3 rounded font-mono uppercase tracking-wider text-sm hover:bg-slate-800 disabled:opacity-50"
+          className="bg-amber-600 text-slate-900 px-6 py-3 rounded font-mono uppercase tracking-wider text-sm hover:bg-amber-500 disabled:opacity-50"
         >
           {screen.isPending ? "Council deliberating…" : "Submit to Council of 10"}
         </button>
@@ -331,9 +331,9 @@ function MarketStatusBadge() {
   const isPreOp = phase === "PRE_OPEN";
 
   const palette =
-    isOpen   ? "bg-green-100 text-green-800 border-green-300" :
-    isPreOp  ? "bg-amber-100 text-amber-800 border-amber-300" :
-               "bg-slate-100 text-slate-700 border-slate-300";
+    isOpen   ? "bg-green-900/30 text-green-300 border-green-700" :
+    isPreOp  ? "bg-amber-900/30 text-amber-300 border-amber-700" :
+               "bg-slate-800 text-slate-300 border-slate-600";
 
   const dot =
     isOpen   ? "bg-green-500 animate-pulse" :
@@ -362,19 +362,19 @@ function MarketStatusBadge() {
 function CouncilVerdictCard({ result }: { result: any }) {
   const verdictColor =
     result.verdict === "APPROVED" || result.verdict === "EXECUTE"
-      ? "bg-green-50 border-green-600"
+      ? "bg-green-900/30 border-green-500"
       : result.verdict === "BLOCK" || result.verdict === "REJECTED"
-      ? "bg-red-50 border-red-600"
-      : "bg-amber-50 border-amber-600";
+      ? "bg-red-900/30 border-red-500"
+      : "bg-amber-900/30 border-amber-500";
 
   return (
     <section className={`border-l-4 p-5 mt-6 ${verdictColor}`}>
       <div className="flex justify-between items-start mb-4">
         <div>
-          <div className="text-xs uppercase tracking-widest text-slate-500">
+          <div className="text-xs uppercase tracking-widest text-slate-400">
             Verdict
           </div>
-          <div className="text-2xl font-serif text-slate-900">
+          <div className="text-2xl font-serif text-slate-100">
             {result.verdict}
           </div>
         </div>
@@ -384,7 +384,7 @@ function CouncilVerdictCard({ result }: { result: any }) {
           </div>
 
           {result.structuralNoCount > 0 && (
-            <div className="text-amber-700 text-xs mt-1 italic">
+            <div className="text-amber-400 text-xs mt-1 italic">
               {result.structuralNoCount} of {result.noCount}{" "}
               {result.noCount === 1 ? "NO is a" : "NOs are"} missing-data refusal
               {result.structuralNoCount > 1 ? "s" : ""}
@@ -408,28 +408,28 @@ function CouncilVerdictCard({ result }: { result: any }) {
             key={v.personaId}
             className={`border rounded p-3 ${
               v.vote === "HARD_NO"
-                ? "border-red-500 bg-red-50"
+                ? "border-red-500 bg-red-900/20"
                 : v.vote === "NO"
-                ? "border-amber-400 bg-amber-50"
-                : "border-slate-200 bg-white"
+                ? "border-amber-400 bg-amber-900/20"
+                : "border-slate-200 bg-[#1a2035] text-slate-200"
             }`}
           >
             <div className="flex justify-between items-baseline">
-              <div className="font-semibold text-slate-900">
+              <div className="font-semibold text-slate-100">
                 {v.personaName ?? v.personaId}
               </div>
-              <div className="text-xs font-mono text-slate-600">
+              <div className="text-xs font-mono text-slate-300">
                 {v.vote} · {Math.round((v.confidence ?? 0) * 100)}%
               </div>
             </div>
-            <div className="text-sm text-slate-700 mt-1">{v.rationale}</div>
+            <div className="text-sm text-slate-300 mt-1">{v.rationale}</div>
             {v.blockers?.length > 0 && (
               <div className="text-xs text-red-700 mt-2 font-mono">
                 blockers: {v.blockers.join(", ")}
               </div>
             )}
             {v.conditions?.length > 0 && (
-              <div className="text-xs text-slate-600 mt-1 font-mono">
+              <div className="text-xs text-slate-400 mt-1 font-mono">
                 conditions: {v.conditions.join(", ")}
               </div>
             )}
