@@ -4382,3 +4382,10 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] P5/P6: Wire adminEvalStats into appRouter in routers.ts
 - [x] P5/P6: Tests for aggregation logic and admin gate
 - [x] P5/P6: TypeScript 0 errors, all tests passing
+
+## P7 — /admin/evals Dashboard (2026-05-17)
+- [x] P7: client/src/pages/AdminEvalsDashboard.tsx — admin-gated dashboard page
+- [x] P7: Add /admin/evals route in App.tsx
+- [x] P7: Add "Eval Stats" nav link in MeshSidebar (adminOnly) and DashboardLayout
+- [x] P7: Panels: summary KPIs, cost over time chart, provider breakdown, escalation breakdown, cache hit rate, p95 latency, fallback/retry counts, daily call volume
+- [x] P7: TypeScript 0 errors, all tests passing

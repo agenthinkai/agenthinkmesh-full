@@ -62,6 +62,7 @@ const GameTheoryAgent = lazy(() => import("./pages/GameTheoryAgent"));
 const ETFStudio = lazy(() => import("./pages/ETFStudio"));
 const PartnerCRM = lazy(() => import("./pages/PartnerCRM"));
 const AdminUsageDashboard = lazy(() => import("./pages/AdminUsageDashboard"));
+const AdminEvalsDashboard = lazy(() => import("./pages/AdminEvalsDashboard"));
 const CommandCenter = lazy(() => import("./pages/CommandCenter"));
 const MeshIntelligence = lazy(() => import("./pages/Intelligence"));
 const AdminTreasury = lazy(() => import("./pages/AdminTreasury"));
@@ -233,6 +234,7 @@ function Router() {
       <Route path="/beta-access" component={BetaAccess} />
       {/* Admin */}
       <Route path="/admin/usage" component={AdminUsageDashboard} />
+      <Route path="/admin/evals" component={AdminEvalsDashboard} />
       <Route path="/admin/beta-requests" component={AdminBetaRequests} />
       <Route path="/admin/demo-requests" component={AdminDemoRequests} />
       <Route path="/admin/treasury" component={AdminTreasury} />
