@@ -20,6 +20,7 @@ import {
 import { eq, and, inArray, sql } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
 import { runCouncil } from "./councilEngine";
+import { scheduleWarmup } from "./lib/llm/evalCacheWarmup";
 import { encryptWithMasterKey, decryptWithMasterKey } from "./cmk";
 
 // ── Model constants ────────────────────────────────────────────────────────────
@@ -1237,6 +1238,11 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
     }
 
     // Step 4: Submit to mesh
+    // P8: Non-blocking cache warm-up — fire-and-forget before eval phase.
+    // Skipped in quickTest mode (too few evals to benefit from warm-up overhead).
+    if (!quickTest) {
+      scheduleWarmup({ councilMode: opts.gccMode ? "gcc" : "gcc" });
+    }
     await updateRunStatus(runId, "evaluating");
     await submitToMesh(runId, acc, quickTest
       ? { maxConcurrent: 3, staggerMs: 1000, gccMode: opts.gccMode, bypassCostGuard }
@@ -1458,6 +1464,8 @@ export async function runFleetPhase(
 
   // ── Phase: evaluate ──────────────────────────────────────────────────────
   if (phase === "evaluate") {
+    // P8: Non-blocking cache warm-up — fire-and-forget before eval phase.
+    scheduleWarmup({ councilMode: gccMode ? "gcc" : "gcc" });
     await updateRunStatus(runId, "evaluating");
     await submitToMesh(runId, acc, { gccMode, bypassCostGuard });
     await saveCosts(runId, acc);

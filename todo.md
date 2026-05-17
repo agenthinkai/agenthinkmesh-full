@@ -4389,3 +4389,10 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] P7: Add "Eval Stats" nav link in MeshSidebar (adminOnly) and DashboardLayout
 - [x] P7: Panels: summary KPIs, cost over time chart, provider breakdown, escalation breakdown, cache hit rate, p95 latency, fallback/retry counts, daily call volume
 - [x] P7: TypeScript 0 errors, all tests passing
+
+## Cache Warm-Up on Fleet Start (2026-05-17)
+- [x] CW: server/lib/llm/evalCacheWarmup.ts — warm-up module
+- [x] CW: Wire warmupEvalCache() into founderFleet.ts runFleet (non-blocking)
+- [x] CW: Warm-up metrics: loaded entries, skipped, duration
+- [x] CW: Tests for warm-up logic
+- [x] CW: TypeScript 0 errors, all tests passing
