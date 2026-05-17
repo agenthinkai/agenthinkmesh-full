@@ -55,7 +55,7 @@ import { notifyOwner } from "./_core/notification";
 // ── Config ────────────────────────────────────────────────────────────────────
 
 const CONSENSUS_THRESHOLD = 8;
-const AGENT_TIMEOUT_MS    = 50_000;
+const AGENT_TIMEOUT_MS    = 15_000; // P1: reduced from 50_000ms — DeepSeek Flash p99 ~8s; 15s gives 2× headroom
 
 // [FIX B] Fixed USD amount — Stripe doesn't support KWD (3-decimal currency).
 // KWD 10 billed as $32.50 USD. Label on invoice shows "approx KWD 10".

@@ -570,8 +570,8 @@ Return ONLY a JSON array of ${domainIdeas.length} objects in the same order as t
 }
 
 // ── Step 4: Submit to mesh with concurrency queue ─────────────────────────────
-const MAX_CONCURRENT = 10;
-const STAGGER_MS = 3000;
+const MAX_CONCURRENT = 25; // P1: increased from 10 — DeepSeek Flash handles higher concurrency than Claude
+const STAGGER_MS = 500;    // P1: reduced from 3000ms — conservative Claude rate-limit guard no longer needed on DeepSeek primary path
 
 interface PitchEntry {
   pitch: FounderAgentPitch;

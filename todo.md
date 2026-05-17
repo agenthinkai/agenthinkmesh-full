@@ -4350,3 +4350,12 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Tests: deepseekProvider, evalRouter routing, observability, councilEngine flag
 - [ ] TypeScript: 0 errors
 - [ ] All existing tests still passing
+
+## DeepSeek Eval Infrastructure — P1/P2 Throughput
+
+- [x] P1: STAGGER_MS 3000 → 500 in founderFleet.ts
+- [x] P1: MAX_CONCURRENT 10 → 25 in founderFleet.ts
+- [x] P1: AGENT_TIMEOUT_MS 50_000 → 15_000 in councilEngine.ts
+- [x] P2: Async fleet execution confirmed — fleet.start dispatches runFleet() in background; returns runId immediately (pre-existing correct pattern)
+- [x] P2: 16 new tests in server/throughput.p1p2.test.ts (P1 constants + P2 async dispatch)
+- [x] P1/P2: TypeScript 0 errors, 942 tests passing, 1 pre-existing skip
