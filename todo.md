@@ -4434,6 +4434,12 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] /demo/kamco — Sukuk allocation page
 - [x] Auth-gated Prospect Demos dropdown in SiteNav (admin/owner only, hide Markaz+Alghanim)
 
+## ProductDemo Audio Fix (2026-05-18)
+- [x] Fix duplicate sentence playback — replaced per-scene Audio() construction with named-function listeners that self-remove on "ended"
+- [x] Fix abrupt audio cutoff — preload cache pre-fetches next 2 scenes while current plays; 200 ms gap replaces 600 ms
+- [x] Stable playSceneRef pattern — "ended" closure always calls latest playScene without stale closures or re-registration
+- [x] TypeScript: 0 errors. Tests: 1053 passed, 1 skipped
+
 ## CSV Export — /admin/evals (2026-05-18)
 - [x] adminEvalStats.exportCsv tRPC mutation — 3 modes: raw rows (up to 5000), byDay aggregation, byProvider aggregation
 - [x] csvField + toCsv helpers — RFC 4180 compliant (quotes, comma, newline escaping)

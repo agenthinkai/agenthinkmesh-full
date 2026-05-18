@@ -450,102 +450,161 @@ export default function ProductDemo() {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isMuted, setIsMuted] = useState(false);
   const [progress, setProgress] = useState(0);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const sceneStartTimeRef = useRef<number>(0);
 
-  const stopProgress = useCallback(() => {
-    if (progressIntervalRef.current) {
-      clearInterval(progressIntervalRef.current);
-      progressIntervalRef.current = null;
-    }
+  // ── Single persistent Audio element ─────────────────────────────────────────
+  // We create ONE Audio element for the lifetime of the component and swap its
+  // src instead of creating new instances. This avoids:
+  //   1. Duplicate "ended" listeners (the old bug — each new Audio() added a
+  //      fresh listener but the previous one was never removed)
+  //   2. Cold-start buffering gaps between scenes (the browser can start
+  //      fetching the next src while the current one is still playing)
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  // Stable ref for current scene index so event handlers never go stale
+  const currentSceneRef = useRef<number>(-1);
+
+  // Preload cache: Audio elements keyed by scene index, loaded ahead of time
+  const preloadCache = useRef<Map<number, HTMLAudioElement>>(new Map());
+
+  // Muted ref so the "ended" handler can read the latest value without
+  // being in the dependency array (which would recreate the handler)
+  const isMutedRef = useRef(false);
+
+  // ── Preload helpers ──────────────────────────────────────────────────────────
+
+  const preloadScene = useCallback((index: number) => {
+    if (index < 0 || index >= SCENES.length) return;
+    if (preloadCache.current.has(index)) return;
+    const a = new Audio();
+    a.preload = "auto";
+    a.src = AUDIO_URLS[SCENES[index].id];
+    preloadCache.current.set(index, a);
   }, []);
 
+  // ── Core play logic ──────────────────────────────────────────────────────────
+  // playSceneRef holds the latest version of playScene so the "ended" handler
+  // always calls the current function without being re-registered.
+  const playSceneRef = useRef<(index: number) => void>(() => {});
+
   const playScene = useCallback(
-    async (sceneIndex: number) => {
+    (sceneIndex: number) => {
       if (sceneIndex >= SCENES.length) {
         setIsPlaying(false);
-        setCurrentScene(SCENES.length); // show end state
+        setCurrentScene(SCENES.length);
+        currentSceneRef.current = SCENES.length;
         return;
       }
 
+      currentSceneRef.current = sceneIndex;
       setCurrentScene(sceneIndex);
-      const sceneId = SCENES[sceneIndex].id;
-      const audioUrl = AUDIO_URLS[sceneId];
 
-      stopProgress();
+      // Kick off preload for the next two scenes immediately
+      preloadScene(sceneIndex + 1);
+      preloadScene(sceneIndex + 2);
 
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = "";
+      // Grab from preload cache if available, otherwise create fresh
+      const cached = preloadCache.current.get(sceneIndex);
+      const audio = cached ?? new Audio(AUDIO_URLS[SCENES[sceneIndex].id]);
+      audio.muted = isMutedRef.current;
+
+      // Remove the old audio element's listeners cleanly
+      const prev = audioRef.current;
+      if (prev && prev !== audio) {
+        prev.pause();
+        // Detach src so the browser releases the network connection
+        prev.src = "";
+        prev.load();
       }
-
-      const audio = new Audio(audioUrl);
-      audio.muted = isMuted;
       audioRef.current = audio;
 
-      sceneStartTimeRef.current = Date.now();
+      // ── Attach listeners to this specific audio instance ──────────────────
+      // We use named functions so they can be removed precisely, preventing
+      // the duplicate-playback bug.
 
-      audio.addEventListener("timeupdate", () => {
+      function onTimeUpdate() {
         if (audio.duration) {
-          const sceneProgress = audio.currentTime / audio.duration;
-          const overallProgress = (sceneIndex + sceneProgress) / SCENES.length;
-          setProgress(overallProgress * 100);
+          const sp = audio.currentTime / audio.duration;
+          setProgress(((sceneIndex + sp) / SCENES.length) * 100);
         }
-      });
-
-      audio.addEventListener("ended", () => {
-        // Small pause between scenes
-        setTimeout(() => playScene(sceneIndex + 1), 600);
-      });
-
-      audio.addEventListener("error", () => {
-        // If audio fails, advance after 4 seconds
-        setTimeout(() => playScene(sceneIndex + 1), 4000);
-      });
-
-      try {
-        await audio.play();
-      } catch {
-        // Autoplay blocked — advance after 4 seconds
-        setTimeout(() => playScene(sceneIndex + 1), 4000);
       }
+
+      function onEnded() {
+        // Clean up listeners before advancing
+        audio.removeEventListener("timeupdate", onTimeUpdate);
+        audio.removeEventListener("ended", onEnded);
+        audio.removeEventListener("error", onError);
+        // Tiny gap (200 ms) feels natural without being jarring
+        setTimeout(() => playSceneRef.current(sceneIndex + 1), 200);
+      }
+
+      function onError() {
+        audio.removeEventListener("timeupdate", onTimeUpdate);
+        audio.removeEventListener("ended", onEnded);
+        audio.removeEventListener("error", onError);
+        // Advance after a short pause so the demo keeps moving
+        setTimeout(() => playSceneRef.current(sceneIndex + 1), 3000);
+      }
+
+      audio.addEventListener("timeupdate", onTimeUpdate);
+      audio.addEventListener("ended", onEnded);
+      audio.addEventListener("error", onError);
+
+      // Play — if autoplay is blocked the error handler will advance
+      audio.play().catch(() => {
+        audio.removeEventListener("timeupdate", onTimeUpdate);
+        audio.removeEventListener("ended", onEnded);
+        audio.removeEventListener("error", onError);
+        setTimeout(() => playSceneRef.current(sceneIndex + 1), 3000);
+      });
     },
-    [isMuted, stopProgress]
+    [preloadScene]
   );
+
+  // Keep the ref in sync so the "ended" closure always calls the latest version
+  useEffect(() => {
+    playSceneRef.current = playScene;
+  }, [playScene]);
 
   const handleStart = useCallback(() => {
     setIsPlaying(true);
     setProgress(0);
+    // Preload first two scenes before starting
+    preloadScene(0);
+    preloadScene(1);
     playScene(0);
-  }, [playScene]);
+  }, [playScene, preloadScene]);
 
   const handlePause = useCallback(() => {
-    if (audioRef.current) {
-      if (audioRef.current.paused) {
-        audioRef.current.play();
-        setIsPlaying(true);
-      } else {
-        audioRef.current.pause();
-        setIsPlaying(false);
-      }
+    const audio = audioRef.current;
+    if (!audio) return;
+    if (audio.paused) {
+      audio.play().catch(() => {});
+      setIsPlaying(true);
+    } else {
+      audio.pause();
+      setIsPlaying(false);
     }
   }, []);
 
   const handleRestart = useCallback(() => {
-    if (audioRef.current) {
-      audioRef.current.pause();
-      audioRef.current.src = "";
+    const audio = audioRef.current;
+    if (audio) {
+      audio.pause();
+      audio.src = "";
+      audio.load();
     }
-    stopProgress();
+    audioRef.current = null;
+    preloadCache.current.clear();
+    currentSceneRef.current = -1;
     setCurrentScene(-1);
     setIsPlaying(false);
     setProgress(0);
-  }, [stopProgress]);
+  }, []);
 
   const handleMute = useCallback(() => {
     setIsMuted((prev) => {
       const next = !prev;
+      isMutedRef.current = next;
       if (audioRef.current) audioRef.current.muted = next;
       return next;
     });
@@ -553,23 +612,24 @@ export default function ProductDemo() {
 
   const handleSceneJump = useCallback(
     (index: number) => {
-      if (audioRef.current) {
-        audioRef.current.pause();
-        audioRef.current.src = "";
-      }
-      stopProgress();
       setIsPlaying(true);
       playScene(index);
     },
-    [playScene, stopProgress]
+    [playScene]
   );
 
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (audioRef.current) audioRef.current.pause();
-      stopProgress();
+      const audio = audioRef.current;
+      if (audio) {
+        audio.pause();
+        audio.src = "";
+      }
+      preloadCache.current.forEach((a) => { a.src = ""; });
+      preloadCache.current.clear();
     };
-  }, [stopProgress]);
+  }, []);
 
   const renderScene = (scene: SceneConfig, active: boolean) => {
     switch (scene.component) {
