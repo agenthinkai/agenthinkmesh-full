@@ -4433,3 +4433,13 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] /demo/kia — Sovereign portfolio rebalance page
 - [x] /demo/kamco — Sukuk allocation page
 - [x] Auth-gated Prospect Demos dropdown in SiteNav (admin/owner only, hide Markaz+Alghanim)
+
+## ProductDemo — Animated 8-Scene Product Demo Page (2026-05-18)
+- [x] ProductDemo.tsx — 8 animated scenes (Hook, Intro, Input, Council, Verdict, Memo, Advanced, CTA)
+- [x] Voice narration via /manus-storage/ CDN audio URLs (scene1–scene8)
+- [x] Scene navigation dots, progress bar, pause/mute/restart controls
+- [x] Cinematic dark background (#0a0a0f) with amber accent colors
+- [x] /product-demo route registered in App.tsx
+- [x] TypeScript check — 0 errors (fixed Set iteration TS2802)
+- [x] Tests — 1033 passed, 1 skipped
+- [x] Checkpoint saved
