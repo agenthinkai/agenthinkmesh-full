@@ -30,8 +30,30 @@ import { router, adminProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "../db";
 import { evalInferenceLog } from "../../drizzle/schema";
-import { sql, and, gte, lte } from "drizzle-orm";
+import { sql, and, gte, lte, desc } from "drizzle-orm";
 import { evalCacheStats } from "../lib/llm/evalCache";
+
+// ── CSV helpers ───────────────────────────────────────────────────────────────
+
+/** Escape a CSV field: wrap in quotes if it contains comma, quote, or newline. */
+function csvField(value: string | number | null | undefined): string {
+  const s = value === null || value === undefined ? "" : String(value);
+  if (s.includes(",") || s.includes('"') || s.includes("\n")) {
+    return `"${s.replace(/"/g, '""')}"`;
+  }
+  return s;
+}
+
+/** Convert an array of objects to a CSV string (header row + data rows). */
+function toCsv(rows: Record<string, string | number | null | undefined>[]): string {
+  if (rows.length === 0) return "";
+  const headers = Object.keys(rows[0]);
+  const lines = [
+    headers.map(csvField).join(","),
+    ...rows.map((row) => headers.map((h) => csvField(row[h])).join(",")),
+  ];
+  return lines.join("\n");
+}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -301,6 +323,168 @@ export const adminEvalStatsRouter = router({
   cacheStats: adminProcedure
     .query(() => {
       return evalCacheStats();
+    }),
+
+  /**
+   * exportCsv — export eval log rows as a CSV string.
+   *
+   * Three export modes (controlled by `exportType`):
+   *   "raw"      — individual eval_inference_log rows (up to `limit`, default 5000)
+   *   "byDay"    — daily aggregation (same as byDay procedure)
+   *   "byProvider" — provider/model aggregation (same as byProvider procedure)
+   *
+   * Returns: { csv: string, filename: string, rowCount: number }
+   */
+  exportCsv: adminProcedure
+    .input(
+      z.object({
+        days:       z.number().int().min(1).max(90).default(7),
+        exportType: z.enum(["raw", "byDay", "byProvider"]).default("raw"),
+        limit:      z.number().int().min(1).max(10_000).default(5_000),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "DB unavailable" });
+
+      const fromTs = daysAgoMs(input.days);
+      const toTs   = Date.now();
+      const dateTag = new Date().toISOString().slice(0, 10);
+
+      // ── Raw rows ────────────────────────────────────────────────────────
+      if (input.exportType === "raw") {
+        const rows = await db
+          .select({
+            id:               evalInferenceLog.id,
+            sessionId:        evalInferenceLog.sessionId,
+            personaId:        evalInferenceLog.personaId,
+            provider:         evalInferenceLog.provider,
+            model:            evalInferenceLog.model,
+            inputTokens:      evalInferenceLog.inputTokens,
+            outputTokens:     evalInferenceLog.outputTokens,
+            estimatedCostUsd: evalInferenceLog.estimatedCostUsd,
+            latencyMs:        evalInferenceLog.latencyMs,
+            retryCount:       evalInferenceLog.retryCount,
+            escalationReason: evalInferenceLog.escalationReason,
+            fallbackUsed:     evalInferenceLog.fallbackUsed,
+            fromCache:        evalInferenceLog.fromCache,
+            createdAt:        evalInferenceLog.createdAt,
+          })
+          .from(evalInferenceLog)
+          .where(
+            and(
+              gte(evalInferenceLog.createdAt, fromTs),
+              lte(evalInferenceLog.createdAt, toTs),
+            ),
+          )
+          .orderBy(desc(evalInferenceLog.createdAt))
+          .limit(input.limit);
+
+        const csvRows = rows.map((r) => ({
+          id:                r.id,
+          session_id:        r.sessionId,
+          persona_id:        r.personaId,
+          provider:          r.provider,
+          model:             r.model,
+          input_tokens:      r.inputTokens ?? "",
+          output_tokens:     r.outputTokens ?? "",
+          estimated_cost_usd: r.estimatedCostUsd ?? "",
+          latency_ms:        r.latencyMs ?? "",
+          retry_count:       r.retryCount,
+          escalation_reason: r.escalationReason ?? "",
+          fallback_used:     r.fallbackUsed,
+          from_cache:        r.fromCache,
+          created_at_utc:    new Date(r.createdAt).toISOString(),
+        }));
+
+        return {
+          csv:      toCsv(csvRows),
+          filename: `eval-log-raw-${input.days}d-${dateTag}.csv`,
+          rowCount: csvRows.length,
+        };
+      }
+
+      // ── By-day aggregation ───────────────────────────────────────────────
+      if (input.exportType === "byDay") {
+        const rows = await db
+          .select({
+            date:         sql<string>`DATE(FROM_UNIXTIME(${evalInferenceLog.createdAt} / 1000))`,
+            totalCalls:   sql<number>`COUNT(*)`,
+            cachedCalls:  sql<number>`SUM(CASE WHEN ${evalInferenceLog.fromCache} = 1 THEN 1 ELSE 0 END)`,
+            totalCostUsd: sql<string>`COALESCE(SUM(CAST(${evalInferenceLog.estimatedCostUsd} AS DECIMAL(12,6))), 0)`,
+            avgLatencyMs: sql<number>`ROUND(AVG(CASE WHEN ${evalInferenceLog.fromCache} = 0 THEN ${evalInferenceLog.latencyMs} END), 0)`,
+            totalRetries: sql<number>`SUM(${evalInferenceLog.retryCount})`,
+            fallbackCalls: sql<number>`SUM(${evalInferenceLog.fallbackUsed})`,
+          })
+          .from(evalInferenceLog)
+          .where(
+            and(
+              gte(evalInferenceLog.createdAt, fromTs),
+              lte(evalInferenceLog.createdAt, toTs),
+            ),
+          )
+          .groupBy(sql`DATE(FROM_UNIXTIME(${evalInferenceLog.createdAt} / 1000))`)
+          .orderBy(sql`DATE(FROM_UNIXTIME(${evalInferenceLog.createdAt} / 1000))`);
+
+        const csvRows = rows.map((r) => ({
+          date:           r.date,
+          total_calls:    Number(r.totalCalls),
+          cached_calls:   Number(r.cachedCalls),
+          cache_hit_rate: r4(safeDivide(Number(r.cachedCalls), Number(r.totalCalls))),
+          total_cost_usd: r4(parseFloat(String(r.totalCostUsd))),
+          avg_latency_ms: Number(r.avgLatencyMs ?? 0),
+          total_retries:  Number(r.totalRetries ?? 0),
+          fallback_calls: Number(r.fallbackCalls ?? 0),
+        }));
+
+        return {
+          csv:      toCsv(csvRows),
+          filename: `eval-log-byday-${input.days}d-${dateTag}.csv`,
+          rowCount: csvRows.length,
+        };
+      }
+
+      // ── By-provider aggregation ──────────────────────────────────────────
+      const rows = await db
+        .select({
+          provider:       evalInferenceLog.provider,
+          model:          evalInferenceLog.model,
+          totalCalls:     sql<number>`COUNT(*)`,
+          cachedCalls:    sql<number>`SUM(CASE WHEN ${evalInferenceLog.fromCache} = 1 THEN 1 ELSE 0 END)`,
+          totalCostUsd:   sql<string>`COALESCE(SUM(CAST(${evalInferenceLog.estimatedCostUsd} AS DECIMAL(12,6))), 0)`,
+          avgLatencyMs:   sql<number>`ROUND(AVG(CASE WHEN ${evalInferenceLog.fromCache} = 0 THEN ${evalInferenceLog.latencyMs} END), 0)`,
+          fallbackCalls:  sql<number>`SUM(${evalInferenceLog.fallbackUsed})`,
+          escalatedCalls: sql<number>`SUM(CASE WHEN ${evalInferenceLog.escalationReason} IS NOT NULL THEN 1 ELSE 0 END)`,
+          totalRetries:   sql<number>`SUM(${evalInferenceLog.retryCount})`,
+        })
+        .from(evalInferenceLog)
+        .where(
+          and(
+            gte(evalInferenceLog.createdAt, fromTs),
+            lte(evalInferenceLog.createdAt, toTs),
+          ),
+        )
+        .groupBy(evalInferenceLog.provider, evalInferenceLog.model)
+        .orderBy(sql`COUNT(*) DESC`);
+
+      const csvRows = rows.map((r) => ({
+        provider:        r.provider,
+        model:           r.model,
+        total_calls:     Number(r.totalCalls),
+        cached_calls:    Number(r.cachedCalls),
+        cache_hit_rate:  r4(safeDivide(Number(r.cachedCalls), Number(r.totalCalls))),
+        total_cost_usd:  r4(parseFloat(String(r.totalCostUsd))),
+        avg_latency_ms:  Number(r.avgLatencyMs ?? 0),
+        fallback_calls:  Number(r.fallbackCalls),
+        escalated_calls: Number(r.escalatedCalls),
+        total_retries:   Number(r.totalRetries ?? 0),
+      }));
+
+      return {
+        csv:      toCsv(csvRows),
+        filename: `eval-log-byprovider-${input.days}d-${dateTag}.csv`,
+        rowCount: csvRows.length,
+      };
     }),
 });
 

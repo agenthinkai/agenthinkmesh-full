@@ -4434,6 +4434,14 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] /demo/kamco — Sukuk allocation page
 - [x] Auth-gated Prospect Demos dropdown in SiteNav (admin/owner only, hide Markaz+Alghanim)
 
+## CSV Export — /admin/evals (2026-05-18)
+- [x] adminEvalStats.exportCsv tRPC mutation — 3 modes: raw rows (up to 5000), byDay aggregation, byProvider aggregation
+- [x] csvField + toCsv helpers — RFC 4180 compliant (quotes, comma, newline escaping)
+- [x] ExportCsvButton component in AdminEvalsDashboard — dropdown with 3 modes, loading/done/error states
+- [x] Browser download via Blob URL (no server-side file storage)
+- [x] 20 new tests in adminEvalStats.test.ts (csvField, toCsv, exportCsv shape contracts)
+- [x] TypeScript: 0 errors. Tests: 1053 passed, 1 skipped
+
 ## ProductDemo — Animated 8-Scene Product Demo Page (2026-05-18)
 - [x] ProductDemo.tsx — 8 animated scenes (Hook, Intro, Input, Council, Verdict, Memo, Advanced, CTA)
 - [x] Voice narration via /manus-storage/ CDN audio URLs (scene1–scene8)
