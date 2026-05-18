@@ -4457,3 +4457,23 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] TypeScript check — 0 errors (fixed Set iteration TS2802)
 - [x] Tests — 1033 passed, 1 skipped
 - [x] Checkpoint saved
+
+## ProductDemo — Real Page Screenshots with Zoom/Pan Animations (2026-05-18)
+- [ ] Capture screenshots of real app pages: deal input form, persona execution, verdict, IC memo
+- [ ] Upload screenshots to CDN via manus-upload-file --webdev
+- [ ] Rewrite ProductDemo.tsx scenes to use real screenshots with cinematic zoom-in/out/pan CSS animations
+- [ ] Scene 1 (Hook): keep abstract stats card — no screenshot needed
+- [ ] Scene 2 (Input): screenshot of deal screener input form with zoom-in on form fields
+- [ ] Scene 3 (Execution): screenshot of 10-persona running view with pan across agent cards
+- [ ] Scene 4 (Verdict): screenshot of verdict/consensus page with zoom-in on APPROVED badge
+- [ ] Scene 5 (IC Memo): screenshot of IC memo with slow pan down the sections list
+- [ ] Scene 6 (Advanced): screenshot of advanced features / CFO deep dive
+- [ ] Scene 7 (CTA): keep abstract CTA — no screenshot needed
+- [ ] TypeScript: 0 errors. Tests: all passing
+
+## ProductDemo V2 — Real Screenshots + Zoom/Pan (2026-05-18)
+- [x] Capture screenshots: /gcc-ic (IC memo), /deals (input form), persona execution view, verdict
+- [x] Upload screenshots to CDN
+- [x] Build ProductDemoV2.tsx with screenshot scenes and CSS zoom/pan animations
+- [x] Register /product-demo-v2 route in App.tsx (keep /product-demo untouched)
+- [x] TypeScript: 0 errors. Tests: 1053 passed, 1 skipped

@@ -114,6 +114,7 @@ const NbkDemo = lazy(() => import("./pages/NbkDemo"));
 const KiaDemo = lazy(() => import("./pages/KiaDemo"));
 const AlghanimDemo = lazy(() => import("./pages/AlghanimDemo"));
 const ProductDemo = lazy(() => import("./pages/ProductDemo"));
+const ProductDemoV2 = lazy(() => import("./pages/ProductDemoV2"));
 const Demos = lazy(() => import("./pages/Demos"));
 const VoiceDemoAgent = lazy(() => import("./pages/VoiceDemoAgent"));
 const DemoGuide = lazy(() => import("./pages/DemoGuide"));
@@ -369,6 +370,7 @@ function Router() {
       <Route path="/kia" component={KiaDemo} />
       <Route path="/alghanim" component={AlghanimDemo} />
       <Route path="/product-demo" component={ProductDemo} />
+      <Route path="/product-demo-v2" component={ProductDemoV2} />
       {/* D.1b Batch 1 — /demo/* prospect routes (isolated from Batch 2) */}
       <Route path="/demo/stc" component={StcDemo} />
       <Route path="/demo/tencent" component={TencentDemo} />
