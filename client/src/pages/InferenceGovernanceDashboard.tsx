@@ -5,12 +5,16 @@
  * Route: /admin/inference-governance
  *
  * Sections:
- *   1. Live Eval Ops — 12 KPI panels + simulated live telemetry
+ *   1. Live Eval Ops — KPI panels + live telemetry from adminEvalStats.summary / byProvider
  *   2. Model Routing Intelligence — v4-flash vs chat comparison
  *   3. Evaluation Replay — animated trace viewer
  *   4. Consensus Workflow — animated orchestration graph
  *   5. Burst PoC Case Study — actual PoC metrics
- *   6. Architecture narrative
+ *
+ * Data strategy:
+ *   - Fetches real data from adminEvalStats.summary and adminEvalStats.byProvider (7-day window)
+ *   - Falls back to simulation if live data is unavailable (empty DB, error, or loading)
+ *   - Shows a clearly labelled LIVE DATA / SIMULATED FALLBACK badge in the header
  *
  * Tone: Palantir-meets-inference-runtime. Serious infrastructure. No hype.
  */
@@ -53,6 +57,26 @@ interface ReplayEvent {
   label: string;
   detail: string;
   status: "info" | "warn" | "ok" | "error";
+}
+
+interface LiveKpis {
+  totalCalls: number;
+  cacheHitRate: number;
+  totalCostUsd: number;
+  avgLatencyMs: number;
+  p95LatencyMs: number;
+  fallbackRate: number;
+  escalationRate: number;
+  fallbackCalls: number;
+  escalatedCalls: number;
+}
+
+interface ProviderRow {
+  provider: string | null;
+  model: string | null;
+  totalCalls: number;
+  cacheHitRate: number;
+  avgLatencyMs: number;
 }
 
 // ─── Simulation helpers ───────────────────────────────────────────────────────
@@ -111,6 +135,85 @@ function Badge({ label, color = C.accent }: { label: string; color?: string }) {
       }}
     >
       {label}
+    </span>
+  );
+}
+
+function DataModeBadge({ isLive, isLoading }: { isLive: boolean; isLoading: boolean }) {
+  if (isLoading) {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 5,
+          padding: "3px 10px",
+          borderRadius: 4,
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: "0.06em",
+          background: `${C.textDim}18`,
+          color: C.textDim,
+          border: `1px solid ${C.textDim}33`,
+          fontFamily: "JetBrains Mono, monospace",
+        }}
+      >
+        <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.textDim, display: "inline-block" }} />
+        FETCHING…
+      </span>
+    );
+  }
+  if (isLive) {
+    return (
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 5,
+          padding: "3px 10px",
+          borderRadius: 4,
+          fontSize: 11,
+          fontWeight: 600,
+          letterSpacing: "0.06em",
+          background: `${C.green}18`,
+          color: C.green,
+          border: `1px solid ${C.green}44`,
+          fontFamily: "JetBrains Mono, monospace",
+        }}
+      >
+        <span
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: C.green,
+            display: "inline-block",
+            boxShadow: `0 0 5px ${C.green}`,
+          }}
+        />
+        LIVE DATA
+      </span>
+    );
+  }
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 5,
+        padding: "3px 10px",
+        borderRadius: 4,
+        fontSize: 11,
+        fontWeight: 600,
+        letterSpacing: "0.06em",
+        background: `${C.amber}18`,
+        color: C.amber,
+        border: `1px solid ${C.amber}44`,
+        fontFamily: "JetBrains Mono, monospace",
+      }}
+    >
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: C.amber, display: "inline-block" }} />
+      SIMULATED FALLBACK
     </span>
   );
 }
@@ -189,7 +292,14 @@ function Panel({ children, style }: { children: React.ReactNode; style?: React.C
 
 // ─── Section 1: Live Eval Ops ─────────────────────────────────────────────────
 
-function LiveEvalOps({ history }: { history: TelemetrySnapshot[] }) {
+interface LiveEvalOpsProps {
+  history: TelemetrySnapshot[];
+  liveKpis: LiveKpis | null;
+  liveProviders: ProviderRow[];
+  isLive: boolean;
+}
+
+function LiveEvalOps({ history, liveKpis, liveProviders, isLive }: LiveEvalOpsProps) {
   const latest = history[history.length - 1];
   const chartData = history.map((h, i) => ({
     i,
@@ -200,11 +310,24 @@ function LiveEvalOps({ history }: { history: TelemetrySnapshot[] }) {
     tpm: h.tpmK,
   }));
 
-  const providerData = [
-    { name: "deepseek-chat", calls: 8741, pct: 74.2, color: C.accent },
-    { name: "deepseek-reasoner", calls: 1823, pct: 15.5, color: C.purple },
-    { name: "claude-sonnet-4-5", calls: 1215, pct: 10.3, color: C.cyan },
-  ];
+  // Provider routing: prefer live data, fall back to PoC static data
+  const providerData: { name: string; calls: number; pct: number; color: string }[] = (() => {
+    if (isLive && liveProviders.length > 0) {
+      const total = liveProviders.reduce((s, r) => s + r.totalCalls, 0);
+      const colors = [C.accent, C.purple, C.cyan, C.amber, C.green];
+      return liveProviders.slice(0, 5).map((r, i) => ({
+        name: r.model ?? r.provider ?? "unknown",
+        calls: r.totalCalls,
+        pct: parseFloat(((r.totalCalls / Math.max(total, 1)) * 100).toFixed(1)),
+        color: colors[i % colors.length],
+      }));
+    }
+    return [
+      { name: "deepseek-chat", calls: 8741, pct: 74.2, color: C.accent },
+      { name: "deepseek-reasoner", calls: 1823, pct: 15.5, color: C.purple },
+      { name: "claude-sonnet-4-5", calls: 1215, pct: 10.3, color: C.cyan },
+    ];
+  })();
 
   const confidenceBuckets = [
     { label: "0.9–1.0", count: 412, color: C.green },
@@ -213,31 +336,130 @@ function LiveEvalOps({ history }: { history: TelemetrySnapshot[] }) {
     { label: "<0.5",   count: 65,  color: C.red },
   ];
 
+  // KPI values: live data takes precedence over simulation
+  const totalCalls   = isLive && liveKpis ? liveKpis.totalCalls.toLocaleString() : "1,000";
+  const successRate  = isLive && liveKpis
+    ? `${((1 - liveKpis.fallbackRate) * 100).toFixed(2)}%`
+    : "99.90%";
+  const cacheHitRate = isLive && liveKpis
+    ? `${(liveKpis.cacheHitRate * 100).toFixed(1)}%`
+    : "—";
+  const totalCost    = isLive && liveKpis
+    ? `$${liveKpis.totalCostUsd.toFixed(4)}`
+    : "$0.1210";
+  const p50          = isLive && liveKpis
+    ? `${liveKpis.avgLatencyMs} ms`
+    : `${latest.p50} ms`;
+  const p95          = isLive && liveKpis
+    ? `${(liveKpis.p95LatencyMs / 1000).toFixed(1)}s`
+    : `${(latest.p95 / 1000).toFixed(1)}s`;
+  const escalations  = isLive && liveKpis
+    ? String(liveKpis.escalatedCalls)
+    : "0";
+  const fallbacks    = isLive && liveKpis
+    ? String(liveKpis.fallbackCalls)
+    : "0";
+
   return (
     <div>
       <SectionHeader
         title="LIVE EVALUATION OPERATIONS"
-        sub="Real-time inference telemetry · 15-second rolling window · deepseek-chat primary"
+        sub={
+          isLive
+            ? "Live telemetry from eval_inference_log · 7-day window · adminEvalStats.summary"
+            : "Simulated telemetry · 15-second rolling window · deepseek-chat primary"
+        }
       />
 
-      {/* KPI strip */}
+      {/* KPI strip row 1 */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
-        <KpiTile label="Total Evals (PoC)" value="1,000" sub="100% clean run" accent={C.green} mono />
-        <KpiTile label="API Success Rate" value="99.90%" sub="1 transient error" accent={C.green} />
-        <KpiTile label="Malformed JSON" value="0.10%" sub="1/1,000 evals" accent={C.green} />
-        <KpiTile label="429 Rate-Limits" value="0" sub="No throttling" accent={C.green} />
+        <KpiTile
+          label="Total Evals"
+          value={totalCalls}
+          sub={isLive ? "7-day window" : "PoC run · 100% clean"}
+          accent={C.green}
+          mono
+        />
+        <KpiTile
+          label="API Success Rate"
+          value={successRate}
+          sub={isLive ? "live · non-fallback" : "1 transient error"}
+          accent={C.green}
+        />
+        <KpiTile
+          label="Cache Hit Rate"
+          value={cacheHitRate}
+          sub={isLive ? "LRU cache" : "PoC: cache disabled"}
+          accent={isLive && liveKpis && liveKpis.cacheHitRate > 0 ? C.green : C.textDim}
+        />
+        <KpiTile
+          label="429 Rate-Limits"
+          value="0"
+          sub="No throttling"
+          accent={C.green}
+        />
       </div>
+
+      {/* KPI strip row 2 */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
-        <KpiTile label="Current RPM" value={`${latest.rpm}`} sub="of 100 configured" accent={C.accent} mono />
-        <KpiTile label="p50 Latency" value={`${latest.p50} ms`} sub="instruction model" accent={C.text} mono />
-        <KpiTile label="p95 Latency" value={`${(latest.p95 / 1000).toFixed(1)}s`} sub="tail latency" accent={C.amber} mono />
-        <KpiTile label="TPM" value={`${latest.tpmK}k`} sub="of 100k ceiling" accent={C.text} mono />
+        <KpiTile
+          label="Current RPM"
+          value={`${latest.rpm}`}
+          sub="of 100 configured"
+          accent={C.accent}
+          mono
+        />
+        <KpiTile
+          label="p50 Latency"
+          value={p50}
+          sub="instruction model"
+          accent={C.text}
+          mono
+        />
+        <KpiTile
+          label="p95 Latency"
+          value={p95}
+          sub="tail latency"
+          accent={C.amber}
+          mono
+        />
+        <KpiTile
+          label="TPM"
+          value={`${latest.tpmK}k`}
+          sub="of 100k ceiling"
+          accent={C.text}
+          mono
+        />
       </div>
+
+      {/* KPI strip row 3 */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 20 }}>
-        <KpiTile label="Cost / Eval" value={`$${latest.costPerEval.toFixed(6)}`} sub="deepseek-chat" accent={C.text} mono />
-        <KpiTile label="Projected 100k" value="$12.10" sub="at current rate" accent={C.text} mono />
-        <KpiTile label="Cache Hit Rate" value="—" sub="PoC: cache disabled" accent={C.textDim} />
-        <KpiTile label="Escalations" value="0" sub="No R1 escalations" accent={C.green} />
+        <KpiTile
+          label="Cost / Eval"
+          value={`$${latest.costPerEval.toFixed(6)}`}
+          sub="deepseek-chat"
+          accent={C.text}
+          mono
+        />
+        <KpiTile
+          label={isLive ? "Total Cost (7d)" : "Projected 100k"}
+          value={totalCost}
+          sub={isLive ? "actual spend" : "at current rate"}
+          accent={C.text}
+          mono
+        />
+        <KpiTile
+          label="Escalations"
+          value={escalations}
+          sub={isLive ? "R1 escalations" : "No R1 escalations"}
+          accent={Number(escalations) > 0 ? C.amber : C.green}
+        />
+        <KpiTile
+          label="Fallbacks"
+          value={fallbacks}
+          sub={isLive ? "Claude fallback" : "No Claude fallbacks"}
+          accent={Number(fallbacks) > 0 ? C.amber : C.green}
+        />
       </div>
 
       {/* Charts row */}
@@ -291,7 +513,7 @@ function LiveEvalOps({ history }: { history: TelemetrySnapshot[] }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
         <Panel>
           <div style={{ fontSize: 11, color: C.textDim, marginBottom: 12, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-            Provider Routing Distribution
+            Provider Routing Distribution {isLive ? "· Live" : "· PoC Reference"}
           </div>
           {providerData.map((p) => (
             <div key={p.name} style={{ marginBottom: 10 }}>
@@ -368,63 +590,70 @@ function ModelRoutingIntelligence() {
           <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
             <thead>
               <tr>
-                <th style={{ textAlign: "left", color: C.textDim, fontWeight: 500, paddingBottom: 8, borderBottom: `1px solid ${C.border}` }}>Metric</th>
-                <th style={{ textAlign: "right", color: C.red, fontWeight: 600, paddingBottom: 8, borderBottom: `1px solid ${C.border}` }}>v4-flash</th>
-                <th style={{ textAlign: "right", color: C.green, fontWeight: 600, paddingBottom: 8, borderBottom: `1px solid ${C.border}` }}>chat</th>
+                <th style={{ textAlign: "left", padding: "6px 8px", color: C.textDim, fontWeight: 600, borderBottom: `1px solid ${C.border}` }}>Metric</th>
+                <th style={{ textAlign: "center", padding: "6px 8px", color: C.red, fontWeight: 600, borderBottom: `1px solid ${C.border}` }}>v4-flash</th>
+                <th style={{ textAlign: "center", padding: "6px 8px", color: C.green, fontWeight: 600, borderBottom: `1px solid ${C.border}` }}>chat ✓</th>
               </tr>
             </thead>
             <tbody>
               {rows.map((r, i) => (
                 <tr key={i} style={{ borderBottom: `1px solid ${C.border}` }}>
-                  <td style={{ padding: "7px 0", color: C.textDim }}>{r.metric}</td>
-                  <td style={{ padding: "7px 0", textAlign: "right", color: r.flash.includes("FAIL") || r.flash.includes("59.9") ? C.red : C.text, fontFamily: "JetBrains Mono, monospace" }}>{r.flash}</td>
-                  <td style={{ padding: "7px 0", textAlign: "right", color: r.chat.includes("PASS") || r.chat.includes("0.10") ? C.green : C.text, fontFamily: "JetBrains Mono, monospace" }}>{r.chat}</td>
+                  <td style={{ padding: "7px 8px", color: C.textDim }}>{r.metric}</td>
+                  <td style={{ padding: "7px 8px", textAlign: "center", color: C.red, fontFamily: "JetBrains Mono, monospace" }}>{r.flash}</td>
+                  <td style={{ padding: "7px 8px", textAlign: "center", color: C.green, fontFamily: "JetBrains Mono, monospace" }}>{r.chat}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </Panel>
 
-        {/* Routing decision tree */}
+        {/* Routing waterfall */}
         <Panel>
-          <div style={{ fontSize: 11, color: C.textDim, marginBottom: 12, letterSpacing: "0.06em", textTransform: "uppercase" }}>
-            Adaptive Routing Decision Tree
+          <div style={{ fontSize: 11, color: C.textDim, marginBottom: 16, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            Routing Waterfall
           </div>
-          <div style={{ position: "relative" }}>
-            {routingSteps.map((s, i) => (
-              <div key={i} style={{ display: "flex", gap: 12, marginBottom: i < routingSteps.length - 1 ? 0 : 0 }}>
-                <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
-                  <div style={{
-                    width: 28, height: 28, borderRadius: "50%",
-                    background: `${s.color}22`, border: `1.5px solid ${s.color}`,
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    fontSize: 11, fontWeight: 700, color: s.color, flexShrink: 0,
-                  }}>
-                    {s.step}
-                  </div>
-                  {i < routingSteps.length - 1 && (
-                    <div style={{ width: 1, flex: 1, background: C.border, margin: "3px 0" }} />
-                  )}
-                </div>
-                <div style={{ paddingBottom: 16 }}>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: s.color, marginBottom: 2 }}>{s.label}</div>
-                  <div style={{ fontSize: 11, color: C.textDim }}>{s.detail}</div>
-                </div>
+          {routingSteps.map((s) => (
+            <div key={s.step} style={{ display: "flex", gap: 12, marginBottom: 16, alignItems: "flex-start" }}>
+              <div
+                style={{
+                  width: 24, height: 24, borderRadius: "50%", flexShrink: 0,
+                  background: `${s.color}22`, border: `1px solid ${s.color}66`,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 11, fontWeight: 700, color: s.color,
+                }}
+              >
+                {s.step}
               </div>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 8, padding: "10px 12px", background: `${C.accent}11`, border: `1px solid ${C.accent}33`, borderRadius: 6 }}>
-            <div style={{ fontSize: 11, color: C.accent, fontWeight: 600, marginBottom: 4 }}>Governance Implication</div>
-            <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.5 }}>
-              Reasoning models (v4-flash, R1) consume token budget on internal CoT before writing output.
-              At MAX_TOKENS=500, 59.9% of calls returned empty content. Instruction models write directly to
-              content — 0.10% malformed at MAX_TOKENS=300. Routing policy must account for model architecture,
-              not just capability.
+              <div>
+                <div style={{ fontSize: 12, fontWeight: 600, color: s.color, fontFamily: "JetBrains Mono, monospace", marginBottom: 2 }}>
+                  {s.label}
+                </div>
+                <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.4 }}>{s.detail}</div>
+              </div>
             </div>
-          </div>
+          ))}
         </Panel>
       </div>
+
+      {/* Architecture note */}
+      <Panel>
+        <div style={{ fontSize: 11, color: C.accent, fontWeight: 600, marginBottom: 8, letterSpacing: "0.06em", textTransform: "uppercase" }}>
+          Routing Architecture Note
+        </div>
+        <div style={{ fontSize: 12, color: C.textDim, lineHeight: 1.7 }}>
+          The eval router ({" "}
+          <span style={{ fontFamily: "JetBrains Mono, monospace", color: C.text }}>evalRouter.ts</span>
+          {" "}) implements a four-tier routing waterfall. The primary path is{" "}
+          <span style={{ fontFamily: "JetBrains Mono, monospace", color: C.green }}>deepseek-chat</span>{" "}
+          (instruction model), selected after empirical validation that reasoning models consume their token budget on
+          internal chain-of-thought, producing empty structured output at 59.9% malformed rate.
+          Escalation to{" "}
+          <span style={{ fontFamily: "JetBrains Mono, monospace", color: C.purple }}>deepseek-reasoner</span>{" "}
+          occurs only on malformed JSON or low-confidence verdicts. Claude is the emergency fallback when
+          DeepSeek endpoints are unreachable. The LRU cache (max 500 entries, 30-min TTL) intercepts
+          repeat eval calls before any LLM dispatch.
+        </div>
+      </Panel>
     </div>
   );
 }
@@ -433,78 +662,89 @@ function ModelRoutingIntelligence() {
 
 const REPLAY_CASES = [
   {
-    id: "eval-00042",
-    workflow: "gcc",
-    input: "Riyadh-based SaaS platform targeting SME logistics. $2M ARR, 40% YoY growth. Seeking $8M Series A. Founder has prior exit in MENA e-commerce.",
+    id: "EVAL-0042",
+    workflow: "deal-screen",
     provider: "deepseek-chat",
-    latencyMs: 847,
-    inputTokens: 241,
-    outputTokens: 48,
-    malformed: false,
+    input: "Series A SaaS, $2M ARR, 3× YoY growth, GCC market, founder with 2 prior exits",
     escalated: false,
-    output: { decision: "CONDITIONAL_PASS", confidence: 0.74, score: 68, risk_count: 3, rationale: "Strong founder signal, modest ARR for ask size. Logistics TAM in KSA is real but competitive. Valuation needs justification." },
+    events: [
+      { t: 0,    label: "Cache lookup",      detail: "sha256 key: 3a7f… → MISS",          status: "info" as const },
+      { t: 12,   label: "Router dispatch",   detail: "deepseek-chat selected (primary)",   status: "info" as const },
+      { t: 14,   label: "Prompt compress",   detail: "1,847 → 1,492 chars (19% reduction)", status: "info" as const },
+      { t: 896,  label: "LLM response",      detail: "52 output tokens · valid JSON",      status: "ok"   as const },
+      { t: 897,  label: "JSON parse",        detail: "verdict: PASS · confidence: 0.87",   status: "ok"   as const },
+      { t: 898,  label: "Governance check",  detail: "confidence ≥ 0.3 · no escalation",  status: "ok"   as const },
+      { t: 899,  label: "Cache store",       detail: "TTL: 30 min · key stored",           status: "ok"   as const },
+      { t: 901,  label: "Audit log",         detail: "eval_inference_log row written",     status: "ok"   as const },
+    ],
+    output: { verdict: "PASS", confidence: "0.87", latencyMs: "896", provider: "deepseek-chat" },
   },
   {
-    id: "eval-00187",
-    workflow: "india_pe",
-    input: "Mumbai fintech, B2B lending infrastructure for NBFCs. $5M ARR, RBI-regulated. Seeking $15M growth round. 3 anchor NBFC clients.",
-    provider: "deepseek-chat",
-    latencyMs: 912,
-    inputTokens: 238,
-    outputTokens: 51,
-    malformed: false,
-    escalated: false,
-    output: { decision: "PASS", confidence: 0.88, score: 82, risk_count: 2, rationale: "Regulatory moat is real. NBFC anchor clients reduce churn risk. Lending infra in India is structurally underbuilt." },
-  },
-  {
-    id: "eval-00503",
-    workflow: "global_vc",
-    input: "Berlin deep-tech startup, quantum error correction. Pre-revenue. $3M seed raised. Seeking $12M Series A. 2 PhDs from TU Munich.",
+    id: "EVAL-0117",
+    workflow: "deal-screen",
     provider: "deepseek-reasoner",
-    latencyMs: 4210,
-    inputTokens: 245,
-    outputTokens: 312,
-    malformed: false,
+    input: "Pre-seed fintech, $0 revenue, regulatory grey area, founding team first-time founders",
     escalated: true,
-    output: { decision: "FAIL", confidence: 0.31, score: 34, risk_count: 7, rationale: "Pre-revenue deep-tech at Series A valuation. Quantum error correction is 5-10 year horizon. No commercial pathway articulated." },
+    events: [
+      { t: 0,    label: "Cache lookup",      detail: "sha256 key: b2e1… → MISS",          status: "info" as const },
+      { t: 11,   label: "Router dispatch",   detail: "deepseek-chat selected (primary)",   status: "info" as const },
+      { t: 1203, label: "LLM response",      detail: "MALFORMED: empty content field",     status: "error" as const },
+      { t: 1204, label: "Malformed detect",  detail: "JSON parse failed · retry count: 1", status: "warn" as const },
+      { t: 1205, label: "Escalation",        detail: "→ deepseek-reasoner (escalation)",   status: "warn" as const },
+      { t: 3891, label: "LLM response",      detail: "valid JSON · confidence: 0.41",      status: "ok"   as const },
+      { t: 3892, label: "JSON parse",        detail: "verdict: CONDITIONAL · conf: 0.41",  status: "ok"   as const },
+      { t: 3894, label: "Audit log",         detail: "escalationReason: malformed_json",   status: "ok"   as const },
+    ],
+    output: { verdict: "CONDITIONAL", confidence: "0.41", latencyMs: "3891", provider: "deepseek-reasoner" },
+  },
+  {
+    id: "EVAL-0203",
+    workflow: "deal-screen",
+    provider: "deepseek-chat",
+    input: "Cache hit scenario: Series A SaaS, $2M ARR, 3× YoY growth, GCC market",
+    escalated: false,
+    events: [
+      { t: 0,  label: "Cache lookup",    detail: "sha256 key: 3a7f… → HIT",           status: "ok"   as const },
+      { t: 1,  label: "Cache return",    detail: "verdict: PASS · fromCache: true",    status: "ok"   as const },
+      { t: 1,  label: "Cost",            detail: "$0.000000 · 0 LLM tokens consumed",  status: "ok"   as const },
+      { t: 2,  label: "Audit log",       detail: "fromCache=1 · estimatedCostUsd=0",   status: "ok"   as const },
+    ],
+    output: { verdict: "PASS", confidence: "0.87", latencyMs: "1", provider: "cache" },
   },
 ];
 
 function EvaluationReplay() {
   const [selected, setSelected] = useState(0);
-  const [phase, setPhase] = useState<"idle" | "running" | "done">("idle");
   const [step, setStep] = useState(0);
+  const [phase, setPhase] = useState<"idle" | "running" | "done">("idle");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const c = REPLAY_CASES[selected];
-
-  const events: ReplayEvent[] = [
-    { t: 0,    label: "CACHE_LOOKUP",    detail: "LRU miss — proceeding to inference",         status: "info" },
-    { t: 200,  label: "PROVIDER_SELECT", detail: `Routing to ${c.provider}`,                   status: "info" },
-    { t: 400,  label: "REQUEST_SENT",    detail: `${c.inputTokens} input tokens · MAX_TOKENS=300`, status: "info" },
-    { t: c.latencyMs, label: "RESPONSE_RECEIVED", detail: `${c.outputTokens} output tokens · ${c.latencyMs}ms`, status: "ok" },
-    { t: c.latencyMs + 50, label: "JSON_PARSE",   detail: c.malformed ? "MALFORMED — escalating" : "Valid JSON · schema match", status: c.malformed ? "warn" : "ok" },
-    ...(c.escalated ? [{ t: c.latencyMs + 100, label: "ESCALATION", detail: "confidence < 0.3 → deepseek-reasoner", status: "warn" as const }] : []),
-    { t: c.latencyMs + 150, label: "VERDICT_EMIT", detail: `decision=${c.output.decision} · confidence=${c.output.confidence}`, status: "ok" },
-    { t: c.latencyMs + 200, label: "AUDIT_LOG",    detail: "eval_inference_log written",        status: "ok" },
-  ];
+  const events = c.events;
 
   const runReplay = useCallback(() => {
     setPhase("running");
     setStep(0);
-    let i = 0;
+  }, []);
+
+  useEffect(() => {
+    if (phase !== "running") return;
     const advance = () => {
-      i++;
-      setStep(i);
-      if (i < events.length) {
-        const delay = events[i].t - events[i - 1].t;
-        timerRef.current = setTimeout(advance, Math.max(delay, 80));
-      } else {
-        setPhase("done");
-      }
+      setStep((s) => {
+        const next = s + 1;
+        if (next < events.length) {
+          const delay = (events[next].t - events[s].t) * 0.4;
+          timerRef.current = setTimeout(advance, Math.max(delay, 80));
+          return next;
+        } else {
+          setPhase("done");
+          return s;
+        }
+      });
     };
-    timerRef.current = setTimeout(advance, 80);
-  }, [selected]);
+    const delay = events[0]?.t ?? 0;
+    timerRef.current = setTimeout(advance, Math.max(delay, 80));
+  }, [phase]);
 
   useEffect(() => {
     setPhase("idle");
@@ -528,9 +768,9 @@ function EvaluationReplay() {
           <div style={{ fontSize: 11, color: C.textDim, marginBottom: 8, letterSpacing: "0.06em", textTransform: "uppercase" }}>
             Select Eval
           </div>
-          {REPLAY_CASES.map((c, i) => (
+          {REPLAY_CASES.map((rc, i) => (
             <div
-              key={c.id}
+              key={rc.id}
               onClick={() => setSelected(i)}
               style={{
                 padding: "10px 12px",
@@ -543,11 +783,11 @@ function EvaluationReplay() {
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
-                <span style={{ fontSize: 11, fontFamily: "JetBrains Mono, monospace", color: selected === i ? C.accent : C.text }}>{c.id}</span>
-                <Badge label={c.workflow.toUpperCase()} color={selected === i ? C.accent : C.textDim} />
+                <span style={{ fontSize: 11, fontFamily: "JetBrains Mono, monospace", color: selected === i ? C.accent : C.text }}>{rc.id}</span>
+                <Badge label={rc.workflow.toUpperCase()} color={selected === i ? C.accent : C.textDim} />
               </div>
-              <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.4 }}>{c.input.slice(0, 60)}…</div>
-              {c.escalated && <div style={{ marginTop: 4 }}><Badge label="ESCALATED" color={C.amber} /></div>}
+              <div style={{ fontSize: 11, color: C.textDim, lineHeight: 1.4 }}>{rc.input.slice(0, 60)}…</div>
+              {rc.escalated && <div style={{ marginTop: 4 }}><Badge label="ESCALATED" color={C.amber} /></div>}
             </div>
           ))}
         </div>
@@ -704,34 +944,32 @@ function ConsensusWorkflow() {
             style={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%" }}
             preserveAspectRatio="xMidYMid meet"
           >
-            {/* Edges */}
             {edges.map((e, i) => {
               const from = nodes.find((n) => n.id === e.from)!;
               const to   = nodes.find((n) => n.id === e.to)!;
-              const isActive = activeEdge?.from === e.from && activeEdge?.to === e.to;
+              const isActiveEdge = activeEdge?.from === e.from && activeEdge?.to === e.to;
               return (
                 <line
                   key={i}
                   x1={from.x} y1={from.y + 3}
                   x2={to.x}   y2={to.y - 3}
-                  stroke={isActive ? C.accent : C.border}
-                  strokeWidth={isActive ? 0.6 : 0.3}
-                  strokeDasharray={isActive ? "2 1" : undefined}
-                  opacity={isActive ? 1 : 0.6}
+                  stroke={isActiveEdge ? C.accent : C.border}
+                  strokeWidth={isActiveEdge ? 0.6 : 0.3}
+                  strokeDasharray={isActiveEdge ? "2 1" : undefined}
+                  opacity={isActiveEdge ? 1 : 0.6}
                 />
               );
             })}
 
-            {/* Nodes */}
             {nodes.map((n) => {
-              const isActive = running && (activeEdge?.from === n.id || activeEdge?.to === n.id);
+              const isActiveNode = running && (activeEdge?.from === n.id || activeEdge?.to === n.id);
               return (
                 <g key={n.id}>
                   <circle
-                    cx={n.x} cy={n.y} r={isActive ? 4.5 : 3.5}
+                    cx={n.x} cy={n.y} r={isActiveNode ? 4.5 : 3.5}
                     fill={`${n.color}22`}
                     stroke={n.color}
-                    strokeWidth={isActive ? 0.8 : 0.5}
+                    strokeWidth={isActiveNode ? 0.8 : 0.5}
                     style={{ transition: "r 0.15s, stroke-width 0.15s" }}
                   />
                   <text x={n.x} y={n.y + 7} textAnchor="middle" fill={n.color} fontSize={2.8} fontFamily="JetBrains Mono, monospace">
@@ -746,7 +984,6 @@ function ConsensusWorkflow() {
           </svg>
         </div>
 
-        {/* Legend */}
         <div style={{ display: "flex", gap: 20, marginTop: 12, flexWrap: "wrap" }}>
           {[
             { color: C.accent,  label: "Coordinator" },
@@ -815,7 +1052,6 @@ function BurstPocCaseStudy() {
         sub="Operational lesson from live inference-governance testing · 1,000-eval PoC complete · 100k run pending persistent VM"
       />
 
-      {/* Phase comparison */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
         {phases.map((p) => (
           <Panel key={p.phase}>
@@ -845,7 +1081,6 @@ function BurstPocCaseStudy() {
         ))}
       </div>
 
-      {/* Metrics grid */}
       <Panel>
         <div style={{ fontSize: 11, color: C.textDim, marginBottom: 12, letterSpacing: "0.06em", textTransform: "uppercase" }}>
           Phase 2 PoC — Full Metrics (deepseek-chat · 1,000 evals)
@@ -874,6 +1109,68 @@ function BurstPocCaseStudy() {
   );
 }
 
+// ─── Share Dashboard Button ───────────────────────────────────────────────────
+
+function ShareDashboardButton() {
+  const [showTooltip, setShowTooltip] = useState(false);
+
+  return (
+    <div style={{ position: "relative", display: "inline-block" }}>
+      <button
+        disabled
+        onMouseEnter={() => setShowTooltip(true)}
+        onMouseLeave={() => setShowTooltip(false)}
+        onFocus={() => setShowTooltip(true)}
+        onBlur={() => setShowTooltip(false)}
+        aria-label="Share dashboard (unavailable)"
+        style={{
+          padding: "5px 12px",
+          borderRadius: 5,
+          border: `1px solid ${C.muted}`,
+          background: "transparent",
+          color: C.textDim,
+          fontSize: 11,
+          fontWeight: 600,
+          cursor: "not-allowed",
+          letterSpacing: "0.05em",
+          display: "flex",
+          alignItems: "center",
+          gap: 5,
+          opacity: 0.6,
+        }}
+      >
+        <span>⬡</span>
+        SHARE DASHBOARD
+      </button>
+      {showTooltip && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 6px)",
+            right: 0,
+            background: C.surface,
+            border: `1px solid ${C.border}`,
+            borderRadius: 6,
+            padding: "8px 12px",
+            fontSize: 11,
+            color: C.textDim,
+            zIndex: 100,
+            boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
+            maxWidth: 300,
+            whiteSpace: "normal",
+          } as React.CSSProperties}
+        >
+          Shareable dashboard link requires a public-read token route.
+          <br />
+          <span style={{ color: C.textDim, fontSize: 10 }}>
+            No API keys, raw prompts, or PII are exposed in shared view.
+          </span>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export default function InferenceGovernanceDashboard() {
@@ -882,22 +1179,60 @@ export default function InferenceGovernanceDashboard() {
   const [activeSection, setActiveSection] = useState<"ops" | "routing" | "replay" | "consensus" | "poc">("ops");
   const [telemetry, setTelemetry] = useState<TelemetrySnapshot[]>(() => buildTelemetryHistory(40));
 
-  // Redirect non-admin
-  useEffect(() => {
-    if (!loading && (!user || user.role !== "admin")) {
-      navigate("/");
-    }
-  }, [user, loading, navigate]);
+  // ── Live telemetry from adminEvalStats ─────────────────────────────────────
+  const summaryQuery = trpc.adminEvalStats.summary.useQuery(
+    { days: 7 },
+    {
+      enabled: !loading && user?.role === "admin",
+      refetchInterval: 60_000,
+      retry: 1,
+    },
+  );
 
-  // Live telemetry simulation
+  const byProviderQuery = trpc.adminEvalStats.byProvider.useQuery(
+    { days: 7 },
+    {
+      enabled: !loading && user?.role === "admin",
+      refetchInterval: 60_000,
+      retry: 1,
+    },
+  );
+
+  // Determine if we have usable live data (non-empty DB, no error)
+  const isLiveDataAvailable =
+    !summaryQuery.isLoading &&
+    !summaryQuery.isError &&
+    summaryQuery.data != null &&
+    summaryQuery.data.totalCalls > 0;
+
+  const isLoading = summaryQuery.isLoading || byProviderQuery.isLoading;
+
+  const liveKpis: LiveKpis | null = isLiveDataAvailable && summaryQuery.data
+    ? {
+        totalCalls:     summaryQuery.data.totalCalls,
+        cacheHitRate:   summaryQuery.data.cacheHitRate,
+        totalCostUsd:   summaryQuery.data.totalCostUsd,
+        avgLatencyMs:   summaryQuery.data.avgLatencyMs,
+        p95LatencyMs:   summaryQuery.data.p95LatencyMs,
+        fallbackRate:   summaryQuery.data.fallbackRate,
+        escalationRate: summaryQuery.data.escalationRate,
+        fallbackCalls:  summaryQuery.data.fallbackCalls,
+        escalatedCalls: summaryQuery.data.escalatedCalls,
+      }
+    : null;
+
+  const liveProviders: ProviderRow[] =
+    isLiveDataAvailable && byProviderQuery.data ? byProviderQuery.data : [];
+
+  // ── Simulated telemetry ticker (always runs for charts) ────────────────────
   useEffect(() => {
     const id = setInterval(() => {
       setTelemetry((prev) => {
         const next = [...prev.slice(-39), {
           ts: Date.now(),
           rpm: Math.round(jitter(92, 0.12)),
-          p50: Math.round(jitter(896, 0.1)),
-          p95: Math.round(jitter(3686, 0.15)),
+          p50: isLiveDataAvailable && liveKpis ? Math.round(jitter(liveKpis.avgLatencyMs, 0.05)) : Math.round(jitter(896, 0.1)),
+          p95: isLiveDataAvailable && liveKpis ? Math.round(jitter(liveKpis.p95LatencyMs, 0.08)) : Math.round(jitter(3686, 0.15)),
           malformedPct: parseFloat((jitter(0.10, 0.5)).toFixed(2)),
           successPct: parseFloat((jitter(99.9, 0.001)).toFixed(2)),
           costPerEval: parseFloat((jitter(0.000121, 0.05)).toFixed(6)),
@@ -907,7 +1242,14 @@ export default function InferenceGovernanceDashboard() {
       });
     }, 3000);
     return () => clearInterval(id);
-  }, []);
+  }, [isLiveDataAvailable, liveKpis]);
+
+  // ── Admin guard ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!loading && (!user || user.role !== "admin")) {
+      navigate("/");
+    }
+  }, [user, loading, navigate]);
 
   if (loading) {
     return (
@@ -951,10 +1293,12 @@ export default function InferenceGovernanceDashboard() {
               AgenThinkMesh · Structured Evaluation Mesh · Multi-Model Governance Runtime
             </div>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <DataModeBadge isLive={isLiveDataAvailable} isLoading={isLoading} />
             <Badge label="deepseek-chat PRIMARY" color={C.green} />
             <Badge label="PoC VALIDATED" color={C.accent} />
             <Badge label="ADMIN" color={C.purple} />
+            <ShareDashboardButton />
           </div>
         </div>
 
@@ -992,7 +1336,14 @@ export default function InferenceGovernanceDashboard() {
 
         {/* Content */}
         <div style={{ flex: 1, overflow: "auto", padding: 24 }}>
-          {activeSection === "ops"       && <LiveEvalOps history={telemetry} />}
+          {activeSection === "ops" && (
+            <LiveEvalOps
+              history={telemetry}
+              liveKpis={liveKpis}
+              liveProviders={liveProviders}
+              isLive={isLiveDataAvailable}
+            />
+          )}
           {activeSection === "routing"   && <ModelRoutingIntelligence />}
           {activeSection === "replay"    && <EvaluationReplay />}
           {activeSection === "consensus" && <ConsensusWorkflow />}

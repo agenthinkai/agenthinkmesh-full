@@ -4498,3 +4498,15 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] MeshSidebar integration, admin-only redirect guard
 - [x] /admin/inference-governance route registered in App.tsx
 - [x] TypeScript: 0 errors. Tests: 1053 passed, 1 skipped
+
+## Inference Governance Production-Hardening Pass (2026-05-19)
+- [x] Wire live telemetry from adminEvalStats.summary + byProvider (7-day window, refetch every 60s)
+- [x] LIVE DATA / SIMULATED FALLBACK / FETCHING badge in header
+- [x] Graceful fallback to simulation when DB is empty or query errors
+- [x] Live KPIs: totalCalls, cacheHitRate, totalCostUsd, avgLatencyMs, p95LatencyMs, fallbackCalls, escalatedCalls
+- [x] Live provider distribution panel replaces static PoC data when live data available
+- [x] Simulation ticker anchors p50/p95 to live values when live data is present
+- [x] Add Inference Governance to MeshSidebar under Admin (adminOnly: true, route /admin/inference-governance)
+- [x] ShareDashboardButton disabled placeholder with tooltip
+- [x] TypeScript: 0 errors
+- [x] Tests: 1053 passed, 1 skipped
