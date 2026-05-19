@@ -1111,60 +1111,170 @@ function BurstPocCaseStudy() {
 
 // ─── Share Dashboard Button ───────────────────────────────────────────────────
 
+type ShareState = "idle" | "loading" | "copied" | "error";
+
 function ShareDashboardButton() {
-  const [showTooltip, setShowTooltip] = useState(false);
+  const [state, setState] = useState<ShareState>("idle");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [shareUrl, setShareUrl] = useState("");
+  const [showPopover, setShowPopover] = useState(false);
+
+  const createMutation = trpc.governanceSnapshot.create.useMutation({
+    onSuccess: async (data) => {
+      setShareUrl(data.shareUrl);
+      try {
+        await navigator.clipboard.writeText(data.shareUrl);
+        setState("copied");
+      } catch {
+        setState("copied"); // still show URL even if clipboard fails
+      }
+      setShowPopover(true);
+      setTimeout(() => setState("idle"), 8000);
+    },
+    onError: (err) => {
+      setState("error");
+      setErrorMsg(err.message ?? "Failed to generate share link.");
+      setTimeout(() => setState("idle"), 5000);
+    },
+  });
+
+  const handleClick = () => {
+    if (state === "loading") return;
+    if (state === "copied" && shareUrl) {
+      navigator.clipboard.writeText(shareUrl).catch(() => {});
+      return;
+    }
+    setState("loading");
+    setShowPopover(false);
+    createMutation.mutate({ expiryDays: 14, origin: window.location.origin });
+  };
+
+  const btnColor = state === "copied" ? C.green
+    : state === "error"  ? "#ef4444"
+    : C.accent;
+
+  const btnLabel = state === "loading" ? "GENERATING…"
+    : state === "copied"  ? "COPIED ✓"
+    : state === "error"   ? "ERROR"
+    : "SHARE DASHBOARD";
 
   return (
     <div style={{ position: "relative", display: "inline-block" }}>
       <button
-        disabled
-        onMouseEnter={() => setShowTooltip(true)}
-        onMouseLeave={() => setShowTooltip(false)}
-        onFocus={() => setShowTooltip(true)}
-        onBlur={() => setShowTooltip(false)}
-        aria-label="Share dashboard (unavailable)"
+        onClick={handleClick}
+        disabled={state === "loading"}
+        aria-label="Share governance dashboard"
         style={{
           padding: "5px 12px",
           borderRadius: 5,
-          border: `1px solid ${C.muted}`,
-          background: "transparent",
-          color: C.textDim,
+          border: `1px solid ${btnColor}`,
+          background: state === "copied" ? `${C.green}18` : "transparent",
+          color: btnColor,
           fontSize: 11,
           fontWeight: 600,
-          cursor: "not-allowed",
+          cursor: state === "loading" ? "wait" : "pointer",
           letterSpacing: "0.05em",
           display: "flex",
           alignItems: "center",
           gap: 5,
-          opacity: 0.6,
+          transition: "all 0.2s",
         }}
       >
-        <span>⬡</span>
-        SHARE DASHBOARD
+        <span>{state === "loading" ? "◌" : "⬡"}</span>
+        {btnLabel}
       </button>
-      {showTooltip && (
+
+      {/* Popover with URL + expiry info */}
+      {showPopover && shareUrl && (
         <div
           style={{
             position: "absolute",
-            top: "calc(100% + 6px)",
+            top: "calc(100% + 8px)",
             right: 0,
             background: C.surface,
-            border: `1px solid ${C.border}`,
+            border: `1px solid ${C.green}`,
+            borderRadius: 6,
+            padding: "10px 14px",
+            fontSize: 11,
+            color: C.text,
+            zIndex: 200,
+            boxShadow: "0 4px 16px rgba(0,0,0,0.5)",
+            minWidth: 320,
+            maxWidth: 420,
+          } as React.CSSProperties}
+        >
+          <div style={{ color: C.green, fontWeight: 700, marginBottom: 6, fontSize: 10, letterSpacing: "0.08em" }}>
+            SHARE LINK GENERATED — VALID 14 DAYS
+          </div>
+          <div style={{
+            background: C.bg,
+            borderRadius: 4,
+            padding: "6px 8px",
+            fontFamily: "JetBrains Mono, monospace",
+            fontSize: 10,
+            color: C.textDim,
+            wordBreak: "break-all",
+            marginBottom: 8,
+          }}>
+            {shareUrl}
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <button
+              onClick={() => navigator.clipboard.writeText(shareUrl).catch(() => {})}
+              style={{
+                padding: "3px 8px",
+                borderRadius: 4,
+                border: `1px solid ${C.border}`,
+                background: "transparent",
+                color: C.textDim,
+                fontSize: 10,
+                cursor: "pointer",
+              }}
+            >
+              Copy again
+            </button>
+            <span style={{ color: C.textDim, fontSize: 10 }}>
+              Read-only · No API keys · No PII
+            </span>
+            <button
+              onClick={() => setShowPopover(false)}
+              style={{
+                marginLeft: "auto",
+                padding: "3px 8px",
+                borderRadius: 4,
+                border: `1px solid ${C.border}`,
+                background: "transparent",
+                color: C.textDim,
+                fontSize: 10,
+                cursor: "pointer",
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Error tooltip */}
+      {state === "error" && errorMsg && (
+        <div
+          style={{
+            position: "absolute",
+            top: "calc(100% + 8px)",
+            right: 0,
+            background: C.surface,
+            border: "1px solid #ef4444",
             borderRadius: 6,
             padding: "8px 12px",
             fontSize: 11,
-            color: C.textDim,
-            zIndex: 100,
+            color: "#ef4444",
+            zIndex: 200,
             boxShadow: "0 4px 12px rgba(0,0,0,0.4)",
-            maxWidth: 300,
+            maxWidth: 280,
             whiteSpace: "normal",
           } as React.CSSProperties}
         >
-          Shareable dashboard link requires a public-read token route.
-          <br />
-          <span style={{ color: C.textDim, fontSize: 10 }}>
-            No API keys, raw prompts, or PII are exposed in shared view.
-          </span>
+          {errorMsg}
         </div>
       )}
     </div>

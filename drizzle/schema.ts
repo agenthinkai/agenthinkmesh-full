@@ -1293,9 +1293,10 @@ export type InsertDealComparison = typeof dealComparisons.$inferInsert;
 export const sharedReports = mysqlTable("shared_reports", {
   id: int("id").autoincrement().primaryKey(),
   tokenHash: varchar("tokenHash", { length: 64 }).notNull().unique(), // SHA-256 hex of raw 256-bit token
-  reportType: mysqlEnum("reportType", ["single_deal", "comparison"]).notNull(),
+  reportType: mysqlEnum("reportType", ["single_deal", "comparison", "governance_snapshot"]).notNull(),
   dealId: varchar("dealId", { length: 64 }),          // screeningId for single_deal
   comparisonId: varchar("comparisonId", { length: 64 }), // comparisonId for comparison
+  snapshotPayload: longtext("snapshotPayload"),           // JSON — governance_snapshot only
   userId: int("userId").notNull().references(() => users.id, { onDelete: "cascade" }),
   expiresAt: bigint("expiresAt", { mode: "number" }).notNull(), // Unix ms
   revokedAt: bigint("revokedAt", { mode: "number" }),           // Unix ms, null = active

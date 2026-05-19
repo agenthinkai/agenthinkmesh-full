@@ -1,0 +1,2 @@
+ALTER TABLE `shared_reports` MODIFY COLUMN `reportType` enum('single_deal','comparison','governance_snapshot') NOT NULL;--> statement-breakpoint
+ALTER TABLE `shared_reports` ADD `snapshotPayload` longtext;

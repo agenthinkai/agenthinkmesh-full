@@ -82,6 +82,7 @@ const Contacts = lazy(() => import("./pages/Contacts"));
 const DealComparison = lazy(() => import("./pages/DealComparison"));
 const SharedReport = lazy(() => import("./pages/SharedReport"));
 const ReportsHistory = lazy(() => import("./pages/ReportsHistory"));
+const GovernanceSnapshotView = lazy(() => import("./pages/GovernanceSnapshotView"));
 const IntelligenceHome = lazy(() => import("./pages/IntelligenceHome"));
 const IntelligenceTracking = lazy(() => import("./pages/IntelligenceTracking"));
 const IntelligenceBriefs = lazy(() => import("./pages/IntelligenceBriefs"));
@@ -293,6 +294,7 @@ function Router() {
       <Route path="/deals/compare" component={DealComparison} />
       <Route path="/reports/:token" component={SharedReport} />
       <Route path="/reports/history" component={ReportsHistory} />
+      <Route path="/share/governance/:token" component={GovernanceSnapshotView} />
 
       {/* Intelligence Agent — AI Programme Monitoring */}
       <Route path="/intelligence" component={IntelligenceHome} />

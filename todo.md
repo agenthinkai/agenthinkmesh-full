@@ -4510,3 +4510,18 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] ShareDashboardButton disabled placeholder with tooltip
 - [x] TypeScript: 0 errors
 - [x] Tests: 1053 passed, 1 skipped
+
+## Governance Dashboard Share Route (2026-05-19)
+- [x] Extend sharedReports schema: add governance_snapshot to reportType enum, add snapshotPayload longtext column
+- [x] Run pnpm db:push — migration applied successfully
+- [x] Create server/routers/governanceSnapshot.ts: create (adminProcedure) + get (publicProcedure)
+- [x] Token: 256-bit random (randomBytes(32)), stored as SHA-256 hex only — raw token never persisted
+- [x] Snapshot payload: aggregated KPIs, provider distribution, routing architecture, Burst PoC — no API keys, no PII, no raw prompts
+- [x] Payload validated with Zod before storage and on retrieval
+- [x] View count + reportViews log on each public access (fire-and-forget)
+- [x] Register governanceSnapshotRouter in routers.ts
+- [x] Enable ShareDashboardButton in InferenceGovernanceDashboard: GENERATING / COPIED / ERROR states, popover with URL + expiry
+- [x] Create client/src/pages/GovernanceSnapshotView.tsx — public read-only page, no auth, no sidebar, no mutations
+- [x] Register /share/governance/:token route in App.tsx (lazy-loaded)
+- [x] TypeScript: 0 errors
+- [x] Tests: 1053 passed, 1 skipped
