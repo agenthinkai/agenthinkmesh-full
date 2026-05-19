@@ -4477,3 +4477,24 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Build ProductDemoV2.tsx with screenshot scenes and CSS zoom/pan animations
 - [x] Register /product-demo-v2 route in App.tsx (keep /product-demo untouched)
 - [x] TypeScript: 0 errors. Tests: 1053 passed, 1 skipped
+
+## Inference Governance Demo Layer (2026-05-19)
+- [ ] /admin/inference-governance — enterprise demo page (new route, existing /admin/evals untouched)
+- [ ] Live eval ops dashboard with 12 KPI panels + simulated telemetry
+- [ ] Model Routing Intelligence panel (v4-flash vs chat comparison)
+- [ ] Evaluation Replay viewer with animated trace
+- [ ] Consensus Workflow animated graph
+- [ ] Burst PoC case study section (actual PoC metrics)
+- [ ] Dark enterprise UI — Palantir-meets-inference-runtime aesthetic
+- [ ] TypeScript: 0 errors. Tests: all passing
+
+## Inference Governance Demo Layer (2026-05-19)
+- [x] InferenceGovernanceDashboard.tsx — 6-section enterprise demo page at /admin/inference-governance
+- [x] Section 1: Live Eval Operations — telemetry simulation with RPM, success rate, malformed rate, cost, latency p50/p95/p99, confidence distribution, cache-hit simulation
+- [x] Section 2: Model Routing Intelligence — deepseek-v4-flash vs deepseek-chat visual comparison, reasoning-model vs instruction-model distinction
+- [x] Section 3: Evaluation Replay — clickable replay of input case, provider selection, latency, output, malformed detection, retry/escalation
+- [x] Section 4: Consensus Workflow — animated graph showing orchestration, evaluator nodes, arbitration, governance checks, audit logging
+- [x] Section 5: Burst PoC Case Study — actual PoC metrics (1000 evals, 0.10% malformed, $12.10 projected 100k cost)
+- [x] MeshSidebar integration, admin-only redirect guard
+- [x] /admin/inference-governance route registered in App.tsx
+- [x] TypeScript: 0 errors. Tests: 1053 passed, 1 skipped

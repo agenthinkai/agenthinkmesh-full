@@ -139,6 +139,7 @@ const SADOAuditTrail = lazy(() => import("./pages/sado/SADOAuditTrail"));
 const SADOConsensus  = lazy(() => import("./pages/sado/SADOConsensus"));
 const SADOArabicRefinement = lazy(() => import("./pages/sado/SadoArabicRefinement"));
 const CouncilOf10 = lazy(() => import("./pages/CouncilOf10"));
+const InferenceGovernanceDashboard = lazy(() => import("./pages/InferenceGovernanceDashboard"));
 
 // ── Page-level loading fallback ───────────────────────────────────────────────
 function PageLoader() {
@@ -253,6 +254,7 @@ function Router() {
       {/* Admin */}
       <Route path="/admin/usage" component={AdminUsageDashboard} />
       <Route path="/admin/evals" component={AdminEvalsDashboard} />
+      <Route path="/admin/inference-governance" component={InferenceGovernanceDashboard} />
       <Route path="/admin/beta-requests" component={AdminBetaRequests} />
       <Route path="/admin/demo-requests" component={AdminDemoRequests} />
       <Route path="/admin/treasury" component={AdminTreasury} />
