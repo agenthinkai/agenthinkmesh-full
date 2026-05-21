@@ -141,6 +141,11 @@ const SADOConsensus  = lazy(() => import("./pages/sado/SADOConsensus"));
 const SADOArabicRefinement = lazy(() => import("./pages/sado/SadoArabicRefinement"));
 const CouncilOf10 = lazy(() => import("./pages/CouncilOf10"));
 const InferenceGovernanceDashboard = lazy(() => import("./pages/InferenceGovernanceDashboard"));
+const InfraSimDashboard = lazy(() => import("./pages/InfraSimDashboard"));
+const InfraSimCase = lazy(() => import("./pages/InfraSimCase"));
+const InfraSimRunDetail = lazy(() => import("./pages/InfraSimRunDetail"));
+const InfraSimCouncil = lazy(() => import("./pages/InfraSimCouncil"));
+const InfraSimMonitor = lazy(() => import("./pages/InfraSimMonitor"));
 
 // ── Page-level loading fallback ───────────────────────────────────────────────
 function PageLoader() {
@@ -405,6 +410,13 @@ function Router() {
 
       {/* Council of 10 — public standalone reflective decision companion */}
       <Route path="/council">{() => <CouncilOf10 />}</Route>
+
+      {/* Governed Infrastructure Stress Simulation v2 */}
+      <Route path="/infra-sim">{() => <MeshSidebar><InfraSimDashboard /></MeshSidebar>}</Route>
+      <Route path="/infra-sim/case/:id">{() => <MeshSidebar><InfraSimCase /></MeshSidebar>}</Route>
+      <Route path="/infra-sim/run/:id">{() => <MeshSidebar><InfraSimRunDetail /></MeshSidebar>}</Route>
+      <Route path="/infra-sim/council/:id">{() => <MeshSidebar><InfraSimCouncil /></MeshSidebar>}</Route>
+      <Route path="/infra-sim/monitor/:id">{() => <MeshSidebar><InfraSimMonitor /></MeshSidebar>}</Route>
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

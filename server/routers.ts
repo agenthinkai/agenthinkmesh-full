@@ -42,6 +42,7 @@ import { governanceSnapshotRouter } from "./routers/governanceSnapshot";
 import { voiceDemoRouter } from "./routers/voiceDemo";
 import { decisionUpgradeRouter } from "./routers/decisionUpgrade";
 import { councilRouter } from "./routers/council";
+import { infraSimRouter } from "./routers/infraSim";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
 import { eq, desc, asc, gte, lte, sql, and, like, or, isNull, lt, count } from "drizzle-orm";
@@ -125,6 +126,7 @@ export const appRouter = router({
   voiceDemo: voiceDemoRouter,
   decisionUpgrade: decisionUpgradeRouter,
   council: councilRouter,
+  infraSim: infraSimRouter,
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   auth: router({

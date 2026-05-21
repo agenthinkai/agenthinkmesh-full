@@ -4525,3 +4525,90 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Register /share/governance/:token route in App.tsx (lazy-loaded)
 - [x] TypeScript: 0 errors
 - [x] Tests: 1053 passed, 1 skipped
+
+## Governed Infrastructure Stress Simulation v2 (2026-05-21)
+
+### Phase 1: Database Schema
+- [ ] Add `infraSimCases` table (simulation case metadata, IC memo, base assumptions)
+- [ ] Add `infraSimDimensions` table (configurable risk dimensions per case)
+- [ ] Add `infraSimRuns` table (10k-100k scenario run batches)
+- [ ] Add `infraSimScenarios` table (individual scenario results, IRR, decision, blockers)
+- [ ] Add `infraSimCouncilSessions` table (5-round deliberation sessions)
+- [ ] Add `infraSimCouncilRounds` table (per-round votes, arguments, confidence)
+- [ ] Add `infraSimMonitoringObjects` table (persistent post-IC monitoring)
+- [ ] Add `infraSimMonitoringEvents` table (ingested risk events)
+- [ ] Add `infraSimPortfolioLinks` table (portfolio dependency graph edges)
+- [ ] Run `pnpm db:push`
+
+### Phase 2: Core Simulation Engine (server)
+- [ ] Build `infraSimEngine.ts` — scenario generator with stratified sampling
+- [ ] Build `infraSimIrrEngine.ts` — IRR calculator with nonlinear interaction penalties
+- [ ] Build `infraSimDecisionLogic.ts` — governed decision rules (HARD NO / SOFT NO / CONDITIONAL / APPROVE)
+- [ ] Build `infraSimApprovalPathway.ts` — reverse optimization: "what must become true?"
+- [ ] Build `infraSimSensitivity.ts` — tornado / sensitivity analysis
+- [ ] Build `infraSimAudit.ts` — reproducibility manifest, governance_audit.json generator
+
+### Phase 3: Portfolio Contagion Engine (server)
+- [ ] Build `infraSimContagion.ts` — contagion graph engine, cascade failure simulation
+- [ ] Build `infraSimPortfolioFragility.ts` — systemic risk index, correlated downside analysis
+
+### Phase 4: Autonomous Council Deliberation (server)
+- [ ] Build `infraSimCouncilPersonas.ts` — infrastructure-specific council personas
+- [ ] Build `infraSimCouncilDebate.ts` — 5-round deliberation, argument influence, vote migration
+- [ ] Build `infraSimMinorityReport.ts` — dissent memo and minority report generator
+
+### Phase 5: Continuous Monitoring Mode (server)
+- [ ] Build `infraSimMonitor.ts` — live risk ingestion, thesis status engine (Green/Yellow/Orange/Red)
+- [ ] Build `infraSimMonitorReport.ts` — weekly governance memo, "Would We Still Approve Today?"
+- [ ] Add scheduled heartbeat job for monitoring recomputation
+
+### Phase 6: tRPC Router
+- [ ] Build `server/routers/infraSim.ts` — full CRUD + run + results + monitoring + export procedures
+- [ ] Register router in `server/routers.ts`
+
+### Phase 7: Visualization Layer
+- [ ] Build `infraSimCharts.ts` — server-side chart generation (tornado, heatmaps, density plots, contagion graphs)
+- [ ] PDF export: board memo, IC appendix, audit package
+
+### Phase 8: Frontend — Institutional Dashboard UI
+- [ ] Create `/infra-sim` route in App.tsx
+- [ ] Build `InfraSimHome.tsx` — case list, new simulation CTA
+- [ ] Build `InfraSimNew.tsx` — IC memo upload + dimension configurator
+- [ ] Build `InfraSimRun.tsx` — live simulation progress (streaming)
+- [ ] Build `InfraSimResults.tsx` — full results explorer (KPI cards, all 8 charts)
+- [ ] Build `InfraSimApprovalPath.tsx` — approval pathway optimizer UI
+- [ ] Build `InfraSimCouncil.tsx` — 5-round council deliberation viewer + transcript
+- [ ] Build `InfraSimContagion.tsx` — portfolio contagion graph + fragility map
+- [ ] Build `InfraSimMonitor.tsx` — continuous monitoring dashboard
+- [ ] Add navigation entry in sidebar
+
+### Phase 9: Helios-North Demo Case
+- [ ] Seed Helios-North as baseline demo case in DB
+- [ ] Run full 10,000-scenario simulation via the new engine
+- [ ] Populate all charts and results
+- [ ] Generate governance share URL for demo
+
+### Phase 10: QA & Delivery
+- [ ] Write vitest tests for simulation engine
+- [ ] Write vitest tests for decision logic
+- [ ] Write vitest tests for approval pathway engine
+- [ ] Final checkpoint
+- [ ] Deliver to user
+
+## Governed Infrastructure Stress Simulation v2 — COMPLETED (2026-05-21)
+
+- [x] 9 new database tables added and migrated (infra_sim_cases, runs, scenarios, dimensions, council_sessions, council_rounds, monitoring_objects, monitoring_events, portfolio_links)
+- [x] infraSimEngine.ts — IRR calculator, scenario generator, decision logic, approval pathway optimizer
+- [x] infraSimCouncilPersonas.ts — 10 infrastructure-specific council personas
+- [x] infraSimCouncilDebate.ts — 5-round autonomous deliberation engine
+- [x] infraSimMonitor.ts — continuous monitoring, thesis status engine, weekly memo generation
+- [x] server/routers/infraSim.ts — full tRPC router (createCase, getCase, listCases, startRun, getRunResult, listRuns, exportRun, startCouncilDeliberation, getCouncilSession, getMonitoringObject, ingestRiskSignal, recomputeMonitoring, generateGovernanceMemo)
+- [x] InfraSimDashboard.tsx — case list, portfolio overview, new case creation
+- [x] InfraSimCase.tsx — case detail, dimension editor, simulation runner, council trigger
+- [x] InfraSimRunDetail.tsx — full results explorer (KPI cards, tornado, heatmaps, export)
+- [x] InfraSimCouncil.tsx — 5-round deliberation transcript viewer
+- [x] InfraSimMonitor.tsx — continuous monitoring dashboard
+- [x] DashboardLayout.tsx — "Infra Stress Sim" nav entry added
+- [x] App.tsx — all 5 infra-sim routes registered
+- [x] TypeScript check — zero errors
+- [x] Helios-North IC Memo extracted and loaded as baseline demo case config

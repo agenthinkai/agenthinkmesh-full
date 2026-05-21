@@ -1984,3 +1984,219 @@ export const evalInferenceLog = mysqlTable("eval_inference_log", {
   eilProviderIdx: index("eil_provider_idx").on(table.provider),
   eilCreatedIdx:  index("eil_created_idx").on(table.createdAt),
 }));
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// GOVERNED INFRASTRUCTURE STRESS SIMULATION v2
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── Simulation Case — top-level IC memo / investment case ─────────────────────
+export const infraSimCases = mysqlTable("infra_sim_cases", {
+  id:                 int("id").autoincrement().primaryKey(),
+  userId:             int("user_id").notNull(),
+  title:              varchar("title", { length: 255 }).notNull(),
+  assetClass:         varchar("asset_class", { length: 64 }).notNull(),       // "offshore_wind" | "solar" | "infrastructure" | "real_estate" | ...
+  geography:          varchar("geography", { length: 64 }),
+  totalCapexGbpM:     decimal("total_capex_gbp_m", { precision: 12, scale: 2 }),
+  baseIrrPct:         decimal("base_irr_pct", { precision: 6, scale: 3 }),
+  fundMinIrrPct:      decimal("fund_min_irr_pct", { precision: 6, scale: 3 }),
+  icMemoText:         longtext("ic_memo_text"),                                 // full IC memo content
+  baseAssumptionsJson: text("base_assumptions_json"),                           // JSON: key-value base assumptions
+  icDecision:         mysqlEnum("ic_decision", ["APPROVE", "CONDITIONAL", "REJECT", "PENDING"]).notNull().default("PENDING"),
+  icVoteJson:         text("ic_vote_json"),                                     // JSON: { hardNo, softNo, softYes }
+  status:             mysqlEnum("status", ["draft", "running", "complete", "error"]).notNull().default("draft"),
+  createdAt:          bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt:          bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  iscUserIdx:    index("isc_user_idx").on(table.userId),
+  iscStatusIdx:  index("isc_status_idx").on(table.status),
+  iscCreatedIdx: index("isc_created_idx").on(table.createdAt),
+}));
+export type InfraSimCase = typeof infraSimCases.$inferSelect;
+export type InsertInfraSimCase = typeof infraSimCases.$inferInsert;
+
+// ── Simulation Dimension — configurable risk axis per case ────────────────────
+export const infraSimDimensions = mysqlTable("infra_sim_dimensions", {
+  id:                   int("id").autoincrement().primaryKey(),
+  caseId:               int("case_id").notNull(),
+  name:                 varchar("name", { length: 128 }).notNull(),             // e.g. "Foundation Technology"
+  key:                  varchar("key", { length: 64 }).notNull(),               // e.g. "foundation_tech"
+  category:             varchar("category", { length: 64 }),                    // "technology" | "financial" | "regulatory" | "execution" | "revenue"
+  valuesJson:           text("values_json").notNull(),                          // JSON: array of { label, irrDeltaPct, weight, isHardNo, isGovernanceTrigger }
+  interactionPenaltiesJson: text("interaction_penalties_json"),                 // JSON: { [key1+key2]: penaltyPct }
+  governanceThreshold:  decimal("governance_threshold", { precision: 6, scale: 3 }), // IRR delta that triggers escalation
+  sortOrder:            int("sort_order").notNull().default(0),
+  createdAt:            bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  isdCaseIdx: index("isd_case_idx").on(table.caseId),
+}));
+export type InfraSimDimension = typeof infraSimDimensions.$inferSelect;
+export type InsertInfraSimDimension = typeof infraSimDimensions.$inferInsert;
+
+// ── Simulation Run — a batch of N scenarios ───────────────────────────────────
+export const infraSimRuns = mysqlTable("infra_sim_runs", {
+  id:                   int("id").autoincrement().primaryKey(),
+  caseId:               int("case_id").notNull(),
+  userId:               int("user_id").notNull(),
+  targetCount:          int("target_count").notNull().default(10000),
+  completedCount:       int("completed_count").notNull().default(0),
+  approveCount:         int("approve_count").notNull().default(0),
+  conditionalCount:     int("conditional_count").notNull().default(0),
+  rejectCount:          int("reject_count").notNull().default(0),
+  medianIrrPct:         decimal("median_irr_pct", { precision: 6, scale: 3 }),
+  p10IrrPct:            decimal("p10_irr_pct", { precision: 6, scale: 3 }),
+  p90IrrPct:            decimal("p90_irr_pct", { precision: 6, scale: 3 }),
+  topFailureDriversJson: text("top_failure_drivers_json"),                      // JSON: ranked failure drivers
+  approvalPathwayJson:  text("approval_pathway_json"),                          // JSON: minimum conditions for approval
+  sensitivityJson:      text("sensitivity_json"),                               // JSON: tornado data
+  chartsJson:           text("charts_json"),                                    // JSON: { chartName: base64png }
+  reproducibilityManifestJson: text("reproducibility_manifest_json"),           // JSON: seed, params, version
+  governanceAuditJson:  text("governance_audit_json"),                          // JSON: trigger frequencies
+  status:               mysqlEnum("status", ["queued", "running", "complete", "error"]).notNull().default("queued"),
+  errorMessage:         varchar("error_message", { length: 512 }),
+  startedAt:            bigint("started_at", { mode: "number" }),
+  completedAt:          bigint("completed_at", { mode: "number" }),
+  createdAt:            bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  isrCaseIdx:    index("isr_case_idx").on(table.caseId),
+  isrUserIdx:    index("isr_user_idx").on(table.userId),
+  isrStatusIdx:  index("isr_status_idx").on(table.status),
+  isrCreatedIdx: index("isr_created_idx").on(table.createdAt),
+}));
+export type InfraSimRun = typeof infraSimRuns.$inferSelect;
+export type InsertInfraSimRun = typeof infraSimRuns.$inferInsert;
+
+// ── Simulation Scenario — individual scenario result (sampled, not all 10k) ───
+// Only top/bottom/milestone scenarios are persisted; full results in audit JSON
+export const infraSimScenarios = mysqlTable("infra_sim_scenarios", {
+  id:                   int("id").autoincrement().primaryKey(),
+  runId:                int("run_id").notNull(),
+  scenarioIndex:        int("scenario_index").notNull(),
+  parametersJson:       text("parameters_json").notNull(),                      // JSON: { dimension_key: value_label }
+  irrPct:               decimal("irr_pct", { precision: 6, scale: 3 }).notNull(),
+  decision:             mysqlEnum("decision", ["APPROVE", "CONDITIONAL", "REJECT"]).notNull(),
+  blockerScore:         decimal("blocker_score", { precision: 6, scale: 3 }),
+  dominantRiskCategory: varchar("dominant_risk_category", { length: 64 }),
+  hardNoTriggersJson:   text("hard_no_triggers_json"),                          // JSON: string[]
+  softNoTriggersJson:   text("soft_no_triggers_json"),                          // JSON: string[]
+  interactionPenaltyPct: decimal("interaction_penalty_pct", { precision: 6, scale: 3 }),
+  scenarioType:         varchar("scenario_type", { length: 32 }),               // "best" | "worst" | "base" | "approval_threshold" | "sampled"
+  createdAt:            bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  issRunIdx:      index("iss_run_idx").on(table.runId),
+  issDecisionIdx: index("iss_decision_idx").on(table.decision),
+}));
+export type InfraSimScenario = typeof infraSimScenarios.$inferSelect;
+export type InsertInfraSimScenario = typeof infraSimScenarios.$inferInsert;
+
+// ── Council Deliberation Session — 5-round autonomous debate ─────────────────
+export const infraSimCouncilSessions = mysqlTable("infra_sim_council_sessions", {
+  id:                   int("id").autoincrement().primaryKey(),
+  caseId:               int("case_id").notNull(),
+  runId:                int("run_id"),                                           // optional link to a sim run
+  userId:               int("user_id").notNull(),
+  personaSetKey:        varchar("persona_set_key", { length: 64 }).notNull().default("infrastructure_global"),
+  finalDecision:        mysqlEnum("final_decision", ["APPROVE", "CONDITIONAL", "REJECT", "DEADLOCK"]),
+  finalVoteJson:        text("final_vote_json"),                                 // JSON: { approve, conditional, reject, abstain }
+  consensusScore:       decimal("consensus_score", { precision: 5, scale: 2 }), // 0-100
+  debateTranscriptJson: longtext("debate_transcript_json"),                      // JSON: full 5-round transcript
+  persuasionGraphJson:  text("persuasion_graph_json"),                           // JSON: argument influence edges
+  coalitionMapJson:     text("coalition_map_json"),                              // JSON: coalition formation
+  minorityReportJson:   text("minority_report_json"),                            // JSON: dissent memo
+  unresolvedDisagreementsJson: text("unresolved_disagreements_json"),            // JSON: string[]
+  status:               mysqlEnum("status", ["running", "complete", "error"]).notNull().default("running"),
+  createdAt:            bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  completedAt:          bigint("completed_at", { mode: "number" }),
+}, (table) => ({
+  iscsCase:    index("iscs_case_idx").on(table.caseId),
+  iscsUser:    index("iscs_user_idx").on(table.userId),
+  iscsStatus:  index("iscs_status_idx").on(table.status),
+}));
+export type InfraSimCouncilSession = typeof infraSimCouncilSessions.$inferSelect;
+export type InsertInfraSimCouncilSession = typeof infraSimCouncilSessions.$inferInsert;
+
+// ── Council Round — per-round votes within a session ─────────────────────────
+export const infraSimCouncilRounds = mysqlTable("infra_sim_council_rounds", {
+  id:                   int("id").autoincrement().primaryKey(),
+  sessionId:            int("session_id").notNull(),
+  roundNumber:          int("round_number").notNull(),                          // 1=independent, 2=adversarial, 3=rebuttal, 4=convergence, 5=final
+  roundType:            varchar("round_type", { length: 32 }).notNull(),        // "independent" | "adversarial" | "rebuttal" | "convergence" | "final"
+  votesJson:            text("votes_json").notNull(),                           // JSON: PersonaVote[]
+  argumentsJson:        longtext("arguments_json"),                             // JSON: { personaId: argument }
+  voteMigrationsJson:   text("vote_migrations_json"),                           // JSON: { personaId: { from, to, reason } }
+  confidenceShiftsJson: text("confidence_shifts_json"),                         // JSON: { personaId: delta }
+  createdAt:            bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  iscrSession: index("iscr_session_idx").on(table.sessionId),
+  iscrRound:   index("iscr_round_idx").on(table.roundNumber),
+}));
+export type InfraSimCouncilRound = typeof infraSimCouncilRounds.$inferSelect;
+export type InsertInfraSimCouncilRound = typeof infraSimCouncilRounds.$inferInsert;
+
+// ── Monitoring Object — persistent post-IC deal monitor ──────────────────────
+export const infraSimMonitoringObjects = mysqlTable("infra_sim_monitoring_objects", {
+  id:                   int("id").autoincrement().primaryKey(),
+  caseId:               int("case_id").notNull(),
+  userId:               int("user_id").notNull(),
+  thesisStatus:         mysqlEnum("thesis_status", ["GREEN", "YELLOW", "ORANGE", "RED"]).notNull().default("GREEN"),
+  approvalProbabilityPct: decimal("approval_probability_pct", { precision: 5, scale: 2 }),
+  decisionDriftScore:   decimal("decision_drift_score", { precision: 5, scale: 2 }),
+  thesisDegradationPct: decimal("thesis_degradation_pct", { precision: 5, scale: 2 }),
+  lastRecomputedAt:     bigint("last_recomputed_at", { mode: "number" }),
+  weeklyMemoJson:       text("weekly_memo_json"),                               // JSON: latest weekly governance memo
+  assumptionDriftJson:  text("assumption_drift_json"),                          // JSON: drifted assumptions vs base
+  wouldApproveToday:    tinyint("would_approve_today").default(0),              // 0=no, 1=yes
+  alertsJson:           text("alerts_json"),                                    // JSON: active alerts
+  isActive:             tinyint("is_active").notNull().default(1),
+  createdAt:            bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt:            bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  ismoCase:   index("ismo_case_idx").on(table.caseId),
+  ismoUser:   index("ismo_user_idx").on(table.userId),
+  ismoStatus: index("ismo_status_idx").on(table.thesisStatus),
+  ismoActive: index("ismo_active_idx").on(table.isActive),
+}));
+export type InfraSimMonitoringObject = typeof infraSimMonitoringObjects.$inferSelect;
+export type InsertInfraSimMonitoringObject = typeof infraSimMonitoringObjects.$inferInsert;
+
+// ── Monitoring Event — ingested risk events ───────────────────────────────────
+export const infraSimMonitoringEvents = mysqlTable("infra_sim_monitoring_events", {
+  id:                   int("id").autoincrement().primaryKey(),
+  monitoringObjectId:   int("monitoring_object_id").notNull(),
+  caseId:               int("case_id").notNull(),
+  eventType:            varchar("event_type", { length: 64 }).notNull(),        // "regulatory" | "commodity" | "interest_rate" | "construction" | "supplier" | "manual"
+  eventTitle:           varchar("event_title", { length: 255 }).notNull(),
+  eventDescription:     text("event_description"),
+  impactedDimensions:   varchar("impacted_dimensions", { length: 512 }),        // comma-separated dimension keys
+  irrImpactDeltaPct:    decimal("irr_impact_delta_pct", { precision: 6, scale: 3 }),
+  thesisImpact:         mysqlEnum("thesis_impact", ["POSITIVE", "NEUTRAL", "NEGATIVE", "CRITICAL"]).notNull().default("NEUTRAL"),
+  sourceUrl:            varchar("source_url", { length: 512 }),
+  processedAt:          bigint("processed_at", { mode: "number" }),
+  createdAt:            bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  ismeMonitor: index("isme_monitor_idx").on(table.monitoringObjectId),
+  ismeCase:    index("isme_case_idx").on(table.caseId),
+  ismeType:    index("isme_type_idx").on(table.eventType),
+  ismeCreated: index("isme_created_idx").on(table.createdAt),
+}));
+export type InfraSimMonitoringEvent = typeof infraSimMonitoringEvents.$inferSelect;
+export type InsertInfraSimMonitoringEvent = typeof infraSimMonitoringEvents.$inferInsert;
+
+// ── Portfolio Link — dependency graph edges between cases ─────────────────────
+export const infraSimPortfolioLinks = mysqlTable("infra_sim_portfolio_links", {
+  id:                   int("id").autoincrement().primaryKey(),
+  userId:               int("user_id").notNull(),
+  sourceCaseId:         int("source_case_id").notNull(),
+  targetCaseId:         int("target_case_id").notNull(),
+  dependencyType:       varchar("dependency_type", { length: 64 }).notNull(),   // "supplier" | "epc" | "sovereign" | "grid" | "financing" | "technology" | "regulatory"
+  dependencyStrength:   decimal("dependency_strength", { precision: 4, scale: 2 }).notNull().default("1.00"), // 0-1 contagion multiplier
+  contagionDirectional: tinyint("contagion_directional").notNull().default(0),  // 0=bidirectional, 1=source→target only
+  notes:                varchar("notes", { length: 512 }),
+  createdAt:            bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  isplSource: index("ispl_source_idx").on(table.sourceCaseId),
+  isplTarget: index("ispl_target_idx").on(table.targetCaseId),
+  isplUser:   index("ispl_user_idx").on(table.userId),
+}));
+export type InfraSimPortfolioLink = typeof infraSimPortfolioLinks.$inferSelect;
+export type InsertInfraSimPortfolioLink = typeof infraSimPortfolioLinks.$inferInsert;
