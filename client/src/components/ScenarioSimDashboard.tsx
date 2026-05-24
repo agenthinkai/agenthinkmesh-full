@@ -453,15 +453,25 @@ function SimulationProgress({ progressPct, mode, completedCount, targetCount }: 
 
 // ── Main Dashboard Component ──────────────────────────────────────────────────
 
+interface CompletedSimData {
+  runId: string;
+  mode: string;
+  targetCount: number;
+  completedAt: string;
+  aggregation: SimAggregation;
+}
+
 interface ScenarioSimDashboardProps {
   dealId: string;
   dealName: string;
   dealText: string;
   /** If provided, load an existing run instead of starting a new one */
   existingRunId?: string;
+  /** Called when a simulation completes (live or restored) — used to unlock Reports panel */
+  onSimCompleted?: (data: CompletedSimData) => void;
 }
 
-export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId }: ScenarioSimDashboardProps) {
+export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId, onSimCompleted }: ScenarioSimDashboardProps) {
   const [selectedMode, setSelectedMode] = useState<SimMode>("quick");
   const [runId, setRunId] = useState<string | null>(existingRunId ?? null);
   const [isRunning, setIsRunning] = useState(false);
@@ -482,12 +492,22 @@ export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId
     { enabled: !!runId, refetchInterval: runId && isRunning ? 3000 : false }
   );
 
-  // Stop polling when complete
+  // Stop polling when complete; notify parent when aggregation is ready
   useEffect(() => {
     if (runStatus?.status === "completed" || runStatus?.status === "failed") {
       setIsRunning(false);
     }
-  }, [runStatus?.status]);
+    if (runStatus?.status === "completed" && runStatus.aggregation && onSimCompleted) {
+      onSimCompleted({
+        runId:       runStatus.runId,
+        mode:        runStatus.mode,
+        targetCount: runStatus.targetCount,
+        completedAt: runStatus.completedAt ? String(runStatus.completedAt) : new Date().toISOString(),
+        aggregation: runStatus.aggregation as SimAggregation,
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [runStatus?.status, runStatus?.aggregation]);
 
   const [showGatedModal, setShowGatedModal] = useState(false);
   const [pendingGatedMode, setPendingGatedMode] = useState<SimMode | null>(null);

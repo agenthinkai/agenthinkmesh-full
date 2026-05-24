@@ -288,22 +288,22 @@ export function ReportsPanel({
 
   // ── Export: Stress Test Report ────────────────────────────────────────────
   const handleExportStress = async () => {
-    if (!simAggregation || !simMode || !simTargetCount || !simCompletedAt) return;
+    if (!simAggregation?.decisionDistribution) return;
     setStressLoading(true);
     setStressDone(false);
     try {
       const res = await stressTestReportPdf.mutateAsync({
         dealName,
         baseVerdict: verdict,
-        mode: simMode,
-        targetCount: simTargetCount,
-        completedAt: simCompletedAt,
-        executiveSummary: simAggregation.executiveSummary ?? "",
-        decisionDistribution: simAggregation.decisionDistribution,
-        failureVectors: simAggregation.failureVectors,
-        approvalPathways: simAggregation.approvalPathways,
-        sensitivitySurface: simAggregation.sensitivitySurface,
-        governanceHeatmap: simAggregation.governanceHeatmap,
+        mode: safeSimMode,
+        targetCount: safeSimTargetCount,
+        completedAt: safeSimCompletedAt,
+        executiveSummary: simAggregation!.executiveSummary ?? "",
+        decisionDistribution: simAggregation!.decisionDistribution,
+        failureVectors: simAggregation!.failureVectors ?? [],
+        approvalPathways: simAggregation!.approvalPathways ?? [],
+        sensitivitySurface: simAggregation!.sensitivitySurface ?? [],
+        governanceHeatmap: simAggregation!.governanceHeatmap ?? [],
         format: stressFmt,
       });
       const name = safeName(dealName);
@@ -331,7 +331,12 @@ export function ReportsPanel({
   };
 
   const hasUpgrade = !!upgradeProtocol;
-  const hasStress = !!(simAggregation && simMode && simTargetCount && simCompletedAt);
+  // Unlock if aggregation + decisionDistribution exist; mode/targetCount/completedAt are optional
+  const hasStress = !!(simAggregation?.decisionDistribution);
+  // Safe fallbacks for display when some metadata is missing
+  const safeSimMode = simMode ?? "unknown";
+  const safeSimTargetCount = simTargetCount ?? (simAggregation?.decisionDistribution?.totalScenarios ?? 0);
+  const safeSimCompletedAt = simCompletedAt ?? new Date().toISOString();
 
   return (
     <TooltipProvider>
@@ -409,9 +414,9 @@ export function ReportsPanel({
                     icon={<BarChart3 className="h-4 w-4" />}
                     title="Strategic Stress Test Report"
                     subtitle={hasStress
-                      ? `${simTargetCount!.toLocaleString()} scenarios · ${simMode} mode · ${simAggregation!.decisionDistribution.approvePct.toFixed(1)}% approve rate.`
+                      ? `${safeSimTargetCount.toLocaleString()} scenarios · ${safeSimMode} mode · ${simAggregation!.decisionDistribution.approvePct.toFixed(1)}% approve rate.`
                       : "Run a Strategic Scenario Simulation first to unlock this report."}
-                    badge={hasStress ? `${simTargetCount!.toLocaleString()} Scenarios` : "Requires Simulation"}
+                    badge={hasStress ? `${safeSimTargetCount.toLocaleString()} Scenarios` : "Requires Simulation"}
                     badgeVariant={hasStress ? "default" : "outline"}
                     available={hasStress}
                     unavailableReason="Run a Strategic Scenario Simulation first."

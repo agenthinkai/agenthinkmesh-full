@@ -4670,3 +4670,17 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Tests: Section 17 text export
 - [x] Tests: gated 1M confirmation modal logic
 - [ ] Tests: no empty report sections when data unavailable
+
+## Stress Test Report Unlock Bug Fix (2026-05-24)
+- [ ] Trace data flow: ScenarioSimDashboard completed state → ReportsPanel unlock condition
+- [ ] Fix unlock condition: check latest completed sim via tRPC query (not local state only)
+- [ ] Persist completed aggregation to ICReport-level state so ReportsPanel can access it
+- [ ] Add fallback: restored historical simulation data also unlocks the report
+- [ ] Add debug guard: partial aggregation shows available data, marks missing fields as "Not available"
+- [ ] Tests: report locked before simulation
+- [ ] Tests: report unlocks after completed simulation
+- [ ] Tests: report unlocks after restored historical simulation
+- [ ] Tests: report export uses latest completed run
+- [ ] Tests: no blank body when aggregation exists
+- [ ] TypeScript check — zero errors
+- [ ] Full test suite passing

@@ -1341,15 +1341,37 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
   const [liftedProtocol, setLiftedProtocol] = useState<any>(null);
   const [liftedDelta, setLiftedDelta] = useState<any>(null);
 
-  // ── Reports Panel: fetch latest completed simulation for stress test export
+  // ── Reports Panel: live sim data (set via onSimCompleted callback from ScenarioSimDashboard)
+  const [liveSimData, setLiveSimData] = useState<{
+    runId: string; mode: string; targetCount: number; completedAt: string; aggregation: any;
+  } | null>(null);
+
+  const handleSimCompleted = (data: { runId: string; mode: string; targetCount: number; completedAt: string; aggregation: any }) => {
+    setLiveSimData(data);
+  };
+
+  // ── Reports Panel: DB fallback — fetch latest completed simulation for stress test export
   const { data: latestSimRuns } = trpc.scenarioSim.listRunsForDeal.useQuery(
     { dealId: result.dealId ?? "" },
-    { enabled: !!result.dealId, staleTime: 30_000 }
+    { enabled: !!result.dealId && !liveSimData, staleTime: 30_000 }
   );
   const latestCompletedSim = latestSimRuns?.find((r: any) => r.status === "completed") ?? null;
   const { data: latestSimStatus } = trpc.scenarioSim.getRunStatus.useQuery(
     { runId: latestCompletedSim?.runId ?? "" },
-    { enabled: !!latestCompletedSim?.runId, staleTime: 60_000 }
+    { enabled: !!latestCompletedSim?.runId && !liveSimData, staleTime: 60_000 }
+  );
+
+  // Merge: prefer live data (just completed), fall back to DB-fetched
+  const effectiveSimData = liveSimData ?? (
+    latestSimStatus?.status === "completed" && latestSimStatus.aggregation
+      ? {
+          runId:       latestSimStatus.runId,
+          mode:        latestSimStatus.mode,
+          targetCount: latestSimStatus.targetCount,
+          completedAt: latestSimStatus.completedAt ? String(latestSimStatus.completedAt) : "",
+          aggregation: latestSimStatus.aggregation,
+        }
+      : null
   );
 
   const handleICMemoPdf = async () => {
@@ -2084,6 +2106,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
           dealId={result.dealId ?? result.dealName}
           dealName={result.dealName}
           dealText={result.dealText ?? result.dealTextPreview ?? ""}
+          onSimCompleted={handleSimCompleted}
         />
       </div>
       {/* ── Section 12: Institutional Reports Export Hub ──────────────── */}
@@ -2097,11 +2120,11 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
           icMemoLoading={icMemoLoading}
           upgradeProtocol={liftedProtocol}
           upgradeDelta={liftedDelta}
-          simRunId={latestCompletedSim?.runId ?? null}
-          simMode={latestCompletedSim?.mode ?? undefined}
-          simTargetCount={latestCompletedSim?.targetCount ?? undefined}
-          simCompletedAt={latestCompletedSim?.completedAt ? String(latestCompletedSim.completedAt) : undefined}
-          simAggregation={latestSimStatus?.aggregation ?? null}
+          simRunId={effectiveSimData?.runId ?? null}
+          simMode={effectiveSimData?.mode ?? undefined}
+          simTargetCount={effectiveSimData?.targetCount ?? undefined}
+          simCompletedAt={effectiveSimData?.completedAt ?? undefined}
+          simAggregation={effectiveSimData?.aggregation ?? null}
         />
       </div>
     </div>
