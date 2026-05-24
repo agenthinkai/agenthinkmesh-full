@@ -4694,3 +4694,13 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Tests: omit before sim, include after sim, include after restore, partial data, no duplicate
 - [ ] TypeScript check — zero errors
 - [ ] Full test suite passing
+
+## Stress Test Report PDF Export Bug Fix
+
+- [ ] Trace exact crash path: ReportsPanel → tRPC procedure → stressTestReportPdf builder
+- [ ] Add error logging (dealId, runId, scenario count, mode, field existence, error stack)
+- [ ] Harden PDF builder against undefined arrays, null nested fields, NaN/Infinity, long text, unsupported chars
+- [ ] Ensure PDF builder uses same effectiveSimData source as unlock logic
+- [ ] Tests: full aggregation, partial aggregation, restored historical, 0% approve, 10k deep mode, missing optional fields
+- [ ] TypeScript check — zero errors
+- [ ] Full test suite passing

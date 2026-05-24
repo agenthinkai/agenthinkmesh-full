@@ -96,7 +96,7 @@ export interface ReportsPanelProps {
   simRunId?: string | null;
   simMode?: string;
   simTargetCount?: number;
-  simCompletedAt?: string;
+  simCompletedAt?: string | Date;
   simAggregation?: SimAggregation | null;
 }
 
@@ -336,7 +336,9 @@ export function ReportsPanel({
   // Safe fallbacks for display when some metadata is missing
   const safeSimMode = simMode ?? "unknown";
   const safeSimTargetCount = simTargetCount ?? (simAggregation?.decisionDistribution?.totalScenarios ?? 0);
-  const safeSimCompletedAt = simCompletedAt ?? new Date().toISOString();
+  const safeSimCompletedAt = simCompletedAt
+    ? (simCompletedAt instanceof Date ? simCompletedAt.toISOString() : simCompletedAt)
+    : new Date().toISOString();
 
   return (
     <TooltipProvider>

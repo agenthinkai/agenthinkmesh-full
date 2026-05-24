@@ -1368,7 +1368,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
           runId:       latestSimStatus.runId,
           mode:        latestSimStatus.mode,
           targetCount: latestSimStatus.targetCount,
-          completedAt: latestSimStatus.completedAt ? String(latestSimStatus.completedAt) : "",
+          completedAt: latestSimStatus.completedAt ? (latestSimStatus.completedAt instanceof Date ? latestSimStatus.completedAt.toISOString() : String(latestSimStatus.completedAt)) : "",
           aggregation: latestSimStatus.aggregation,
         }
       : null

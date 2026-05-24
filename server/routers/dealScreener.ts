@@ -1021,7 +1021,7 @@ export const dealScreenerRouter = router({
       baseVerdict:          z.string(),
       mode:                 z.string(),
       targetCount:          z.number(),
-      completedAt:          z.string(),
+      completedAt:          z.union([z.string(), z.date()]).transform(v => v instanceof Date ? v.toISOString() : v),
       executiveSummary:     z.string(),
       decisionDistribution: z.object({
         approvePct:    z.number(),
@@ -1043,16 +1043,22 @@ export const dealScreenerRouter = router({
         ...input,
         generatedAt: new Date().toISOString(),
       };
-      if (input.format === "text") {
-        const text = generateStressTestReportText(reportInput);
-        return { format: "text" as const, text, base64: null };
+      console.log(`[StressTestReportPdf] Export requested: dealName=${input.dealName}, mode=${input.mode}, targetCount=${input.targetCount}, completedAt=${input.completedAt}, format=${input.format}, hasExecutiveSummary=${!!input.executiveSummary}, failureVectors=${input.failureVectors.length}, approvalPathways=${input.approvalPathways.length}, sensitivitySurface=${input.sensitivitySurface.length}, governanceHeatmap=${input.governanceHeatmap.length}`);
+      try {
+        if (input.format === "text") {
+          const text = generateStressTestReportText(reportInput);
+          return { format: "text" as const, text, base64: null };
+        }
+        if (input.format === "json") {
+          return { format: "json" as const, text: JSON.stringify(reportInput, null, 2), base64: null };
+        }
+        const pdfBuffer = await generateStressTestReportPdf(reportInput);
+        const base64 = pdfBuffer.toString("base64");
+        return { format: "pdf" as const, base64, text: null };
+      } catch (err: any) {
+        console.error(`[StressTestReportPdf] Export failed: dealName=${input.dealName}, mode=${input.mode}, targetCount=${input.targetCount}, completedAt=${input.completedAt}, format=${input.format}, error=${err?.message ?? String(err)}`, err?.stack ?? "");
+        throw err;
       }
-      if (input.format === "json") {
-        return { format: "json" as const, text: JSON.stringify(reportInput, null, 2), base64: null };
-      }
-      const pdfBuffer = await generateStressTestReportPdf(reportInput);
-      const base64 = pdfBuffer.toString("base64");
-      return { format: "pdf" as const, base64, text: null };
     }),
 });
 

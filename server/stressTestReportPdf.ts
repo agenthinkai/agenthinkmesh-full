@@ -233,7 +233,7 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
 
   doc.rect(0, 180, W, 36).fill("#F0F4F8");
   doc.fontSize(8).fillColor(GRAY).font("Helvetica")
-    .text(`Generated: ${input.generatedAt ?? new Date().toISOString().split("T")[0]}   ·   Scenarios: ${input.targetCount.toLocaleString()}   ·   Completed: ${input.completedAt.split("T")[0]}   ·   AgenThinkMesh Scenario Engine`, L, 193, { width: CONTENT_W, align: "center" });
+    .text(`Generated: ${input.generatedAt ?? new Date().toISOString().split("T")[0]}   ·   Scenarios: ${input.targetCount.toLocaleString()}   ·   Completed: ${(typeof input.completedAt === "string" ? input.completedAt : (input.completedAt as unknown as Date).toISOString()).split("T")[0]}   ·   AgenThinkMesh Scenario Engine`, L, 193, { width: CONTENT_W, align: "center" });
 
   doc.y = 230;
 
