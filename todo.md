@@ -4684,3 +4684,13 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Tests: no blank body when aggregation exists
 - [ ] TypeScript check — zero errors
 - [ ] Full test suite passing
+
+## Copy IC Report — Section 17 Text Export
+
+- [ ] buildSection17Text() helper — formats simulation data as plain text block
+- [ ] Override onCopy in ICReport to append Section 17 when effectiveSimData exists
+- [ ] Handle partial simulation data with "Not available" fallbacks
+- [ ] Prevent duplicate Section 17 if rawText already contains it
+- [ ] Tests: omit before sim, include after sim, include after restore, partial data, no duplicate
+- [ ] TypeScript check — zero errors
+- [ ] Full test suite passing

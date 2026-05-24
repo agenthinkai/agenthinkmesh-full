@@ -1470,8 +1470,87 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
     }
   };
 
+  // ── Section 17 text builder ─────────────────────────────────────────────────
+  const buildSection17Text = (simData: typeof effectiveSimData): string => {
+    if (!simData?.aggregation?.decisionDistribution) return "";
+    const agg = simData.aggregation;
+    const dist = agg.decisionDistribution;
+    const na = "Not available";
+    const lines: string[] = [];
+    lines.push("");
+    lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    lines.push("17. SCENARIO STRESS SUMMARY");
+    lines.push("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+    lines.push("");
+    lines.push(`Simulation Mode:     ${simData.mode ?? na}`);
+    lines.push(`Scenario Count:      ${(simData.targetCount ?? dist.totalScenarios ?? 0).toLocaleString()}`);
+    lines.push(`Run Timestamp:       ${simData.completedAt ? new Date(simData.completedAt).toLocaleString() : na}`);
+    lines.push("");
+    lines.push("DECISION DISTRIBUTION");
+    lines.push(`  Approve:           ${dist.approvePct?.toFixed(1) ?? na}% (${dist.approveCount ?? na} scenarios)`);
+    lines.push(`  Conditional:       ${dist.conditionalPct?.toFixed(1) ?? na}% (${dist.conditionalCount ?? na} scenarios)`);
+    lines.push(`  Reject:            ${dist.rejectPct?.toFixed(1) ?? na}% (${dist.rejectCount ?? na} scenarios)`);
+    if (dist.hardNoPct != null) {
+      lines.push(`  Hard-No Triggered: ${dist.hardNoPct.toFixed(1)}% (${dist.hardNoCount ?? 0} scenarios)`);
+    }
+    lines.push("");
+    lines.push("EXECUTIVE SUMMARY");
+    lines.push(agg.executiveSummary ?? na);
+    lines.push("");
+    // Top 3 failure vectors
+    const fv: any[] = agg.failureVectors ?? [];
+    lines.push("TOP FAILURE VECTORS");
+    if (fv.length === 0) {
+      lines.push(`  ${na}`);
+    } else {
+      fv.slice(0, 3).forEach((v: any, i: number) => {
+        lines.push(`  ${i + 1}. ${v.category ?? na} — ${v.description ?? na} (${v.frequency != null ? (v.frequency * 100).toFixed(0) + "% of scenarios" : na})`);
+      });
+    }
+    lines.push("");
+    // Top 3 approval pathways
+    const ap: any[] = agg.approvalPathways ?? [];
+    lines.push("TOP APPROVAL PATHWAYS");
+    if (ap.length === 0) {
+      lines.push(`  ${na}`);
+    } else {
+      ap.slice(0, 3).forEach((p: any, i: number) => {
+        lines.push(`  ${i + 1}. ${p.description ?? na} (${p.frequency != null ? (p.frequency * 100).toFixed(0) + "% of scenarios" : na})`);
+      });
+    }
+    lines.push("");
+    // Governance escalation highlights
+    const gh: any[] = agg.governanceHeatmap ?? [];
+    const escalations = gh.filter((g: any) => g.escalationRate > 0.1).slice(0, 3);
+    lines.push("GOVERNANCE ESCALATION HIGHLIGHTS");
+    if (escalations.length === 0) {
+      lines.push(`  No significant escalation triggers detected.`);
+    } else {
+      escalations.forEach((g: any) => {
+        lines.push(`  ${g.category ?? na}: ${g.escalationRate != null ? (g.escalationRate * 100).toFixed(0) + "% escalation rate" : na}`);
+      });
+    }
+    lines.push("");
+    // Sensitivity summary
+    const ss: any[] = agg.sensitivitySurface ?? [];
+    lines.push("SENSITIVITY SUMMARY");
+    if (ss.length === 0) {
+      lines.push(`  ${na}`);
+    } else {
+      ss.slice(0, 3).forEach((s: any, i: number) => {
+        lines.push(`  ${i + 1}. ${s.dimension ?? na}: approval impact ${s.approvalImpact != null ? (s.approvalImpact > 0 ? "+" : "") + (s.approvalImpact * 100).toFixed(1) + "pp" : na}`);
+      });
+    }
+    lines.push("");
+    return lines.join("\n");
+  };
+
   const handleCopyICReport = (text: string) => {
-    navigator.clipboard.writeText(text).catch(() => {});
+    // Append Section 17 if simulation data exists and not already present
+    const section17 = buildSection17Text(effectiveSimData);
+    const alreadyHasSection17 = text.includes("17. SCENARIO STRESS SUMMARY");
+    const enrichedText = section17 && !alreadyHasSection17 ? text + section17 : text;
+    navigator.clipboard.writeText(enrichedText).catch(() => {});
     setCopied(true);
     setTimeout(() => setCopied(false), 2500);
   };
