@@ -1,16 +1,15 @@
 /**
  * upgradeProtocolPdf.ts — Institutional Investment Readiness Report Generator
  *
- * Produces a standalone PDF from the Decision Upgrade Protocol output.
- * 8 sections:
- *   1. Executive Summary
- *   2. Required Missing Inputs
- *   3. Performance Gaps
- *   4. Structural Weaknesses
- *   5. Risk Mitigation Requirements
- *   6. Narrative Improvements
- *   7. Upgrade Impact Forecast
- *   8. Re-run Summary (if delta available)
+ * Sovereign IC / top-tier strategy consulting quality.
+ * 13 sections across 5 pages:
+ *
+ * Page 1: Executive Summary · KPI Strip · Core Thesis Breakers · Investment Readiness Score · Fastest Path to Investability
+ * Page 2: Critical Missing Inputs · Structural Weaknesses · Severity Matrix
+ * Page 3: Performance Gaps · Market & Scalability · Investor Fit Analysis
+ * Page 4: Risk Mitigation · Governance Concerns · Capital Readiness
+ * Page 5: Narrative Improvements · Re-run Summary · Expected Upgraded Outcome
+ * Appendix: Full Issue Log
  */
 import https from "https";
 import http from "http";
@@ -39,7 +38,6 @@ export interface UpgradeProtocolInput {
   riskMitigationActions: UpgradeFixInput[];
   expectedOutcomeShift: { predictedVerdict: string; confidenceDelta: number; rationale: string };
   allFixes: UpgradeFixInput[];
-  // Optional delta (re-run summary)
   delta?: {
     verdictBefore: string;
     verdictAfter: string;
@@ -71,6 +69,40 @@ function fetchBuffer(url: string): Promise<Buffer> {
 
 const LOGO_CDN_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663268376562/7EnctkaNppkKLbjFfnH6YY/agenthink-logo_f76cbf68.png";
 
+/** Sanitize text: remove control chars, normalize whitespace, strip bad precision. */
+function sanitize(text: string | undefined | null): string {
+  if (!text) return "";
+  return text
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "")
+    .replace(/\t/g, "  ")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    // Fix ugly floating-point precision: +0.05899999999999994% → +5.9%
+    .replace(/([+-]?\d+\.\d{4,})%/g, (_, n) => {
+      const v = parseFloat(n);
+      if (!isFinite(v)) return "0%";
+      return `${v >= 0 ? "+" : ""}${v.toFixed(1)}%`;
+    })
+    // Remove raw NaN/Infinity/undefined/null
+    .replace(/\b(NaN|Infinity|-Infinity|undefined|null)\b/g, "—")
+    .trim();
+}
+
+/** Safe number: clamp NaN/Infinity to 0, round to given decimals. */
+function safeNum(v: unknown, decimals = 1): number {
+  const n = typeof v === "string" ? parseFloat(v.replace(/[^0-9.\-]/g, "")) : Number(v);
+  if (!isFinite(n)) return 0;
+  const factor = Math.pow(10, decimals);
+  return Math.round(n * factor) / factor;
+}
+
+/** Format a percentage cleanly: 0.059 → "+5.9%" */
+function fmtPct(v: number, showSign = false): string {
+  const safe = safeNum(v, 1);
+  if (showSign && safe > 0) return `+${safe}%`;
+  return `${safe}%`;
+}
+
 function verdictLabel(v: string): string {
   const map: Record<string, string> = {
     APPROVED: "APPROVED",
@@ -83,16 +115,27 @@ function verdictLabel(v: string): string {
     VETOED: "VETOED",
     INSUFFICIENT_DATA: "INSUFFICIENT DATA",
   };
-  return map[v.toUpperCase()] ?? v.toUpperCase();
+  return map[v?.toUpperCase?.()] ?? (v?.toUpperCase?.() ?? "—");
 }
 
-function tagLabel(tag: string): string {
+/** Map tag → severity label */
+function severityLabel(tag: string): string {
   const map: Record<string, string> = {
-    ASSUMED: "⚠ ASSUMED",
-    IMPROVED: "✓ IMPROVED",
-    USER_REQUIRED: "⚡ USER REQUIRED",
+    USER_REQUIRED: "CRITICAL",
+    ASSUMED: "HIGH",
+    IMPROVED: "MEDIUM",
   };
-  return map[tag] ?? tag;
+  return map[tag] ?? "LOW";
+}
+
+/** Map tag → severity color */
+function severityColor(tag: string): string {
+  const map: Record<string, string> = {
+    USER_REQUIRED: "#C0392B",  // red
+    ASSUMED:       "#D4860A",  // amber
+    IMPROVED:      "#1A6FBF",  // blue
+  };
+  return map[tag] ?? "#555555"; // gray
 }
 
 function categoryLabel(cat: string): string {
@@ -106,35 +149,105 @@ function categoryLabel(cat: string): string {
   return map[cat] ?? cat;
 }
 
-function wrap(text: string, maxLen: number): string[] {
-  const words = text.split(" ");
-  const lines: string[] = [];
-  let current = "";
-  for (const word of words) {
-    if ((current + " " + word).trim().length > maxLen) {
-      if (current) lines.push(current.trim());
-      current = word;
-    } else {
-      current = (current + " " + word).trim();
-    }
+/** Compute a 0–100 readiness score from the fix list */
+function computeReadinessScore(input: UpgradeProtocolInput): {
+  overall: number;
+  team: number;
+  market: number;
+  financials: number;
+  defensibility: number;
+  governance: number;
+  scalability: number;
+} {
+  const total = Math.max(input.allFixes.length, 1);
+  const critical = input.allFixes.filter(f => f.tag === "USER_REQUIRED").length;
+  const high = input.allFixes.filter(f => f.tag === "ASSUMED").length;
+  const penalty = Math.min(critical * 8 + high * 3, 65);
+  const base = Math.max(100 - penalty, 15);
+
+  // Distribute sub-scores based on fix categories
+  const byCategory = (cats: string[]) => {
+    const n = input.allFixes.filter(f => cats.includes(f.category)).length;
+    return Math.max(100 - n * 12, 10);
+  };
+
+  return {
+    overall: safeNum(base, 0),
+    team: safeNum(byCategory(["structural_issue"]), 0),
+    market: safeNum(byCategory(["performance_gap"]), 0),
+    financials: safeNum(byCategory(["missing_input"]), 0),
+    defensibility: safeNum(byCategory(["structural_issue", "risk_mitigation"]), 0),
+    governance: safeNum(byCategory(["risk_mitigation"]), 0),
+    scalability: safeNum(byCategory(["performance_gap", "structural_issue"]), 0),
+  };
+}
+
+/** Derive investor fit from the deal profile */
+function deriveInvestorFit(input: UpgradeProtocolInput): { fit: string; rationale: string } {
+  const critical = input.allFixes.filter(f => f.tag === "USER_REQUIRED").length;
+  const structural = input.structuralIssues.length;
+  const verdict = verdictLabel(input.verdictBefore);
+
+  if (verdict.includes("VETOED") || critical >= 6) {
+    return { fit: "REJECT ENTIRELY", rationale: "Deal has critical structural blockers that preclude institutional capital at this stage." };
   }
-  if (current) lines.push(current.trim());
-  return lines;
+  if (structural >= 4 || critical >= 4) {
+    return { fit: "FAMILY OFFICE / ANGEL", rationale: "Risk profile and governance maturity are below institutional thresholds. Better suited to patient, flexible capital." };
+  }
+  if (verdict.includes("CONDITIONAL") && critical <= 2) {
+    return { fit: "STRATEGIC INVESTOR / CORPORATE VC", rationale: "Deal has strategic merit but requires operational support. A strategic partner with domain expertise would add more value than pure financial capital." };
+  }
+  if (input.performanceGaps.length >= 3) {
+    return { fit: "VENTURE CAPITAL (EARLY STAGE)", rationale: "Performance metrics are pre-institutional but the thesis is directionally sound. VC with operational support is the appropriate capital type." };
+  }
+  return { fit: "PRIVATE EQUITY / GROWTH EQUITY", rationale: "Deal has institutional-grade fundamentals with identifiable improvement levers. PE or growth equity is the appropriate capital type." };
+}
+
+/** Derive capital readiness assessment */
+function deriveCapitalReadiness(input: UpgradeProtocolInput): string {
+  const critical = input.allFixes.filter(f => f.tag === "USER_REQUIRED").length;
+  const missing = input.missingInputs.length;
+
+  if (critical >= 5 || missing >= 4) {
+    return "Company is too early for institutional capital. Critical data gaps and structural blockers must be resolved before approaching institutional LPs or IC committees.";
+  }
+  if (critical >= 3) {
+    return "Company is approaching capital readiness but has unresolved blockers. Raising now risks a down-round or onerous terms. Address critical fixes first.";
+  }
+  if (input.performanceGaps.length >= 3) {
+    return "Company may be over-raising relative to current traction. Benchmarks suggest a smaller bridge round to prove key metrics before a full institutional raise.";
+  }
+  return "Company is broadly capital-ready subject to resolving the high-priority fixes identified in this report. Institutional capital is achievable within 60–90 days of remediation.";
+}
+
+/** Get top 3 thesis breakers */
+function getThesisBreakers(input: UpgradeProtocolInput): string[] {
+  const critical = input.allFixes.filter(f => f.tag === "USER_REQUIRED").slice(0, 3);
+  if (critical.length > 0) return critical.map(f => f.title);
+  const high = input.allFixes.filter(f => f.tag === "ASSUMED").slice(0, 3);
+  return high.map(f => f.title);
+}
+
+/** Get fastest path fixes (top 3–5 by impact) */
+function getFastestPath(input: UpgradeProtocolInput): UpgradeFixInput[] {
+  const critical = input.allFixes.filter(f => f.tag === "USER_REQUIRED");
+  const high = input.allFixes.filter(f => f.tag === "ASSUMED");
+  return [...critical.slice(0, 3), ...high.slice(0, 2)].slice(0, 5);
 }
 
 // ── PDF Generator ─────────────────────────────────────────────────────────────
 
 export async function generateUpgradeProtocolPdf(input: UpgradeProtocolInput): Promise<Buffer> {
-  // Dynamic import to avoid top-level side effects
   const PDFDocument = (await import("pdfkit")).default;
 
   const doc = new PDFDocument({
     size: "A4",
     margins: { top: 56, bottom: 56, left: 56, right: 56 },
+    bufferPages: true,
     info: {
       Title: `Investment Readiness Report — ${input.dealName}`,
       Author: "AgenThinkMesh Decision Engine",
-      Subject: "Decision Upgrade Protocol",
+      Subject: "Institutional Investment Readiness Report",
     },
   });
 
@@ -142,288 +255,487 @@ export async function generateUpgradeProtocolPdf(input: UpgradeProtocolInput): P
   doc.on("data", (c: Buffer) => chunks.push(c));
 
   const W = 595.28;
-  const CONTENT_W = W - 112; // 56px margins each side
-  const L = 56; // left margin
+  const CONTENT_W = W - 112;
+  const L = 56;
 
-  // ── Colours ────────────────────────────────────────────────────────────────
-  const BLACK   = "#0A0A0A";
+  // ── Palette ────────────────────────────────────────────────────────────────
+  const BLACK   = "#0D1117";
   const WHITE   = "#FFFFFF";
-  const ACCENT  = "#1A3C5E";   // dark navy
+  const NAVY    = "#0F2744";
+  const NAVY_LT = "#1A3C5E";
   const GOLD    = "#C9A84C";
   const RED     = "#C0392B";
-  const GREEN   = "#1E7E34";
+  const RED_LT  = "#FDECEA";
   const AMBER   = "#D4860A";
-  const GRAY    = "#555555";
-  const LGRAY   = "#888888";
-  const BGLIGHT = "#F8F9FA";
-  const BORDER  = "#D0D5DD";
+  const AMBER_LT= "#FFF8E7";
+  const BLUE    = "#1A6FBF";
+  const BLUE_LT = "#EBF4FF";
+  const GREEN   = "#1E7E34";
+  const GREEN_LT= "#E8F5E9";
+  const GRAY    = "#4A5568";
+  const LGRAY   = "#718096";
+  const BGLIGHT = "#F7F9FC";
+  const BORDER  = "#CBD5E0";
+  const DIVIDER = "#E2E8F0";
 
-  // ── Helpers ────────────────────────────────────────────────────────────────
+  // ── Derived data ──────────────────────────────────────────────────────────
+  const scores = computeReadinessScore(input);
+  const investorFit = deriveInvestorFit(input);
+  const capitalReadiness = deriveCapitalReadiness(input);
+  const thesisBreakers = getThesisBreakers(input);
+  const fastestPath = getFastestPath(input);
+  const confDelta = safeNum(input.expectedOutcomeShift.confidenceDelta, 1);
+  const criticalCount = input.allFixes.filter(f => f.tag === "USER_REQUIRED").length;
+  const highestRiskArea = input.allFixes.filter(f => f.tag === "USER_REQUIRED")[0]?.category
+    ?? input.allFixes[0]?.category ?? "—";
+
+  // ── Page helpers ──────────────────────────────────────────────────────────
 
   function newPage() {
     doc.addPage();
-    // Subtle header rule
-    doc.moveTo(L, 40).lineTo(W - L, 40).lineWidth(0.5).strokeColor(BORDER).stroke();
-    doc.fontSize(7).fillColor(LGRAY).font("Helvetica")
-      .text(`AGENTHINK MESH · INVESTMENT READINESS REPORT — ${input.dealName.toUpperCase()}`, L, 28, { width: CONTENT_W, align: "left" });
-    doc.moveDown(0.5);
+    // Header rule
+    doc.moveTo(L, 38).lineTo(W - L, 38).lineWidth(0.4).strokeColor(DIVIDER).stroke();
+    doc.fontSize(6.5).fillColor(LGRAY).font("Helvetica")
+      .text(
+        `AGENTHINK MESH  ·  INVESTMENT READINESS REPORT  ·  ${sanitize(input.dealName).toUpperCase()}`,
+        L, 26, { width: CONTENT_W, align: "left" }
+      );
+    doc.y = 52;
   }
 
-  function sectionHeader(num: number, title: string) {
-    // Ensure enough space
-    if (doc.y > 680) newPage();
-    doc.moveDown(0.8);
-    // Rule
-    doc.moveTo(L, doc.y).lineTo(W - L, doc.y).lineWidth(0.5).strokeColor(ACCENT).stroke();
+  function ensureSpace(needed: number) {
+    if (doc.y + needed > 780) newPage();
+  }
+
+  function rule(color = DIVIDER, weight = 0.4) {
+    doc.moveTo(L, doc.y).lineTo(W - L, doc.y).lineWidth(weight).strokeColor(color).stroke();
+  }
+
+  function sectionHeader(title: string, pageBreak = false) {
+    if (pageBreak || doc.y > 660) newPage();
+    else { doc.moveDown(0.9); }
+    rule(NAVY_LT, 0.6);
     doc.moveDown(0.3);
-    doc.fontSize(11).fillColor(ACCENT).font("Helvetica-Bold")
-      .text(`${num}. ${title.toUpperCase()}`, L, doc.y, { width: CONTENT_W });
+    doc.fontSize(10).fillColor(NAVY).font("Helvetica-Bold")
+      .text(sanitize(title).toUpperCase(), L, doc.y, { width: CONTENT_W });
     doc.moveDown(0.4);
   }
 
-  function subHeader(text: string) {
-    if (doc.y > 700) newPage();
-    doc.fontSize(9).fillColor(ACCENT).font("Helvetica-Bold")
-      .text(text.toUpperCase(), L, doc.y, { width: CONTENT_W });
+  function subHead(text: string) {
+    ensureSpace(20);
+    doc.fontSize(8.5).fillColor(NAVY_LT).font("Helvetica-Bold")
+      .text(sanitize(text).toUpperCase(), L, doc.y, { width: CONTENT_W });
     doc.moveDown(0.25);
   }
 
-  function bodyText(text: string, indent = 0) {
-    if (!text) return;
-    if (doc.y > 720) newPage();
-    doc.fontSize(9).fillColor(BLACK).font("Helvetica")
-      .text(text, L + indent, doc.y, { width: CONTENT_W - indent });
-    doc.moveDown(0.25);
+  function body(text: string, indent = 0) {
+    const t = sanitize(text);
+    if (!t) return;
+    ensureSpace(14);
+    doc.fontSize(8.5).fillColor(BLACK).font("Helvetica")
+      .text(t, L + indent, doc.y, { width: CONTENT_W - indent, lineGap: 1.5 });
+    doc.moveDown(0.3);
   }
 
-  function labelValue(label: string, value: string, indent = 0) {
-    if (doc.y > 720) newPage();
-    doc.fontSize(8.5).fillColor(GRAY).font("Helvetica-Bold")
-      .text(label + ":", L + indent, doc.y, { continued: true, width: 110 });
+  function bullet(text: string, indent = 8) {
+    const t = sanitize(text);
+    if (!t) return;
+    ensureSpace(14);
+    doc.fontSize(8.5).fillColor(BLACK).font("Helvetica")
+      .text(`•  ${t}`, L + indent, doc.y, { width: CONTENT_W - indent, lineGap: 1.5 });
+    doc.moveDown(0.2);
+  }
+
+  function labelVal(label: string, value: string, indent = 0) {
+    ensureSpace(14);
+    const lw = 130;
+    doc.fontSize(8).fillColor(GRAY).font("Helvetica-Bold")
+      .text(sanitize(label) + ":", L + indent, doc.y, { continued: true, width: lw });
     doc.fillColor(BLACK).font("Helvetica")
-      .text("  " + (value || "—"), { width: CONTENT_W - indent - 110 });
+      .text("  " + sanitize(value || "—"), { width: CONTENT_W - indent - lw });
     doc.moveDown(0.2);
   }
 
-  function tagBadge(tag: string) {
-    const colors: Record<string, string> = {
-      ASSUMED: AMBER, IMPROVED: GREEN, USER_REQUIRED: "#1A6FBF",
+  /** Severity pill */
+  function severityPill(tag: string, x: number, y: number) {
+    const lbl = severityLabel(tag);
+    const col = severityColor(tag);
+    const bgMap: Record<string, string> = {
+      CRITICAL: RED_LT, HIGH: AMBER_LT, MEDIUM: BLUE_LT, LOW: BGLIGHT,
     };
-    const col = colors[tag] ?? GRAY;
-    const lbl = tagLabel(tag);
-    if (doc.y > 720) newPage();
+    const bg = bgMap[lbl] ?? BGLIGHT;
+    const pillW = 62;
+    const pillH = 12;
+    doc.roundedRect(x, y - 1, pillW, pillH, 2).fill(bg);
+    doc.fontSize(6.5).fillColor(col).font("Helvetica-Bold")
+      .text(lbl, x + 4, y + 1, { width: pillW - 8 });
+  }
+
+  /** Score bar */
+  function scoreBar(label: string, score: number, y: number) {
+    const barW = 120;
+    const barH = 8;
+    const barX = W - L - barW;
+    const filled = Math.round((score / 100) * barW);
+    const col = score >= 70 ? GREEN : score >= 45 ? AMBER : RED;
+    doc.rect(barX, y, barW, barH).fill(DIVIDER);
+    if (filled > 0) doc.rect(barX, y, filled, barH).fill(col);
+    doc.fontSize(7.5).fillColor(GRAY).font("Helvetica")
+      .text(sanitize(label), L, y, { width: barX - L - 8 });
     doc.fontSize(7.5).fillColor(col).font("Helvetica-Bold")
-      .text(`[${lbl}]`, L + 8, doc.y, { width: CONTENT_W });
-    doc.moveDown(0.15);
+      .text(`${score}`, barX + barW + 4, y, { width: 24 });
   }
 
-  function fixCard(fix: UpgradeFixInput, idx: number) {
-    if (doc.y > 680) newPage();
-    // Card background
+  /** Issue card (compressed, no verbose preamble) */
+  function issueCard(fix: UpgradeFixInput, idx: number) {
+    ensureSpace(60);
     const cardY = doc.y;
-    doc.rect(L, cardY, CONTENT_W, 1).fill(BGLIGHT);
-    doc.moveDown(0.1);
 
-    // Number + title
-    doc.fontSize(9).fillColor(ACCENT).font("Helvetica-Bold")
-      .text(`${idx + 1}. ${fix.title}`, L + 8, doc.y, { width: CONTENT_W - 16 });
-    doc.moveDown(0.2);
+    // Left severity stripe
+    const stripeCol = severityColor(fix.tag);
+    doc.rect(L, cardY, 3, 52).fill(stripeCol);
 
-    tagBadge(fix.tag);
-    labelValue("Category", categoryLabel(fix.category), 8);
-    bodyText(fix.description, 8);
+    // Card background
+    doc.rect(L + 3, cardY, CONTENT_W - 3, 52).fill(BGLIGHT);
+
+    // Title row
+    const titleY = cardY + 6;
+    doc.fontSize(8.5).fillColor(NAVY).font("Helvetica-Bold")
+      .text(`${idx + 1}. ${sanitize(fix.title)}`, L + 10, titleY, { width: CONTENT_W - 90 });
+    severityPill(fix.tag, W - L - 68, titleY);
+
+    // Description (max 2 lines)
+    const descY = titleY + 14;
+    const desc = sanitize(fix.description);
+    doc.fontSize(8).fillColor(GRAY).font("Helvetica")
+      .text(desc, L + 10, descY, { width: CONTENT_W - 20, height: 18, ellipsis: true });
+
+    // Recommendation
     if (fix.suggestion) {
-      subHeader("  Recommendation");
-      bodyText(fix.suggestion, 8);
+      const recY = descY + 20;
+      doc.fontSize(7.5).fillColor(BLUE).font("Helvetica-Bold")
+        .text("ACTION: ", L + 10, recY, { continued: true, width: 50 });
+      doc.fillColor(BLACK).font("Helvetica")
+        .text(sanitize(fix.suggestion), { width: CONTENT_W - 60, height: 12, ellipsis: true });
     }
-    if (fix.exampleValue) {
-      labelValue("Example", fix.exampleValue, 8);
-    }
-    // Bottom rule
-    doc.moveTo(L, doc.y).lineTo(W - L, doc.y).lineWidth(0.3).strokeColor(BORDER).stroke();
-    doc.moveDown(0.4);
+
+    doc.y = cardY + 56;
+    doc.moveDown(0.2);
   }
 
-  // ── Cover Page ─────────────────────────────────────────────────────────────
+  // ══════════════════════════════════════════════════════════════════════════
+  // COVER PAGE
+  // ══════════════════════════════════════════════════════════════════════════
 
   // Navy header band
-  doc.rect(0, 0, W, 180).fill(ACCENT);
+  doc.rect(0, 0, W, 200).fill(NAVY);
 
   // Logo
   try {
     const logoBuffer = await fetchBuffer(LOGO_CDN_URL);
-    doc.image(logoBuffer, L, 20, { height: 32 });
+    doc.image(logoBuffer, L, 18, { height: 30 });
   } catch {
-    doc.fontSize(14).fillColor(WHITE).font("Helvetica-Bold").text("AGENTHINK MESH", L, 24);
+    doc.fontSize(13).fillColor(WHITE).font("Helvetica-Bold").text("AGENTHINK MESH", L, 22);
   }
 
-  // Report type label
-  doc.fontSize(8).fillColor(GOLD).font("Helvetica-Bold")
-    .text("INSTITUTIONAL INVESTMENT READINESS REPORT", L, 70, { width: CONTENT_W, align: "center" });
+  // Report type
+  doc.fontSize(7.5).fillColor(GOLD).font("Helvetica-Bold")
+    .text("INSTITUTIONAL INVESTMENT READINESS REPORT", L, 68, { width: CONTENT_W, align: "center", characterSpacing: 1 });
 
   // Deal name
-  const dealLines = wrap(input.dealName.toUpperCase(), 42);
-  let dealY = 90;
-  for (const line of dealLines) {
-    doc.fontSize(22).fillColor(WHITE).font("Helvetica-Bold")
-      .text(line, L, dealY, { width: CONTENT_W, align: "center" });
-    dealY += 28;
-  }
+  const dealName = sanitize(input.dealName).toUpperCase();
+  doc.fontSize(20).fillColor(WHITE).font("Helvetica-Bold")
+    .text(dealName, L, 88, { width: CONTENT_W, align: "center" });
 
   // Verdict badge
   const vLabel = verdictLabel(input.verdictBefore);
-  const vColor = ["REJECTED", "VETOED"].some(x => vLabel.includes(x)) ? RED
-    : vLabel.includes("CONDITIONAL") ? AMBER
-    : GREEN;
-  doc.fontSize(11).fillColor(vColor).font("Helvetica-Bold")
-    .text(`CURRENT VERDICT: ${vLabel}`, L, 155, { width: CONTENT_W, align: "center" });
+  const vColor = vLabel.includes("REJECTED") || vLabel.includes("VETOED") ? RED
+    : vLabel.includes("CONDITIONAL") ? AMBER : GREEN;
+  doc.fontSize(10).fillColor(vColor).font("Helvetica-Bold")
+    .text(`CURRENT VERDICT: ${vLabel}`, L, 148, { width: CONTENT_W, align: "center" });
 
-  // Meta row
-  doc.rect(0, 180, W, 36).fill("#F0F4F8");
-  doc.fontSize(8).fillColor(GRAY).font("Helvetica")
-    .text(`Generated: ${input.generatedAt ?? new Date().toISOString().split("T")[0]}   ·   Confidence: ${input.confidenceBefore}%   ·   Total Fixes: ${input.allFixes.length}   ·   AgenThinkMesh Decision Engine`, L, 193, { width: CONTENT_W, align: "center" });
+  // Meta strip
+  doc.rect(0, 200, W, 32).fill("#EEF2F7");
+  const genDate = sanitize(input.generatedAt ?? new Date().toISOString().split("T")[0]);
+  doc.fontSize(7.5).fillColor(GRAY).font("Helvetica")
+    .text(
+      `Generated: ${genDate}   ·   Confidence: ${safeNum(input.confidenceBefore, 0)}%   ·   Fixes Identified: ${input.allFixes.length}   ·   Critical: ${criticalCount}   ·   AgenThinkMesh Decision Engine`,
+      L, 212, { width: CONTENT_W, align: "center" }
+    );
 
-  doc.y = 230;
+  doc.y = 248;
 
-  // ── Preamble ───────────────────────────────────────────────────────────────
-  doc.fontSize(9).fillColor(GRAY).font("Helvetica")
-    .text("This report has been generated by the AgenThinkMesh Decision Upgrade Engine. It identifies the specific inputs, structural issues, performance gaps, and narrative improvements required to improve this deal's investment readiness. Each fix is tagged by type and ranked by impact. Apply the required fixes and re-run the Council of 10 to validate the upgraded verdict.", L, doc.y, { width: CONTENT_W, align: "justify" });
-  doc.moveDown(1);
+  // ══════════════════════════════════════════════════════════════════════════
+  // PAGE 1 — Executive Summary · KPI Strip · Core Thesis Breakers · Readiness Score · Fastest Path
+  // ══════════════════════════════════════════════════════════════════════════
 
-  // ── Section 1: Executive Summary ──────────────────────────────────────────
-  sectionHeader(1, "Executive Summary");
+  // ── Executive Summary ─────────────────────────────────────────────────────
+  sectionHeader("Executive Summary");
 
-  const expectedVerdict = input.expectedOutcomeShift.predictedVerdict;
-  const confDelta = input.expectedOutcomeShift.confidenceDelta;
+  // KPI tile strip (6 tiles)
+  const tileW = Math.floor(CONTENT_W / 3) - 4;
+  const tileH = 44;
+  const tileY = doc.y;
+  const kpis = [
+    { label: "Current Verdict",    value: vLabel,                                color: vColor },
+    { label: "Expected Verdict",   value: verdictLabel(input.expectedOutcomeShift.predictedVerdict), color: GREEN },
+    { label: "Confidence Shift",   value: `${confDelta >= 0 ? "+" : ""}${confDelta}%`, color: confDelta >= 0 ? GREEN : RED },
+    { label: "Critical Issues",    value: `${criticalCount}`,                    color: criticalCount > 3 ? RED : AMBER },
+    { label: "Highest-Risk Area",  value: categoryLabel(highestRiskArea),        color: AMBER },
+    { label: "Readiness Score",    value: `${scores.overall}/100`,               color: scores.overall >= 60 ? GREEN : scores.overall >= 35 ? AMBER : RED },
+  ];
+  kpis.forEach((kpi, i) => {
+    const col = i % 3;
+    const row = Math.floor(i / 3);
+    const tx = L + col * (tileW + 4);
+    const ty = tileY + row * (tileH + 4);
+    doc.rect(tx, ty, tileW, tileH).fill(BGLIGHT);
+    doc.moveTo(tx, ty).lineTo(tx + tileW, ty).lineWidth(2).strokeColor(kpi.color).stroke();
+    doc.fontSize(6.5).fillColor(LGRAY).font("Helvetica")
+      .text(kpi.label.toUpperCase(), tx + 6, ty + 6, { width: tileW - 12 });
+    doc.fontSize(9.5).fillColor(kpi.color).font("Helvetica-Bold")
+      .text(sanitize(kpi.value), tx + 6, ty + 18, { width: tileW - 12, height: 20, ellipsis: true });
+  });
+  doc.y = tileY + 2 * (tileH + 4) + 8;
 
-  labelValue("Current Verdict", verdictLabel(input.verdictBefore));
-  labelValue("Current Confidence", `${input.confidenceBefore}%`);
-  labelValue("Expected Upgraded Verdict", verdictLabel(expectedVerdict));
-  labelValue("Expected Confidence Delta", `${confDelta >= 0 ? "+" : ""}${confDelta}%`);
-  labelValue("Total Fixes Identified", `${input.allFixes.length}`);
-  labelValue("User-Required Fixes", `${input.allFixes.filter(f => f.tag === "USER_REQUIRED").length}`);
-  labelValue("AI-Inferred Fixes", `${input.allFixes.filter(f => f.tag === "ASSUMED" || f.tag === "IMPROVED").length}`);
-
-  doc.moveDown(0.4);
+  // Why this deal failed
   if (input.expectedOutcomeShift.rationale) {
-    subHeader("Why This Deal Failed / Passed Conditionally");
-    bodyText(input.expectedOutcomeShift.rationale);
+    body(sanitize(input.expectedOutcomeShift.rationale));
   }
 
-  // ── Section 2: Required Missing Inputs ────────────────────────────────────
-  if (input.missingInputs.length > 0) {
-    sectionHeader(2, "Required Missing Inputs");
-    bodyText(`${input.missingInputs.length} missing input${input.missingInputs.length !== 1 ? "s" : ""} identified. These are data points the Council of 10 could not evaluate due to absence of evidence.`);
-    doc.moveDown(0.3);
-    input.missingInputs.forEach((fix, i) => fixCard(fix, i));
-  }
+  // ── Core Thesis Breakers ──────────────────────────────────────────────────
+  sectionHeader("Core Investment Thesis Breakers");
+  body("The following issues represent the primary reasons this deal currently fails institutional screening:");
+  thesisBreakers.forEach((t, i) => bullet(`${i + 1}. ${sanitize(t)}`));
 
-  // ── Section 3: Performance Gaps ───────────────────────────────────────────
-  if (input.performanceGaps.length > 0) {
-    sectionHeader(3, "Performance Gaps");
-    bodyText(`${input.performanceGaps.length} performance gap${input.performanceGaps.length !== 1 ? "s" : ""} identified. These are areas where the deal's metrics fall below institutional benchmarks.`);
-    doc.moveDown(0.3);
-    input.performanceGaps.forEach((fix, i) => fixCard(fix, i));
-  }
-
-  // ── Section 4: Structural Weaknesses ──────────────────────────────────────
-  if (input.structuralIssues.length > 0) {
-    sectionHeader(4, "Structural Weaknesses");
-    bodyText(`${input.structuralIssues.length} structural issue${input.structuralIssues.length !== 1 ? "s" : ""} identified. These include moat, governance, funding, execution, and commercial model concerns.`);
-    doc.moveDown(0.3);
-    input.structuralIssues.forEach((fix, i) => fixCard(fix, i));
-  }
-
-  // ── Section 5: Risk Mitigation Requirements ───────────────────────────────
-  if (input.riskMitigationActions.length > 0) {
-    sectionHeader(5, "Risk Mitigation Requirements");
-    bodyText(`${input.riskMitigationActions.length} risk mitigation action${input.riskMitigationActions.length !== 1 ? "s" : ""} required before investment can proceed.`);
-    doc.moveDown(0.3);
-    input.riskMitigationActions.forEach((fix, i) => fixCard(fix, i));
-  }
-
-  // ── Section 6: Narrative Improvements ────────────────────────────────────
-  sectionHeader(6, "Narrative Improvements");
-  if (input.narrativeFix.original || input.narrativeFix.improved) {
-    subHeader("Original Narrative");
-    bodyText(input.narrativeFix.original || "—");
-    doc.moveDown(0.3);
-    subHeader("Improved Narrative");
-    bodyText(input.narrativeFix.improved || "—");
-    doc.moveDown(0.3);
-    subHeader("Rationale");
-    bodyText(input.narrativeFix.rationale || "—");
-  } else {
-    bodyText("No narrative improvement required.");
-  }
-
-  // ── Section 7: Upgrade Impact Forecast ───────────────────────────────────
-  sectionHeader(7, "Upgrade Impact Forecast");
-  labelValue("Predicted Verdict (All Fixes Applied)", verdictLabel(input.expectedOutcomeShift.predictedVerdict));
-  labelValue("Expected Confidence Change", `${confDelta >= 0 ? "+" : ""}${confDelta}%`);
+  // ── Investment Readiness Score ────────────────────────────────────────────
+  sectionHeader("Investment Readiness Score");
+  body(`Overall readiness: ${scores.overall}/100. Scores below 50 indicate material blockers that preclude institutional capital.`);
   doc.moveDown(0.3);
-  bodyText(input.expectedOutcomeShift.rationale || "Apply all USER_REQUIRED fixes first. AI-inferred fixes (ASSUMED/IMPROVED) will further strengthen the narrative but require human validation.");
+  const scoreRows = [
+    ["Team & Execution",  scores.team],
+    ["Market & Scalability", scores.market],
+    ["Financials",        scores.financials],
+    ["Defensibility",     scores.defensibility],
+    ["Governance",        scores.governance],
+    ["Scalability",       scores.scalability],
+  ] as [string, number][];
+  const scoreStartY = doc.y;
+  scoreRows.forEach((row, i) => {
+    scoreBar(row[0], row[1], scoreStartY + i * 16);
+  });
+  doc.y = scoreStartY + scoreRows.length * 16 + 8;
 
-  // Remaining blockers
+  // ── Fastest Path to Investability ────────────────────────────────────────
+  sectionHeader("Fastest Path to Investability");
+  body("Applying the following changes would most improve approval probability:");
+  fastestPath.forEach((fix, i) => {
+    ensureSpace(20);
+    doc.fontSize(8.5).fillColor(NAVY).font("Helvetica-Bold")
+      .text(`${i + 1}. ${sanitize(fix.title)}`, L + 8, doc.y, { continued: true, width: CONTENT_W - 80 });
+    severityPill(fix.tag, W - L - 68, doc.y - 2);
+    doc.moveDown(0.15);
+    body(sanitize(fix.suggestion || fix.description), 16);
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // PAGE 2 — Critical Missing Inputs · Structural Weaknesses · Severity Matrix
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── Critical Missing Inputs ───────────────────────────────────────────────
+  if (input.missingInputs.length > 0) {
+    sectionHeader("Critical Missing Inputs", true);
+    body(`${input.missingInputs.length} missing input${input.missingInputs.length !== 1 ? "s" : ""} identified. The Council could not evaluate these dimensions due to absent evidence.`);
+    doc.moveDown(0.3);
+    input.missingInputs.forEach((fix, i) => issueCard(fix, i));
+  }
+
+  // ── Structural Weaknesses ─────────────────────────────────────────────────
+  if (input.structuralIssues.length > 0) {
+    sectionHeader("Structural Weaknesses");
+    body(`${input.structuralIssues.length} structural issue${input.structuralIssues.length !== 1 ? "s" : ""} identified. These include moat, governance, funding, execution, and commercial model concerns.`);
+    doc.moveDown(0.3);
+    input.structuralIssues.forEach((fix, i) => issueCard(fix, i));
+  }
+
+  // ── Severity Matrix ───────────────────────────────────────────────────────
+  sectionHeader("Severity Matrix");
+  const matrixData = [
+    { sev: "CRITICAL", col: RED,   bg: RED_LT,   count: input.allFixes.filter(f => f.tag === "USER_REQUIRED").length, desc: "Immediate action required. Blocks institutional approval." },
+    { sev: "HIGH",     col: AMBER, bg: AMBER_LT, count: input.allFixes.filter(f => f.tag === "ASSUMED").length,       desc: "Significant risk. Address before IC presentation." },
+    { sev: "MEDIUM",   col: BLUE,  bg: BLUE_LT,  count: input.allFixes.filter(f => f.tag === "IMPROVED").length,      desc: "Improvement opportunity. Strengthens investment thesis." },
+  ];
+  matrixData.forEach(row => {
+    ensureSpace(22);
+    const rowY = doc.y;
+    doc.rect(L, rowY, CONTENT_W, 18).fill(row.bg);
+    doc.rect(L, rowY, 4, 18).fill(row.col);
+    doc.fontSize(7.5).fillColor(row.col).font("Helvetica-Bold")
+      .text(row.sev, L + 10, rowY + 5, { width: 60 });
+    doc.fontSize(7.5).fillColor(GRAY).font("Helvetica")
+      .text(`${row.count} issue${row.count !== 1 ? "s" : ""}  —  ${row.desc}`, L + 75, rowY + 5, { width: CONTENT_W - 85 });
+    doc.y = rowY + 22;
+  });
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // PAGE 3 — Performance Gaps · Market & Scalability · Investor Fit Analysis
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── Performance Gaps ──────────────────────────────────────────────────────
+  if (input.performanceGaps.length > 0) {
+    sectionHeader("Performance Gaps", true);
+    body(`${input.performanceGaps.length} performance gap${input.performanceGaps.length !== 1 ? "s" : ""} identified. Metrics fall below institutional benchmarks in the following areas:`);
+    doc.moveDown(0.3);
+    input.performanceGaps.forEach((fix, i) => issueCard(fix, i));
+  } else {
+    sectionHeader("Performance Gaps", true);
+    body("No performance gaps identified. Deal metrics meet or exceed institutional benchmarks.");
+  }
+
+  // ── Investor Fit Analysis ─────────────────────────────────────────────────
+  sectionHeader("Investor Fit Analysis");
+  ensureSpace(50);
+  const fitY = doc.y;
+  const fitCol = investorFit.fit.includes("REJECT") ? RED
+    : investorFit.fit.includes("FAMILY") ? AMBER
+    : investorFit.fit.includes("VENTURE") ? BLUE : GREEN;
+  doc.rect(L, fitY, CONTENT_W, 36).fill(BGLIGHT);
+  doc.moveTo(L, fitY).lineTo(L + CONTENT_W, fitY).lineWidth(2).strokeColor(fitCol).stroke();
+  doc.fontSize(9).fillColor(fitCol).font("Helvetica-Bold")
+    .text(sanitize(investorFit.fit), L + 8, fitY + 8, { width: CONTENT_W - 16 });
+  doc.fontSize(8).fillColor(GRAY).font("Helvetica")
+    .text(sanitize(investorFit.rationale), L + 8, fitY + 22, { width: CONTENT_W - 16, height: 12, ellipsis: true });
+  doc.y = fitY + 44;
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // PAGE 4 — Risk Mitigation · Governance Concerns · Capital Readiness
+  // ══════════════════════════════════════════════════════════════════════════
+
+  // ── Risk Mitigation Requirements ─────────────────────────────────────────
+  if (input.riskMitigationActions.length > 0) {
+    sectionHeader("Risk Mitigation Requirements", true);
+    body(`${input.riskMitigationActions.length} risk mitigation action${input.riskMitigationActions.length !== 1 ? "s" : ""} required before investment can proceed.`);
+    doc.moveDown(0.3);
+    input.riskMitigationActions.forEach((fix, i) => issueCard(fix, i));
+  } else {
+    sectionHeader("Risk Mitigation Requirements", true);
+    body("No outstanding risk mitigation actions identified at this stage.");
+  }
+
+  // ── Capital Readiness ─────────────────────────────────────────────────────
+  sectionHeader("Capital Readiness");
+  ensureSpace(44);
+  const capY = doc.y;
+  const capCritical = criticalCount;
+  const capCol = capCritical >= 5 ? RED : capCritical >= 3 ? AMBER : GREEN;
+  doc.rect(L, capY, CONTENT_W, 36).fill(BGLIGHT);
+  doc.rect(L, capY, 4, 36).fill(capCol);
+  doc.fontSize(8.5).fillColor(BLACK).font("Helvetica")
+    .text(sanitize(capitalReadiness), L + 10, capY + 8, { width: CONTENT_W - 18, lineGap: 1.5 });
+  doc.y = capY + 44;
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // PAGE 5 — Narrative Improvements · Re-run Summary · Expected Upgraded Outcome
+  // ══════════════════════════════════════════════════════════════════════════
+
+  sectionHeader("Narrative Improvements", true);
+  if (sanitize(input.narrativeFix.original) || sanitize(input.narrativeFix.improved)) {
+    subHead("Original Narrative");
+    body(sanitize(input.narrativeFix.original) || "—");
+    doc.moveDown(0.3);
+    subHead("Improved Narrative");
+    body(sanitize(input.narrativeFix.improved) || "—");
+    if (input.narrativeFix.rationale) {
+      doc.moveDown(0.2);
+      subHead("Rationale");
+      body(sanitize(input.narrativeFix.rationale));
+    }
+  } else {
+    body("No narrative improvement required.");
+  }
+
+  // ── Upgrade Impact Forecast ───────────────────────────────────────────────
+  sectionHeader("Upgrade Impact Forecast");
+  labelVal("Predicted Verdict (All Fixes Applied)", verdictLabel(input.expectedOutcomeShift.predictedVerdict));
+  labelVal("Expected Confidence Change", `${confDelta >= 0 ? "+" : ""}${confDelta}%`);
+  doc.moveDown(0.3);
+  if (input.expectedOutcomeShift.rationale) {
+    body(sanitize(input.expectedOutcomeShift.rationale));
+  }
   const blockers = input.allFixes.filter(f => f.tag === "USER_REQUIRED");
   if (blockers.length > 0) {
     doc.moveDown(0.3);
-    subHeader("Remaining Blockers (User Action Required)");
-    blockers.forEach((b, i) => {
-      bodyText(`${i + 1}. ${b.title} — ${b.description}`, 8);
-    });
+    subHead("Remaining Blockers (Action Required)");
+    blockers.forEach((b, i) => bullet(`${i + 1}. ${sanitize(b.title)} — ${sanitize(b.description)}`));
   }
 
-  // ── Section 8: Re-run Summary (if delta available) ────────────────────────
+  // ── Re-run Summary ────────────────────────────────────────────────────────
   if (input.delta) {
     const d = input.delta;
-    sectionHeader(8, "Re-run Summary");
-    bodyText("The following comparison reflects the council re-evaluation after applying the selected fixes.");
-    doc.moveDown(0.3);
-
-    labelValue("Verdict Before", verdictLabel(d.verdictBefore));
-    labelValue("Verdict After", verdictLabel(d.verdictAfter));
-    labelValue("Verdict Changed", d.verdictChanged ? "YES" : "NO");
-    labelValue("Confidence Before", `${d.confidenceBefore}%`);
-    labelValue("Confidence After", `${d.confidenceAfter}%`);
-    labelValue("Confidence Delta", `${d.confidenceDelta >= 0 ? "+" : ""}${d.confidenceDelta}%`);
+    sectionHeader("Re-run Summary");
+    body("Council re-evaluation after applying selected fixes:");
+    doc.moveDown(0.2);
+    labelVal("Verdict Before", verdictLabel(d.verdictBefore));
+    labelVal("Verdict After", verdictLabel(d.verdictAfter));
+    labelVal("Verdict Changed", d.verdictChanged ? "YES" : "NO");
+    labelVal("Confidence Before", `${safeNum(d.confidenceBefore, 0)}%`);
+    labelVal("Confidence After", `${safeNum(d.confidenceAfter, 0)}%`);
+    labelVal("Confidence Delta", `${safeNum(d.confidenceDelta, 1) >= 0 ? "+" : ""}${safeNum(d.confidenceDelta, 1)}%`);
 
     if (d.keyMetricChanges.length > 0) {
       doc.moveDown(0.3);
-      subHeader("Key Metric Changes");
+      subHead("Key Metric Changes");
       d.keyMetricChanges.forEach(m => {
-        const arrow = m.direction === "improved" ? "↑" : m.direction === "worsened" ? "↓" : "→";
-        bodyText(`${arrow} ${m.metric}: ${m.before} → ${m.after}`, 8);
+        const arrow = m.direction === "improved" ? "+" : m.direction === "worsened" ? "-" : "~";
+        bullet(`[${arrow}] ${sanitize(m.metric)}: ${sanitize(m.before)} → ${sanitize(m.after)}`);
       });
     }
-
     if (d.topImprovementFactors.length > 0) {
       doc.moveDown(0.3);
-      subHeader("Top Improvement Factors");
-      d.topImprovementFactors.forEach((f, i) => bodyText(`${i + 1}. ${f}`, 8));
+      subHead("Top Improvement Factors");
+      d.topImprovementFactors.forEach((f, i) => bullet(`${i + 1}. ${sanitize(f)}`));
     }
-
     if (d.remainingGaps.length > 0) {
       doc.moveDown(0.3);
-      subHeader("Remaining Gaps");
-      d.remainingGaps.forEach((g, i) => bodyText(`${i + 1}. ${g}`, 8));
+      subHead("Remaining Gaps");
+      d.remainingGaps.forEach((g, i) => bullet(`${i + 1}. ${sanitize(g)}`));
     }
-
     if (d.summary) {
       doc.moveDown(0.3);
-      subHeader("Summary");
-      bodyText(d.summary);
+      subHead("Summary");
+      body(sanitize(d.summary));
     }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // APPENDIX — Full Issue Log
+  // ══════════════════════════════════════════════════════════════════════════
+
+  if (input.allFixes.length > 0) {
+    newPage();
+    doc.fontSize(10).fillColor(NAVY).font("Helvetica-Bold")
+      .text("APPENDIX — FULL ISSUE LOG", L, doc.y, { width: CONTENT_W });
+    doc.moveDown(0.4);
+    rule(NAVY_LT, 0.6);
+    doc.moveDown(0.4);
+    body(`Complete log of all ${input.allFixes.length} identified issues, ordered by severity.`);
+    doc.moveDown(0.3);
+
+    const sorted = [...input.allFixes].sort((a, b) => {
+      const order = { USER_REQUIRED: 0, ASSUMED: 1, IMPROVED: 2 };
+      return (order[a.tag] ?? 3) - (order[b.tag] ?? 3);
+    });
+    sorted.forEach((fix, i) => issueCard(fix, i));
   }
 
   // ── Footer on all pages ───────────────────────────────────────────────────
   const range = doc.bufferedPageRange();
   for (let i = 0; i < range.count; i++) {
     doc.switchToPage(range.start + i);
-    doc.fontSize(7).fillColor(LGRAY).font("Helvetica")
+    doc.fontSize(6.5).fillColor(LGRAY).font("Helvetica")
       .text(
-        `AgenThinkMesh · Investment Readiness Report · ${input.dealName} · Page ${i + 1} of ${range.count}`,
-        L, 820, { width: CONTENT_W, align: "center" }
+        `AgenThinkMesh  ·  Investment Readiness Report  ·  ${sanitize(input.dealName)}  ·  Page ${i + 1} of ${range.count}`,
+        L, 826, { width: CONTENT_W, align: "center" }
       );
   }
 
@@ -438,142 +750,193 @@ export async function generateUpgradeProtocolPdf(input: UpgradeProtocolInput): P
 
 export function generateUpgradeProtocolText(input: UpgradeProtocolInput): string {
   const lines: string[] = [];
-  const sep = "═".repeat(60);
-  const dash = "─".repeat(60);
+  const sep  = "═".repeat(70);
+  const dash = "─".repeat(70);
+
+  const confDelta = safeNum(input.expectedOutcomeShift.confidenceDelta, 1);
+  const scores = computeReadinessScore(input);
+  const investorFit = deriveInvestorFit(input);
+  const capitalReadiness = deriveCapitalReadiness(input);
+  const thesisBreakers = getThesisBreakers(input);
+  const fastestPath = getFastestPath(input);
+  const criticalCount = input.allFixes.filter(f => f.tag === "USER_REQUIRED").length;
 
   lines.push(sep);
   lines.push("INSTITUTIONAL INVESTMENT READINESS REPORT");
-  lines.push(`Deal: ${input.dealName}`);
-  lines.push(`Generated: ${input.generatedAt ?? new Date().toISOString()}`);
+  lines.push(`Deal: ${sanitize(input.dealName)}`);
+  lines.push(`Generated: ${sanitize(input.generatedAt ?? new Date().toISOString().split("T")[0])}`);
   lines.push(sep);
   lines.push("");
 
-  // Section 1
+  // 1. Executive Summary
   lines.push("1. EXECUTIVE SUMMARY");
   lines.push(dash);
-  lines.push(`Current Verdict:          ${verdictLabel(input.verdictBefore)}`);
-  lines.push(`Current Confidence:       ${input.confidenceBefore}%`);
+  lines.push(`Current Verdict:           ${verdictLabel(input.verdictBefore)}`);
+  lines.push(`Current Confidence:        ${safeNum(input.confidenceBefore, 0)}%`);
   lines.push(`Expected Upgraded Verdict: ${verdictLabel(input.expectedOutcomeShift.predictedVerdict)}`);
-  lines.push(`Expected Confidence Delta: ${input.expectedOutcomeShift.confidenceDelta >= 0 ? "+" : ""}${input.expectedOutcomeShift.confidenceDelta}%`);
-  lines.push(`Total Fixes Identified:   ${input.allFixes.length}`);
-  lines.push(`User-Required Fixes:      ${input.allFixes.filter(f => f.tag === "USER_REQUIRED").length}`);
-  lines.push(`AI-Inferred Fixes:        ${input.allFixes.filter(f => f.tag === "ASSUMED" || f.tag === "IMPROVED").length}`);
+  lines.push(`Expected Confidence Delta: ${confDelta >= 0 ? "+" : ""}${confDelta}%`);
+  lines.push(`Total Fixes Identified:    ${input.allFixes.length}`);
+  lines.push(`Critical (User-Required):  ${criticalCount}`);
+  lines.push(`Readiness Score:           ${scores.overall}/100`);
   if (input.expectedOutcomeShift.rationale) {
     lines.push("");
-    lines.push(input.expectedOutcomeShift.rationale);
+    lines.push(sanitize(input.expectedOutcomeShift.rationale));
   }
   lines.push("");
 
-  // Section 2
+  // 2. Core Thesis Breakers
+  lines.push("2. CORE INVESTMENT THESIS BREAKERS");
+  lines.push(dash);
+  thesisBreakers.forEach((t, i) => lines.push(`  ${i + 1}. ${sanitize(t)}`));
+  lines.push("");
+
+  // 3. Investment Readiness Score
+  lines.push("3. INVESTMENT READINESS SCORE");
+  lines.push(dash);
+  lines.push(`  Overall:       ${scores.overall}/100`);
+  lines.push(`  Team:          ${scores.team}/100`);
+  lines.push(`  Market:        ${scores.market}/100`);
+  lines.push(`  Financials:    ${scores.financials}/100`);
+  lines.push(`  Defensibility: ${scores.defensibility}/100`);
+  lines.push(`  Governance:    ${scores.governance}/100`);
+  lines.push(`  Scalability:   ${scores.scalability}/100`);
+  lines.push("");
+
+  // 4. Fastest Path to Investability
+  lines.push("4. FASTEST PATH TO INVESTABILITY");
+  lines.push(dash);
+  fastestPath.forEach((fix, i) => {
+    lines.push(`  ${i + 1}. [${severityLabel(fix.tag)}] ${sanitize(fix.title)}`);
+    lines.push(`     ${sanitize(fix.suggestion || fix.description)}`);
+  });
+  lines.push("");
+
+  // 5. Missing Inputs
   if (input.missingInputs.length > 0) {
-    lines.push("2. REQUIRED MISSING INPUTS");
+    lines.push("5. CRITICAL MISSING INPUTS");
     lines.push(dash);
     input.missingInputs.forEach((fix, i) => {
-      lines.push(`${i + 1}. [${tagLabel(fix.tag)}] ${fix.title}`);
-      lines.push(`   Category: ${categoryLabel(fix.category)}`);
-      lines.push(`   ${fix.description}`);
-      if (fix.suggestion) lines.push(`   Recommendation: ${fix.suggestion}`);
+      lines.push(`  ${i + 1}. [${severityLabel(fix.tag)}] ${sanitize(fix.title)}`);
+      lines.push(`     ${sanitize(fix.description)}`);
+      if (fix.suggestion) lines.push(`     Action: ${sanitize(fix.suggestion)}`);
       lines.push("");
     });
   }
 
-  // Section 3
-  if (input.performanceGaps.length > 0) {
-    lines.push("3. PERFORMANCE GAPS");
-    lines.push(dash);
-    input.performanceGaps.forEach((fix, i) => {
-      lines.push(`${i + 1}. [${tagLabel(fix.tag)}] ${fix.title}`);
-      lines.push(`   ${fix.description}`);
-      if (fix.suggestion) lines.push(`   Recommendation: ${fix.suggestion}`);
-      lines.push("");
-    });
-  }
-
-  // Section 4
+  // 6. Structural Weaknesses
   if (input.structuralIssues.length > 0) {
-    lines.push("4. STRUCTURAL WEAKNESSES");
+    lines.push("6. STRUCTURAL WEAKNESSES");
     lines.push(dash);
     input.structuralIssues.forEach((fix, i) => {
-      lines.push(`${i + 1}. [${tagLabel(fix.tag)}] ${fix.title}`);
-      lines.push(`   ${fix.description}`);
-      if (fix.suggestion) lines.push(`   Recommendation: ${fix.suggestion}`);
+      lines.push(`  ${i + 1}. [${severityLabel(fix.tag)}] ${sanitize(fix.title)}`);
+      lines.push(`     ${sanitize(fix.description)}`);
+      if (fix.suggestion) lines.push(`     Action: ${sanitize(fix.suggestion)}`);
       lines.push("");
     });
   }
 
-  // Section 5
+  // 7. Performance Gaps
+  if (input.performanceGaps.length > 0) {
+    lines.push("7. PERFORMANCE GAPS");
+    lines.push(dash);
+    input.performanceGaps.forEach((fix, i) => {
+      lines.push(`  ${i + 1}. [${severityLabel(fix.tag)}] ${sanitize(fix.title)}`);
+      lines.push(`     ${sanitize(fix.description)}`);
+      if (fix.suggestion) lines.push(`     Action: ${sanitize(fix.suggestion)}`);
+      lines.push("");
+    });
+  }
+
+  // 8. Investor Fit
+  lines.push("8. INVESTOR FIT ANALYSIS");
+  lines.push(dash);
+  lines.push(`  Fit: ${sanitize(investorFit.fit)}`);
+  lines.push(`  ${sanitize(investorFit.rationale)}`);
+  lines.push("");
+
+  // 9. Risk Mitigation
   if (input.riskMitigationActions.length > 0) {
-    lines.push("5. RISK MITIGATION REQUIREMENTS");
+    lines.push("9. RISK MITIGATION REQUIREMENTS");
     lines.push(dash);
     input.riskMitigationActions.forEach((fix, i) => {
-      lines.push(`${i + 1}. [${tagLabel(fix.tag)}] ${fix.title}`);
-      lines.push(`   ${fix.description}`);
-      if (fix.suggestion) lines.push(`   Recommendation: ${fix.suggestion}`);
+      lines.push(`  ${i + 1}. [${severityLabel(fix.tag)}] ${sanitize(fix.title)}`);
+      lines.push(`     ${sanitize(fix.description)}`);
+      if (fix.suggestion) lines.push(`     Action: ${sanitize(fix.suggestion)}`);
       lines.push("");
     });
   }
 
-  // Section 6
-  lines.push("6. NARRATIVE IMPROVEMENTS");
+  // 10. Capital Readiness
+  lines.push("10. CAPITAL READINESS");
   lines.push(dash);
-  lines.push(`Original: ${input.narrativeFix.original || "—"}`);
-  lines.push(`Improved: ${input.narrativeFix.improved || "—"}`);
-  lines.push(`Rationale: ${input.narrativeFix.rationale || "—"}`);
+  lines.push(`  ${sanitize(capitalReadiness)}`);
   lines.push("");
 
-  // Section 7
-  lines.push("7. UPGRADE IMPACT FORECAST");
+  // 11. Narrative Improvements
+  lines.push("11. NARRATIVE IMPROVEMENTS");
   lines.push(dash);
-  lines.push(`Predicted Verdict (All Fixes Applied): ${verdictLabel(input.expectedOutcomeShift.predictedVerdict)}`);
-  lines.push(`Expected Confidence Change: ${input.expectedOutcomeShift.confidenceDelta >= 0 ? "+" : ""}${input.expectedOutcomeShift.confidenceDelta}%`);
+  lines.push(`  Original: ${sanitize(input.narrativeFix.original) || "—"}`);
+  lines.push(`  Improved: ${sanitize(input.narrativeFix.improved) || "—"}`);
+  if (input.narrativeFix.rationale) {
+    lines.push(`  Rationale: ${sanitize(input.narrativeFix.rationale)}`);
+  }
   lines.push("");
-  lines.push(input.expectedOutcomeShift.rationale || "");
+
+  // 12. Upgrade Impact Forecast
+  lines.push("12. UPGRADE IMPACT FORECAST");
+  lines.push(dash);
+  lines.push(`  Predicted Verdict:    ${verdictLabel(input.expectedOutcomeShift.predictedVerdict)}`);
+  lines.push(`  Confidence Change:    ${confDelta >= 0 ? "+" : ""}${confDelta}%`);
+  if (input.expectedOutcomeShift.rationale) {
+    lines.push("");
+    lines.push(`  ${sanitize(input.expectedOutcomeShift.rationale)}`);
+  }
   const blockers = input.allFixes.filter(f => f.tag === "USER_REQUIRED");
   if (blockers.length > 0) {
     lines.push("");
-    lines.push("Remaining Blockers (User Action Required):");
-    blockers.forEach((b, i) => lines.push(`  ${i + 1}. ${b.title} — ${b.description}`));
+    lines.push("  Remaining Blockers:");
+    blockers.forEach((b, i) => lines.push(`    ${i + 1}. ${sanitize(b.title)} — ${sanitize(b.description)}`));
   }
   lines.push("");
 
-  // Section 8
+  // 13. Re-run Summary
   if (input.delta) {
     const d = input.delta;
-    lines.push("8. RE-RUN SUMMARY");
+    lines.push("13. RE-RUN SUMMARY");
     lines.push(dash);
-    lines.push(`Verdict Before:    ${verdictLabel(d.verdictBefore)}`);
-    lines.push(`Verdict After:     ${verdictLabel(d.verdictAfter)}`);
-    lines.push(`Verdict Changed:   ${d.verdictChanged ? "YES" : "NO"}`);
-    lines.push(`Confidence Before: ${d.confidenceBefore}%`);
-    lines.push(`Confidence After:  ${d.confidenceAfter}%`);
-    lines.push(`Confidence Delta:  ${d.confidenceDelta >= 0 ? "+" : ""}${d.confidenceDelta}%`);
+    lines.push(`  Verdict Before:    ${verdictLabel(d.verdictBefore)}`);
+    lines.push(`  Verdict After:     ${verdictLabel(d.verdictAfter)}`);
+    lines.push(`  Verdict Changed:   ${d.verdictChanged ? "YES" : "NO"}`);
+    lines.push(`  Confidence Before: ${safeNum(d.confidenceBefore, 0)}%`);
+    lines.push(`  Confidence After:  ${safeNum(d.confidenceAfter, 0)}%`);
+    lines.push(`  Confidence Delta:  ${safeNum(d.confidenceDelta, 1) >= 0 ? "+" : ""}${safeNum(d.confidenceDelta, 1)}%`);
     if (d.keyMetricChanges.length > 0) {
       lines.push("");
-      lines.push("Key Metric Changes:");
+      lines.push("  Key Metric Changes:");
       d.keyMetricChanges.forEach(m => {
-        const arrow = m.direction === "improved" ? "↑" : m.direction === "worsened" ? "↓" : "→";
-        lines.push(`  ${arrow} ${m.metric}: ${m.before} → ${m.after}`);
+        const arrow = m.direction === "improved" ? "+" : m.direction === "worsened" ? "-" : "~";
+        lines.push(`    [${arrow}] ${sanitize(m.metric)}: ${sanitize(m.before)} → ${sanitize(m.after)}`);
       });
     }
     if (d.topImprovementFactors.length > 0) {
       lines.push("");
-      lines.push("Top Improvement Factors:");
-      d.topImprovementFactors.forEach((f, i) => lines.push(`  ${i + 1}. ${f}`));
+      lines.push("  Top Improvement Factors:");
+      d.topImprovementFactors.forEach((f, i) => lines.push(`    ${i + 1}. ${sanitize(f)}`));
     }
     if (d.remainingGaps.length > 0) {
       lines.push("");
-      lines.push("Remaining Gaps:");
-      d.remainingGaps.forEach((g, i) => lines.push(`  ${i + 1}. ${g}`));
+      lines.push("  Remaining Gaps:");
+      d.remainingGaps.forEach((g, i) => lines.push(`    ${i + 1}. ${sanitize(g)}`));
     }
     if (d.summary) {
       lines.push("");
-      lines.push(d.summary);
+      lines.push(`  ${sanitize(d.summary)}`);
     }
     lines.push("");
   }
 
   lines.push(sep);
-  lines.push("END OF REPORT — AgenThinkMesh Decision Upgrade Engine");
+  lines.push("END OF REPORT — AgenThinkMesh Investment Readiness Engine");
   lines.push(sep);
 
   return lines.join("\n");
