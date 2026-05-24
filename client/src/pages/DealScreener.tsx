@@ -771,17 +771,34 @@ function DecisionIntegritySection({ di }: { di: DecisionIntegrityData }) {
 }
 // ── DecisionIntegritySection ───────────────────────────────────────────────────────────────
 // ── PersonaLoadingGrid ───────────────────────────────────────────────────────────────
-function PersonaLoadingGrid({ councilMode = "gcc" }: { councilMode?: CouncilModeType }) {
+function PersonaLoadingGrid({ councilMode = "gcc", loadingStartedAt }: { councilMode?: CouncilModeType; loadingStartedAt?: React.MutableRefObject<number | null> }) {
   const personaOrder = PERSONA_ORDERS[councilMode] ?? PERSONA_ORDERS.gcc;
-  const [active, setActive] = useState(0);
+  const TOTAL_MS = 30_000;
+  const SEQUENCE_MS = 28_000; // personas complete over first 28s
+  const DELIBERATION_THRESHOLD_MS = TOTAL_MS - 5_000; // last 5s = deliberation
 
+  const [elapsed, setElapsed] = useState(0);
+
+  // Tick every 200ms to drive both the persona sequence and status message
   useEffect(() => {
-    setActive(0);
-    const interval = setInterval(() => {
-      setActive((prev) => (prev < personaOrder.length - 1 ? prev + 1 : prev));
-    }, 1800);
-    return () => clearInterval(interval);
-  }, [councilMode]);
+    const start = loadingStartedAt?.current ?? Date.now();
+    // Reset elapsed when councilMode changes (new submission)
+    setElapsed(0);
+    const timer = setInterval(() => {
+      setElapsed(Date.now() - start);
+    }, 200);
+    return () => clearInterval(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [councilMode, loadingStartedAt]);
+
+  // How many personas are "done" based on elapsed time (spread evenly over SEQUENCE_MS)
+  const msPerPersona = SEQUENCE_MS / personaOrder.length;
+  const doneCount = Math.min(personaOrder.length, Math.floor(elapsed / msPerPersona));
+  // The currently active persona is the one right after the last done one
+  const activeIdx = doneCount < personaOrder.length ? doneCount : -1;
+
+  const allDone = doneCount >= personaOrder.length;
+  const isDeliberating = elapsed >= DELIBERATION_THRESHOLD_MS;
 
   const modeLabel = councilMode === "global_vc" ? "GLOBAL VC COUNCIL" : councilMode === "india_pe" ? "INDIA PE / VC COUNCIL" : "GCC INVESTMENT COUNCIL";
 
@@ -791,13 +808,19 @@ function PersonaLoadingGrid({ councilMode = "gcc" }: { councilMode?: CouncilMode
         <div style={{ fontFamily: MONO, fontSize: 13, color: ACCENT, letterSpacing: "0.1em", marginBottom: 8 }}>
           CONVENING THE {modeLabel}
         </div>
-        <div style={{ fontSize: 12, color: TEXT2 }}>10 specialist AI advisors are reviewing your deal memo</div>
+        <div style={{ fontSize: 12, color: isDeliberating ? "#F59E0B" : TEXT2, transition: "color 0.6s" }}>
+          {isDeliberating
+            ? "Council is finalising its verdict..."
+            : allDone
+            ? "All advisors have submitted their analysis"
+            : "10 specialist AI advisors are reviewing your deal memo"}
+        </div>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {personaOrder.map((p, i) => {
           const meta = PERSONA_META[p.id as keyof typeof PERSONA_META] ?? { icon: "🤖", color: ACCENT };
-          const isActive = i === active;
-          const isDone = i < active;
+          const isActive = i === activeIdx;
+          const isDone = i < doneCount;
           return (
             <div key={p.id} style={{
               display: "flex",
@@ -3959,7 +3982,7 @@ export default function DealScreener() {
             {screenError}
           </div>
         )}
-        {view === "loading" && <PersonaLoadingGrid councilMode={councilMode} />}
+        {view === "loading" && <PersonaLoadingGrid councilMode={councilMode} loadingStartedAt={loadingStartedAt} />}
         {view === "report" && result && (
           <div>
             {previousView === "history" && (
