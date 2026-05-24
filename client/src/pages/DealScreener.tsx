@@ -3499,6 +3499,9 @@ export default function DealScreener() {
   const unreadSignalCount = signalData?.unreadCount ?? 0;
   const [result, setResult] = useState<CouncilResult | null>(null);
   const [selectedDealId, setSelectedDealId] = useState<string | null>(null);
+  // ── 30-second minimum loading hold ──────────────────────────────────────────
+  const loadingStartedAt = useRef<number | null>(null);
+  const MIN_LOADING_MS = 30_000;
   const [screenError, setScreenError] = useState<string | null>(null);
   const [councilMode, setCouncilMode] = useState<CouncilModeType>("global_vc");
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -3532,11 +3535,22 @@ export default function DealScreener() {
     { enabled: !!selectedDealId }
   );
 
+  // Navigate to report view — respects the 30-second minimum loading hold
+  const navigateToReport = React.useCallback((r: CouncilResult) => {
+    const elapsed = loadingStartedAt.current ? Date.now() - loadingStartedAt.current : MIN_LOADING_MS;
+    const remaining = Math.max(0, MIN_LOADING_MS - elapsed);
+    setResult(r);
+    if (remaining <= 0) {
+      setView("report");
+    } else {
+      setTimeout(() => setView("report"), remaining);
+    }
+  }, [MIN_LOADING_MS]);
+
   // Top-level screen mutation — used when Data Room tab uploads exactly 1 deal
   const topLevelScreenMutation = trpc.dealScreener.screen.useMutation({
     onSuccess: (data) => {
-      setResult(data as unknown as CouncilResult);
-      setView("report");
+      navigateToReport(data as unknown as CouncilResult);
     },
     onError: (err) => {
       setScreenError(err.message);
@@ -3545,8 +3559,7 @@ export default function DealScreener() {
   });
 
   const handleResult = (r: CouncilResult) => {
-    setResult(r);
-    setView("report");
+    navigateToReport(r);
   };
 
   const handleNewDeal = () => {
@@ -3575,6 +3588,7 @@ export default function DealScreener() {
 
   useEffect(() => {
     if (dealDetail) {
+      // History navigation — no loading screen shown, navigate immediately
       setResult(dealDetail as unknown as CouncilResult);
       setPreviousView("history");
       setView("report");
@@ -3924,7 +3938,7 @@ export default function DealScreener() {
           <>
             <DealForm
               onResult={handleResult}
-              onSubmitStart={() => { setScreenError(null); setView("loading"); }}
+              onSubmitStart={() => { setScreenError(null); loadingStartedAt.current = Date.now(); setView("loading"); }}
               onError={(msg) => { setScreenError(msg); setView("input"); }}
               pendingPaymentSessionId={pendingPaymentSessionId}
               onPaymentVerified={() => setPendingPaymentSessionId(null)}
@@ -4027,6 +4041,7 @@ export default function DealScreener() {
                 setCouncilMode(mode);
                 setScreenError(null);
                 setPreviousView(null);
+                loadingStartedAt.current = Date.now();
                 setView("loading");
                 topLevelScreenMutation.mutate({ dealName, dealText, councilMode: mode });
               }}
