@@ -108,6 +108,10 @@ interface DecisionUpgradePanelProps {
     dealName: string;
     councilMode?: "gcc" | "global_vc" | "india_pe";
   };
+  /** Called when a protocol is successfully generated — lifts data to parent for export */
+  onProtocolReady?: (protocol: UpgradeProtocol) => void;
+  /** Called when a delta output is produced after re-run — lifts data to parent for export */
+  onDeltaReady?: (delta: DeltaOutput) => void;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -444,6 +448,7 @@ export function DecisionUpgradePanel(props: DecisionUpgradePanelProps) {
       // Initialize all fixes as checked
       setAppliedFixes(result.protocol.allFixes.map(f => ({ ...f, applied: true })));
       setState("protocol");
+      props.onProtocolReady?.(result.protocol);
     } catch (err: any) {
       toast.error(`Failed to generate upgrade protocol: ${err.message}`);
       setState("idle");
@@ -488,6 +493,7 @@ export function DecisionUpgradePanel(props: DecisionUpgradePanelProps) {
       });
       setDelta(result.delta);
       setState("delta");
+      props.onDeltaReady?.(result.delta);
     } catch (err: any) {
       toast.error(`Re-run failed: ${err.message}`);
       setState("protocol");

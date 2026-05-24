@@ -14,6 +14,8 @@ import { runCouncil } from "../councilEngine";
 import { runAdversarialCouncil } from "../dealScreenerAdversarial";
 import { generateCfoDeepDivePdf, type CouncilSummaryInput } from "../cfoDeepDivePdf";
 import { generateICMemoPdf, type ICMemoInput } from "../icMemoPdf";
+import { generateUpgradeProtocolPdf, generateUpgradeProtocolText, type UpgradeProtocolInput } from "../upgradeProtocolPdf";
+import { generateStressTestReportPdf, generateStressTestReportText, type StressTestReportInput } from "../stressTestReportPdf";
 import { runComparison } from "../comparisonEngine";
 import { generateSingleDealICReport, generateComparisonICReport } from "../icReportEngine";
 import { detectTier0Signal, TIER0_FEED } from "../tier0Signals";
@@ -977,6 +979,80 @@ export const dealScreenerRouter = router({
         .set({ screened: true })
         .where(and(eq(signalDeals.id, input.signalId), eq(signalDeals.userId, ctx.user.id)));
       return { ok: true };
+    }),
+
+  // ── Upgrade Protocol PDF / Text Export ──────────────────────────────────────
+  upgradeProtocolPdf: protectedProcedure
+    .input(z.object({
+      dealName:             z.string().min(1).max(255),
+      verdictBefore:        z.string(),
+      confidenceBefore:     z.number(),
+      missingInputs:        z.array(z.any()),
+      performanceGaps:      z.array(z.any()),
+      structuralIssues:     z.array(z.any()),
+      narrativeFix:         z.object({ original: z.string(), improved: z.string(), rationale: z.string() }),
+      riskMitigationActions: z.array(z.any()),
+      expectedOutcomeShift: z.object({ predictedVerdict: z.string(), confidenceDelta: z.number(), rationale: z.string() }),
+      allFixes:             z.array(z.any()),
+      delta:                z.any().optional(),
+      format:               z.enum(["pdf", "text", "json"]).default("pdf"),
+    }))
+    .mutation(async ({ input }) => {
+      const protocolInput: UpgradeProtocolInput = {
+        ...input,
+        generatedAt: new Date().toISOString(),
+      };
+      if (input.format === "text") {
+        const text = generateUpgradeProtocolText(protocolInput);
+        return { format: "text" as const, text, base64: null };
+      }
+      if (input.format === "json") {
+        return { format: "json" as const, text: JSON.stringify(protocolInput, null, 2), base64: null };
+      }
+      const pdfBuffer = await generateUpgradeProtocolPdf(protocolInput);
+      const base64 = pdfBuffer.toString("base64");
+      return { format: "pdf" as const, base64, text: null };
+    }),
+
+  // ── Stress Test Report PDF / Text Export ───────────────────────────────────
+  stressTestReportPdf: protectedProcedure
+    .input(z.object({
+      dealName:             z.string().min(1).max(255),
+      baseVerdict:          z.string(),
+      mode:                 z.string(),
+      targetCount:          z.number(),
+      completedAt:          z.string(),
+      executiveSummary:     z.string(),
+      decisionDistribution: z.object({
+        approvePct:    z.number(),
+        conditionalPct: z.number(),
+        rejectPct:     z.number(),
+        vetoPct:       z.number(),
+        totalScenarios: z.number(),
+        confidenceDistribution: z.object({ low: z.number(), medium: z.number(), high: z.number() }).optional(),
+      }),
+      failureVectors:       z.array(z.any()),
+      approvalPathways:     z.array(z.any()),
+      sensitivitySurface:   z.array(z.any()),
+      governanceHeatmap:    z.array(z.any()),
+      scenarioClusters:     z.any().optional(),
+      format:               z.enum(["pdf", "text", "json"]).default("pdf"),
+    }))
+    .mutation(async ({ input }) => {
+      const reportInput: StressTestReportInput = {
+        ...input,
+        generatedAt: new Date().toISOString(),
+      };
+      if (input.format === "text") {
+        const text = generateStressTestReportText(reportInput);
+        return { format: "text" as const, text, base64: null };
+      }
+      if (input.format === "json") {
+        return { format: "json" as const, text: JSON.stringify(reportInput, null, 2), base64: null };
+      }
+      const pdfBuffer = await generateStressTestReportPdf(reportInput);
+      const base64 = pdfBuffer.toString("base64");
+      return { format: "pdf" as const, base64, text: null };
     }),
 });
 

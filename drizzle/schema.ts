@@ -2212,7 +2212,7 @@ export const scenarioSimRuns = mysqlTable("scenario_sim_runs", {
   userId:          int("user_id").notNull(),
   dealId:          varchar("deal_id", { length: 64 }).notNull(),
   dealName:        varchar("deal_name", { length: 255 }).notNull(),
-  mode:            mysqlEnum("mode", ["quick", "institutional", "deep", "infrastructure"]).notNull(),
+  mode:            mysqlEnum("mode", ["quick", "institutional", "deep", "infrastructure", "extreme"]).notNull(),
   targetCount:     int("target_count").notNull(),
   completedCount:  int("completed_count").notNull().default(0),
   status:          mysqlEnum("status", ["pending", "running", "completed", "failed", "paused"]).notNull().default("pending"),

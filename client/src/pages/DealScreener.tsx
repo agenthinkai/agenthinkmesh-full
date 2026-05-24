@@ -14,6 +14,7 @@ import DataRoomBatch from "@/components/DataRoomBatch";
 import DataRoomV2 from "@/components/DataRoomV2";
 import { DecisionUpgradePanel } from "@/components/DecisionUpgradePanel";
 import { ScenarioSimDashboard, ScenarioSimToggle } from "@/components/ScenarioSimDashboard";
+import { ReportsPanel } from "@/components/ReportsPanel";
 import { trackEvent } from "@/lib/analytics";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -1336,6 +1337,21 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
     { enabled: !!result.dealId, staleTime: 30_000 }
   );
 
+  // ── Reports Panel: lift protocol/delta state from DecisionUpgradePanel ────
+  const [liftedProtocol, setLiftedProtocol] = useState<any>(null);
+  const [liftedDelta, setLiftedDelta] = useState<any>(null);
+
+  // ── Reports Panel: fetch latest completed simulation for stress test export
+  const { data: latestSimRuns } = trpc.scenarioSim.listRunsForDeal.useQuery(
+    { dealId: result.dealId ?? "" },
+    { enabled: !!result.dealId, staleTime: 30_000 }
+  );
+  const latestCompletedSim = latestSimRuns?.find((r: any) => r.status === "completed") ?? null;
+  const { data: latestSimStatus } = trpc.scenarioSim.getRunStatus.useQuery(
+    { runId: latestCompletedSim?.runId ?? "" },
+    { enabled: !!latestCompletedSim?.runId, staleTime: 60_000 }
+  );
+
   const handleICMemoPdf = async () => {
     setIcMemoLoading(true);
     setIcMemoError(null);
@@ -2059,6 +2075,8 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
         conditions={result.conditionsToProceed ?? []}
         agentFeedback={result.votes?.map(v => `${v.personaName}: ${v.rationale}`).join("\n") ?? ""}
         dealMeta={{ dealName: result.dealName ?? "Deal" }}
+        onProtocolReady={setLiftedProtocol}
+        onDeltaReady={setLiftedDelta}
       />
       {/* ── Section 11: Strategic Scenario Simulation Dashboard ─────────── */}
       <div style={{ marginTop: 8, borderTop: "1px solid #1e2d3d", paddingTop: 24 }}>
@@ -2066,6 +2084,24 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
           dealId={result.dealId ?? result.dealName}
           dealName={result.dealName}
           dealText={result.dealText ?? result.dealTextPreview ?? ""}
+        />
+      </div>
+      {/* ── Section 12: Institutional Reports Export Hub ──────────────── */}
+      <div style={{ marginTop: 8, paddingBottom: 32 }}>
+        <ReportsPanel
+          dealName={result.dealName}
+          dealId={result.dealId}
+          verdict={result.verdict}
+          confidenceScore={result.confidenceScore}
+          onExportICMemo={handleICMemoPdf}
+          icMemoLoading={icMemoLoading}
+          upgradeProtocol={liftedProtocol}
+          upgradeDelta={liftedDelta}
+          simRunId={latestCompletedSim?.runId ?? null}
+          simMode={latestCompletedSim?.mode ?? undefined}
+          simTargetCount={latestCompletedSim?.targetCount ?? undefined}
+          simCompletedAt={latestCompletedSim?.completedAt ? String(latestCompletedSim.completedAt) : undefined}
+          simAggregation={latestSimStatus?.aggregation ?? null}
         />
       </div>
     </div>
@@ -2103,7 +2139,7 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
   const [investorMode, setInvestorMode] = useState(false);
   // Strategic Scenario Simulation
   const [simEnabled, setSimEnabled] = useState(false);
-  const [simMode, setSimMode] = useState<"quick" | "institutional" | "deep" | "infrastructure">("quick");
+  const [simMode, setSimMode] = useState<"quick" | "institutional" | "deep" | "infrastructure" | "extreme">("quick");
   const [error, setError] = useState<string | null>(null);
   const [touchedSubmit, setTouchedSubmit] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);

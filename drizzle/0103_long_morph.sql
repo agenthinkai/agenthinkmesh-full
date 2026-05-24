@@ -1,0 +1,1 @@
+ALTER TABLE `scenario_sim_runs` MODIFY COLUMN `mode` enum('quick','institutional','deep','infrastructure','extreme') NOT NULL;

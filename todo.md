@@ -4633,3 +4633,40 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Tests for Section 17 injection, badge visibility, and restore behavior (scenarioSimProductization.test.ts — 22 tests)
 - [x] TypeScript check — zero errors
 - [x] Full test suite passing (61 files, 1101 tests)
+
+## Three Institutional Reports + Gated Simulation Modes (2026-05-24)
+
+### Phase 1 — Standalone Report Exports + Reports Panel
+- [x] Upgrade Protocol PDF generator (server/upgradeProtocolPdf.ts) — 8 sections
+- [x] Upgrade Protocol export buttons: Export PDF, Copy Text, Export JSON
+- [x] Stress Test Report PDF generator (server/stressTestReportPdf.ts) — 10 sections
+- [x] Stress Test export buttons: Export PDF, Copy Text, Export JSON
+- [x] Unified Reports panel on deal result page (3 cards: IC Memo, Upgrade Protocol, Stress Test)
+
+### Phase 2 — Text Copy + Methodology Sections
+- [ ] Section 17 in "Copy IC Report" text export
+- [ ] Stress Test methodology and interpretation sections in PDF
+- [ ] Upgrade Protocol re-run summary section in PDF
+
+### Phase 3 — Gated 100k and 1M Simulation Modes
+- [x] Add "extreme" mode (1,000,000 scenarios) to SIMULATION_MODES
+- [ ] Add "infrastructure_xl" mode (100,000 scenarios) — already exists, add cost/ETA display
+- [x] 1M confirmation modal with safety warning text
+- [ ] Cost estimate and ETA estimate before launch for 100k and 1M
+- [ ] Checkpointing and resumable runs for 100k/1M
+- [ ] Progress dashboard with abort button
+- [ ] Abort conditions (cost cap, wall-clock cap, 429 threshold, malformed output threshold)
+- [ ] Partial report export for in-progress runs
+- [ ] Telemetry logging for 100k/1M runs
+- [ ] Batch size configuration for 1M mode
+
+### Phase 4 — Simulation Comparison View
+- [ ] Compare button in history panel (select 2 runs, side-by-side delta view)
+
+### Tests
+- [x] Tests: Upgrade Protocol PDF/text export shape (scenarioSimProductization.test.ts)
+- [x] Tests: Stress Test PDF/text export shape (scenarioSimProductization.test.ts)
+- [x] Tests: Reports panel visibility logic
+- [ ] Tests: Section 17 text export
+- [x] Tests: gated 1M confirmation modal logic
+- [ ] Tests: no empty report sections when data unavailable

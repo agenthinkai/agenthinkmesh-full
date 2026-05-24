@@ -30,7 +30,7 @@ const TEAL = "#00d4aa";
 const ORANGE = "#ff6b35";
 
 // ── Types (mirrors server types) ──────────────────────────────────────────────
-type SimMode = "quick" | "institutional" | "deep" | "infrastructure";
+type SimMode = "quick" | "institutional" | "deep" | "infrastructure" | "extreme";
 
 interface DecisionDistribution {
   approveCount: number;
@@ -93,11 +93,12 @@ interface SimAggregation {
 }
 
 // ── Mode config ───────────────────────────────────────────────────────────────
-const MODE_CONFIG: Record<SimMode, { label: string; count: number; tag: string; description: string; color: string }> = {
-  quick:          { label: "Quick Stress",          count: 100,    tag: "100",  description: "Rapid sensitivity scan",                      color: TEAL },
-  institutional:  { label: "Institutional Stress",  count: 1000,   tag: "1k",   description: "Probabilistic approval mapping",              color: ACCENT },
-  deep:           { label: "Strategic Deep Stress",  count: 10000,  tag: "10k",  description: "Decision-surface analysis",                   color: PURPLE },
-  infrastructure: { label: "Infrastructure Scale",  count: 100000, tag: "100k", description: "Continuous institutional stress testing",     color: AMBER },
+const MODE_CONFIG: Record<SimMode, { label: string; count: number; tag: string; description: string; color: string; gated?: boolean; warningMessage?: string; costTier?: string }> = {
+  quick:          { label: "Quick Stress",          count: 100,      tag: "100",  description: "Rapid sensitivity scan",                                    color: TEAL },
+  institutional:  { label: "Institutional Stress",  count: 1000,     tag: "1k",   description: "Probabilistic approval mapping",                            color: ACCENT },
+  deep:           { label: "Strategic Deep Stress",  count: 10000,   tag: "10k",  description: "Decision-surface analysis",                                 color: PURPLE },
+  infrastructure: { label: "Infrastructure Scale",  count: 100000,   tag: "100k", description: "Continuous institutional stress testing",                   color: AMBER,  gated: true, costTier: "high",    warningMessage: "Infrastructure Scale mode runs 100,000 scenarios. This is a long-duration run with checkpointing and resumability. Estimated wall-clock time depends on RPM limits and worker configuration. Confirm only if you accept the cost and time implications." },
+  extreme:        { label: "Extreme Scale",         count: 1000000,  tag: "1M",   description: "Extreme-scale stress testing across 1,000,000 strategic futures", color: RED, gated: true, costTier: "extreme", warningMessage: "You are about to launch Extreme Scale Simulation Mode. This may run for days depending on RPM limits and worker configuration. Confirm only if checkpointing, telemetry, and cost limits are acceptable." },
 };
 
 // ── Category colors ───────────────────────────────────────────────────────────
@@ -488,7 +489,19 @@ export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId
     }
   }, [runStatus?.status]);
 
-  const handleLaunch = async () => {
+  const [showGatedModal, setShowGatedModal] = useState(false);
+  const [pendingGatedMode, setPendingGatedMode] = useState<SimMode | null>(null);
+
+  const handleLaunch = async (confirmedGated = false) => {
+    const cfg = MODE_CONFIG[selectedMode];
+    // Show gated confirmation modal for infrastructure / extreme modes
+    if (cfg.gated && !confirmedGated) {
+      setPendingGatedMode(selectedMode);
+      setShowGatedModal(true);
+      return;
+    }
+    setShowGatedModal(false);
+    setPendingGatedMode(null);
     setError(null);
     setIsRunning(true);
     try {
@@ -497,6 +510,7 @@ export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId
         dealName,
         dealText: dealText.slice(0, 12000),
         mode: selectedMode,
+        confirmedGated: cfg.gated ? true : undefined,
       });
       setRunId(result.runId);
       if (result.status === "completed" && result.aggregation) {
@@ -543,27 +557,42 @@ export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId
           <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED, letterSpacing: "0.12em", marginBottom: 10 }}>
             SELECT SIMULATION SCALE
           </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", gap: 8 }}>
             {(Object.keys(MODE_CONFIG) as SimMode[]).map(mode => {
               const cfg = MODE_CONFIG[mode];
               const isSelected = selectedMode === mode;
+              // Convert hex color to RGB for rgba background
+              const colorRgb: Record<SimMode, string> = {
+                quick: "0,212,170", institutional: "74,158,255", deep: "168,85,247",
+                infrastructure: "255,159,67", extreme: "255,71,87",
+              };
               return (
                 <button
                   key={mode}
                   onClick={() => setSelectedMode(mode)}
                   style={{
-                    background: isSelected ? `rgba(${mode === "quick" ? "0,212,170" : mode === "institutional" ? "74,158,255" : mode === "deep" ? "168,85,247" : "255,159,67"},0.12)` : BG3,
-                    border: `1px solid ${isSelected ? cfg.color : BORDER}`,
+                    background: isSelected ? `rgba(${colorRgb[mode]},0.12)` : BG3,
+                    border: `1px solid ${isSelected ? cfg.color : cfg.gated ? `rgba(${colorRgb[mode]},0.35)` : BORDER}`,
                     borderRadius: 6,
                     padding: "10px 8px",
                     cursor: "pointer",
                     textAlign: "center" as const,
                     transition: "all 0.2s",
+                    position: "relative" as const,
                   }}
                 >
+                  {cfg.gated && (
+                    <div style={{ position: "absolute", top: 4, right: 5, fontFamily: MONO, fontSize: 6, color: cfg.color, letterSpacing: "0.05em", opacity: 0.8 }}>⚠ GATED</div>
+                  )}
                   <div style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: cfg.color, marginBottom: 3 }}>{cfg.tag}</div>
                   <div style={{ fontFamily: MONO, fontSize: 8, color: isSelected ? TEXT : TEXT2, marginBottom: 2 }}>{cfg.label}</div>
                   <div style={{ fontFamily: MONO, fontSize: 7, color: MUTED }}>{cfg.description}</div>
+                  {cfg.costTier === "extreme" && (
+                    <div style={{ fontFamily: MONO, fontSize: 6, color: RED, marginTop: 4, opacity: 0.7 }}>MULTI-DAY RUN</div>
+                  )}
+                  {cfg.costTier === "high" && (
+                    <div style={{ fontFamily: MONO, fontSize: 6, color: AMBER, marginTop: 4, opacity: 0.7 }}>LONG-DURATION</div>
+                  )}
                 </button>
               );
             })}
@@ -571,7 +600,7 @@ export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId
 
           {/* Launch button */}
           <button
-            onClick={handleLaunch}
+            onClick={() => handleLaunch()}
             disabled={isRunning || startRun.isPending}
             style={{
               marginTop: 14,
@@ -598,6 +627,45 @@ export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId
               ✗ {error}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Gated Mode Confirmation Modal */}
+      {showGatedModal && pendingGatedMode && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 9999,
+          background: "rgba(7,11,18,0.88)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          backdropFilter: "blur(4px)",
+        }}>
+          <div style={{
+            background: BG2, border: `1px solid ${MODE_CONFIG[pendingGatedMode].color}`,
+            borderRadius: 10, padding: "28px 32px", maxWidth: 520, width: "90%",
+          }}>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: MODE_CONFIG[pendingGatedMode].color, letterSpacing: "0.15em", marginBottom: 10 }}>
+              ⚠ GATED MODE — CONFIRMATION REQUIRED
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 13, color: TEXT, fontWeight: 700, marginBottom: 14 }}>
+              {MODE_CONFIG[pendingGatedMode].label} ({MODE_CONFIG[pendingGatedMode].tag} Scenarios)
+            </div>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: TEXT2, lineHeight: 1.7, marginBottom: 20 }}>
+              {MODE_CONFIG[pendingGatedMode].warningMessage}
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <button
+                onClick={() => { setShowGatedModal(false); setPendingGatedMode(null); }}
+                style={{ flex: 1, padding: "10px 0", background: "transparent", border: `1px solid ${BORDER}`, borderRadius: 5, color: MUTED, fontFamily: MONO, fontSize: 9, cursor: "pointer" }}
+              >
+                CANCEL
+              </button>
+              <button
+                onClick={() => handleLaunch(true)}
+                style={{ flex: 2, padding: "10px 0", background: `rgba(${pendingGatedMode === "extreme" ? "255,71,87" : "255,159,67"},0.15)`, border: `1px solid ${MODE_CONFIG[pendingGatedMode].color}`, borderRadius: 5, color: MODE_CONFIG[pendingGatedMode].color, fontFamily: MONO, fontSize: 9, fontWeight: 700, cursor: "pointer" }}
+              >
+                I UNDERSTAND — LAUNCH {MODE_CONFIG[pendingGatedMode].tag} SIMULATION
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

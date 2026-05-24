@@ -32,13 +32,44 @@ export type PerturbationCategory =
   | "technology"
   | "governance";
 
-export type SimulationMode = "quick" | "institutional" | "deep" | "infrastructure";
+export type SimulationMode = "quick" | "institutional" | "deep" | "infrastructure" | "extreme";
 
-export const SIMULATION_MODES: Record<SimulationMode, { label: string; count: number; description: string }> = {
-  quick:          { label: "Mode A — Quick Stress",          count: 100,     description: "Rapid sensitivity scan across 100 scenarios" },
-  institutional:  { label: "Mode B — Institutional Stress",  count: 1000,    description: "Probabilistic approval mapping across 1,000 scenarios" },
-  deep:           { label: "Mode C — Strategic Deep Stress",  count: 10000,   description: "Decision-surface analysis across 10,000 scenarios" },
-  infrastructure: { label: "Mode D — Infrastructure Scale",  count: 100000,  description: "Continuous institutional stress testing at 100,000 scenarios" },
+export interface SimulationModeConfig {
+  label: string;
+  count: number;
+  description: string;
+  /** If true, requires user confirmation before launching */
+  gated?: boolean;
+  /** Confirmation modal message shown before launch */
+  warningMessage?: string;
+  /** Whether this mode supports checkpointing and resumability */
+  resumable?: boolean;
+  /** Estimated cost tier for display */
+  costTier?: "low" | "medium" | "high" | "extreme";
+}
+
+export const SIMULATION_MODES: Record<SimulationMode, SimulationModeConfig> = {
+  quick:          { label: "Mode A — Quick Stress",          count: 100,       description: "Rapid sensitivity scan across 100 scenarios",                                  costTier: "low" },
+  institutional:  { label: "Mode B — Institutional Stress",  count: 1000,      description: "Probabilistic approval mapping across 1,000 scenarios",                       costTier: "low" },
+  deep:           { label: "Mode C — Strategic Deep Stress",  count: 10000,     description: "Decision-surface analysis across 10,000 scenarios",                           costTier: "medium" },
+  infrastructure: {
+    label: "Mode D — Infrastructure Scale",
+    count: 100000,
+    description: "Continuous institutional stress testing at 100,000 scenarios",
+    gated: true,
+    resumable: true,
+    costTier: "high",
+    warningMessage: "Infrastructure Scale mode runs 100,000 scenarios. This is a long-duration run with checkpointing and resumability. Estimated wall-clock time depends on RPM limits and worker configuration. Confirm only if you accept the cost and time implications.",
+  },
+  extreme: {
+    label: "Mode E — Extreme Scale",
+    count: 1000000,
+    description: "Extreme-scale stress testing across 1,000,000 strategic futures",
+    gated: true,
+    resumable: true,
+    costTier: "extreme",
+    warningMessage: "You are about to launch Extreme Scale Simulation Mode. This may run for days depending on RPM limits and worker configuration. Confirm only if checkpointing, telemetry, and cost limits are acceptable.",
+  },
 };
 
 // ── Perturbation Dimension Definitions ────────────────────────────────────────

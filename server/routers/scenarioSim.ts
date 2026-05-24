@@ -46,7 +46,12 @@ export const scenarioSimRouter = router({
       dealId:   z.string().min(1).max(64),
       dealName: z.string().min(1).max(255),
       dealText: z.string().min(10).max(15000),
-      mode:     z.enum(["quick", "institutional", "deep", "infrastructure"]),
+      mode:     z.enum(["quick", "institutional", "deep", "infrastructure", "extreme"]),
+      // Safety controls for gated modes (100k / 1M)
+      maxCostCapUsd:    z.number().optional(),
+      maxWallClockHours: z.number().optional(),
+      batchSize:        z.number().min(100).max(10000).optional(),
+      confirmedGated:   z.boolean().optional(), // must be true for gated modes
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -57,13 +62,21 @@ export const scenarioSimRouter = router({
       const baseSeed = Date.now();
       const targetCount = modeConfig.count;
 
+      // Enforce gated mode confirmation BEFORE creating the run record
+      if (modeConfig.gated && !input.confirmedGated) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: `Mode '${input.mode}' requires explicit confirmation. Set confirmedGated: true after showing the user the warning modal.`,
+        });
+      }
+
       // Create run record
       await db.insert(scenarioSimRuns).values({
         runId,
         userId:      ctx.user.id,
         dealId:      input.dealId,
         dealName:    input.dealName,
-        mode:        input.mode as "quick" | "institutional" | "deep" | "infrastructure",
+        mode:        input.mode as "quick" | "institutional" | "deep" | "infrastructure" | "extreme",
         targetCount,
         completedCount: 0,
         status:      "running",
