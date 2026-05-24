@@ -524,7 +524,7 @@ export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId
         </div>
         {isComplete && (
           <div style={{ fontFamily: MONO, fontSize: 8, color: GREEN, background: "rgba(0,255,135,0.08)", border: "1px solid rgba(0,255,135,0.2)", padding: "4px 10px", borderRadius: 4 }}>
-            ✓ SIMULATION COMPLETE · {runStatus?.totalScenarios?.toLocaleString()} SCENARIOS
+            ✓ SIMULATION COMPLETE · {runStatus?.targetCount?.toLocaleString()} SCENARIOS
           </div>
         )}
       </div>
@@ -618,7 +618,7 @@ export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId
           {aggregation.executiveSummary && (
             <ExecutiveSummaryBanner
               summary={aggregation.executiveSummary}
-              totalScenarios={runStatus?.totalScenarios ?? 0}
+              totalScenarios={runStatus?.targetCount ?? 0}
               mode={runStatus?.mode as SimMode ?? "quick"}
             />
           )}

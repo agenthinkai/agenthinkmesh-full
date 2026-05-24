@@ -216,7 +216,7 @@ function computeFailureVectors(
   const vectors: FailureVector[] = [];
 
   // Add category-level vectors
-  for (const [category, stats] of categoryRejections.entries()) {
+  for (const [category, stats] of Array.from(categoryRejections.entries())) {
     const dim = PERTURBATION_DIMENSIONS.find(d => d.category === category);
     vectors.push({
       dimensionKey: `category_${category}`,
