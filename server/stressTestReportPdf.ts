@@ -390,9 +390,115 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
     INFOBORDER
   );
 
-  // ── Section B: How to Read This Report ──────────────────────────────────────
+  // ── Section B: Why Simulation Scale Matters ───────────────────────────────
 
-  sectionHeader("B. How to Read This Report");
+  newPage();
+  sectionHeader("B. Why Simulation Scale Matters");
+
+  // Conceptual framing — two-paragraph institutional explanation
+  infoBox(
+    "The Objective of Simulation Scale",
+    [
+      "The objective is not to ask the same question many times.",
+      "The objective is to systematically perturb strategic assumptions and observe how",
+      "institutional decision outcomes change under varying conditions.",
+      "",
+      "Increasing simulation scale improves: decision-surface resolution, sensitivity detection,",
+      "governance pattern recognition, rare-event discovery, and institutional confidence.",
+      "Each order of magnitude adds a qualitatively different category of insight.",
+    ],
+    INFOBOX,
+    INFOBORDER
+  );
+
+  doc.moveDown(0.4);
+  subHeader("Simulation Maturity Curve");
+  bodyText("Each scale tier represents a different depth of institutional insight:");
+  doc.moveDown(0.4);
+
+  // ── Simulation Maturity Curve (PDFKit rect-based horizontal stepped chart) ──
+  {
+    const tiers = [
+      { label: "100",     tier: "Quick Scan",          desc: "Rapid directional stress scan. Detects obvious fragility.",                                          color: "#94A3B8", height: 28 },
+      { label: "1,000",   tier: "Probabilistic",        desc: "Identifies recurring risk patterns. Reveals primary failure vectors.",                               color: "#60A5FA", height: 36 },
+      { label: "10,000",  tier: "Institutional",        desc: "Maps decision surfaces. Detects nonlinear interactions. Reveals governance escalation patterns.",     color: "#3B82F6", height: 44 },
+      { label: "100,000", tier: "Rare-Event Detection", desc: "Exposes low-frequency, high-impact edge cases. Identifies systemic governance failure clusters.",     color: "#1D4ED8", height: 52 },
+      { label: "1M",      tier: "Strategic Intelligence",desc: "Approaches continuous scenario exploration. Enables rare-event discovery. Policy-scale analysis.",  color: "#1E3A8A", height: 60 },
+    ];
+
+    const chartW = CONTENT_W;
+    const colW = Math.floor(chartW / tiers.length) - 4;
+    const baseY = doc.y;
+    const maxH = tiers[tiers.length - 1].height;
+    const chartBaseY = baseY + maxH + 8; // baseline of bars
+
+    ensureSpace(maxH + 80);
+
+    tiers.forEach((tier, i) => {
+      const x = L + i * (colW + 4);
+      const barTop = chartBaseY - tier.height;
+
+      // Bar
+      doc.rect(x, barTop, colW, tier.height).fillColor(tier.color).fill();
+
+      // Scale label (inside bar top)
+      doc.fontSize(9).fillColor("#FFFFFF").font("Helvetica-Bold")
+        .text(tier.label, x + 2, barTop + 4, { width: colW - 4, align: "center" });
+
+      // Tier label below bar
+      doc.fontSize(7.5).fillColor(ACCENT).font("Helvetica-Bold")
+        .text(tier.tier, x, chartBaseY + 4, { width: colW, align: "center" });
+
+      // Description below tier label (2 lines max)
+      doc.fontSize(6.5).fillColor(GRAY).font("Helvetica")
+        .text(tier.desc, x, chartBaseY + 16, { width: colW, align: "left", lineGap: 1 });
+    });
+
+    doc.y = chartBaseY + 58;
+  }
+
+  doc.moveDown(0.5);
+
+  // Scale-specific insight rows
+  const scaleRows: [string, string][] = [
+    ["100 scenarios",       "Quick directional stress scan. Detects obvious fragility. Suitable for initial screening."],
+    ["1,000 scenarios",     "Identifies recurring risk patterns. Reveals primary failure vectors. Provides meaningful probabilistic confidence."],
+    ["10,000 scenarios",    "Maps institutional decision surfaces. Detects nonlinear interactions. Reveals governance escalation patterns. Identifies fragile vs resilient structures."],
+    ["100,000 scenarios",   "Exposes low-frequency, high-impact edge cases. Improves statistical confidence. Identifies systemic governance failure clusters."],
+    ["1,000,000 scenarios", "Approaches continuous institutional scenario exploration. Enables rare-event discovery. Supports policy-scale and sovereign-scale strategic analysis."],
+  ];
+  scaleRows.forEach(([scale, insight]) => {
+    ensureSpace(22);
+    doc.fontSize(8.5).fillColor(ACCENT).font("Helvetica-Bold")
+      .text(sanitize(scale), L + 8, doc.y, { continued: true, width: 120 });
+    doc.fillColor(GRAY).font("Helvetica")
+      .text(`  ${sanitize(insight)}`, { width: CONTENT_W - 128 });
+    doc.moveDown(0.3);
+  });
+
+  doc.moveDown(0.3);
+  infoBox(
+    "Why This Run Used " + input.targetCount.toLocaleString() + " Scenarios",
+    [
+      `This simulation ran ${input.targetCount.toLocaleString()} scenarios (${modeLabel(input.mode)}).`,
+      "",
+      input.targetCount >= 1000000
+        ? "At 1M scenarios, this report provides strategic intelligence infrastructure — rare-event discovery, policy-scale resilience mapping, and continuous scenario coverage."
+        : input.targetCount >= 100000
+        ? "At 100,000+ scenarios, this report identifies low-frequency, high-impact edge cases and systemic governance failure clusters that smaller simulations cannot detect."
+        : input.targetCount >= 10000
+        ? "At 10,000 scenarios, this report maps the full institutional decision surface — detecting nonlinear interactions, governance escalation patterns, and fragile vs resilient deal structures."
+        : input.targetCount >= 1000
+        ? "At 1,000 scenarios, this report provides meaningful probabilistic confidence and identifies primary failure vectors with statistical reliability."
+        : "At 100 scenarios, this report provides a rapid directional stress scan — sufficient for initial screening but not for deep institutional analysis.",
+    ],
+    INFOBOX,
+    INFOBORDER
+  );
+
+  // ── Section E: How to Read This Report ──────────────────────────────────────
+
+  sectionHeader("E. How to Read This Report");
   const glossaryRows: [string, string][] = [
     ["Approval Rate", "Share of scenarios where the deal remained investable (APPROVE verdict)."],
     ["Conditional Rate", "Share of scenarios where the deal may proceed only with mitigants."],
@@ -455,6 +561,93 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
   doc.moveDown(0.3);
   subHeader("Aggregation Logic");
   bodyText("Results are aggregated across all scenarios to produce decision distribution percentages, failure vector rankings, approval pathway identification, governance escalation mapping, and sensitivity surface analysis.");
+
+  // ── Section C: What This Adds Beyond Traditional IC Review ────────────────
+
+  sectionHeader("C. What This Adds Beyond Traditional IC Review");
+
+  ensureSpace(110);
+  const compY = doc.y;
+  const halfW = (CONTENT_W - 12) / 2;
+
+  // Left column: Traditional IC Review
+  doc.rect(L, compY, halfW, 90).fillColor("#FFF7ED").fill();
+  doc.rect(L, compY, halfW, 3).fillColor(AMBER).fill();
+  doc.fontSize(8.5).fillColor(AMBER).font("Helvetica-Bold")
+    .text("TRADITIONAL IC REVIEW", L + 8, compY + 8, { width: halfW - 16 });
+  const tradLines = [
+    "One memo",
+    "One recommendation",
+    "Static assumptions",
+    "Single-point judgment",
+    "No resilience test",
+  ];
+  tradLines.forEach((line, i) => {
+    doc.fontSize(8).fillColor(GRAY).font("Helvetica")
+      .text(`- ${line}`, L + 8, compY + 22 + i * 13, { width: halfW - 16 });
+  });
+
+  // Right column: Strategic Simulation
+  const rightX = L + halfW + 12;
+  doc.rect(rightX, compY, halfW, 90).fillColor(INFOBOX).fill();
+  doc.rect(rightX, compY, halfW, 3).fillColor(INFOBORDER).fill();
+  doc.fontSize(8.5).fillColor(INFOBORDER).font("Helvetica-Bold")
+    .text("STRATEGIC SIMULATION", rightX + 8, compY + 8, { width: halfW - 16 });
+  const simLines = [
+    "Thousands of governed strategic futures",
+    "Probabilistic decision distributions",
+    "Failure vector mapping",
+    "Governance escalation analysis",
+    "Sensitivity detection & resilience testing",
+  ];
+  simLines.forEach((line, i) => {
+    doc.fontSize(8).fillColor(BLACK).font("Helvetica")
+      .text(`+ ${line}`, rightX + 8, compY + 22 + i * 13, { width: halfW - 16 });
+  });
+
+  doc.y = compY + 98;
+  doc.moveDown(0.4);
+
+  infoBox(
+    "",
+    [
+      "A deal that survives 10,000 stressed futures is fundamentally different from a deal",
+      "approved once under static assumptions. Simulation does not replace IC judgment — it",
+      "stress-tests it. The result is a decision basis that is robust to the realistic range",
+      "of strategic futures, not just the base case.",
+    ],
+    INFOBOX,
+    INFOBORDER
+  );
+
+  // ── Section D: Interpretation Guidance ──────────────────────────────────────
+
+  sectionHeader("D. Interpretation Guidance");
+  bodyText("How to interpret simulation result patterns:");
+  doc.moveDown(0.3);
+
+  const interpretRows: [string, string, string][] = [
+    ["High approval consistency",       "Resilient deal structure.",                              "The investment thesis holds across a wide range of strategic futures. Proceed with standard diligence."],
+    ["Wide conditional range",           "Execution-sensitive opportunity.",                       "The deal is investable but sensitive to execution quality. Conditional approval with operational covenants is appropriate."],
+    ["High veto concentration",          "Governance fragility.",                                  "Hard-no triggers are firing frequently. Governance structure, compliance exposure, or regulatory risk must be addressed before any investment."],
+    ["Low-frequency catastrophic failures","Edge-case systemic risk.",                            "The deal is broadly resilient but contains tail-risk scenarios. Stress-test the specific triggers and add protective covenants."],
+    ["0% approval rate",                 "Structurally non-investable under tested assumptions.",  "No tested combination of realistic stresses produced an investable outcome. Fundamental restructuring is required — not incremental improvement."],
+  ];
+
+  interpretRows.forEach(([pattern, headline, guidance]) => {
+    ensureSpace(40);
+    const rowY = doc.y;
+    doc.rect(L, rowY, CONTENT_W, 34).fillColor(BGLIGHT).fill();
+    doc.rect(L, rowY, 3, 34).fillColor(INFOBORDER).fill();
+    doc.fontSize(8.5).fillColor(ACCENT).font("Helvetica-Bold")
+      .text(sanitize(pattern), L + 10, rowY + 4, { width: CONTENT_W - 20, continued: true });
+    doc.fillColor(INFOBORDER).font("Helvetica-Bold")
+      .text(`  →  ${sanitize(headline)}`, { width: CONTENT_W - 20 });
+    doc.fontSize(8).fillColor(GRAY).font("Helvetica")
+      .text(sanitize(guidance), L + 10, rowY + 18, { width: CONTENT_W - 20, height: 14, ellipsis: true });
+    doc.y = rowY + 38;
+    doc.moveDown(0.1);
+  });
 
   // ── Section 3: Decision Distribution ────────────────────────────────────────
 
@@ -836,6 +1029,50 @@ export function generateStressTestReportText(input: StressTestReportInput): stri
   lines.push("");
   lines.push("A 0% approval rate does not mean the model failed. It means no tested combination");
   lines.push("of realistic stresses produced an investable outcome under the current deal structure.");
+  lines.push("");
+
+  lines.push("B. WHY SIMULATION SCALE MATTERS");
+  lines.push(dash);
+  lines.push("The objective is not to ask the same question many times.");
+  lines.push("The objective is to systematically perturb strategic assumptions and observe how");
+  lines.push("institutional decision outcomes change under varying conditions.");
+  lines.push("");
+  lines.push("SIMULATION MATURITY CURVE:");
+  lines.push("  100 scenarios     -- Quick Scan: Rapid directional stress scan. Detects obvious fragility.");
+  lines.push("  1,000 scenarios   -- Probabilistic: Identifies recurring risk patterns. Reveals primary failure vectors.");
+  lines.push("  10,000 scenarios  -- Institutional: Maps decision surfaces. Detects nonlinear interactions.");
+  lines.push("  100,000 scenarios -- Rare-Event: Exposes low-frequency, high-impact edge cases.");
+  lines.push("  1M scenarios      -- Strategic Intelligence: Rare-event discovery. Policy-scale analysis.");
+  lines.push("");
+  const scaleContext = input.targetCount >= 1000000
+    ? "At 1M scenarios, this report provides strategic intelligence infrastructure."
+    : input.targetCount >= 100000
+    ? "At 100,000+ scenarios, this report identifies low-frequency, high-impact edge cases."
+    : input.targetCount >= 10000
+    ? "At 10,000 scenarios, this report maps the full institutional decision surface."
+    : input.targetCount >= 1000
+    ? "At 1,000 scenarios, this report provides meaningful probabilistic confidence."
+    : "At 100 scenarios, this report provides a rapid directional stress scan.";
+  lines.push(`This run: ${input.targetCount.toLocaleString()} scenarios (${modeLabel(input.mode)}). ${scaleContext}`);
+  lines.push("");
+
+  lines.push("C. WHAT THIS ADDS BEYOND TRADITIONAL IC REVIEW");
+  lines.push(dash);
+  lines.push("Traditional IC Review:    One memo | One recommendation | Static assumptions | No resilience test");
+  lines.push("Strategic Simulation:     Thousands of governed futures | Probabilistic distributions");
+  lines.push("                          Failure vector mapping | Governance escalation analysis");
+  lines.push("");
+  lines.push("A deal that survives 10,000 stressed futures is fundamentally different from a deal");
+  lines.push("approved once under static assumptions. Simulation stress-tests IC judgment.");
+  lines.push("");
+
+  lines.push("D. INTERPRETATION GUIDANCE");
+  lines.push(dash);
+  lines.push("High approval consistency    -> Resilient deal structure. Proceed with standard diligence.");
+  lines.push("Wide conditional range       -> Execution-sensitive. Conditional approval with covenants.");
+  lines.push("High veto concentration      -> Governance fragility. Address before any investment.");
+  lines.push("Low-freq catastrophic events -> Edge-case systemic risk. Add protective covenants.");
+  lines.push("0% approval rate             -> Structurally non-investable. Fundamental restructuring required.");
   lines.push("");
 
   lines.push("1. EXECUTIVE SUMMARY");
