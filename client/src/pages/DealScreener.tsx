@@ -13,6 +13,7 @@ import DataRoomUpload, { type DataRoomResult } from "@/components/DataRoomUpload
 import DataRoomBatch from "@/components/DataRoomBatch";
 import DataRoomV2 from "@/components/DataRoomV2";
 import { DecisionUpgradePanel } from "@/components/DecisionUpgradePanel";
+import { ScenarioSimDashboard, ScenarioSimToggle } from "@/components/ScenarioSimDashboard";
 import { trackEvent } from "@/lib/analytics";
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -2027,6 +2028,14 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
         agentFeedback={result.votes?.map(v => `${v.personaName}: ${v.rationale}`).join("\n") ?? ""}
         dealMeta={{ dealName: result.dealName ?? "Deal" }}
       />
+      {/* ── Section 11: Strategic Scenario Simulation Dashboard ─────────── */}
+      <div style={{ marginTop: 8, borderTop: "1px solid #1e2d3d", paddingTop: 24 }}>
+        <ScenarioSimDashboard
+          dealId={result.dealId ?? result.dealName}
+          dealName={result.dealName}
+          dealText={result.dealText ?? result.dealTextPreview ?? ""}
+        />
+      </div>
     </div>
   );
 }
@@ -2060,6 +2069,9 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
   // Data Room Ingestion V1 — toggle state
   const [dataRoomMode, setDataRoomMode] = useState(false);
   const [investorMode, setInvestorMode] = useState(false);
+  // Strategic Scenario Simulation
+  const [simEnabled, setSimEnabled] = useState(false);
+  const [simMode, setSimMode] = useState<"quick" | "institutional" | "deep" | "infrastructure">("quick");
   const [error, setError] = useState<string | null>(null);
   const [touchedSubmit, setTouchedSubmit] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
@@ -2683,6 +2695,15 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
           </span>
         </div>
 
+        {/* Strategic Scenario Simulation Toggle */}
+        <div style={{ marginBottom: 16 }}>
+          <ScenarioSimToggle
+            enabled={simEnabled}
+            onChange={setSimEnabled}
+            selectedMode={simMode}
+            onModeChange={setSimMode}
+          />
+        </div>
         {/* Error */}
         {error && (
           <div style={{

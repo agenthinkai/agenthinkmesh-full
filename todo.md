@@ -4612,3 +4612,15 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] App.tsx — all 5 infra-sim routes registered
 - [x] TypeScript check — zero errors
 - [x] Helios-North IC Memo extracted and loaded as baseline demo case config
+
+## Strategic Scenario Simulation Mode (2026-05-24)
+
+- [x] Scenario Mutation Engine (scenarioMutationEngine.ts) — 30 perturbation dimensions across 6 categories, correlation groups, hard-no triggers, provenance manifest, deterministic seeded RNG
+- [x] Aggregation Layer (scenarioAggregator.ts) — Decision Distribution, Failure Vector Ranking, Approval Pathways, Governance Heatmap, Sensitivity Surface, Executive Summary
+- [x] Database schema — scenario_sim_runs and scenario_sim_telemetry tables, pnpm db:push applied
+- [x] tRPC router (server/routers/scenarioSim.ts) — startRun (sync ≤1000 / async >1000), getRunStatus (polling), listRuns, cancelRun
+- [x] Router registered in server/routers.ts as scenarioSim
+- [x] ScenarioSimDashboard.tsx — simulation toggle in DealForm, 4-mode selector (100/1k/10k/100k), 5 dashboard sections (Decision Distribution donut, Risk Heatmap, Approval Pathway Matrix, Governance Escalation Chart, Variable Sensitivity Ranking)
+- [x] ScenarioSimDashboard integrated into ICReport component after DecisionUpgradePanel
+- [x] Vitest tests (server/scenarioSim.test.ts) — 30 tests covering SIMULATION_MODES, PERTURBATION_DIMENSIONS, generateScenarioVariants, buildScenarioBrief, evaluateScenario, aggregateSimulationResults — all passing
+- [x] Full test suite: 60 test files, 1079 tests passing

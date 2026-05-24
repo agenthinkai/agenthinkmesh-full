@@ -2200,3 +2200,53 @@ export const infraSimPortfolioLinks = mysqlTable("infra_sim_portfolio_links", {
 }));
 export type InfraSimPortfolioLink = typeof infraSimPortfolioLinks.$inferSelect;
 export type InsertInfraSimPortfolioLink = typeof infraSimPortfolioLinks.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Strategic Scenario Simulation Mode — Schema
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── Simulation Run — top-level record for each simulation batch ───────────────
+export const scenarioSimRuns = mysqlTable("scenario_sim_runs", {
+  id:              int("id").autoincrement().primaryKey(),
+  runId:           varchar("run_id", { length: 64 }).notNull().unique(),
+  userId:          int("user_id").notNull(),
+  dealId:          varchar("deal_id", { length: 64 }).notNull(),
+  dealName:        varchar("deal_name", { length: 255 }).notNull(),
+  mode:            mysqlEnum("mode", ["quick", "institutional", "deep", "infrastructure"]).notNull(),
+  targetCount:     int("target_count").notNull(),
+  completedCount:  int("completed_count").notNull().default(0),
+  status:          mysqlEnum("status", ["pending", "running", "completed", "failed", "paused"]).notNull().default("pending"),
+  decisionDistribution: text("decision_distribution"),
+  failureVectors:       text("failure_vectors"),
+  approvalPathways:     text("approval_pathways"),
+  governanceHeatmap:    text("governance_heatmap"),
+  sensitivitySurface:   text("sensitivity_surface"),
+  executiveSummary:     text("executive_summary"),
+  durationMs:      int("duration_ms"),
+  baseSeed:        bigint("base_seed", { mode: "number" }),
+  createdAt:       timestamp("created_at").defaultNow().notNull(),
+  completedAt:     timestamp("completed_at"),
+}, (table) => ({
+  ssrUser:   index("ssr_user_idx").on(table.userId),
+  ssrDeal:   index("ssr_deal_idx").on(table.dealId),
+  ssrStatus: index("ssr_status_idx").on(table.status),
+}));
+export type ScenarioSimRun = typeof scenarioSimRuns.$inferSelect;
+export type InsertScenarioSimRun = typeof scenarioSimRuns.$inferInsert;
+
+// ── Simulation Telemetry — lightweight per-chunk progress tracking ────────────
+export const scenarioSimTelemetry = mysqlTable("scenario_sim_telemetry", {
+  id:               int("id").autoincrement().primaryKey(),
+  runId:            varchar("run_id", { length: 64 }).notNull(),
+  chunkIndex:       int("chunk_index").notNull(),
+  chunkSize:        int("chunk_size").notNull(),
+  approveCount:     int("approve_count").notNull().default(0),
+  conditionalCount: int("conditional_count").notNull().default(0),
+  rejectCount:      int("reject_count").notNull().default(0),
+  hardNoCount:      int("hard_no_count").notNull().default(0),
+  durationMs:       int("duration_ms"),
+  createdAt:        timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  sstRun: index("sst_run_idx").on(table.runId),
+}));
+export type ScenarioSimTelemetry = typeof scenarioSimTelemetry.$inferSelect;
