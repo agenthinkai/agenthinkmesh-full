@@ -2,17 +2,23 @@
  * stressTestReportPdf.ts — AI-Governed Strategic Stress Test Report Generator
  *
  * Produces a standalone PDF from Strategic Scenario Simulation Mode output.
- * 10 sections:
- *   1. Executive Summary
+ *
+ * Sections:
+ *   COVER PAGE (traceability: deal name, mode, scenario count, run ID, timestamp, base verdict, version)
+ *   A. What 10,000 Strategic Simulations Means  [explanatory box]
+ *   B. How to Read This Report                  [glossary]
+ *   1. Executive Summary + KPI Tiles
  *   2. Methodology
  *   3. Decision Distribution
- *   4. Failure Vector Ranking
- *   5. Approval Pathways
- *   6. Sensitivity Analysis
- *   7. Governance Escalation Map
- *   8. Scenario Clusters
- *   9. Comparison to Base IC Memo
- *  10. Final Investment Interpretation
+ *   4. Structural Failure Analysis              [shown when approvePct < 5%]
+ *   5. Failure Vector Ranking
+ *   6. Approval Pathways                        [hidden when approvePct = 0]
+ *   7. Sensitivity Analysis
+ *   8. Governance Escalation Map
+ *   9. Scenario Clusters
+ *  10. Institutional Meaning
+ *  11. Comparison to Base IC Memo
+ *  12. Final Investment Interpretation
  */
 import https from "https";
 import http from "http";
@@ -65,6 +71,10 @@ export interface StressTestReportInput {
     catastrophic: number;
   };
   generatedAt?: string;
+  /** Optional run ID for traceability on cover page */
+  runId?: string;
+  /** Report version string */
+  reportVersion?: string;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -106,13 +116,28 @@ function modeLabel(mode: string): string {
   return map[mode] ?? mode;
 }
 
+/** Safe percentage: clamp to 0–100, guard NaN/Infinity, format to 1 decimal. */
 function pct(n: number): string {
-  return `${n.toFixed(1)}%`;
+  if (!isFinite(n) || isNaN(n)) return "0.0%";
+  return `${Math.min(100, Math.max(0, n)).toFixed(1)}%`;
 }
 
-function bar(pctVal: number, width = 30): string {
-  const filled = Math.round((pctVal / 100) * width);
-  return "█".repeat(filled) + "░".repeat(width - filled);
+/** Safe number: clamp NaN/Infinity to 0. */
+function safeNum(n: number): number {
+  if (!isFinite(n) || isNaN(n)) return 0;
+  return n;
+}
+
+/** Strip unsupported glyphs — keep only ASCII + common safe Unicode. */
+function sanitize(text: string): string {
+  if (!text) return "";
+  // Remove % followed by non-numeric (e.g. %' %^ artifacts)
+  let s = text.replace(/%[^0-9.\s]/g, "%");
+  // Remove zero-width and non-printable characters
+  s = s.replace(/[\u200B-\u200D\uFEFF\u00AD]/g, "");
+  // Replace em-dash variants with hyphen for safety
+  s = s.replace(/[\u2013\u2014]/g, "-");
+  return s;
 }
 
 // ── PDF Generator ─────────────────────────────────────────────────────────────
@@ -123,6 +148,7 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
   const doc = new PDFDocument({
     size: "A4",
     margins: { top: 56, bottom: 56, left: 56, right: 56 },
+    bufferPages: true,
     info: {
       Title: `Strategic Stress Test Report — ${input.dealName}`,
       Author: "AgenThinkMesh Scenario Simulation Engine",
@@ -137,9 +163,10 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
   const CONTENT_W = W - 112;
   const L = 56;
 
+  // ── Palette ──────────────────────────────────────────────────────────────────
   const BLACK   = "#0A0A0A";
   const WHITE   = "#FFFFFF";
-  const ACCENT  = "#1A1A2E"; // deep navy/purple
+  const ACCENT  = "#1A1A2E";   // deep navy/purple — cover + section headers
   const PURPLE  = "#6B21A8";
   const TEAL    = "#0D7377";
   const RED     = "#C0392B";
@@ -150,64 +177,128 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
   const BGLIGHT = "#F8F9FA";
   const BORDER  = "#D0D5DD";
   const GOLD    = "#C9A84C";
+  const INFOBOX = "#EFF6FF";   // light blue for explanatory boxes
+  const INFOBORDER = "#3B82F6";
+  const WARNBOX = "#FFF7ED";   // amber box for structural failure
+  const WARNBORDER = "#F59E0B";
+
+  // ── Page helpers ─────────────────────────────────────────────────────────────
 
   function newPage() {
     doc.addPage();
     doc.moveTo(L, 40).lineTo(W - L, 40).lineWidth(0.5).strokeColor(BORDER).stroke();
     doc.fontSize(7).fillColor(LGRAY).font("Helvetica")
-      .text(`AGENTHINK MESH · STRATEGIC STRESS TEST REPORT — ${input.dealName.toUpperCase()}`, L, 28, { width: CONTENT_W, align: "left" });
-    doc.moveDown(0.5);
+      .text(`AGENTHINK MESH  ·  STRATEGIC STRESS TEST REPORT  —  ${sanitize(input.dealName).toUpperCase()}`, L, 28, { width: CONTENT_W, align: "left" });
+    doc.y = 56;
   }
 
-  function sectionHeader(num: number, title: string) {
-    if (doc.y > 680) newPage();
+  function ensureSpace(needed = 60) {
+    if (doc.y > 842 - 56 - needed) newPage();
+  }
+
+  function sectionHeader(label: string) {
+    ensureSpace(50);
     doc.moveDown(0.8);
     doc.moveTo(L, doc.y).lineTo(W - L, doc.y).lineWidth(0.5).strokeColor(ACCENT).stroke();
     doc.moveDown(0.3);
     doc.fontSize(11).fillColor(ACCENT).font("Helvetica-Bold")
-      .text(`${num}. ${title.toUpperCase()}`, L, doc.y, { width: CONTENT_W });
-    doc.moveDown(0.4);
+      .text(label.toUpperCase(), L, doc.y, { width: CONTENT_W });
+    doc.moveDown(0.5);
   }
 
   function subHeader(text: string) {
-    if (doc.y > 700) newPage();
+    ensureSpace(30);
     doc.fontSize(9).fillColor(PURPLE).font("Helvetica-Bold")
-      .text(text.toUpperCase(), L, doc.y, { width: CONTENT_W });
-    doc.moveDown(0.25);
+      .text(sanitize(text).toUpperCase(), L, doc.y, { width: CONTENT_W });
+    doc.moveDown(0.3);
   }
 
   function bodyText(text: string, indent = 0) {
-    if (!text) return;
-    if (doc.y > 720) newPage();
+    const s = sanitize(text);
+    if (!s) return;
+    ensureSpace(20);
     doc.fontSize(9).fillColor(BLACK).font("Helvetica")
-      .text(text, L + indent, doc.y, { width: CONTENT_W - indent });
-    doc.moveDown(0.25);
+      .text(s, L + indent, doc.y, { width: CONTENT_W - indent });
+    doc.moveDown(0.3);
   }
 
   function labelValue(label: string, value: string, indent = 0) {
-    if (doc.y > 720) newPage();
+    ensureSpace(18);
+    const safeVal = sanitize(value) || "Not available";
     doc.fontSize(8.5).fillColor(GRAY).font("Helvetica-Bold")
-      .text(label + ":", L + indent, doc.y, { continued: true, width: 130 });
+      .text(label + ":", L + indent, doc.y, { continued: true, width: 140 });
     doc.fillColor(BLACK).font("Helvetica")
-      .text("  " + (value || "—"), { width: CONTENT_W - indent - 130 });
+      .text("  " + safeVal, { width: CONTENT_W - indent - 140 });
     doc.moveDown(0.2);
   }
 
+  /** Percentage row — no ASCII bar, just a clean label + colored percentage. */
   function metricRow(label: string, pctVal: number, color: string) {
-    if (doc.y > 720) newPage();
+    ensureSpace(18);
+    const safePct = safeNum(pctVal);
+    const barWidth = 120;
+    const filled = Math.round((Math.min(100, safePct) / 100) * barWidth);
+
+    // Label
     doc.fontSize(8.5).fillColor(GRAY).font("Helvetica-Bold")
-      .text(label, L + 8, doc.y, { continued: true, width: 130 });
+      .text(sanitize(label), L + 8, doc.y, { continued: true, width: 150 });
+
+    // Percentage value
     doc.fillColor(color).font("Helvetica-Bold")
-      .text(pct(pctVal), { continued: true, width: 50 });
-    doc.fillColor(color).font("Helvetica")
-      .text(`  ${bar(pctVal, 25)}`, { width: CONTENT_W - 188 });
-    doc.moveDown(0.25);
+      .text(pct(safePct), { continued: true, width: 50 });
+
+    // Simple filled rectangle bar (no ASCII glyphs)
+    const barX = L + 8 + 150 + 50 + 4;
+    const barY = doc.y - 10;
+    const barH = 8;
+    doc.rect(barX, barY, barWidth, barH).fillColor("#E5E7EB").fill();
+    if (filled > 0) {
+      doc.rect(barX, barY, filled, barH).fillColor(color).fill();
+    }
+    doc.text("", { width: 0 }); // flush continued
+    doc.moveDown(0.35);
   }
 
-  // ── Cover Page ─────────────────────────────────────────────────────────────
+  /** Colored info box with left border accent. */
+  function infoBox(title: string, lines: string[], bgColor: string, borderColor: string) {
+    const lineHeight = 13;
+    const padding = 10;
+    const totalH = padding * 2 + (title ? 16 : 0) + lines.length * lineHeight + 4;
+    ensureSpace(totalH + 10);
 
-  // Deep navy/purple header band
-  doc.rect(0, 0, W, 180).fill(ACCENT);
+    const boxY = doc.y;
+    doc.rect(L, boxY, CONTENT_W, totalH).fillColor(bgColor).fill();
+    doc.rect(L, boxY, 3, totalH).fillColor(borderColor).fill();
+
+    let textY = boxY + padding;
+    if (title) {
+      doc.fontSize(9).fillColor(borderColor).font("Helvetica-Bold")
+        .text(sanitize(title), L + 12, textY, { width: CONTENT_W - 20 });
+      textY += 16;
+    }
+    lines.forEach(line => {
+      doc.fontSize(8.5).fillColor(BLACK).font("Helvetica")
+        .text(sanitize(line), L + 12, textY, { width: CONTENT_W - 20 });
+      textY += lineHeight;
+    });
+    doc.y = boxY + totalH + 8;
+    doc.moveDown(0.2);
+  }
+
+  /** KPI tile — draws a small colored card with a big number and label. */
+  function kpiTile(x: number, y: number, tileW: number, tileH: number, value: string, label: string, color: string) {
+    doc.rect(x, y, tileW, tileH).fillColor(BGLIGHT).fill();
+    doc.rect(x, y, tileW, 3).fillColor(color).fill();
+    doc.fontSize(14).fillColor(color).font("Helvetica-Bold")
+      .text(sanitize(value), x + 6, y + 10, { width: tileW - 12, align: "center" });
+    doc.fontSize(6.5).fillColor(LGRAY).font("Helvetica")
+      .text(sanitize(label).toUpperCase(), x + 4, y + 30, { width: tileW - 8, align: "center" });
+  }
+
+  // ── Cover Page ───────────────────────────────────────────────────────────────
+
+  // Dark header band
+  doc.rect(0, 0, W, 195).fill(ACCENT);
 
   try {
     const logoBuffer = await fetchBuffer(LOGO_CDN_URL);
@@ -216,48 +307,144 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
     doc.fontSize(14).fillColor(WHITE).font("Helvetica-Bold").text("AGENTHINK MESH", L, 24);
   }
 
-  doc.fontSize(8).fillColor(GOLD).font("Helvetica-Bold")
-    .text("AI-GOVERNED STRATEGIC STRESS TEST REPORT", L, 70, { width: CONTENT_W, align: "center" });
+  doc.fontSize(7.5).fillColor(GOLD).font("Helvetica-Bold")
+    .text("AI-GOVERNED STRATEGIC STRESS TEST REPORT  ·  REPORT VERSION " + (input.reportVersion ?? "1.0"), L, 68, { width: CONTENT_W, align: "center" });
 
   doc.fontSize(20).fillColor(WHITE).font("Helvetica-Bold")
-    .text(input.dealName.toUpperCase(), L, 95, { width: CONTENT_W, align: "center" });
+    .text(sanitize(input.dealName).toUpperCase(), L, 88, { width: CONTENT_W, align: "center" });
 
   doc.fontSize(10).fillColor(GOLD).font("Helvetica")
-    .text(`${modeLabel(input.mode).toUpperCase()}`, L, 130, { width: CONTENT_W, align: "center" });
+    .text(modeLabel(input.mode).toUpperCase(), L, 125, { width: CONTENT_W, align: "center" });
 
   const vLabel = verdictLabel(input.baseVerdict);
   const vColor = ["REJECTED", "VETOED"].some(x => vLabel.includes(x)) ? RED
     : vLabel.includes("CONDITIONAL") ? AMBER : GREEN;
   doc.fontSize(10).fillColor(vColor).font("Helvetica-Bold")
-    .text(`BASE VERDICT: ${vLabel}`, L, 153, { width: CONTENT_W, align: "center" });
+    .text(`BASE VERDICT: ${vLabel}`, L, 148, { width: CONTENT_W, align: "center" });
 
-  doc.rect(0, 180, W, 36).fill("#F0F4F8");
-  doc.fontSize(8).fillColor(GRAY).font("Helvetica")
-    .text(`Generated: ${input.generatedAt ?? new Date().toISOString().split("T")[0]}   ·   Scenarios: ${input.targetCount.toLocaleString()}   ·   Completed: ${(typeof input.completedAt === "string" ? input.completedAt : (input.completedAt as unknown as Date).toISOString()).split("T")[0]}   ·   AgenThinkMesh Scenario Engine`, L, 193, { width: CONTENT_W, align: "center" });
+  // Traceability band
+  doc.rect(0, 195, W, 48).fill("#F0F4F8");
 
-  doc.y = 230;
+  const completedDateStr = (() => {
+    try {
+      const s = typeof input.completedAt === "string" ? input.completedAt
+        : (input.completedAt as unknown as Date).toISOString();
+      return s.split("T")[0];
+    } catch { return "Unknown"; }
+  })();
 
-  doc.fontSize(9).fillColor(GRAY).font("Helvetica")
-    .text("This report presents the results of a strategic scenario simulation conducted by the AgenThinkMesh Scenario Mutation Engine. The simulation perturbs deal parameters across 30 dimensions in 6 categories and re-evaluates each scenario through the Council of 10 decision framework. Results are aggregated to produce probabilistic governance intelligence.", L, doc.y, { width: CONTENT_W, align: "justify" });
-  doc.moveDown(1);
+  const generatedDateStr = (() => {
+    try {
+      const s = input.generatedAt ?? new Date().toISOString();
+      return s.split("T")[0];
+    } catch { return new Date().toISOString().split("T")[0]; }
+  })();
 
-  // ── Section 1: Executive Summary ──────────────────────────────────────────
-  sectionHeader(1, "Executive Summary");
-  labelValue("Simulation Mode", modeLabel(input.mode));
-  labelValue("Scenario Count", input.targetCount.toLocaleString());
+  doc.fontSize(7.5).fillColor(GRAY).font("Helvetica-Bold")
+    .text("DEAL:", L + 8, 205, { continued: true, width: 30 });
+  doc.font("Helvetica").fillColor(BLACK)
+    .text(` ${sanitize(input.dealName)}`, { continued: true, width: 120 });
+  doc.fillColor(GRAY).font("Helvetica-Bold")
+    .text("  MODE:", { continued: true, width: 30 });
+  doc.font("Helvetica").fillColor(BLACK)
+    .text(` ${sanitize(input.mode).toUpperCase()}`, { continued: true, width: 80 });
+  doc.fillColor(GRAY).font("Helvetica-Bold")
+    .text("  SCENARIOS:", { continued: true, width: 50 });
+  doc.font("Helvetica").fillColor(BLACK)
+    .text(` ${input.targetCount.toLocaleString()}`, { width: 60 });
+
+  doc.fontSize(7.5).fillColor(GRAY).font("Helvetica-Bold")
+    .text("COMPLETED:", L + 8, 218, { continued: true, width: 50 });
+  doc.font("Helvetica").fillColor(BLACK)
+    .text(` ${completedDateStr}`, { continued: true, width: 80 });
+  doc.fillColor(GRAY).font("Helvetica-Bold")
+    .text("  GENERATED:", { continued: true, width: 55 });
+  doc.font("Helvetica").fillColor(BLACK)
+    .text(` ${generatedDateStr}`, { continued: true, width: 80 });
+  if (input.runId) {
+    doc.fillColor(GRAY).font("Helvetica-Bold")
+      .text("  RUN ID:", { continued: true, width: 40 });
+    doc.font("Helvetica").fillColor(BLACK)
+      .text(` ${sanitize(input.runId).slice(0, 16)}`, { width: 120 });
+  } else {
+    doc.text("", { width: 0 });
+  }
+
+  doc.y = 255;
+
+  // ── Section A: What 10,000 Strategic Simulations Means ──────────────────────
+
+  sectionHeader("A. What 10,000 Strategic Simulations Means");
+  infoBox(
+    "What 10,000 Strategic Simulations Means",
+    [
+      "This report does not repeat the same deal screen 10,000 times. It creates 10,000 structured strategic",
+      "futures by perturbing key deal assumptions — financial, regulatory, market, execution, technology, and",
+      "governance conditions — then re-runs the Council of 10 decision framework against each variant. The result",
+      "is a probabilistic map of how resilient or fragile the investment case is under changing real-world conditions.",
+      "",
+      "A 0% approval rate does not mean the model failed. It means no tested combination of realistic stresses",
+      "produced an investable outcome under the current deal structure.",
+    ],
+    INFOBOX,
+    INFOBORDER
+  );
+
+  // ── Section B: How to Read This Report ──────────────────────────────────────
+
+  sectionHeader("B. How to Read This Report");
+  const glossaryRows: [string, string][] = [
+    ["Approval Rate", "Share of scenarios where the deal remained investable (APPROVE verdict)."],
+    ["Conditional Rate", "Share of scenarios where the deal may proceed only with mitigants."],
+    ["Rejection Rate", "Share of scenarios where the deal failed investment criteria."],
+    ["Veto Rate", "Share of scenarios triggering hard-no governance blockers. Veto is a subset of Rejection — do not add them together."],
+    ["Failure Vectors", "Most frequent reasons scenarios failed, ranked by occurrence across all simulated futures."],
+    ["Approval Pathways", "Conditions that would make the deal stronger, if any investable scenarios exist."],
+    ["Sensitivity Analysis", "Variables ranked by their marginal impact on approval probability."],
+    ["Governance Escalation", "Categories that triggered escalation or veto conditions most frequently."],
+  ];
+  glossaryRows.forEach(([term, def]) => {
+    ensureSpace(20);
+    doc.fontSize(8.5).fillColor(ACCENT).font("Helvetica-Bold")
+      .text(`${sanitize(term)}:`, L + 8, doc.y, { continued: true, width: 130 });
+    doc.fillColor(GRAY).font("Helvetica")
+      .text(`  ${sanitize(def)}`, { width: CONTENT_W - 138 });
+    doc.moveDown(0.2);
+  });
+
+  // ── Section 1: Executive Summary + KPI Tiles ────────────────────────────────
+
+  sectionHeader("1. Executive Summary");
+
+  // KPI tiles — 6 tiles in 2 rows of 3
+  const tileW = (CONTENT_W - 20) / 3;
+  const tileH = 46;
+  const row1Y = doc.y;
+  ensureSpace(tileH * 2 + 20);
+
+  const topFv = input.failureVectors[0]?.category?.replace(/_/g, " ") ?? "None";
+  kpiTile(L,               row1Y, tileW - 4, tileH, input.targetCount.toLocaleString(), "Scenario Count", ACCENT);
+  kpiTile(L + tileW,       row1Y, tileW - 4, tileH, pct(safeNum(input.decisionDistribution.approvePct)), "Approval Rate", GREEN);
+  kpiTile(L + tileW * 2,   row1Y, tileW - 4, tileH, pct(safeNum(input.decisionDistribution.rejectPct)), "Rejection Rate", RED);
+
+  const row2Y = row1Y + tileH + 8;
+  kpiTile(L,               row2Y, tileW - 4, tileH, pct(safeNum(input.decisionDistribution.vetoPct)), "Veto Rate", "#8B0000");
+  kpiTile(L + tileW,       row2Y, tileW - 4, tileH, sanitize(topFv).slice(0, 18), "Top Failure Vector", AMBER);
+  kpiTile(L + tileW * 2,   row2Y, tileW - 4, tileH, sanitize(input.mode).toUpperCase(), "Simulation Mode", PURPLE);
+
+  doc.y = row2Y + tileH + 14;
+
   labelValue("Base Verdict", verdictLabel(input.baseVerdict));
-  labelValue("Approval Rate", pct(input.decisionDistribution.approvePct));
-  labelValue("Conditional Rate", pct(input.decisionDistribution.conditionalPct));
-  labelValue("Rejection Rate", pct(input.decisionDistribution.rejectPct));
-  labelValue("Veto Rate", pct(input.decisionDistribution.vetoPct));
-  doc.moveDown(0.3);
+  labelValue("Conditional Rate", pct(safeNum(input.decisionDistribution.conditionalPct)));
   if (input.executiveSummary) {
+    doc.moveDown(0.3);
     subHeader("Key Conclusion");
     bodyText(input.executiveSummary);
   }
 
-  // ── Section 2: Methodology ────────────────────────────────────────────────
-  sectionHeader(2, "Methodology");
+  // ── Section 2: Methodology ───────────────────────────────────────────────────
+
+  sectionHeader("2. Methodology");
   bodyText("The AgenThinkMesh Scenario Mutation Engine generates synthetic strategic variants of the base deal by applying probabilistic perturbations across 30 dimensions in 6 categories: Capital & Financial Stress, Revenue & Market Stress, Operational & Execution Stress, Regulatory & Governance Stress, Macro & Systemic Stress, and Technology & Infrastructure Stress.");
   doc.moveDown(0.3);
   subHeader("Perturbation Dimensions");
@@ -268,110 +455,213 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
   doc.moveDown(0.3);
   subHeader("Aggregation Logic");
   bodyText("Results are aggregated across all scenarios to produce decision distribution percentages, failure vector rankings, approval pathway identification, governance escalation mapping, and sensitivity surface analysis.");
-  doc.moveDown(0.3);
-  subHeader("Confidence Interpretation");
-  bodyText("Approval percentage represents the fraction of scenarios where the deal received an APPROVE verdict. Conditional percentage includes APPROVED_WITH_CONDITIONS outcomes. The sensitivity surface ranks variables by their marginal impact on approval probability.");
 
-  // ── Section 3: Decision Distribution ─────────────────────────────────────
-  sectionHeader(3, "Decision Distribution");
+  // ── Section 3: Decision Distribution ────────────────────────────────────────
+
+  sectionHeader("3. Decision Distribution");
   bodyText(`Across ${input.targetCount.toLocaleString()} simulated scenarios:`);
   doc.moveDown(0.3);
-  metricRow("APPROVE", input.decisionDistribution.approvePct, GREEN);
-  metricRow("CONDITIONAL APPROVE", input.decisionDistribution.conditionalPct, AMBER);
-  metricRow("REJECT", input.decisionDistribution.rejectPct, RED);
-  metricRow("VETO", input.decisionDistribution.vetoPct, "#8B0000");
+  metricRow("APPROVE", safeNum(input.decisionDistribution.approvePct), GREEN);
+  metricRow("CONDITIONAL APPROVE", safeNum(input.decisionDistribution.conditionalPct), AMBER);
+  metricRow("REJECT", safeNum(input.decisionDistribution.rejectPct), RED);
+  metricRow("VETO (hard-no governance)", safeNum(input.decisionDistribution.vetoPct), "#8B0000");
+
+  // Fix negative-outcome math: veto is a subset of rejection — never add them
+  const rejectPct = safeNum(input.decisionDistribution.rejectPct);
+  const vetoPct   = safeNum(input.decisionDistribution.vetoPct);
+  if (rejectPct > 0 || vetoPct > 0) {
+    doc.moveDown(0.3);
+    let negOutcomeText = "";
+    if (rejectPct > 0 && vetoPct > 0) {
+      negOutcomeText = `${pct(rejectPct)} of scenarios produced a rejection outcome, and ${pct(vetoPct)} triggered hard-no governance veto conditions. Note: veto scenarios are a subset of rejected scenarios — they are not additive.`;
+    } else if (rejectPct > 0) {
+      negOutcomeText = `${pct(rejectPct)} of scenarios produced a rejection outcome.`;
+    } else {
+      negOutcomeText = `${pct(vetoPct)} of scenarios triggered hard-no governance veto conditions.`;
+    }
+    infoBox("", [negOutcomeText], "#FEF2F2", RED);
+  }
 
   if (input.decisionDistribution.confidenceDistribution) {
     doc.moveDown(0.3);
     subHeader("Confidence Distribution");
     const cd = input.decisionDistribution.confidenceDistribution;
-    metricRow("Low Confidence (< 40%)", cd.low, RED);
-    metricRow("Medium Confidence (40–70%)", cd.medium, AMBER);
-    metricRow("High Confidence (> 70%)", cd.high, GREEN);
+    metricRow("Low Confidence (< 40%)", safeNum(cd.low), RED);
+    metricRow("Medium Confidence (40-70%)", safeNum(cd.medium), AMBER);
+    metricRow("High Confidence (> 70%)", safeNum(cd.high), GREEN);
   }
 
-  // ── Section 4: Failure Vector Ranking ────────────────────────────────────
+  // ── Section 4: Structural Failure Analysis (shown when approvePct < 5%) ─────
+
+  const approvePct = safeNum(input.decisionDistribution.approvePct);
+  if (approvePct < 5) {
+    sectionHeader("4. Structural Failure Analysis");
+    infoBox(
+      "Why No Approval Scenarios Emerged",
+      [
+        `Across ${input.targetCount.toLocaleString()} simulated strategic futures, ${pct(approvePct)} of scenarios produced an`,
+        "investable outcome. This indicates that the current deal structure is not resilient to realistic",
+        "perturbations of its key assumptions. The deal is structurally fragile, not merely risky.",
+        "",
+        "This is distinct from a deal that is risky but investable. A risky deal still produces positive",
+        "outcomes under favorable conditions. A structurally fragile deal does not — the investment case",
+        "collapses under almost any realistic stress scenario.",
+      ],
+      WARNBOX,
+      WARNBORDER
+    );
+
+    if (input.failureVectors.length > 0) {
+      subHeader("Top 3 Structural Blockers");
+      input.failureVectors.slice(0, 3).forEach((fv, i) => {
+        ensureSpace(30);
+        doc.fontSize(9).fillColor(RED).font("Helvetica-Bold")
+          .text(`${i + 1}. ${sanitize(fv.category).replace(/_/g, " ").toUpperCase()}`, L + 8, doc.y, { width: CONTENT_W - 16 });
+        doc.moveDown(0.15);
+        labelValue("Present in", `${pct(safeNum(fv.affectedPct))} of scenarios`, 8);
+        labelValue("Avg Severity", `${safeNum(fv.avgSeverity).toFixed(2)} / 1.0`, 8);
+        doc.moveTo(L, doc.y).lineTo(W - L, doc.y).lineWidth(0.3).strokeColor(BORDER).stroke();
+        doc.moveDown(0.35);
+      });
+    }
+
+    subHeader("Minimum Conditions Required for Investability");
+    if (input.approvalPathways.length > 0) {
+      input.approvalPathways.slice(0, 2).forEach((ap, i) => {
+        ensureSpace(30);
+        doc.fontSize(9).fillColor(TEAL).font("Helvetica-Bold")
+          .text(`Pathway ${i + 1} (${pct(safeNum(ap.approvalProbability))} approval probability)`, L + 8, doc.y, { width: CONTENT_W - 16 });
+        doc.moveDown(0.15);
+        if (ap.conditionSet.length > 0) {
+          ap.conditionSet.forEach(c => bodyText(`• ${sanitize(c)}`, 16));
+        }
+        doc.moveDown(0.2);
+      });
+    } else {
+      bodyText("No approval pathways were identified in the simulation. The deal requires fundamental restructuring before any investable pathway can emerge.", 8);
+    }
+
+    subHeader("Residual Blocker Statement");
+    const topBlocker = input.failureVectors[0]?.category?.replace(/_/g, " ") ?? "structural assumptions";
+    bodyText(`Even under the most favorable simulated conditions, ${sanitize(topBlocker)} consistently prevented an investable outcome. This dimension must be fundamentally addressed — not mitigated — before re-evaluation.`, 8);
+
+    subHeader("IC Recommendation");
+    infoBox(
+      "",
+      [
+        "RECOMMENDATION: REJECT — pending fundamental restructuring.",
+        "",
+        "Options available to the IC:",
+        "  1. Reject: Decline the deal in its current form.",
+        "  2. Request Revised Inputs: Ask the sponsor to address the top structural blockers",
+        "     identified above, then re-run the simulation.",
+        "  3. Run Decision Upgrade Protocol: Use the Upgrade Protocol to identify minimum",
+        "     changes required for the deal to become investable, then re-simulate.",
+      ],
+      WARNBOX,
+      WARNBORDER
+    );
+  }
+
+  // ── Section 5: Failure Vector Ranking ───────────────────────────────────────
+
   if (input.failureVectors.length > 0) {
-    sectionHeader(4, "Failure Vector Ranking");
+    sectionHeader("5. Failure Vector Ranking");
     bodyText("Top rejection drivers ranked by frequency across all simulated scenarios:");
     doc.moveDown(0.3);
     input.failureVectors.slice(0, 10).forEach((fv, i) => {
-      if (doc.y > 700) newPage();
+      ensureSpace(70);
       doc.fontSize(9).fillColor(ACCENT).font("Helvetica-Bold")
-        .text(`${i + 1}. ${fv.category.replace(/_/g, " ").toUpperCase()}`, L + 8, doc.y, { width: CONTENT_W - 16 });
+        .text(`${i + 1}. ${sanitize(fv.category).replace(/_/g, " ").toUpperCase()}`, L + 8, doc.y, { width: CONTENT_W - 16 });
       doc.moveDown(0.15);
-      labelValue("Frequency", fv.frequency.toLocaleString() + " scenarios", 8);
-      labelValue("Affected Scenarios", pct(fv.affectedPct), 8);
-      labelValue("Average Severity", fv.avgSeverity.toFixed(2) + " / 1.0", 8);
+      labelValue("Frequency", `${safeNum(fv.frequency).toLocaleString()} scenarios`, 8);
+      labelValue("Affected Scenarios", pct(safeNum(fv.affectedPct)), 8);
+      labelValue("Average Severity", `${safeNum(fv.avgSeverity).toFixed(2)} / 1.0`, 8);
       if (fv.examplePattern) {
-        labelValue("Example Pattern", fv.examplePattern, 8);
+        labelValue("Example Pattern", sanitize(fv.examplePattern), 8);
       }
       doc.moveTo(L, doc.y).lineTo(W - L, doc.y).lineWidth(0.3).strokeColor(BORDER).stroke();
       doc.moveDown(0.35);
     });
+  } else {
+    sectionHeader("5. Failure Vector Ranking");
+    bodyText("No data available. No failure vectors were recorded in this simulation run.");
   }
 
-  // ── Section 5: Approval Pathways ──────────────────────────────────────────
-  if (input.approvalPathways.length > 0) {
-    sectionHeader(5, "Approval Pathways");
+  // ── Section 6: Approval Pathways (hidden when approvePct = 0) ───────────────
+
+  if (approvePct > 0 && input.approvalPathways.length > 0) {
+    sectionHeader("6. Approval Pathways");
     bodyText("Conditions that increase approval probability across simulated scenarios:");
     doc.moveDown(0.3);
     input.approvalPathways.slice(0, 5).forEach((ap, i) => {
-      if (doc.y > 700) newPage();
+      ensureSpace(80);
       doc.fontSize(9).fillColor(TEAL).font("Helvetica-Bold")
         .text(`Pathway ${i + 1}`, L + 8, doc.y, { width: CONTENT_W - 16 });
       doc.moveDown(0.15);
-      labelValue("Approval Probability", pct(ap.approvalProbability), 8);
-      labelValue("Confidence Lift", `+${ap.confidenceLift.toFixed(1)}%`, 8);
+      labelValue("Approval Probability", pct(safeNum(ap.approvalProbability)), 8);
+      labelValue("Confidence Lift", `+${safeNum(ap.confidenceLift).toFixed(1)}%`, 8);
       if (ap.conditionSet.length > 0) {
         subHeader("  Condition Set");
-        ap.conditionSet.forEach(c => bodyText(`• ${c}`, 16));
+        ap.conditionSet.forEach(c => bodyText(`• ${sanitize(c)}`, 16));
       }
       if (ap.remainingRisks.length > 0) {
         subHeader("  Remaining Risks");
-        ap.remainingRisks.forEach(r => bodyText(`• ${r}`, 16));
+        ap.remainingRisks.forEach(r => bodyText(`• ${sanitize(r)}`, 16));
       }
       doc.moveTo(L, doc.y).lineTo(W - L, doc.y).lineWidth(0.3).strokeColor(BORDER).stroke();
       doc.moveDown(0.35);
     });
+  } else if (approvePct === 0) {
+    sectionHeader("6. Approval Pathways");
+    bodyText("Not applicable. No approval scenarios emerged in this simulation. See Section 4 (Structural Failure Analysis) for the minimum conditions required for investability.");
   }
 
-  // ── Section 6: Sensitivity Analysis ──────────────────────────────────────
+  // ── Section 7: Sensitivity Analysis ─────────────────────────────────────────
+
   if (input.sensitivitySurface.length > 0) {
-    sectionHeader(6, "Sensitivity Analysis");
+    sectionHeader("7. Sensitivity Analysis");
     bodyText("Variables ranked by their impact on approval probability. Higher impact score = greater influence on the deal's outcome across simulated scenarios.");
     doc.moveDown(0.3);
     input.sensitivitySurface.slice(0, 12).forEach((sv, i) => {
-      if (doc.y > 720) newPage();
-      const impactBar = "█".repeat(Math.round(sv.impactScore * 20)) + "░".repeat(20 - Math.round(sv.impactScore * 20));
+      ensureSpace(20);
+      const impactPct = safeNum(sv.impactScore) * 100;
       doc.fontSize(8.5).fillColor(GRAY).font("Helvetica-Bold")
-        .text(`${i + 1}. ${sv.variable.replace(/_/g, " ").toUpperCase()}`, L + 8, doc.y, { continued: true, width: 160 });
+        .text(`${i + 1}. ${sanitize(sv.variable).replace(/_/g, " ").toUpperCase()}`, L + 8, doc.y, { continued: true, width: 180 });
       doc.fillColor(sv.direction === "negative" ? RED : GREEN).font("Helvetica")
-        .text(`  ${impactBar}  ${(sv.impactScore * 100).toFixed(1)}%`, { width: CONTENT_W - 168 });
+        .text(`  ${pct(impactPct)}  (${sanitize(sv.direction)})`, { width: CONTENT_W - 188 });
       doc.moveDown(0.25);
     });
+  } else {
+    sectionHeader("7. Sensitivity Analysis");
+    bodyText("No data available. Sensitivity surface was not computed for this simulation run.");
   }
 
-  // ── Section 7: Governance Escalation Map ─────────────────────────────────
+  // ── Section 8: Governance Escalation Map ────────────────────────────────────
+
   if (input.governanceHeatmap.length > 0) {
-    sectionHeader(7, "Governance Escalation Map");
+    sectionHeader("8. Governance Escalation Map");
     bodyText("Categories that triggered governance escalation, veto, or compliance concerns across simulated scenarios:");
     doc.moveDown(0.3);
     input.governanceHeatmap.slice(0, 8).forEach((gh, i) => {
-      if (doc.y > 720) newPage();
+      ensureSpace(60);
       doc.fontSize(9).fillColor(ACCENT).font("Helvetica-Bold")
-        .text(`${i + 1}. ${gh.category.replace(/_/g, " ").toUpperCase()}`, L + 8, doc.y, { width: CONTENT_W - 16 });
+        .text(`${i + 1}. ${sanitize(gh.category).replace(/_/g, " ").toUpperCase()}`, L + 8, doc.y, { width: CONTENT_W - 16 });
       doc.moveDown(0.15);
-      labelValue("Escalation Count", gh.escalationCount.toLocaleString(), 8);
-      labelValue("Veto Count", gh.vetoCount.toLocaleString(), 8);
-      labelValue("Average Severity", gh.avgSeverity.toFixed(2) + " / 1.0", 8);
+      labelValue("Escalation Count", safeNum(gh.escalationCount).toLocaleString(), 8);
+      labelValue("Veto Count", safeNum(gh.vetoCount).toLocaleString(), 8);
+      labelValue("Average Severity", `${safeNum(gh.avgSeverity).toFixed(2)} / 1.0`, 8);
       doc.moveTo(L, doc.y).lineTo(W - L, doc.y).lineWidth(0.3).strokeColor(BORDER).stroke();
       doc.moveDown(0.35);
     });
+  } else {
+    sectionHeader("8. Governance Escalation Map");
+    bodyText("No data available. No governance escalation data was recorded in this simulation run.");
   }
 
-  // ── Section 8: Scenario Clusters ─────────────────────────────────────────
-  sectionHeader(8, "Scenario Clusters");
+  // ── Section 9: Scenario Clusters ────────────────────────────────────────────
+
+  sectionHeader("9. Scenario Clusters");
   if (input.scenarioClusters) {
     const sc = input.scenarioClusters;
     const total = sc.resilient + sc.conditional + sc.failure + sc.catastrophic;
@@ -382,21 +672,22 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
     metricRow("FAILURE (Reject)", total > 0 ? (sc.failure / total) * 100 : 0, RED);
     metricRow("CATASTROPHIC (Veto / Hard-No)", total > 0 ? (sc.catastrophic / total) * 100 : 0, "#8B0000");
     doc.moveDown(0.3);
-    labelValue("Resilient Scenarios", sc.resilient.toLocaleString());
-    labelValue("Conditional Scenarios", sc.conditional.toLocaleString());
-    labelValue("Failure Scenarios", sc.failure.toLocaleString());
-    labelValue("Catastrophic Scenarios", sc.catastrophic.toLocaleString());
+    labelValue("Resilient Scenarios", safeNum(sc.resilient).toLocaleString());
+    labelValue("Conditional Scenarios", safeNum(sc.conditional).toLocaleString());
+    labelValue("Failure Scenarios", safeNum(sc.failure).toLocaleString());
+    labelValue("Catastrophic Scenarios", safeNum(sc.catastrophic).toLocaleString());
   } else {
-    // Derive from distribution
     const total = input.targetCount;
-    const resilient = Math.round(total * input.decisionDistribution.approvePct / 100);
-    const conditional = Math.round(total * input.decisionDistribution.conditionalPct / 100);
-    const failure = Math.round(total * input.decisionDistribution.rejectPct / 100);
-    const catastrophic = Math.round(total * input.decisionDistribution.vetoPct / 100);
-    metricRow("RESILIENT (Approve)", input.decisionDistribution.approvePct, GREEN);
-    metricRow("CONDITIONAL", input.decisionDistribution.conditionalPct, AMBER);
-    metricRow("FAILURE (Reject)", input.decisionDistribution.rejectPct, RED);
-    metricRow("CATASTROPHIC (Veto)", input.decisionDistribution.vetoPct, "#8B0000");
+    const resilient  = Math.round(total * approvePct / 100);
+    const conditional = Math.round(total * safeNum(input.decisionDistribution.conditionalPct) / 100);
+    const failure    = Math.round(total * rejectPct / 100);
+    const catastrophic = Math.round(total * vetoPct / 100);
+    bodyText("Scenarios grouped by outcome severity (derived from decision distribution):");
+    doc.moveDown(0.3);
+    metricRow("RESILIENT (Approve)", approvePct, GREEN);
+    metricRow("CONDITIONAL", safeNum(input.decisionDistribution.conditionalPct), AMBER);
+    metricRow("FAILURE (Reject)", rejectPct, RED);
+    metricRow("CATASTROPHIC (Veto)", vetoPct, "#8B0000");
     doc.moveDown(0.3);
     labelValue("Resilient Scenarios", resilient.toLocaleString());
     labelValue("Conditional Scenarios", conditional.toLocaleString());
@@ -404,69 +695,87 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
     labelValue("Catastrophic Scenarios", catastrophic.toLocaleString());
   }
 
-  // ── Section 9: Comparison to Base IC Memo ────────────────────────────────
-  sectionHeader(9, "Comparison to Base IC Memo");
-  const approveRate = input.decisionDistribution.approvePct;
-  const conditionalRate = input.decisionDistribution.conditionalPct;
-  const rejectRate = input.decisionDistribution.rejectPct;
-  const baseIsApproved = ["APPROVED", "APPROVE"].includes(input.baseVerdict.toUpperCase());
+  // ── Section 10: Institutional Meaning ───────────────────────────────────────
+
+  sectionHeader("10. Institutional Meaning");
+  infoBox(
+    "What This Simulation Adds Beyond a Normal IC Memo",
+    [
+      "A normal IC memo gives one verdict — a single point estimate of the deal's investability.",
+      "This simulation tests whether that verdict survives thousands of plausible futures.",
+      "",
+      "Specifically, it answers five questions a normal IC memo cannot:",
+      "  1. Which assumptions repeatedly break the deal when stressed?",
+      "  2. Is the deal fragile (collapses under most stresses) or merely risky (survives most)?",
+      "  3. Under what conditions does the deal become investable, if any?",
+      "  4. Which governance dimensions are most exposed to escalation or veto?",
+      "  5. What is the probability-weighted distribution of outcomes, not just the base case?",
+      "",
+      "The result is a stress-tested decision basis — not a prediction, but a map of the",
+      "investment case's resilience across the realistic range of strategic futures.",
+    ],
+    INFOBOX,
+    INFOBORDER
+  );
+
+  // ── Section 11: Comparison to Base IC Memo ──────────────────────────────────
+
+  sectionHeader("11. Comparison to Base IC Memo");
+  const conditionalRate = safeNum(input.decisionDistribution.conditionalPct);
+  const baseIsApproved    = ["APPROVED", "APPROVE"].includes(input.baseVerdict.toUpperCase());
   const baseIsConditional = ["APPROVED_WITH_CONDITIONS", "CONDITIONAL_APPROVAL", "CONDITIONAL"].includes(input.baseVerdict.toUpperCase());
-  const baseIsRejected = ["REJECTED", "REJECT", "VETOED"].includes(input.baseVerdict.toUpperCase());
+  const baseIsRejected    = ["REJECTED", "REJECT", "VETOED"].includes(input.baseVerdict.toUpperCase());
 
   let comparison = "";
-  if (baseIsApproved && approveRate >= 50) {
-    comparison = `The base IC Memo verdict of ${verdictLabel(input.baseVerdict)} is reinforced by the simulation. ${pct(approveRate)} of scenarios produced an APPROVE outcome, indicating strong resilience across strategic perturbations.`;
-  } else if (baseIsApproved && approveRate < 50) {
-    comparison = `The base IC Memo verdict of ${verdictLabel(input.baseVerdict)} is challenged by the simulation. Only ${pct(approveRate)} of scenarios produced an APPROVE outcome. The deal is more fragile than the base case suggests.`;
-  } else if (baseIsConditional && (approveRate + conditionalRate) >= 50) {
-    comparison = `The base IC Memo verdict of ${verdictLabel(input.baseVerdict)} is broadly consistent with simulation results. ${pct(approveRate + conditionalRate)} of scenarios produced APPROVE or CONDITIONAL outcomes.`;
-  } else if (baseIsRejected && rejectRate >= 60) {
-    comparison = `The base IC Memo verdict of ${verdictLabel(input.baseVerdict)} is strongly reinforced by the simulation. ${pct(rejectRate)} of scenarios produced a REJECT outcome, confirming the deal's structural challenges.`;
+  if (baseIsApproved && approvePct >= 50) {
+    comparison = `The base IC Memo verdict of ${verdictLabel(input.baseVerdict)} is reinforced by the simulation. ${pct(approvePct)} of scenarios produced an APPROVE outcome, indicating strong resilience across strategic perturbations.`;
+  } else if (baseIsApproved && approvePct < 50) {
+    comparison = `The base IC Memo verdict of ${verdictLabel(input.baseVerdict)} is challenged by the simulation. Only ${pct(approvePct)} of scenarios produced an APPROVE outcome. The deal is more fragile than the base case suggests.`;
+  } else if (baseIsConditional && (approvePct + conditionalRate) >= 50) {
+    comparison = `The base IC Memo verdict of ${verdictLabel(input.baseVerdict)} is broadly consistent with simulation results. ${pct(approvePct + conditionalRate)} of scenarios produced APPROVE or CONDITIONAL outcomes.`;
+  } else if (baseIsRejected && rejectPct >= 60) {
+    comparison = `The base IC Memo verdict of ${verdictLabel(input.baseVerdict)} is strongly reinforced by the simulation. ${pct(rejectPct)} of scenarios produced a REJECT outcome, confirming the deal's structural challenges.`;
   } else {
-    comparison = `The simulation produced a mixed outcome distribution relative to the base IC Memo verdict of ${verdictLabel(input.baseVerdict)}. ${pct(approveRate)} APPROVE, ${pct(conditionalRate)} CONDITIONAL, ${pct(rejectRate)} REJECT across ${input.targetCount.toLocaleString()} scenarios.`;
+    comparison = `The simulation produced a mixed outcome distribution relative to the base IC Memo verdict of ${verdictLabel(input.baseVerdict)}. ${pct(approvePct)} APPROVE, ${pct(conditionalRate)} CONDITIONAL, ${pct(rejectPct)} REJECT across ${input.targetCount.toLocaleString()} scenarios.`;
   }
   bodyText(comparison);
 
-  // ── Section 10: Final Investment Interpretation ───────────────────────────
-  sectionHeader(10, "Final Investment Interpretation");
+  // ── Section 12: Final Investment Interpretation ──────────────────────────────
 
-  const investable = approveRate + conditionalRate >= 40;
-  const stronglyInvestable = approveRate >= 60;
-  const marginal = approveRate + conditionalRate >= 20 && approveRate + conditionalRate < 40;
+  sectionHeader("12. Final Investment Interpretation");
+
+  const investable = approvePct + conditionalRate >= 40;
+  const stronglyInvestable = approvePct >= 60;
+  const marginal = approvePct + conditionalRate >= 20 && approvePct + conditionalRate < 40;
 
   let interpretation = "";
   if (stronglyInvestable) {
-    interpretation = `This deal demonstrates strong resilience across ${input.targetCount.toLocaleString()} simulated strategic futures. With ${pct(approveRate)} of scenarios producing an APPROVE outcome, the investment case is robust. The primary variables driving approval are identified in the Sensitivity Analysis. Further diligence on the top failure vectors is recommended but the investment thesis is well-supported.`;
+    interpretation = `This deal demonstrates strong resilience across ${input.targetCount.toLocaleString()} simulated strategic futures. With ${pct(approvePct)} of scenarios producing an APPROVE outcome, the investment case is robust. The primary variables driving approval are identified in the Sensitivity Analysis. Further diligence on the top failure vectors is recommended but the investment thesis is well-supported.`;
   } else if (investable) {
-    interpretation = `This deal remains investable under most simulated conditions, with ${pct(approveRate + conditionalRate)} of scenarios producing APPROVE or CONDITIONAL outcomes. However, the deal is sensitive to the variables identified in the Sensitivity Analysis. Conditional approval with specific covenants addressing the top failure vectors is the recommended approach.`;
+    interpretation = `This deal remains investable under most simulated conditions, with ${pct(approvePct + conditionalRate)} of scenarios producing APPROVE or CONDITIONAL outcomes. However, the deal is sensitive to the variables identified in the Sensitivity Analysis. Conditional approval with specific covenants addressing the top failure vectors is the recommended approach.`;
   } else if (marginal) {
-    interpretation = `This deal is marginally investable under simulation. Only ${pct(approveRate + conditionalRate)} of scenarios produced positive outcomes. Significant structural improvements are required before the investment case can be made with confidence. The top failure vectors must be addressed before re-evaluation.`;
+    interpretation = `This deal is marginally investable under simulation. Only ${pct(approvePct + conditionalRate)} of scenarios produced positive outcomes. Significant structural improvements are required before the investment case can be made with confidence. The top failure vectors must be addressed before re-evaluation.`;
   } else {
-    interpretation = `This deal does not demonstrate sufficient resilience across simulated strategic futures. ${pct(rejectRate + input.decisionDistribution.vetoPct)} of scenarios produced negative outcomes. The investment case requires fundamental restructuring before it can be considered investable.`;
+    interpretation = `This deal does not demonstrate sufficient resilience across simulated strategic futures. ${pct(rejectPct)} of scenarios produced a rejection outcome${vetoPct > 0 ? `, and ${pct(vetoPct)} triggered hard-no governance veto conditions` : ""}. The investment case requires fundamental restructuring before it can be considered investable.`;
   }
-
   bodyText(interpretation);
   doc.moveDown(0.3);
 
-  // What must change
   if (input.failureVectors.length > 0) {
     subHeader("What Must Change");
-    const topVectors = input.failureVectors.slice(0, 3);
-    topVectors.forEach((fv, i) => {
-      bodyText(`${i + 1}. ${fv.category.replace(/_/g, " ")} — present in ${pct(fv.affectedPct)} of scenarios. Addressing this dimension would have the highest impact on approval probability.`, 8);
+    input.failureVectors.slice(0, 3).forEach((fv, i) => {
+      bodyText(`${i + 1}. ${sanitize(fv.category).replace(/_/g, " ")} — present in ${pct(safeNum(fv.affectedPct))} of scenarios. Addressing this dimension would have the highest impact on approval probability.`, 8);
     });
   }
 
-  // What variables matter most
   if (input.sensitivitySurface.length > 0) {
     doc.moveDown(0.3);
     subHeader("Variables That Matter Most");
     input.sensitivitySurface.slice(0, 5).forEach((sv, i) => {
-      bodyText(`${i + 1}. ${sv.variable.replace(/_/g, " ")} (impact: ${(sv.impactScore * 100).toFixed(1)}%)`, 8);
+      bodyText(`${i + 1}. ${sanitize(sv.variable).replace(/_/g, " ")} (impact: ${pct(safeNum(sv.impactScore) * 100)})`, 8);
     });
   }
 
-  // Further diligence
   doc.moveDown(0.3);
   subHeader("Further Diligence Recommendation");
   if (stronglyInvestable) {
@@ -477,13 +786,14 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
     bodyText("Deep diligence is required before any investment decision. The simulation indicates structural fragility that cannot be resolved through standard diligence alone. Consider running a follow-up simulation after structural improvements are made.");
   }
 
-  // ── Footer on all pages ───────────────────────────────────────────────────
+  // ── Footer on all pages ───────────────────────────────────────────────────────
+
   const range = doc.bufferedPageRange();
   for (let i = 0; i < range.count; i++) {
     doc.switchToPage(range.start + i);
     doc.fontSize(7).fillColor(LGRAY).font("Helvetica")
       .text(
-        `AgenThinkMesh · Strategic Stress Test Report · ${input.dealName} · Page ${i + 1} of ${range.count}`,
+        `AgenThinkMesh  ·  Strategic Stress Test Report  ·  ${sanitize(input.dealName)}  ·  Page ${i + 1} of ${range.count}`,
         L, 820, { width: CONTENT_W, align: "center" }
       );
   }
@@ -499,16 +809,33 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
 
 export function generateStressTestReportText(input: StressTestReportInput): string {
   const lines: string[] = [];
-  const sep = "═".repeat(60);
-  const dash = "─".repeat(60);
+  const sep  = "=".repeat(72);
+  const dash = "-".repeat(72);
+
+  const approvePct    = safeNum(input.decisionDistribution.approvePct);
+  const conditionalPct = safeNum(input.decisionDistribution.conditionalPct);
+  const rejectPct     = safeNum(input.decisionDistribution.rejectPct);
+  const vetoPct       = safeNum(input.decisionDistribution.vetoPct);
 
   lines.push(sep);
   lines.push("AI-GOVERNED STRATEGIC STRESS TEST REPORT");
-  lines.push(`Deal: ${input.dealName}`);
-  lines.push(`Mode: ${modeLabel(input.mode)}`);
-  lines.push(`Scenarios: ${input.targetCount.toLocaleString()}`);
-  lines.push(`Generated: ${input.generatedAt ?? new Date().toISOString()}`);
+  lines.push(`Deal:       ${sanitize(input.dealName)}`);
+  lines.push(`Mode:       ${modeLabel(input.mode)}`);
+  lines.push(`Scenarios:  ${input.targetCount.toLocaleString()}`);
+  lines.push(`Completed:  ${input.completedAt}`);
+  lines.push(`Generated:  ${input.generatedAt ?? new Date().toISOString()}`);
+  if (input.runId) lines.push(`Run ID:     ${sanitize(input.runId)}`);
   lines.push(sep);
+  lines.push("");
+
+  lines.push("A. WHAT 10,000 STRATEGIC SIMULATIONS MEANS");
+  lines.push(dash);
+  lines.push("This report does not repeat the same deal screen 10,000 times. It creates 10,000");
+  lines.push("structured strategic futures by perturbing key deal assumptions and re-runs the");
+  lines.push("Council of 10 decision framework against each variant.");
+  lines.push("");
+  lines.push("A 0% approval rate does not mean the model failed. It means no tested combination");
+  lines.push("of realistic stresses produced an investable outcome under the current deal structure.");
   lines.push("");
 
   lines.push("1. EXECUTIVE SUMMARY");
@@ -516,97 +843,125 @@ export function generateStressTestReportText(input: StressTestReportInput): stri
   lines.push(`Simulation Mode:    ${modeLabel(input.mode)}`);
   lines.push(`Scenario Count:     ${input.targetCount.toLocaleString()}`);
   lines.push(`Base Verdict:       ${verdictLabel(input.baseVerdict)}`);
-  lines.push(`Approval Rate:      ${pct(input.decisionDistribution.approvePct)}`);
-  lines.push(`Conditional Rate:   ${pct(input.decisionDistribution.conditionalPct)}`);
-  lines.push(`Rejection Rate:     ${pct(input.decisionDistribution.rejectPct)}`);
-  lines.push(`Veto Rate:          ${pct(input.decisionDistribution.vetoPct)}`);
+  lines.push(`Approval Rate:      ${pct(approvePct)}`);
+  lines.push(`Conditional Rate:   ${pct(conditionalPct)}`);
+  lines.push(`Rejection Rate:     ${pct(rejectPct)}`);
+  lines.push(`Veto Rate:          ${pct(vetoPct)}`);
   if (input.executiveSummary) {
     lines.push("");
-    lines.push(input.executiveSummary);
+    lines.push(sanitize(input.executiveSummary));
   }
   lines.push("");
 
   lines.push("3. DECISION DISTRIBUTION");
   lines.push(dash);
-  lines.push(`APPROVE:            ${pct(input.decisionDistribution.approvePct)}  ${bar(input.decisionDistribution.approvePct)}`);
-  lines.push(`CONDITIONAL:        ${pct(input.decisionDistribution.conditionalPct)}  ${bar(input.decisionDistribution.conditionalPct)}`);
-  lines.push(`REJECT:             ${pct(input.decisionDistribution.rejectPct)}  ${bar(input.decisionDistribution.rejectPct)}`);
-  lines.push(`VETO:               ${pct(input.decisionDistribution.vetoPct)}  ${bar(input.decisionDistribution.vetoPct)}`);
+  lines.push(`APPROVE:            ${pct(approvePct)}`);
+  lines.push(`CONDITIONAL:        ${pct(conditionalPct)}`);
+  lines.push(`REJECT:             ${pct(rejectPct)}`);
+  lines.push(`VETO (hard-no):     ${pct(vetoPct)}`);
+  if (rejectPct > 0 && vetoPct > 0) {
+    lines.push("");
+    lines.push(`NOTE: ${pct(rejectPct)} of scenarios produced a rejection outcome, and ${pct(vetoPct)} triggered`);
+    lines.push("hard-no governance veto conditions. Veto is a subset of rejection — do not add them.");
+  }
   lines.push("");
 
+  if (approvePct < 5) {
+    lines.push("4. STRUCTURAL FAILURE ANALYSIS");
+    lines.push(dash);
+    lines.push(`No investable scenarios emerged (${pct(approvePct)} approval rate).`);
+    lines.push("The deal is structurally fragile, not merely risky.");
+    lines.push("");
+    if (input.failureVectors.length > 0) {
+      lines.push("Top 3 Structural Blockers:");
+      input.failureVectors.slice(0, 3).forEach((fv, i) => {
+        lines.push(`  ${i + 1}. ${sanitize(fv.category).replace(/_/g, " ")} (${pct(safeNum(fv.affectedPct))} of scenarios)`);
+      });
+      lines.push("");
+    }
+    lines.push("IC Recommendation: REJECT — pending fundamental restructuring.");
+    lines.push("Options: Reject | Request Revised Inputs | Run Decision Upgrade Protocol");
+    lines.push("");
+  }
+
   if (input.failureVectors.length > 0) {
-    lines.push("4. FAILURE VECTOR RANKING");
+    lines.push("5. FAILURE VECTOR RANKING");
     lines.push(dash);
     input.failureVectors.slice(0, 10).forEach((fv, i) => {
-      lines.push(`${i + 1}. ${fv.category.replace(/_/g, " ").toUpperCase()}`);
-      lines.push(`   Frequency: ${fv.frequency.toLocaleString()} scenarios (${pct(fv.affectedPct)})`);
-      lines.push(`   Avg Severity: ${fv.avgSeverity.toFixed(2)}`);
-      if (fv.examplePattern) lines.push(`   Example: ${fv.examplePattern}`);
+      lines.push(`${i + 1}. ${sanitize(fv.category).replace(/_/g, " ").toUpperCase()}`);
+      lines.push(`   Frequency: ${safeNum(fv.frequency).toLocaleString()} scenarios (${pct(safeNum(fv.affectedPct))})`);
+      lines.push(`   Avg Severity: ${safeNum(fv.avgSeverity).toFixed(2)}`);
+      if (fv.examplePattern) lines.push(`   Example: ${sanitize(fv.examplePattern)}`);
       lines.push("");
     });
   }
 
-  if (input.approvalPathways.length > 0) {
-    lines.push("5. APPROVAL PATHWAYS");
+  if (approvePct > 0 && input.approvalPathways.length > 0) {
+    lines.push("6. APPROVAL PATHWAYS");
     lines.push(dash);
     input.approvalPathways.slice(0, 5).forEach((ap, i) => {
-      lines.push(`Pathway ${i + 1}: Approval Probability ${pct(ap.approvalProbability)}, Confidence Lift +${ap.confidenceLift.toFixed(1)}%`);
-      if (ap.conditionSet.length > 0) lines.push(`  Conditions: ${ap.conditionSet.join("; ")}`);
-      if (ap.remainingRisks.length > 0) lines.push(`  Remaining Risks: ${ap.remainingRisks.join("; ")}`);
+      lines.push(`Pathway ${i + 1}: Approval Probability ${pct(safeNum(ap.approvalProbability))}, Confidence Lift +${safeNum(ap.confidenceLift).toFixed(1)}%`);
+      if (ap.conditionSet.length > 0) lines.push(`  Conditions: ${ap.conditionSet.map(c => sanitize(c)).join("; ")}`);
+      if (ap.remainingRisks.length > 0) lines.push(`  Remaining Risks: ${ap.remainingRisks.map(r => sanitize(r)).join("; ")}`);
       lines.push("");
     });
   }
 
   if (input.sensitivitySurface.length > 0) {
-    lines.push("6. SENSITIVITY ANALYSIS");
+    lines.push("7. SENSITIVITY ANALYSIS");
     lines.push(dash);
     input.sensitivitySurface.slice(0, 12).forEach((sv, i) => {
-      lines.push(`${i + 1}. ${sv.variable.replace(/_/g, " ")} — Impact: ${(sv.impactScore * 100).toFixed(1)}% (${sv.direction})`);
+      lines.push(`${i + 1}. ${sanitize(sv.variable).replace(/_/g, " ")} -- Impact: ${pct(safeNum(sv.impactScore) * 100)} (${sanitize(sv.direction)})`);
     });
     lines.push("");
   }
 
   if (input.governanceHeatmap.length > 0) {
-    lines.push("7. GOVERNANCE ESCALATION MAP");
+    lines.push("8. GOVERNANCE ESCALATION MAP");
     lines.push(dash);
     input.governanceHeatmap.slice(0, 8).forEach((gh, i) => {
-      lines.push(`${i + 1}. ${gh.category.replace(/_/g, " ").toUpperCase()}`);
-      lines.push(`   Escalations: ${gh.escalationCount.toLocaleString()}, Vetoes: ${gh.vetoCount.toLocaleString()}, Avg Severity: ${gh.avgSeverity.toFixed(2)}`);
+      lines.push(`${i + 1}. ${sanitize(gh.category).replace(/_/g, " ").toUpperCase()}`);
+      lines.push(`   Escalations: ${safeNum(gh.escalationCount).toLocaleString()}, Vetoes: ${safeNum(gh.vetoCount).toLocaleString()}, Avg Severity: ${safeNum(gh.avgSeverity).toFixed(2)}`);
     });
     lines.push("");
   }
 
-  lines.push("10. FINAL INVESTMENT INTERPRETATION");
+  lines.push("10. INSTITUTIONAL MEANING");
   lines.push(dash);
-  const approveRate = input.decisionDistribution.approvePct;
-  const conditionalRate = input.decisionDistribution.conditionalPct;
-  const rejectRate = input.decisionDistribution.rejectPct;
-  const investable = approveRate + conditionalRate >= 40;
-  const stronglyInvestable = approveRate >= 60;
+  lines.push("A normal IC memo gives one verdict. This simulation tests whether that verdict");
+  lines.push("survives thousands of plausible futures. It identifies which assumptions repeatedly");
+  lines.push("break the deal, distinguishes between a fixable deal and a structurally fragile deal,");
+  lines.push("and gives the IC a stress-tested decision basis.");
+  lines.push("");
+
+  lines.push("12. FINAL INVESTMENT INTERPRETATION");
+  lines.push(dash);
+  const investable = approvePct + conditionalPct >= 40;
+  const stronglyInvestable = approvePct >= 60;
   if (stronglyInvestable) {
-    lines.push(`INVESTABLE — ${pct(approveRate)} of scenarios approved. Strong resilience confirmed.`);
+    lines.push(`INVESTABLE -- ${pct(approvePct)} of scenarios approved. Strong resilience confirmed.`);
   } else if (investable) {
-    lines.push(`CONDITIONALLY INVESTABLE — ${pct(approveRate + conditionalRate)} of scenarios produced positive outcomes.`);
+    lines.push(`CONDITIONALLY INVESTABLE -- ${pct(approvePct + conditionalPct)} of scenarios produced positive outcomes.`);
   } else {
-    lines.push(`NOT INVESTABLE — ${pct(rejectRate + input.decisionDistribution.vetoPct)} of scenarios rejected. Structural improvements required.`);
+    lines.push(`NOT INVESTABLE -- ${pct(rejectPct)} of scenarios produced a rejection outcome${vetoPct > 0 ? `, ${pct(vetoPct)} triggered governance veto` : ""}. Structural improvements required.`);
   }
   if (input.failureVectors.length > 0) {
     lines.push("");
     lines.push("What Must Change:");
     input.failureVectors.slice(0, 3).forEach((fv, i) => {
-      lines.push(`  ${i + 1}. ${fv.category.replace(/_/g, " ")} (${pct(fv.affectedPct)} of scenarios)`);
+      lines.push(`  ${i + 1}. ${sanitize(fv.category).replace(/_/g, " ")} (${pct(safeNum(fv.affectedPct))} of scenarios)`);
     });
   }
   if (input.sensitivitySurface.length > 0) {
     lines.push("");
     lines.push("Variables That Matter Most:");
     input.sensitivitySurface.slice(0, 5).forEach((sv, i) => {
-      lines.push(`  ${i + 1}. ${sv.variable.replace(/_/g, " ")} (${(sv.impactScore * 100).toFixed(1)}%)`);
+      lines.push(`  ${i + 1}. ${sanitize(sv.variable).replace(/_/g, " ")} (${pct(safeNum(sv.impactScore) * 100)})`);
     });
   }
   lines.push("");
   lines.push(sep);
-  lines.push("END OF REPORT — AgenThinkMesh Scenario Simulation Engine");
+  lines.push("END OF REPORT -- AgenThinkMesh Scenario Simulation Engine");
   lines.push(sep);
 
   return lines.join("\n");
