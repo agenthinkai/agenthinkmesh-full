@@ -1043,6 +1043,7 @@ export const dealScreenerRouter = router({
       sensitivitySurface:   z.array(z.any()),
       governanceHeatmap:    z.array(z.any()),
       scenarioClusters:     z.any().optional(),
+      runId:                z.string().optional(),
       format:               z.enum(["pdf", "text", "json"]).default("pdf"),
     }))
     .mutation(async ({ input }) => {

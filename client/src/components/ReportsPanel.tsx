@@ -223,6 +223,75 @@ function ReportCard({
   );
 }
 
+// ── Interpretation Pattern Detection ────────────────────────────────────────
+
+interface InterpretationPattern {
+  title: string;
+  interpretation: string;
+  icPosture: string;
+  color: string; // Tailwind border/text color
+}
+
+function detectInterpretationPattern(
+  approvePct: number,
+  conditionalPct: number,
+  rejectPct: number,
+  vetoPct: number,
+): InterpretationPattern {
+  // 1. High Conviction / Tight Distribution — approve > 70%
+  if (approvePct >= 70) {
+    return {
+      title: "High Conviction / Tight Distribution",
+      interpretation: "Scenario outcomes converge strongly on an investable result across tested assumptions.",
+      icPosture: "Proceed with standard diligence. Simulation supports high-confidence approval.",
+      color: "border-emerald-500/40 text-emerald-400",
+    };
+  }
+  // 2. Optionality / Upside Skew — approve + conditional > 60% and approve > 30%
+  if (approvePct + conditionalPct >= 60 && approvePct >= 30) {
+    return {
+      title: "Optionality / Upside Skew",
+      interpretation: "Majority of scenarios produce investable outcomes, but execution quality is material.",
+      icPosture: "Conditional approval with milestone-based exposure. Monitor execution triggers closely.",
+      color: "border-blue-500/40 text-blue-400",
+    };
+  }
+  // 3. Wide Uncertainty Band — conditional > 30% and no dominant outcome
+  if (conditionalPct >= 30 && approvePct < 40 && rejectPct < 50) {
+    return {
+      title: "Wide Uncertainty Band",
+      interpretation: "Scenario outcomes vary materially across assumptions. No dominant outcome emerges.",
+      icPosture: "Proceed only with milestone-based exposure or tighter diligence gating.",
+      color: "border-amber-500/40 text-amber-400",
+    };
+  }
+  // 4. Downside-Asymmetric — reject > 50% but veto < 20%
+  if (rejectPct >= 50 && vetoPct < 20) {
+    return {
+      title: "Downside-Asymmetric",
+      interpretation: "Downside scenarios dominate. Upside requires narrow conditions that rarely materialise.",
+      icPosture: "Reject or require fundamental restructuring before re-evaluation. Document specific conditions for reconsideration.",
+      color: "border-orange-500/40 text-orange-400",
+    };
+  }
+  // 5. Fragile Upside — veto > 20% or approve < 5%
+  if (vetoPct >= 20 || approvePct < 5) {
+    return {
+      title: "Fragile Upside",
+      interpretation: "Hard governance blockers fire frequently. The deal is structurally fragile, not merely risky.",
+      icPosture: "Reject pending fundamental restructuring. Governance, compliance, or regulatory exposure must be resolved first.",
+      color: "border-red-500/40 text-red-400",
+    };
+  }
+  // Default fallback
+  return {
+    title: "Wide Uncertainty Band",
+    interpretation: "Scenario outcomes vary materially across assumptions.",
+    icPosture: "Proceed only with milestone-based exposure or tighter diligence gating.",
+    color: "border-amber-500/40 text-amber-400",
+  };
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export function ReportsPanel({
@@ -315,6 +384,8 @@ export function ReportsPanel({
         approvalPathways: simAggregation!.approvalPathways ?? [],
         sensitivitySurface: simAggregation!.sensitivitySurface ?? [],
         governanceHeatmap: simAggregation!.governanceHeatmap ?? [],
+        // Task 2: Run ID traceability — wire through to PDF cover
+        runId: simRunId ?? undefined,
         format: stressFmt,
       });
       const name = safeName(dealName);
@@ -451,6 +522,39 @@ export function ReportsPanel({
             </Tooltip>
 
           </div>
+
+          {/* ── Interpretation Pattern Callout ─────────────────────────────────────── */}
+          {hasStress && (() => {
+            const _approvePct    = (simAggregation!.decisionDistribution.approvePct as number | undefined) ?? 0;
+            const _conditionalPct = (simAggregation!.decisionDistribution.conditionalPct as number | undefined) ?? 0;
+            const _rejectPct     = (simAggregation!.decisionDistribution.rejectPct as number | undefined) ?? 0;
+            const _vetoPct       = (simAggregation!.decisionDistribution.vetoPct as number | undefined) ?? 0;
+            const pattern = detectInterpretationPattern(_approvePct, _conditionalPct, _rejectPct, _vetoPct);
+            const borderClass = pattern.color.split(" ").find(c => c.startsWith("border-")) ?? "border-white/20";
+            const textClass   = pattern.color.split(" ").find(c => c.startsWith("text-")) ?? "text-white/70";
+            return (
+              <div className={`mt-3 rounded-lg border ${borderClass} bg-white/[0.02] px-4 py-3`}>
+                <div className="flex items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-semibold text-white/30 uppercase tracking-widest">AI IC Interpretation Guidance</span>
+                    </div>
+                    <div className={`text-sm font-semibold ${textClass} mb-1.5`}>{pattern.title}</div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1.5">
+                      <div>
+                        <span className="text-[10px] text-white/30 uppercase tracking-wider">Interpretation</span>
+                        <p className="text-xs text-white/60 mt-0.5 leading-relaxed">{pattern.interpretation}</p>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-white/30 uppercase tracking-wider">Suggested IC Posture</span>
+                        <p className="text-xs text-white/60 mt-0.5 leading-relaxed">{pattern.icPosture}</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* ── Status row ───────────────────────────────────────────────── */}
           <div className="flex items-center gap-4 mt-4 pt-3 border-t border-white/5">

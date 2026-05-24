@@ -418,6 +418,13 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
 
   // ── Simulation Maturity Curve (PDFKit rect-based horizontal stepped chart) ──
   {
+    // Detect current tier index (0-based)
+    const currentTierIdx =
+      input.targetCount >= 1000000 ? 4 :
+      input.targetCount >= 100000  ? 3 :
+      input.targetCount >= 10000   ? 2 :
+      input.targetCount >= 1000    ? 1 : 0;
+
     const tiers = [
       { label: "100",     tier: "Quick Scan",          desc: "Rapid directional stress scan. Detects obvious fragility.",                                          color: "#94A3B8", height: 28 },
       { label: "1,000",   tier: "Probabilistic",        desc: "Identifies recurring risk patterns. Reveals primary failure vectors.",                               color: "#60A5FA", height: 36 },
@@ -426,27 +433,41 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
       { label: "1M",      tier: "Strategic Intelligence",desc: "Approaches continuous scenario exploration. Enables rare-event discovery. Policy-scale analysis.",  color: "#1E3A8A", height: 60 },
     ];
 
+    const GOLD = "#D4A017";
+
     const chartW = CONTENT_W;
     const colW = Math.floor(chartW / tiers.length) - 4;
     const baseY = doc.y;
     const maxH = tiers[tiers.length - 1].height;
     const chartBaseY = baseY + maxH + 8; // baseline of bars
 
-    ensureSpace(maxH + 80);
+    ensureSpace(maxH + 100);
 
     tiers.forEach((tier, i) => {
       const x = L + i * (colW + 4);
       const barTop = chartBaseY - tier.height;
+      const isActive = i === currentTierIdx;
 
-      // Bar
+      // Bar fill
       doc.rect(x, barTop, colW, tier.height).fillColor(tier.color).fill();
+
+      // Gold border on active tier (drawn after fill so it overlays)
+      if (isActive) {
+        doc.rect(x, barTop, colW, tier.height).lineWidth(2).strokeColor(GOLD).stroke();
+      }
 
       // Scale label (inside bar top)
       doc.fontSize(9).fillColor("#FFFFFF").font("Helvetica-Bold")
         .text(tier.label, x + 2, barTop + 4, { width: colW - 4, align: "center" });
 
+      // YOU ARE HERE label inside active bar (bottom-aligned)
+      if (isActive && tier.height >= 36) {
+        doc.fontSize(6).fillColor(GOLD).font("Helvetica-Bold")
+          .text("YOU ARE HERE", x + 2, barTop + tier.height - 12, { width: colW - 4, align: "center" });
+      }
+
       // Tier label below bar
-      doc.fontSize(7.5).fillColor(ACCENT).font("Helvetica-Bold")
+      doc.fontSize(7.5).fillColor(isActive ? GOLD : ACCENT).font("Helvetica-Bold")
         .text(tier.tier, x, chartBaseY + 4, { width: colW, align: "center" });
 
       // Description below tier label (2 lines max)
@@ -455,6 +476,18 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
     });
 
     doc.y = chartBaseY + 58;
+
+    // Tier-specific contextual sentence
+    const tierContextMsg =
+      currentTierIdx === 4 ? "This run exceeds traditional IC scenario analysis by several orders of magnitude. It approaches continuous institutional scenario exploration."
+      : currentTierIdx === 3 ? "This run exceeds traditional IC scenario analysis by several orders of magnitude. Rare-event detection and systemic governance failure clusters are now visible."
+      : currentTierIdx === 2 ? "This run operates at institutional-grade simulation depth. Nonlinear interactions and governance escalation patterns are fully mapped."
+      : currentTierIdx === 1 ? "This simulation tier enables higher confidence in downside visibility. Primary failure vectors are statistically reliable."
+      : "This run provides a rapid directional stress scan. Suitable for initial screening; consider deeper simulation for institutional-grade confidence.";
+    doc.moveDown(0.4);
+    doc.fontSize(8).fillColor(GOLD).font("Helvetica-Bold")
+      .text(sanitize(tierContextMsg), L, doc.y, { width: CONTENT_W });
+    doc.moveDown(0.3);
   }
 
   doc.moveDown(0.5);
@@ -1037,12 +1070,31 @@ export function generateStressTestReportText(input: StressTestReportInput): stri
   lines.push("The objective is to systematically perturb strategic assumptions and observe how");
   lines.push("institutional decision outcomes change under varying conditions.");
   lines.push("");
+  // Detect tier for YOU ARE HERE marker
+  const textTierIdx =
+    input.targetCount >= 1000000 ? 4 :
+    input.targetCount >= 100000  ? 3 :
+    input.targetCount >= 10000   ? 2 :
+    input.targetCount >= 1000    ? 1 : 0;
+  const tierLines = [
+    "  100 scenarios     -- Quick Scan: Rapid directional stress scan. Detects obvious fragility.",
+    "  1,000 scenarios   -- Probabilistic: Identifies recurring risk patterns. Reveals primary failure vectors.",
+    "  10,000 scenarios  -- Institutional: Maps decision surfaces. Detects nonlinear interactions.",
+    "  100,000 scenarios -- Rare-Event: Exposes low-frequency, high-impact edge cases.",
+    "  1M scenarios      -- Strategic Intelligence: Rare-event discovery. Policy-scale analysis.",
+  ];
   lines.push("SIMULATION MATURITY CURVE:");
-  lines.push("  100 scenarios     -- Quick Scan: Rapid directional stress scan. Detects obvious fragility.");
-  lines.push("  1,000 scenarios   -- Probabilistic: Identifies recurring risk patterns. Reveals primary failure vectors.");
-  lines.push("  10,000 scenarios  -- Institutional: Maps decision surfaces. Detects nonlinear interactions.");
-  lines.push("  100,000 scenarios -- Rare-Event: Exposes low-frequency, high-impact edge cases.");
-  lines.push("  1M scenarios      -- Strategic Intelligence: Rare-event discovery. Policy-scale analysis.");
+  tierLines.forEach((line, i) => {
+    lines.push(i === textTierIdx ? `${line}  << YOU ARE HERE` : line);
+  });
+  lines.push("");
+  const tierCtxMsg =
+    textTierIdx === 4 ? "This run exceeds traditional IC scenario analysis by several orders of magnitude. It approaches continuous institutional scenario exploration."
+    : textTierIdx === 3 ? "This run exceeds traditional IC scenario analysis by several orders of magnitude. Rare-event detection and systemic governance failure clusters are now visible."
+    : textTierIdx === 2 ? "This run operates at institutional-grade simulation depth. Nonlinear interactions and governance escalation patterns are fully mapped."
+    : textTierIdx === 1 ? "This simulation tier enables higher confidence in downside visibility. Primary failure vectors are statistically reliable."
+    : "This run provides a rapid directional stress scan. Suitable for initial screening; consider deeper simulation for institutional-grade confidence.";
+  lines.push(`>> ${tierCtxMsg}`);
   lines.push("");
   const scaleContext = input.targetCount >= 1000000
     ? "At 1M scenarios, this report provides strategic intelligence infrastructure."
