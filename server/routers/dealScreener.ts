@@ -9,7 +9,7 @@ import { TRPCError } from "@trpc/server";
 import { eq, desc, and, gte } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { dealScreenings, dealScreeningRateLimit, dealComparisons, dealScreenerPayments, signalDeals, userSignalPrefs } from "../../drizzle/schema";
+import { dealScreenings, dealScreeningRateLimit, dealComparisons, dealScreenerPayments, signalDeals, userSignalPrefs, scenarioSimRuns } from "../../drizzle/schema";
 import { runCouncil } from "../councilEngine";
 import { runAdversarialCouncil } from "../dealScreenerAdversarial";
 import { generateCfoDeepDivePdf, type CouncilSummaryInput } from "../cfoDeepDivePdf";
@@ -731,6 +731,7 @@ export const dealScreenerRouter = router({
         blockingIssues:      z.array(z.string()),
         councilMode:         z.enum(["gcc", "global_vc", "india_pe", "gcc_equities"]).optional(),
         patternContext:       z.enum(["invested_match", "passed_match"]).optional(),
+        dealId:              z.string().optional(),
         votes: z.array(z.object({
           personaId:   z.string(),
           personaName: z.string(),
@@ -744,7 +745,53 @@ export const dealScreenerRouter = router({
         })),
       })
     )
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // ── Auto-fetch latest completed simulation for Section 17 ────────────
+      let scenarioStress: ICMemoInput["scenarioStress"] | undefined;
+      if (input.dealId) {
+        try {
+          const db = await getDb();
+          if (db) {
+            const simRuns = await db
+              .select()
+              .from(scenarioSimRuns)
+              .where(
+                and(
+                  eq(scenarioSimRuns.dealId, input.dealId),
+                  eq(scenarioSimRuns.userId, ctx.user.id),
+                  eq(scenarioSimRuns.status, "completed")
+                )
+              )
+              .orderBy(desc(scenarioSimRuns.completedAt))
+              .limit(1);
+            if (simRuns.length > 0) {
+              const run = simRuns[0];
+              const dd = run.decisionDistribution ? JSON.parse(run.decisionDistribution) : null;
+              const fv = run.failureVectors ? JSON.parse(run.failureVectors) : [];
+              const ap = run.approvalPathways ? JSON.parse(run.approvalPathways) : [];
+              const gh = run.governanceHeatmap ? JSON.parse(run.governanceHeatmap) : [];
+              const ss = run.sensitivitySurface ? JSON.parse(run.sensitivitySurface) : [];
+              if (dd) {
+                scenarioStress = {
+                  mode:                run.mode,
+                  targetCount:         run.targetCount,
+                  completedAt:         (run.completedAt instanceof Date ? run.completedAt.toISOString() : run.completedAt) ?? new Date().toISOString(),
+                  executiveSummary:    run.executiveSummary ?? "",
+                  decisionDistribution: dd,
+                  failureVectors:      fv,
+                  approvalPathways:    ap,
+                  governanceHeatmap:   gh,
+                  sensitivitySurface:  ss,
+                };
+              }
+            }
+          }
+        } catch (e) {
+          // Non-fatal — Section 17 simply omitted if fetch fails
+          console.warn("[icMemoPdf] Could not fetch simulation data for Section 17:", e);
+        }
+      }
+
       const memoInput: ICMemoInput = {
         dealName:            input.dealName,
         verdict:             input.verdict,
@@ -756,6 +803,7 @@ export const dealScreenerRouter = router({
         councilMode:         input.councilMode,
         patternContext:      input.patternContext,
         votes:               input.votes,
+        scenarioStress,
       };
       const pdfBuffer = await generateICMemoPdf(memoInput);
       const patternSuffix = input.patternContext === "invested_match"

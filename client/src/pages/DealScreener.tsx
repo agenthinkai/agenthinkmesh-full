@@ -920,7 +920,7 @@ function VCSummaryBlock({ vc, decisionColor }: { vc: NonNullable<ICReportData["v
   );
 }
 
-function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext }: { ic: ICReportData; result: CouncilResult; onCopy: (text: string) => void; onNewDeal: () => void; patternContext?: "invested_match" | "passed_match" }) {
+function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stressTested }: { ic: ICReportData; result: CouncilResult; onCopy: (text: string) => void; onNewDeal: () => void; patternContext?: "invested_match" | "passed_match"; stressTested?: boolean }) {
   // Color derived from council verdict (not IC executive verdict) for consistency
   const verdictColor = result.verdict === "APPROVED" ? GREEN
     : result.verdict === "APPROVED_WITH_CONDITIONS" ? ACCENT
@@ -983,7 +983,32 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext }: { 
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 8 }}>
-            <VerdictBadge verdict={result.verdict} />
+            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap", justifyContent: "flex-end" }}>
+              <VerdictBadge verdict={result.verdict} />
+              {stressTested && (
+                <span
+                  title="Strategic Scenario Simulation completed for this deal."
+                  style={{
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 4,
+                    padding: "2px 8px",
+                    borderRadius: 3,
+                    background: "rgba(168,85,247,0.15)",
+                    border: "1px solid rgba(168,85,247,0.55)",
+                    color: "#a855f7",
+                    fontFamily: MONO,
+                    fontSize: 10,
+                    fontWeight: 700,
+                    letterSpacing: "0.08em",
+                    cursor: "help",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  ⚡ STRESS-TESTED
+                </span>
+              )}
+            </div>
             {result.decisionIntegrity != null && (
               <DisagreementBadge count={result.decisionIntegrity.disagreementCount ?? 0} />
             )}
@@ -1305,6 +1330,12 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
   const createShare = trpc.shareReport.create.useMutation();
   const updateTriageStage = trpc.pitch.updateStage.useMutation();
 
+  // ── Stress-tested badge: check if a completed simulation exists ───────────
+  const { data: simBadgeData } = trpc.scenarioSim.hasCompletedSim.useQuery(
+    { dealId: result.dealId ?? "" },
+    { enabled: !!result.dealId, staleTime: 30_000 }
+  );
+
   const handleICMemoPdf = async () => {
     setIcMemoLoading(true);
     setIcMemoError(null);
@@ -1322,6 +1353,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
         blockingIssues:      result.blockingIssues,
         councilMode:         councilModeProp ?? result.councilMode,
         patternContext:      patternContext,
+        dealId:              result.dealId,
         votes: result.votes.map(v => ({
           personaId:   v.personaId,
           personaName: v.personaId,
@@ -1753,7 +1785,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
 
       {/* Boardroom IC Report tab */}
       {activeTab === "boardroom" && result.icReport && (
-        <BoardroomICReport ic={result.icReport} result={result} onCopy={handleCopyICReport} onNewDeal={onNewDeal} patternContext={patternContext} />
+        <BoardroomICReport ic={result.icReport} result={result} onCopy={handleCopyICReport} onNewDeal={onNewDeal} patternContext={patternContext} stressTested={simBadgeData?.hasCompleted} />
       )}
 
       {/* Raw Council tab */}

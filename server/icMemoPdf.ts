@@ -52,6 +52,21 @@ export interface ICMemoInput {
     p10: number; p50: number; p90: number; mean: number; std: number;
     upside_skew: boolean; verdict: string; distribution_label: string;
   };
+  scenarioStress?: {
+    mode: string;
+    targetCount: number;
+    completedAt: string;
+    executiveSummary: string;
+    decisionDistribution: {
+      approvePct: number; conditionalPct: number; rejectPct: number;
+      approveCount: number; conditionalCount: number; rejectCount: number;
+      hardNoPct: number; totalScenarios: number;
+    };
+    failureVectors: Array<{ dimensionLabel: string; rejectionContributionPct: number; category: string; escalationTriggerCount: number }>;
+    approvalPathways: Array<{ description: string; estimatedApprovalPct: number; scenarioCount: number }>;
+    governanceHeatmap: Array<{ category: string; escalationPct: number; vetoCount: number; regulatoryFragilityScore: number }>;
+    sensitivitySurface: Array<{ dimensionLabel: string; category: string; impactScore: number; tippingPointSeverity: string | null }>;
+  };
 }
 
 interface FinancialRow {
@@ -1838,6 +1853,219 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       doc.font("Helvetica").fontSize(9).fillColor(TEXT)
         .text(interpretation, ML, doc.y, { width: BODY_W });
       doc.y += 14;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // SECTION 17 — STRATEGIC SCENARIO STRESS SUMMARY (optional, only when sim run)
+    // ─────────────────────────────────────────────────────────────────────────
+    if (input.scenarioStress) {
+      const ss = input.scenarioStress;
+      const dd = ss.decisionDistribution;
+      const modeLabel = ss.mode === "quick" ? "Quick (100 scenarios)"
+        : ss.mode === "institutional" ? "Institutional (1,000 scenarios)"
+        : ss.mode === "deep" ? "Deep (10,000 scenarios)"
+        : ss.mode === "infrastructure" ? "Infrastructure (100,000 scenarios)"
+        : ss.mode;
+      const runDate = new Date(ss.completedAt).toLocaleDateString("en-GB", {
+        day: "2-digit", month: "short", year: "numeric",
+      });
+
+      newSectionPage("17. Strategic Scenario Stress Summary");
+      sectionDivider("17", "Strategic Scenario Stress Summary", "#7c3aed");
+
+      // ── Run metadata banner ──────────────────────────────────────────────
+      ensureSpace(40);
+      doc.rect(ML, doc.y, BODY_W, 28).fill("#f5f0ff");
+      doc.font("Helvetica-Bold").fontSize(8).fillColor("#7c3aed")
+        .text("SIMULATION PARAMETERS", ML + 8, doc.y + 6, { width: BODY_W - 16 });
+      doc.font("Helvetica").fontSize(8).fillColor("#333")
+        .text(
+          `Mode: ${modeLabel}  |  Scenarios run: ${dd.totalScenarios.toLocaleString()}  |  Completed: ${runDate}`,
+          ML + 8, doc.y + 16, { width: BODY_W - 16 }
+        );
+      doc.y += 36;
+
+      // ── Executive Summary ────────────────────────────────────────────────
+      ensureSpace(50);
+      doc.font("Helvetica-Bold").fontSize(9).fillColor(MUTED)
+        .text("EXECUTIVE SUMMARY", ML, doc.y, { width: BODY_W });
+      doc.y += 4;
+      doc.font("Helvetica").fontSize(9).fillColor(TEXT)
+        .text(ss.executiveSummary, ML, doc.y, { width: BODY_W });
+      doc.y += 14;
+
+      // ── Decision Distribution table ──────────────────────────────────────
+      ensureSpace(80);
+      doc.font("Helvetica-Bold").fontSize(9).fillColor(MUTED)
+        .text("DECISION DISTRIBUTION", ML, doc.y, { width: BODY_W });
+      doc.y += 4;
+      const distRows = [
+        ["Outcome", "Count", "Percentage"],
+        ["Approve",      `${dd.approveCount}`,      `${dd.approvePct}%`],
+        ["Conditional",  `${dd.conditionalCount}`,  `${dd.conditionalPct}%`],
+        ["Reject",       `${dd.rejectCount}`,       `${dd.rejectPct}%`],
+        ["Hard-No Veto", `${Math.round(dd.hardNoPct / 100 * dd.totalScenarios)}`, `${dd.hardNoPct}%`],
+      ];
+      const distColW = [BODY_W * 0.5, BODY_W * 0.25, BODY_W * 0.25];
+      let distY = doc.y;
+      distRows.forEach((row, ri) => {
+        const isHeader = ri === 0;
+        const rowH = 18;
+        ensureSpace(rowH + 4);
+        if (isHeader) doc.rect(ML, distY, BODY_W, rowH).fill("#f5f5f5");
+        else if (ri % 2 === 0) doc.rect(ML, distY, BODY_W, rowH).fill("#fafafa");
+        let cx = ML;
+        row.forEach((cell, ci) => {
+          const color = !isHeader && ci === 0
+            ? (ri === 1 ? "#16a34a" : ri === 2 ? "#d97706" : ri === 3 ? "#dc2626" : TEXT)
+            : TEXT;
+          doc.font(isHeader ? "Helvetica-Bold" : "Helvetica")
+            .fontSize(9).fillColor(color)
+            .text(cell, cx + 4, distY + 5, { width: distColW[ci] - 8, lineBreak: false });
+          cx += distColW[ci];
+        });
+        distY += rowH;
+      });
+      doc.y = distY + 10;
+
+      // ── Top 3 Failure Vectors ────────────────────────────────────────────
+      if (ss.failureVectors.length > 0) {
+        ensureSpace(80);
+        doc.font("Helvetica-Bold").fontSize(9).fillColor(MUTED)
+          .text("TOP FAILURE VECTORS", ML, doc.y, { width: BODY_W });
+        doc.y += 4;
+        const fvRows = [
+          ["Risk Category", "Rejection Contribution", "Escalations"],
+          ...ss.failureVectors.slice(0, 3).map(fv => [
+            fv.dimensionLabel,
+            `${fv.rejectionContributionPct}%`,
+            `${fv.escalationTriggerCount}`,
+          ]),
+        ];
+        const fvColW = [BODY_W * 0.55, BODY_W * 0.25, BODY_W * 0.2];
+        let fvY = doc.y;
+        fvRows.forEach((row, ri) => {
+          const isHeader = ri === 0;
+          const rowH = 18;
+          ensureSpace(rowH + 4);
+          if (isHeader) doc.rect(ML, fvY, BODY_W, rowH).fill("#f5f5f5");
+          else if (ri % 2 === 0) doc.rect(ML, fvY, BODY_W, rowH).fill("#fafafa");
+          let cx = ML;
+          row.forEach((cell, ci) => {
+            doc.font(isHeader ? "Helvetica-Bold" : "Helvetica")
+              .fontSize(9).fillColor(TEXT)
+              .text(cell, cx + 4, fvY + 5, { width: fvColW[ci] - 8, lineBreak: false });
+            cx += fvColW[ci];
+          });
+          fvY += rowH;
+        });
+        doc.y = fvY + 10;
+      }
+
+      // ── Top 3 Approval Pathways ──────────────────────────────────────────
+      if (ss.approvalPathways.length > 0) {
+        ensureSpace(80);
+        doc.font("Helvetica-Bold").fontSize(9).fillColor(MUTED)
+          .text("APPROVAL PATHWAYS", ML, doc.y, { width: BODY_W });
+        doc.y += 4;
+        const apRows = [
+          ["Pathway", "Est. Approval %", "Scenario Count"],
+          ...ss.approvalPathways.slice(0, 3).map(ap => [
+            ap.description,
+            `${ap.estimatedApprovalPct}%`,
+            `${ap.scenarioCount}`,
+          ]),
+        ];
+        const apColW = [BODY_W * 0.6, BODY_W * 0.2, BODY_W * 0.2];
+        let apY = doc.y;
+        apRows.forEach((row, ri) => {
+          const isHeader = ri === 0;
+          const rowH = ri === 0 ? 18 : 22;
+          ensureSpace(rowH + 4);
+          if (isHeader) doc.rect(ML, apY, BODY_W, rowH).fill("#f5f5f5");
+          else if (ri % 2 === 0) doc.rect(ML, apY, BODY_W, rowH).fill("#fafafa");
+          let cx = ML;
+          row.forEach((cell, ci) => {
+            doc.font(isHeader ? "Helvetica-Bold" : "Helvetica")
+              .fontSize(9).fillColor(TEXT)
+              .text(cell, cx + 4, apY + 4, { width: apColW[ci] - 8, lineBreak: ci === 0 && !isHeader });
+            cx += apColW[ci];
+          });
+          apY += rowH;
+        });
+        doc.y = apY + 10;
+      }
+
+      // ── Governance Escalation Highlights ────────────────────────────────
+      const govHighlights = ss.governanceHeatmap.filter(g => g.escalationPct > 0 || g.vetoCount > 0);
+      if (govHighlights.length > 0) {
+        ensureSpace(80);
+        doc.font("Helvetica-Bold").fontSize(9).fillColor(MUTED)
+          .text("GOVERNANCE ESCALATION HIGHLIGHTS", ML, doc.y, { width: BODY_W });
+        doc.y += 4;
+        const govRows = [
+          ["Category", "Escalation %", "Veto Count", "Fragility Score"],
+          ...govHighlights.slice(0, 4).map(g => [
+            g.category.charAt(0).toUpperCase() + g.category.slice(1),
+            `${g.escalationPct}%`,
+            `${g.vetoCount}`,
+            `${g.regulatoryFragilityScore}/100`,
+          ]),
+        ];
+        const govColW = [BODY_W * 0.35, BODY_W * 0.22, BODY_W * 0.2, BODY_W * 0.23];
+        let govY = doc.y;
+        govRows.forEach((row, ri) => {
+          const isHeader = ri === 0;
+          const rowH = 18;
+          ensureSpace(rowH + 4);
+          if (isHeader) doc.rect(ML, govY, BODY_W, rowH).fill("#f5f5f5");
+          else if (ri % 2 === 0) doc.rect(ML, govY, BODY_W, rowH).fill("#fafafa");
+          let cx = ML;
+          row.forEach((cell, ci) => {
+            doc.font(isHeader ? "Helvetica-Bold" : "Helvetica")
+              .fontSize(9).fillColor(TEXT)
+              .text(cell, cx + 4, govY + 5, { width: govColW[ci] - 8, lineBreak: false });
+            cx += govColW[ci];
+          });
+          govY += rowH;
+        });
+        doc.y = govY + 10;
+      }
+
+      // ── Sensitivity Summary ──────────────────────────────────────────────
+      if (ss.sensitivitySurface.length > 0) {
+        ensureSpace(80);
+        doc.font("Helvetica-Bold").fontSize(9).fillColor(MUTED)
+          .text("VARIABLE SENSITIVITY RANKING", ML, doc.y, { width: BODY_W });
+        doc.y += 4;
+        const sensRows = [
+          ["Variable", "Category", "Impact Score", "Tipping Point"],
+          ...ss.sensitivitySurface.slice(0, 4).map(s => [
+            s.dimensionLabel,
+            s.category.charAt(0).toUpperCase() + s.category.slice(1),
+            `${s.impactScore}/100`,
+            s.tippingPointSeverity ?? "—",
+          ]),
+        ];
+        const sensColW = [BODY_W * 0.35, BODY_W * 0.22, BODY_W * 0.2, BODY_W * 0.23];
+        let sensY = doc.y;
+        sensRows.forEach((row, ri) => {
+          const isHeader = ri === 0;
+          const rowH = 18;
+          ensureSpace(rowH + 4);
+          if (isHeader) doc.rect(ML, sensY, BODY_W, rowH).fill("#f5f5f5");
+          else if (ri % 2 === 0) doc.rect(ML, sensY, BODY_W, rowH).fill("#fafafa");
+          let cx = ML;
+          row.forEach((cell, ci) => {
+            doc.font(isHeader ? "Helvetica-Bold" : "Helvetica")
+              .fontSize(9).fillColor(TEXT)
+              .text(cell, cx + 4, sensY + 5, { width: sensColW[ci] - 8, lineBreak: false });
+            cx += sensColW[ci];
+          });
+          sensY += rowH;
+        });
+        doc.y = sensY + 10;
+      }
     }
 
     // ─────────────────────────────────────────────────────────────────────────

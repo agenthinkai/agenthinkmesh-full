@@ -256,6 +256,38 @@ export const scenarioSimRouter = router({
         .limit(20);
     }),
 
+  /** Check if a completed simulation exists for a deal (lightweight badge query) */
+  hasCompletedSim: protectedProcedure
+    .input(z.object({ dealId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return { hasCompleted: false, runId: null as string | null, mode: null as string | null, completedAt: null as string | null };
+
+      const [run] = await db
+        .select({
+          runId:       scenarioSimRuns.runId,
+          mode:        scenarioSimRuns.mode,
+          completedAt: scenarioSimRuns.completedAt,
+        })
+        .from(scenarioSimRuns)
+        .where(
+          and(
+            eq(scenarioSimRuns.dealId, input.dealId),
+            eq(scenarioSimRuns.userId, ctx.user.id),
+            eq(scenarioSimRuns.status, "completed")
+          )
+        )
+        .orderBy(desc(scenarioSimRuns.completedAt))
+        .limit(1);
+
+      return {
+        hasCompleted: !!run,
+        runId:        run?.runId ?? null,
+        mode:         run?.mode ?? null,
+        completedAt:  run?.completedAt ?? null,
+      };
+    }),
+
   /** Cancel / pause a running simulation */
   cancelRun: protectedProcedure
     .input(z.object({ runId: z.string() }))

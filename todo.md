@@ -4624,3 +4624,12 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] ScenarioSimDashboard integrated into ICReport component after DecisionUpgradePanel
 - [x] Vitest tests (server/scenarioSim.test.ts) — 30 tests covering SIMULATION_MODES, PERTURBATION_DIMENSIONS, generateScenarioVariants, buildScenarioBrief, evaluateScenario, aggregateSimulationResults — all passing
 - [x] Full test suite: 60 test files, 1079 tests passing
+
+## Scenario Simulation Productization Pass (2026-05-24)
+
+- [x] IC Memo Section 17 — Scenario Stress Summary: auto-inject latest simulation results (mode, count, distribution, executive summary, top 3 failure vectors, top 3 pathways, governance escalation, sensitivity summary, timestamp); omit if no simulation run
+- [x] Verdict card stress-tested badge: purple "⚡ STRESS-TESTED" badge beside verdict label when completed simulation exists; tooltip "Strategic Scenario Simulation completed for this deal."
+- [x] Simulation History tab: collapsible "Past Simulations" section below dashboard, last 5 runs, columns (date, mode, count, approve%, conditional%, reject%, top failure vector, status), Restore Results button reloads saved aggregation without re-running; restored state clearly marked
+- [x] Tests for Section 17 injection, badge visibility, and restore behavior (scenarioSimProductization.test.ts — 22 tests)
+- [x] TypeScript check — zero errors
+- [x] Full test suite passing (61 files, 1101 tests)

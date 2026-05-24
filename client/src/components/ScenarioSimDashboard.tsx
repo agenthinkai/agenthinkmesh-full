@@ -466,6 +466,14 @@ export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pollInterval, setPollInterval] = useState<number | null>(null);
+  /** True when the current view was loaded via Restore Results (not a live run) */
+  const [isRestored, setIsRestored] = useState(false);
+
+  const handleRestore = useCallback((restoredRunId: string) => {
+    setRunId(restoredRunId);
+    setIsRunning(false);
+    setIsRestored(true);
+  }, []);
 
   const startRun = trpc.scenarioSim.startRun.useMutation();
   const { data: runStatus, refetch: refetchStatus } = trpc.scenarioSim.getRunStatus.useQuery(
@@ -651,25 +659,266 @@ export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId
             )}
           </div>
 
+          {/* Restored data banner */}
+          {isRestored && (
+            <div style={{
+              marginTop: 12,
+              padding: "8px 14px",
+              background: "rgba(255,159,67,0.06)",
+              border: "1px solid rgba(255,159,67,0.25)",
+              borderRadius: 5,
+              fontFamily: MONO,
+              fontSize: 8,
+              color: AMBER,
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+            }}>
+              ⚠ VIEWING RESTORED HISTORICAL DATA — Results loaded from a previous simulation run.
+            </div>
+          )}
+
           {/* Re-run button */}
-          <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end" }}>
-            <button
-              onClick={() => { setRunId(null); setIsRunning(false); }}
-              style={{
-                background: "none",
-                border: `1px solid ${BORDER}`,
-                color: TEXT2,
-                fontFamily: MONO,
-                fontSize: 9,
-                padding: "7px 16px",
-                borderRadius: 4,
-                cursor: "pointer",
-                letterSpacing: "0.08em",
-              }}
-            >
-              ↺ RUN NEW SIMULATION
-            </button>
+          <div style={{ marginTop: 16, display: "flex", justifyContent: "flex-end", gap: 8 }}>
+            {isRestored && (
+              <button
+                onClick={() => { setRunId(null); setIsRunning(false); setIsRestored(false); }}
+                style={{
+                  background: "none",
+                  border: `1px solid rgba(168,85,247,0.3)`,
+                  color: PURPLE,
+                  fontFamily: MONO,
+                  fontSize: 9,
+                  padding: "7px 16px",
+                  borderRadius: 4,
+                  cursor: "pointer",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                ⚡ RUN NEW SIMULATION
+              </button>
+            )}
+            {!isRestored && (
+              <button
+                onClick={() => { setRunId(null); setIsRunning(false); setIsRestored(false); }}
+                style={{
+                  background: "none",
+                  border: `1px solid ${BORDER}`,
+                  color: TEXT2,
+                  fontFamily: MONO,
+                  fontSize: 9,
+                  padding: "7px 16px",
+                  borderRadius: 4,
+                  cursor: "pointer",
+                  letterSpacing: "0.08em",
+                }}
+              >
+                ↺ RUN NEW SIMULATION
+              </button>
+            )}
           </div>
+        </div>
+      )}
+
+      {/* Simulation History Panel — always shown below results or launcher */}
+      <SimulationHistoryPanel
+        dealId={dealId}
+        onRestore={handleRestore}
+        activeRunId={runId}
+      />
+    </div>
+  );
+}
+
+// ── Simulation History Panel ─────────────────────────────────────────────────
+
+interface SimHistoryPanelProps {
+  dealId: string;
+  /** Called when user restores a historical run — sets the runId in the parent */
+  onRestore: (runId: string) => void;
+  /** The currently active runId so we can highlight it */
+  activeRunId: string | null;
+}
+
+function SimulationHistoryPanel({ dealId, onRestore, activeRunId }: SimHistoryPanelProps) {
+  const [open, setOpen] = useState(false);
+  const [restoringId, setRestoringId] = useState<string | null>(null);
+  const utils = trpc.useUtils();
+
+  const { data: runs, isLoading } = trpc.scenarioSim.listRunsForDeal.useQuery(
+    { dealId },
+    { enabled: open, staleTime: 15_000 }
+  );
+
+  const completedRuns = (runs ?? []).filter(r => r.status === "completed").slice(0, 5);
+
+  const handleRestore = async (runId: string) => {
+    setRestoringId(runId);
+    try {
+      // Pre-fetch the full run status so it's in the cache when the dashboard mounts
+      await utils.scenarioSim.getRunStatus.fetch({ runId });
+      onRestore(runId);
+    } catch (e) {
+      console.error("[SimHistory] Failed to restore run:", e);
+    } finally {
+      setRestoringId(null);
+    }
+  };
+
+  const modeLabel = (mode: string) => {
+    const map: Record<string, string> = {
+      quick: "Quick (100)",
+      institutional: "Institutional (1k)",
+      deep: "Deep (10k)",
+      infrastructure: "Infrastructure (100k)",
+    };
+    return map[mode] ?? mode;
+  };
+
+  const formatDate = (ts: string | Date | null | undefined) => {
+    if (!ts) return "—";
+    const d = typeof ts === "string" ? new Date(ts) : ts;
+    return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+      + " " + d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  };
+
+  return (
+    <div style={{ marginTop: 20, borderTop: `1px solid ${BORDER}`, paddingTop: 16 }}>
+      {/* Collapsible header */}
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          background: "none",
+          border: "none",
+          cursor: "pointer",
+          padding: 0,
+          width: "100%",
+          textAlign: "left" as const,
+        }}
+      >
+        <span style={{ fontFamily: MONO, fontSize: 8, color: MUTED, letterSpacing: "0.15em" }}>
+          PAST SIMULATIONS
+        </span>
+        <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED, transition: "transform 0.2s", display: "inline-block", transform: open ? "rotate(90deg)" : "rotate(0deg)" }}>
+          ▶
+        </span>
+      </button>
+
+      {open && (
+        <div style={{ marginTop: 12 }}>
+          {isLoading && (
+            <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, padding: "12px 0" }}>Loading history…</div>
+          )}
+          {!isLoading && completedRuns.length === 0 && (
+            <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, padding: "12px 0" }}>No completed simulations found for this deal.</div>
+          )}
+          {!isLoading && completedRuns.length > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {/* Column headers */}
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 60px 60px 60px 80px 80px 100px",
+                gap: 8,
+                padding: "4px 10px",
+                fontFamily: MONO,
+                fontSize: 7,
+                color: MUTED,
+                letterSpacing: "0.1em",
+                borderBottom: `1px solid ${BORDER}`,
+              }}>
+                <span>DATE / TIME</span>
+                <span>MODE</span>
+                <span>APPROVE</span>
+                <span>COND.</span>
+                <span>REJECT</span>
+                <span>TOP FAILURE</span>
+                <span>STATUS</span>
+                <span></span>
+              </div>
+
+              {completedRuns.map(run => {
+                const dd = run.decisionDistribution as DecisionDistribution | null;
+                const isActive = run.runId === activeRunId;
+                const isRestoring = restoringId === run.runId;
+
+                return (
+                  <div
+                    key={run.runId}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr 60px 60px 60px 80px 80px 100px",
+                      gap: 8,
+                      padding: "8px 10px",
+                      background: isActive ? "rgba(168,85,247,0.06)" : BG2,
+                      border: `1px solid ${isActive ? "rgba(168,85,247,0.3)" : BORDER}`,
+                      borderRadius: 5,
+                      alignItems: "center",
+                    }}
+                  >
+                    <span style={{ fontFamily: MONO, fontSize: 8, color: TEXT2 }}>{formatDate(run.completedAt)}</span>
+                    <span style={{ fontFamily: MONO, fontSize: 8, color: TEXT }}>{modeLabel(run.mode)}</span>
+                    <span style={{ fontFamily: MONO, fontSize: 9, color: GREEN, fontWeight: 700 }}>{dd ? `${dd.approvePct}%` : "—"}</span>
+                    <span style={{ fontFamily: MONO, fontSize: 9, color: AMBER, fontWeight: 700 }}>{dd ? `${dd.conditionalPct}%` : "—"}</span>
+                    <span style={{ fontFamily: MONO, fontSize: 9, color: RED, fontWeight: 700 }}>{dd ? `${dd.rejectPct}%` : "—"}</span>
+                    <span style={{ fontFamily: MONO, fontSize: 7, color: TEXT2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+                      {run.executiveSummary ? run.executiveSummary.slice(0, 30) + "…" : "—"}
+                    </span>
+                    <span style={{
+                      fontFamily: MONO, fontSize: 7, fontWeight: 700, letterSpacing: "0.08em",
+                      color: isActive ? PURPLE : GREEN,
+                      background: isActive ? "rgba(168,85,247,0.1)" : "rgba(0,255,135,0.08)",
+                      border: `1px solid ${isActive ? "rgba(168,85,247,0.3)" : "rgba(0,255,135,0.2)"}`,
+                      padding: "2px 6px", borderRadius: 3,
+                    }}>
+                      {isActive ? "ACTIVE" : "COMPLETE"}
+                    </span>
+                    <button
+                      onClick={() => handleRestore(run.runId)}
+                      disabled={isActive || isRestoring}
+                      style={{
+                        background: isActive ? "transparent" : "rgba(168,85,247,0.1)",
+                        border: `1px solid ${isActive ? BORDER : "rgba(168,85,247,0.3)"}`,
+                        color: isActive ? MUTED : PURPLE,
+                        fontFamily: MONO,
+                        fontSize: 8,
+                        fontWeight: 700,
+                        padding: "4px 8px",
+                        borderRadius: 4,
+                        cursor: isActive ? "default" : "pointer",
+                        letterSpacing: "0.06em",
+                        opacity: isRestoring ? 0.6 : 1,
+                        whiteSpace: "nowrap" as const,
+                      }}
+                    >
+                      {isRestoring ? "⟳ LOADING…" : isActive ? "CURRENT" : "↺ RESTORE"}
+                    </button>
+                  </div>
+                );
+              })}
+
+              {/* Restored data notice — shown when viewing a non-latest run */}
+              {activeRunId && completedRuns.length > 0 && activeRunId !== completedRuns[0]?.runId && (
+                <div style={{
+                  marginTop: 6,
+                  padding: "8px 12px",
+                  background: "rgba(255,159,67,0.06)",
+                  border: "1px solid rgba(255,159,67,0.25)",
+                  borderRadius: 4,
+                  fontFamily: MONO,
+                  fontSize: 8,
+                  color: AMBER,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                }}>
+                  ⚠ VIEWING RESTORED HISTORICAL DATA — This is not the most recent simulation for this deal.
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>
