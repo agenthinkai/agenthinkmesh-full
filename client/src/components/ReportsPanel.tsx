@@ -57,28 +57,26 @@ interface DeltaOutput {
 interface SimAggregation {
   executiveSummary: string | null;
   decisionDistribution: {
-    approvePct: number;
-    conditionalPct: number;
-    rejectPct: number;
-    vetoPct: number;
-    totalScenarios: number;
+    // PDF-builder field names
+    approvePct?: number;
+    conditionalPct?: number;
+    rejectPct?: number;
+    vetoPct?: number;
+    totalScenarios?: number;
     confidenceDistribution?: { low: number; medium: number; high: number };
+    // Aggregator field names (also accepted)
+    approveCount?: number;
+    conditionalCount?: number;
+    rejectCount?: number;
+    hardNoPct?: number;
+    hardNoCount?: number;
+    [key: string]: unknown;
   };
-  failureVectors: Array<{
-    category: string;
-    frequency: number;
-    avgSeverity: number;
-    affectedPct: number;
-    examplePattern?: string;
-  }>;
-  approvalPathways: Array<{
-    conditionSet: string[];
-    approvalProbability: number;
-    confidenceLift: number;
-    remainingRisks: string[];
-  }>;
-  sensitivitySurface: Array<{ variable: string; impactScore: number; direction: string }>;
-  governanceHeatmap: Array<{ category: string; escalationCount: number; vetoCount: number; avgSeverity: number }>;
+  // Accept both PDF-builder and aggregator field shapes (any)
+  failureVectors: Array<Record<string, unknown>>;
+  approvalPathways: Array<Record<string, unknown>>;
+  sensitivitySurface: Array<Record<string, unknown>>;
+  governanceHeatmap: Array<Record<string, unknown>>;
 }
 
 export interface ReportsPanelProps {
@@ -299,7 +297,20 @@ export function ReportsPanel({
         targetCount: safeSimTargetCount,
         completedAt: safeSimCompletedAt,
         executiveSummary: simAggregation!.executiveSummary ?? "",
-        decisionDistribution: simAggregation!.decisionDistribution,
+        decisionDistribution: {
+          approvePct:    (simAggregation!.decisionDistribution.approvePct as number | undefined) ?? 0,
+          conditionalPct: (simAggregation!.decisionDistribution.conditionalPct as number | undefined) ?? 0,
+          rejectPct:     (simAggregation!.decisionDistribution.rejectPct as number | undefined) ?? 0,
+          vetoPct:       (simAggregation!.decisionDistribution.vetoPct as number | undefined) ?? (simAggregation!.decisionDistribution.hardNoPct as number | undefined) ?? 0,
+          totalScenarios: (simAggregation!.decisionDistribution.totalScenarios as number | undefined) ?? safeSimTargetCount,
+          ...(simAggregation!.decisionDistribution.confidenceDistribution ? { confidenceDistribution: simAggregation!.decisionDistribution.confidenceDistribution } : {}),
+          // Pass through aggregator fields so server-side normalization can use them
+          hardNoPct:     simAggregation!.decisionDistribution.hardNoPct as number | undefined,
+          hardNoCount:   simAggregation!.decisionDistribution.hardNoCount as number | undefined,
+          approveCount:  simAggregation!.decisionDistribution.approveCount as number | undefined,
+          conditionalCount: simAggregation!.decisionDistribution.conditionalCount as number | undefined,
+          rejectCount:   simAggregation!.decisionDistribution.rejectCount as number | undefined,
+        } as any,
         failureVectors: simAggregation!.failureVectors ?? [],
         approvalPathways: simAggregation!.approvalPathways ?? [],
         sensitivitySurface: simAggregation!.sensitivitySurface ?? [],
@@ -416,7 +427,7 @@ export function ReportsPanel({
                     icon={<BarChart3 className="h-4 w-4" />}
                     title="Strategic Stress Test Report"
                     subtitle={hasStress
-                      ? `${safeSimTargetCount.toLocaleString()} scenarios · ${safeSimMode} mode · ${simAggregation!.decisionDistribution.approvePct.toFixed(1)}% approve rate.`
+                      ? `${safeSimTargetCount.toLocaleString()} scenarios · ${safeSimMode} mode · ${((simAggregation!.decisionDistribution.approvePct as number | undefined) ?? 0).toFixed(1)}% approve rate.`
                       : "Run a Strategic Scenario Simulation first to unlock this report."}
                     badge={hasStress ? `${safeSimTargetCount.toLocaleString()} Scenarios` : "Requires Simulation"}
                     badgeVariant={hasStress ? "default" : "outline"}

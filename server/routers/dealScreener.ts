@@ -16,6 +16,7 @@ import { generateCfoDeepDivePdf, type CouncilSummaryInput } from "../cfoDeepDive
 import { generateICMemoPdf, type ICMemoInput } from "../icMemoPdf";
 import { generateUpgradeProtocolPdf, generateUpgradeProtocolText, type UpgradeProtocolInput } from "../upgradeProtocolPdf";
 import { generateStressTestReportPdf, generateStressTestReportText, type StressTestReportInput } from "../stressTestReportPdf";
+import { normalizeStressTestReportInput, logValidationError } from "../normalizeStressTestReportInput";
 import { runComparison } from "../comparisonEngine";
 import { generateSingleDealICReport, generateComparisonICReport } from "../icReportEngine";
 import { detectTier0Signal, TIER0_FEED } from "../tier0Signals";
@@ -1024,11 +1025,17 @@ export const dealScreenerRouter = router({
       completedAt:          z.union([z.string(), z.date()]).transform(v => v instanceof Date ? v.toISOString() : v),
       executiveSummary:     z.string(),
       decisionDistribution: z.object({
-        approvePct:    z.number(),
-        conditionalPct: z.number(),
-        rejectPct:     z.number(),
-        vetoPct:       z.number(),
-        totalScenarios: z.number(),
+        approvePct:    z.union([z.number(), z.string()]).transform(v => typeof v === 'string' ? parseFloat(v.replace(/%$/, '')) || 0 : v),
+        conditionalPct: z.union([z.number(), z.string()]).transform(v => typeof v === 'string' ? parseFloat(v.replace(/%$/, '')) || 0 : v),
+        rejectPct:     z.union([z.number(), z.string()]).transform(v => typeof v === 'string' ? parseFloat(v.replace(/%$/, '')) || 0 : v),
+        vetoPct:       z.union([z.number(), z.string()]).transform(v => typeof v === 'string' ? parseFloat(v.replace(/%$/, '')) || 0 : v).optional().default(0),
+        totalScenarios: z.union([z.number(), z.string()]).transform(v => typeof v === 'string' ? parseInt(v, 10) || 0 : v).optional().default(0),
+        // aggregator uses hardNoPct instead of vetoPct — accept both
+        hardNoPct:     z.union([z.number(), z.string()]).transform(v => typeof v === 'string' ? parseFloat(v.replace(/%$/, '')) || 0 : v).optional(),
+        hardNoCount:   z.number().optional(),
+        approveCount:  z.number().optional(),
+        conditionalCount: z.number().optional(),
+        rejectCount:   z.number().optional(),
         confidenceDistribution: z.object({ low: z.number(), medium: z.number(), high: z.number() }).optional(),
       }),
       failureVectors:       z.array(z.any()),
@@ -1039,11 +1046,27 @@ export const dealScreenerRouter = router({
       format:               z.enum(["pdf", "text", "json"]).default("pdf"),
     }))
     .mutation(async ({ input }) => {
-      const reportInput: StressTestReportInput = {
+      // Normalize aggregation data: maps aggregator field names → PDF builder field names,
+      // coerces numeric strings, clamps NaN/Infinity, and provides safe fallbacks.
+      const rawInput: Record<string, unknown> = {
         ...input,
         generatedAt: new Date().toISOString(),
       };
-      console.log(`[StressTestReportPdf] Export requested: dealName=${input.dealName}, mode=${input.mode}, targetCount=${input.targetCount}, completedAt=${input.completedAt}, format=${input.format}, hasExecutiveSummary=${!!input.executiveSummary}, failureVectors=${input.failureVectors.length}, approvalPathways=${input.approvalPathways.length}, sensitivitySurface=${input.sensitivitySurface.length}, governanceHeatmap=${input.governanceHeatmap.length}`);
+      const reportInput: StressTestReportInput = normalizeStressTestReportInput(rawInput);
+
+      console.log(
+        `[StressTestReportPdf] Export requested: dealName=${reportInput.dealName}` +
+        `, mode=${reportInput.mode}, targetCount=${reportInput.targetCount}` +
+        `, completedAt=${reportInput.completedAt}, format=${input.format}` +
+        `, hasExecutiveSummary=${!!reportInput.executiveSummary}` +
+        `, failureVectors=${reportInput.failureVectors.length}` +
+        `, approvalPathways=${reportInput.approvalPathways.length}` +
+        `, sensitivitySurface=${reportInput.sensitivitySurface.length}` +
+        `, governanceHeatmap=${reportInput.governanceHeatmap.length}` +
+        `, approvePct=${reportInput.decisionDistribution.approvePct}` +
+        `, rejectPct=${reportInput.decisionDistribution.rejectPct}`
+      );
+
       try {
         if (input.format === "text") {
           const text = generateStressTestReportText(reportInput);
@@ -1056,7 +1079,18 @@ export const dealScreenerRouter = router({
         const base64 = pdfBuffer.toString("base64");
         return { format: "pdf" as const, base64, text: null };
       } catch (err: any) {
-        console.error(`[StressTestReportPdf] Export failed: dealName=${input.dealName}, mode=${input.mode}, targetCount=${input.targetCount}, completedAt=${input.completedAt}, format=${input.format}, error=${err?.message ?? String(err)}`, err?.stack ?? "");
+        // Log full validation error path if it's a zod-style error
+        if (Array.isArray(err?.data?.zodError?.fieldErrors) || Array.isArray(err?.issues)) {
+          logValidationError("stressTestReportPdf mutation", err.issues ?? []);
+        }
+        console.error(
+          `[StressTestReportPdf] Export failed: dealName=${reportInput.dealName}` +
+          `, mode=${reportInput.mode}, targetCount=${reportInput.targetCount}` +
+          `, completedAt=${reportInput.completedAt}, format=${input.format}` +
+          `, approvePct=${reportInput.decisionDistribution.approvePct}` +
+          `, error=${err?.message ?? String(err)}`,
+          err?.stack ?? ""
+        );
         throw err;
       }
     }),
