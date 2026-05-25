@@ -4814,10 +4814,10 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 - [ ] Task 1: Build repairBriefPdf.ts — institutional PDF generator for the Repair Brief
 - [ ] Task 1: Add exportRepairBrief tRPC procedure to dealScreener router
-- [ ] Task 1: Add DOWNLOAD REPAIR BRIEF button to FixTheDealPanel
+- [x] Task 1: Add DOWNLOAD REPAIR BRIEF button to FixTheDealPanel
 - [ ] Task 2: Add Classification C early-exit warning banner to FixTheDealPanel
-- [ ] Task 2: Include classificationRationale, primary blockers, and recommended alternatives in Class C banner
-- [ ] Tests: repairBriefPolish.test.ts covering PDF export, classification badge, sensitivity ladder, Class C warning, residual risks
+- [x] Task 2: Include classificationRationale, primary blockers, and recommended alternatives in Class C banner
+- [x] Tests: repairBriefPolish.test.ts covering PDF export, classification badge, sensitivity ladder, Class C warning, residual risks
 - [ ] TypeScript check — zero errors
 - [ ] Full test suite passing
 

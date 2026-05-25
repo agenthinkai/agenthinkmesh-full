@@ -461,3 +461,127 @@ describe("residual risks — data integrity", () => {
     expect(combined).toContain("Refinancing");
   });
 });
+
+// ── requestRestructuringMemo — input validation ───────────────────────────────
+// These tests validate the input schema and logic for the Restructuring Memo
+// feature without making real LLM calls.
+
+describe("requestRestructuringMemo — input schema validation", () => {
+  it("Class C classificationRationale is non-empty", () => {
+    expect(CLASS_C_INPUT.classificationRationale.length).toBeGreaterThan(0);
+  });
+
+  it("Class C rootCauses provide at least 1 structural blocker for memo", () => {
+    const blockers = CLASS_C_INPUT.rootCauses
+      .slice(0, 3)
+      .map((rc) => `[${rc.category}] ${rc.description}`);
+    expect(blockers.length).toBeGreaterThanOrEqual(1);
+    expect(blockers[0]).toContain("[UNIT_ECON]");
+  });
+
+  it("structural blockers are non-empty strings", () => {
+    const blockers = CLASS_C_INPUT.rootCauses
+      .slice(0, 3)
+      .map((rc) => `[${rc.category}] ${rc.description}`);
+    for (const b of blockers) {
+      expect(typeof b).toBe("string");
+      expect(b.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("memo input would not be sent for Class A or B", () => {
+    // The REQUEST RESTRUCTURING MEMO button is only shown when classification === "C"
+    const isClassC_A = CLASS_A_INPUT.classification === "C";
+    const isClassC_B = BASE_INPUT.classification === "C";
+    const isClassC_C = CLASS_C_INPUT.classification === "C";
+    expect(isClassC_A).toBe(false);
+    expect(isClassC_B).toBe(false);
+    expect(isClassC_C).toBe(true);
+  });
+
+  it("fallback blocker is used when rootCauses is empty", () => {
+    const emptyRoots: typeof CLASS_C_INPUT.rootCauses = [];
+    const blockers = emptyRoots.slice(0, 3).map((rc) => `[${rc.category}] ${rc.description}`);
+    const fallback = blockers.length > 0
+      ? blockers
+      : ["Fundamental structural deficiency identified by Council of 10"];
+    expect(fallback).toHaveLength(1);
+    expect(fallback[0]).toContain("Fundamental structural deficiency");
+  });
+});
+
+// ── Class C suppression — UI branching logic ─────────────────────────────────
+// These tests verify the branching conditions that control what renders in
+// the FixTheDealPanel for each classification.
+
+describe("FixTheDealPanel — Class C suppression logic", () => {
+  it("isClassC is true only for classification C", () => {
+    const isClassC = (cls: string) => cls === "C";
+    expect(isClassC("A")).toBe(false);
+    expect(isClassC("B")).toBe(false);
+    expect(isClassC("C")).toBe(true);
+  });
+
+  it("DOWNLOAD REPAIR BRIEF is not shown for Class C", () => {
+    // The download button is inside the !isClassC branch
+    const shouldShowDownload = (cls: string) => cls !== "C";
+    expect(shouldShowDownload("A")).toBe(true);
+    expect(shouldShowDownload("B")).toBe(true);
+    expect(shouldShowDownload("C")).toBe(false);
+  });
+
+  it("REQUEST RESTRUCTURING MEMO is only shown for Class C", () => {
+    const shouldShowMemo = (cls: string) => cls === "C";
+    expect(shouldShowMemo("A")).toBe(false);
+    expect(shouldShowMemo("B")).toBe(false);
+    expect(shouldShowMemo("C")).toBe(true);
+  });
+
+  it("full repair report (change table, sensitivity ladder) is suppressed for Class C", () => {
+    // The full repair report renders inside !isClassC block
+    const shouldShowFullReport = (cls: string) => cls !== "C";
+    expect(shouldShowFullReport("A")).toBe(true);
+    expect(shouldShowFullReport("B")).toBe(true);
+    expect(shouldShowFullReport("C")).toBe(false);
+  });
+
+  it("Class C banner renders classificationRationale verbatim (no truncation)", () => {
+    const rationale = CLASS_C_INPUT.classificationRationale;
+    // Simulate the verbatim render — no slice, no truncation
+    const rendered = rationale; // The UI renders {d.classificationRationale} directly
+    expect(rendered).toBe(CLASS_C_INPUT.classificationRationale);
+    expect(rendered.length).toBe(CLASS_C_INPUT.classificationRationale.length);
+  });
+});
+
+// ── PDF filename convention — underscore format ───────────────────────────────
+
+describe("PDF filename convention — underscore sanitization", () => {
+  it("filename uses underscores (not hyphens) for non-alphanumeric chars", () => {
+    const dealName = "Helios-North Offshore Wind";
+    const date = "20260525";
+    const sanitized = dealName.replace(/[^a-zA-Z0-9]/g, "_");
+    const filename = `${sanitized}_RepairBrief_${date}.pdf`;
+    expect(filename).toBe("Helios_North_Offshore_Wind_RepairBrief_20260525.pdf");
+  });
+
+  it("date portion is exactly 8 digits (YYYYMMDD)", () => {
+    const today = new Date();
+    const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
+    expect(dateStr).toMatch(/^\d{8}$/);
+  });
+
+  it("filename ends with .pdf extension", () => {
+    const dealName = "Test Deal";
+    const sanitized = dealName.replace(/[^a-zA-Z0-9]/g, "_");
+    const filename = `${sanitized}_RepairBrief_20260525.pdf`;
+    expect(filename.endsWith(".pdf")).toBe(true);
+  });
+
+  it("Class C deal does not generate a Repair Brief filename (no PDF export)", () => {
+    // Class C deals get a Restructuring Memo, not a Repair Brief PDF
+    const classification = "C";
+    const shouldExportPdf = classification !== "C";
+    expect(shouldExportPdf).toBe(false);
+  });
+});

@@ -1456,6 +1456,61 @@ ${input.icMemoSummary ?? "Not provided."}`;
       const buffer = await generateRepairBriefPdf(briefInput);
       return { pdfBase64: buffer.toString("base64") };
     }),
+
+  // ── Request Restructuring Memo (Class C only) ───────────────────────────────
+  // Produces a 300-word IC-partner-to-sponsor memo explaining why the deal
+  // cannot be approved and what fundamental changes are required.
+  requestRestructuringMemo: protectedProcedure
+    .input(z.object({
+      dealName:                z.string().min(1).max(200).trim(),
+      classificationRationale: z.string().min(1).max(2000).trim(),
+      structuralBlockers:      z.array(z.string()).min(1).max(10),
+      councilMode:             z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const modeLabel = input.councilMode === "infrastructure"
+        ? "Infrastructure / Project Finance"
+        : "Venture Capital";
+
+      const systemPrompt = `You are a senior Investment Committee partner writing a formal memo to a deal sponsor.
+Tone: direct, professional, IC-partner-to-sponsor. Not apologetic. Not encouraging.
+This deal has been classified as fundamentally non-viable (Class C) by the Council of 10.
+Write a memo of exactly 250-300 words. No more.
+
+Structure:
+1. Opening sentence: state clearly that the submission cannot be approved in its current form.
+2. Paragraph 1 (60-80 words): explain the primary structural reason the deal fails.
+3. Paragraph 2 (80-100 words): list the specific structural changes required before resubmission — not cosmetic fixes.
+4. Closing sentence: state the condition under which the sponsor may resubmit.
+
+Do NOT:
+- Use bullet points
+- Be apologetic or encouraging
+- Suggest the deal is "close" to approval
+- Use phrases like "we appreciate your submission"
+- Exceed 300 words
+
+Return only the memo text. No subject line, no salutation, no signature block.`;
+
+      const userMessage = `Deal Name: ${input.dealName}
+Council Mode: ${modeLabel}
+Classification Rationale: ${input.classificationRationale}
+Structural Blockers:
+${input.structuralBlockers.map((b, i) => `${i + 1}. ${b}`).join('\n')}`;
+
+      const raw = await invokeLLM({
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user",   content: userMessage },
+        ],
+      });
+
+      const memo = raw.choices?.[0]?.message?.content ?? "Unable to generate memo.";
+      const memoText = typeof memo === "string" ? memo.trim() : JSON.stringify(memo);
+
+      return { memo: memoText };
+    }),
+
 });
 
 // ── Static demo signals — shown when user has no stored signals ────────────────
