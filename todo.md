@@ -4746,3 +4746,33 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Tests: updated terms applied correctly, verdict delta renders, original result preserved, infrastructure mode persists, no forced approval
 - [ ] TypeScript check — zero errors
 - [ ] Full test suite passing
+
+## IC Memo Export Bug Fix (2026-05-25 — Demo-Critical)
+
+- [ ] Reproduce IC Memo PDF export failure in Infrastructure mode
+- [ ] Identify root cause (null/undefined fields, schema mismatch, PDF rendering error)
+- [ ] Fix all identified failure paths in icMemoPdf.ts and normalization layer
+- [ ] Verify Infrastructure mode propagation into IC Memo export
+- [ ] Verify Section 17 Scenario Stress Summary injection
+- [ ] Verify Conditions to Re-engage panel rendering in PDF
+- [ ] Verify mode coherence badge rendering in PDF
+- [ ] Add regression tests for the exact failing path
+- [ ] Confirm IC Memo export works in VC mode, Infrastructure mode, stress-tested and non-stress-tested flows
+- [ ] Run TypeScript check — zero errors
+- [ ] Run full test suite — zero failures
+- [ ] Perform real manual export after fix
+
+## IC Memo Export Bug Fix (2026-05-25 — Demo-critical stabilization)
+
+- [x] Reproduced crash: input.blockingIssues.join() on undefined at line 223 of icMemoPdf.ts
+- [x] Fixed: defensive null-coalescing on conditionsToProceed and blockingIssues (lines 220, 223)
+- [x] Fixed: PersonaVoteInput.personaId and personaName made optional (backward compatible)
+- [x] Fixed: verdict === "REJECTED" check corrected to include "REJECT" and "VETOED" (line 1577)
+- [x] Fixed: ⚡ emoji replaced with [INFRA] — PDFKit Helvetica cannot render Unicode emoji
+- [x] Fixed: ℹ symbol replaced with NOTE: — PDFKit Helvetica cannot render U+2139
+- [x] Fixed: const modeLabel shadowing in Section 17 — renamed to simModeLabel
+- [x] Added: dealText, keyStrengths, keyRisks, decisionTriggers as optional fields to ICMemoInput type
+- [x] Added: icMemoExportRegression.test.ts (35 regression tests covering all 7 issues)
+- [x] TypeScript: 0 errors
+- [x] Tests: 74 files, 1366 passing, 1 skipped, 0 failures
+- [x] Real manual export confirmed: 72,277 byte PDF generated successfully (Helios-North, Infrastructure mode)

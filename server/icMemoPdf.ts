@@ -26,8 +26,8 @@ const LOGO_CDN_URL = "https://d2xsxph8kpxj0f.cloudfront.net/310519663268376562/7
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 export interface PersonaVoteInput {
-  personaId:   string;
-  personaName: string;
+  personaId?:  string;
+  personaName?: string;
   personaRole: string;
   vote:        string;
   confidence:  number;
@@ -48,6 +48,15 @@ export interface ICMemoInput {
   votes:               PersonaVoteInput[];
   councilMode?:        "gcc" | "global_vc" | "india_pe" | "gcc_equities" | "infrastructure";
   patternContext?:     "invested_match" | "passed_match";
+  // Optional fields used by Infrastructure mode panels
+  dealText?:           string;
+  keyStrengths?:       string[];
+  keyRisks?:           string[];
+  decisionTriggers?: {
+    hardNoTriggers?:   string[];
+    upgradeTriggers?:  string[];
+    watchItems?:       string[];
+  };
   monteCarloAnalysis?: {
     p10: number; p50: number; p90: number; mean: number; std: number;
     upside_skew: boolean; verdict: string; distribution_label: string;
@@ -217,10 +226,10 @@ DEAL: ${input.dealName}
 COUNCIL VERDICT: ${verdictLabel} (${input.yesCount} Yes / ${input.noCount} No, ${Math.round(input.confidenceScore * 100)}% consensus)
 
 CONDITIONS TO PROCEED:
-${input.conditionsToProceed.join("\n")}
+${(input.conditionsToProceed ?? []).join("\n")}
 
 BLOCKING ISSUES:
-${input.blockingIssues.join("\n")}
+${(input.blockingIssues ?? []).join("\n")}
 
 COUNCIL OF 10 — FULL VOTE ANALYSIS:
 ${votesSummary}
@@ -1002,7 +1011,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       doc.rect(infraBadgeX, infraBadgeY, infraBadgeW, 28).stroke("#f97316");
       doc.rect(infraBadgeX, infraBadgeY, 4, 28).fill("#f97316");
       doc.fontSize(7).fillColor("#f97316").font("Helvetica-Bold")
-        .text("⚡  INFRASTRUCTURE / PROJECT FINANCE COUNCIL  ·  10-AGENT COUNCIL",
+        .text("[INFRA]  INFRASTRUCTURE / PROJECT FINANCE COUNCIL  ·  10-AGENT COUNCIL",
           infraBadgeX + 12, infraBadgeY + 5,
           { width: infraBadgeW - 16, align: "center", lineBreak: false });
       doc.fontSize(6.5).fillColor("#9a3412").font("Helvetica")
@@ -1574,7 +1583,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     }
 
     // ── Infrastructure: Conditions to Re-engage (shown only in infrastructure mode for rejected/vetoed deals) ──
-    const isRejectOrVeto = input.verdict === "REJECTED" || input.verdict === "VETOED";
+    const isRejectOrVeto = input.verdict === "REJECT" || input.verdict === "VETOED" || input.verdict === "REJECTED";
     if (input.councilMode === "infrastructure" && isRejectOrVeto) {
       ensureSpace(24);
       doc.y += 20;
@@ -1626,7 +1635,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
 
       doc.y += 8;
       doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
-        .text("ℹ All conditions must be met concurrently for re-engagement. Re-submit the updated deal memo to the Infrastructure / Project Finance Council for a fresh evaluation.",
+        .text("NOTE: All conditions must be met concurrently for re-engagement. Re-submit the updated deal memo to the Infrastructure / Project Finance Council for a fresh evaluation.",
           ML, doc.y, { width: BODY_W, lineBreak: true });
       doc.y += 14;
     }
@@ -1939,11 +1948,11 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     if (input.scenarioStress) {
       const ss = input.scenarioStress;
       const dd = ss.decisionDistribution;
-      const modeLabel = ss.mode === "quick" ? "Quick (100 scenarios)"
+      const simModeLabel = ss.mode === "quick" ? "Quick (100 scenarios)"
         : ss.mode === "institutional" ? "Institutional (1,000 scenarios)"
         : ss.mode === "deep" ? "Deep (10,000 scenarios)"
         : ss.mode === "infrastructure" ? "Infrastructure (100,000 scenarios)"
-        : ss.mode;
+        : ss.mode ?? "";
       const runDate = new Date(ss.completedAt).toLocaleDateString("en-GB", {
         day: "2-digit", month: "short", year: "numeric",
       });
@@ -1958,7 +1967,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
         .text("SIMULATION PARAMETERS", ML + 8, doc.y + 6, { width: BODY_W - 16 });
       doc.font("Helvetica").fontSize(8).fillColor("#333")
         .text(
-          `Mode: ${modeLabel}  |  Scenarios run: ${dd.totalScenarios.toLocaleString()}  |  Completed: ${runDate}`,
+          `Mode: ${simModeLabel}  |  Scenarios run: ${dd.totalScenarios.toLocaleString()}  |  Completed: ${runDate}`,
           ML + 8, doc.y + 16, { width: BODY_W - 16 }
         );
       doc.y += 36;
