@@ -165,7 +165,7 @@ export const infraSimRouter = router({
       userId: ctx.user.id,
       title: HELIOS_NORTH_CONFIG.title,
       assetClass: "offshore_wind",
-      geography: "UK North Sea",
+      geography: "Celtic Sea (Floating Wind)",
       totalCapexGbpM: "4200",
       baseIrrPct: HELIOS_NORTH_CONFIG.baseIrrPct.toString(),
       fundMinIrrPct: HELIOS_NORTH_CONFIG.fundMinIrrPct.toString(),
@@ -793,7 +793,7 @@ export const infraSimRouter = router({
 // ── Helios-North IC Memo Extract ──────────────────────────────────────────────
 
 const HELIOS_NORTH_MEMO_EXTRACT = `PROJECT: Helios-North Offshore Wind
-LOCATION: UK North Sea (Dogger Bank adjacent)
+LOCATION: Celtic Sea (South-West UK, floating-wind zone, water depth 70–95m)
 CAPACITY: 850 MW
 TOTAL CAPEX: £4.2B
 BASE CASE IRR: 9.5%

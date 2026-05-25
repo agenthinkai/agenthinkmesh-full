@@ -63,9 +63,10 @@ export interface AdversarialCouncilResult extends CouncilResult {
 // ── Challenger / Proposer agent ID maps per council mode ─────────────────────
 
 const CHALLENGER_IDS: Record<string, string[]> = {
-  gcc:       ["SKEPTIC", "GCC_REG", "DEVILS_ADVOCATE"],
-  global_vc: ["VC_SKEPTIC", "VC_LEGAL", "VC_CONTRARIAN"],
-  india_pe:  ["IN_SKEPTIC", "IN_LEGAL", "IN_DEVILS_ADVOCATE"],
+  gcc:            ["SKEPTIC", "GCC_REG", "DEVILS_ADVOCATE"],
+  global_vc:      ["VC_SKEPTIC", "VC_LEGAL", "VC_CONTRARIAN"],
+  india_pe:       ["IN_SKEPTIC", "IN_LEGAL", "IN_DEVILS_ADVOCATE"],
+  infrastructure: ["INFRA_SKEPTIC", "INFRA_REGULATORY", "INFRA_EPC"],
 };
 
 /**
@@ -73,32 +74,35 @@ const CHALLENGER_IDS: Record<string, string[]> = {
  * The Skeptic and Contrarian are NOT in this set — they require 2+ HARD_NOs.
  */
 const HARD_VETO_AGENTS: Record<string, string[]> = {
-  gcc:       ["GCC_REG", "GCC_SHARIAH"],
-  global_vc: ["VC_LEGAL"],
-  india_pe:  ["IN_LEGAL"],
-  gcc_equities: ["GCC_EQ_REG", "GCC_EQ_SHARIAH"],
-// Intentionally excluded: SKEPTIC, VC_SKEPTIC, IN_SKEPTIC, DEVILS_ADVOCATE, VC_CONTRARIAN
-// These agents create unresolved objections and reduce confidence but cannot veto alone.
+  gcc:            ["GCC_REG", "GCC_SHARIAH"],
+  global_vc:      ["VC_LEGAL"],
+  india_pe:       ["IN_LEGAL"],
+  gcc_equities:   ["GCC_EQ_REG", "GCC_EQ_SHARIAH"],
+  infrastructure: ["INFRA_REGULATORY"],  // Regulatory & Permitting Counsel has solo veto power
+// Intentionally excluded: INFRA_SKEPTIC, INFRA_EPC — these require 2+ HARD_NOs
 };
 
 const PROPOSER_IDS: Record<string, string[]> = {
-  gcc:       ["ANALYST", "CFO", "MACRO", "GCC_CONSUMER"],
-  global_vc: ["VC_THESIS", "VC_FOUNDER", "VC_PRODUCT", "VC_CFO", "VC_MARKET"],
-  india_pe:  ["IN_ANALYST", "IN_CFO", "IN_MARKET", "IN_MACRO"],
+  gcc:            ["ANALYST", "CFO", "MACRO", "GCC_CONSUMER"],
+  global_vc:      ["VC_THESIS", "VC_FOUNDER", "VC_PRODUCT", "VC_CFO", "VC_MARKET"],
+  india_pe:       ["IN_ANALYST", "IN_CFO", "IN_MARKET", "IN_MACRO"],
+  infrastructure: ["INFRA_PROJECT_FINANCE", "INFRA_OFFTAKE", "INFRA_IRR", "INFRA_CONTRARIAN"],
 };
 
 // Agents that always run regardless of risk level (core minimum)
 const CORE_AGENT_IDS: Record<string, string[]> = {
-  gcc:       ["ANALYST", "CFO", "SKEPTIC", "GCC_REG"],
-  global_vc: ["VC_THESIS", "VC_CFO", "VC_SKEPTIC", "VC_LEGAL"],
-  india_pe:  ["IN_ANALYST", "IN_CFO", "IN_SKEPTIC", "IN_LEGAL"],
+  gcc:            ["ANALYST", "CFO", "SKEPTIC", "GCC_REG"],
+  global_vc:      ["VC_THESIS", "VC_CFO", "VC_SKEPTIC", "VC_LEGAL"],
+  india_pe:       ["IN_ANALYST", "IN_CFO", "IN_SKEPTIC", "IN_LEGAL"],
+  infrastructure: ["INFRA_PROJECT_FINANCE", "INFRA_REGULATORY", "INFRA_SKEPTIC", "INFRA_OFFTAKE"],
 };
 
 // Agents added at MEDIUM risk
 const MEDIUM_AGENT_IDS: Record<string, string[]> = {
-  gcc:       ["MACRO", "GCC_CONSUMER"],
-  global_vc: ["VC_FOUNDER", "VC_PRODUCT"],
-  india_pe:  ["IN_MARKET", "IN_MACRO"],
+  gcc:            ["MACRO", "GCC_CONSUMER"],
+  global_vc:      ["VC_FOUNDER", "VC_PRODUCT"],
+  india_pe:       ["IN_MARKET", "IN_MACRO"],
+  infrastructure: ["INFRA_EPC", "INFRA_TECH"],
 };
 
 // ── 1. Risk Estimator (input completeness only) ───────────────────────────────

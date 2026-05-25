@@ -46,7 +46,7 @@ export interface ICMemoInput {
   conditionsToProceed: string[];
   blockingIssues:      string[];
   votes:               PersonaVoteInput[];
-  councilMode?:        "gcc" | "global_vc" | "india_pe" | "gcc_equities";
+  councilMode?:        "gcc" | "global_vc" | "india_pe" | "gcc_equities" | "infrastructure";
   patternContext?:     "invested_match" | "passed_match";
   monteCarloAnalysis?: {
     p10: number; p50: number; p90: number; mean: number; std: number;
@@ -900,10 +900,11 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
     // ─────────────────────────────────────────────────────────────────────────
     const dateStr = new Date().toLocaleDateString("en-GB", { day: "2-digit", month: "long", year: "numeric" });
     const modeLabel =
-      input.councilMode === "global_vc"    ? "Global VC" :
-      input.councilMode === "india_pe"     ? "India PE" :
-      input.councilMode === "gcc"          ? "GCC PE" :
-      input.councilMode === "gcc_equities" ? "GCC Equities" : "Global VC";
+      input.councilMode === "global_vc"      ? "Global VC" :
+      input.councilMode === "india_pe"       ? "India PE" :
+      input.councilMode === "gcc"            ? "GCC PE" :
+      input.councilMode === "gcc_equities"   ? "GCC Equities" :
+      input.councilMode === "infrastructure" ? "Infrastructure / Project Finance" : "Global VC";
 
     // Full white background
     doc.rect(0, 0, A4_W, A4_H).fill(BG);

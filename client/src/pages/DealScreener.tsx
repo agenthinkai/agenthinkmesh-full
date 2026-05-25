@@ -80,7 +80,7 @@ interface CouncilResult {
   conditionsToProceed: string[];
   blockingIssues: string[];
   votes: PersonaVote[];
-  councilMode?: "gcc" | "global_vc" | "india_pe" | "gcc_equities";
+  councilMode?: "gcc" | "global_vc" | "india_pe" | "gcc_equities" | "infrastructure";
   evidenceBlob?: string | null;
   icReport?: ICReportData | null;
   universitySignal?: UniversitySignal | null;
@@ -237,7 +237,7 @@ const PERSONA_META: Record<string, { icon: string; color: string }> = {
   GCC_EQ_CONTRARIAN: { icon: "🔥", color: "#ff4757" },
 };
 
-type CouncilModeType = "gcc" | "global_vc" | "india_pe" | "gcc_equities";
+type CouncilModeType = "gcc" | "global_vc" | "india_pe" | "gcc_equities" | "infrastructure";
 
 const PERSONA_ORDERS: Record<CouncilModeType, { id: string; label: string }[]> = {
   gcc: [
@@ -287,6 +287,18 @@ const PERSONA_ORDERS: Record<CouncilModeType, { id: string; label: string }[]> =
     { id: "GCC_EQ_LIQUIDITY",   label: "Liquidity & Market Micro" },
     { id: "GCC_EQ_ESG",         label: "ESG & Governance" },
     { id: "GCC_EQ_CONTRARIAN",  label: "Contrarian" },
+  ],
+  infrastructure: [
+    { id: "INFRA_PROJECT_FINANCE", label: "Project Finance Analyst" },
+    { id: "INFRA_REGULATORY",      label: "Regulatory & Permitting Counsel" },
+    { id: "INFRA_OFFTAKE",         label: "Offtake & Revenue Analyst" },
+    { id: "INFRA_SKEPTIC",         label: "Infrastructure Skeptic" },
+    { id: "INFRA_EPC",             label: "EPC & Construction Risk" },
+    { id: "INFRA_TECH",            label: "Technology & Operations" },
+    { id: "INFRA_ESG",             label: "ESG & Climate Risk" },
+    { id: "INFRA_MACRO",           label: "Infrastructure Macro" },
+    { id: "INFRA_IRR",             label: "IRR & Returns Analyst" },
+    { id: "INFRA_CONTRARIAN",      label: "Infrastructure Contrarian" },
   ],
 };
 
@@ -800,7 +812,11 @@ function PersonaLoadingGrid({ councilMode = "gcc", loadingStartedAt }: { council
   const allDone = doneCount >= personaOrder.length;
   const isDeliberating = elapsed >= DELIBERATION_THRESHOLD_MS;
 
-  const modeLabel = councilMode === "global_vc" ? "GLOBAL VC COUNCIL" : councilMode === "india_pe" ? "INDIA PE / VC COUNCIL" : "GCC INVESTMENT COUNCIL";
+  const modeLabel = councilMode === "global_vc" ? "GLOBAL VC COUNCIL"
+    : councilMode === "india_pe" ? "INDIA PE / VC COUNCIL"
+    : councilMode === "infrastructure" ? "INFRASTRUCTURE & PROJECT FINANCE COUNCIL"
+    : councilMode === "gcc_equities" ? "GCC EQUITIES COUNCIL"
+    : "GCC INVESTMENT COUNCIL";
 
   return (
     <div style={{ maxWidth: 640, margin: "0 auto" }}>
@@ -1868,7 +1884,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
             <div style={{ marginBottom: 16 }}>
               <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 8 }}>COUNCIL MODE</div>
               <div style={{ display: "flex", gap: 8 }}>
-                {(["gcc", "global_vc", "india_pe"] as CouncilModeType[]).map((m) => (
+                {(["gcc", "global_vc", "india_pe", "infrastructure"] as CouncilModeType[]).map((m) => (
                   <button
                     key={m}
                     onClick={() => setRerunMode(m)}
@@ -1879,7 +1895,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
                       border: `1px solid ${rerunMode === m ? PURPLE : BORDER}`,
                       color: rerunMode === m ? PURPLE : TEXT2,
                     }}
-                  >{m === "gcc" ? "GCC" : m === "global_vc" ? "GLOBAL VC" : "INDIA PE"}</button>
+                  >{m === "gcc" ? "GCC" : m === "global_vc" ? "GLOBAL VC" : m === "india_pe" ? "INDIA PE" : "INFRASTRUCTURE"}</button>
                 ))}
               </div>
             </div>
@@ -1954,7 +1970,13 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
         {/* Header: deal name + verdict badge */}
         <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 20 }}>
           <div>
-            <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.15em", marginBottom: 6 }}>INVESTMENT COMMITTEE · COUNCIL OF 10</div>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.15em", marginBottom: 6 }}>
+              {(result.councilMode === "infrastructure") ? "INFRASTRUCTURE & PROJECT FINANCE COUNCIL" :
+               (result.councilMode === "global_vc") ? "GLOBAL VC COUNCIL · COUNCIL OF 10" :
+               (result.councilMode === "india_pe") ? "INDIA PE / VC COUNCIL · COUNCIL OF 10" :
+               (result.councilMode === "gcc_equities") ? "GCC EQUITIES COUNCIL · COUNCIL OF 10" :
+               "INVESTMENT COMMITTEE · COUNCIL OF 10"}
+            </div>
             <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
               <h2 style={{ margin: 0, fontSize: 22, color: TEXT, fontWeight: 700 }}>{result.dealName}</h2>
               {result.investorMode && (
@@ -2603,11 +2625,12 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
           <label style={{ display: "block", fontFamily: MONO, fontSize: 10, color: TEXT2, letterSpacing: "0.08em", marginBottom: 10 }}>
             COUNCIL MODE — SELECT YOUR INVESTOR LENS
           </label>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
             {([
-              { key: "gcc" as const, icon: "🏛️", label: "GCC Institutional", desc: "Kuwait CMA · Shariah · Vision 2035" },
+              { key: "gcc" as const, icon: "🏗️", label: "GCC Institutional", desc: "Kuwait CMA · Shariah · Vision 2035" },
               { key: "global_vc" as const, icon: "🌐", label: "Global VC", desc: "Sequoia · a16z · Lightspeed lens" },
               { key: "india_pe" as const, icon: "🇮🇳", label: "India PE / VC", desc: "SEBI · FEMA · NSE/BSE exits" },
+              { key: "infrastructure" as const, icon: "⚡", label: "Infrastructure / Project Finance", desc: "DSCR · CfD · EPC · Offtake · IRR" },
             ] as const).map(({ key, icon, label, desc }) => (
               <button
                 key={key}
@@ -2634,6 +2657,42 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
             ))}
           </div>
         </div>
+
+        {/* Mode safety warning — shown when infrastructure keywords detected in non-infrastructure mode */}
+        {councilMode !== "infrastructure" && (() => {
+          const infraKeywords = ["dscr", "cfd", "lcoe", "epc", "offtake", "ppa", "offshore wind", "floating wind", "project finance", "capex", "debt service", "lender", "mw ", "gwh", "turbine", "substation", "grid connection", "infrastructure fund", "construction risk", "commissioning"];
+          const textLower = (dealText + " " + dealName).toLowerCase();
+          const hasInfraSignals = infraKeywords.filter(kw => textLower.includes(kw)).length >= 2;
+          if (!hasInfraSignals) return null;
+          return (
+            <div style={{
+              marginBottom: 16,
+              padding: "10px 14px",
+              background: "rgba(255,159,67,0.08)",
+              border: "1px solid rgba(255,159,67,0.4)",
+              borderRadius: 6,
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 10,
+            }}>
+              <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>⚠️</span>
+              <div>
+                <div style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: "#ff9f43", letterSpacing: "0.06em", marginBottom: 4 }}>INFRASTRUCTURE DEAL DETECTED</div>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: "rgba(255,159,67,0.8)", lineHeight: 1.5 }}>
+                  This deal memo contains infrastructure signals (DSCR, CfD, EPC, LCOE, MW, etc.).
+                  The current <strong style={{ color: "#ff9f43" }}>{councilMode === "global_vc" ? "Global VC" : councilMode === "india_pe" ? "India PE" : "GCC Institutional"}</strong> council
+                  uses VC/PE rubrics that are not calibrated for project finance.
+                  {" "}<button
+                    type="button"
+                    onClick={() => setCouncilMode("infrastructure")}
+                    style={{ background: "none", border: "none", color: "#ff9f43", fontFamily: MONO, fontSize: 10, fontWeight: 700, cursor: "pointer", textDecoration: "underline", padding: 0 }}
+                  >Switch to Infrastructure / Project Finance mode</button>
+                  {" "}for DSCR, CfD, EPC, and IRR-calibrated analysis.
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Deal name */}
         <div style={{ marginBottom: 20 }}>
@@ -3012,7 +3071,7 @@ function HistoryTable({ onSelect }: { onSelect: (dealId: string) => void }) {
         confidenceScore:     typeof deal.confidenceScore === "string" ? parseFloat(deal.confidenceScore) : deal.confidenceScore,
         conditionsToProceed: deal.conditionsToProceed as string[],
         blockingIssues:      deal.blockingIssues as string[],
-        councilMode:         (deal as { councilMode?: "gcc" | "global_vc" | "india_pe" }).councilMode,
+        councilMode:         (deal as { councilMode?: "gcc" | "global_vc" | "india_pe" | "gcc_equities" | "infrastructure" }).councilMode,
         votes: (deal.votes as Array<{
           personaId: string; personaName?: string; personaRole: string;
           vote: string; confidence: number; rationale: string;

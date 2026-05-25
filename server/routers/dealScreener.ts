@@ -125,7 +125,7 @@ export const dealScreenerRouter = router({
         pdfFileKey: z.string().optional(),
         pdfFileUrl: z.string().optional(),
         stripeSessionId: z.string().optional(), // link payment row to this deal run
-        councilMode: z.enum(["gcc", "global_vc", "india_pe", "gcc_equities"]).optional().default("global_vc"),
+        councilMode: z.enum(["gcc", "global_vc", "india_pe", "gcc_equities", "infrastructure"]).optional().default("global_vc"),
         signalPayload: z
           .object({
             strategy: z.enum(["FRIDAY_GAP", "NAV_DEPEG", "SPREAD_CAPTURE"]),
@@ -732,7 +732,7 @@ export const dealScreenerRouter = router({
         confidenceScore:     z.number(),
         conditionsToProceed: z.array(z.string()),
         blockingIssues:      z.array(z.string()),
-        councilMode:         z.enum(["gcc", "global_vc", "india_pe", "gcc_equities"]).optional(),
+        councilMode:         z.enum(["gcc", "global_vc", "india_pe", "gcc_equities", "infrastructure"]).optional(),
         patternContext:       z.enum(["invested_match", "passed_match"]).optional(),
         dealId:              z.string().optional(),
         votes: z.array(z.object({
