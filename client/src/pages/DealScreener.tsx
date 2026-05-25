@@ -966,6 +966,30 @@ function VCSummaryBlock({ vc, decisionColor }: { vc: NonNullable<ICReportData["v
 // and the blocking issues, formatted as an institutional checklist table.
 function InfraReEngagePanel({ result }: { result: CouncilResult }) {
   const isRejectOrVeto = result.verdict === "REJECTED" || result.verdict === "VETOED";
+
+  // ── Re-run state ────────────────────────────────────────────────────────────
+  const [rerunResult, setRerunResult] = useState<null | {
+    originalVerdict: string;
+    originalConfidence: number;
+    originalBlockers: string[];
+    updatedVerdict: string;
+    updatedConfidence: number;
+    updatedBlockers: string[];
+    updatedYesCount: number;
+    updatedNoCount: number;
+    deltaLabel: string;
+    whatImproved: string[];
+    risksRemaining: string[];
+    councilMode: string;
+    assumptionsApplied: Record<string, unknown>;
+  }>(null);
+  const [rerunError, setRerunError] = useState<string | null>(null);
+
+  const rerunMutation = trpc.dealScreener.rerunWithUpdatedTerms.useMutation({
+    onSuccess: (data) => { setRerunResult(data); setRerunError(null); },
+    onError: (err) => { setRerunError(err.message ?? "Re-run failed"); },
+  });
+
   if (!isRejectOrVeto) return null;
 
   // Build structured conditions from blockingIssues + conditionsToProceed
@@ -1029,6 +1053,52 @@ function InfraReEngagePanel({ result }: { result: CouncilResult }) {
   }
 
   if (conditions.length === 0) return null;
+
+  // Determine the Helios-North updated assumptions from the conditions detected
+  const hasCfd = conditions.some(c => c.condition === "CfD Strike Price");
+  const hasContingency = conditions.some(c => c.condition === "Construction Contingency");
+  const hasFoundation = conditions.some(c => c.condition === "Floating Foundation Validation");
+  const hasEpc = conditions.some(c => c.condition === "EPC Contract");
+  const hasMerchant = conditions.some(c => c.condition === "Merchant Exposure");
+
+  function handleRerun() {
+    const dealText = result.dealText ?? result.dealTextPreview ?? "";
+    if (!dealText.trim()) {
+      setRerunError("Original deal text not available for re-run. Please re-submit the deal.");
+      return;
+    }
+    setRerunResult(null);
+    setRerunError(null);
+    rerunMutation.mutate({
+      originalDealText: dealText,
+      originalVerdict: result.verdict,
+      originalConfidence: result.confidenceScore,
+      originalBlockers: result.blockingIssues ?? [],
+      updatedAssumptions: {
+        cfdStrikeGbpMwh: hasCfd ? 85 : undefined,
+        contingencyPct: hasContingency ? 5 : undefined,
+        merchantExposurePct: hasMerchant ? 10 : undefined,
+        fixedPriceEpc: hasEpc ? true : undefined,
+        foundationValidated: hasFoundation ? true : undefined,
+      },
+    });
+  }
+
+  // Verdict color helper
+  function verdictColor(v: string) {
+    if (v === "APPROVED") return GREEN;
+    if (v === "APPROVED_WITH_CONDITIONS") return ACCENT;
+    return RED;
+  }
+
+  // Delta label color
+  const deltaColor = rerunResult
+    ? rerunResult.deltaLabel.startsWith("IMPROVED") || rerunResult.deltaLabel.startsWith("SIGNIFICANT")
+      ? GREEN
+      : rerunResult.deltaLabel.startsWith("UNCHANGED")
+      ? AMBER
+      : RED
+    : MUTED;
 
   return (
     <div style={{
@@ -1094,6 +1164,161 @@ function InfraReEngagePanel({ result }: { result: CouncilResult }) {
       <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(255,159,67,0.15)", fontFamily: MONO, fontSize: 9, color: MUTED, lineHeight: 1.5 }}>
         ℹ All conditions must be met concurrently for re-engagement. Meeting individual conditions in isolation does not guarantee approval.
         Re-submit the updated deal memo to the Infrastructure / Project Finance Council for a fresh evaluation.
+      </div>
+
+      {/* ── RE-RUN WITH UPDATED TERMS ─────────────────────────────────────── */}
+      <div style={{ marginTop: 16, paddingTop: 14, borderTop: "1px solid rgba(255,159,67,0.2)" }}>
+        {/* Section label */}
+        <div style={{ fontFamily: MONO, fontSize: 9, color: "rgba(255,159,67,0.6)", letterSpacing: "0.1em", marginBottom: 10 }}>
+          SENSITIVITY ANALYSIS · UPDATED TERMS SCENARIO
+        </div>
+
+        {/* Assumptions summary */}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 12 }}>
+          {hasCfd && <span style={{ fontFamily: MONO, fontSize: 9, color: TEXT2, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, padding: "2px 7px" }}>CfD → £85/MWh</span>}
+          {hasContingency && <span style={{ fontFamily: MONO, fontSize: 9, color: TEXT2, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, padding: "2px 7px" }}>Contingency → 5%</span>}
+          {hasMerchant && <span style={{ fontFamily: MONO, fontSize: 9, color: TEXT2, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, padding: "2px 7px" }}>Merchant → 10%</span>}
+          {hasEpc && <span style={{ fontFamily: MONO, fontSize: 9, color: TEXT2, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, padding: "2px 7px" }}>Fixed-Price EPC</span>}
+          {hasFoundation && <span style={{ fontFamily: MONO, fontSize: 9, color: TEXT2, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 3, padding: "2px 7px" }}>Foundation Validated</span>}
+        </div>
+
+        {/* Re-run button */}
+        {!rerunResult && (
+          <button
+            onClick={handleRerun}
+            disabled={rerunMutation.isPending}
+            style={{
+              padding: "9px 20px",
+              background: rerunMutation.isPending ? "rgba(255,159,67,0.12)" : "rgba(255,159,67,0.15)",
+              border: `1px solid ${rerunMutation.isPending ? "rgba(255,159,67,0.3)" : "#ff9f43"}`,
+              color: rerunMutation.isPending ? "rgba(255,159,67,0.5)" : "#ff9f43",
+              fontFamily: MONO, fontSize: 10, fontWeight: 700,
+              cursor: rerunMutation.isPending ? "not-allowed" : "pointer",
+              borderRadius: 4, letterSpacing: "0.08em",
+              display: "flex", alignItems: "center", gap: 8,
+            }}
+          >
+            {rerunMutation.isPending ? (
+              <>
+                <span style={{ display: "inline-block", width: 10, height: 10, border: "1.5px solid rgba(255,159,67,0.4)", borderTopColor: "#ff9f43", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+                COUNCIL RE-EVALUATING…
+              </>
+            ) : (
+              <>↺ RE-RUN WITH UPDATED TERMS</>
+            )}
+          </button>
+        )}
+
+        {/* Error */}
+        {rerunError && (
+          <div style={{ marginTop: 8, fontFamily: MONO, fontSize: 10, color: RED }}>
+            ⚠ {rerunError}
+          </div>
+        )}
+
+        {/* ── COMPARISON CARD ── */}
+        {rerunResult && (
+          <div style={{ marginTop: 12 }}>
+            {/* Delta banner */}
+            <div style={{
+              display: "flex", alignItems: "center", gap: 12,
+              padding: "10px 14px",
+              background: `rgba(${rerunResult.deltaLabel.startsWith("IMPROVED") || rerunResult.deltaLabel.startsWith("SIGNIFICANT") ? "0,255,135" : rerunResult.deltaLabel.startsWith("UNCHANGED") ? "255,159,67" : "255,71,87"},0.07)`,
+              border: `1px solid ${deltaColor}`,
+              borderRadius: 6, marginBottom: 12,
+            }}>
+              <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: deltaColor, letterSpacing: "0.08em" }}>
+                {rerunResult.deltaLabel}
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginLeft: "auto" }}>
+                UPDATED TERMS SCENARIO · INFRASTRUCTURE / PROJECT FINANCE COUNCIL
+              </div>
+            </div>
+
+            {/* Side-by-side verdict comparison */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 12 }}>
+              {/* Original */}
+              <div style={{ background: "rgba(255,71,87,0.04)", border: "1px solid rgba(255,71,87,0.25)", borderRadius: 6, padding: "12px 14px" }}>
+                <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED, letterSpacing: "0.1em", marginBottom: 8 }}>ORIGINAL SUBMISSION</div>
+                <div style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: verdictColor(rerunResult.originalVerdict), marginBottom: 4 }}>
+                  {rerunResult.originalVerdict.replace(/_/g, " ")}
+                </div>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, marginBottom: 8 }}>
+                  Confidence: {Math.round(rerunResult.originalConfidence)}%
+                </div>
+                {rerunResult.originalBlockers.slice(0, 3).map((b, i) => (
+                  <div key={i} style={{ display: "flex", gap: 6, alignItems: "start", marginBottom: 3 }}>
+                    <span style={{ color: RED, fontSize: 9, flexShrink: 0, marginTop: 1 }}>●</span>
+                    <span style={{ fontSize: 10, color: TEXT2, lineHeight: 1.4 }}>{b.length > 80 ? b.slice(0, 80) + "…" : b}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Updated */}
+              <div style={{ background: `rgba(${rerunResult.updatedVerdict === "APPROVED" ? "0,255,135" : rerunResult.updatedVerdict === "APPROVED_WITH_CONDITIONS" ? "74,158,255" : "255,71,87"},0.04)`, border: `1px solid ${verdictColor(rerunResult.updatedVerdict)}40`, borderRadius: 6, padding: "12px 14px" }}>
+                <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED, letterSpacing: "0.1em", marginBottom: 8 }}>UPDATED TERMS SCENARIO</div>
+                <div style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color: verdictColor(rerunResult.updatedVerdict), marginBottom: 4 }}>
+                  {rerunResult.updatedVerdict.replace(/_/g, " ")}
+                </div>
+                <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, marginBottom: 8 }}>
+                  Confidence: {Math.round(rerunResult.updatedConfidence)}%
+                  &nbsp;&middot;&nbsp;{rerunResult.updatedYesCount}/10 YES
+                </div>
+                {rerunResult.updatedBlockers.slice(0, 3).map((b, i) => (
+                  <div key={i} style={{ display: "flex", gap: 6, alignItems: "start", marginBottom: 3 }}>
+                    <span style={{ color: AMBER, fontSize: 9, flexShrink: 0, marginTop: 1 }}>●</span>
+                    <span style={{ fontSize: 10, color: TEXT2, lineHeight: 1.4 }}>{b.length > 80 ? b.slice(0, 80) + "…" : b}</span>
+                  </div>
+                ))}
+                {rerunResult.updatedBlockers.length === 0 && (
+                  <div style={{ fontSize: 10, color: GREEN }}>No blocking issues identified</div>
+                )}
+              </div>
+            </div>
+
+            {/* What improved */}
+            {rerunResult.whatImproved.length > 0 && (
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ fontFamily: MONO, fontSize: 8, color: GREEN, letterSpacing: "0.1em", marginBottom: 6 }}>WHAT IMPROVED</div>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                  {rerunResult.whatImproved.map((item, i) => (
+                    <span key={i} style={{ fontFamily: MONO, fontSize: 9, color: GREEN, background: "rgba(0,255,135,0.06)", border: "1px solid rgba(0,255,135,0.2)", borderRadius: 3, padding: "2px 7px" }}>
+                      ✓ {item.length > 60 ? item.slice(0, 60) + "…" : item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Risks remaining */}
+            {rerunResult.risksRemaining.length > 0 && (
+              <div style={{ marginBottom: 10 }}>
+                <div style={{ fontFamily: MONO, fontSize: 8, color: AMBER, letterSpacing: "0.1em", marginBottom: 6 }}>RISKS REMAINING</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 3 }}>
+                  {rerunResult.risksRemaining.slice(0, 4).map((r, i) => (
+                    <div key={i} style={{ display: "flex", gap: 6, alignItems: "start" }}>
+                      <span style={{ color: AMBER, fontSize: 9, flexShrink: 0, marginTop: 1 }}>▶</span>
+                      <span style={{ fontSize: 10, color: TEXT2, lineHeight: 1.4 }}>{r.length > 100 ? r.slice(0, 100) + "…" : r}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Re-run again button */}
+            <button
+              onClick={() => { setRerunResult(null); setRerunError(null); }}
+              style={{
+                marginTop: 4, padding: "6px 14px",
+                background: "none", border: `1px solid ${MUTED}`,
+                color: MUTED, fontFamily: MONO, fontSize: 9,
+                cursor: "pointer", borderRadius: 3, letterSpacing: "0.06em",
+              }}
+            >
+              ↺ RESET
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

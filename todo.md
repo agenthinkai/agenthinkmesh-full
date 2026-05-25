@@ -4736,3 +4736,13 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Tests: mode coherence badge present in infrastructure mode
 - [x] TypeScript check — zero errors
 - [x] Full test suite passing — 1317 tests, 72 test files, 0 failures
+
+## Re-run with Updated Terms (2026-05-25 — Helios-North Interactive Demo)
+
+- [ ] Add `deals.rerunWithUpdatedTerms` tRPC procedure — accepts original dealText + updatedAssumptions, injects them as a preamble, re-runs the full council in infrastructure mode, returns { originalVerdict, updatedVerdict, delta }
+- [ ] Build `InfraReRunPanel` component — "Re-run with Updated Terms" button, loading state, comparison card (original vs updated verdict, confidence, top blockers, what improved, risks remaining, movement label)
+- [ ] Integrate InfraReRunPanel into the existing Conditions to Re-engage panel (below the conditions table)
+- [ ] Verdict delta logic: VETOED→CONDITIONAL, CONDITIONAL→ENGAGE, etc. — no forced approval
+- [ ] Tests: updated terms applied correctly, verdict delta renders, original result preserved, infrastructure mode persists, no forced approval
+- [ ] TypeScript check — zero errors
+- [ ] Full test suite passing

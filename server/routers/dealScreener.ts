@@ -1095,6 +1095,142 @@ export const dealScreenerRouter = router({
         throw err;
       }
     }),
+
+  /**
+   * Re-run the Infrastructure council with updated deal assumptions.
+   * Injects improved terms as a structured preamble into the deal text,
+   * re-runs runAdversarialCouncil in infrastructure mode, and returns
+   * a comparison object: { original, updated, delta, whatImproved, risksRemaining }.
+   *
+   * IMPORTANT: This procedure does NOT force a positive outcome.
+   * The council genuinely re-evaluates the updated deal text.
+   */
+  rerunWithUpdatedTerms: protectedProcedure
+    .input(z.object({
+      originalDealText: z.string().min(10).max(10000).trim(),
+      originalVerdict: z.string(),
+      originalConfidence: z.number(),
+      originalBlockers: z.array(z.string()),
+      updatedAssumptions: z.object({
+        cfdStrikeGbpMwh: z.number().optional(),       // e.g. 85
+        contingencyPct: z.number().optional(),         // e.g. 5
+        merchantExposurePct: z.number().optional(),    // e.g. 10
+        fixedPriceEpc: z.boolean().optional(),         // true = fixed-price EPC committed
+        foundationValidated: z.boolean().optional(),   // true = independent engineering validation obtained
+        additionalNotes: z.string().max(500).optional(),
+      }),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      // Build an "Updated Terms" preamble that the council will see at the top of the deal text
+      const { updatedAssumptions: ua } = input;
+      const preambleLines: string[] = [
+        "=== UPDATED TERMS SCENARIO (Infrastructure / Project Finance Council) ===",
+        "The following assumptions have been updated from the original submission.",
+        "The council must evaluate the deal under these revised terms.",
+        "",
+      ];
+
+      if (ua.cfdStrikeGbpMwh !== undefined) {
+        preambleLines.push(`CfD Strike Price: UPDATED to £${ua.cfdStrikeGbpMwh}/MWh (was below threshold in original submission)`);
+      }
+      if (ua.contingencyPct !== undefined) {
+        preambleLines.push(`Construction Contingency: UPDATED to ${ua.contingencyPct}% of CAPEX (was critically low in original submission)`);
+      }
+      if (ua.merchantExposurePct !== undefined) {
+        preambleLines.push(`Merchant Exposure: REDUCED to ${ua.merchantExposurePct}% uncontracted revenue (was 20% in original submission)`);
+      }
+      if (ua.fixedPriceEpc === true) {
+        preambleLines.push(`EPC Contract: UPDATED — committed fixed-price EPC with liquidated damages backstop now in place`);
+      }
+      if (ua.foundationValidated === true) {
+        preambleLines.push(`Floating Foundation Technology: VALIDATED — independent engineering validation at commercial scale obtained`);
+      }
+      if (ua.additionalNotes) {
+        preambleLines.push(`Additional Notes: ${ua.additionalNotes}`);
+      }
+
+      preambleLines.push("");
+      preambleLines.push("=== ORIGINAL DEAL MEMO (unchanged) ===");
+      preambleLines.push("");
+
+      const updatedDealText = preambleLines.join("\n") + input.originalDealText;
+
+      // Re-run the council in infrastructure mode — no forced outcome
+      const updatedResult = await runAdversarialCouncil(updatedDealText, {
+        userId: ctx.user.id,
+        councilMode: "infrastructure",
+        skipMemory: true,
+        bypassCostGuard: true,
+      });
+
+      // Compute verdict delta label
+      const VERDICT_RANK: Record<string, number> = {
+        VETOED: 0,
+        REJECTED: 1,
+        INSUFFICIENT_DATA: 2,
+        APPROVED_WITH_CONDITIONS: 3,
+        APPROVED: 4,
+      };
+      const origRank = VERDICT_RANK[input.originalVerdict] ?? 1;
+      const updRank = VERDICT_RANK[updatedResult.verdict] ?? 1;
+      let deltaLabel: string;
+      if (updRank > origRank) {
+        const steps = updRank - origRank;
+        deltaLabel = steps >= 2 ? `SIGNIFICANT IMPROVEMENT (+${steps} levels)` : `IMPROVED (${input.originalVerdict} → ${updatedResult.verdict})`;
+      } else if (updRank < origRank) {
+        deltaLabel = `WORSENED (${input.originalVerdict} → ${updatedResult.verdict})`;
+      } else {
+        deltaLabel = `UNCHANGED (${updatedResult.verdict})`;
+      }
+
+      // Identify what improved: original blockers no longer present in updated blockers
+      const updatedBlockers = updatedResult.blockingIssues ?? [];
+      const updatedBlockersLower = updatedBlockers.map(b => b.toLowerCase());
+      const whatImproved: string[] = [];
+      const risksRemaining: string[] = [...updatedBlockers];
+
+      for (const blocker of input.originalBlockers) {
+        const bl = blocker.toLowerCase();
+        const stillPresent = updatedBlockersLower.some(ub =>
+          ub.includes(bl.slice(0, 20)) || bl.includes(ub.slice(0, 20))
+        );
+        if (!stillPresent) {
+          whatImproved.push(blocker);
+        }
+      }
+
+      // Add assumption-level improvements to whatImproved
+      if (ua.cfdStrikeGbpMwh !== undefined) whatImproved.push(`CfD updated to £${ua.cfdStrikeGbpMwh}/MWh`);
+      if (ua.contingencyPct !== undefined) whatImproved.push(`Contingency raised to ${ua.contingencyPct}%`);
+      if (ua.merchantExposurePct !== undefined) whatImproved.push(`Merchant exposure reduced to ${ua.merchantExposurePct}%`);
+      if (ua.fixedPriceEpc === true) whatImproved.push("Fixed-price EPC committed");
+      if (ua.foundationValidated === true) whatImproved.push("Floating foundation independently validated");
+
+      // Deduplicate whatImproved
+      const uniqueImproved = Array.from(new Set(whatImproved));
+
+      return {
+        originalVerdict: input.originalVerdict,
+        originalConfidence: input.originalConfidence,
+        originalBlockers: input.originalBlockers,
+        updatedVerdict: updatedResult.verdict,
+        updatedConfidence: updatedResult.confidenceScore,
+        updatedBlockers: risksRemaining,
+        updatedYesCount: updatedResult.yesCount,
+        updatedNoCount: updatedResult.noCount,
+        deltaLabel,
+        whatImproved: uniqueImproved,
+        risksRemaining,
+        councilMode: "infrastructure" as const,
+        assumptionsApplied: {
+          cfdStrikeGbpMwh: ua.cfdStrikeGbpMwh,
+          contingencyPct: ua.contingencyPct,
+          merchantExposurePct: ua.merchantExposurePct,
+          fixedPriceEpc: ua.fixedPriceEpc,
+          foundationValidated: ua.foundationValidated,
+        },
+      };
+    }),
 });
 
 // ── Static demo signals — shown when user has no stored signals ────────────────
