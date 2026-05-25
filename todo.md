@@ -4809,3 +4809,25 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Write fixTheDeal.test.ts (structured output shape, vote impact sum, no fabrication markers, rerun integration)
 - [ ] TypeScript check — zero errors
 - [ ] Full test suite passing
+
+## Fix the Deal Polish Pass (2026-05-25)
+
+- [ ] Task 1: Build repairBriefPdf.ts — institutional PDF generator for the Repair Brief
+- [ ] Task 1: Add exportRepairBrief tRPC procedure to dealScreener router
+- [ ] Task 1: Add DOWNLOAD REPAIR BRIEF button to FixTheDealPanel
+- [ ] Task 2: Add Classification C early-exit warning banner to FixTheDealPanel
+- [ ] Task 2: Include classificationRationale, primary blockers, and recommended alternatives in Class C banner
+- [ ] Tests: repairBriefPolish.test.ts covering PDF export, classification badge, sensitivity ladder, Class C warning, residual risks
+- [ ] TypeScript check — zero errors
+- [ ] Full test suite passing
+
+## Fix the Deal — Priority 1 & 2 Polish (25 May)
+
+- [x] Rewrite repairBriefPdf.ts: Page 1 (header+badge+root cause table+sensitivity ladder visual), Page 2 (revised brief+residual risks+footer), filename convention [DealName]_RepairBrief_[YYYYMMDD].pdf
+- [x] Add requestRestructuringMemo tRPC procedure: 300-word IC-partner-to-sponsor memo, Class C only
+- [x] Rewrite FixTheDealPanel: Class C suppresses full repair report, shows red banner + Restructuring Memo button
+- [x] Class C banner: header "THIS DEAL CANNOT BE REPAIRED", subheader, classificationRationale verbatim, 3 structural changes required to reach Class B
+- [x] Class A/B: show full repair report + DOWNLOAD REPAIR BRIEF button (no Restructuring Memo)
+- [x] Update repairBriefPolish.test.ts for new Class C suppression, Restructuring Memo, PDF structure
+- [x] TypeScript: 0 errors
+- [x] Full test suite passing

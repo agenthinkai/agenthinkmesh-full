@@ -26,6 +26,7 @@ import { runTriage } from "../triageEngine";
 import { checkDuplicate } from "../dealDedup";
 import { runRealityAlignment } from "../realityAlignmentEngine";
 import { invokeLLM } from "../_core/llm";
+import { generateRepairBriefPdf, type RepairBriefInput } from "../repairBriefPdf";
 
 // ── Owner whitelist — these users always bypass payment and rate limits ────────
 const OWNER_EMAILS = ["farouq@agenthink.ai", "farouqsultan@gmail.com"];
@@ -1403,6 +1404,57 @@ ${input.icMemoSummary ?? "Not provided."}`;
         approvalSensitivityLadder: (parsed.approvalSensitivityLadder as unknown[]) ?? [],
         residualRisks:             (parsed.residualRisks as string[])         ?? [],
       };
+    }),
+
+  // ── Export Repair Brief PDF ─────────────────────────────────────────────────
+  exportRepairBrief: protectedProcedure
+    .input(z.object({
+      dealName:                z.string().min(1).max(200).trim(),
+      councilMode:             z.string().optional(),
+      classification:          z.enum(["A", "B", "C"]),
+      classificationRationale: z.string(),
+      rootCauses:              z.array(z.object({
+        category:    z.string(),
+        description: z.string(),
+        priority:    z.number(),
+      })),
+      revisedBrief:            z.string(),
+      changeSummaryTable:      z.array(z.object({
+        change:               z.string(),
+        original:             z.string(),
+        revised:              z.string(),
+        rootCauseAddressed:   z.string(),
+        estimatedVoteImpact:  z.string(),
+      })),
+      predictedOutcome:        z.object({
+        voteDistribution:           z.string(),
+        consensusPct:               z.number(),
+        decision:                   z.string(),
+        mostLikelyDissentingAgent:  z.string(),
+        mostLikelyCondition:        z.string(),
+      }),
+      approvalSensitivityLadder: z.array(z.object({
+        structuralChange:     z.string(),
+        estimatedVoteShift:   z.string(),
+        runningVoteEstimate:  z.string(),
+      })),
+      residualRisks: z.array(z.string()),
+    }))
+    .mutation(async ({ input }) => {
+      const briefInput: RepairBriefInput = {
+        dealName:                input.dealName,
+        councilMode:             input.councilMode,
+        classification:          input.classification,
+        classificationRationale: input.classificationRationale,
+        rootCauses:              input.rootCauses,
+        revisedBrief:            input.revisedBrief,
+        changeSummaryTable:      input.changeSummaryTable,
+        predictedOutcome:        input.predictedOutcome,
+        approvalSensitivityLadder: input.approvalSensitivityLadder,
+        residualRisks:           input.residualRisks,
+      };
+      const buffer = await generateRepairBriefPdf(briefInput);
+      return { pdfBase64: buffer.toString("base64") };
     }),
 });
 

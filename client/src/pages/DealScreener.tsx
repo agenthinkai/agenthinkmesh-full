@@ -983,6 +983,7 @@ function FixTheDealPanel({ result, councilMode, onRerun }: {
   const [rerunning, setRerunning] = useState(false);
 
   const fixMutation = trpc.dealScreener.fixTheDeal.useMutation();
+  const exportMutation = trpc.dealScreener.exportRepairBrief.useMutation();
 
   if (!isRejected) return null;
 
@@ -997,6 +998,30 @@ function FixTheDealPanel({ result, councilMode, onRerun }: {
       councilMode: councilMode,
     });
     setOpen(true);
+  };
+
+  const handleDownloadPdf = async () => {
+    if (!d) return;
+    const dealName = result.dealName ?? "Deal";
+    const res = await exportMutation.mutateAsync({
+      dealName,
+      councilMode: councilMode,
+      classification: d.classification,
+      classificationRationale: d.classificationRationale,
+      rootCauses: d.rootCauses,
+      revisedBrief: d.revisedBrief,
+      changeSummaryTable: d.changeSummaryTable,
+      predictedOutcome: d.predictedOutcome,
+      approvalSensitivityLadder: d.approvalSensitivityLadder,
+      residualRisks: d.residualRisks,
+    });
+    const blob = new Blob([Uint8Array.from(atob(res.pdfBase64), c => c.charCodeAt(0))], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Repair-Brief-${dealName.replace(/[^a-zA-Z0-9]/g, "-")}.pdf`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleRerun = () => {
@@ -1055,7 +1080,7 @@ function FixTheDealPanel({ result, councilMode, onRerun }: {
                   fontFamily: MONO, fontSize: 11, fontWeight: 700, color: classColor,
                   background: `${classColor}18`, border: `1px solid ${classColor}44`,
                   borderRadius: 4, padding: "3px 10px",
-                }}>{d.classification} — {d.classification === "A" ? "FIXABLE" : d.classification === "B" ? "CONDITIONALLY FIXABLE" : "FUNDAMENTALLY NON-VIABLE"}</span>
+                }}>{d.classification} — {d.classification === "A" ? "STRUCTURALLY REPAIRABLE" : d.classification === "B" ? "CONDITIONALLY VIABLE" : "FUNDAMENTALLY NON-VIABLE"}</span>
               </div>
             )}
           </div>
@@ -1077,10 +1102,53 @@ function FixTheDealPanel({ result, councilMode, onRerun }: {
           {/* Results */}
           {d && !fixMutation.isPending && (
             <>
-              {/* Classification rationale */}
-              <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, marginBottom: 16, lineHeight: 1.6, padding: "10px 14px", background: `${classColor}08`, borderRadius: 6, borderLeft: `3px solid ${classColor}` }}>
-                {d.classificationRationale}
-              </div>
+              {/* Classification C early-exit warning banner */}
+              {d.classification === "C" && (
+                <div style={{
+                  marginBottom: 20,
+                  padding: "16px 18px",
+                  background: "rgba(255,71,87,0.08)",
+                  border: `2px solid ${RED}`,
+                  borderRadius: 6,
+                  borderLeft: `6px solid ${RED}`,
+                }} data-testid="class-c-warning">
+                  <div style={{ fontFamily: MONO, fontSize: 11, color: RED, fontWeight: 700, letterSpacing: "0.08em", marginBottom: 8 }}>
+                    THIS DEAL CANNOT BE REPAIRED WITHOUT FUNDAMENTAL RESTRUCTURING
+                  </div>
+                  <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, lineHeight: 1.6, marginBottom: 12 }}>
+                    {d.classificationRationale}
+                  </div>
+                  {d.rootCauses.length > 0 && (
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.12em", marginBottom: 6 }}>PRIMARY STRUCTURAL BLOCKERS</div>
+                      {d.rootCauses.slice(0, 3).map((rc: any, i: number) => (
+                        <div key={i} style={{ fontFamily: MONO, fontSize: 10, color: RED, padding: "3px 0", paddingLeft: 8, borderLeft: `2px solid ${RED}44` }}>
+                          [{rc.category}] {rc.description}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  <div>
+                    <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.12em", marginBottom: 6 }}>RECOMMENDED ALTERNATIVES</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {["Phased entry", "Smaller ticket", "Different financing structure", "Strategic partnership", "Alternative instrument", "Hold / wait strategy"].map(alt => (
+                        <span key={alt} style={{
+                          fontFamily: MONO, fontSize: 9, color: AMBER,
+                          background: `${AMBER}12`, border: `1px solid ${AMBER}33`,
+                          borderRadius: 4, padding: "3px 8px",
+                        }}>{alt}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Classification rationale (non-C) */}
+              {d.classification !== "C" && (
+                <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, marginBottom: 16, lineHeight: 1.6, padding: "10px 14px", background: `${classColor}08`, borderRadius: 6, borderLeft: `3px solid ${classColor}` }}>
+                  {d.classificationRationale}
+                </div>
+              )}
 
               {/* Root causes */}
               {d.rootCauses.length > 0 && (
@@ -1199,7 +1267,7 @@ function FixTheDealPanel({ result, councilMode, onRerun }: {
                           borderRadius: 4, letterSpacing: "0.06em", fontWeight: 700,
                         }}
                       >
-                        {rerunning ? "SUBMITTING TO COUNCIL..." : "↻ RERUN WITH FIXES"}
+                        {rerunning ? "SUBMITTING TO COUNCIL..." : "\u21bb RERUN WITH FIXES"}
                       </button>
                     )}
                   </div>
@@ -1211,6 +1279,31 @@ function FixTheDealPanel({ result, councilMode, onRerun }: {
                   }}>{d.revisedBrief}</pre>
                 </div>
               )}
+
+              {/* Download Repair Brief button */}
+              <div style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${BORDER}`, display: "flex", justifyContent: "flex-end" }}>
+                <button
+                  onClick={handleDownloadPdf}
+                  disabled={exportMutation.isPending}
+                  data-testid="download-repair-brief"
+                  style={{
+                    padding: "8px 18px",
+                    background: exportMutation.isPending ? "rgba(245,158,11,0.08)" : "rgba(245,158,11,0.12)",
+                    border: `1px solid ${AMBER}`,
+                    color: AMBER,
+                    fontFamily: MONO, fontSize: 11, cursor: exportMutation.isPending ? "not-allowed" : "pointer",
+                    borderRadius: 4, letterSpacing: "0.06em", fontWeight: 700,
+                    opacity: exportMutation.isPending ? 0.7 : 1,
+                  }}
+                >
+                  {exportMutation.isPending ? "GENERATING PDF..." : "DOWNLOAD REPAIR BRIEF"}
+                </button>
+                {exportMutation.isError && (
+                  <span style={{ fontFamily: MONO, fontSize: 10, color: RED, marginLeft: 12, alignSelf: "center" }}>
+                    PDF export failed — {exportMutation.error?.message ?? "Unknown error"}
+                  </span>
+                )}
+              </div>
             </>
           )}
         </div>
