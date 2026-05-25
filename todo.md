@@ -4799,3 +4799,13 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] TypeScript: 0 errors
 - [ ] Full test suite passing
 - [ ] Save checkpoint
+
+## Fix the Deal Engine (2026-05-25)
+
+- [ ] Add fixTheDeal tRPC procedure to dealScreener router (5-step LLM prompt, structured JSON output)
+- [ ] Add FixTheDealPanel UI component to DealScreener.tsx (side panel, inline revisions, change table, sensitivity ladder)
+- [ ] Add "FIX THE DEAL" button to BoardroomICReport verdict area (visible only for REJECTED/VETOED/HOLD)
+- [ ] Add "RERUN WITH FIXES" button in FixTheDealPanel that re-submits revised brief to council
+- [ ] Write fixTheDeal.test.ts (structured output shape, vote impact sum, no fabrication markers, rerun integration)
+- [ ] TypeScript check — zero errors
+- [ ] Full test suite passing

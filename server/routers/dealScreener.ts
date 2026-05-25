@@ -25,6 +25,7 @@ import { randomUUID } from "crypto";
 import { runTriage } from "../triageEngine";
 import { checkDuplicate } from "../dealDedup";
 import { runRealityAlignment } from "../realityAlignmentEngine";
+import { invokeLLM } from "../_core/llm";
 
 // ── Owner whitelist — these users always bypass payment and rate limits ────────
 const OWNER_EMAILS = ["farouq@agenthink.ai", "farouqsultan@gmail.com"];
@@ -1221,14 +1222,186 @@ export const dealScreenerRouter = router({
         deltaLabel,
         whatImproved: uniqueImproved,
         risksRemaining,
-        councilMode: "infrastructure" as const,
-        assumptionsApplied: {
-          cfdStrikeGbpMwh: ua.cfdStrikeGbpMwh,
-          contingencyPct: ua.contingencyPct,
-          merchantExposurePct: ua.merchantExposurePct,
-          fixedPriceEpc: ua.fixedPriceEpc,
-          foundationValidated: ua.foundationValidated,
+      councilMode: "infrastructure" as const,
+      assumptionsApplied: {
+        cfdStrikeGbpMwh: ua.cfdStrikeGbpMwh,
+        contingencyPct: ua.contingencyPct,
+        merchantExposurePct: ua.merchantExposurePct,
+        fixedPriceEpc: ua.fixedPriceEpc,
+        foundationValidated: ua.foundationValidated,
+      },
+    };
+  }),
+
+  // ── Fix the Deal engine ─────────────────────────────────────────────────────
+  fixTheDeal: protectedProcedure
+    .input(z.object({
+      dealText:        z.string().min(10).max(12000).trim(),
+      councilOutcome:  z.string().min(1).max(500).trim(),
+      icMemoSummary:   z.string().max(4000).trim().optional(),
+      councilMode:     z.string().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const modeHint = input.councilMode === "infrastructure"
+        ? "This deal must be evaluated as Infrastructure / Project Finance — NOT venture capital. Use DSCR, CfD, EPC, LCOE, and project-finance logic throughout."
+        : "Apply the appropriate investor archetype based on the deal type.";
+
+      const systemPrompt = `You are the AgenThink Mesh Deal Repair Engine.
+Your sole function is to analyse a rejected or vetoed investment deal brief and systematically reconstruct it to achieve a positive Council outcome WITHOUT fabricating information that cannot be commercially justified.
+
+${modeHint}
+
+Return ONLY valid JSON matching this schema exactly. No prose before or after the JSON.
+
+{
+  "classification": "A" | "B" | "C",
+  "classificationRationale": "<max 60 words>",
+  "rootCauses": [
+    { "category": "<A-G label>", "description": "<max 40 words>", "priority": <1-7> }
+  ],
+  "revisedBrief": "<full revised deal brief with [REVISED: reason] inline tags on changed lines>",
+  "changeSummaryTable": [
+    { "change": "<what changed>", "original": "<before>", "revised": "<after>", "rootCauseAddressed": "<category>", "estimatedVoteImpact": "<e.g. +2 YES>" }
+  ],
+  "predictedOutcome": {
+    "voteDistribution": "<e.g. 7 YES / 2 CONDITIONAL / 1 NO>",
+    "consensusPct": <number 0-100>,
+    "decision": "<APPROVED | APPROVED_WITH_CONDITIONS | CONDITIONAL | HOLD | REJECTED | VETOED>",
+    "mostLikelyDissentingAgent": "<agent name>",
+    "mostLikelyCondition": "<attached condition>"
+  },
+  "approvalSensitivityLadder": [
+    { "structuralChange": "<description>", "estimatedVoteShift": "<e.g. +2 YES>", "runningVoteEstimate": "<e.g. 4 YES>" }
+  ],
+  "residualRisks": ["<risk 1>", "<risk 2>", "<risk 3>"]
+}
+
+RULES:
+- Never fabricate approvals, remove legitimate risks, or force positive outcomes.
+- Only mark something as executed/awarded/confirmed if commercially realistic and timeline-feasible.
+- If classification is C (fundamentally non-viable), state this clearly in classificationRationale and set decision to REJECTED.
+- Mark every changed line in revisedBrief with [REVISED: <reason>].
+- Preserve 3-5 real residual risks.
+- Stop applying fixes once projected outcome reaches approximately 7/10 YES.
+- Terminate immediately after closing JSON brace.`;
+
+      const userMessage = `[ORIGINAL DEAL BRIEF]
+${input.dealText}
+
+[COUNCIL OUTCOME]
+${input.councilOutcome}
+
+[IC MEMO SUMMARY]
+${input.icMemoSummary ?? "Not provided."}`;
+
+      const raw = await invokeLLM({
+        messages: [
+          { role: "system", content: systemPrompt },
+          { role: "user",   content: userMessage },
+        ],
+        response_format: {
+          type: "json_schema",
+          json_schema: {
+            name: "fix_the_deal",
+            strict: true,
+            schema: {
+              type: "object",
+              properties: {
+                classification:           { type: "string" },
+                classificationRationale:  { type: "string" },
+                rootCauses: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      category:    { type: "string" },
+                      description: { type: "string" },
+                      priority:    { type: "number" },
+                    },
+                    required: ["category", "description", "priority"],
+                    additionalProperties: false,
+                  },
+                },
+                revisedBrief: { type: "string" },
+                changeSummaryTable: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      change:               { type: "string" },
+                      original:             { type: "string" },
+                      revised:              { type: "string" },
+                      rootCauseAddressed:   { type: "string" },
+                      estimatedVoteImpact:  { type: "string" },
+                    },
+                    required: ["change", "original", "revised", "rootCauseAddressed", "estimatedVoteImpact"],
+                    additionalProperties: false,
+                  },
+                },
+                predictedOutcome: {
+                  type: "object",
+                  properties: {
+                    voteDistribution:            { type: "string" },
+                    consensusPct:                { type: "number" },
+                    decision:                    { type: "string" },
+                    mostLikelyDissentingAgent:   { type: "string" },
+                    mostLikelyCondition:         { type: "string" },
+                  },
+                  required: ["voteDistribution", "consensusPct", "decision", "mostLikelyDissentingAgent", "mostLikelyCondition"],
+                  additionalProperties: false,
+                },
+                approvalSensitivityLadder: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      structuralChange:      { type: "string" },
+                      estimatedVoteShift:    { type: "string" },
+                      runningVoteEstimate:   { type: "string" },
+                    },
+                    required: ["structuralChange", "estimatedVoteShift", "runningVoteEstimate"],
+                    additionalProperties: false,
+                  },
+                },
+                residualRisks: { type: "array", items: { type: "string" } },
+              },
+              required: ["classification", "classificationRationale", "rootCauses", "revisedBrief", "changeSummaryTable", "predictedOutcome", "approvalSensitivityLadder", "residualRisks"],
+              additionalProperties: false,
+            },
+          },
         },
+      });
+
+      const rawContent = raw.choices?.[0]?.message?.content ?? "{}";
+      const content = typeof rawContent === "string" ? rawContent : JSON.stringify(rawContent);
+      let parsed: Record<string, unknown>;
+      try {
+        parsed = JSON.parse(content);
+      } catch {
+        // Attempt to extract JSON from markdown code block
+        const match = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (match) {
+          try { parsed = JSON.parse(match[1]); } catch { parsed = {}; }
+        } else {
+          parsed = {};
+        }
+      }
+
+      return {
+        classification:           (parsed.classification as string)          ?? "B",
+        classificationRationale:  (parsed.classificationRationale as string) ?? "Unable to parse engine output.",
+        rootCauses:               (parsed.rootCauses as unknown[])            ?? [],
+        revisedBrief:             (parsed.revisedBrief as string)             ?? "",
+        changeSummaryTable:       (parsed.changeSummaryTable as unknown[])    ?? [],
+        predictedOutcome:         (parsed.predictedOutcome as Record<string, unknown>) ?? {
+          voteDistribution: "Unknown",
+          consensusPct: 0,
+          decision: "UNKNOWN",
+          mostLikelyDissentingAgent: "Unknown",
+          mostLikelyCondition: "Unknown",
+        },
+        approvalSensitivityLadder: (parsed.approvalSensitivityLadder as unknown[]) ?? [],
+        residualRisks:             (parsed.residualRisks as string[])         ?? [],
       };
     }),
 });
