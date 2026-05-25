@@ -16,7 +16,6 @@
  */
 
 import { runAdversarialCouncil } from "./dealScreenerAdversarial";
-import { invokeLLM } from "./_core/llm";
 
 const HELIOS_NORTH_MEMO = `PROJECT: Helios-North Offshore Wind
 LOCATION: Celtic Sea (South-West UK, floating-wind zone, water depth 70–95m)
@@ -79,9 +78,9 @@ async function main() {
     const result = await runAdversarialCouncil(
       HELIOS_NORTH_MEMO,
       {
-        dealName: "Helios-North Offshore Wind",
-        invokeLLM: invokeLLM as any,
         councilMode: "infrastructure",
+        skipMemory: true,
+        bypassCostGuard: true,
       }
     );
 
