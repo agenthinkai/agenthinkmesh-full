@@ -107,10 +107,54 @@ const MEDIUM_AGENT_IDS: Record<string, string[]> = {
 
 // ── 1. Risk Estimator (input completeness only) ───────────────────────────────
 
-export function estimateRiskLevel(dealText: string): RiskLevel {
+/**
+ * Infrastructure-mode risk estimator.
+ * Uses DSCR / CfD / EPC / FOAK / merchant exposure signals.
+ * VC-specific signals (founder, valuation, seed, runway, revenue multiples) are suppressed.
+ */
+export function estimateRiskLevelInfrastructure(dealText: string): RiskLevel {
   let score = 0;
 
-  // Missing critical fields
+  // Missing critical infrastructure fields
+  const missingSignals = [
+    !/(dscr|debt.?service.?cover)/i.test(dealText),
+    !/(cfd|contract.?for.?difference|strike.?price|offtake)/i.test(dealText),
+    !/(epc|engineering.?procurement.?construction|contractor)/i.test(dealText),
+  ].filter(Boolean).length;
+  score += missingSignals;
+
+  // FOAK / technology maturity risk
+  if (/(foak|first.?of.?a.?kind|pilot.?scale|trl.?[1-5]|prototype)/i.test(dealText)) score += 2;
+
+  // Merchant / subsidy exposure risk
+  if (/(merchant.?exposure|no.?cfd|subsidy.?free|uncontracted|merchant.?risk)/i.test(dealText)) score += 2;
+
+  // Open-book / lump-sum EPC risk
+  if (/(open.?book|cost.?plus|no.?fixed.?price|epc.?not.?signed)/i.test(dealText)) score += 2;
+
+  // Floating foundation / deep-water risk
+  if (/(floating|semi.?sub|spar|tlp|70.?m|80.?m|90.?m|deep.?water)/i.test(dealText)) score += 1;
+
+  // LCOE above CfD strike (explicit mention)
+  if (/(lcoe.*(above|exceed|higher than).*cfd|cfd.*(below|less than).*lcoe)/i.test(dealText)) score += 2;
+
+  // Regulatory / permitting risk
+  if (/(permit.?not.?granted|planning.?risk|regulatory.?uncertainty|grid.?connection.?risk)/i.test(dealText)) score += 1;
+
+  // Positive signals that reduce risk
+  if (/(cfd.?awarded|cfd.?secured|signed.?epc|lump.?sum.?epc|financial.?close|fc.?achieved)/i.test(dealText)) score -= 1;
+  if (/(dscr.*[12]\.[5-9]|dscr.*[2-9]\.|investment.?grade.?rating)/i.test(dealText)) score -= 1;
+
+  if (score >= 4) return "HIGH";
+  if (score >= 2) return "MEDIUM";
+  return "LOW";
+}
+
+export function estimateRiskLevel(dealText: string, mode?: string): RiskLevel {
+  if (mode === "infrastructure") return estimateRiskLevelInfrastructure(dealText);
+  let score = 0;
+
+  // Missing critical fields (VC / general mode)
   const missingSignals = [
     !/(revenue|arr|mrr|\$[\d]|aed[\d]|kwd[\d]|usd[\d])/i.test(dealText),
     !/(founder|ceo|team|management)/i.test(dealText),
@@ -162,21 +206,43 @@ export function getAgentSubset(
  * Checks whether the Phase 1 council result warrants escalation to HIGH risk.
  * Separates "input completeness" (estimateRiskLevel) from "decision risk".
  * A well-written but fundamentally bad deal escalates here, not in estimateRiskLevel.
+ * Infrastructure mode uses DSCR/CfD/EPC escalation signals instead of VC signals.
  */
-function shouldEscalate(result: CouncilResult, dealText: string): boolean {
-  // 1. High hard-no count
+function shouldEscalate(result: CouncilResult, dealText: string, mode?: string): boolean {
+  // 1. High hard-no count (universal)
   if (result.hardNoCount >= 3) return true;
 
-  // 2. Veto triggered by base council
+  // 2. Veto triggered by base council (universal)
   if (result.gccVetoTriggered) return true;
 
-  // 3. Compliance / regulatory HARD_NO in votes
+  // 3. Compliance / regulatory HARD_NO in votes (universal)
   const complianceHardNo = result.votes.some(
     (v) => v.vote === "HARD_NO" &&
       /(regulatory|compliance|license|legal|sanction|permit)/i.test(v.rationale)
   );
   if (complianceHardNo) return true;
 
+  if (mode === "infrastructure") {
+    // Infrastructure-specific escalation signals — no VC signals
+    // DSCR below investment grade in rationale
+    const dscrRisk = result.votes.some(
+      (v) => v.vote === "HARD_NO" &&
+        /(dscr|debt.?service|lcoe|cfd|epc|foundation|merchant|offtake)/i.test(v.rationale)
+    );
+    if (dscrRisk) return true;
+
+    // FOAK / technology risk explicitly flagged
+    if (/(foak|first.?of.?a.?kind|trl.?[1-4])/i.test(dealText)) return true;
+
+    // Unresolved critical objection (universal)
+    const hardNos = result.votes.filter((v) => v.vote === "HARD_NO");
+    const hardYes = result.votes.filter((v) => v.vote === "HARD_YES");
+    if (hardNos.length >= 2 && hardYes.length === 0) return true;
+
+    return false;
+  }
+
+  // VC / general mode escalation signals
   // 4. Runway < 6 months signal in deal text
   const runwayMatch = dealText.match(/(\d+)\s*month[s]?\s*(runway|of\s*runway|remaining)/i);
   if (runwayMatch && parseInt(runwayMatch[1]) < 6) return true;
@@ -185,7 +251,6 @@ function shouldEscalate(result: CouncilResult, dealText: string): boolean {
   if (/(\d{2,3})x\s*(revenue|arr|mrr|multiple)/i.test(dealText)) return true;
 
   // 6. Unresolved critical objection: multiple HARD_NOs with zero HARD_YES anywhere
-  // Requires at least 2 HARD_NOs to avoid escalating borderline deals with a single dissenter
   const hardNos    = result.votes.filter((v) => v.vote === "HARD_NO");
   const hardYes    = result.votes.filter((v) => v.vote === "HARD_YES");
   if (hardNos.length >= 2 && hardYes.length === 0) return true;
@@ -383,8 +448,57 @@ export async function runAdversarialCouncil(
   const allPersonas    = getPersonasForMode(mode);
   const challengerIds  = CHALLENGER_IDS[mode] ?? [];
 
+  // ── Infrastructure mode: prepend institutional reasoning preamble ────────────
+  // This preamble is injected before the deal text reaches any persona.
+  // It suppresses VC-style framing and enforces project-finance logic.
+  let effectiveDealText = dealText;
+  if (mode === "infrastructure") {
+    effectiveDealText =
+      `[INFRASTRUCTURE / PROJECT FINANCE MODE]
+` +
+      `This is an infrastructure asset evaluation. Apply project-finance logic throughout.
+` +
+      `
+` +
+      `REQUIRED EVALUATION FRAMEWORK:
+` +
+      `• DSCR (Debt Service Coverage Ratio) — minimum 1.25x investment grade, target 1.40x+
+` +
+      `• LCOE vs CfD strike price — assess whether contracted revenue covers cost of generation
+` +
+      `• EPC certainty — lump-sum fixed-price preferred; open-book is a material risk
+` +
+      `• Merchant exposure — uncontracted revenue is a structural risk, not an upside
+` +
+      `• Foundation maturity — FOAK floating foundations carry technology risk premium
+` +
+      `• Refinancing resilience — assess ability to refinance at financial close
+` +
+      `• Contingency adequacy — infrastructure projects require 10–15% CapEx contingency
+` +
+      `
+` +
+      `SUPPRESSED FRAMEWORKS (do NOT apply):
+` +
+      `• VC return framing (IRR targets, exit multiples, TAM sizing)
+` +
+      `• Hypergrowth criticism ("too capital intensive for venture returns")
+` +
+      `• Startup scaling logic (team size, product-market fit, churn)
+` +
+      `• Revenue multiple valuation (EV/EBITDA is acceptable; revenue multiples are not)
+` +
+      `
+` +
+      `---
+` +
+      `
+` +
+      dealText;
+  }
+
   // ── Phase 1: Initial risk estimate + scaled first run ────────────────────
-  const initialRisk        = estimateRiskLevel(dealText);
+  const initialRisk        = estimateRiskLevel(effectiveDealText, mode);
   const initialSubset      = getAgentSubset(mode, initialRisk);
   const phase1PersonaIds   = initialSubset ?? allPersonas.map((p) => p.id);
   const phase1ChallengerIds = challengerIds.filter((id) => phase1PersonaIds.includes(id));
@@ -392,14 +506,14 @@ export async function runAdversarialCouncil(
   const councilStartMs = Date.now();
   console.log(`[AdversarialCouncil] Phase 1 | Risk: ${initialRisk} | Agents: ${phase1PersonaIds.length}/${allPersonas.length} | Mode: ${mode}`);
 
-  const phase1Result = await runCouncil(dealText, {
+  const phase1Result = await runCouncil(effectiveDealText, {
     ...options,
     activePersonaIds:   phase1PersonaIds,
     challengerAgentIds: phase1ChallengerIds,
   });
 
   // ── Phase 2: Second-stage escalation check ───────────────────────────────
-  const escalate = shouldEscalate(phase1Result, dealText);
+  const escalate = shouldEscalate(phase1Result, effectiveDealText, mode);
   let finalResult: CouncilResult = phase1Result;
   let finalRisk: RiskLevel       = initialRisk;
   let agentsRun                  = phase1PersonaIds.length;
@@ -414,7 +528,7 @@ export async function runAdversarialCouncil(
       console.log(`[AdversarialCouncil] ESCALATING to HIGH | Running ${remainingIds.length} additional agents`);
       const remainingChallengerIds = challengerIds.filter((id) => remainingIds.includes(id));
 
-      const phase2Result = await runCouncil(dealText, {
+      const phase2Result = await runCouncil(effectiveDealText, {
         ...options,
         activePersonaIds:   remainingIds,
         challengerAgentIds: remainingChallengerIds,

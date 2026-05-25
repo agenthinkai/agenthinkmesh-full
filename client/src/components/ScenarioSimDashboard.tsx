@@ -469,9 +469,11 @@ interface ScenarioSimDashboardProps {
   existingRunId?: string;
   /** Called when a simulation completes (live or restored) — used to unlock Reports panel */
   onSimCompleted?: (data: CompletedSimData) => void;
+  /** Council mode — passed to simulation engine for mode-aware reasoning (e.g. infrastructure uses DSCR/CfD language) */
+  councilMode?: "gcc" | "global_vc" | "india_pe" | "gcc_equities" | "infrastructure";
 }
 
-export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId, onSimCompleted }: ScenarioSimDashboardProps) {
+export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId, onSimCompleted, councilMode }: ScenarioSimDashboardProps) {
   const [selectedMode, setSelectedMode] = useState<SimMode>("quick");
   const [runId, setRunId] = useState<string | null>(existingRunId ?? null);
   const [isRunning, setIsRunning] = useState(false);
@@ -531,6 +533,7 @@ export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId
         dealText: dealText.slice(0, 12000),
         mode: selectedMode,
         confirmedGated: cfg.gated ? true : undefined,
+        councilMode,
       });
       setRunId(result.runId);
       if (result.status === "completed" && result.aggregation) {

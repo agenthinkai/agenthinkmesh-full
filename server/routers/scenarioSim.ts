@@ -47,6 +47,8 @@ export const scenarioSimRouter = router({
       dealName: z.string().min(1).max(255),
       dealText: z.string().min(10).max(15000),
       mode:     z.enum(["quick", "institutional", "deep", "infrastructure", "extreme"]),
+      /** Council mode (gcc | global_vc | india_pe | gcc_equities | infrastructure) — used for mode-aware mitigant text */
+      councilMode: z.enum(["gcc", "global_vc", "india_pe", "gcc_equities", "infrastructure"]).optional(),
       // Safety controls for gated modes (100k / 1M)
       maxCostCapUsd:    z.number().optional(),
       maxWallClockHours: z.number().optional(),
@@ -92,7 +94,7 @@ export const scenarioSimRouter = router({
 
         // Evaluate all variants
         const results = await Promise.all(
-          variants.map(v => evaluateScenario(v, buildScenarioBrief(input.dealText, v), invokeLLM as any))
+          variants.map(v => evaluateScenario(v, buildScenarioBrief(input.dealText, v), invokeLLM as any, input.councilMode))
         );
 
         // Aggregate
@@ -148,7 +150,8 @@ export const scenarioSimRouter = router({
         input.mode as SimulationMode,
         targetCount,
         baseSeed,
-        db
+        db,
+        input.councilMode
       ).catch(err => {
         console.error(`[ScenarioSim] Background run failed for ${runId}:`, err);
       });
@@ -337,7 +340,8 @@ async function runDeepSimulationBackground(
   mode: SimulationMode,
   targetCount: number,
   baseSeed: number,
-  db: Awaited<ReturnType<typeof getDb>>
+  db: Awaited<ReturnType<typeof getDb>>,
+  councilMode?: string
 ): Promise<void> {
   if (!db) return;
 
@@ -364,7 +368,7 @@ async function runDeepSimulationBackground(
     const chunkMs = Date.now();
 
     const results = await Promise.all(
-      variants.map(v => evaluateScenario(v, buildScenarioBrief(dealText, v), invokeLLM as any))
+      variants.map(v => evaluateScenario(v, buildScenarioBrief(dealText, v), invokeLLM as any, councilMode))
     );
 
     allResults.push(...results);

@@ -2231,6 +2231,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
           dealName={result.dealName}
           dealText={result.dealText ?? result.dealTextPreview ?? ""}
           onSimCompleted={handleSimCompleted}
+          councilMode={councilModeProp ?? result.councilMode as CouncilModeType | undefined}
         />
       </div>
       {/* ── Section 12: Institutional Reports Export Hub ──────────────── */}

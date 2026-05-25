@@ -4704,3 +4704,23 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Tests: full aggregation, partial aggregation, restored historical, 0% approve, 10k deep mode, missing optional fields
 - [ ] TypeScript check — zero errors
 - [ ] Full test suite passing
+
+## Infrastructure Mode Coherence Pass (2026-05-25 — Helios-North Demo Prep)
+
+- [x] Add Infrastructure mode to live Deal Screener UI (mode selector)
+- [x] Infrastructure mode preamble: DSCR/LCOE/CfD/EPC/merchant/foundation/refinancing/contingency rubrics
+- [x] Infrastructure mode preamble: suppress VC return framing, hypergrowth criticism, startup scaling logic
+- [x] evaluateScenario accepts optional councilMode parameter (4th arg)
+- [x] evaluateScenario topMitigants: infrastructure mode returns DSCR/contracted revenue language
+- [x] evaluateScenario topMitigants: non-infrastructure mode returns management track record language
+- [x] scenarioSim startRun procedure accepts councilMode and passes it to evaluateScenario
+- [x] runDeepSimulationBackground passes councilMode to all evaluateScenario calls
+- [x] ScenarioSimDashboard accepts councilMode prop and passes it to startRun
+- [x] DealScreener passes councilMode state to ScenarioSimDashboard
+- [x] Helios-North fixture: Celtic Sea geography (not North Sea), floating-wind, 70–95m depth
+- [x] Helios-North fixture: CfD strike at £73/MWh base, floating foundation dimension
+- [x] Tests: infrastructureModeCoherence.test.ts — 20 tests covering preamble, estimateRiskLevel, evaluateScenario, shouldEscalate, Helios-North fixture
+- [x] Tests: infrastructureMode.test.ts — 9 existing tests (personas, IC memo, geography)
+- [x] TypeScript check — zero errors
+- [x] Full test suite — 1294 passing, 0 failures
+- [x] Live Helios-North dry run: VETOED | 9/10 HARD_NO | 0 VC leaks | 6/6 infra concepts present

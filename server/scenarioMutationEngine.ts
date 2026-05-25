@@ -666,7 +666,8 @@ export interface ScenarioEvalResult {
 export async function evaluateScenario(
   variant: ScenarioVariant,
   scenarioBrief: string,
-  invokeLLM: (params: { messages: Array<{ role: string; content: string }> }) => Promise<{ choices: Array<{ message: { content: string } }> }>
+  invokeLLM: (params: { messages: Array<{ role: string; content: string }> }) => Promise<{ choices: Array<{ message: { content: string } }> }>,
+  councilMode?: string
 ): Promise<ScenarioEvalResult> {
   // Hard-no scenarios are deterministically rejected without LLM call
   if (variant.hasHardNo) {
@@ -714,7 +715,11 @@ export async function evaluateScenario(
     confidenceScore: Math.min(0.97, confidence),
     dominantRiskCategory: variant.dominantRiskCategory,
     topBlockers,
-    topMitigants: delta > -0.20 ? ["Base case fundamentals remain intact", "Management track record provides buffer"] : [],
+    topMitigants: delta > -0.20
+      ? councilMode === "infrastructure"
+        ? ["Base case project economics remain intact", "DSCR headroom and contracted revenue structure provide buffer"]
+        : ["Base case fundamentals remain intact", "Management track record provides buffer"]
+      : [],
     escalationTriggers: variant.stressedCategories.includes("governance") ? ["governance_stress"] : [],
     governanceConcerns: variant.stressedCategories.includes("governance") ? ["Governance stress detected in this scenario"] : [],
     hasHardNo: false,
