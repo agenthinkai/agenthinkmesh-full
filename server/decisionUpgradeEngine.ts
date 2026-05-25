@@ -144,7 +144,7 @@ export function sanitizeFix(f: any): UpgradeFix {
       typeof f?.fieldPath === "string" && f.fieldPath.trim() !== ""
         ? f.fieldPath
         : undefined,
-    exampleValue: safeString(f?.exampleValue),
+    exampleValue: safeString(f?.exampleValue).replace(/\[ASSUMED[^\]]*\]/gi, "").replace(/\[PLACEHOLDER[^\]]*\]/gi, "").trim(),
   };
 }
 

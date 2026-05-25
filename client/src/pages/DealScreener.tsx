@@ -3300,11 +3300,11 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
               const HELIOS_MEMO = `PROJECT: Helios-North Offshore Wind
 LOCATION: Celtic Sea (South-West UK, floating-wind zone, water depth 70–95m)
 CAPACITY: 850 MW
-TOTAL CAPEX: £4.2B
+TOTAL CAPEX: £5.88bn
 BASE CASE IRR: 9.5%
 FUND MINIMUM IRR: 15%
 
-IC DECISION: REJECT (3 HARD NO / 4 SOFT NO / 3 SOFT YES)
+IC DECISION: REJECT (0/10 COUNCIL · 92% CONSENSUS · 10/10 HARD NO)
 
 PRIMARY BLOCKERS:
 1. Foundation Technology: Unvalidated floating foundation at commercial scale — no independent engineering validation
@@ -3345,7 +3345,7 @@ CONDITIONS FOR RE-ENGAGEMENT:
             ⚡ LOAD HELIOS-NORTH DEMO
             <span style={{ fontFamily: MONO, fontSize: 9, color: "rgba(255,159,67,0.6)", background: "rgba(255,159,67,0.1)", border: "1px solid rgba(255,159,67,0.25)", borderRadius: 2, padding: "1px 5px" }}>INFRA MODE</span>
           </button>
-          <span style={{ marginLeft: 10, fontSize: 10, color: MUTED, fontFamily: MONO }}>Celtic Sea · 850 MW floating wind · £4.2B CAPEX</span>
+          <span style={{ marginLeft: 10, fontSize: 10, color: MUTED, fontFamily: MONO }}>Celtic Sea · 850 MW floating wind · £5.88bn CAPEX · 0/10 council</span>
         </div>
 
         {/* Investor Mode toggle */}

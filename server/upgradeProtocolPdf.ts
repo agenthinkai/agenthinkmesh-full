@@ -478,7 +478,7 @@ export async function generateUpgradeProtocolPdf(input: UpgradeProtocolInput): P
   const tileY = doc.y;
   const kpis = [
     { label: "Current Verdict",    value: vLabel,                                color: vColor },
-    { label: "Expected Verdict",   value: verdictLabel(input.expectedOutcomeShift.predictedVerdict), color: GREEN },
+    { label: "Fixes Required",     value: `${input.allFixes.length} (${criticalCount} critical)`,    color: criticalCount > 3 ? RED : AMBER },
     { label: "Confidence Shift",   value: `${confDelta >= 0 ? "+" : ""}${confDelta}%`, color: confDelta >= 0 ? GREEN : RED },
     { label: "Critical Issues",    value: `${criticalCount}`,                    color: criticalCount > 3 ? RED : AMBER },
     { label: "Highest-Risk Area",  value: categoryLabel(highestRiskArea),        color: AMBER },

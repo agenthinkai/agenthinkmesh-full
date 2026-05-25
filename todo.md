@@ -4776,3 +4776,26 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] TypeScript: 0 errors
 - [x] Tests: 74 files, 1366 passing, 1 skipped, 0 failures
 - [x] Real manual export confirmed: 72,277 byte PDF generated successfully (Helios-North, Infrastructure mode)
+
+## Reconcile-and-Prune (2026-05-25 — Before 28 May Demo)
+
+### Job 1: Reconcile Helios-North canonical facts
+- [ ] Audit all four artifacts and report current figures
+- [ ] Update Helios-North fixture in Deal Screener demo button: 850 MW, £5.88bn, Celtic Sea, floating FOAK
+- [ ] Update infraSim.ts HELIOS_NORTH_CONFIG: 850 MW, £5.88bn, 0% approve, 0/10 council
+- [ ] Update Fengmiao-II comparison report: Helios-North column shows 850 MW, £5.88bn, 0% approve
+- [ ] Remove/retire any reference to 1.2 GW, €4.8bn, 18% approve, or 4/10 vote
+
+### Job 2: Fix broken artifacts
+- [ ] Investment Readiness Report: remove from demo OR fix cover/re-run verdict mismatch and remove [ASSUMED 15.5%] placeholder
+- [ ] IC Memo simulation summary: remove Section 17 (Strategic Scenario Stress Summary) if impact scores are all 0/100, OR compute real scores
+
+### Job 3: Confirm live Deal Screener output
+- [ ] Confirm demo button loads 850 MW, Infrastructure mode
+- [ ] Confirm council produces 0% approve / 100% reject
+- [ ] Confirm DSCR / EPC / foundation / CfD / merchant as failure drivers, zero VC language
+
+### Completion
+- [ ] TypeScript: 0 errors
+- [ ] Full test suite passing
+- [ ] Save checkpoint

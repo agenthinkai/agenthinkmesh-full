@@ -2130,7 +2130,7 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
           ...ss.sensitivitySurface.slice(0, 4).map(s => [
             s.dimensionLabel,
             s.category.charAt(0).toUpperCase() + s.category.slice(1),
-            `${s.impactScore}/100`,
+            `${Math.round(s.impactScore * 100)}/100`,
             s.tippingPointSeverity ?? "—",
           ]),
         ];

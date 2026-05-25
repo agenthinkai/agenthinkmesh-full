@@ -166,12 +166,12 @@ export const infraSimRouter = router({
       title: HELIOS_NORTH_CONFIG.title,
       assetClass: "offshore_wind",
       geography: "Celtic Sea (Floating Wind)",
-      totalCapexGbpM: "4200",
+      totalCapexGbpM: "5880",
       baseIrrPct: HELIOS_NORTH_CONFIG.baseIrrPct.toString(),
       fundMinIrrPct: HELIOS_NORTH_CONFIG.fundMinIrrPct.toString(),
       icMemoText: HELIOS_NORTH_MEMO_EXTRACT,
       icDecision: "REJECT",
-      icVoteJson: JSON.stringify({ hardNo: 3, softNo: 4, softYes: 3 }),
+      icVoteJson: JSON.stringify({ hardNo: 10, softNo: 0, softYes: 0 }),
       status: "draft",
     });
 
@@ -795,11 +795,11 @@ export const infraSimRouter = router({
 const HELIOS_NORTH_MEMO_EXTRACT = `PROJECT: Helios-North Offshore Wind
 LOCATION: Celtic Sea (South-West UK, floating-wind zone, water depth 70–95m)
 CAPACITY: 850 MW
-TOTAL CAPEX: £4.2B
+TOTAL CAPEX: £5.88bn
 BASE CASE IRR: 9.5%
 FUND MINIMUM IRR: 15%
 
-IC DECISION: REJECT (3 HARD NO / 4 SOFT NO / 3 SOFT YES)
+IC DECISION: REJECT (0/10 COUNCIL · 92% CONSENSUS · 10/10 HARD NO)
 
 PRIMARY BLOCKERS:
 1. Foundation Technology: Unvalidated floating foundation at commercial scale — no independent engineering validation
