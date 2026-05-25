@@ -960,6 +960,145 @@ function VCSummaryBlock({ vc, decisionColor }: { vc: NonNullable<ICReportData["v
   );
 }
 
+// ── Infrastructure Conditions to Re-engage Panel ─────────────────────────────
+// Shown only in infrastructure mode when verdict is REJECT or VETOED.
+// Derives structured re-engagement criteria from the council's upgrade triggers
+// and the blocking issues, formatted as an institutional checklist table.
+function InfraReEngagePanel({ result }: { result: CouncilResult }) {
+  const isRejectOrVeto = result.verdict === "REJECTED" || result.verdict === "VETOED";
+  if (!isRejectOrVeto) return null;
+
+  // Build structured conditions from blockingIssues + conditionsToProceed
+  // Each condition gets a threshold, rationale, and impact estimate
+  const conditions: Array<{ condition: string; threshold: string; rationale: string; impact: string }> = [];
+
+  // Parse known Helios-North / infrastructure patterns from blocking issues
+  const allText = [...(result.blockingIssues ?? []), ...(result.conditionsToProceed ?? [])].join(" ").toLowerCase();
+
+  if (allText.includes("cfd") || allText.includes("strike") || allText.includes("£73") || allText.includes("contract for difference")) {
+    conditions.push({
+      condition: "CfD Strike Price",
+      threshold: "≥ £85/MWh (AR7 mid-range)",
+      rationale: "Current £73/MWh is below fund IRR threshold; AR7 outcome required to close gap",
+      impact: "Approval probability +25–35%",
+    });
+  }
+  if (allText.includes("contingency") || allText.includes("1.7%") || allText.includes("low contingency")) {
+    conditions.push({
+      condition: "Construction Contingency",
+      threshold: "≥ 5% of CAPEX",
+      rationale: "1.7% is dangerously low for FOAK floating foundation technology",
+      impact: "Approval probability +15–20%",
+    });
+  }
+  if (allText.includes("foundation") || allText.includes("floating") || allText.includes("foak") || allText.includes("first-of-kind") || allText.includes("unvalidated")) {
+    conditions.push({
+      condition: "Floating Foundation Validation",
+      threshold: "Independent engineering validation at commercial scale",
+      rationale: "No track record at commercial scale; TRL <7 is a hard blocker for project finance",
+      impact: "Approval probability +30–40%",
+    });
+  }
+  if (allText.includes("epc") || allText.includes("contractor") || allText.includes("fixed-price") || allText.includes("open-book")) {
+    conditions.push({
+      condition: "EPC Contract",
+      threshold: "Committed fixed-price EPC with LD backstop",
+      rationale: "Open-book EPC transfers construction risk to sponsor; unacceptable for FOAK technology",
+      impact: "Approval probability +20–25%",
+    });
+  }
+  if (allText.includes("merchant") || allText.includes("unhedged") || allText.includes("20%") || allText.includes("offtake")) {
+    conditions.push({
+      condition: "Merchant Exposure",
+      threshold: "≤ 10% uncontracted revenue",
+      rationale: "20% merchant exposure creates material downside risk in a price-volatile market",
+      impact: "Approval probability +10–15%",
+    });
+  }
+
+  // Fallback: derive from conditionsToProceed if no pattern matched
+  if (conditions.length === 0 && result.conditionsToProceed?.length) {
+    result.conditionsToProceed.slice(0, 5).forEach(c => {
+      conditions.push({
+        condition: c.length > 60 ? c.slice(0, 60) + "…" : c,
+        threshold: "As specified by council",
+        rationale: c,
+        impact: "Required for re-engagement",
+      });
+    });
+  }
+
+  if (conditions.length === 0) return null;
+
+  return (
+    <div style={{
+      background: "rgba(255,159,67,0.04)",
+      border: "1px solid rgba(255,159,67,0.35)",
+      borderRadius: 8,
+      padding: "20px 24px",
+      marginBottom: 20,
+      marginTop: 8,
+    }}>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 16 }}>
+        <div style={{
+          width: 3, height: 32, background: "#ff9f43", borderRadius: 2, flexShrink: 0,
+        }} />
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: 11, fontWeight: 700, color: "#ff9f43", letterSpacing: "0.12em", marginBottom: 2 }}>
+            CONDITIONS TO RE-ENGAGE
+          </div>
+          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.06em" }}>
+            INFRASTRUCTURE / PROJECT FINANCE COUNCIL · INSTITUTIONAL RE-ENGAGEMENT CRITERIA
+          </div>
+        </div>
+        <div style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 9, color: "rgba(255,159,67,0.7)", background: "rgba(255,159,67,0.08)", border: "1px solid rgba(255,159,67,0.25)", borderRadius: 3, padding: "3px 8px" }}>
+          {conditions.length} CRITERIA
+        </div>
+      </div>
+
+      {/* Table header */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "1.4fr 1.6fr 2fr 1fr",
+        gap: 8,
+        padding: "6px 10px",
+        background: "rgba(255,159,67,0.08)",
+        borderRadius: 4,
+        marginBottom: 6,
+      }}>
+        {["CONDITION", "THRESHOLD", "RATIONALE", "APPROVAL IMPACT"].map(h => (
+          <div key={h} style={{ fontFamily: MONO, fontSize: 8, color: "#ff9f43", fontWeight: 700, letterSpacing: "0.1em" }}>{h}</div>
+        ))}
+      </div>
+
+      {/* Table rows */}
+      {conditions.map((c, i) => (
+        <div key={i} style={{
+          display: "grid",
+          gridTemplateColumns: "1.4fr 1.6fr 2fr 1fr",
+          gap: 8,
+          padding: "8px 10px",
+          background: i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.02)",
+          borderBottom: i < conditions.length - 1 ? `1px solid rgba(255,159,67,0.1)` : "none",
+          alignItems: "start",
+        }}>
+          <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT, fontWeight: 700, lineHeight: 1.4 }}>{c.condition}</div>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: "#ff9f43", lineHeight: 1.4 }}>{c.threshold}</div>
+          <div style={{ fontSize: 11, color: TEXT2, lineHeight: 1.5 }}>{c.rationale}</div>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: GREEN, lineHeight: 1.4 }}>{c.impact}</div>
+        </div>
+      ))}
+
+      {/* Footer note */}
+      <div style={{ marginTop: 12, paddingTop: 10, borderTop: "1px solid rgba(255,159,67,0.15)", fontFamily: MONO, fontSize: 9, color: MUTED, lineHeight: 1.5 }}>
+        ℹ All conditions must be met concurrently for re-engagement. Meeting individual conditions in isolation does not guarantee approval.
+        Re-submit the updated deal memo to the Infrastructure / Project Finance Council for a fresh evaluation.
+      </div>
+    </div>
+  );
+}
+
 function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stressTested }: { ic: ICReportData; result: CouncilResult; onCopy: (text: string) => void; onNewDeal: () => void; patternContext?: "invested_match" | "passed_match"; stressTested?: boolean }) {
   // Color derived from council verdict (not IC executive verdict) for consistency
   const verdictColor = result.verdict === "APPROVED" ? GREEN
@@ -991,8 +1130,30 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stre
           borderRadius: "10px 10px 0 0",
         }} />
         {/* Top row: label + date */}
-        <div style={{ marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.15em" }}>DEAL SCREENER · IC DECISION MEMO</div>
+        <div style={{ marginBottom: 14, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.15em" }}>DEAL SCREENER · IC DECISION MEMO</div>
+            {/* Mode coherence badge — shown prominently for infrastructure mode */}
+            {result.councilMode === "infrastructure" && (
+              <span style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 5,
+                fontFamily: MONO,
+                fontSize: 9,
+                fontWeight: 700,
+                color: "#ff9f43",
+                background: "rgba(255,159,67,0.1)",
+                border: "1px solid rgba(255,159,67,0.4)",
+                borderRadius: 3,
+                padding: "2px 8px",
+                letterSpacing: "0.08em",
+                whiteSpace: "nowrap" as const,
+              }}>
+                ⚡ INFRASTRUCTURE / PROJECT FINANCE COUNCIL · 10-AGENT COUNCIL
+              </span>
+            )}
+          </div>
           <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.08em" }}>
             {new Date(result.createdAt ?? Date.now()).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })}
           </div>
@@ -1325,6 +1486,11 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stre
             )}
           </div>
         </div>
+      )}
+
+      {/* Infrastructure Conditions to Re-engage Panel — shown only in infrastructure mode for rejected/vetoed deals */}
+      {result.councilMode === "infrastructure" && (
+        <InfraReEngagePanel result={result} />
       )}
 
       {/* Copy IC Report button */}
@@ -2899,6 +3065,62 @@ function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaym
           <span style={{ marginLeft: 10, fontSize: 11, color: MUTED }}>
             Text will auto-fill the memo field if empty
           </span>
+        </div>
+
+        {/* Helios-North Demo Fixture — auto-selects Infrastructure mode */}
+        <div style={{ marginBottom: 16 }}>
+          <button
+            type="button"
+            onClick={() => {
+              const HELIOS_MEMO = `PROJECT: Helios-North Offshore Wind
+LOCATION: Celtic Sea (South-West UK, floating-wind zone, water depth 70–95m)
+CAPACITY: 850 MW
+TOTAL CAPEX: £4.2B
+BASE CASE IRR: 9.5%
+FUND MINIMUM IRR: 15%
+
+IC DECISION: REJECT (3 HARD NO / 4 SOFT NO / 3 SOFT YES)
+
+PRIMARY BLOCKERS:
+1. Foundation Technology: Unvalidated floating foundation at commercial scale — no independent engineering validation
+2. CfD Strike Price: £73/MWh is below fund IRR threshold; AR7 outcome uncertain
+3. Merchant Exposure: 20% unhedged merchant exposure creates material downside risk
+4. Contingency: 1.7% contingency is dangerously low for first-of-kind technology
+5. EPC: No committed EPC contractor with fixed-price contract
+6. Timeline: 11-year project timeline exceeds fund horizon (7 years)
+
+CONDITIONS FOR RE-ENGAGEMENT:
+- Foundation technology independently validated at commercial scale
+- CfD strike price ≥ £85/MWh (AR7 mid-range)
+- Merchant exposure reduced to ≤ 10%
+- Committed EPC with fixed-price contract
+- Contingency increased to ≥ 5%`;
+              setDealName("Helios-North Offshore Wind");
+              setDealText(HELIOS_MEMO);
+              setGuidedMode(false); // switch to expert mode
+              setCouncilMode("infrastructure"); // auto-select Infrastructure mode
+            }}
+            style={{
+              padding: "8px 16px",
+              background: "rgba(255,159,67,0.06)",
+              border: "1px solid rgba(255,159,67,0.4)",
+              borderRadius: 4,
+              color: "#ff9f43",
+              fontFamily: MONO,
+              fontSize: 11,
+              cursor: "pointer",
+              letterSpacing: "0.06em",
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+            }}
+            onMouseEnter={e => { e.currentTarget.style.background = "rgba(255,159,67,0.12)"; }}
+            onMouseLeave={e => { e.currentTarget.style.background = "rgba(255,159,67,0.06)"; }}
+          >
+            ⚡ LOAD HELIOS-NORTH DEMO
+            <span style={{ fontFamily: MONO, fontSize: 9, color: "rgba(255,159,67,0.6)", background: "rgba(255,159,67,0.1)", border: "1px solid rgba(255,159,67,0.25)", borderRadius: 2, padding: "1px 5px" }}>INFRA MODE</span>
+          </button>
+          <span style={{ marginLeft: 10, fontSize: 10, color: MUTED, fontFamily: MONO }}>Celtic Sea · 850 MW floating wind · £4.2B CAPEX</span>
         </div>
 
         {/* Investor Mode toggle */}

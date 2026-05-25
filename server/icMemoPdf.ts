@@ -992,6 +992,25 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
           { width: metaCellW - 22, lineBreak: false });
     });
 
+    // ── Infrastructure Council Badge (shown only in infrastructure mode) ────────
+    if (input.councilMode === "infrastructure") {
+      const infraBadgeY = metaY + 52;
+      const infraBadgeW = BODY_W - 40;
+      const infraBadgeX = ML + 20;
+      // Amber-tinted background
+      doc.rect(infraBadgeX, infraBadgeY, infraBadgeW, 28).fill("#FFF7ED");
+      doc.rect(infraBadgeX, infraBadgeY, infraBadgeW, 28).stroke("#f97316");
+      doc.rect(infraBadgeX, infraBadgeY, 4, 28).fill("#f97316");
+      doc.fontSize(7).fillColor("#f97316").font("Helvetica-Bold")
+        .text("⚡  INFRASTRUCTURE / PROJECT FINANCE COUNCIL  ·  10-AGENT COUNCIL",
+          infraBadgeX + 12, infraBadgeY + 5,
+          { width: infraBadgeW - 16, align: "center", lineBreak: false });
+      doc.fontSize(6.5).fillColor("#9a3412").font("Helvetica")
+        .text("DSCR  ·  CfD  ·  EPC  ·  LCOE  ·  MERCHANT EXPOSURE  ·  FLOATING FOUNDATION  ·  REFINANCING RESILIENCE",
+          infraBadgeX + 12, infraBadgeY + 17,
+          { width: infraBadgeW - 16, align: "center", lineBreak: false });
+    }
+
     // ── Pattern context badge (shown only when patternContext is set) ─────────
     if (input.patternContext === "invested_match" || input.patternContext === "passed_match") {
       const patternBadgeY = metaY + 58;
@@ -1554,7 +1573,65 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       }
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
+    // ── Infrastructure: Conditions to Re-engage (shown only in infrastructure mode for rejected/vetoed deals) ──
+    const isRejectOrVeto = input.verdict === "REJECTED" || input.verdict === "VETOED";
+    if (input.councilMode === "infrastructure" && isRejectOrVeto) {
+      ensureSpace(24);
+      doc.y += 20;
+
+      // Section header
+      doc.rect(ML, doc.y, BODY_W, 1).fill("#f97316");
+      doc.y += 8;
+      doc.fontSize(12).fillColor("#f97316").font("Helvetica-Bold")
+        .text("CONDITIONS TO RE-ENGAGE", ML, doc.y);
+      doc.y += 4;
+      doc.fontSize(8.5).fillColor(MUTED).font("Helvetica")
+        .text("INFRASTRUCTURE / PROJECT FINANCE COUNCIL  ·  INSTITUTIONAL RE-ENGAGEMENT CRITERIA", ML, doc.y);
+      doc.y += 16;
+
+      // Build conditions from blockingIssues + conditionsToProceed
+      const allBlockText = [...(input.blockingIssues ?? []), ...(input.conditionsToProceed ?? [])].join(" ").toLowerCase();
+      const reEngageRows: [string, string, string, string][] = [];
+
+      if (allBlockText.includes("cfd") || allBlockText.includes("strike") || allBlockText.includes("£73") || allBlockText.includes("contract for difference")) {
+        reEngageRows.push(["CfD Strike Price", "≥ £85/MWh (AR7 mid-range)", "Current £73/MWh below fund IRR threshold; AR7 outcome required", "+25–35% approval probability"]);
+      }
+      if (allBlockText.includes("contingency") || allBlockText.includes("1.7%") || allBlockText.includes("low contingency")) {
+        reEngageRows.push(["Construction Contingency", "≥ 5% of CAPEX", "1.7% dangerously low for FOAK floating foundation technology", "+15–20% approval probability"]);
+      }
+      if (allBlockText.includes("foundation") || allBlockText.includes("floating") || allBlockText.includes("foak") || allBlockText.includes("first-of-kind") || allBlockText.includes("unvalidated")) {
+        reEngageRows.push(["Floating Foundation Validation", "Independent engineering validation at commercial scale", "No track record at commercial scale; TRL <7 is a hard blocker for project finance", "+30–40% approval probability"]);
+      }
+      if (allBlockText.includes("epc") || allBlockText.includes("contractor") || allBlockText.includes("fixed-price") || allBlockText.includes("open-book")) {
+        reEngageRows.push(["EPC Contract", "Committed fixed-price EPC with LD backstop", "Open-book EPC transfers construction risk to sponsor; unacceptable for FOAK technology", "+20–25% approval probability"]);
+      }
+      if (allBlockText.includes("merchant") || allBlockText.includes("unhedged") || allBlockText.includes("20%") || allBlockText.includes("offtake")) {
+        reEngageRows.push(["Merchant Exposure", "≤ 10% uncontracted revenue", "20% merchant exposure creates material downside risk in a price-volatile market", "+10–15% approval probability"]);
+      }
+
+      // Fallback: use conditionsToProceed if no pattern matched
+      if (reEngageRows.length === 0 && input.conditionsToProceed?.length) {
+        input.conditionsToProceed.slice(0, 5).forEach(c => {
+          reEngageRows.push([c.length > 55 ? c.slice(0, 55) + "…" : c, "As specified by council", c, "Required for re-engagement"]);
+        });
+      }
+
+      if (reEngageRows.length > 0) {
+        table(
+          ["Condition", "Threshold", "Rationale", "Approval Impact"],
+          reEngageRows,
+          [100, 120, 200, 79]
+        );
+      }
+
+      doc.y += 8;
+      doc.fontSize(7.5).fillColor(MUTED).font("Helvetica")
+        .text("ℹ All conditions must be met concurrently for re-engagement. Re-submit the updated deal memo to the Infrastructure / Project Finance Council for a fresh evaluation.",
+          ML, doc.y, { width: BODY_W, lineBreak: true });
+      doc.y += 14;
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────────
     // SECTION 12 — EXIT STRATEGY
     // ─────────────────────────────────────────────────────────────────────────
     newSectionPage("12. Exit Strategy");

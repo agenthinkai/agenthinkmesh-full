@@ -4724,3 +4724,15 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] TypeScript check — zero errors
 - [x] Full test suite — 1294 passing, 0 failures
 - [x] Live Helios-North dry run: VETOED | 9/10 HARD_NO | 0 VC leaks | 6/6 infra concepts present
+
+## Infrastructure Demo Polish Pass (2026-05-25 — Helios-North 28 May Session)
+
+- [x] Task 1: Add "Conditions to Re-engage" panel to BoardroomICReport (UI) — infrastructure mode only, reject/vetoed verdict
+- [x] Task 1: Add "Conditions to Re-engage" section to IC Memo PDF (Section 11 extension) — infrastructure mode only
+- [x] Task 2: Add Helios-North demo fixture button to Deal Screener expert mode — auto-selects Infrastructure mode
+- [x] Task 3: Add mode coherence badge to BoardroomICReport verdict header — "Infrastructure / Project Finance Council · 10-Agent Council"
+- [x] Task 3: Enhance mode coherence badge in IC Memo PDF cover — make Infrastructure label more prominent
+- [x] Tests: conditions panel visible in infrastructure mode, hidden in other modes
+- [x] Tests: mode coherence badge present in infrastructure mode
+- [x] TypeScript check — zero errors
+- [x] Full test suite passing — 1317 tests, 72 test files, 0 failures
