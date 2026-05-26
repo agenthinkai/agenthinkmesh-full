@@ -1490,7 +1490,7 @@ const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle, {
                               borderRadius: 4, letterSpacing: "0.06em", fontWeight: 700,
                             }}
                           >
-                            {rerunning ? "PREPARING..." : "↻ APPLY FIXES & RE-RUN"}
+                            {rerunning ? "PREPARING..." : "↻ FIX THE DEAL & RE-RUN COUNCIL"}
                           </button>
                         )}
                       </div>
@@ -3548,15 +3548,15 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
           }}
         >
           <div>
-            <div style={{ fontFamily: MONO, fontSize: 10, color: PURPLE, fontWeight: 700, letterSpacing: "0.08em", marginBottom: 3 }}>NEXT STEP — APPLY FIXES</div>
-            <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2 }}>Upgrade protocol generated. Apply the recommended structural fixes and re-run the Council to measure verdict improvement.</div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: PURPLE, fontWeight: 700, letterSpacing: "0.08em", marginBottom: 3 }}>NEXT STEP — FIX THE DEAL & RE-RUN COUNCIL</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2 }}>Apply the Upgrade Protocol recommendations to create an upgraded deal version, then re-run the Council.</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
             <button
               onClick={() => { fixPanelRef.current?.triggerFix(); }}
               disabled={fixPanelRef.current?.isPending() ?? false}
               style={{ padding: "7px 16px", background: PURPLE, border: "none", color: "#fff", fontFamily: MONO, fontSize: 10, fontWeight: 700, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em", whiteSpace: "nowrap", opacity: (fixPanelRef.current?.isPending() ?? false) ? 0.6 : 1 }}
-            >{(fixPanelRef.current?.isPending() ?? false) ? "APPLYING FIXES & RE-RUNNING COUNCIL…" : "APPLY FIXES & RE-RUN →"}</button>
+            >{(fixPanelRef.current?.isPending() ?? false) ? "APPLYING UPGRADE PROTOCOL & RE-RUNNING COUNCIL…" : "FIX THE DEAL & RE-RUN COUNCIL →"}</button>
             <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED }}>Scroll down to view the repair report and re-run results</div>
           </div>
         </div>
