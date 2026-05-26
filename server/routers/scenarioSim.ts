@@ -54,6 +54,11 @@ export const scenarioSimRouter = router({
       maxWallClockHours: z.number().optional(),
       batchSize:        z.number().min(100).max(10000).optional(),
       confirmedGated:   z.boolean().optional(), // must be true for gated modes
+      // Upgraded scenario metadata (set when running on a post-fix deal)
+      upgradedScenario: z.boolean().optional(),
+      originalDealId:   z.string().max(64).optional(),
+      originalVerdict:  z.string().max(64).optional(),
+      upgradedVerdict:  z.string().max(64).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -83,6 +88,10 @@ export const scenarioSimRouter = router({
         completedCount: 0,
         status:      "running",
         baseSeed,
+        upgradedScenario: input.upgradedScenario ? 1 : 0,
+        originalDealId:   input.originalDealId ?? null,
+        originalVerdict:  input.originalVerdict ?? null,
+        upgradedVerdict:  input.upgradedVerdict ?? null,
       });
 
       // For quick and institutional modes: run synchronously
@@ -229,6 +238,11 @@ export const scenarioSimRouter = router({
           executiveSummary: scenarioSimRuns.executiveSummary,
           // Return aggregation summary fields only (not full JSON blobs)
           decisionDistribution: scenarioSimRuns.decisionDistribution,
+          // Upgraded scenario metadata
+          upgradedScenario: scenarioSimRuns.upgradedScenario,
+          originalDealId:   scenarioSimRuns.originalDealId,
+          originalVerdict:  scenarioSimRuns.originalVerdict,
+          upgradedVerdict:  scenarioSimRuns.upgradedVerdict,
         })
         .from(scenarioSimRuns)
         .where(

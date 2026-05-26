@@ -1007,6 +1007,21 @@ function FixTheDealPanel({ result, councilMode, onRerun, onUpgradedSimCompleted 
   const exportMutation = trpc.dealScreener.exportRepairBrief.useMutation();
   const memoMutation = trpc.dealScreener.requestRestructuringMemo.useMutation();
   const startSimMutation = trpc.scenarioSim.startRun.useMutation();
+  // ── Original simulation data (for comparison card left column) ────────────
+  const { data: origSimRuns } = trpc.scenarioSim.listRunsForDeal.useQuery(
+    { dealId: result.dealId ?? "" },
+    { enabled: !!result.dealId && open, staleTime: 60_000 }
+  );
+  const origCompletedRun = (origSimRuns ?? []).find(
+    (r: any) => r.status === "completed" && !r.upgradedScenario
+  ) ?? null;
+  const { data: origSimStatus } = trpc.scenarioSim.getRunStatus.useQuery(
+    { runId: origCompletedRun?.runId ?? "" },
+    { enabled: !!origCompletedRun?.runId, staleTime: 120_000 }
+  );
+  const origSimDist = origSimStatus?.status === "completed" && origSimStatus.aggregation
+    ? (origSimStatus.aggregation as any).decisionDistribution ?? null
+    : null;
 
   // Poll upgraded simulation status
   const { data: upgradedSimStatus } = trpc.scenarioSim.getRunStatus.useQuery(
@@ -1116,6 +1131,11 @@ function FixTheDealPanel({ result, councilMode, onRerun, onUpgradedSimCompleted 
         dealText: d.revisedBrief.slice(0, 12000),
         mode: "quick",
         councilMode: effectiveMode as "gcc" | "global_vc" | "india_pe" | "gcc_equities" | "infrastructure",
+        // Persist upgraded scenario metadata for history labeling
+        upgradedScenario: true,
+        originalDealId: result.dealId ?? undefined,
+        originalVerdict: result.verdict ?? undefined,
+        upgradedVerdict: d.predictedOutcome?.decision ?? undefined,
       });
       setSimRunId(res.runId);
       // If synchronous completion (quick mode)
@@ -1151,7 +1171,10 @@ function FixTheDealPanel({ result, councilMode, onRerun, onUpgradedSimCompleted 
   const isClassC = d?.classification === "C";
 
   // ── Comparison helpers ────────────────────────────────────────────────────
-  const origApprovalPct = upgradedSimData ? null : null; // original sim not available in this panel
+  // Pull original sim distribution from DB query (non-upgraded run for this dealId)
+  const origApprovalPct = origSimDist
+    ? Math.round((origSimDist.approvePct ?? 0) + (origSimDist.conditionalPct ?? 0))
+    : null;
   const upgApprovalPct = upgradedSimData?.aggregation?.decisionDistribution
     ? Math.round(upgradedSimData.aggregation.decisionDistribution.approvePct + upgradedSimData.aggregation.decisionDistribution.conditionalPct)
     : null;
@@ -1577,11 +1600,40 @@ function FixTheDealPanel({ result, councilMode, onRerun, onUpgradedSimCompleted 
                             <span style={{ color: MUTED }}>Confidence: </span>{result.confidenceScore ? `${Math.round(result.confidenceScore * 100)}%` : "—"}
                           </div>
                           {(result.blockingIssues ?? []).length > 0 && (
-                            <div>
+                            <div style={{ marginBottom: 8 }}>
                               <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 4 }}>TOP BLOCKERS BEFORE</div>
                               {(result.blockingIssues ?? []).slice(0, 3).map((b: string, i: number) => (
                                 <div key={i} style={{ fontFamily: MONO, fontSize: 9, color: RED, padding: "2px 0", borderLeft: `2px solid ${RED}44`, paddingLeft: 8, marginBottom: 2 }}>{b}</div>
                               ))}
+                            </div>
+                          )}
+                          {/* Original simulation distribution */}
+                          {origSimDist ? (
+                            <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${BORDER}` }}>
+                              <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED, letterSpacing: "0.1em", marginBottom: 6 }}>
+                                ORIGINAL STRESS SIMULATION
+                              </div>
+                              <div style={{ display: "flex", gap: 10, marginBottom: 6 }}>
+                                {[
+                                  { label: "APPROVE", val: origSimDist.approvePct, color: GREEN },
+                                  { label: "COND.", val: origSimDist.conditionalPct, color: AMBER },
+                                  { label: "REJECT", val: origSimDist.rejectPct, color: RED },
+                                ].map(({ label, val, color }) => (
+                                  <div key={label} style={{ textAlign: "center", minWidth: 52 }}>
+                                    <div style={{ fontFamily: MONO, fontSize: 14, fontWeight: 700, color }}>{Math.round(val)}%</div>
+                                    <div style={{ fontFamily: MONO, fontSize: 7, color: MUTED }}>{label}</div>
+                                  </div>
+                                ))}
+                              </div>
+                              <div style={{ height: 6, borderRadius: 3, overflow: "hidden", display: "flex" }}>
+                                <div style={{ width: `${origSimDist.approvePct}%`, background: GREEN }} />
+                                <div style={{ width: `${origSimDist.conditionalPct}%`, background: AMBER }} />
+                                <div style={{ width: `${origSimDist.rejectPct}%`, background: RED }} />
+                              </div>
+                            </div>
+                          ) : (
+                            <div style={{ marginTop: 8, paddingTop: 8, borderTop: `1px solid ${BORDER}`, fontFamily: MONO, fontSize: 8, color: MUTED }}>
+                              No original simulation available.
                             </div>
                           )}
                         </div>

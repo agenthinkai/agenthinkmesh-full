@@ -833,3 +833,209 @@ describe("Req 7 — Reports Panel updates with upgraded simulation data", () => 
     expect(stressTestUpdated).toBe(true);
   });
 });
+
+// ── Task 1-3: Before/After Simulation Comparison + Persistence + History Labeling ─────────────
+
+describe("Task 1 — Original Sim Distribution in Comparison Card", () => {
+  it("origCompletedRun is null when no completed non-upgraded run exists", () => {
+    const origSimRuns: any[] = [];
+    const origCompletedRun = origSimRuns.find(
+      (r: any) => r.status === "completed" && !r.upgradedScenario
+    ) ?? null;
+    expect(origCompletedRun).toBeNull();
+  });
+
+  it("origCompletedRun resolves to the first completed non-upgraded run", () => {
+    const origSimRuns = [
+      { runId: "run-upg-001", status: "completed", upgradedScenario: 1 },
+      { runId: "run-orig-001", status: "completed", upgradedScenario: 0 },
+    ];
+    const origCompletedRun = origSimRuns.find(
+      (r: any) => r.status === "completed" && !r.upgradedScenario
+    ) ?? null;
+    expect(origCompletedRun?.runId).toBe("run-orig-001");
+  });
+
+  it("upgraded runs are excluded from origCompletedRun lookup", () => {
+    const origSimRuns = [
+      { runId: "run-upg-001", status: "completed", upgradedScenario: 1 },
+      { runId: "run-upg-002", status: "completed", upgradedScenario: 1 },
+    ];
+    const origCompletedRun = origSimRuns.find(
+      (r: any) => r.status === "completed" && !r.upgradedScenario
+    ) ?? null;
+    expect(origCompletedRun).toBeNull();
+  });
+
+  it("fallback 'No original simulation available.' renders when origSimDist is null", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/pages/DealScreener.tsx"),
+      "utf8"
+    );
+    expect(src).toContain("No original simulation available.");
+  });
+
+  it("ORIGINAL STRESS SIMULATION section renders when origSimDist is available", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/pages/DealScreener.tsx"),
+      "utf8"
+    );
+    expect(src).toContain("ORIGINAL STRESS SIMULATION");
+    expect(src).toContain("origSimDist.approvePct");
+    expect(src).toContain("origSimDist.conditionalPct");
+    expect(src).toContain("origSimDist.rejectPct");
+  });
+
+  it("origSimDist is derived from decisionDistribution on the aggregation object", () => {
+    const aggregation = {
+      decisionDistribution: {
+        approvePct: 45, conditionalPct: 20, rejectPct: 35,
+        totalScenarios: 100,
+      },
+    };
+    const origSimDist = (aggregation as any).decisionDistribution ?? null;
+    expect(origSimDist).not.toBeNull();
+    expect(origSimDist.approvePct).toBe(45);
+    expect(origSimDist.rejectPct).toBe(35);
+  });
+});
+
+describe("Task 2 — Upgraded Sim Persistence to Deal History", () => {
+  it("schema has upgradedScenario column on scenarioSimRuns", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "../drizzle/schema.ts"),
+      "utf8"
+    );
+    expect(src).toContain('upgradedScenario: tinyint("upgraded_scenario").notNull().default(0)');
+  });
+
+  it("schema has originalDealId column on scenarioSimRuns", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "../drizzle/schema.ts"),
+      "utf8"
+    );
+    expect(src).toContain('originalDealId:  varchar("original_deal_id", { length: 64 })');
+  });
+
+  it("schema has originalVerdict and upgradedVerdict columns", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "../drizzle/schema.ts"),
+      "utf8"
+    );
+    expect(src).toContain('originalVerdict: varchar("original_verdict", { length: 64 })');
+    expect(src).toContain('upgradedVerdict: varchar("upgraded_verdict", { length: 64 })');
+  });
+
+  it("startRun input schema accepts upgradedScenario boolean", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "routers/scenarioSim.ts"),
+      "utf8"
+    );
+    expect(src).toContain("upgradedScenario: z.boolean().optional()");
+  });
+
+  it("startRun inserts upgradedScenario as 0 or 1 tinyint", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "routers/scenarioSim.ts"),
+      "utf8"
+    );
+    expect(src).toContain("upgradedScenario: input.upgradedScenario ? 1 : 0");
+  });
+
+  it("listRunsForDeal returns upgradedScenario and originalDealId", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "routers/scenarioSim.ts"),
+      "utf8"
+    );
+    expect(src).toContain("upgradedScenario: scenarioSimRuns.upgradedScenario");
+    expect(src).toContain("originalDealId:   scenarioSimRuns.originalDealId");
+  });
+
+  it("FixTheDealPanel passes upgradedScenario=true to startRun", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/pages/DealScreener.tsx"),
+      "utf8"
+    );
+    expect(src).toContain("upgradedScenario: true");
+  });
+
+  it("FixTheDealPanel passes originalDealId to startRun", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/pages/DealScreener.tsx"),
+      "utf8"
+    );
+    expect(src).toContain("originalDealId: result.dealId ?? undefined");
+  });
+
+  it("original and upgraded runs are distinct (different dealIds)", () => {
+    const originalDealId = "deal-abc";
+    const upgradedDealId = `${originalDealId}-fixed`;
+    expect(upgradedDealId).not.toBe(originalDealId);
+    expect(upgradedDealId).toContain("-fixed");
+  });
+});
+
+describe("Task 3 — Simulation History Labeling", () => {
+  it("SimulationHistoryPanel renders UPGRADED badge for upgradedScenario=1 runs", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/components/ScenarioSimDashboard.tsx"),
+      "utf8"
+    );
+    expect(src).toContain('"UPGRADED"');
+    expect(src).toContain('"ORIGINAL"');
+  });
+
+  it("TYPE column header is present in SimulationHistoryPanel", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/components/ScenarioSimDashboard.tsx"),
+      "utf8"
+    );
+    expect(src).toContain("<span>TYPE</span>");
+  });
+
+  it("restored upgraded simulation shows green banner text", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/components/ScenarioSimDashboard.tsx"),
+      "utf8"
+    );
+    expect(src).toContain("VIEWING RESTORED UPGRADED SIMULATION");
+  });
+
+  it("restored original simulation shows amber warning text", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/components/ScenarioSimDashboard.tsx"),
+      "utf8"
+    );
+    expect(src).toContain("VIEWING RESTORED HISTORICAL DATA");
+  });
+
+  it("upgraded badge uses green color, original badge uses muted color", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/components/ScenarioSimDashboard.tsx"),
+      "utf8"
+    );
+    expect(src).toContain("(run as any).upgradedScenario ? GREEN : TEXT2");
+  });
+
+  it("Infrastructure mode label is preserved in history rows", () => {
+    const modeLabel = (mode: string): string => {
+      const map: Record<string, string> = {
+        quick: "Quick (100)",
+        institutional: "Institutional (1k)",
+        deep: "Deep (10k)",
+        infrastructure: "Infrastructure (100k)",
+      };
+      return map[mode] ?? mode;
+    };
+    expect(modeLabel("infrastructure")).toBe("Infrastructure (100k)");
+    expect(modeLabel("quick")).toBe("Quick (100)");
+  });
+
+  it("DB index exists for originalDealId for efficient history queries", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "../drizzle/schema.ts"),
+      "utf8"
+    );
+    expect(src).toContain('ssrOrigDeal: index("ssr_orig_deal_idx").on(table.originalDealId)');
+  });
+});

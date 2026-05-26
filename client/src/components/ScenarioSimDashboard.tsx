@@ -911,7 +911,7 @@ function SimulationHistoryPanel({ dealId, onRestore, activeRunId }: SimHistoryPa
               {/* Column headers */}
               <div style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 1fr 60px 60px 60px 80px 80px 100px",
+                gridTemplateColumns: "1fr 80px 1fr 60px 60px 60px 80px 100px",
                 gap: 8,
                 padding: "4px 10px",
                 fontFamily: MONO,
@@ -921,11 +921,11 @@ function SimulationHistoryPanel({ dealId, onRestore, activeRunId }: SimHistoryPa
                 borderBottom: `1px solid ${BORDER}`,
               }}>
                 <span>DATE / TIME</span>
+                <span>TYPE</span>
                 <span>MODE</span>
                 <span>APPROVE</span>
                 <span>COND.</span>
                 <span>REJECT</span>
-                <span>TOP FAILURE</span>
                 <span>STATUS</span>
                 <span></span>
               </div>
@@ -940,7 +940,7 @@ function SimulationHistoryPanel({ dealId, onRestore, activeRunId }: SimHistoryPa
                     key={run.runId}
                     style={{
                       display: "grid",
-                      gridTemplateColumns: "1fr 1fr 60px 60px 60px 80px 80px 100px",
+                      gridTemplateColumns: "1fr 80px 1fr 60px 60px 60px 80px 100px",
                       gap: 8,
                       padding: "8px 10px",
                       background: isActive ? "rgba(168,85,247,0.06)" : BG2,
@@ -950,13 +950,20 @@ function SimulationHistoryPanel({ dealId, onRestore, activeRunId }: SimHistoryPa
                     }}
                   >
                     <span style={{ fontFamily: MONO, fontSize: 8, color: TEXT2 }}>{formatDate(run.completedAt)}</span>
+                    {/* TYPE badge: UPGRADED or ORIGINAL */}
+                    <span style={{
+                      fontFamily: MONO, fontSize: 7, fontWeight: 700, letterSpacing: "0.06em",
+                      color: (run as any).upgradedScenario ? GREEN : TEXT2,
+                      background: (run as any).upgradedScenario ? "rgba(0,255,135,0.08)" : "rgba(255,255,255,0.04)",
+                      border: `1px solid ${(run as any).upgradedScenario ? "rgba(0,255,135,0.25)" : BORDER}`,
+                      padding: "2px 5px", borderRadius: 3, textAlign: "center" as const,
+                    }}>
+                      {(run as any).upgradedScenario ? "UPGRADED" : "ORIGINAL"}
+                    </span>
                     <span style={{ fontFamily: MONO, fontSize: 8, color: TEXT }}>{modeLabel(run.mode)}</span>
                     <span style={{ fontFamily: MONO, fontSize: 9, color: GREEN, fontWeight: 700 }}>{dd ? `${dd.approvePct}%` : "—"}</span>
                     <span style={{ fontFamily: MONO, fontSize: 9, color: AMBER, fontWeight: 700 }}>{dd ? `${dd.conditionalPct}%` : "—"}</span>
                     <span style={{ fontFamily: MONO, fontSize: 9, color: RED, fontWeight: 700 }}>{dd ? `${dd.rejectPct}%` : "—"}</span>
-                    <span style={{ fontFamily: MONO, fontSize: 7, color: TEXT2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
-                      {run.executiveSummary ? run.executiveSummary.slice(0, 30) + "…" : "—"}
-                    </span>
                     <span style={{
                       fontFamily: MONO, fontSize: 7, fontWeight: 700, letterSpacing: "0.08em",
                       color: isActive ? PURPLE : GREEN,
@@ -991,23 +998,29 @@ function SimulationHistoryPanel({ dealId, onRestore, activeRunId }: SimHistoryPa
               })}
 
               {/* Restored data notice — shown when viewing a non-latest run */}
-              {activeRunId && completedRuns.length > 0 && activeRunId !== completedRuns[0]?.runId && (
-                <div style={{
-                  marginTop: 6,
-                  padding: "8px 12px",
-                  background: "rgba(255,159,67,0.06)",
-                  border: "1px solid rgba(255,159,67,0.25)",
-                  borderRadius: 4,
-                  fontFamily: MONO,
-                  fontSize: 8,
-                  color: AMBER,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 8,
-                }}>
-                  ⚠ VIEWING RESTORED HISTORICAL DATA — This is not the most recent simulation for this deal.
-                </div>
-              )}
+              {activeRunId && completedRuns.length > 0 && activeRunId !== completedRuns[0]?.runId && (() => {
+                const activeRun = completedRuns.find((r: any) => r.runId === activeRunId);
+                const isUpgradedRestore = activeRun && (activeRun as any).upgradedScenario;
+                return (
+                  <div style={{
+                    marginTop: 6,
+                    padding: "8px 12px",
+                    background: isUpgradedRestore ? "rgba(0,255,135,0.04)" : "rgba(255,159,67,0.06)",
+                    border: `1px solid ${isUpgradedRestore ? "rgba(0,255,135,0.2)" : "rgba(255,159,67,0.25)"}`,
+                    borderRadius: 4,
+                    fontFamily: MONO,
+                    fontSize: 8,
+                    color: isUpgradedRestore ? GREEN : AMBER,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}>
+                    {isUpgradedRestore
+                      ? "↑ VIEWING RESTORED UPGRADED SIMULATION — This run was performed on a post-fix upgraded deal."
+                      : "⚠ VIEWING RESTORED HISTORICAL DATA — This is not the most recent simulation for this deal."}
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>

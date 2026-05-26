@@ -2224,12 +2224,21 @@ export const scenarioSimRuns = mysqlTable("scenario_sim_runs", {
   executiveSummary:     text("executive_summary"),
   durationMs:      int("duration_ms"),
   baseSeed:        bigint("base_seed", { mode: "number" }),
+  /** 1 when this run was performed on an upgraded (post-fix) deal, 0 for original submissions */
+  upgradedScenario: tinyint("upgraded_scenario").notNull().default(0),
+  /** The original dealId this upgraded run is associated with (null for non-upgraded runs) */
+  originalDealId:  varchar("original_deal_id", { length: 64 }),
+  /** Original verdict before fixes were applied (for comparison card) */
+  originalVerdict: varchar("original_verdict", { length: 64 }),
+  /** Upgraded predicted verdict after fixes (for comparison card) */
+  upgradedVerdict: varchar("upgraded_verdict", { length: 64 }),
   createdAt:       timestamp("created_at").defaultNow().notNull(),
   completedAt:     timestamp("completed_at"),
 }, (table) => ({
   ssrUser:   index("ssr_user_idx").on(table.userId),
   ssrDeal:   index("ssr_deal_idx").on(table.dealId),
   ssrStatus: index("ssr_status_idx").on(table.status),
+  ssrOrigDeal: index("ssr_orig_deal_idx").on(table.originalDealId),
 }));
 export type ScenarioSimRun = typeof scenarioSimRuns.$inferSelect;
 export type InsertScenarioSimRun = typeof scenarioSimRuns.$inferInsert;
