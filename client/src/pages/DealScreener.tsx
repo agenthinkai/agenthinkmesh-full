@@ -1144,17 +1144,25 @@ const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle, {
     const upgradedDealName = `${result.dealName ?? "Deal"} [UPGRADED]`;
     const effectiveMode = (councilMode as CouncilModeType) ?? result.councilMode ?? "global_vc";
     try {
+      // Derive baseApprovalScore from the upgraded deal's predicted outcome
+      // so the simulation is anchored to the upgraded deal's quality, not the original
+      const upgradedVerdict = d.predictedOutcome?.decision ?? "CONDITIONAL";
+      const upgradedBaseScore =
+        upgradedVerdict === "APPROVE" ? 0.55
+        : upgradedVerdict === "CONDITIONAL" ? 0.20
+        : -0.15;
       const res = await startSimMutation.mutateAsync({
         dealId: upgradedDealId,
         dealName: upgradedDealName,
         dealText: d.revisedBrief.slice(0, 12000),
         mode: "quick",
         councilMode: effectiveMode as "gcc" | "global_vc" | "india_pe" | "gcc_equities" | "infrastructure",
+        baseApprovalScore: upgradedBaseScore,
         // Persist upgraded scenario metadata for history labeling
         upgradedScenario: true,
         originalDealId: result.dealId ?? undefined,
         originalVerdict: result.verdict ?? undefined,
-        upgradedVerdict: d.predictedOutcome?.decision ?? undefined,
+        upgradedVerdict: upgradedVerdict,
       });
       setSimRunId(res.runId);
       // If synchronous completion (quick mode)
@@ -3603,6 +3611,11 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
           dealText={result.dealText ?? result.dealTextPreview ?? ""}
           onSimCompleted={handleSimCompleted}
           councilMode={councilModeProp ?? result.councilMode as CouncilModeType | undefined}
+          baseApprovalScore={
+            result.verdict === "APPROVED" ? 0.55
+            : result.verdict === "APPROVED_WITH_CONDITIONS" ? 0.20
+            : -0.15
+          }
         />
       </div>
       {/* ── Section 12: Institutional Reports Export Hub ──────────────── */}

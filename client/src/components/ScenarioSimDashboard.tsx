@@ -471,9 +471,17 @@ interface ScenarioSimDashboardProps {
   onSimCompleted?: (data: CompletedSimData) => void;
   /** Council mode — passed to simulation engine for mode-aware reasoning (e.g. infrastructure uses DSCR/CfD language) */
   councilMode?: "gcc" | "global_vc" | "india_pe" | "gcc_equities" | "infrastructure";
+  /**
+   * Base approval score from the council verdict. Anchors the simulation
+   * distribution around the deal's actual quality.
+   *   APPROVE      → +0.55
+   *   CONDITIONAL  → +0.20
+   *   REJECT       → -0.15
+   */
+  baseApprovalScore?: number;
 }
 
-export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId, onSimCompleted, councilMode }: ScenarioSimDashboardProps) {
+export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId, onSimCompleted, councilMode, baseApprovalScore }: ScenarioSimDashboardProps) {
   const [selectedMode, setSelectedMode] = useState<SimMode>("quick");
   const [runId, setRunId] = useState<string | null>(existingRunId ?? null);
   const [isRunning, setIsRunning] = useState(false);
@@ -534,6 +542,7 @@ export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId
         mode: selectedMode,
         confirmedGated: cfg.gated ? true : undefined,
         councilMode,
+        baseApprovalScore,
       });
       setRunId(result.runId);
       if (result.status === "completed" && result.aggregation) {

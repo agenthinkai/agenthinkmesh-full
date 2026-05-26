@@ -659,17 +659,35 @@ export interface ScenarioEvalResult {
 }
 
 /**
- * Evaluate a single scenario variant using the LLM council.
- * This is a lightweight single-call evaluation (not the full 10-persona council)
- * to keep simulation costs manageable at scale.
+ * Threshold beyond which the heuristic signal is unambiguous — no LLM call needed.
+ * effectiveDelta >= +CONFIDENT_THRESHOLD → cheap APPROVE
+ * effectiveDelta <= -CONFIDENT_THRESHOLD → cheap REJECT
+ * Otherwise → spend the LLM call in the ambiguous middle band.
+ */
+const CONFIDENT_THRESHOLD = 0.30;
+
+/**
+ * Evaluate a single scenario variant.
+ *
+ * Architecture:
+ *   - Hard-no triggers → deterministic REJECT (no LLM)
+ *   - Unambiguous signal (|effectiveDelta| >= CONFIDENT_THRESHOLD) → cheap heuristic
+ *   - Ambiguous middle band → LLM call with assembled stress brief
+ *
+ * baseApprovalScore reflects the deal's starting quality from the council verdict:
+ *   APPROVE      →  +0.55
+ *   CONDITIONAL  →  +0.20
+ *   REJECT       →  -0.15
+ *   (default 0.0 for backward compatibility)
  */
 export async function evaluateScenario(
   variant: ScenarioVariant,
   scenarioBrief: string,
   invokeLLM: (params: { messages: Array<{ role: string; content: string }> }) => Promise<{ choices: Array<{ message: { content: string } }> }>,
-  councilMode?: string
+  councilMode?: string,
+  baseApprovalScore: number = 0.0
 ): Promise<ScenarioEvalResult> {
-  // Hard-no scenarios are deterministically rejected without LLM call
+  // ── 1. Hard-no: deterministic reject, no LLM ──────────────────────────────
   if (variant.hasHardNo) {
     return {
       index: variant.index,
@@ -687,35 +705,98 @@ export async function evaluateScenario(
     };
   }
 
-  // Heuristic evaluation for non-hard-no scenarios
-  // Uses approval delta to determine decision without LLM call (cost-efficient at scale)
   const delta = variant.totalApprovalDelta;
-  let decision: "APPROVE" | "CONDITIONAL" | "REJECT";
-  let confidence: number;
+  const effectiveDelta = baseApprovalScore + delta;
 
-  if (delta >= -0.15) {
-    decision = "APPROVE";
-    confidence = 0.72 + Math.min(0.20, (delta + 0.15) * 0.5);
-  } else if (delta >= -0.40) {
-    decision = "CONDITIONAL";
-    confidence = 0.60 + Math.min(0.20, Math.abs(delta + 0.40) * 0.4);
-  } else {
-    decision = "REJECT";
-    confidence = 0.70 + Math.min(0.25, Math.abs(delta + 0.40) * 0.3);
+  // ── 2. Cheap path: unambiguous signal ────────────────────────────────────
+  if (effectiveDelta >= CONFIDENT_THRESHOLD || effectiveDelta <= -CONFIDENT_THRESHOLD) {
+    let decision: "APPROVE" | "CONDITIONAL" | "REJECT";
+    let confidence: number;
+
+    if (effectiveDelta >= CONFIDENT_THRESHOLD) {
+      decision = "APPROVE";
+      confidence = 0.72 + Math.min(0.20, (effectiveDelta - CONFIDENT_THRESHOLD) * 0.5);
+    } else {
+      decision = "REJECT";
+      confidence = 0.70 + Math.min(0.25, Math.abs(effectiveDelta + CONFIDENT_THRESHOLD) * 0.3);
+    }
+
+    const topBlockers = variant.stressFragments
+      .filter((_, i) => i < 3)
+      .map(f => f.split(".")[0]);
+
+    return {
+      index: variant.index,
+      decision,
+      confidenceScore: Math.min(0.97, confidence),
+      dominantRiskCategory: variant.dominantRiskCategory,
+      topBlockers,
+      topMitigants: effectiveDelta > 0
+        ? councilMode === "infrastructure"
+          ? ["Base case project economics remain intact", "DSCR headroom and contracted revenue structure provide buffer"]
+          : ["Base case fundamentals remain intact", "Management track record provides buffer"]
+        : [],
+      escalationTriggers: variant.stressedCategories.includes("governance") ? ["governance_stress"] : [],
+      governanceConcerns: variant.stressedCategories.includes("governance") ? ["Governance stress detected in this scenario"] : [],
+      hasHardNo: false,
+      approvalDelta: delta,
+      stressedCategories: variant.stressedCategories,
+      provenance: variant.provenance,
+    };
   }
 
-  // Extract top blockers from stressed dimensions
+  // ── 3. Ambiguous middle band: spend the LLM call ─────────────────────────
+  // The scenarioBrief already contains the assembled stress context from
+  // buildScenarioBrief(). The LLM evaluates the deal UNDER those specific
+  // stress conditions, not the base case.
+  let llmDecision: "APPROVE" | "CONDITIONAL" | "REJECT" = "CONDITIONAL";
+  let llmConfidence = 0.65;
+
+  try {
+    const infraContext = councilMode === "infrastructure"
+      ? " You are evaluating an infrastructure / project-finance deal. Apply DSCR, CfD, and contracted-revenue standards."
+      : "";
+    const response = await invokeLLM({
+      messages: [
+        {
+          role: "system",
+          content: `You are a senior investment committee analyst.${infraContext} Evaluate the deal brief below — which includes specific stress scenario conditions — and return a JSON object with exactly these fields: {"decision":"APPROVE"|"CONDITIONAL"|"REJECT","confidence":0.0-1.0,"rationale":"max 40 words"}. Terminate immediately after the closing brace.`,
+        },
+        {
+          role: "user",
+          content: scenarioBrief,
+        },
+      ],
+    });
+
+    const raw = response.choices[0]?.message?.content ?? "";
+    const match = raw.match(/\{[^}]+\}/);
+    if (match) {
+      const parsed = JSON.parse(match[0]);
+      if (["APPROVE", "CONDITIONAL", "REJECT"].includes(parsed.decision)) {
+        llmDecision = parsed.decision as "APPROVE" | "CONDITIONAL" | "REJECT";
+      }
+      if (typeof parsed.confidence === "number") {
+        llmConfidence = Math.min(0.97, Math.max(0.50, parsed.confidence));
+      }
+    }
+  } catch {
+    // LLM call failed — fall back to heuristic for this scenario
+    if (effectiveDelta >= 0) llmDecision = "CONDITIONAL";
+    else llmDecision = "REJECT";
+  }
+
   const topBlockers = variant.stressFragments
     .filter((_, i) => i < 3)
     .map(f => f.split(".")[0]);
 
   return {
     index: variant.index,
-    decision,
-    confidenceScore: Math.min(0.97, confidence),
+    decision: llmDecision,
+    confidenceScore: llmConfidence,
     dominantRiskCategory: variant.dominantRiskCategory,
     topBlockers,
-    topMitigants: delta > -0.20
+    topMitigants: llmDecision !== "REJECT"
       ? councilMode === "infrastructure"
         ? ["Base case project economics remain intact", "DSCR headroom and contracted revenue structure provide buffer"]
         : ["Base case fundamentals remain intact", "Management track record provides buffer"]
