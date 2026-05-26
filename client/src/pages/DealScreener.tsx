@@ -79,6 +79,7 @@ interface CouncilResult {
   tiebreakerSwingAgent: string | null;
   conditionsToProceed: string[];
   blockingIssues: string[];
+  terminalFlags?: string[];  // structured terminal blocker flags — shared enum, never prose
   votes: PersonaVote[];
   councilMode?: "gcc" | "global_vc" | "india_pe" | "gcc_equities" | "infrastructure";
   evidenceBlob?: string | null;
@@ -1067,6 +1068,7 @@ const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle, {
       councilOutcome: outcome,
       icMemoSummary: icSummary,
       councilMode: councilMode,
+      terminalFlags: (result.terminalFlags ?? []) as string[],
     }, {
       onSuccess: () => { onFixesApplied?.(); },
     });

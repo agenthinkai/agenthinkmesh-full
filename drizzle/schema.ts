@@ -889,6 +889,7 @@ export const dealScreenings = mysqlTable("deal_screenings", {
   // Aggregated outputs (JSON)
   conditionsToProceed: text("conditionsToProceed").notNull(), // JSON string[]
   blockingIssues: text("blockingIssues").notNull(),           // JSON string[]
+  terminalFlags: text("terminalFlags"),                        // JSON TerminalBlockerFlag[] — nullable for backwards compat with pre-v3.1 rows
   votes: text("votes").notNull(),                             // JSON PersonaVote[]
 
   // Tiered pipeline fields (v2)

@@ -19,6 +19,7 @@
  */
 
 import { invokeLLM } from "./_core/llm";
+import { TERMINAL_BLOCKER_FLAGS, type TerminalBlockerFlag } from "./lib/rescuePolicy";
 import { routeEvalCall } from "./lib/llm/evalRouter";
 import { trimMemoryContext, compressDealText } from "./lib/promptCompressor";
 import Stripe from "stripe";
@@ -83,6 +84,7 @@ export interface PersonaVote {
   keyFlags:     string[];
   conditions:   string[];
   blockers:     string[];
+  terminalFlag: TerminalBlockerFlag | null;  // structured terminal blocker — shared enum, never prose
   weight:       number;
   timedOut?:    boolean;
   isSilentFail: boolean;   // [FIX 3] model alive but confidence = 0
@@ -108,6 +110,7 @@ export interface CouncilResult {
   conditionsToProceed:   string[];
   blockingIssues:        string[];
   criticalBlockers:      string[];   // alias for blockingIssues (v3.0 compat)
+  terminalFlags:         TerminalBlockerFlag[];  // structured terminal flags from HARD_NO votes — single shared enum
   hardFlags:             string[];
   silentFails:           string[];
   structuralNoCount:     number;
@@ -148,6 +151,7 @@ const PersonaResponseSchema = z.object({
   key_flags:  z.array(z.string()).default([]),
   conditions: z.array(z.string()).default([]),
   blockers:   z.array(z.string()).default([]),
+  terminal_flag: z.enum(TERMINAL_BLOCKER_FLAGS).nullable().optional().default(null),
 });
 
 type PersonaResponse = z.infer<typeof PersonaResponseSchema>;
@@ -178,7 +182,7 @@ Framework:
 HARD_NO on any hard regulatory blocker. Not legal advice — flagging risk for committee.
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "GCC_SHARIAH",
@@ -197,7 +201,7 @@ Framework — AAOIFI Shariah Standards:
 HARD_NO on any confirmed Shariah non-compliance.
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "ANALYST",
@@ -213,7 +217,7 @@ Framework:
 5. EXECUTION FEASIBILITY — Can this be built or acquired at stated terms?
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "SKEPTIC",
@@ -231,7 +235,7 @@ Framework:
 Vote HARD_YES or SOFT_YES only when risks are quantifiable and bounded. Default to SOFT_NO or HARD_NO when uncertain.
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "CFO",
@@ -246,7 +250,7 @@ GCC BENCHMARKS (reference only):
 - Real Estate: 10x-15x EBITDA, IRR 12-18%, hurdle 10%
 RULES: rationale must be 1-2 sentences max (under 180 chars). List max 4 key_flags. No prose outside JSON.
 Return ONLY this JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"entry multiple vs benchmark + IRR estimate in 1-2 sentences","key_flags":["flag1"],"conditions":["condition"],"blockers":["blocker"]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"entry multiple vs benchmark + IRR estimate in 1-2 sentences","key_flags":["flag1"],"conditions":["condition"],"blockers":["blocker"],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "MACRO",
@@ -262,7 +266,7 @@ Framework:
 5. DEMOGRAPHIC TRENDS — Tailwinds or headwinds from GCC demographics?
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "GEOPOLITICAL",
@@ -280,7 +284,7 @@ Framework:
 HARD_NO on any confirmed sanctions exposure — non-negotiable for ADGM-registered entities.
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "GCC_CONSUMER",
@@ -297,7 +301,7 @@ Framework:
 6. NATIONALIZATION — Conflict with Kuwaitization/Saudization/Emiratization mandates?
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "EXIT",
@@ -308,7 +312,7 @@ You analyse: realistic acquirer universe (strategic + financial), comparable exi
 You are sceptical of "we'll IPO" without a credible path. You want to see: defensible IP, acquirer synergies, and a business that gets more valuable as it scales.
 Flag: acquirer concentration risk, IP that doesn't transfer cleanly, and exit timelines that exceed fund life.
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "DEVILS_ADVOCATE",
@@ -319,7 +323,7 @@ You look for risks that aren't obvious: regulatory changes that could invalidate
 You also look for: founder incentive misalignment, cap table issues that will create problems at Series B, and any "hidden" assumption that the entire thesis depends on.
 You are not pessimistic — you are rigorous about tail risk. If the deal survives your scrutiny, it is genuinely strong.
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
 ];
 
@@ -339,7 +343,7 @@ Framework:
 5. VENTURE RETURN MATH — At this entry valuation, what does a 10x outcome require?
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "VC_FOUNDER",
@@ -355,7 +359,7 @@ Framework:
 5. FOUNDER-MARKET FIT — Are they the right people for this specific problem?
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "VC_PRODUCT",
@@ -371,7 +375,7 @@ Framework:
 5. SCALABILITY — Does the architecture support 100x growth?
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "VC_CFO",
@@ -387,7 +391,7 @@ VC BENCHMARKS:
 
 RULES: rationale must be 1-2 sentences max. List max 4 key_flags.
 Return ONLY this JSON:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"entry multiple vs VC benchmark + growth rate assessment","key_flags":["flag1"],"conditions":["condition"],"blockers":["blocker"]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"entry multiple vs VC benchmark + growth rate assessment","key_flags":["flag1"],"conditions":["condition"],"blockers":["blocker"],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "VC_MARKET",
@@ -403,7 +407,7 @@ Framework:
 5. REGULATORY TAILWINDS/HEADWINDS — Is regulation helping or threatening the model?
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "VC_SKEPTIC",
@@ -420,7 +424,7 @@ Framework:
 
 Vote HARD_YES or SOFT_YES only when risks are quantifiable and bounded.
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "VC_EXIT",
@@ -431,7 +435,7 @@ You analyse: realistic acquirer universe (strategic + financial), comparable exi
 You are sceptical of "we'll IPO" without a credible path. You want to see: defensible IP, acquirer synergies, and a business that gets more valuable as it scales.
 Flag: acquirer concentration risk, IP that doesn't transfer cleanly, and exit timelines that exceed fund life.
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "VC_LEGAL",
@@ -448,7 +452,7 @@ Framework:
 
 HARD_NO on confirmed IP ownership disputes or regulatory prohibition.
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "VC_CONTRARIAN",
@@ -460,7 +464,7 @@ You look for: hidden optionality the bears are missing, underappreciated network
 You are not blindly optimistic — you are rigorous about identifying genuine upside that others are discounting.
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "VC_PORTFOLIO",
@@ -476,7 +480,7 @@ Framework:
 5. RESERVE STRATEGY — How much follow-on capital will this company need, and can we support it?
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
 ];
 
@@ -497,7 +501,7 @@ Framework:
 
 HARD_NO on any confirmed FEMA violation or SEBI regulatory breach.
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "IN_CFO",
@@ -514,7 +518,7 @@ INDIA PE/VC BENCHMARKS:
 
 RULES: rationale must be 1-2 sentences max. List max 4 key_flags.
 Return ONLY this JSON:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"entry multiple vs India benchmark + IRR estimate","key_flags":["flag1"],"conditions":["condition"],"blockers":["blocker"]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"entry multiple vs India benchmark + IRR estimate","key_flags":["flag1"],"conditions":["condition"],"blockers":["blocker"],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "IN_MARKET",
@@ -530,7 +534,7 @@ Framework:
 5. DISTRIBUTION — WhatsApp, Jio ecosystem, Google Pay — what's the go-to-market reality in India?
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "IN_MACRO",
@@ -546,7 +550,7 @@ Framework:
 5. GEOPOLITICAL — India-China tech policy, US-India trade relations, FDI policy stability?
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "IN_SKEPTIC",
@@ -562,7 +566,7 @@ Framework:
 5. EXIT RISK — Is the Indian M&A market liquid enough? IPO window timing?
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "IN_EXIT",
@@ -572,7 +576,7 @@ Return ONLY valid JSON — no markdown, no preamble:
 You analyse: Indian strategic acquirer universe (Reliance, Tata, Swiggy, Zomato, Flipkart), NSE/BSE IPO readiness (SEBI ICDR compliance, profitability requirements), PE secondary market in India, and whether the business is being built to be acquired or to go public.
 Flag: SEBI ICDR profitability requirements for IPO, acquirer concentration in India's oligopolistic market, and exit timelines vs AIF fund lifecycle.
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"max 400 chars","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "IN_ESG",
@@ -588,7 +592,7 @@ Framework:
 5. DATA GOVERNANCE — Personal data protection under India's DPDP Act 2023?
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "IN_ANALYST",
@@ -604,7 +608,7 @@ Framework:
 5. PORTFOLIO CONFLICT — Does this conflict with existing India portfolio positions?
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "IN_CONTRARIAN",
@@ -615,7 +619,7 @@ Return ONLY valid JSON — no markdown, no preamble:
 You look for: India-specific tailwinds the bears are missing (UPI adoption, Jio ecosystem, rising tier-2 consumption), underappreciated network effects in India's fragmented markets, and why the consensus view might be wrong about India execution risk.
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "IN_DEVILS_ADVOCATE",
@@ -625,7 +629,7 @@ Return ONLY valid JSON — no markdown, no preamble:
 You look for: regulatory changes that could invalidate the business model (gig worker classification, data localization, FDI policy reversal), competitive responses from Reliance/Tata with infinite distribution, technology shifts (ONDC disrupting marketplace models), and India-specific governance risks (promoter tunneling, related-party transactions).
 You also look for: founder incentive misalignment post-funding, cap table issues from angel rounds, and any hidden assumption the entire India thesis depends on.
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"concise analysis","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
 ];
 
@@ -646,7 +650,7 @@ Framework:
 
 HARD_NO if: DSCR <1.10x in base case, no offtake/CfD, or debt tenor exceeds asset useful life.
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"DSCR + debt structure assessment in 2 sentences","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"DSCR + debt structure assessment in 2 sentences","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "INFRA_EPC",
@@ -663,7 +667,7 @@ Framework:
 
 HARD_NO if: open-book EPC on FOAK technology with no LD backstop.
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"EPC contract type + contractor quality assessment","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"EPC contract type + contractor quality assessment","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "INFRA_OFFTAKE",
@@ -680,7 +684,7 @@ Framework:
 
 HARD_NO if: strike price < LCOE, or >50% merchant exposure with no floor price mechanism.
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"CfD/PPA structure + revenue certainty assessment","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"CfD/PPA structure + revenue certainty assessment","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "INFRA_TECH",
@@ -697,7 +701,7 @@ Framework:
 
 HARD_NO if: TRL <7 with no independent engineer sign-off, or no availability guarantee.
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"TRL + O&M risk assessment","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"TRL + O&M risk assessment","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "INFRA_REGULATORY",
@@ -714,7 +718,7 @@ Framework:
 
 HARD_NO if: planning consent not granted or grid connection agreement not signed at financial close.
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"permitting + regulatory risk assessment","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"permitting + regulatory risk assessment","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "INFRA_ESG",
@@ -730,7 +734,7 @@ Framework:
 5. TAXONOMY ALIGNMENT — Does the project qualify as EU Taxonomy-aligned or equivalent? This affects institutional investor eligibility.
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"ESG + climate risk assessment","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"ESG + climate risk assessment","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "INFRA_MACRO",
@@ -746,7 +750,7 @@ Framework:
 5. ENERGY PRICE CORRELATION — For merchant exposure, what is the correlation between energy prices and the macro environment? Is this a hedge or a pro-cyclical bet?
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"macro + energy policy risk assessment","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"macro + energy policy risk assessment","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "INFRA_SKEPTIC",
@@ -763,7 +767,7 @@ Framework:
 
 Vote HARD_YES or SOFT_YES only when downside scenarios are quantified and bounded.
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"worst-case scenario assessment","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"worst-case scenario assessment","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "INFRA_IRR",
@@ -786,7 +790,7 @@ Framework:
 5. COMPARABLE TRANSACTIONS — What have comparable infrastructure deals traded at? Flag any valuation premium vs comps.
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"equity IRR vs benchmark + downside scenario","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"equity IRR vs benchmark + downside scenario","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
   {
     id:   "INFRA_CONTRARIAN",
@@ -800,7 +804,7 @@ For offshore wind: consider the learning curve effect (floating wind costs fell 
 For other infrastructure: consider the inflation-hedge characteristics, the scarcity value of permitted sites, and the long-duration cash flow premium in a low-yield environment.
 
 Return ONLY valid JSON — no markdown, no preamble:
-{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"bull case + hidden optionality assessment","key_flags":["flag1"],"conditions":["..."],"blockers":["..."]}`,
+{"vote":"HARD_YES|SOFT_YES|SOFT_NO|HARD_NO","confidence":0.0-1.0,"rationale":"bull case + hidden optionality assessment","key_flags":["flag1"],"conditions":["..."],"blockers":["..."],"terminal_flag":null|"fraud"|"capital_controls"|"licence_revoked"|"sanctions"|"regulatory_blocked"|"financial_crisis"|"default_risk"}`,
   },
 ];
 
@@ -1027,6 +1031,7 @@ async function callPersona(
       keyFlags:     parsed.key_flags,
       conditions:   parsed.conditions,
       blockers:     parsed.blockers,
+      terminalFlag: (parsed.terminal_flag as TerminalBlockerFlag | null) ?? null,
       timedOut:     false,
       isSilentFail,
     };
@@ -1046,6 +1051,7 @@ async function callPersona(
       keyFlags:     [isTimeout ? "Response timeout" : "Parse error"],
       conditions:   [],
       blockers:     [],
+      terminalFlag: null,
       timedOut:     isTimeout,
       isSilentFail: true,
     };
@@ -1196,6 +1202,7 @@ export async function runCouncil(
       keyFlags:     ["Unexpected error"],
       conditions:   [],
       blockers:     [],
+      terminalFlag: null,
       timedOut:     true,
       isSilentFail: true,
       weight,
@@ -1459,6 +1466,15 @@ export async function runCouncil(
 
   const blockingIssues = deduplicate(noVotes.flatMap((v) => v.blockers));
 
+  // Aggregate terminal flags from HARD_NO votes — structured enum, never prose
+  const terminalFlags: TerminalBlockerFlag[] = [
+    ...new Set(
+      votes
+        .filter((v) => v.vote === "HARD_NO" && v.terminalFlag !== null)
+        .map((v) => v.terminalFlag as TerminalBlockerFlag)
+    ),
+  ];
+
   const councilResult: CouncilResult = {
     verdict,
     yesCount:              finalYesCount,
@@ -1479,6 +1495,7 @@ export async function runCouncil(
     conditionsToProceed,
     blockingIssues,
     criticalBlockers:      blockingIssues,   // alias
+    terminalFlags,
     hardFlags,
     silentFails,
     structuralNoCount:     structuralNoSeats.length,

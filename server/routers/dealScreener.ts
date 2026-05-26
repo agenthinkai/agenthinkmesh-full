@@ -12,6 +12,7 @@ import { getDb } from "../db";
 import { dealScreenings, dealScreeningRateLimit, dealComparisons, dealScreenerPayments, signalDeals, userSignalPrefs, scenarioSimRuns } from "../../drizzle/schema";
 import { runCouncil } from "../councilEngine";
 import { runAdversarialCouncil } from "../dealScreenerAdversarial";
+import { deriveClassification, rescuePolicy, TERMINAL_FLAGS, type TerminalBlockerFlag } from "../lib/rescuePolicy";
 import { generateCfoDeepDivePdf, type CouncilSummaryInput } from "../cfoDeepDivePdf";
 import { generateICMemoPdf, type ICMemoInput } from "../icMemoPdf";
 import { generateUpgradeProtocolPdf, generateUpgradeProtocolText, type UpgradeProtocolInput } from "../upgradeProtocolPdf";
@@ -183,6 +184,7 @@ export const dealScreenerRouter = router({
           tiebreakerSwingAgent: ownerResult.tiebreakerSwingAgent ?? null,
           conditionsToProceed: JSON.stringify(ownerResult.conditionsToProceed),
           blockingIssues: JSON.stringify(ownerResult.blockingIssues),
+          terminalFlags: JSON.stringify(ownerResult.terminalFlags ?? []),
           votes: JSON.stringify(ownerResult.votes),
           councilMode: input.councilMode,
           investorMode: input.investorMode ?? false,
@@ -274,6 +276,7 @@ export const dealScreenerRouter = router({
             tiebreakerSwingAgent: prev.tiebreakerSwingAgent ?? null,
             conditionsToProceed: JSON.parse(prev.conditionsToProceed || "[]"),
             blockingIssues: JSON.parse(prev.blockingIssues || "[]"),
+            terminalFlags: JSON.parse(prev.terminalFlags || "[]") as string[],
             votes: JSON.parse(prev.votes || "[]"),
             icReport: null,
             universitySignal: null,
@@ -312,6 +315,7 @@ export const dealScreenerRouter = router({
             tiebreakerSwingAgent: null,
             conditionsToProceed: "[]",
             blockingIssues: JSON.stringify([triageResult.reason]),
+            terminalFlags: JSON.stringify([]),
             votes: "[]",
             sourceType: input.sourceType ?? "manual",
             dealHash: dedupResult.dealHash,
@@ -377,6 +381,7 @@ export const dealScreenerRouter = router({
         tiebreakerSwingAgent: result.tiebreakerSwingAgent ?? null,
         conditionsToProceed: JSON.stringify(result.conditionsToProceed),
         blockingIssues: JSON.stringify(result.blockingIssues),
+        terminalFlags: JSON.stringify(result.terminalFlags ?? []),
         votes: JSON.stringify(result.votes),
         councilMode: input.councilMode,
         investorMode: input.investorMode ?? false,
@@ -670,6 +675,7 @@ export const dealScreenerRouter = router({
         ...row,
         conditionsToProceed: JSON.parse(row.conditionsToProceed) as string[],
         blockingIssues: JSON.parse(row.blockingIssues) as string[],
+        terminalFlags: JSON.parse(row.terminalFlags || "[]") as string[],
         votes: JSON.parse(row.votes),
         confidenceScore: parseFloat(row.confidenceScore),
       };
@@ -1241,6 +1247,10 @@ export const dealScreenerRouter = router({
       councilOutcome:  z.string().min(1).max(500).trim(),
       icMemoSummary:   z.string().max(4000).trim().optional(),
       councilMode:     z.string().optional(),
+      // Structured terminal flags from council HARD_NO votes — shared enum, never prose.
+      // Populated by the frontend from result.terminalFlags (set by councilEngine.ts).
+      // Used for code-side classification derivation — never trust LLM classification alone.
+      terminalFlags:   z.array(z.string()).optional().default([]),
     }))
     .mutation(async ({ input }) => {
       const modeHint = input.councilMode === "infrastructure"
@@ -1388,21 +1398,112 @@ ${input.icMemoSummary ?? "Not provided."}`;
         }
       }
 
+      // ── CODE-SIDE CLASSIFICATION (Guard 0 — runs before all other guards) ─────
+      // codeClassification is derived from structured terminalFlags (council HARD_NO enum),
+      // NOT from the LLM's self-reported classification.
+      // TERMINAL_FLAGS is derived from rescuePolicy — never hand-maintained.
+      // FAIL-SAFE: any unknown flag (not in enum) is treated as TERMINAL → C.
+      const codeClassification = deriveClassification(input.terminalFlags);
+
+      // ── GUARD 1: C-DEAL CLEAN CONSTRUCTOR ────────────────────────────────────
+      // If codeClassification === "C", build a clean rejected result from scratch.
+      // Do NOT pass LLM output through — any positive field the LLM returned is discarded.
+      // This prevents fabricated-positive leakage (e.g. score=82, decision=APPROVE on a C deal).
+      // The restructuring memo path is still available for C deals (separate procedure).
+      if (codeClassification === "C") {
+        const terminalPolicyEntries = (input.terminalFlags as TerminalBlockerFlag[])
+          .filter((f) => TERMINAL_FLAGS.has(f))
+          .map((f) => rescuePolicy[f]);
+        const residualRisks = terminalPolicyEntries.length > 0
+          ? terminalPolicyEntries.map((e) => e.residualRisk)
+          : ["Terminal institutional blocker — deal cannot be rescued at the deal level."];
+        return {
+          // codeClassification overrides LLM classification — always C for terminal deals
+          classification:           "C" as const,
+          classificationRationale:  `This deal contains one or more terminal institutional blockers (${input.terminalFlags.join(", ")}). No deal-level restructuring can address these. A from-scratch resubmission through Stage 1 is required after the underlying condition is resolved.`,
+          rootCauses:               [],
+          // revisedBrief: null — C deals do not receive a revised brief (no rescue path)
+          revisedBrief:             "",
+          changeSummaryTable:       [],
+          // predictedOutcome: all positive/score fields are null/zero — no fabricated signal
+          predictedOutcome: {
+            voteDistribution:          "0 YES / 10 NO",
+            consensusPct:              0,      // ← no positive score survives
+            decision:                  "REJECTED" as const,  // ← hard REJECTED, never APPROVE/CONDITIONAL
+            mostLikelyDissentingAgent: "All agents",
+            mostLikelyCondition:       "N/A — terminal blocker",
+          },
+          approvalSensitivityLadder: [],  // ← no upgrade path for C deals
+          residualRisks,
+          // codeClassification field exposed so frontend can gate PDF/memo surfaces
+          codeClassification:        "C" as const,
+        };
+      }
+
+      // ── GUARD 2: DECISION NORMALIZATION (runs before Guards 3–5) ─────────────
+      // Normalize the LLM decision string BEFORE any guard runs.
+      // Catches casing variants ("APPROVE" → "APPROVED", "approve" → "APPROVED").
+      // Guard 3 MUST precede Guard 4 (ordering is load-bearing — see Guard 4 comment).
+      const rawDecision = ((parsed.predictedOutcome as Record<string, unknown>)?.decision as string ?? "REJECTED").toUpperCase().trim();
+      const DECISION_SYNONYMS: Record<string, string> = {
+        "APPROVE": "APPROVED",
+        "APPROVED_WITH_CONDITION": "APPROVED_WITH_CONDITIONS",
+        "CONDITIONAL_APPROVAL": "APPROVED_WITH_CONDITIONS",
+        "CONDITIONAL": "APPROVED_WITH_CONDITIONS",
+        "HOLD": "HOLD",
+        "REJECT": "REJECTED",
+        "VETO": "VETOED",
+      };
+      const normalizedDecision = DECISION_SYNONYMS[rawDecision] ?? rawDecision;
+
+      // ── GUARD 3: CEILING CAP (APPROVED → APPROVED_WITH_CONDITIONS) ───────────
+      // A rescued deal caps at APPROVED_WITH_CONDITIONS. It can NEVER mint an APPROVE.
+      // APPROVED is intentionally absent from VALID_RESCUE_DECISIONS (see Guard 4).
+      // This guard runs BEFORE Guard 4 so APPROVED is upgraded before the default net.
+      const VALID_RESCUE_DECISIONS = new Set([
+        "APPROVED_WITH_CONDITIONS",
+        "HOLD",
+        "REJECTED",
+        "VETOED",
+        "INSUFFICIENT_DATA",
+      ]);
+      const cappedDecision = normalizedDecision === "APPROVED"
+        ? "APPROVED_WITH_CONDITIONS"  // ← ceiling cap: APPROVED → APPROVED_WITH_CONDITIONS
+        : normalizedDecision;
+
+      // ── GUARD 4: DEFAULT-REJECT NET ───────────────────────────────────────────
+      // Any decision not in VALID_RESCUE_DECISIONS falls through to REJECTED.
+      // APPROVED is intentionally absent — Guard 3 must have already handled it.
+      // NOTE: This guard is also the BACKSTOP for the B-default in deriveClassification.
+      // The A/B distinction is deferred (all non-C deals return B). Guard 4 ensures
+      // B cannot leak an APPROVE even if the LLM returns one.
+      // DO NOT remove Guard 4 believing B is independently safe — it is not.
+      const finalDecision = VALID_RESCUE_DECISIONS.has(cappedDecision)
+        ? cappedDecision
+        : "REJECTED";  // ← default: REJECTED, never allow unknown values through
+
+      // ── GUARD 5: CONSENSUS PCT CAP ────────────────────────────────────────────
+      // consensusPct must not exceed 99 for a rescued deal (never 100 — that implies
+      // unanimous approval which is not achievable for a previously-rejected deal).
+      const rawConsensusPct = typeof (parsed.predictedOutcome as Record<string, unknown>)?.consensusPct === "number"
+        ? (parsed.predictedOutcome as Record<string, unknown>).consensusPct as number
+        : 0;
+      const cappedConsensusPct = Math.min(Math.max(rawConsensusPct, 0), 99);
+
       return {
-        classification:           (parsed.classification as string)          ?? "B",
+        classification:           codeClassification,  // ← code-derived, never LLM-judged
         classificationRationale:  (parsed.classificationRationale as string) ?? "Unable to parse engine output.",
         rootCauses:               (parsed.rootCauses as unknown[])            ?? [],
         revisedBrief:             (parsed.revisedBrief as string)             ?? "",
         changeSummaryTable:       (parsed.changeSummaryTable as unknown[])    ?? [],
-        predictedOutcome:         (parsed.predictedOutcome as Record<string, unknown>) ?? {
-          voteDistribution: "Unknown",
-          consensusPct: 0,
-          decision: "UNKNOWN",
-          mostLikelyDissentingAgent: "Unknown",
-          mostLikelyCondition: "Unknown",
+        predictedOutcome: {
+          ...((parsed.predictedOutcome as Record<string, unknown>) ?? {}),
+          decision:      finalDecision,      // ← Guard 3+4 applied
+          consensusPct:  cappedConsensusPct, // ← Guard 5 applied
         },
         approvalSensitivityLadder: (parsed.approvalSensitivityLadder as unknown[]) ?? [],
         residualRisks:             (parsed.residualRisks as string[])         ?? [],
+        codeClassification,  // ← exposed so frontend can gate PDF/memo surfaces
       };
     }),
 
