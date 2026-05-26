@@ -1290,3 +1290,88 @@ describe("Workflow Tracker visual connectors", () => {
     expect(src).toContain("✓");
   });
 });
+
+// ── Workflow Tracker State Wiring Tests ──────────────────────────────────────
+describe("Workflow Tracker State Wiring", () => {
+  const readSrc = () =>
+    require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/pages/DealScreener.tsx"),
+      "utf8"
+    );
+
+  // Req 1: FixTheDealPanel accepts onFixesApplied and onRerunCompleted props
+  it("FixTheDealPanel props interface includes onFixesApplied callback", () => {
+    const src = readSrc();
+    expect(src).toContain("onFixesApplied?: () => void;");
+  });
+
+  it("FixTheDealPanel props interface includes onRerunCompleted callback", () => {
+    const src = readSrc();
+    expect(src).toContain("onRerunCompleted?: () => void;");
+  });
+
+  // Req 2: onFixesApplied is called in fixMutation onSuccess
+  it("onFixesApplied is called in fixMutation onSuccess callback", () => {
+    const src = readSrc();
+    expect(src).toContain("onSuccess: () => { onFixesApplied?.(); }");
+  });
+
+  // Req 3: onRerunCompleted is called in handleContinueToCouncil before onRerun
+  it("onRerunCompleted is called in handleContinueToCouncil", () => {
+    const src = readSrc();
+    expect(src).toContain("onRerunCompleted?.();");
+    // Ensure it appears before onRerun call in handleContinueToCouncil
+    const rerunCompletedIdx = src.indexOf("onRerunCompleted?.();");
+    const onRerunCallIdx = src.indexOf("onRerun(\n      result.dealName");
+    expect(rerunCompletedIdx).toBeLessThan(onRerunCallIdx);
+  });
+
+  // Req 4: BoardroomICReport passes onFixesApplied and onRerunCompleted to FixTheDealPanel
+  it("BoardroomICReport passes onFixesApplied to FixTheDealPanel", () => {
+    const src = readSrc();
+    expect(src).toContain("onFixesApplied={onFixesApplied}");
+  });
+
+  it("BoardroomICReport passes onRerunCompleted to FixTheDealPanel", () => {
+    const src = readSrc();
+    expect(src).toContain("onRerunCompleted={onRerunCompleted}");
+  });
+
+  // Req 5: ICReport wires setFixesApplied and setRerunCompleted into BoardroomICReport
+  it("ICReport passes setFixesApplied as onFixesApplied to BoardroomICReport", () => {
+    const src = readSrc();
+    expect(src).toContain("onFixesApplied={() => setFixesApplied(true)}");
+  });
+
+  it("ICReport passes setRerunCompleted as onRerunCompleted to BoardroomICReport", () => {
+    const src = readSrc();
+    expect(src).toContain("onRerunCompleted={() => setRerunCompleted(true)}");
+  });
+
+  // Req 6: Simulation prompt still appears after re-run (showSimPrompt is set in handleRerun)
+  it("showSimPrompt is set to true in handleRerun (simulation prompt still appears)", () => {
+    const src = readSrc();
+    expect(src).toContain("setShowSimPrompt(true);");
+  });
+
+  // Req 7: Comparison card still renders after simulation (comparisonAvailable gating preserved)
+  it("comparisonAvailable gates the investability summary card", () => {
+    const src = readSrc();
+    expect(src).toContain("{comparisonAvailable && (");
+    expect(src).toContain('data-testid="investability-summary"');
+  });
+
+  // Req 8: Infrastructure mode is preserved through the rerun flow (councilMode passed through)
+  it("Infrastructure mode is preserved — councilMode passed to handleContinueToCouncil", () => {
+    const src = readSrc();
+    // councilMode is used in handleContinueToCouncil as the third arg to onRerun
+    expect(src).toContain("(councilMode as CouncilModeType) ?? result.councilMode ?? \"global_vc\"");
+  });
+
+  // Req 9: No regressions — onUpgradedSimCompleted still wired
+  it("onUpgradedSimCompleted is still wired through the prop chain", () => {
+    const src = readSrc();
+    expect(src).toContain("onUpgradedSimCompleted={onUpgradedSimCompleted}");
+    expect(src).toContain("onUpgradedSimCompleted={handleSimCompleted}");
+  });
+});

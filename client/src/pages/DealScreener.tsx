@@ -973,11 +973,13 @@ interface FixTheDealResult {
   approvalSensitivityLadder: Array<{ structuralChange: string; estimatedVoteShift: string; runningVoteEstimate: string }>;
   residualRisks: string[];
 }
-function FixTheDealPanel({ result, councilMode, onRerun, onUpgradedSimCompleted }: {
+function FixTheDealPanel({ result, councilMode, onRerun, onUpgradedSimCompleted, onFixesApplied, onRerunCompleted }: {
   result: CouncilResult;
   councilMode?: string;
   onRerun?: (dealName: string, dealText: string, mode: CouncilModeType) => void;
   onUpgradedSimCompleted?: (data: { runId: string; mode: string; targetCount: number; completedAt: string; aggregation: any }) => void;
+  onFixesApplied?: () => void;
+  onRerunCompleted?: () => void;
 }) {
   const isRejected = ["REJECTED", "VETOED", "HOLD"].includes(result.verdict);
   const [open, setOpen] = useState(false);
@@ -1061,6 +1063,8 @@ function FixTheDealPanel({ result, councilMode, onRerun, onUpgradedSimCompleted 
       councilOutcome: outcome,
       icMemoSummary: icSummary,
       councilMode: councilMode,
+    }, {
+      onSuccess: () => { onFixesApplied?.(); },
     });
     setOpen(true);
     setMemoText(null);
@@ -1159,6 +1163,7 @@ function FixTheDealPanel({ result, councilMode, onRerun, onUpgradedSimCompleted 
 
   const handleContinueToCouncil = () => {
     if (!d?.revisedBrief || !onRerun) return;
+    onRerunCompleted?.();
     onRerun(
       result.dealName + " [FIXED]",
       d.revisedBrief,
@@ -2141,7 +2146,7 @@ function InfraReEngagePanel({ result }: { result: CouncilResult }) {
   );
 }
 
-function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stressTested, councilMode, onRerun, onUpgradedSimCompleted }: { ic: ICReportData; result: CouncilResult; onCopy: (text: string) => void; onNewDeal: () => void; patternContext?: "invested_match" | "passed_match"; stressTested?: boolean; councilMode?: string; onRerun?: (dealName: string, dealText: string, mode: CouncilModeType) => void; onUpgradedSimCompleted?: (data: { runId: string; mode: string; targetCount: number; completedAt: string; aggregation: any }) => void }) {
+function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stressTested, councilMode, onRerun, onUpgradedSimCompleted, onFixesApplied, onRerunCompleted }: { ic: ICReportData; result: CouncilResult; onCopy: (text: string) => void; onNewDeal: () => void; patternContext?: "invested_match" | "passed_match"; stressTested?: boolean; councilMode?: string; onRerun?: (dealName: string, dealText: string, mode: CouncilModeType) => void; onUpgradedSimCompleted?: (data: { runId: string; mode: string; targetCount: number; completedAt: string; aggregation: any }) => void; onFixesApplied?: () => void; onRerunCompleted?: () => void }) {
   // Color derived from council verdict (not IC executive verdict) for consistency
   const verdictColor = result.verdict === "APPROVED" ? GREEN
     : result.verdict === "APPROVED_WITH_CONDITIONS" ? ACCENT
@@ -2536,7 +2541,7 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stre
       )}
 
       {/* Fix the Deal button + panel */}
-      <FixTheDealPanel result={result} councilMode={councilMode} onRerun={onRerun} onUpgradedSimCompleted={onUpgradedSimCompleted} />
+      <FixTheDealPanel result={result} councilMode={councilMode} onRerun={onRerun} onUpgradedSimCompleted={onUpgradedSimCompleted} onFixesApplied={onFixesApplied} onRerunCompleted={onRerunCompleted} />
 
       {/* Copy IC Report button */}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }} className="no-print">
@@ -3228,7 +3233,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
 
       {/* Boardroom IC Report tab */}
       {activeTab === "boardroom" && result.icReport && (
-        <BoardroomICReport ic={result.icReport} result={result} onCopy={handleCopyICReport} onNewDeal={onNewDeal} patternContext={patternContext} stressTested={simBadgeData?.hasCompleted} councilMode={result.councilMode ?? councilModeProp} onRerun={onRerun} onUpgradedSimCompleted={handleSimCompleted} />
+        <BoardroomICReport ic={result.icReport} result={result} onCopy={handleCopyICReport} onNewDeal={onNewDeal} patternContext={patternContext} stressTested={simBadgeData?.hasCompleted} councilMode={result.councilMode ?? councilModeProp} onRerun={onRerun} onUpgradedSimCompleted={handleSimCompleted} onFixesApplied={() => setFixesApplied(true)} onRerunCompleted={() => setRerunCompleted(true)} />
       )}
 
       {/* Raw Council tab */}
