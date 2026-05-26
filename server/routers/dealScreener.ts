@@ -1582,13 +1582,26 @@ ${input.icMemoSummary ?? "Not provided."}`;
     .input(z.object({
       dealName:                z.string().min(1).max(200).trim(),
       classificationRationale: z.string().min(1).max(2000).trim(),
-      structuralBlockers:      z.array(z.string()).min(1).max(10),
+      // Structured terminal blocker flags from the council engine (TerminalBlockerFlag enum values).
+      // These are the SOLE source for naming blockers in the memo — prose inference is forbidden.
+      // The frontend must pass result.terminalFlags directly; never derive from rootCauses or prose.
+      terminalFlags:           z.array(z.string()).min(1).max(10),
       councilMode:             z.string().optional(),
     }))
     .mutation(async ({ input }) => {
       const modeLabel = input.councilMode === "infrastructure"
         ? "Infrastructure / Project Finance"
         : "Venture Capital";
+
+      // Derive the canonical blocker labels from the structured terminalFlags array.
+      // This is the ONLY source — no prose parsing, no rootCauses inference, no fallback to text.
+      // If a flag is not in rescuePolicy, it is still named verbatim (fail-safe: unknown = terminal).
+      const namedBlockers = input.terminalFlags.map((flag) => {
+        const policy = rescuePolicy[flag as TerminalBlockerFlag];
+        const label = flag.replace(/_/g, " ").toUpperCase();
+        const residual = policy?.residualRisk ?? "No deal-level mitigation available. Terminal institutional blocker.";
+        return `${label}: ${residual}`;
+      });
 
       const systemPrompt = `You are a senior Investment Committee partner writing a formal memo to a deal sponsor.
 Tone: direct, professional, IC-partner-to-sponsor. Not apologetic. Not encouraging.
@@ -1597,9 +1610,11 @@ Write a memo of exactly 250-300 words. No more.
 
 Structure:
 1. Opening sentence: state clearly that the submission cannot be approved in its current form.
-2. Paragraph 1 (60-80 words): explain the primary structural reason the deal fails.
-3. Paragraph 2 (80-100 words): list the specific structural changes required before resubmission — not cosmetic fixes.
+2. Paragraph 1 (60-80 words): explain the primary structural reason the deal fails, referencing the terminal blockers listed below BY NAME — do not invent or substitute other blockers.
+3. Paragraph 2 (80-100 words): explain why these specific blockers cannot be addressed at deal level and what condition would need to change before resubmission is viable.
 4. Closing sentence: state the condition under which the sponsor may resubmit.
+
+CRITICAL: You MUST name ONLY the blockers provided in the Terminal Blockers list. Do not infer, add, or substitute blockers from any other source.
 
 Do NOT:
 - Use bullet points
@@ -1607,14 +1622,15 @@ Do NOT:
 - Suggest the deal is "close" to approval
 - Use phrases like "we appreciate your submission"
 - Exceed 300 words
+- Name any blocker not in the Terminal Blockers list
 
 Return only the memo text. No subject line, no salutation, no signature block.`;
 
       const userMessage = `Deal Name: ${input.dealName}
 Council Mode: ${modeLabel}
 Classification Rationale: ${input.classificationRationale}
-Structural Blockers:
-${input.structuralBlockers.map((b, i) => `${i + 1}. ${b}`).join('\n')}`;
+Terminal Blockers (name ONLY these — no others):
+${namedBlockers.map((b, i) => `${i + 1}. ${b}`).join('\n')}`;
 
       const raw = await invokeLLM({
         messages: [
@@ -1626,7 +1642,8 @@ ${input.structuralBlockers.map((b, i) => `${i + 1}. ${b}`).join('\n')}`;
       const memo = raw.choices?.[0]?.message?.content ?? "Unable to generate memo.";
       const memoText = typeof memo === "string" ? memo.trim() : JSON.stringify(memo);
 
-      return { memo: memoText };
+      // Echo back the structured terminalFlags so callers can verify which blockers were named.
+      return { memo: memoText, terminalFlags: input.terminalFlags };
     }),
 
 });

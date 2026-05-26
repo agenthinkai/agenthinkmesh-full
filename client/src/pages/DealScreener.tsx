@@ -1123,11 +1123,14 @@ const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle, {
   const handleRequestMemo = async () => {
     if (!d || d.codeClassification !== "C") return;  // Guard: memo only for C deals (code-derived, not LLM)
     setMemoText(null);
-    const blockers = d.rootCauses.slice(0, 3).map((rc: any) => `[${rc.category}] ${rc.description}`);
+    // Pass the structured terminalFlags array directly — NEVER derive from rootCauses prose or any text.
+    // terminalFlags is the sole source of truth for which blockers the memo names.
+    const flags = (d.terminalFlags ?? []) as string[];
+    if (flags.length === 0) return; // Structural guard: cannot generate memo without structured flags
     const res = await memoMutation.mutateAsync({
       dealName: result.dealName ?? "Deal",
       classificationRationale: d.classificationRationale,
-      structuralBlockers: blockers.length > 0 ? blockers : ["Fundamental structural deficiency identified by Council of 10"],
+      terminalFlags: flags,
       councilMode: councilMode,
     });
     setMemoText(res.memo);

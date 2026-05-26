@@ -638,3 +638,100 @@ describe("fixTheDeal — header badge: terminal flags rendered from structured a
     expect(returnedFlags).toEqual([]);
   });
 });
+
+// ── RESTRUCTURING MEMO TESTS ──────────────────────────────────────────────────
+
+describe("requestRestructuringMemo — structured terminalFlags as sole blocker source", () => {
+  beforeEach(() => {
+    // Default: memo LLM returns a memo that names the exact flags passed in
+    vi.mocked(invokeLLM).mockResolvedValue({
+      choices: [{
+        message: {
+          content: "This submission cannot be approved. The deal is blocked by FRAUD and CAPITAL CONTROLS. These are terminal institutional blockers that cannot be addressed at deal level. Resubmit only after the underlying conditions are resolved.",
+        },
+      }],
+    } as never);
+  });
+
+  it("MEMO-1: multi-flag C deal — terminalFlags echoed back exactly, both flags present in namedBlockers sent to LLM", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+
+    // Capture what invokeLLM is called with to verify the prompt contains structured flags
+    let capturedUserMessage = "";
+    vi.mocked(invokeLLM).mockImplementation(async ({ messages }) => {
+      const userMsg = messages.find((m: { role: string; content: string }) => m.role === "user");
+      capturedUserMessage = typeof userMsg?.content === "string" ? userMsg.content : "";
+      return {
+        choices: [{
+          message: {
+            content: "Memo text referencing FRAUD and CAPITAL CONTROLS as terminal blockers.",
+          },
+        }],
+      } as never;
+    });
+
+    const result = await caller.dealScreener.requestRestructuringMemo({
+      dealName: "FraudCo Ltd",
+      classificationRationale: "Terminal blockers: fraud allegation and capital controls prevent exit repatriation.",
+      terminalFlags: ["fraud", "capital_controls"],
+      councilMode: "vc",
+    });
+
+    // The echoed terminalFlags must EXACTLY match the input — both flags, in order
+    expect(result.terminalFlags).toEqual(["fraud", "capital_controls"]);
+
+    // The user message sent to the LLM must contain BOTH structured flag labels (not prose)
+    expect(capturedUserMessage).toContain("FRAUD");
+    expect(capturedUserMessage).toContain("CAPITAL CONTROLS");
+
+    // The user message must NOT contain the word "structuralBlockers" (old prose path)
+    expect(capturedUserMessage).not.toContain("structuralBlockers");
+
+    // The memo is returned
+    expect(result.memo).toBeTruthy();
+    expect(typeof result.memo).toBe("string");
+  });
+
+  it("MEMO-2: divergence guard — council prose mentions 'sanctions' but terminalFlags=[fraud, capital_controls]; memo prompt contains ONLY the structured flags", async () => {
+    const caller = appRouter.createCaller(makeCtx());
+
+    // Capture the prompt to verify prose-only blocker is NOT included
+    let capturedUserMessage = "";
+    vi.mocked(invokeLLM).mockImplementation(async ({ messages }) => {
+      const userMsg = messages.find((m: { role: string; content: string }) => m.role === "user");
+      capturedUserMessage = typeof userMsg?.content === "string" ? userMsg.content : "";
+      return {
+        choices: [{
+          message: {
+            content: "Memo text. The deal is blocked by FRAUD and CAPITAL CONTROLS.",
+          },
+        }],
+      } as never;
+    });
+
+    const result = await caller.dealScreener.requestRestructuringMemo({
+      dealName: "DivergenceCo",
+      // councilOutcome prose mentions "sanctions" — but terminalFlags does NOT include it
+      classificationRationale: "Council outcome: fraud allegation; capital controls; sanctions exposure (mentioned in prose only).",
+      // Structured flags: only fraud and capital_controls — sanctions is NOT here
+      terminalFlags: ["fraud", "capital_controls"],
+      councilMode: "vc",
+    });
+
+    // Echoed flags must be exactly the structured input — no sanctions
+    expect(result.terminalFlags).toEqual(["fraud", "capital_controls"]);
+
+    // The LLM prompt must contain FRAUD and CAPITAL CONTROLS
+    expect(capturedUserMessage).toContain("FRAUD");
+    expect(capturedUserMessage).toContain("CAPITAL CONTROLS");
+
+    // CRITICAL: "SANCTIONS" must NOT appear in the Terminal Blockers section of the prompt
+    // (it may appear in classificationRationale text, but NOT as a named blocker)
+    // The Terminal Blockers section starts with "Terminal Blockers (name ONLY these"
+    const terminalBlockersSection = capturedUserMessage.split("Terminal Blockers (name ONLY these")[1] ?? "";
+    expect(terminalBlockersSection.toUpperCase()).not.toContain("SANCTIONS");
+
+    // Memo is returned
+    expect(result.memo).toBeTruthy();
+  });
+});
