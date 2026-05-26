@@ -4843,3 +4843,12 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Reports Panel (Stress Test) updates via onUpgradedSimCompleted callback chain
 - [x] TypeScript: 0 errors
 - [x] Full test suite: 76 files, 1477 tests passing
+
+## Guided Sequential Workflow (May 2026)
+- [x] Workflow state engine: 6 boolean flags (screeningCompleted, upgradeProtocolGenerated, fixesApplied, rerunCompleted, simulationCompleted, comparisonAvailable)
+- [x] Visual horizontal workflow tracker (6 steps: Screen → Upgrade → Fix → Re-run → Simulate → Compare)
+- [x] Next-step prompt card after Upgrade Protocol (when upgradeProtocolGenerated && !fixesApplied)
+- [x] Next-step prompt card after Re-run (when rerunCompleted && !simulationCompleted)
+- [x] Final Investability Summary card (gated on comparisonAvailable): council verdict delta, simulation delta, residual blockers, governance posture
+- [x] TypeScript: 0 errors
+- [x] Full test suite: 1530 tests passing

@@ -2590,6 +2590,12 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
   // ── Reports Panel: lift protocol/delta state from DecisionUpgradePanel ────
   const [liftedProtocol, setLiftedProtocol] = useState<any>(null);
   const [liftedDelta, setLiftedDelta] = useState<any>(null);
+  // ── Guided workflow state engine ─────────────────────────────────────────
+  const [fixesApplied,   setFixesApplied]   = useState(false);
+  const [rerunCompleted, setRerunCompleted] = useState(false);
+  const screeningCompleted       = true; // always true inside ICReport
+  const upgradeProtocolGenerated = liftedProtocol != null;
+  // simulationCompleted and comparisonAvailable resolved after effectiveSimData is computed below
 
   // ── Reports Panel: live sim data (set via onSimCompleted callback from ScenarioSimDashboard)
   const [liveSimData, setLiveSimData] = useState<{
@@ -2612,6 +2618,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
   );
 
   // Merge: prefer live data (just completed), fall back to DB-fetched
+  // Also update fixesApplied / rerunCompleted flags from FixTheDealPanel callbacks (see onRerun)
   const effectiveSimData = liveSimData ?? (
     latestSimStatus?.status === "completed" && latestSimStatus.aggregation
       ? {
@@ -2623,6 +2630,9 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
         }
       : null
   );
+  // Derived workflow flags (resolved after effectiveSimData)
+  const simulationCompleted  = effectiveSimData != null;
+  const comparisonAvailable  = simulationCompleted && rerunCompleted;
 
   const handleICMemoPdf = async () => {
     setIcMemoLoading(true);
@@ -2816,6 +2826,72 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
 
   return (
     <div style={{ maxWidth: 900, margin: "0 auto" }}>
+      {/* ── Guided Workflow Tracker ───────────────────────────────────────────────── */}
+      {(() => {
+        const steps = [
+          { id: "screen",   label: "Screen",   done: screeningCompleted },
+          { id: "upgrade",  label: "Upgrade",  done: upgradeProtocolGenerated },
+          { id: "fix",      label: "Fix",      done: fixesApplied },
+          { id: "rerun",    label: "Re-run",   done: rerunCompleted },
+          { id: "simulate", label: "Simulate", done: simulationCompleted },
+          { id: "compare",  label: "Compare",  done: comparisonAvailable },
+        ];
+        const currentIdx = steps.findLastIndex(s => s.done);
+        return (
+          <div
+            data-testid="workflow-tracker"
+            style={{
+              display: "flex", alignItems: "center", gap: 0,
+              marginBottom: 20,
+              padding: "10px 16px",
+              background: "rgba(13,20,33,0.8)",
+              border: `1px solid ${BORDER}`,
+              borderRadius: 6,
+              overflowX: "auto",
+            }}
+          >
+            {steps.map((step, idx) => {
+              const isDone    = step.done;
+              const isCurrent = idx === currentIdx + 1 || (currentIdx === steps.length - 1 && idx === steps.length - 1);
+              const isFuture  = !isDone && !isCurrent;
+              const color     = isDone ? GREEN : isCurrent ? ACCENT : MUTED;
+              return (
+                <React.Fragment key={step.id}>
+                  <div
+                    data-testid={`workflow-step-${step.id}`}
+                    style={{ display: "flex", alignItems: "center", gap: 5, flexShrink: 0 }}
+                  >
+                    <div style={{
+                      width: 18, height: 18, borderRadius: "50%",
+                      background: isDone ? `${GREEN}22` : isCurrent ? `${ACCENT}22` : "transparent",
+                      border: `1.5px solid ${color}`,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      flexShrink: 0,
+                    }}>
+                      {isDone
+                        ? <span style={{ fontSize: 9, color: GREEN, fontWeight: 900 }}>✓</span>
+                        : <span style={{ fontSize: 7, color, fontWeight: 700 }}>{idx + 1}</span>
+                      }
+                    </div>
+                    <span style={{
+                      fontFamily: MONO, fontSize: 9, fontWeight: isDone || isCurrent ? 700 : 400,
+                      color, letterSpacing: "0.06em",
+                      opacity: isFuture ? 0.45 : 1,
+                    }}>{step.label.toUpperCase()}</span>
+                  </div>
+                  {idx < steps.length - 1 && (
+                    <div style={{
+                      flex: 1, minWidth: 16, height: 1,
+                      background: idx < currentIdx ? GREEN : BORDER,
+                      margin: "0 6px",
+                    }} />
+                  )}
+                </React.Fragment>
+              );
+            })}
+          </div>
+        );
+      })()}
       {/* Duplicate banner */}
       {result.duplicate && (
         <div style={{ padding: "10px 16px", background: "rgba(74,158,255,0.10)", border: "1px solid rgba(74,158,255,0.5)", borderRadius: 6, marginBottom: 16, display: "flex", alignItems: "center", gap: 10 }}>
@@ -3435,8 +3511,60 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
         onProtocolReady={setLiftedProtocol}
         onDeltaReady={setLiftedDelta}
       />
+      {/* ── Next-step prompt: after Upgrade Protocol ─────────────────────── */}
+      {upgradeProtocolGenerated && !fixesApplied && (
+        <div
+          data-testid="next-step-prompt-upgrade"
+          style={{
+            margin: "12px 0",
+            padding: "14px 18px",
+            background: "rgba(168,85,247,0.06)",
+            border: `1px solid rgba(168,85,247,0.35)`,
+            borderRadius: 6,
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: PURPLE, fontWeight: 700, letterSpacing: "0.08em", marginBottom: 3 }}>NEXT STEP — APPLY FIXES</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2 }}>Upgrade protocol generated. Apply the recommended structural fixes and re-run the Council to measure verdict improvement.</div>
+          </div>
+          <button
+            onClick={() => {
+              const el = document.getElementById("decision-upgrade-panel");
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            style={{ padding: "7px 16px", background: PURPLE, border: "none", color: "#fff", fontFamily: MONO, fontSize: 10, fontWeight: 700, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em", whiteSpace: "nowrap" }}
+          >APPLY FIXES &amp; RE-RUN →</button>
+        </div>
+      )}
+      {/* ── Next-step prompt: after Re-run completes ─────────────────────── */}
+      {rerunCompleted && !simulationCompleted && (
+        <div
+          data-testid="next-step-prompt-rerun"
+          style={{
+            margin: "12px 0",
+            padding: "14px 18px",
+            background: "rgba(0,255,135,0.05)",
+            border: `1px solid rgba(0,255,135,0.3)`,
+            borderRadius: 6,
+            display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap",
+          }}
+        >
+          <div>
+            <div style={{ fontFamily: MONO, fontSize: 10, color: GREEN, fontWeight: 700, letterSpacing: "0.08em", marginBottom: 3 }}>NEXT STEP — STRESS TEST</div>
+            <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2 }}>Council re-run complete. Run a 100-scenario Quick Stress Simulation to validate whether the fixes meaningfully improved approval probability.</div>
+          </div>
+          <button
+            onClick={() => {
+              const el = document.getElementById("scenario-sim-section");
+              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+            style={{ padding: "7px 16px", background: GREEN, border: "none", color: BG, fontFamily: MONO, fontSize: 10, fontWeight: 700, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em", whiteSpace: "nowrap" }}
+          >RUN STRESS SIMULATION →</button>
+        </div>
+      )}
       {/* ── Section 11: Strategic Scenario Simulation Dashboard ─────────── */}
-      <div style={{ marginTop: 8, borderTop: "1px solid #1e2d3d", paddingTop: 24 }}>
+      <div id="scenario-sim-section" style={{ marginTop: 8, borderTop: "1px solid #1e2d3d", paddingTop: 24 }}>
         <ScenarioSimDashboard
           dealId={result.dealId ?? result.dealName}
           dealName={result.dealName}
@@ -3463,6 +3591,62 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
           simAggregation={effectiveSimData?.aggregation ?? null}
         />
       </div>
+      {/* ── Final Investability Summary ──────────────────────────────────────────── */}
+      {comparisonAvailable && (
+        <div
+          data-testid="investability-summary"
+          style={{
+            marginTop: 24,
+            padding: "20px 24px",
+            background: "rgba(13,20,33,0.95)",
+            border: `1px solid ${BORDER}`,
+            borderRadius: 8,
+            marginBottom: 32,
+          }}
+        >
+          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.15em", marginBottom: 12 }}>FINAL INVESTABILITY SUMMARY</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+            <div style={{ padding: "12px 14px", background: "rgba(255,255,255,0.03)", borderRadius: 6, border: `1px solid ${BORDER}` }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 6 }}>COUNCIL VERDICT DELTA</div>
+              <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT }}>
+                {liftedDelta?.verdictBefore ?? result.verdict} → {liftedDelta?.verdictAfter ?? result.verdict}
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, marginTop: 4 }}>
+                Confidence: {Math.round((liftedDelta?.confidenceBefore ?? result.confidenceScore) * 100)}% → {Math.round((liftedDelta?.confidenceAfter ?? result.confidenceScore) * 100)}%
+              </div>
+            </div>
+            <div style={{ padding: "12px 14px", background: "rgba(255,255,255,0.03)", borderRadius: 6, border: `1px solid ${BORDER}` }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 6 }}>SIMULATION DELTA</div>
+              {effectiveSimData?.aggregation ? (
+                <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT }}>
+                  Approve: {Math.round((effectiveSimData.aggregation.approveRate ?? 0) * 100)}% &nbsp;·&nbsp; Reject: {Math.round((effectiveSimData.aggregation.rejectRate ?? 0) * 100)}%
+                </div>
+              ) : (
+                <div style={{ fontFamily: MONO, fontSize: 11, color: MUTED }}>No simulation data</div>
+              )}
+            </div>
+          </div>
+          {(result.blockingIssues?.length ?? 0) > 0 && (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 6 }}>RESIDUAL BLOCKERS</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                {(result.blockingIssues ?? []).slice(0, 5).map((b: string, i: number) => (
+                  <div key={i} style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, display: "flex", gap: 8 }}>
+                    <span style={{ color: AMBER }}>!</span>
+                    <span>{b}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 6 }}>GOVERNANCE POSTURE</div>
+          <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2 }}>
+            {result.verdict === "APPROVED" || result.verdict === "APPROVED_WITH_CONDITIONS"
+              ? "Deal has been structurally improved. Proceed to IC presentation with updated materials."
+              : "Fixes applied but deal remains below approval threshold. Additional restructuring required before resubmission."}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

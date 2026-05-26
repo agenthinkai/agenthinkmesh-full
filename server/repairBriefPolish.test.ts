@@ -1138,3 +1138,155 @@ describe("Simulation Delta Row", () => {
     expect(src).toContain("SIMULATION DELTA");
   });
 });
+
+// ── Guided Sequential Workflow Tests ─────────────────────────────────────────
+describe("Guided Sequential Workflow — state engine and tracker", () => {
+  const readSrc = () =>
+    require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/pages/DealScreener.tsx"),
+      "utf8"
+    );
+
+  // Req 1: Workflow tracker renders with data-testid
+  it("workflow tracker has data-testid='workflow-tracker'", () => {
+    expect(readSrc()).toContain('data-testid="workflow-tracker"');
+  });
+
+  // Req 2: All 6 workflow steps are present
+  it("workflow tracker contains all 6 steps", () => {
+    const src = readSrc();
+    // Steps are rendered via template literal: data-testid={`workflow-step-${step.id}`}
+    // Verify the template literal pattern and all 6 step ids are defined
+    expect(src).toContain('data-testid={`workflow-step-${step.id}`}');
+    expect(src).toContain('{ id: "screen"');
+    expect(src).toContain('{ id: "upgrade"');
+    expect(src).toContain('{ id: "fix"');
+    expect(src).toContain('{ id: "rerun"');
+    expect(src).toContain('{ id: "simulate"');
+    expect(src).toContain('{ id: "compare"');
+  });
+
+  // Req 3: Workflow state engine declares the 6 flags
+  it("workflow state engine declares all required flags", () => {
+    const src = readSrc();
+    expect(src).toContain("fixesApplied");
+    expect(src).toContain("rerunCompleted");
+    expect(src).toContain("screeningCompleted");
+    expect(src).toContain("upgradeProtocolGenerated");
+    expect(src).toContain("simulationCompleted");
+    expect(src).toContain("comparisonAvailable");
+  });
+
+  // Req 4: screeningCompleted is always true inside ICReport
+  it("screeningCompleted is always true inside ICReport", () => {
+    const src = readSrc();
+    expect(src).toContain("const screeningCompleted       = true;");
+  });
+
+  // Req 5: upgradeProtocolGenerated derives from liftedProtocol
+  it("upgradeProtocolGenerated derives from liftedProtocol", () => {
+    const src = readSrc();
+    expect(src).toContain("const upgradeProtocolGenerated = liftedProtocol != null;");
+  });
+
+  // Req 6: simulationCompleted derives from effectiveSimData
+  it("simulationCompleted derives from effectiveSimData", () => {
+    const src = readSrc();
+    expect(src).toContain("const simulationCompleted  = effectiveSimData != null;");
+  });
+
+  // Req 7: comparisonAvailable requires both simulationCompleted and rerunCompleted
+  it("comparisonAvailable requires simulationCompleted AND rerunCompleted", () => {
+    const src = readSrc();
+    expect(src).toContain("const comparisonAvailable  = simulationCompleted && rerunCompleted;");
+  });
+
+  // Req 8: Next-step prompt after upgrade protocol is rendered
+  it("next-step prompt card after upgrade protocol has correct data-testid", () => {
+    const src = readSrc();
+    expect(src).toContain('data-testid="next-step-prompt-upgrade"');
+    expect(src).toContain("upgradeProtocolGenerated && !fixesApplied");
+  });
+
+  // Req 9: Next-step prompt after re-run is rendered
+  it("next-step prompt card after re-run has correct data-testid", () => {
+    const src = readSrc();
+    expect(src).toContain('data-testid="next-step-prompt-rerun"');
+    expect(src).toContain("rerunCompleted && !simulationCompleted");
+  });
+});
+
+// ── Final Investability Summary Tests ────────────────────────────────────────
+describe("Final Investability Summary card", () => {
+  const readSrc = () =>
+    require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/pages/DealScreener.tsx"),
+      "utf8"
+    );
+
+  it("investability summary has data-testid='investability-summary'", () => {
+    expect(readSrc()).toContain('data-testid="investability-summary"');
+  });
+
+  it("investability summary is gated on comparisonAvailable", () => {
+    const src = readSrc();
+    expect(src).toContain("{comparisonAvailable && (");
+  });
+
+  it("investability summary contains COUNCIL VERDICT DELTA section", () => {
+    expect(readSrc()).toContain("COUNCIL VERDICT DELTA");
+  });
+
+  it("investability summary contains SIMULATION DELTA section", () => {
+    expect(readSrc()).toContain("SIMULATION DELTA");
+  });
+
+  it("investability summary contains RESIDUAL BLOCKERS section", () => {
+    expect(readSrc()).toContain("RESIDUAL BLOCKERS");
+  });
+
+  it("investability summary contains GOVERNANCE POSTURE section", () => {
+    expect(readSrc()).toContain("GOVERNANCE POSTURE");
+  });
+
+  it("governance posture handles approved verdict", () => {
+    const src = readSrc();
+    expect(src).toContain("Proceed to IC presentation with updated materials.");
+  });
+
+  it("governance posture handles rejected-after-fix case", () => {
+    const src = readSrc();
+    expect(src).toContain("Additional restructuring required before resubmission.");
+  });
+
+  it("investability summary shows confidence delta", () => {
+    const src = readSrc();
+    expect(src).toContain("liftedDelta?.confidenceBefore");
+    expect(src).toContain("liftedDelta?.confidenceAfter");
+  });
+});
+
+// ── Workflow Tracker Visual Connector Tests ───────────────────────────────────
+describe("Workflow Tracker visual connectors", () => {
+  const readSrc = () =>
+    require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/pages/DealScreener.tsx"),
+      "utf8"
+    );
+
+  it("tracker connector line uses GREEN for completed steps", () => {
+    const src = readSrc();
+    expect(src).toContain("idx < currentIdx ? GREEN : BORDER");
+  });
+
+  it("tracker uses findLastIndex to determine current step", () => {
+    const src = readSrc();
+    expect(src).toContain("steps.findLastIndex(s => s.done)");
+  });
+
+  it("tracker step circle shows checkmark for done steps", () => {
+    const src = readSrc();
+    expect(src).toContain("isDone");
+    expect(src).toContain("✓");
+  });
+});
