@@ -1256,13 +1256,44 @@ const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle, {
               <div style={{ fontFamily: MONO, fontSize: 14, color: AMBER, fontWeight: 700 }}>FIX THE DEAL</div>
             </div>
             {d && (
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED }}>CLASSIFICATION</span>
-                <span style={{
-                  fontFamily: MONO, fontSize: 11, fontWeight: 700, color: classColor,
-                  background: `${classColor}18`, border: `1px solid ${classColor}44`,
-                  borderRadius: 4, padding: "3px 10px",
-                }}>{d.codeClassification} — {d.codeClassification === "A" ? "STRUCTURALLY REPAIRABLE" : d.codeClassification === "B" ? "CONDITIONALLY VIABLE" : "FUNDAMENTALLY NON-VIABLE"}</span>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED }}>CLASSIFICATION</span>
+                  <span style={{
+                    fontFamily: MONO, fontSize: 11, fontWeight: 700, color: classColor,
+                    background: `${classColor}18`, border: `1px solid ${classColor}44`,
+                    borderRadius: 4, padding: "3px 10px",
+                  }}>{d.codeClassification} — {d.codeClassification === "A" ? "STRUCTURALLY REPAIRABLE" : d.codeClassification === "B" ? "CONDITIONALLY VIABLE" : "FUNDAMENTALLY NON-VIABLE"}</span>
+                </div>
+                {/* Terminal flag badges — only for C deals, read from structured terminalFlags array (never parsed from prose) */}
+                {isClassC && d.terminalFlags && d.terminalFlags.length > 0 && (
+                  <div
+                    data-testid="terminal-flag-badges"
+                    style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}
+                  >
+                    <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED }}>TERMINAL BLOCKERS</span>
+                    {d.terminalFlags.map((flag: string) => (
+                      <span
+                        key={flag}
+                        data-testid={`terminal-flag-${flag}`}
+                        style={{
+                          fontFamily: MONO,
+                          fontSize: 9,
+                          fontWeight: 700,
+                          color: RED,
+                          background: "rgba(255,71,87,0.10)",
+                          border: `1px solid ${RED}55`,
+                          borderRadius: 3,
+                          padding: "2px 7px",
+                          letterSpacing: "0.05em",
+                          textTransform: "uppercase",
+                        }}
+                      >
+                        {flag.replace(/_/g, " ")}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
             )}
           </div>

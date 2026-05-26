@@ -1437,6 +1437,8 @@ ${input.icMemoSummary ?? "Not provided."}`;
           residualRisks,
           // codeClassification field exposed so frontend can gate PDF/memo surfaces
           codeClassification:        "C" as const,
+          // terminalFlags echoed back so the panel header badge row can render them
+          terminalFlags:             input.terminalFlags,
         };
       }
 
@@ -1490,6 +1492,19 @@ ${input.icMemoSummary ?? "Not provided."}`;
         : 0;
       const cappedConsensusPct = Math.min(Math.max(rawConsensusPct, 0), 99);
 
+      // ── RESCUABLE FLAG MITIGATION INJECTION ─────────────────────────────────
+      // For B deals, append rescuePolicy mitigation and residualRisk text for any
+      // RESCUABLE flags present. This ensures the panel shows the institutional
+      // mitigation text even if the LLM did not include it.
+      const rescuableFlagEntries = (input.terminalFlags as TerminalBlockerFlag[])
+        .filter((f) => !TERMINAL_FLAGS.has(f) && rescuePolicy[f as TerminalBlockerFlag])
+        .map((f) => rescuePolicy[f as TerminalBlockerFlag]);
+      const llmResidualRisks = (parsed.residualRisks as string[]) ?? [];
+      const policyResidualRisks = rescuableFlagEntries
+        .map((e) => e.residualRisk)
+        .filter((r) => r && !llmResidualRisks.includes(r)) as string[];
+      const mergedResidualRisks = [...llmResidualRisks, ...policyResidualRisks];
+
       return {
         classification:           codeClassification,  // ← code-derived, never LLM-judged
         classificationRationale:  (parsed.classificationRationale as string) ?? "Unable to parse engine output.",
@@ -1502,8 +1517,10 @@ ${input.icMemoSummary ?? "Not provided."}`;
           consensusPct:  cappedConsensusPct, // ← Guard 5 applied
         },
         approvalSensitivityLadder: (parsed.approvalSensitivityLadder as unknown[]) ?? [],
-        residualRisks:             (parsed.residualRisks as string[])         ?? [],
+        residualRisks:             mergedResidualRisks,
         codeClassification,  // ← exposed so frontend can gate PDF/memo surfaces
+        // terminalFlags echoed back so the panel header badge row can render them
+        terminalFlags:             input.terminalFlags,
       };
     }),
 

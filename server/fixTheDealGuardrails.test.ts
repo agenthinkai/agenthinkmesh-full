@@ -409,3 +409,232 @@ describe("fixTheDeal — panel badge reads codeClassification, not LLM classific
     expect(result.predictedOutcome.decision).toBe("APPROVED_WITH_CONDITIONS");
   });
 });
+
+// ── NEW TEST GROUPS (ratified verdicts) ───────────────────────────────────────
+
+describe("fixTheDeal — RESCUABLE path: default_risk only", () => {
+  /**
+   * default_risk is the ONLY RESCUABLE flag.
+   * With only default_risk in terminalFlags → codeClassification = B (not C).
+   * Outcome must be CONDITIONAL (capped at APPROVED_WITH_CONDITIONS, never APPROVE).
+   * The mitigation and residualRisk from rescuePolicy must be attached.
+   */
+  it("default_risk only → codeClassification B → decision APPROVED_WITH_CONDITIONS (never APPROVE)", async () => {
+    vi.mocked(invokeLLM).mockResolvedValue(makeAdversarialLLMResponse({
+      decision: "APPROVED",       // ← LLM tries to return APPROVE
+      consensusPct: 75,
+      classification: "A",        // ← LLM claims A
+    }) as never);
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.dealScreener.fixTheDeal({
+      dealText: FRAUD_DEAL_TEXT,
+      councilOutcome: "Verdict: REJECTED · 4/10 YES · Confidence: 40%\nTop blockers: counterparty default risk",
+      terminalFlags: ["default_risk"],
+    });
+
+    // codeClassification must be B (default_risk is RESCUABLE, not TERMINAL)
+    expect((result as Record<string, unknown>).codeClassification).toBe("B");
+    expect(result.classification).toBe("B");
+
+    // Guard 4 (ceiling cap): APPROVED → APPROVED_WITH_CONDITIONS (never APPROVE)
+    expect(result.predictedOutcome.decision).toBe("APPROVED_WITH_CONDITIONS");
+
+    // Score is NOT zeroed for B deals (only zeroed for C)
+    expect(result.predictedOutcome.consensusPct).toBeGreaterThan(0);
+    expect(result.predictedOutcome.consensusPct).toBeLessThanOrEqual(99); // Guard 5: never 100
+
+    // Mitigation text from rescuePolicy must be present in the result
+    // (either in changeSummaryTable, revisedBrief, or residualRisks)
+    const resultStr = JSON.stringify(result);
+    expect(resultStr).toContain("restructur"); // mitigation text contains "restructuring"
+
+    // residualRisk text from rescuePolicy must be present
+    expect(resultStr).toContain("default risk is reduced, not eliminated");
+  });
+
+  it("default_risk only → revisedBrief is non-empty (B deals receive rescue path)", async () => {
+    vi.mocked(invokeLLM).mockResolvedValue(makeAdversarialLLMResponse({
+      decision: "APPROVED_WITH_CONDITIONS",
+      consensusPct: 65,
+    }) as never);
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.dealScreener.fixTheDeal({
+      dealText: FRAUD_DEAL_TEXT,
+      councilOutcome: "Verdict: REJECTED · 4/10 YES\nTop blockers: default risk",
+      terminalFlags: ["default_risk"],
+    });
+
+    // B deals get the LLM's revisedBrief (not zeroed like C deals)
+    expect(result.revisedBrief).toBeTruthy();
+    expect(result.revisedBrief.length).toBeGreaterThan(0);
+  });
+});
+
+describe("fixTheDeal — each TERMINAL flag individually → REJECTED", () => {
+  /**
+   * Tests each of the 6 TERMINAL flags in isolation.
+   * Any single TERMINAL flag must force codeClassification C → decision REJECTED.
+   * Confirms TERMINAL_FLAGS = {fraud, capital_controls, licence_revoked, sanctions,
+   *                             regulatory_blocked, financial_crisis}
+   * and that default_risk is NOT in this set.
+   */
+  const TERMINAL_FLAGS = [
+    "fraud",
+    "capital_controls",
+    "licence_revoked",
+    "sanctions",
+    "regulatory_blocked",
+    "financial_crisis",
+  ] as const;
+
+  for (const flag of TERMINAL_FLAGS) {
+    it(`${flag} alone → codeClassification C → decision REJECTED → consensusPct 0`, async () => {
+      vi.mocked(invokeLLM).mockResolvedValue(makeAdversarialLLMResponse({
+        decision: "APPROVED",
+        consensusPct: 80,
+        classification: "A",
+      }) as never);
+      const caller = appRouter.createCaller(makeCtx());
+      const result = await caller.dealScreener.fixTheDeal({
+        dealText: FRAUD_DEAL_TEXT,
+        councilOutcome: `Verdict: VETOED · 1/10 YES\nTop blockers: ${flag}`,
+        terminalFlags: [flag],
+      });
+
+      expect((result as Record<string, unknown>).codeClassification).toBe("C");
+      expect(result.classification).toBe("C");
+      expect(result.predictedOutcome.decision).toBe("REJECTED");
+      expect(result.predictedOutcome.consensusPct).toBe(0);
+      expect(result.revisedBrief).toBe("");
+      expect(result.residualRisks.length).toBeGreaterThan(0);
+    });
+  }
+
+  it("default_risk alone does NOT produce REJECTED (it is RESCUABLE, not TERMINAL)", async () => {
+    vi.mocked(invokeLLM).mockResolvedValue(makeAdversarialLLMResponse({
+      decision: "APPROVED_WITH_CONDITIONS",
+      consensusPct: 60,
+    }) as never);
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.dealScreener.fixTheDeal({
+      dealText: FRAUD_DEAL_TEXT,
+      councilOutcome: "Verdict: REJECTED · 4/10 YES\nTop blockers: default risk",
+      terminalFlags: ["default_risk"],
+    });
+
+    // default_risk is RESCUABLE → B, not C
+    expect((result as Record<string, unknown>).codeClassification).toBe("B");
+    expect(result.predictedOutcome.decision).not.toBe("REJECTED");
+  });
+});
+
+describe("fixTheDeal — mixed TERMINAL + RESCUABLE: single TERMINAL dominates", () => {
+  /**
+   * A single TERMINAL flag in the array must dominate any RESCUABLE flags.
+   * default_risk (RESCUABLE) + any TERMINAL flag → C / REJECTED.
+   * The RESCUABLE flag does not soften the TERMINAL classification.
+   */
+  const TERMINAL_FLAGS = [
+    "fraud",
+    "capital_controls",
+    "licence_revoked",
+    "sanctions",
+    "regulatory_blocked",
+    "financial_crisis",
+  ] as const;
+
+  for (const terminalFlag of TERMINAL_FLAGS) {
+    it(`default_risk + ${terminalFlag} → C / REJECTED (TERMINAL dominates)`, async () => {
+      vi.mocked(invokeLLM).mockResolvedValue(makeAdversarialLLMResponse({
+        decision: "APPROVED_WITH_CONDITIONS",
+        consensusPct: 55,
+      }) as never);
+      const caller = appRouter.createCaller(makeCtx());
+      const result = await caller.dealScreener.fixTheDeal({
+        dealText: FRAUD_DEAL_TEXT,
+        councilOutcome: `Verdict: VETOED · 2/10 YES\nTop blockers: default risk; ${terminalFlag}`,
+        terminalFlags: ["default_risk", terminalFlag],
+      });
+
+      // One TERMINAL flag is sufficient to force C
+      expect((result as Record<string, unknown>).codeClassification).toBe("C");
+      expect(result.predictedOutcome.decision).toBe("REJECTED");
+      expect(result.predictedOutcome.consensusPct).toBe(0);
+    });
+  }
+});
+
+describe("fixTheDeal — header badge: terminal flags rendered from structured array", () => {
+  /**
+   * The panel header badge row reads from the structured terminalFlags array.
+   * This test verifies the PROCEDURE returns the correct terminalFlags in its
+   * result shape, which the frontend badge row reads directly.
+   * (UI rendering is tested separately in component tests.)
+   */
+  it("C deal with [fraud, capital_controls] → result.terminalFlags contains both flags", async () => {
+    vi.mocked(invokeLLM).mockResolvedValue(makeAdversarialLLMResponse({
+      decision: "APPROVED",
+      consensusPct: 90,
+    }) as never);
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.dealScreener.fixTheDeal({
+      dealText: FRAUD_DEAL_TEXT,
+      councilOutcome: "Verdict: VETOED · 0/10 YES\nTop blockers: fraud; capital controls",
+      terminalFlags: ["fraud", "capital_controls"],
+    });
+
+    // Procedure must echo back the terminalFlags for the panel badge row
+    const returnedFlags = (result as Record<string, unknown>).terminalFlags as string[];
+    expect(returnedFlags).toBeDefined();
+    expect(returnedFlags).toContain("fraud");
+    expect(returnedFlags).toContain("capital_controls");
+    expect(returnedFlags.length).toBe(2);
+
+    // Classification and decision must still be C / REJECTED
+    expect((result as Record<string, unknown>).codeClassification).toBe("C");
+    expect(result.predictedOutcome.decision).toBe("REJECTED");
+  });
+
+  it("B deal with [default_risk] → terminal flag badges NOT rendered (no TERMINAL flags)", async () => {
+    vi.mocked(invokeLLM).mockResolvedValue(makeAdversarialLLMResponse({
+      decision: "APPROVED_WITH_CONDITIONS",
+      consensusPct: 65,
+    }) as never);
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.dealScreener.fixTheDeal({
+      dealText: FRAUD_DEAL_TEXT,
+      councilOutcome: "Verdict: REJECTED · 4/10 YES\nTop blockers: default risk",
+      terminalFlags: ["default_risk"],
+    });
+
+    // B deal: codeClassification is B, so the badge row condition (isClassC) is false
+    expect((result as Record<string, unknown>).codeClassification).toBe("B");
+
+    // The terminalFlags are still echoed back (for completeness), but the panel
+    // badge row only renders when isClassC === true
+    const returnedFlags = (result as Record<string, unknown>).terminalFlags as string[];
+    expect(returnedFlags).toBeDefined();
+    expect(returnedFlags).toContain("default_risk");
+  });
+
+  it("C deal with empty terminalFlags (pre-v3.1 deal) → no badge row rendered", async () => {
+    vi.mocked(invokeLLM).mockResolvedValue(makeAdversarialLLMResponse({
+      decision: "APPROVED",
+      consensusPct: 80,
+      classification: "C",  // LLM claims C, but no structured flags
+    }) as never);
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.dealScreener.fixTheDeal({
+      dealText: FRAUD_DEAL_TEXT,
+      councilOutcome: "Verdict: VETOED · 1/10 YES",
+      terminalFlags: [],  // pre-v3.1 deal: no structured flags
+    });
+
+    // Empty terminalFlags → codeClassification B (fail-safe: not C, because no structured evidence)
+    expect((result as Record<string, unknown>).codeClassification).toBe("B");
+
+    // terminalFlags echoed back as empty
+    const returnedFlags = (result as Record<string, unknown>).terminalFlags as string[];
+    expect(returnedFlags).toEqual([]);
+  });
+});

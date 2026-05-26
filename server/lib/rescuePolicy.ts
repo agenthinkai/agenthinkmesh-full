@@ -82,26 +82,29 @@ export const rescuePolicy: Record<TerminalBlockerFlag, RescuePolicyEntry> = {
       "Resolution requires full sanctions clearance before any engagement.",
   },
   regulatory_blocked: {
-    verdict: "TODO",
+    verdict: "TERMINAL",
     mitigation: null,
     residualRisk:
-      "TODO: Institutional decision pending on whether regulatory block is rescuable " +
-      "(e.g., pending approval vs. denied approval). Until decided, treated as TERMINAL.",
+      "Regulatory prohibition treated as terminal pending identification of a specific " +
+      "phased-compliance or carve-out path.",
   },
   financial_crisis: {
-    verdict: "TODO",
+    verdict: "TERMINAL",
     mitigation: null,
     residualRisk:
-      "TODO: Institutional decision pending on whether systemic financial crisis " +
-      "is rescuable (e.g., temporary liquidity vs. structural insolvency). " +
-      "Until decided, treated as TERMINAL.",
+      "Systemic credit-market freeze cannot be mitigated at deal level; counterparties " +
+      "to any mitigation are themselves impaired.",
   },
   default_risk: {
-    verdict: "TODO",
-    mitigation: null,
+    verdict: "RESCUABLE",
+    mitigation:
+      "Counterparty default risk addressed via debt restructuring: revised amortization " +
+      "schedule, enhanced security/collateral package, and tightened financial covenants " +
+      "with step-in rights. Conditional on counterparty agreement to restructured terms.",
     residualRisk:
-      "TODO: Institutional decision pending on whether default risk is rescuable " +
-      "(e.g., covenant breach vs. actual default). Until decided, treated as TERMINAL.",
+      "Execution and counterparty-cooperation risk persists post-restructuring; default " +
+      "risk is reduced, not eliminated. Conditional approval contingent on restructuring " +
+      "closing as structured.",
   },
 };
 
