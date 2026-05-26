@@ -1423,7 +1423,7 @@ describe("APPLY FIXES & RE-RUN Button Wiring", () => {
   // Req 5: next-step card button shows loading state when isPending
   it("next-step card button shows loading text when isPending", () => {
     const src = readSrc();
-    expect(src).toContain("APPLYING FIXES & RE-RUNNING COUNCIL");
+    expect(src).toContain("APPLYING UPGRADE PROTOCOL & RE-RUNNING COUNCIL");
   });
 
   // Req 6: fixPanelRef is threaded from ICReport → BoardroomICReport → FixTheDealPanel
@@ -1468,5 +1468,56 @@ describe("APPLY FIXES & RE-RUN Button Wiring", () => {
     const earlyReturnIdx = src.indexOf("if (!isRejected) return null;");
     expect(imperativeIdx).toBeGreaterThan(0);
     expect(earlyReturnIdx).toBeGreaterThan(imperativeIdx);
+  });
+});
+
+// ── Auto-scroll and Tracker Label Tests ──────────────────────────────────────
+describe("Auto-scroll to FixTheDealPanel and Tracker Label", () => {
+  const readSrc = () =>
+    require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/pages/DealScreener.tsx"),
+      "utf8"
+    );
+
+  // Task 1: next-step button scrolls to fix-the-deal-panel
+  it("next-step button calls scrollIntoView on fix-the-deal-panel after triggerFix", () => {
+    const src = readSrc();
+    expect(src).toContain('document.getElementById("fix-the-deal-panel")');
+    expect(src).toContain('el.scrollIntoView({ behavior: "smooth", block: "start" })');
+  });
+
+  it("fix-the-deal-panel id is present on the wrapper div", () => {
+    const src = readSrc();
+    expect(src).toContain('id="fix-the-deal-panel"');
+  });
+
+  it("scroll happens after triggerFix (setTimeout 80ms)", () => {
+    const src = readSrc();
+    const triggerIdx = src.indexOf("fixPanelRef.current?.triggerFix();");
+    const scrollIdx = src.indexOf('document.getElementById("fix-the-deal-panel")');
+    // scroll call should appear after triggerFix in source order
+    expect(triggerIdx).toBeGreaterThan(0);
+    expect(scrollIdx).toBeGreaterThan(triggerIdx);
+    // wrapped in setTimeout
+    const setTimeoutIdx = src.lastIndexOf("setTimeout(() => {", scrollIdx);
+    expect(setTimeoutIdx).toBeGreaterThan(triggerIdx);
+  });
+
+  // Task 2: tracker step label is "Fix Deal"
+  it("workflow tracker displays Fix Deal label", () => {
+    const src = readSrc();
+    expect(src).toContain('label: "Fix Deal"');
+    expect(src).not.toContain('label: "Fix",');
+  });
+
+  // Regression: existing workflow state names unchanged
+  it("fixesApplied state variable name is unchanged", () => {
+    const src = readSrc();
+    expect(src).toContain("const [fixesApplied,   setFixesApplied]");
+  });
+
+  it("tracker step id remains fix (internal state name unchanged)", () => {
+    const src = readSrc();
+    expect(src).toContain('{ id: "fix",      label: "Fix Deal"');
   });
 });

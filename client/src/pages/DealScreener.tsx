@@ -2558,7 +2558,9 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stre
       )}
 
       {/* Fix the Deal button + panel */}
+      <div id="fix-the-deal-panel">
       <FixTheDealPanel ref={fixPanelRef} result={result} councilMode={councilMode} onRerun={onRerun} onUpgradedSimCompleted={onUpgradedSimCompleted} onFixesApplied={onFixesApplied} onRerunCompleted={onRerunCompleted} />
+      </div>
 
       {/* Copy IC Report button */}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }} className="no-print">
@@ -2854,7 +2856,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
         const steps = [
           { id: "screen",   label: "Screen",   done: screeningCompleted },
           { id: "upgrade",  label: "Upgrade",  done: upgradeProtocolGenerated },
-          { id: "fix",      label: "Fix",      done: fixesApplied },
+          { id: "fix",      label: "Fix Deal", done: fixesApplied },
           { id: "rerun",    label: "Re-run",   done: rerunCompleted },
           { id: "simulate", label: "Simulate", done: simulationCompleted },
           { id: "compare",  label: "Compare",  done: comparisonAvailable },
@@ -3553,7 +3555,13 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
           </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
             <button
-              onClick={() => { fixPanelRef.current?.triggerFix(); }}
+              onClick={() => {
+                fixPanelRef.current?.triggerFix();
+                setTimeout(() => {
+                  const el = document.getElementById("fix-the-deal-panel");
+                  if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                }, 80);
+              }}
               disabled={fixPanelRef.current?.isPending() ?? false}
               style={{ padding: "7px 16px", background: PURPLE, border: "none", color: "#fff", fontFamily: MONO, fontSize: 10, fontWeight: 700, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em", whiteSpace: "nowrap", opacity: (fixPanelRef.current?.isPending() ?? false) ? 0.6 : 1 }}
             >{(fixPanelRef.current?.isPending() ?? false) ? "APPLYING UPGRADE PROTOCOL & RE-RUNNING COUNCIL…" : "FIX THE DEAL & RE-RUN COUNCIL →"}</button>
