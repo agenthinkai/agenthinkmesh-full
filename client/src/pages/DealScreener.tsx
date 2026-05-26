@@ -973,14 +973,19 @@ interface FixTheDealResult {
   approvalSensitivityLadder: Array<{ structuralChange: string; estimatedVoteShift: string; runningVoteEstimate: string }>;
   residualRisks: string[];
 }
-function FixTheDealPanel({ result, councilMode, onRerun, onUpgradedSimCompleted, onFixesApplied, onRerunCompleted }: {
+interface FixTheDealPanelHandle {
+  triggerFix: () => void;
+  isPending: () => boolean;
+}
+
+const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle, {
   result: CouncilResult;
   councilMode?: string;
   onRerun?: (dealName: string, dealText: string, mode: CouncilModeType) => void;
   onUpgradedSimCompleted?: (data: { runId: string; mode: string; targetCount: number; completedAt: string; aggregation: any }) => void;
   onFixesApplied?: () => void;
   onRerunCompleted?: () => void;
-}) {
+}>(function FixTheDealPanel({ result, councilMode, onRerun, onUpgradedSimCompleted, onFixesApplied, onRerunCompleted }, ref) {
   const isRejected = ["REJECTED", "VETOED", "HOLD"].includes(result.verdict);
   const [open, setOpen] = useState(false);
   const [rerunning, setRerunning] = useState(false);
@@ -1008,6 +1013,7 @@ function FixTheDealPanel({ result, councilMode, onRerun, onUpgradedSimCompleted,
   const fixMutation = trpc.dealScreener.fixTheDeal.useMutation();
   const exportMutation = trpc.dealScreener.exportRepairBrief.useMutation();
   const memoMutation = trpc.dealScreener.requestRestructuringMemo.useMutation();
+
   const startSimMutation = trpc.scenarioSim.startRun.useMutation();
   // ── Original simulation data (for comparison card left column) ────────────
   const { data: origSimRuns } = trpc.scenarioSim.listRunsForDeal.useQuery(
@@ -1052,8 +1058,6 @@ function FixTheDealPanel({ result, councilMode, onRerun, onUpgradedSimCompleted,
     }
   }, [upgradedSimStatus?.status, upgradedSimStatus?.aggregation]);
 
-  if (!isRejected) return null;
-
   const handleFix = () => {
     if (open) { setOpen(false); return; }
     const outcome = `Verdict: ${result.verdict} · ${result.yesCount}/10 YES · Confidence: ${Math.round((result.confidenceScore ?? 0) * 100)}%\nTop blockers: ${(result.blockingIssues ?? []).slice(0, 3).join("; ")}`;
@@ -1072,6 +1076,17 @@ function FixTheDealPanel({ result, councilMode, onRerun, onUpgradedSimCompleted,
     setUpgradedSimData(null);
     setSimRunId(null);
   };
+
+  // Expose triggerFix so parent (ICReport next-step card) can call it imperatively
+  // Must be declared AFTER handleFix (no hoisting for const arrow functions)
+  React.useImperativeHandle(ref, () => ({
+    triggerFix: () => { handleFix(); },
+    isPending: () => fixMutation.isPending,
+  }));
+
+  // Early return — must come AFTER all hooks (React rules of hooks)
+  if (!isRejected) return null;
+
 
   const handleDownloadPdf = async () => {
     if (!d || d.classification === "C") return;
@@ -1786,6 +1801,8 @@ function FixTheDealPanel({ result, councilMode, onRerun, onUpgradedSimCompleted,
 // Shown only in infrastructure mode when verdict is REJECT or VETOED.
 // Derives structured re-engagement criteria from the council's upgrade triggers
 // and the blocking issues, formatted as an institutional checklist table.
+);
+
 function InfraReEngagePanel({ result }: { result: CouncilResult }) {
   const isRejectOrVeto = result.verdict === "REJECTED" || result.verdict === "VETOED";
 
@@ -2146,7 +2163,7 @@ function InfraReEngagePanel({ result }: { result: CouncilResult }) {
   );
 }
 
-function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stressTested, councilMode, onRerun, onUpgradedSimCompleted, onFixesApplied, onRerunCompleted }: { ic: ICReportData; result: CouncilResult; onCopy: (text: string) => void; onNewDeal: () => void; patternContext?: "invested_match" | "passed_match"; stressTested?: boolean; councilMode?: string; onRerun?: (dealName: string, dealText: string, mode: CouncilModeType) => void; onUpgradedSimCompleted?: (data: { runId: string; mode: string; targetCount: number; completedAt: string; aggregation: any }) => void; onFixesApplied?: () => void; onRerunCompleted?: () => void }) {
+function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stressTested, councilMode, onRerun, onUpgradedSimCompleted, onFixesApplied, onRerunCompleted, fixPanelRef }: { ic: ICReportData; result: CouncilResult; onCopy: (text: string) => void; onNewDeal: () => void; patternContext?: "invested_match" | "passed_match"; stressTested?: boolean; councilMode?: string; onRerun?: (dealName: string, dealText: string, mode: CouncilModeType) => void; onUpgradedSimCompleted?: (data: { runId: string; mode: string; targetCount: number; completedAt: string; aggregation: any }) => void; onFixesApplied?: () => void; onRerunCompleted?: () => void; fixPanelRef?: React.Ref<FixTheDealPanelHandle> }) {
   // Color derived from council verdict (not IC executive verdict) for consistency
   const verdictColor = result.verdict === "APPROVED" ? GREEN
     : result.verdict === "APPROVED_WITH_CONDITIONS" ? ACCENT
@@ -2541,7 +2558,7 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stre
       )}
 
       {/* Fix the Deal button + panel */}
-      <FixTheDealPanel result={result} councilMode={councilMode} onRerun={onRerun} onUpgradedSimCompleted={onUpgradedSimCompleted} onFixesApplied={onFixesApplied} onRerunCompleted={onRerunCompleted} />
+      <FixTheDealPanel ref={fixPanelRef} result={result} councilMode={councilMode} onRerun={onRerun} onUpgradedSimCompleted={onUpgradedSimCompleted} onFixesApplied={onFixesApplied} onRerunCompleted={onRerunCompleted} />
 
       {/* Copy IC Report button */}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }} className="no-print">
@@ -2598,6 +2615,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
   // ── Guided workflow state engine ─────────────────────────────────────────
   const [fixesApplied,   setFixesApplied]   = useState(false);
   const [rerunCompleted, setRerunCompleted] = useState(false);
+  const fixPanelRef = React.useRef<FixTheDealPanelHandle>(null);
   const screeningCompleted       = true; // always true inside ICReport
   const upgradeProtocolGenerated = liftedProtocol != null;
   // simulationCompleted and comparisonAvailable resolved after effectiveSimData is computed below
@@ -3233,7 +3251,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
 
       {/* Boardroom IC Report tab */}
       {activeTab === "boardroom" && result.icReport && (
-        <BoardroomICReport ic={result.icReport} result={result} onCopy={handleCopyICReport} onNewDeal={onNewDeal} patternContext={patternContext} stressTested={simBadgeData?.hasCompleted} councilMode={result.councilMode ?? councilModeProp} onRerun={onRerun} onUpgradedSimCompleted={handleSimCompleted} onFixesApplied={() => setFixesApplied(true)} onRerunCompleted={() => setRerunCompleted(true)} />
+        <BoardroomICReport ic={result.icReport} result={result} onCopy={handleCopyICReport} onNewDeal={onNewDeal} patternContext={patternContext} stressTested={simBadgeData?.hasCompleted} councilMode={result.councilMode ?? councilModeProp} onRerun={onRerun} onUpgradedSimCompleted={handleSimCompleted} onFixesApplied={() => setFixesApplied(true)} onRerunCompleted={() => setRerunCompleted(true)} fixPanelRef={fixPanelRef} />
       )}
 
       {/* Raw Council tab */}
@@ -3533,13 +3551,14 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
             <div style={{ fontFamily: MONO, fontSize: 10, color: PURPLE, fontWeight: 700, letterSpacing: "0.08em", marginBottom: 3 }}>NEXT STEP — APPLY FIXES</div>
             <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2 }}>Upgrade protocol generated. Apply the recommended structural fixes and re-run the Council to measure verdict improvement.</div>
           </div>
-          <button
-            onClick={() => {
-              const el = document.getElementById("decision-upgrade-panel");
-              if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-            }}
-            style={{ padding: "7px 16px", background: PURPLE, border: "none", color: "#fff", fontFamily: MONO, fontSize: 10, fontWeight: 700, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em", whiteSpace: "nowrap" }}
-          >APPLY FIXES &amp; RE-RUN →</button>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+            <button
+              onClick={() => { fixPanelRef.current?.triggerFix(); }}
+              disabled={fixPanelRef.current?.isPending() ?? false}
+              style={{ padding: "7px 16px", background: PURPLE, border: "none", color: "#fff", fontFamily: MONO, fontSize: 10, fontWeight: 700, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em", whiteSpace: "nowrap", opacity: (fixPanelRef.current?.isPending() ?? false) ? 0.6 : 1 }}
+            >{(fixPanelRef.current?.isPending() ?? false) ? "APPLYING FIXES & RE-RUNNING COUNCIL…" : "APPLY FIXES & RE-RUN →"}</button>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED }}>Scroll down to view the repair report and re-run results</div>
+          </div>
         </div>
       )}
       {/* ── Next-step prompt: after Re-run completes ─────────────────────── */}

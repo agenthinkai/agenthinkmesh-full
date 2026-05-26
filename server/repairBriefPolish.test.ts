@@ -1375,3 +1375,98 @@ describe("Workflow Tracker State Wiring", () => {
     expect(src).toContain("onUpgradedSimCompleted={handleSimCompleted}");
   });
 });
+
+// ── APPLY FIXES & RE-RUN Button Wiring Tests ─────────────────────────────────
+describe("APPLY FIXES & RE-RUN Button Wiring", () => {
+  const readSrc = () =>
+    require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/pages/DealScreener.tsx"),
+      "utf8"
+    );
+
+  // Req 1: FixTheDealPanel is a forwardRef component with FixTheDealPanelHandle
+  it("FixTheDealPanel is wrapped with React.forwardRef", () => {
+    const src = readSrc();
+    expect(src).toContain("const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle");
+  });
+
+  it("FixTheDealPanelHandle interface exposes triggerFix and isPending", () => {
+    const src = readSrc();
+    expect(src).toContain("interface FixTheDealPanelHandle {");
+    expect(src).toContain("triggerFix: () => void;");
+    expect(src).toContain("isPending: () => boolean;");
+  });
+
+  // Req 2: useImperativeHandle wires triggerFix to handleFix
+  it("useImperativeHandle wires triggerFix to handleFix", () => {
+    const src = readSrc();
+    expect(src).toContain("React.useImperativeHandle(ref, () => ({");
+    expect(src).toContain("triggerFix: () => { handleFix(); }");
+    expect(src).toContain("isPending: () => fixMutation.isPending");
+  });
+
+  // Req 3: useImperativeHandle is declared AFTER handleFix (no hoisting issue)
+  it("useImperativeHandle is declared after handleFix in source order", () => {
+    const src = readSrc();
+    const handleFixIdx = src.indexOf("const handleFix = () => {");
+    const imperativeIdx = src.indexOf("React.useImperativeHandle(ref, () => ({");
+    expect(handleFixIdx).toBeGreaterThan(0);
+    expect(imperativeIdx).toBeGreaterThan(handleFixIdx);
+  });
+
+  // Req 4: next-step card button calls fixPanelRef.current?.triggerFix()
+  it("next-step card button calls fixPanelRef.current?.triggerFix()", () => {
+    const src = readSrc();
+    expect(src).toContain("fixPanelRef.current?.triggerFix()");
+  });
+
+  // Req 5: next-step card button shows loading state when isPending
+  it("next-step card button shows loading text when isPending", () => {
+    const src = readSrc();
+    expect(src).toContain("APPLYING FIXES & RE-RUNNING COUNCIL");
+  });
+
+  // Req 6: fixPanelRef is threaded from ICReport → BoardroomICReport → FixTheDealPanel
+  it("ICReport declares fixPanelRef as useRef<FixTheDealPanelHandle>", () => {
+    const src = readSrc();
+    expect(src).toContain("const fixPanelRef = React.useRef<FixTheDealPanelHandle>(null)");
+  });
+
+  it("BoardroomICReport accepts fixPanelRef prop", () => {
+    const src = readSrc();
+    expect(src).toContain("fixPanelRef?: React.Ref<FixTheDealPanelHandle>");
+  });
+
+  it("BoardroomICReport passes fixPanelRef to FixTheDealPanel via ref prop", () => {
+    const src = readSrc();
+    expect(src).toContain("<FixTheDealPanel ref={fixPanelRef}");
+  });
+
+  it("ICReport passes fixPanelRef to BoardroomICReport", () => {
+    const src = readSrc();
+    expect(src).toContain("fixPanelRef={fixPanelRef}");
+  });
+
+  // Req 7: Error state is shown (existing fixMutation.isError block preserved)
+  it("FixTheDealPanel shows error state when fixMutation fails", () => {
+    const src = readSrc();
+    expect(src).toContain("fixMutation.isError");
+    expect(src).toContain("ENGINE ERROR");
+  });
+
+  // Req 8: Loading state is shown in the panel (existing loading block preserved)
+  it("FixTheDealPanel shows loading state during mutation", () => {
+    const src = readSrc();
+    expect(src).toContain("fixMutation.isPending");
+    expect(src).toContain("ANALYSING BLOCKING ISSUES");
+  });
+
+  // Req 9: No silent no-op — early return is AFTER all hooks
+  it("early return if (!isRejected) is placed after all hooks in FixTheDealPanel", () => {
+    const src = readSrc();
+    const imperativeIdx = src.indexOf("React.useImperativeHandle(ref, () => ({");
+    const earlyReturnIdx = src.indexOf("if (!isRejected) return null;");
+    expect(imperativeIdx).toBeGreaterThan(0);
+    expect(earlyReturnIdx).toBeGreaterThan(imperativeIdx);
+  });
+});
