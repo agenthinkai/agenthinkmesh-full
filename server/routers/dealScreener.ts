@@ -1557,6 +1557,11 @@ ${input.icMemoSummary ?? "Not provided."}`;
         runningVoteEstimate:  z.string(),
       })),
       residualRisks: z.array(z.string()),
+      // Structured terminal blocker flags from the council engine (TerminalBlockerFlag enum values).
+      // These are the SOLE source for naming blockers in the PDF — prose inference is forbidden.
+      // The frontend must pass result.terminalFlags directly; never derive from rootCauses or prose.
+      // Optional to remain backward-compatible; empty array treated as "Not available."
+      terminalFlags: z.array(z.string()).optional().default([]),
     }))
     .mutation(async ({ input }) => {
       const briefInput: RepairBriefInput = {
@@ -1564,6 +1569,8 @@ ${input.icMemoSummary ?? "Not provided."}`;
         councilMode:             input.councilMode,
         classification:          input.classification,
         classificationRationale: input.classificationRationale,
+        // Pass structured terminalFlags through to PDF generator — never infer from prose.
+        terminalFlags:           input.terminalFlags,
         rootCauses:              input.rootCauses,
         revisedBrief:            input.revisedBrief,
         changeSummaryTable:      input.changeSummaryTable,

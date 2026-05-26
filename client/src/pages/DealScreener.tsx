@@ -976,6 +976,12 @@ interface FixTheDealResult {
   predictedOutcome: { voteDistribution: string; consensusPct: number; decision: string; mostLikelyDissentingAgent: string; mostLikelyCondition: string };
   approvalSensitivityLadder: Array<{ structuralChange: string; estimatedVoteShift: string; runningVoteEstimate: string }>;
   residualRisks: string[];
+  /**
+   * Structured terminal blocker flags echoed back from the procedure.
+   * These are the SOLE source for naming blockers in the PDF and memo.
+   * Never infer from rootCauses, classificationRationale, or any prose field.
+   */
+  terminalFlags?: string[];
 }
 interface FixTheDealPanelHandle {
   triggerFix: () => void;
@@ -1094,16 +1100,20 @@ const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle, {
 
 
   const handleDownloadPdf = async () => {
-    if (!d || d.codeClassification === "C") return;  // Guard: PDF blocked for C deals (code-derived, not LLM)
+    if (!d) return;
     const dealName = result.dealName ?? "Deal";
     const today = new Date();
     const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
     const filename = `${dealName.replace(/[^a-zA-Z0-9]/g, "_")}_RepairBrief_${dateStr}.pdf`;
+    // Pass structured terminalFlags directly — NEVER derive from rootCauses prose or any text.
+    // terminalFlags is the sole source of truth for which blockers the PDF names.
+    const flags = (d.terminalFlags ?? []) as string[];
     const res = await exportMutation.mutateAsync({
       dealName,
       councilMode: councilMode,
       classification: d.codeClassification,  // ← use code-derived class for PDF header
       classificationRationale: d.classificationRationale,
+      terminalFlags: flags,  // ← structured flags only — sole source for blocker names in PDF
       rootCauses: d.rootCauses,
       revisedBrief: d.revisedBrief,
       changeSummaryTable: d.changeSummaryTable,

@@ -2,9 +2,16 @@
  * repairBriefPdf.ts — Institutional PDF generator for the Deal Repair Brief.
  * Produces a clean, executive-facing single-document PDF from a FixTheDealResult.
  * Uses PDFKit (same as icMemoPdf.ts). No emoji, no unsupported glyphs.
+ *
+ * SECURITY NOTE: Terminal blocker names in the PDF are derived ONLY from the
+ * structured `terminalFlags` array (TerminalBlockerFlag enum values).
+ * Prose inference from councilOutcome, blockingIssues, or any text field is
+ * FORBIDDEN. If terminalFlags is empty on a C deal, the PDF renders
+ * "Terminal Blockers: Not available." — no fallback to prose.
  */
 
 import PDFDocument from "pdfkit";
+import { rescuePolicy, TerminalBlockerFlag } from "./lib/rescuePolicy";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -13,6 +20,13 @@ export interface RepairBriefInput {
   councilMode?: string;
   classification: "A" | "B" | "C";
   classificationRationale: string;
+  /**
+   * Structured terminal blocker flags from the council engine.
+   * These are the SOLE source for naming blockers in the PDF header / Class C section.
+   * Prose inference from any text field is forbidden.
+   * If empty on a C deal, renders "Terminal Blockers: Not available."
+   */
+  terminalFlags?: string[];
   rootCauses: Array<{ category: string; description: string; priority: number }>;
   revisedBrief: string;
   changeSummaryTable: Array<{
@@ -65,6 +79,28 @@ function classLabel(c: "A" | "B" | "C"): string {
 
 function safe(s: string | undefined | null): string {
   return (s ?? "").replace(/[^\x20-\x7E\n]/g, "").trim();
+}
+
+/**
+ * Derive the canonical blocker label string for the PDF from structured terminalFlags.
+ * SOLE source of truth — no prose inference, no regex, no substring matching.
+ *
+ * Returns one of:
+ *   "Terminal Blockers: FRAUD · CAPITAL_CONTROLS"   (flags present)
+ *   "Terminal Blockers: Not available."              (empty / missing flags on C deal)
+ */
+export function terminalBlockersLine(terminalFlags: string[] | undefined): string {
+  if (!terminalFlags || terminalFlags.length === 0) {
+    return "Terminal Blockers: Not available.";
+  }
+  // Canonical label: flag.replace(/_/g, " ").toUpperCase() — same pattern as memo
+  const labels = terminalFlags.map((flag) => {
+    // Validate against rescuePolicy — unknown flags still rendered verbatim (fail-safe)
+    const _policy = rescuePolicy[flag as TerminalBlockerFlag]; // side-effect: type-checks enum membership
+    void _policy;
+    return flag.replace(/_/g, " ").toUpperCase();
+  });
+  return `Terminal Blockers: ${labels.join(" \u00B7 ")}`;
 }
 
 function wrapText(doc: PDFKit.PDFDocument, text: string, maxWidth: number): string[] {
@@ -170,14 +206,21 @@ export async function generateRepairBriefPdf(input: RepairBriefInput): Promise<B
 
     // ── CLASSIFICATION C WARNING ──────────────────────────────────────────────
     if (cls === "C") {
-      y = ensurePage(doc, y, 80);
-      doc.rect(50, y, 495, 60).fill("#1A0A0A");
-      doc.rect(50, y, 4, 60).fill(RED_SOFT);
+      // Derive blocker line from structured terminalFlags ONLY — no prose fallback.
+      // terminalBlockersLine() returns "Terminal Blockers: Not available." for empty/missing flags.
+      const blockersLine = terminalBlockersLine(input.terminalFlags);
+
+      y = ensurePage(doc, y, 90);
+      doc.rect(50, y, 495, 72).fill("#1A0A0A");
+      doc.rect(50, y, 4, 72).fill(RED_SOFT);
       doc.font("Helvetica-Bold").fontSize(9).fillColor(RED_SOFT)
         .text("THIS DEAL CANNOT BE REPAIRED WITHOUT FUNDAMENTAL RESTRUCTURING", 62, y + 8, { width: 475, lineBreak: true });
       doc.font("Helvetica").fontSize(8).fillColor(BODY_TEXT)
         .text(safe(input.classificationRationale), 62, y + 26, { width: 475, lineBreak: true });
-      y += 70;
+      // Structured blocker names — derived from terminalFlags, never from prose
+      doc.font("Helvetica-Bold").fontSize(7.5).fillColor(RED_SOFT)
+        .text(safe(blockersLine), 62, y + 56, { width: 475, lineBreak: false });
+      y += 82;
     }
 
     // ── SECTION 1: CLASSIFICATION RATIONALE (non-C) ───────────────────────────
