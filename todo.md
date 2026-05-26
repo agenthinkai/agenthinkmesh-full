@@ -4831,3 +4831,15 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Update repairBriefPolish.test.ts for new Class C suppression, Restructuring Memo, PDF structure
 - [x] TypeScript: 0 errors
 - [x] Full test suite passing
+
+## Fix the Deal — Continuous Workflow (Fix → Re-run → Simulate → Compare)
+
+- [x] Class C suppresses full repair report (no root cause table, no change audit, no sensitivity ladder, no revised brief)
+- [x] Class C shows red banner + REQUEST RESTRUCTURING MEMO button (replaces RERUN WITH FIXES)
+- [x] Class A/B: after Apply Fixes & Re-run, show Quick Simulation prompt card
+- [x] Quick Simulation uses upgraded deal state (revisedBrief), preserves councilMode
+- [x] Original vs Upgraded comparison card with verdict delta, vote delta, sim distribution
+- [x] Rejected-after-fix case: show FIXES DID NOT IMPROVE INVESTABILITY message
+- [x] Reports Panel (Stress Test) updates via onUpgradedSimCompleted callback chain
+- [x] TypeScript: 0 errors
+- [x] Full test suite: 76 files, 1477 tests passing

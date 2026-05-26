@@ -973,19 +973,67 @@ interface FixTheDealResult {
   approvalSensitivityLadder: Array<{ structuralChange: string; estimatedVoteShift: string; runningVoteEstimate: string }>;
   residualRisks: string[];
 }
-function FixTheDealPanel({ result, councilMode, onRerun }: {
+function FixTheDealPanel({ result, councilMode, onRerun, onUpgradedSimCompleted }: {
   result: CouncilResult;
   councilMode?: string;
   onRerun?: (dealName: string, dealText: string, mode: CouncilModeType) => void;
+  onUpgradedSimCompleted?: (data: { runId: string; mode: string; targetCount: number; completedAt: string; aggregation: any }) => void;
 }) {
   const isRejected = ["REJECTED", "VETOED", "HOLD"].includes(result.verdict);
   const [open, setOpen] = useState(false);
   const [rerunning, setRerunning] = useState(false);
   const [memoText, setMemoText] = useState<string | null>(null);
 
+  // ── Quick Simulation state ────────────────────────────────────────────────
+  const [showSimPrompt, setShowSimPrompt] = useState(false);
+  const [simRunId, setSimRunId] = useState<string | null>(null);
+  const [simRunning, setSimRunning] = useState(false);
+  const [simError, setSimError] = useState<string | null>(null);
+  const [upgradedSimData, setUpgradedSimData] = useState<null | {
+    runId: string;
+    mode: string;
+    targetCount: number;
+    completedAt: string;
+    aggregation: {
+      decisionDistribution: {
+        approveCount: number; conditionalCount: number; rejectCount: number;
+        approvePct: number; conditionalPct: number; rejectPct: number;
+        totalScenarios: number; hardNoCount: number; hardNoPct: number;
+      };
+    };
+  }>(null);
+
   const fixMutation = trpc.dealScreener.fixTheDeal.useMutation();
   const exportMutation = trpc.dealScreener.exportRepairBrief.useMutation();
   const memoMutation = trpc.dealScreener.requestRestructuringMemo.useMutation();
+  const startSimMutation = trpc.scenarioSim.startRun.useMutation();
+
+  // Poll upgraded simulation status
+  const { data: upgradedSimStatus } = trpc.scenarioSim.getRunStatus.useQuery(
+    { runId: simRunId ?? "" },
+    { enabled: !!simRunId && simRunning, refetchInterval: simRunId && simRunning ? 3000 : false }
+  );
+
+  // Stop polling when complete
+  React.useEffect(() => {
+    if (!upgradedSimStatus) return;
+    if (upgradedSimStatus.status === "completed" && upgradedSimStatus.aggregation) {
+      setSimRunning(false);
+      const polledPayload = {
+        runId: upgradedSimStatus.runId,
+        mode: upgradedSimStatus.mode,
+        targetCount: upgradedSimStatus.targetCount,
+        completedAt: upgradedSimStatus.completedAt ? String(upgradedSimStatus.completedAt) : new Date().toISOString(),
+        aggregation: upgradedSimStatus.aggregation as typeof upgradedSimData extends null ? never : NonNullable<typeof upgradedSimData>["aggregation"],
+      };
+      setUpgradedSimData(polledPayload);
+      onUpgradedSimCompleted?.(polledPayload);
+    }
+    if (upgradedSimStatus.status === "failed") {
+      setSimRunning(false);
+      setSimError("Simulation failed. Please try again.");
+    }
+  }, [upgradedSimStatus?.status, upgradedSimStatus?.aggregation]);
 
   if (!isRejected) return null;
 
@@ -1001,6 +1049,9 @@ function FixTheDealPanel({ result, councilMode, onRerun }: {
     });
     setOpen(true);
     setMemoText(null);
+    setShowSimPrompt(false);
+    setUpgradedSimData(null);
+    setSimRunId(null);
   };
 
   const handleDownloadPdf = async () => {
@@ -1044,19 +1095,73 @@ function FixTheDealPanel({ result, councilMode, onRerun }: {
   };
 
   const handleRerun = () => {
-    if (!fixMutation.data?.revisedBrief || !onRerun) return;
+    if (!d?.revisedBrief || !onRerun) return;
     setRerunning(true);
+    // Show the Quick Simulation prompt before navigating away
+    setShowSimPrompt(true);
+    setTimeout(() => setRerunning(false), 2000);
+  };
+
+  const handleRunQuickSim = async () => {
+    if (!d?.revisedBrief) return;
+    setSimError(null);
+    setSimRunning(true);
+    const upgradedDealId = `${result.dealId ?? result.dealName ?? "deal"}-fixed`;
+    const upgradedDealName = `${result.dealName ?? "Deal"} [UPGRADED]`;
+    const effectiveMode = (councilMode as CouncilModeType) ?? result.councilMode ?? "global_vc";
+    try {
+      const res = await startSimMutation.mutateAsync({
+        dealId: upgradedDealId,
+        dealName: upgradedDealName,
+        dealText: d.revisedBrief.slice(0, 12000),
+        mode: "quick",
+        councilMode: effectiveMode as "gcc" | "global_vc" | "india_pe" | "gcc_equities" | "infrastructure",
+      });
+      setSimRunId(res.runId);
+      // If synchronous completion (quick mode)
+      if (res.status === "completed" && res.aggregation) {
+        setSimRunning(false);
+        const simPayload = {
+          runId: res.runId,
+          mode: res.mode,
+          targetCount: res.targetCount,
+          completedAt: new Date().toISOString(),
+          aggregation: res.aggregation as typeof upgradedSimData extends null ? never : NonNullable<typeof upgradedSimData>["aggregation"],
+        };
+        setUpgradedSimData(simPayload);
+        onUpgradedSimCompleted?.(simPayload);
+      }
+    } catch (err: any) {
+      setSimRunning(false);
+      setSimError(err?.message ?? "Simulation failed");
+    }
+  };
+
+  const handleContinueToCouncil = () => {
+    if (!d?.revisedBrief || !onRerun) return;
     onRerun(
       result.dealName + " [FIXED]",
-      fixMutation.data.revisedBrief,
+      d.revisedBrief,
       (councilMode as CouncilModeType) ?? result.councilMode ?? "global_vc"
     );
-    setTimeout(() => setRerunning(false), 2000);
   };
 
   const d = fixMutation.data as FixTheDealResult | undefined;
   const classColor = d?.classification === "A" ? GREEN : d?.classification === "B" ? AMBER : RED;
   const isClassC = d?.classification === "C";
+
+  // ── Comparison helpers ────────────────────────────────────────────────────
+  const origApprovalPct = upgradedSimData ? null : null; // original sim not available in this panel
+  const upgApprovalPct = upgradedSimData?.aggregation?.decisionDistribution
+    ? Math.round(upgradedSimData.aggregation.decisionDistribution.approvePct + upgradedSimData.aggregation.decisionDistribution.conditionalPct)
+    : null;
+
+  // Determine if fixes improved investability
+  const predictedYes = d?.predictedOutcome?.voteDistribution
+    ? parseInt(d.predictedOutcome.voteDistribution.split("/")[0] ?? "0")
+    : null;
+  const originalYes = result.yesCount ?? 0;
+  const fixesImproved = predictedYes !== null ? predictedYes > originalYes : null;
 
   return (
     <div style={{ marginTop: 16, marginBottom: 16 }} className="no-print">
@@ -1137,20 +1242,15 @@ function FixTheDealPanel({ result, councilMode, onRerun }: {
                       borderRadius: 6,
                     }}
                   >
-                    {/* Header */}
                     <div style={{ fontFamily: MONO, fontSize: 13, color: RED, fontWeight: 700, letterSpacing: "0.06em", marginBottom: 4 }}>
                       THIS DEAL CANNOT BE REPAIRED
                     </div>
                     <div style={{ fontFamily: MONO, fontSize: 10, color: `${RED}cc`, letterSpacing: "0.04em", marginBottom: 14 }}>
                       Fundamental restructuring required before resubmission
                     </div>
-
-                    {/* Classification rationale — verbatim, no truncation */}
                     <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, lineHeight: 1.7, marginBottom: 16, padding: "10px 14px", background: "rgba(255,71,87,0.05)", borderRadius: 4 }}>
                       {d.classificationRationale}
                     </div>
-
-                    {/* Structural changes required to reach Class B */}
                     {d.rootCauses.length > 0 && (
                       <div style={{ marginBottom: 16 }}>
                         <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.12em", marginBottom: 8 }}>
@@ -1171,8 +1271,6 @@ function FixTheDealPanel({ result, councilMode, onRerun }: {
                         ))}
                       </div>
                     )}
-
-                    {/* Recommended alternatives */}
                     <div>
                       <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.12em", marginBottom: 8 }}>RECOMMENDED ALTERNATIVES</div>
                       <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
@@ -1186,8 +1284,6 @@ function FixTheDealPanel({ result, councilMode, onRerun }: {
                       </div>
                     </div>
                   </div>
-
-                  {/* REQUEST RESTRUCTURING MEMO button */}
                   <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
                     <button
                       onClick={handleRequestMemo}
@@ -1211,24 +1307,12 @@ function FixTheDealPanel({ result, councilMode, onRerun }: {
                       </span>
                     )}
                   </div>
-
-                  {/* Restructuring memo output */}
                   {memoText && (
-                    <div style={{
-                      marginTop: 16,
-                      padding: "16px 20px",
-                      background: "rgba(13,20,33,0.98)",
-                      border: `1px solid ${BORDER}`,
-                      borderRadius: 6,
-                    }}>
+                    <div style={{ marginTop: 16, padding: "16px 20px", background: "rgba(13,20,33,0.98)", border: `1px solid ${BORDER}`, borderRadius: 6 }}>
                       <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.12em", marginBottom: 10 }}>
                         RESTRUCTURING MEMO — IC PARTNER TO SPONSOR
                       </div>
-                      <pre style={{
-                        fontFamily: MONO, fontSize: 10, color: TEXT2,
-                        lineHeight: 1.8, whiteSpace: "pre-wrap", wordBreak: "break-word",
-                        margin: 0,
-                      }}>{memoText}</pre>
+                      <pre style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, lineHeight: 1.8, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{memoText}</pre>
                       <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED, marginTop: 12, borderTop: `1px solid ${BORDER}`, paddingTop: 8 }}>
                         AI-assisted deal analysis. Not investment advice. © AgenThink Mesh.
                       </div>
@@ -1353,6 +1437,7 @@ function FixTheDealPanel({ result, councilMode, onRerun }: {
                           <button
                             onClick={handleRerun}
                             disabled={rerunning}
+                            data-testid="apply-fixes-rerun"
                             style={{
                               padding: "7px 16px",
                               background: rerunning ? "rgba(0,255,135,0.12)" : "rgba(0,255,135,0.08)",
@@ -1362,7 +1447,7 @@ function FixTheDealPanel({ result, councilMode, onRerun }: {
                               borderRadius: 4, letterSpacing: "0.06em", fontWeight: 700,
                             }}
                           >
-                            {rerunning ? "SUBMITTING TO COUNCIL..." : "↻ RERUN WITH FIXES"}
+                            {rerunning ? "PREPARING..." : "↻ APPLY FIXES & RE-RUN"}
                           </button>
                         )}
                       </div>
@@ -1372,6 +1457,204 @@ function FixTheDealPanel({ result, councilMode, onRerun }: {
                         padding: "12px 14px", maxHeight: 320, overflowY: "auto",
                         lineHeight: 1.6, whiteSpace: "pre-wrap", wordBreak: "break-word",
                       }}>{d.revisedBrief}</pre>
+                    </div>
+                  )}
+
+                  {/* ── QUICK SIMULATION PROMPT CARD ─────────────────────────────── */}
+                  {showSimPrompt && !upgradedSimData && (
+                    <div
+                      data-testid="quick-sim-prompt"
+                      style={{
+                        marginTop: 20,
+                        padding: "18px 22px",
+                        background: "rgba(74,158,255,0.05)",
+                        border: `1px solid ${ACCENT}44`,
+                        borderLeft: `4px solid ${ACCENT}`,
+                        borderRadius: 6,
+                      }}
+                    >
+                      <div style={{ fontFamily: MONO, fontSize: 9, color: ACCENT, letterSpacing: "0.15em", marginBottom: 6 }}>
+                        NEXT STEP — STRESS TEST
+                      </div>
+                      <div style={{ fontFamily: MONO, fontSize: 13, color: TEXT, fontWeight: 700, marginBottom: 8 }}>
+                        Run Quick Stress Simulation?
+                      </div>
+                      <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, lineHeight: 1.7, marginBottom: 16 }}>
+                        The deal has been upgraded and re-evaluated. Run a 100-scenario Quick Stress Simulation to test whether the fixes meaningfully improved the approval distribution?
+                      </div>
+                      <div style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center" }}>
+                        <button
+                          onClick={handleRunQuickSim}
+                          disabled={simRunning}
+                          data-testid="run-quick-simulation"
+                          style={{
+                            padding: "9px 20px",
+                            background: simRunning ? "rgba(74,158,255,0.08)" : "rgba(74,158,255,0.15)",
+                            border: `1px solid ${ACCENT}`,
+                            color: ACCENT,
+                            fontFamily: MONO, fontSize: 11, cursor: simRunning ? "not-allowed" : "pointer",
+                            borderRadius: 4, letterSpacing: "0.06em", fontWeight: 700,
+                            opacity: simRunning ? 0.7 : 1,
+                          }}
+                        >
+                          {simRunning ? "RUNNING 100 SCENARIOS..." : "RUN QUICK SIMULATION"}
+                        </button>
+                        <button
+                          onClick={() => { setShowSimPrompt(false); handleContinueToCouncil(); }}
+                          data-testid="sim-not-now"
+                          style={{
+                            padding: "9px 16px",
+                            background: "none",
+                            border: `1px solid ${BORDER}`,
+                            color: MUTED,
+                            fontFamily: MONO, fontSize: 11, cursor: "pointer",
+                            borderRadius: 4, letterSpacing: "0.06em",
+                          }}
+                        >
+                          NOT NOW — SUBMIT TO COUNCIL
+                        </button>
+                      </div>
+                      {simError && (
+                        <div style={{ fontFamily: MONO, fontSize: 10, color: RED, marginTop: 10 }}>
+                          {simError}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── SIMULATION RUNNING INDICATOR ─────────────────────────────── */}
+                  {simRunning && (
+                    <div style={{ marginTop: 12, fontFamily: MONO, fontSize: 11, color: ACCENT, padding: "10px 14px", background: "rgba(74,158,255,0.05)", borderRadius: 4, border: `1px solid ${ACCENT}22` }}>
+                      RUNNING 100-SCENARIO QUICK SIMULATION ON UPGRADED DEAL...
+                    </div>
+                  )}
+
+                  {/* ── ORIGINAL vs UPGRADED COMPARISON CARD ────────────────────── */}
+                  {upgradedSimData && (
+                    <div
+                      data-testid="original-vs-upgraded"
+                      style={{
+                        marginTop: 20,
+                        padding: "18px 22px",
+                        background: "rgba(13,20,33,0.98)",
+                        border: `1px solid ${BORDER}`,
+                        borderRadius: 8,
+                      }}
+                    >
+                      <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.15em", marginBottom: 12 }}>
+                        ORIGINAL vs UPGRADED — COMPARATIVE ANALYSIS
+                      </div>
+
+                      {/* Investability verdict */}
+                      {fixesImproved !== null && (
+                        <div style={{
+                          marginBottom: 14,
+                          padding: "10px 14px",
+                          background: fixesImproved ? "rgba(0,255,135,0.06)" : "rgba(255,71,87,0.06)",
+                          border: `1px solid ${fixesImproved ? GREEN : RED}33`,
+                          borderRadius: 6,
+                          fontFamily: MONO, fontSize: 11, color: fixesImproved ? GREEN : RED, fontWeight: 700,
+                        }}>
+                          {fixesImproved
+                            ? `FIXES IMPROVED INVESTABILITY — Predicted vote count: ${originalYes}/10 → ${predictedYes}/10`
+                            : `FIXES DID NOT IMPROVE INVESTABILITY — Vote count unchanged: ${originalYes}/10 → ${predictedYes}/10`
+                          }
+                        </div>
+                      )}
+
+                      {/* Comparison grid */}
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                        {/* Original */}
+                        <div style={{ padding: "12px 14px", background: "rgba(255,71,87,0.04)", border: `1px solid ${RED}22`, borderRadius: 6 }}>
+                          <div style={{ fontFamily: MONO, fontSize: 9, color: RED, letterSpacing: "0.12em", marginBottom: 8 }}>ORIGINAL DEAL</div>
+                          <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT, marginBottom: 4 }}>
+                            <span style={{ color: MUTED }}>Verdict: </span>{result.verdict}
+                          </div>
+                          <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT, marginBottom: 4 }}>
+                            <span style={{ color: MUTED }}>Council Vote: </span>{result.yesCount ?? "—"}/10 YES
+                          </div>
+                          <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT, marginBottom: 8 }}>
+                            <span style={{ color: MUTED }}>Confidence: </span>{result.confidenceScore ? `${Math.round(result.confidenceScore * 100)}%` : "—"}
+                          </div>
+                          {(result.blockingIssues ?? []).length > 0 && (
+                            <div>
+                              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 4 }}>TOP BLOCKERS BEFORE</div>
+                              {(result.blockingIssues ?? []).slice(0, 3).map((b: string, i: number) => (
+                                <div key={i} style={{ fontFamily: MONO, fontSize: 9, color: RED, padding: "2px 0", borderLeft: `2px solid ${RED}44`, paddingLeft: 8, marginBottom: 2 }}>{b}</div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Upgraded */}
+                        <div style={{ padding: "12px 14px", background: "rgba(0,255,135,0.04)", border: `1px solid ${GREEN}22`, borderRadius: 6 }}>
+                          <div style={{ fontFamily: MONO, fontSize: 9, color: GREEN, letterSpacing: "0.12em", marginBottom: 8 }}>UPGRADED DEAL</div>
+                          <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT, marginBottom: 4 }}>
+                            <span style={{ color: MUTED }}>Predicted Verdict: </span>{d.predictedOutcome?.decision ?? "—"}
+                          </div>
+                          <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT, marginBottom: 4 }}>
+                            <span style={{ color: MUTED }}>Predicted Vote: </span>{d.predictedOutcome?.voteDistribution ?? "—"}
+                          </div>
+                          <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT, marginBottom: 8 }}>
+                            <span style={{ color: MUTED }}>Consensus: </span>{d.predictedOutcome?.consensusPct ? `${d.predictedOutcome.consensusPct}%` : "—"}
+                          </div>
+                          {d.residualRisks.length > 0 && (
+                            <div>
+                              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 4 }}>RESIDUAL RISKS AFTER</div>
+                              {d.residualRisks.slice(0, 3).map((r: string, i: number) => (
+                                <div key={i} style={{ fontFamily: MONO, fontSize: 9, color: AMBER, padding: "2px 0", borderLeft: `2px solid ${AMBER}44`, paddingLeft: 8, marginBottom: 2 }}>{r}</div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Upgraded simulation distribution */}
+                      {upgradedSimData.aggregation?.decisionDistribution && (
+                        <div style={{ marginBottom: 14 }}>
+                          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.12em", marginBottom: 8 }}>
+                            UPGRADED STRESS SIMULATION — {upgradedSimData.targetCount} SCENARIOS
+                          </div>
+                          <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                            {[
+                              { label: "APPROVE", val: upgradedSimData.aggregation.decisionDistribution.approvePct, color: GREEN },
+                              { label: "CONDITIONAL", val: upgradedSimData.aggregation.decisionDistribution.conditionalPct, color: AMBER },
+                              { label: "REJECT", val: upgradedSimData.aggregation.decisionDistribution.rejectPct, color: RED },
+                            ].map(({ label, val, color }) => (
+                              <div key={label} style={{ textAlign: "center", minWidth: 80 }}>
+                                <div style={{ fontFamily: MONO, fontSize: 18, fontWeight: 700, color }}>{Math.round(val)}%</div>
+                                <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED }}>{label}</div>
+                              </div>
+                            ))}
+                          </div>
+                          {/* Distribution bar */}
+                          <div style={{ marginTop: 10, height: 8, borderRadius: 4, overflow: "hidden", display: "flex" }}>
+                            <div style={{ width: `${upgradedSimData.aggregation.decisionDistribution.approvePct}%`, background: GREEN }} />
+                            <div style={{ width: `${upgradedSimData.aggregation.decisionDistribution.conditionalPct}%`, background: AMBER }} />
+                            <div style={{ width: `${upgradedSimData.aggregation.decisionDistribution.rejectPct}%`, background: RED }} />
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Continue to Council button */}
+                      {onRerun && (
+                        <div style={{ marginTop: 14, paddingTop: 14, borderTop: `1px solid ${BORDER}`, display: "flex", gap: 10, flexWrap: "wrap" }}>
+                          <button
+                            onClick={handleContinueToCouncil}
+                            data-testid="continue-to-council"
+                            style={{
+                              padding: "9px 20px",
+                              background: "rgba(0,255,135,0.08)",
+                              border: `1px solid ${GREEN}`,
+                              color: GREEN,
+                              fontFamily: MONO, fontSize: 11, cursor: "pointer",
+                              borderRadius: 4, letterSpacing: "0.06em", fontWeight: 700,
+                            }}
+                          >
+                            SUBMIT UPGRADED DEAL TO COUNCIL
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
 
@@ -1773,7 +2056,7 @@ function InfraReEngagePanel({ result }: { result: CouncilResult }) {
   );
 }
 
-function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stressTested, councilMode, onRerun }: { ic: ICReportData; result: CouncilResult; onCopy: (text: string) => void; onNewDeal: () => void; patternContext?: "invested_match" | "passed_match"; stressTested?: boolean; councilMode?: string; onRerun?: (dealName: string, dealText: string, mode: CouncilModeType) => void }) {
+function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stressTested, councilMode, onRerun, onUpgradedSimCompleted }: { ic: ICReportData; result: CouncilResult; onCopy: (text: string) => void; onNewDeal: () => void; patternContext?: "invested_match" | "passed_match"; stressTested?: boolean; councilMode?: string; onRerun?: (dealName: string, dealText: string, mode: CouncilModeType) => void; onUpgradedSimCompleted?: (data: { runId: string; mode: string; targetCount: number; completedAt: string; aggregation: any }) => void }) {
   // Color derived from council verdict (not IC executive verdict) for consistency
   const verdictColor = result.verdict === "APPROVED" ? GREEN
     : result.verdict === "APPROVED_WITH_CONDITIONS" ? ACCENT
@@ -2168,7 +2451,7 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stre
       )}
 
       {/* Fix the Deal button + panel */}
-      <FixTheDealPanel result={result} councilMode={councilMode} onRerun={onRerun} />
+      <FixTheDealPanel result={result} councilMode={councilMode} onRerun={onRerun} onUpgradedSimCompleted={onUpgradedSimCompleted} />
 
       {/* Copy IC Report button */}
       <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }} className="no-print">
@@ -2784,7 +3067,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
 
       {/* Boardroom IC Report tab */}
       {activeTab === "boardroom" && result.icReport && (
-        <BoardroomICReport ic={result.icReport} result={result} onCopy={handleCopyICReport} onNewDeal={onNewDeal} patternContext={patternContext} stressTested={simBadgeData?.hasCompleted} councilMode={result.councilMode ?? councilModeProp} onRerun={onRerun} />
+        <BoardroomICReport ic={result.icReport} result={result} onCopy={handleCopyICReport} onNewDeal={onNewDeal} patternContext={patternContext} stressTested={simBadgeData?.hasCompleted} councilMode={result.councilMode ?? councilModeProp} onRerun={onRerun} onUpgradedSimCompleted={handleSimCompleted} />
       )}
 
       {/* Raw Council tab */}
