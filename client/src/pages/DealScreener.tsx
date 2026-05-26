@@ -1661,6 +1661,39 @@ function FixTheDealPanel({ result, councilMode, onRerun, onUpgradedSimCompleted 
                         </div>
                       </div>
 
+                      {/* ── Simulation Delta Row ─────────────────────────────── */}
+                      {origSimDist && upgradedSimData.aggregation?.decisionDistribution && (() => {
+                        const upg = upgradedSimData.aggregation!.decisionDistribution;
+                        const deltaApprove    = Math.round(upg.approvePct)      - Math.round(origSimDist.approvePct ?? 0);
+                        const deltaCond       = Math.round(upg.conditionalPct)  - Math.round(origSimDist.conditionalPct ?? 0);
+                        const deltaReject     = Math.round(upg.rejectPct)       - Math.round(origSimDist.rejectPct ?? 0);
+                        const improved        = deltaApprove > 0 || (deltaApprove === 0 && deltaReject < 0);
+                        const fmt = (n: number) => (n >= 0 ? `+${n}pp` : `${n}pp`);
+                        const rowColor        = improved ? GREEN : (deltaReject > 0 ? RED : AMBER);
+                        return (
+                          <div
+                            data-testid="sim-delta-row"
+                            style={{
+                              margin: "10px 0",
+                              padding: "8px 12px",
+                              background: improved ? "rgba(0,255,135,0.04)" : "rgba(255,71,87,0.04)",
+                              border: `1px solid ${rowColor}33`,
+                              borderRadius: 4,
+                              fontFamily: MONO,
+                              fontSize: 9,
+                              color: rowColor,
+                              letterSpacing: "0.04em",
+                            }}
+                          >
+                            <span style={{ color: MUTED, marginRight: 6 }}>SIMULATION DELTA</span>
+                            Approve rate: <strong>{fmt(deltaApprove)}</strong>
+                            {" · "}
+                            Conditional rate: <strong>{fmt(deltaCond)}</strong>
+                            {" · "}
+                            Reject rate: <strong>{fmt(deltaReject)}</strong>
+                          </div>
+                        );
+                      })()}
                       {/* Upgraded simulation distribution */}
                       {upgradedSimData.aggregation?.decisionDistribution && (
                         <div style={{ marginBottom: 14 }}>

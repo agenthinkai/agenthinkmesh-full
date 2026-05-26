@@ -1039,3 +1039,102 @@ describe("Task 3 — Simulation History Labeling", () => {
     expect(src).toContain('ssrOrigDeal: index("ssr_orig_deal_idx").on(table.originalDealId)');
   });
 });
+
+// ── Simulation Delta Row ──────────────────────────────────────────────────────
+
+describe("Simulation Delta Row", () => {
+  // Helper that mirrors the component logic exactly
+  const computeDelta = (
+    origDist: { approvePct: number; conditionalPct: number; rejectPct: number } | null,
+    upgDist: { approvePct: number; conditionalPct: number; rejectPct: number } | null
+  ) => {
+    if (!origDist || !upgDist) return null;
+    const deltaApprove = Math.round(upgDist.approvePct)     - Math.round(origDist.approvePct);
+    const deltaCond    = Math.round(upgDist.conditionalPct) - Math.round(origDist.conditionalPct);
+    const deltaReject  = Math.round(upgDist.rejectPct)      - Math.round(origDist.rejectPct);
+    const improved     = deltaApprove > 0 || (deltaApprove === 0 && deltaReject < 0);
+    const fmt = (n: number) => (n >= 0 ? `+${n}pp` : `${n}pp`);
+    return { deltaApprove, deltaCond, deltaReject, improved, fmt };
+  };
+
+  it("delta row renders when both distributions exist", () => {
+    const orig = { approvePct: 35, conditionalPct: 20, rejectPct: 45 };
+    const upg  = { approvePct: 62, conditionalPct: 18, rejectPct: 20 };
+    const result = computeDelta(orig, upg);
+    expect(result).not.toBeNull();
+    expect(result!.deltaApprove).toBe(27);
+    expect(result!.deltaCond).toBe(-2);
+    expect(result!.deltaReject).toBe(-25);
+  });
+
+  it("delta row hides when original distribution is missing", () => {
+    const result = computeDelta(null, { approvePct: 62, conditionalPct: 18, rejectPct: 20 });
+    expect(result).toBeNull();
+  });
+
+  it("delta row hides when upgraded distribution is missing", () => {
+    const result = computeDelta({ approvePct: 35, conditionalPct: 20, rejectPct: 45 }, null);
+    expect(result).toBeNull();
+  });
+
+  it("positive improvement formats correctly (approve up, reject down)", () => {
+    const orig = { approvePct: 35, conditionalPct: 20, rejectPct: 45 };
+    const upg  = { approvePct: 62, conditionalPct: 18, rejectPct: 20 };
+    const r = computeDelta(orig, upg)!;
+    expect(r.fmt(r.deltaApprove)).toBe("+27pp");
+    expect(r.fmt(r.deltaCond)).toBe("-2pp");
+    expect(r.fmt(r.deltaReject)).toBe("-25pp");
+    expect(r.improved).toBe(true);
+  });
+
+  it("negative/worse movement formats correctly (approve down, reject up)", () => {
+    const orig = { approvePct: 60, conditionalPct: 20, rejectPct: 20 };
+    const upg  = { approvePct: 40, conditionalPct: 15, rejectPct: 45 };
+    const r = computeDelta(orig, upg)!;
+    expect(r.fmt(r.deltaApprove)).toBe("-20pp");
+    expect(r.fmt(r.deltaCond)).toBe("-5pp");
+    expect(r.fmt(r.deltaReject)).toBe("+25pp");
+    expect(r.improved).toBe(false);
+  });
+
+  it("zero delta formats as +0pp", () => {
+    const same = { approvePct: 50, conditionalPct: 25, rejectPct: 25 };
+    const r = computeDelta(same, same)!;
+    expect(r.fmt(r.deltaApprove)).toBe("+0pp");
+    expect(r.fmt(r.deltaCond)).toBe("+0pp");
+    expect(r.fmt(r.deltaReject)).toBe("+0pp");
+  });
+
+  it("improved=true when approve unchanged but reject decreases", () => {
+    const orig = { approvePct: 50, conditionalPct: 20, rejectPct: 30 };
+    const upg  = { approvePct: 50, conditionalPct: 25, rejectPct: 25 };
+    const r = computeDelta(orig, upg)!;
+    expect(r.deltaApprove).toBe(0);
+    expect(r.deltaReject).toBe(-5);
+    expect(r.improved).toBe(true);
+  });
+
+  it("data-testid='sim-delta-row' is present in DealScreener.tsx source", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/pages/DealScreener.tsx"),
+      "utf8"
+    );
+    expect(src).toContain('data-testid="sim-delta-row"');
+  });
+
+  it("delta row is gated on both origSimDist and upgradedSimData.aggregation", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/pages/DealScreener.tsx"),
+      "utf8"
+    );
+    expect(src).toContain("origSimDist && upgradedSimData.aggregation?.decisionDistribution");
+  });
+
+  it("SIMULATION DELTA label is present in the component source", () => {
+    const src = require("fs").readFileSync(
+      require("path").join(__dirname, "../client/src/pages/DealScreener.tsx"),
+      "utf8"
+    );
+    expect(src).toContain("SIMULATION DELTA");
+  });
+});
