@@ -965,7 +965,10 @@ function VCSummaryBlock({ vc, decisionColor }: { vc: NonNullable<ICReportData["v
 // Shown for any REJECTED/VETOED/HOLD verdict.
 // Calls the fixTheDeal LLM procedure and renders a 5-section deal repair report.
 interface FixTheDealResult {
-  classification: "A" | "B" | "C";
+  // codeClassification is the authoritative code-derived class (never LLM-judged).
+  // classification is kept only for PDF export header text — never use it for gating.
+  codeClassification: "A" | "B" | "C";
+  classification: "A" | "B" | "C";  // ← LLM-reported, display-only, do NOT use for gating
   classificationRationale: string;
   rootCauses: Array<{ category: string; description: string; priority: number }>;
   revisedBrief: string;
@@ -1091,7 +1094,7 @@ const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle, {
 
 
   const handleDownloadPdf = async () => {
-    if (!d || d.classification === "C") return;
+    if (!d || d.codeClassification === "C") return;  // Guard: PDF blocked for C deals (code-derived, not LLM)
     const dealName = result.dealName ?? "Deal";
     const today = new Date();
     const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
@@ -1099,7 +1102,7 @@ const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle, {
     const res = await exportMutation.mutateAsync({
       dealName,
       councilMode: councilMode,
-      classification: d.classification,
+      classification: d.codeClassification,  // ← use code-derived class for PDF header
       classificationRationale: d.classificationRationale,
       rootCauses: d.rootCauses,
       revisedBrief: d.revisedBrief,
@@ -1118,7 +1121,7 @@ const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle, {
   };
 
   const handleRequestMemo = async () => {
-    if (!d || d.classification !== "C") return;
+    if (!d || d.codeClassification !== "C") return;  // Guard: memo only for C deals (code-derived, not LLM)
     setMemoText(null);
     const blockers = d.rootCauses.slice(0, 3).map((rc: any) => `[${rc.category}] ${rc.description}`);
     const res = await memoMutation.mutateAsync({
@@ -1197,8 +1200,9 @@ const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle, {
   };
 
   const d = fixMutation.data as FixTheDealResult | undefined;
-  const classColor = d?.classification === "A" ? GREEN : d?.classification === "B" ? AMBER : RED;
-  const isClassC = d?.classification === "C";
+  // ALWAYS use codeClassification for panel rendering — never d.classification (LLM-reported)
+  const classColor = d?.codeClassification === "A" ? GREEN : d?.codeClassification === "B" ? AMBER : RED;
+  const isClassC = d?.codeClassification === "C";
 
   // ── Comparison helpers ────────────────────────────────────────────────────
   // Pull original sim distribution from DB query (non-upgraded run for this dealId)
@@ -1258,7 +1262,7 @@ const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle, {
                   fontFamily: MONO, fontSize: 11, fontWeight: 700, color: classColor,
                   background: `${classColor}18`, border: `1px solid ${classColor}44`,
                   borderRadius: 4, padding: "3px 10px",
-                }}>{d.classification} — {d.classification === "A" ? "STRUCTURALLY REPAIRABLE" : d.classification === "B" ? "CONDITIONALLY VIABLE" : "FUNDAMENTALLY NON-VIABLE"}</span>
+                }}>{d.codeClassification} — {d.codeClassification === "A" ? "STRUCTURALLY REPAIRABLE" : d.codeClassification === "B" ? "CONDITIONALLY VIABLE" : "FUNDAMENTALLY NON-VIABLE"}</span>
               </div>
             )}
           </div>

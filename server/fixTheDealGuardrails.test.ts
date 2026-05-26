@@ -344,3 +344,68 @@ describe("fixTheDeal — rescuePolicy integration", () => {
     }
   });
 });
+
+describe("fixTheDeal — panel badge reads codeClassification, not LLM classification", () => {
+  /**
+   * This test proves the panel badge gap is closed:
+   * - LLM returns classification = "A" (optimistic self-report)
+   * - terminalFlags = ["fraud"] → codeClassification = "C"
+   * - The procedure exposes codeClassification = "C" for the panel badge
+   * - The procedure also exposes classification = "C" (overridden by Guard 0)
+   * - No path exists where the panel renders a non-C badge for a C deal
+   */
+  it("panel badge field (codeClassification) is C even when LLM self-reports A", async () => {
+    vi.mocked(invokeLLM).mockResolvedValue(makeAdversarialLLMResponse({
+      decision: "APPROVED",
+      consensusPct: 90,
+      classification: "A",  // ← LLM optimistically self-reports A
+    }) as never);
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.dealScreener.fixTheDeal({
+      dealText: FRAUD_DEAL_TEXT,
+      councilOutcome: "Verdict: VETOED · 0/10 YES\nTop blockers: fraud allegation",
+      terminalFlags: ["fraud"],
+    });
+
+    // The field the panel badge reads — must be C
+    expect((result as Record<string, unknown>).codeClassification).toBe("C");
+
+    // The LLM-reported classification field is also overridden to C by Guard 0
+    // (so even if a future developer accidentally reads d.classification, it is still C)
+    expect(result.classification).toBe("C");
+
+    // Decision and score must be zeroed — no fabricated positive leaks through
+    expect(result.predictedOutcome.decision).toBe("REJECTED");
+    expect(result.predictedOutcome.consensusPct).toBe(0);
+
+    // PDF surface: revisedBrief is empty string (C-constructor clears all positive fields)
+    // The C-constructor sets revisedBrief: "" — no rescue path, no revised brief
+    expect(result.revisedBrief).toBe("");
+
+    // Memo surface: residualRisks populated (C-constructor builds from rescuePolicy)
+    expect(result.residualRisks.length).toBeGreaterThan(0);
+  });
+
+  it("panel badge field (codeClassification) is B when terminalFlags is empty, regardless of LLM classification", async () => {
+    vi.mocked(invokeLLM).mockResolvedValue(makeAdversarialLLMResponse({
+      decision: "APPROVED_WITH_CONDITIONS",
+      consensusPct: 70,
+      classification: "C",  // ← LLM claims C
+    }) as never);
+    const caller = appRouter.createCaller(makeCtx());
+    const result = await caller.dealScreener.fixTheDeal({
+      dealText: FRAUD_DEAL_TEXT,
+      councilOutcome: "Verdict: REJECTED · 3/10 YES",
+      terminalFlags: [],  // ← no terminal flags → codeClassification = B
+    });
+
+    // Panel badge must reflect B (code-derived), not C (LLM-reported)
+    expect((result as Record<string, unknown>).codeClassification).toBe("B");
+
+    // LLM classification is overridden to B (Guard 0 normalizes to code-derived)
+    expect(result.classification).toBe("B");
+
+    // B deal: decision is not zeroed (Guard 4 caps at APPROVED_WITH_CONDITIONS, not REJECTED)
+    expect(result.predictedOutcome.decision).toBe("APPROVED_WITH_CONDITIONS");
+  });
+});
