@@ -57,6 +57,17 @@ export interface ICMemoInput {
     upgradeTriggers?:  string[];
     watchItems?:       string[];
   };
+  /**
+   * Optional: upgraded scenario SimulationFingerprint.
+   * When present, a "Simulation Resilience Impact" section is appended to the PDF.
+   * Use stored fingerprint fields only — do not compute from prose.
+   */
+  upgradedFingerprint?: {
+    resilienceDelta?: number | null;
+    upgradeEffectiveness?: number | null;
+    rescueabilityScore?: number | null;
+    structuralFragilityScore?: number | null;
+  } | null;
   monteCarloAnalysis?: {
     p10: number; p50: number; p90: number; mean: number; std: number;
     upside_skew: boolean; verdict: string; distribution_label: string;
@@ -2160,6 +2171,68 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
       }
     }
 
+    // ── Section 18: Simulation Resilience Impact (only when upgraded fingerprint exists) ──
+    // Mirrors the same section in the Stress Test PDF. Uses stored fingerprint fields only.
+    // Omitted entirely when no upgraded fingerprint is available.
+    if (input.upgradedFingerprint) {
+      const fp = input.upgradedFingerprint;
+      // Helper: format resilienceDelta (stored as percentage points, e.g. 18.4)
+      const fmtResilienceDelta = (v: number | null | undefined): string => {
+        if (v == null) return "Not available.";
+        const sign = v >= 0 ? "+" : "";
+        return `${sign}${v.toFixed(1)}pp`;
+      };
+      // Helper: map upgradeEffectiveness float to label (mirrors UI formatUpgradeEffectiveness)
+      const fmtUpgradeEffectiveness = (v: number | null | undefined): string => {
+        if (v == null) return "Not available.";
+        if (v < 0.25) return "Low";
+        if (v < 0.50) return "Moderate";
+        if (v < 0.75) return "High";
+        return "Very High";
+      };
+      newSectionPage("18");
+      sectionDivider("18", "Simulation Resilience Impact");
+      bodyText(
+        "The following metrics are derived from the upgraded scenario fingerprint and reflect how the " +
+        "structural improvements affected simulation resilience. These are simulation resilience metrics, " +
+        "not investment success probabilities."
+      );
+      doc.moveDown(0.3);
+      kvGrid([
+        {
+          label: "Resilience Delta",
+          value: fmtResilienceDelta(fp.resilienceDelta) +
+            (fp.resilienceDelta != null ? "  (pp)" : ""),
+        },
+        {
+          label: "Upgrade Effectiveness",
+          value: fmtUpgradeEffectiveness(fp.upgradeEffectiveness) +
+            (fp.upgradeEffectiveness != null ? `  (raw: ${fp.upgradeEffectiveness.toFixed(3)})` : ""),
+        },
+        {
+          label: "Rescueability Score",
+          value: fp.rescueabilityScore != null
+            ? `${fp.rescueabilityScore.toFixed(0)}/100`
+            : "Not available.",
+        },
+        {
+          label: "Structural Fragility Score",
+          value: fp.structuralFragilityScore != null
+            ? `${fp.structuralFragilityScore.toFixed(0)}/100`
+            : "Not available.",
+        },
+      ], 2);
+      doc.moveDown(0.3);
+      bodyText(
+        "Interpretation: Resilience Delta measures the change in simulated approval rate after structural " +
+        "fixes were applied, in percentage points. Upgrade Effectiveness reflects the magnitude of that " +
+        "improvement. Rescueability Score measures how many hard-no scenarios were recoverable through " +
+        "structured mitigation. Structural Fragility Score reflects how fragile the deal structure remains " +
+        "under stress (higher = more fragile). These metrics do not imply investment success probability, " +
+        "winner selection, or a change to the original council verdict.",
+        MUTED
+      );
+    }
     // ─────────────────────────────────────────────────────────────────────────
     // FOOTER ON ALL PAGES
     // ─────────────────────────────────────────────────────────────────────────

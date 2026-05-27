@@ -2778,6 +2778,15 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
           conditions:  v.conditions,
           blockers:    v.blockers,
         })),
+        // Section 18: Simulation Resilience Impact (only when upgraded fingerprint exists)
+        ...(upgradedFingerprint ? {
+          upgradedFingerprint: {
+            resilienceDelta:          upgradedFingerprint.resilienceDelta ?? null,
+            upgradeEffectiveness:     upgradedFingerprint.upgradeEffectiveness ?? null,
+            rescueabilityScore:       upgradedFingerprint.rescueabilityScore ?? null,
+            structuralFragilityScore: upgradedFingerprint.structuralFragilityScore ?? null,
+          },
+        } : {}),
       });
       clearTimeout(synthesisTimer);
       setIcMemoStatus("done");

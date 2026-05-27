@@ -754,6 +754,13 @@ export const dealScreenerRouter = router({
           conditions:  z.array(z.string()),
           blockers:    z.array(z.string()),
         })),
+        // Optional: upgraded scenario SimulationFingerprint for Section 18
+        upgradedFingerprint: z.object({
+          resilienceDelta:          z.number().nullable().optional(),
+          upgradeEffectiveness:     z.number().nullable().optional(),
+          rescueabilityScore:       z.number().nullable().optional(),
+          structuralFragilityScore: z.number().nullable().optional(),
+        }).nullable().optional(),
       })
     )
     .mutation(async ({ input, ctx }) => {
@@ -815,6 +822,7 @@ export const dealScreenerRouter = router({
         patternContext:      input.patternContext,
         votes:               input.votes,
         scenarioStress,
+        upgradedFingerprint: input.upgradedFingerprint ?? undefined,
       };
       const pdfBuffer = await generateICMemoPdf(memoInput);
       const patternSuffix = input.patternContext === "invested_match"
