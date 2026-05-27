@@ -68,6 +68,13 @@ export const scenarioSimRouter = router({
        * Defaults to 0.0 (backward compatible).
        */
       baseApprovalScore: z.number().min(-1).max(1).optional(),
+      /**
+       * Structured terminalFlags from the council result for this deal.
+       * Passed to the Delta Engine to classify hard-no variants as
+       * RESCUED_CONDITIONAL or FINAL_REJECTED.
+       * Defaults to [] (backward compatible — all hard-nos become FINAL_REJECTED).
+       */
+      terminalFlags: z.array(z.string()).optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -112,8 +119,9 @@ export const scenarioSimRouter = router({
 
         // Evaluate all variants
         const baseScore = input.baseApprovalScore ?? 0.0;
+        const flags = input.terminalFlags ?? [];
         const results = await Promise.all(
-          variants.map(v => evaluateScenario(v, buildScenarioBrief(input.dealText, v), invokeLLM as any, input.councilMode, baseScore))
+          variants.map(v => evaluateScenario(v, buildScenarioBrief(input.dealText, v), invokeLLM as any, input.councilMode, baseScore, flags))
         );
 
         // Aggregate
@@ -171,7 +179,8 @@ export const scenarioSimRouter = router({
         baseSeed,
         db,
         input.councilMode,
-        input.baseApprovalScore ?? 0.0
+        input.baseApprovalScore ?? 0.0,
+        input.terminalFlags ?? []
       ).catch(err => {
         console.error(`[ScenarioSim] Background run failed for ${runId}:`, err);
       });
@@ -367,7 +376,8 @@ async function runDeepSimulationBackground(
   baseSeed: number,
   db: Awaited<ReturnType<typeof getDb>>,
   councilMode?: string,
-  baseApprovalScore: number = 0.0
+  baseApprovalScore: number = 0.0,
+  terminalFlags: string[] = []
 ): Promise<void> {
   if (!db) return;
 
@@ -394,7 +404,7 @@ async function runDeepSimulationBackground(
     const chunkMs = Date.now();
 
     const results = await Promise.all(
-      variants.map(v => evaluateScenario(v, buildScenarioBrief(dealText, v), invokeLLM as any, councilMode, baseApprovalScore))
+      variants.map(v => evaluateScenario(v, buildScenarioBrief(dealText, v), invokeLLM as any, councilMode, baseApprovalScore, terminalFlags))
     );
 
     allResults.push(...results);

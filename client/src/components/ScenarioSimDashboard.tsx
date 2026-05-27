@@ -42,6 +42,11 @@ interface DecisionDistribution {
   totalScenarios: number;
   hardNoCount: number;
   hardNoPct: number;
+  /** Delta Engine sub-classification of hard-no variants */
+  rescuedConditionalCount?: number;
+  finalRejectedCount?: number;
+  rescuedConditionalPct?: number;
+  finalRejectedPct?: number;
 }
 
 interface FailureVector {
@@ -192,6 +197,17 @@ function DecisionDistributionSection({ dist }: { dist: DecisionDistribution }) {
           {dist.hardNoPct > 0 && (
             <div style={{ textAlign: "center", fontFamily: MONO, fontSize: 9, color: RED, marginTop: 6 }}>
               ⚠ {dist.hardNoPct}% HARD-NO TRIGGERS
+            </div>
+          )}
+          {/* Delta Engine sub-classification */}
+          {(dist.rescuedConditionalCount ?? 0) > 0 && (
+            <div style={{ textAlign: "center", fontFamily: MONO, fontSize: 9, color: AMBER, marginTop: 4 }}>
+              ↻ {dist.rescuedConditionalPct}% RESCUED_CONDITIONAL
+            </div>
+          )}
+          {(dist.finalRejectedCount ?? 0) > 0 && dist.hardNoPct > 0 && (
+            <div style={{ textAlign: "center", fontFamily: MONO, fontSize: 9, color: RED, marginTop: 2, opacity: 0.7 }}>
+              ✕ {dist.finalRejectedPct}% FINAL_REJECTED
             </div>
           )}
         </div>

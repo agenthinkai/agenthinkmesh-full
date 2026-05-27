@@ -25,6 +25,17 @@ export interface DecisionDistribution {
   totalScenarios: number;
   hardNoCount: number;
   hardNoPct: number;
+  /**
+   * Delta Engine sub-classification of hard-no REJECT variants.
+   * rescuedConditionalCount: hard-no variants where all terminalFlags are RESCUABLE
+   *   (currently: default_risk-only). These are structurally rescuable.
+   * finalRejectedCount: hard-no variants with TERMINAL flags or empty flags.
+   * rescuedConditionalCount + finalRejectedCount === hardNoCount.
+   */
+  rescuedConditionalCount: number;
+  finalRejectedCount: number;
+  rescuedConditionalPct: number;
+  finalRejectedPct: number;
 }
 
 export interface FailureVector {
@@ -149,12 +160,22 @@ function computeDecisionDistribution(
   let conditionalCount = 0;
   let rejectCount = 0;
   let hardNoCount = 0;
+  let rescuedConditionalCount = 0;
+  let finalRejectedCount = 0;
 
   for (const r of results) {
     if (r.decision === "APPROVE") approveCount++;
     else if (r.decision === "CONDITIONAL") conditionalCount++;
     else rejectCount++;
-    if (r.hasHardNo) hardNoCount++;
+    if (r.hasHardNo) {
+      hardNoCount++;
+      if (r.deltaEngine?.rescueStatus === "RESCUED_CONDITIONAL") {
+        rescuedConditionalCount++;
+      } else {
+        // FINAL_REJECTED or no Delta Engine result (backward compat)
+        finalRejectedCount++;
+      }
+    }
   }
 
   return {
@@ -167,6 +188,10 @@ function computeDecisionDistribution(
     totalScenarios: total,
     hardNoCount,
     hardNoPct: Math.round((hardNoCount / total) * 1000) / 10,
+    rescuedConditionalCount,
+    finalRejectedCount,
+    rescuedConditionalPct: Math.round((rescuedConditionalCount / total) * 1000) / 10,
+    finalRejectedPct: Math.round((finalRejectedCount / total) * 1000) / 10,
   };
 }
 

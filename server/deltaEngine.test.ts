@@ -1,0 +1,96 @@
+/**
+ * deltaEngine.test.ts — Guardrail tests for the Delta Engine / Rescue Sensitivity Layer
+ *
+ * 8 tests covering the 8 resolution rules:
+ *   DE-1  default_risk-only → RESCUED_CONDITIONAL
+ *   DE-2  fraud (terminal) → FINAL_REJECTED
+ *   DE-3  mixed default_risk + fraud → FINAL_REJECTED (terminal overrides rescuable)
+ *   DE-4  empty terminalFlags → FINAL_REJECTED (non-empty guard)
+ *   DE-5  unknown flag → FINAL_REJECTED (fail-closed)
+ *   DE-6  RESCUED_CONDITIONAL has 5 sensitivity scores, all dataUnavailable
+ *   DE-7  FINAL_REJECTED has empty sensitivityScores
+ *   DE-8  rescue can never produce APPROVED (stage-1 invariant)
+ */
+
+import { describe, it, expect } from "vitest";
+import { runDeltaEngine } from "./deltaEngine";
+
+describe("Delta Engine — resolution rules", () => {
+  // ── DE-1: default_risk-only → RESCUED_CONDITIONAL ───────────────────────────
+  it("DE-1: default_risk-only flags produce RESCUED_CONDITIONAL", () => {
+    const result = runDeltaEngine(0, ["debt_severe"], ["default_risk"]);
+    expect(result.rescueStatus).toBe("RESCUED_CONDITIONAL");
+    expect(result.rejectionReason).toBeNull();
+    expect(result.mitigation).toBeTruthy();
+    expect(result.triggeringFlags).toEqual(["default_risk"]);
+  });
+
+  // ── DE-2: fraud (terminal) → FINAL_REJECTED ─────────────────────────────────
+  it("DE-2: fraud flag (TERMINAL) produces FINAL_REJECTED", () => {
+    const result = runDeltaEngine(1, ["governance_severe"], ["fraud"]);
+    expect(result.rescueStatus).toBe("FINAL_REJECTED");
+    expect(result.rejectionReason).toMatch(/FRAUD/i);
+    expect(result.mitigation).toBeNull();
+    expect(result.sensitivityScores).toHaveLength(0);
+  });
+
+  // ── DE-3: mixed default_risk + fraud → FINAL_REJECTED ───────────────────────
+  // Terminal flag overrides co-occurring rescuable flag.
+  it("DE-3: mixed default_risk + fraud → FINAL_REJECTED, rescuable listed in rescuableOverriddenBy", () => {
+    const result = runDeltaEngine(2, ["debt_severe", "governance_severe"], ["default_risk", "fraud"]);
+    expect(result.rescueStatus).toBe("FINAL_REJECTED");
+    expect(result.rejectionReason).toMatch(/FRAUD/i);
+    // default_risk was rescuable but overridden by fraud
+    expect(result.rescuableOverriddenBy).toContain("default_risk");
+    expect(result.sensitivityScores).toHaveLength(0);
+  });
+
+  // ── DE-4: empty terminalFlags → FINAL_REJECTED (non-empty guard) ────────────
+  it("DE-4: empty terminalFlags → FINAL_REJECTED (non-empty guard prevents vacuous rescue)", () => {
+    const result = runDeltaEngine(3, ["debt_severe"], []);
+    expect(result.rescueStatus).toBe("FINAL_REJECTED");
+    expect(result.rejectionReason).toMatch(/empty terminalFlags/i);
+    expect(result.triggeringFlags).toHaveLength(0);
+    expect(result.sensitivityScores).toHaveLength(0);
+  });
+
+  // ── DE-5: unknown flag → FINAL_REJECTED (fail-closed) ───────────────────────
+  it("DE-5: unknown / unrecognised flag → FINAL_REJECTED (fail-closed)", () => {
+    const result = runDeltaEngine(4, ["debt_severe"], ["unknown_blocker_xyz"]);
+    expect(result.rescueStatus).toBe("FINAL_REJECTED");
+    expect(result.rejectionReason).toMatch(/unknown/i);
+    expect(result.sensitivityScores).toHaveLength(0);
+  });
+
+  // ── DE-6: RESCUED_CONDITIONAL has 5 sensitivity scores, all dataUnavailable ──
+  it("DE-6: RESCUED_CONDITIONAL carries 5 sensitivity scores, all dataUnavailable: true", () => {
+    const result = runDeltaEngine(5, ["debt_severe"], ["default_risk"]);
+    expect(result.rescueStatus).toBe("RESCUED_CONDITIONAL");
+    expect(result.sensitivityScores).toHaveLength(5);
+    for (const score of result.sensitivityScores) {
+      expect(score.dataUnavailable).toBe(true);
+      expect(score.currentValue).toBeNull();
+      expect(score.thresholdValue).toBeNull();
+      expect(score.headroom).toBeNull();
+    }
+  });
+
+  // ── DE-7: FINAL_REJECTED has empty sensitivityScores ────────────────────────
+  it("DE-7: FINAL_REJECTED (terminal flag) has empty sensitivityScores", () => {
+    const result = runDeltaEngine(6, ["governance_severe"], ["capital_controls"]);
+    expect(result.rescueStatus).toBe("FINAL_REJECTED");
+    expect(result.sensitivityScores).toHaveLength(0);
+  });
+
+  // ── DE-8: rescue can never produce APPROVED (stage-1 invariant) ─────────────
+  // Even with the most rescuable input, the engine can only produce RESCUED_CONDITIONAL.
+  it("DE-8: rescue can never produce APPROVED — max upgrade is RESCUED_CONDITIONAL", () => {
+    // Best possible input: single default_risk flag (the only RESCUABLE flag)
+    const result = runDeltaEngine(7, ["debt_severe"], ["default_risk"]);
+    // RESCUED_CONDITIONAL is the maximum — never APPROVED
+    expect(result.rescueStatus).not.toBe("APPROVED" as never);
+    expect(["RESCUED_CONDITIONAL", "FINAL_REJECTED"]).toContain(result.rescueStatus);
+    // Confirm it is RESCUED_CONDITIONAL (not silently downgraded)
+    expect(result.rescueStatus).toBe("RESCUED_CONDITIONAL");
+  });
+});

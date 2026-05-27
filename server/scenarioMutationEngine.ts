@@ -22,6 +22,9 @@
  *   - Resumable: large runs (10k, 100k) are chunked and can be paused/resumed.
  */
 
+import type { DeltaEngineResult } from "./deltaEngine";
+import { runDeltaEngine } from "./deltaEngine";
+
 // ── Perturbation Categories ────────────────────────────────────────────────────
 
 export type PerturbationCategory =
@@ -703,6 +706,11 @@ export interface ScenarioEvalResult {
   approvalDelta: number;
   stressedCategories: PerturbationCategory[];
   provenance: ScenarioVariant["provenance"];
+  /**
+   * Delta Engine result — present only for hard-no variants.
+   * null for PASS variants (Delta Engine not invoked).
+   */
+  deltaEngine: DeltaEngineResult | null;
 }
 
 /**
@@ -732,10 +740,19 @@ export async function evaluateScenario(
   scenarioBrief: string,
   invokeLLM: (params: { messages: Array<{ role: string; content: string }> }) => Promise<{ choices: Array<{ message: { content: string } }> }>,
   councilMode?: string,
-  baseApprovalScore: number = 0.0
+  baseApprovalScore: number = 0.0,
+  /** Structured terminalFlags from the deal/council result. Required for Delta Engine. */
+  terminalFlags: string[] = []
 ): Promise<ScenarioEvalResult> {
   // ── 1. Hard-no: deterministic reject, no LLM ──────────────────────────────
   if (variant.hasHardNo) {
+    // Stage 1 (OR-gate) is UNCHANGED: REJECT is always emitted here.
+    // Delta Engine runs post-Stage-1 to classify as RESCUED_CONDITIONAL or FINAL_REJECTED.
+    const deltaResult = runDeltaEngine(
+      variant.index,
+      variant.provenance.hardNoTriggers,
+      terminalFlags
+    );
     return {
       index: variant.index,
       decision: "REJECT",
@@ -749,6 +766,7 @@ export async function evaluateScenario(
       approvalDelta: variant.totalApprovalDelta,
       stressedCategories: variant.stressedCategories,
       provenance: variant.provenance,
+      deltaEngine: deltaResult,
     };
   }
 
@@ -789,6 +807,7 @@ export async function evaluateScenario(
       approvalDelta: delta,
       stressedCategories: variant.stressedCategories,
       provenance: variant.provenance,
+      deltaEngine: null,
     };
   }
 
@@ -854,5 +873,6 @@ export async function evaluateScenario(
     approvalDelta: delta,
     stressedCategories: variant.stressedCategories,
     provenance: variant.provenance,
+    deltaEngine: null,
   };
 }
