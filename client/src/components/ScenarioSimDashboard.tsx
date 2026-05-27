@@ -858,6 +858,8 @@ export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId
         onRestore={handleRestore}
         activeRunId={runId}
       />
+      {/* Run History (Fingerprint) Panel — simulation resilience memory */}
+      <RunFingerprintHistoryPanel dealId={dealId} />
     </div>
   );
 }
@@ -1062,6 +1064,255 @@ function SimulationHistoryPanel({ dealId, onRestore, activeRunId }: SimHistoryPa
                   </div>
                 );
               })()}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Run Fingerprint History Panel ────────────────────────────────────────────
+/**
+ * Displays per-deal simulation fingerprints from listFingerprintsForDeal.
+ * Shows how simulation resilience changes across original and upgraded runs.
+ * Does NOT predict investment success.
+ */
+interface RunFingerprintHistoryPanelProps {
+  dealId: string;
+}
+
+function formatUpgradeEffectivenessLabel(value: number | null | undefined): string {
+  if (value == null) return "Not available";
+  if (value < 0.25) return "Low";
+  if (value < 0.50) return "Moderate";
+  if (value < 0.75) return "High";
+  return "Very High";
+}
+
+function formatRescueabilityLabel(score: number | null | undefined, vetoPct: number | null | undefined): string {
+  if (score == null) return "Not available";
+  if ((vetoPct ?? 0) === 0) return "100 — No rescue required";
+  return String(score);
+}
+
+function formatResilienceDelta(delta: number | null | undefined): string {
+  if (delta == null) return "Not available";
+  return (delta >= 0 ? "+" : "") + delta.toFixed(1) + "pp";
+}
+
+function RunFingerprintHistoryPanel({ dealId }: RunFingerprintHistoryPanelProps) {
+  const [open, setOpen] = useState(false);
+  const { data: fingerprints, isLoading } = trpc.scenarioSim.listFingerprintsForDeal.useQuery(
+    { dealId, limit: 20 },
+    { enabled: open && !!dealId, staleTime: 30_000 }
+  );
+
+  const rows = fingerprints ?? [];
+
+  const formatDate = (d: string | Date | null | undefined) => {
+    if (!d) return "—";
+    const date = new Date(d);
+    return date.toLocaleString("en-US", { timeZone: "Asia/Kuwait", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+  };
+
+  const modeLabel = (mode: string | null | undefined) => {
+    if (!mode) return "—";
+    const map: Record<string, string> = {
+      quick: "Quick", institutional: "Institutional", deep: "Deep",
+      infrastructure: "Infrastructure", extreme: "Extreme",
+    };
+    return map[mode] ?? mode;
+  };
+
+  return (
+    <div
+      data-testid="run-fingerprint-history-panel"
+      style={{ marginTop: 12, border: `1px solid ${BORDER}`, borderRadius: 6, background: BG2, overflow: "hidden" }}
+    >
+      {/* Header / toggle */}
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+          padding: "10px 16px", background: "transparent", border: "none", cursor: "pointer",
+          color: TEXT2, fontFamily: MONO, fontSize: 9, letterSpacing: "0.1em",
+        }}
+      >
+        <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ color: TEAL, fontWeight: 700 }}>◈ RUN HISTORY</span>
+          <span style={{ color: MUTED }}>SIMULATION FINGERPRINTS</span>
+          {rows.length > 0 && open && (
+            <span style={{
+              background: "rgba(0,212,170,0.1)", border: "1px solid rgba(0,212,170,0.25)",
+              color: TEAL, padding: "1px 6px", borderRadius: 3, fontSize: 8,
+            }}>
+              {rows.length} run{rows.length !== 1 ? "s" : ""}
+            </span>
+          )}
+        </span>
+        <span style={{ color: MUTED, fontSize: 10 }}>{open ? "▲" : "▼"}</span>
+      </button>
+
+      {open && (
+        <div style={{ padding: "0 16px 14px" }}>
+          {/* Disclaimer */}
+          <div style={{
+            padding: "8px 12px", marginBottom: 12,
+            background: "rgba(74,158,255,0.04)", border: `1px solid rgba(74,158,255,0.15)`,
+            borderRadius: 4, fontFamily: MONO, fontSize: 8, color: TEXT2, lineHeight: 1.6,
+          }}>
+            Run History stores structured simulation fingerprints for this deal. It shows how resilience
+            changes across repeated simulations and upgraded scenarios. It does not predict investment success.
+          </div>
+
+          {isLoading && (
+            <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, padding: "12px 0" }}>
+              Loading fingerprints…
+            </div>
+          )}
+
+          {!isLoading && rows.length === 0 && (
+            <div
+              data-testid="run-history-empty"
+              style={{ fontFamily: MONO, fontSize: 9, color: MUTED, padding: "12px 0" }}
+            >
+              No simulation fingerprints found for this deal.
+            </div>
+          )}
+
+          {!isLoading && rows.length > 0 && (
+            <div style={{ overflowX: "auto" }}>
+              {/* Column headers */}
+              <div style={{
+                display: "grid",
+                gridTemplateColumns: "90px 60px 55px 70px 52px 52px 52px 70px 70px 80px 80px 90px",
+                gap: 4, padding: "6px 0", borderBottom: `1px solid ${BORDER}`,
+                fontFamily: MONO, fontSize: 7, color: MUTED, letterSpacing: "0.08em",
+              }}>
+                <span>DATE (KWT)</span>
+                <span>MODE</span>
+                <span>SCENARIOS</span>
+                <span>TYPE</span>
+                <span style={{ color: GREEN }}>APPROVE</span>
+                <span style={{ color: AMBER }}>COND.</span>
+                <span style={{ color: RED }}>REJECT</span>
+                <span>RESCUED</span>
+                <span>FINAL REJ.</span>
+                <span style={{ color: TEAL }}>RESILIENCE Δ</span>
+                <span>RESCUEABILITY</span>
+                <span>FRAGILITY</span>
+              </div>
+
+              {/* Rows */}
+              {rows.map((fp: any, idx: number) => {
+                const isUpgraded = fp.isUpgradedScenario === true || fp.isUpgradedScenario === 1;
+                return (
+                  <div
+                    key={fp.id ?? fp.runId ?? idx}
+                    data-testid={isUpgraded ? "fingerprint-row-upgraded" : "fingerprint-row-original"}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "90px 60px 55px 70px 52px 52px 52px 70px 70px 80px 80px 90px",
+                      gap: 4,
+                      padding: "7px 0",
+                      borderBottom: `1px solid rgba(30,45,61,0.5)`,
+                      alignItems: "center",
+                      background: isUpgraded ? "rgba(0,255,135,0.02)" : "transparent",
+                    }}
+                  >
+                    <span style={{ fontFamily: MONO, fontSize: 8, color: TEXT2 }}>
+                      {formatDate(fp.createdAt)}
+                    </span>
+                    <span style={{ fontFamily: MONO, fontSize: 8, color: TEXT }}>
+                      {modeLabel(fp.simulationMode)}
+                    </span>
+                    <span style={{ fontFamily: MONO, fontSize: 8, color: TEXT2 }}>
+                      {fp.scenarioCount ?? "—"}
+                    </span>
+                    {/* Type badge */}
+                    <span
+                      data-testid={isUpgraded ? "badge-upgraded" : "badge-original"}
+                      style={{
+                        fontFamily: MONO, fontSize: 7, fontWeight: 700, letterSpacing: "0.06em",
+                        color: isUpgraded ? GREEN : TEXT2,
+                        background: isUpgraded ? "rgba(0,255,135,0.08)" : "rgba(255,255,255,0.04)",
+                        border: `1px solid ${isUpgraded ? "rgba(0,255,135,0.25)" : BORDER}`,
+                        padding: "2px 5px", borderRadius: 3, display: "inline-block",
+                      }}
+                    >
+                      {isUpgraded ? "UPGRADED" : "ORIGINAL"}
+                    </span>
+                    <span style={{ fontFamily: MONO, fontSize: 8, color: GREEN, fontWeight: 700 }}>
+                      {fp.approvePct != null ? `${fp.approvePct}%` : "—"}
+                    </span>
+                    <span style={{ fontFamily: MONO, fontSize: 8, color: AMBER, fontWeight: 700 }}>
+                      {fp.conditionalPct != null ? `${fp.conditionalPct}%` : "—"}
+                    </span>
+                    <span style={{ fontFamily: MONO, fontSize: 8, color: RED, fontWeight: 700 }}>
+                      {fp.rejectPct != null ? `${fp.rejectPct}%` : "—"}
+                    </span>
+                    <span style={{ fontFamily: MONO, fontSize: 8, color: TEXT2 }}>
+                      {fp.rescuedConditionalPct != null ? `${fp.rescuedConditionalPct}%` : "Not available"}
+                    </span>
+                    <span style={{ fontFamily: MONO, fontSize: 8, color: TEXT2 }}>
+                      {fp.finalRejectedPct != null ? `${fp.finalRejectedPct}%` : "Not available"}
+                    </span>
+                    {/* Resilience Delta */}
+                    <span
+                      data-testid="cell-resilience-delta"
+                      style={{
+                        fontFamily: MONO, fontSize: 8, fontWeight: 700,
+                        color: fp.resilienceDelta == null ? MUTED
+                          : fp.resilienceDelta >= 0 ? GREEN : RED,
+                      }}
+                    >
+                      {formatResilienceDelta(fp.resilienceDelta)}
+                    </span>
+                    {/* Rescueability Score */}
+                    <span
+                      data-testid="cell-rescueability"
+                      style={{ fontFamily: MONO, fontSize: 8, color: fp.rescueabilityScore != null ? TEXT : MUTED }}
+                    >
+                      {formatRescueabilityLabel(fp.rescueabilityScore, fp.vetoPct)}
+                    </span>
+                    {/* Structural Fragility */}
+                    <span
+                      data-testid="cell-fragility"
+                      style={{ fontFamily: MONO, fontSize: 8, color: fp.structuralFragilityScore != null ? TEXT2 : MUTED }}
+                    >
+                      {fp.structuralFragilityScore != null ? `${fp.structuralFragilityScore}/100` : "Not available"}
+                    </span>
+                  </div>
+                );
+              })}
+
+              {/* Upgrade Effectiveness — shown as a sub-row for upgraded runs only */}
+              {rows.some((fp: any) => fp.isUpgradedScenario === true || fp.isUpgradedScenario === 1) && (
+                <div style={{
+                  marginTop: 10, padding: "8px 10px",
+                  background: "rgba(0,255,135,0.03)", border: "1px solid rgba(0,255,135,0.12)",
+                  borderRadius: 4,
+                }}>
+                  <div style={{ fontFamily: MONO, fontSize: 7, color: MUTED, letterSpacing: "0.08em", marginBottom: 6 }}>
+                    UPGRADE EFFECTIVENESS (UPGRADED RUNS ONLY)
+                  </div>
+                  {rows
+                    .filter((fp: any) => fp.isUpgradedScenario === true || fp.isUpgradedScenario === 1)
+                    .map((fp: any, idx: number) => (
+                      <div key={fp.id ?? idx} style={{ display: "flex", gap: 12, alignItems: "center", marginBottom: 4 }}>
+                        <span style={{ fontFamily: MONO, fontSize: 8, color: TEXT2 }}>{formatDate(fp.createdAt)}</span>
+                        <span
+                          data-testid="cell-upgrade-effectiveness"
+                          style={{ fontFamily: MONO, fontSize: 8, color: fp.upgradeEffectiveness != null ? TEAL : MUTED }}
+                        >
+                          {formatUpgradeEffectivenessLabel(fp.upgradeEffectiveness)}
+                        </span>
+                      </div>
+                    ))
+                  }
+                </div>
+              )}
             </div>
           )}
         </div>
