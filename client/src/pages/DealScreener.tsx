@@ -303,6 +303,15 @@ const PERSONA_ORDERS: Record<CouncilModeType, { id: string; label: string }[]> =
   ],
 };
 
+// ── Upgrade Effectiveness label mapping (display-only, does not affect stored values) ────────────
+function formatUpgradeEffectiveness(value: number | null | undefined): string {
+  if (value == null) return "Not available.";
+  if (value < 0.25) return "Low";
+  if (value < 0.50) return "Moderate";
+  if (value < 0.75) return "High";
+  return "Very High";
+}
+
 // ── Vote badge ────────────────────────────────────────────────────────────────
 function VoteBadge({ vote }: { vote: VoteType }) {
   const config = {
@@ -3782,9 +3791,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
               <div style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 5, border: `1px solid ${BORDER}` }}>
                 <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>UPGRADE EFFECTIVENESS</div>
                 <div style={{ fontFamily: MONO, fontSize: 13, color: TEXT2 }}>
-                  {upgradedFingerprint?.upgradeEffectiveness != null
-                    ? String(upgradedFingerprint.upgradeEffectiveness)
-                    : "Not available."}
+                  {formatUpgradeEffectiveness(upgradedFingerprint?.upgradeEffectiveness)}
                 </div>
               </div>
               {/* Rescueability Score */}

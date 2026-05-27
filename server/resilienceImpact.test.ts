@@ -143,6 +143,15 @@ function makeFingerprintInput(overrides: Partial<FingerprintInput> = {}): Finger
   };
 }
 
+// ── Upgrade Effectiveness label helper (mirrors the client-side formatUpgradeEffectiveness) ─────
+function formatUpgradeEffectiveness(value: number | null | undefined): string {
+  if (value == null) return "Not available.";
+  if (value < 0.25) return "Low";
+  if (value < 0.50) return "Moderate";
+  if (value < 0.75) return "High";
+  return "Very High";
+}
+
 // ── RI-1: Positive resilienceDelta formats as "+Xpp" ─────────────────────────
 describe("Resilience Impact — display formatting", () => {
   it("RI-1: positive resilienceDelta formats as '+X.Xpp' with green signal", () => {
@@ -178,6 +187,40 @@ describe("Resilience Impact — display formatting", () => {
     // score display for valid values
     expect(formatScore(72)).toBe("72/100");
     expect(formatScore(0)).toBe("0/100");
+  });
+
+  // ── RI-5: upgradeEffectiveness label mapping ───────────────────────────────────────────────────
+  it("RI-5: upgradeEffectiveness maps null/undefined to 'Not available.'", () => {
+    expect(formatUpgradeEffectiveness(null)).toBe("Not available.");
+    expect(formatUpgradeEffectiveness(undefined)).toBe("Not available.");
+  });
+
+  it("RI-5a: upgradeEffectiveness 0.10 maps to 'Low'", () => {
+    expect(formatUpgradeEffectiveness(0.10)).toBe("Low");
+    // boundary: 0.00 and 0.24 are also Low
+    expect(formatUpgradeEffectiveness(0.00)).toBe("Low");
+    expect(formatUpgradeEffectiveness(0.24)).toBe("Low");
+  });
+
+  it("RI-5b: upgradeEffectiveness 0.30 maps to 'Moderate'", () => {
+    expect(formatUpgradeEffectiveness(0.30)).toBe("Moderate");
+    // boundary: 0.25 and 0.49 are also Moderate
+    expect(formatUpgradeEffectiveness(0.25)).toBe("Moderate");
+    expect(formatUpgradeEffectiveness(0.49)).toBe("Moderate");
+  });
+
+  it("RI-5c: upgradeEffectiveness 0.60 maps to 'High'", () => {
+    expect(formatUpgradeEffectiveness(0.60)).toBe("High");
+    // boundary: 0.50 and 0.74 are also High
+    expect(formatUpgradeEffectiveness(0.50)).toBe("High");
+    expect(formatUpgradeEffectiveness(0.74)).toBe("High");
+  });
+
+  it("RI-5d: upgradeEffectiveness 0.90 maps to 'Very High'", () => {
+    expect(formatUpgradeEffectiveness(0.90)).toBe("Very High");
+    // boundary: 0.75 and 1.00 are also Very High
+    expect(formatUpgradeEffectiveness(0.75)).toBe("Very High");
+    expect(formatUpgradeEffectiveness(1.00)).toBe("Very High");
   });
 
   // ── RI-4: Verdict logic unchanged — fingerprint fields do not affect verdicts ──
