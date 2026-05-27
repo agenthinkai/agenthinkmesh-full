@@ -3801,11 +3801,13 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
                 </div>
               </div>
               {/* Rescueability Score */}
-              <div title="Measures how many hard-no scenarios were recoverable through structured mitigation." style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 5, border: `1px solid ${BORDER}`, cursor: "help" }}>
+              <div title="Measures how many hard-no scenarios were recoverable through structured mitigation. 100/100 with no hard-nos means no rescue was needed — the deal passed all scenarios cleanly." style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 5, border: `1px solid ${BORDER}`, cursor: "help" }}>
                 <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>RESCUEABILITY SCORE</div>
                 <div style={{ fontFamily: MONO, fontSize: 13, color: TEXT2 }}>
                   {upgradedFingerprint?.rescueabilityScore != null
-                    ? `${upgradedFingerprint.rescueabilityScore}/100`
+                    ? (upgradedFingerprint.vetoPct === 0
+                        ? "100/100 — No rescue required"
+                        : `${upgradedFingerprint.rescueabilityScore}/100`)
                     : "Not available."}
                 </div>
               </div>

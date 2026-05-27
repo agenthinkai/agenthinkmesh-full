@@ -71,14 +71,27 @@ export interface SimulationFingerprint {
 /**
  * rescueabilityScore (0–100):
  * Measures how much of the hard-no pool is structurally rescuable.
- * Formula: rescuedConditionalPct * 1.0 + (approvalPathwayCount > 0 ? 5 : 0)
- * Capped at 100. Null if vetoPct === 0 (no hard-nos to rescue).
+ *
+ * MP-3 fix (v2):
+ *   - hardNoCount === 0 (clean deal): return 100.
+ *     Meaning: no rescue was needed. The deal passed all scenarios without
+ *     triggering a hard-no. This is the best possible outcome for this metric.
+ *     100 here means "no rescue required," NOT "all hard-nos were recoverable."
+ *   - hardNoCount > 0: formula unchanged.
+ *     rescuedConditionalPct * 1.0 + (approvalPathwayCount > 0 ? 5 : 0), capped at 100.
+ *   - null is reserved for genuinely unavailable inputs (e.g., totalScenarios === 0).
+ *
+ * Why 100 instead of null:
+ *   Returning null for clean deals caused the UI to show "Not available," which
+ *   is misleading. A deal with zero hard-nos is maximally rescuable by definition
+ *   (there is nothing to rescue). 100 is the semantically correct value.
  */
 function computeRescueabilityScore(
   dist: DecisionDistribution,
   pathways: ApprovalPathway[]
 ): number | null {
-  if (dist.hardNoCount === 0) return null; // no hard-nos → metric not applicable
+  // Clean deal: no hard-nos → no rescue needed → score = 100
+  if (dist.hardNoCount === 0) return 100;
   const base = dist.rescuedConditionalPct; // already 0–100
   const pathwayBonus = pathways.length > 0 ? 5 : 0;
   return Math.min(100, Math.round(base + pathwayBonus));
