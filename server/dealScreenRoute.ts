@@ -303,6 +303,15 @@ router.post("/:dealId/generate-memo", async (req: Request, res: Response): Promi
     try { conditions = JSON.parse(record.conditionsToProceed || "[]"); } catch { /* ignore */ }
     let blockers: string[] = [];
     try { blockers = JSON.parse(record.blockingIssues || "[]"); } catch { /* ignore */ }
+    // Propagate real stored terminalFlags from the DB record.
+    // The DB column is nullable for backwards compat with pre-v3.1 rows; parse defensively.
+    // This path feeds generateSingleDealICReport (display-only, never re-classified),
+    // but we propagate the real flags rather than defaulting to [] to preserve fidelity.
+    let storedTerminalFlags: import("./lib/rescuePolicy").TerminalBlockerFlag[] = [];
+    try {
+      const parsed = JSON.parse(record.terminalFlags ?? "[]");
+      storedTerminalFlags = Array.isArray(parsed) ? parsed : [];
+    } catch { /* ignore — treat unparseable as empty */ }
 
     const councilResult: CouncilResult = {
       verdict: record.verdict as CouncilResult["verdict"],
@@ -326,6 +335,7 @@ router.post("/:dealId/generate-memo", async (req: Request, res: Response): Promi
       conditionsToProceed: conditions,
       blockingIssues: blockers,
       criticalBlockers: blockers,   // alias
+      terminalFlags: storedTerminalFlags, // propagated from DB record; real flags preserved for vetoed deals
       hardFlags: [],                // not stored separately
       silentFails: [],              // not stored separately
       structuralNoCount: 0,         // not stored separately

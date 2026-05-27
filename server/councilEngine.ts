@@ -1467,13 +1467,14 @@ export async function runCouncil(
   const blockingIssues = deduplicate(noVotes.flatMap((v) => v.blockers));
 
   // Aggregate terminal flags from HARD_NO votes — structured enum, never prose
-  const terminalFlags: TerminalBlockerFlag[] = [
-    ...new Set(
+  // Array.from() used instead of spread-of-Set to satisfy TS downlevelIteration requirement
+  const terminalFlags: TerminalBlockerFlag[] = Array.from(
+    new Set(
       votes
         .filter((v) => v.vote === "HARD_NO" && v.terminalFlag !== null)
         .map((v) => v.terminalFlag as TerminalBlockerFlag)
-    ),
-  ];
+    )
+  );
 
   const councilResult: CouncilResult = {
     verdict,
