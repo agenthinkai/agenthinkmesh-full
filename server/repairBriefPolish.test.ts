@@ -931,7 +931,7 @@ describe("Task 2 — Upgraded Sim Persistence to Deal History", () => {
       require("path").join(__dirname, "routers/scenarioSim.ts"),
       "utf8"
     );
-    expect(src).toContain("upgradedScenario: z.boolean().optional()");
+    expect(src).toMatch(/upgradedScenario:\s+z\.boolean\(\)\.optional\(\)/);
   });
 
   it("startRun inserts upgradedScenario as 0 or 1 tinyint", () => {

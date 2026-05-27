@@ -142,14 +142,16 @@ describe("Simulation Fingerprint Engine", () => {
     expect(fp.finalRejectedPct).toBe(dist.finalRejectedPct);
   });
 
-  it("SF-3: rescueabilityScore is null when hardNoCount === 0 (no hard-nos to rescue)", () => {
+  it("SF-3: rescueabilityScore is 100 when hardNoCount === 0 (clean deal — no rescue needed)", () => {
+    // MP-3 fix: clean deals return 100 instead of null.
+    // 100 means 'no rescue needed', not 'all hard-nos recoverable'.
     const dist = makeDecisionDistribution({
       hardNoCount: 0, hardNoPct: 0,
       rescuedConditionalCount: 0, finalRejectedCount: 0,
       rescuedConditionalPct: 0, finalRejectedPct: 0,
     });
     const fp = computeSimulationFingerprint(makeInput({ aggregation: makeAggregation({ decisionDistribution: dist }) }));
-    expect(fp.rescueabilityScore).toBeNull();
+    expect(fp.rescueabilityScore).toBe(100);
   });
 
   it("SF-4: councilDisagreementScore is null (dataUnavailable) when all confidenceScores are uniform", () => {
