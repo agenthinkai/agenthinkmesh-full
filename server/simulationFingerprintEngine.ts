@@ -106,14 +106,48 @@ function computeVetoConcentrationScore(
 /**
  * structuralFragilityScore (0–100):
  * Measures the overall structural weakness of the deal under stress.
- * Formula: finalRejectedPct + vetoPct + attributionUnavailablePct
+ *
+ * NON-OVERLAPPING FORMULA (v2 — MP-2 fix):
+ *
+ *   Component A — finalRejectedPct:
+ *     Hard-no scenarios that were NOT rescued (the truly unrecoverable pool).
+ *     This is the primary fragility signal.
+ *
+ *   Component B — rescuedConditionalPct (weight 0.5):
+ *     Hard-no scenarios that were rescued but only conditionally.
+ *     Rescued = less fragile, but still contributes at half-weight because
+ *     the deal still required mitigation to survive.
+ *     (rescuedConditionalPct + finalRejectedPct = hardNoPct, so these two
+ *     components together cover the full hard-no pool without overlap.)
+ *
+ *   Component C — attributionUnavailablePct (weight 0.5):
+ *     Hard-no scenarios where terminalFlags were null (ATTRIBUTION_UNAVAILABLE).
+ *     Structural opacity is a fragility signal, but discounted because the
+ *     absence of attribution data does not confirm the scenario is unrecoverable.
+ *
+ * Formula:
+ *   score = finalRejectedPct
+ *         + 0.5 * rescuedConditionalPct
+ *         + 0.5 * attributionUnavailablePct
+ *
  * Capped at 100. Higher = more fragile.
+ *
+ * Why this is correct:
+ *   - finalRejectedPct and rescuedConditionalPct are mutually exclusive subsets
+ *     of hardNoPct (they sum to hardNoPct), so there is no overlap.
+ *   - attributionUnavailablePct is a separate dimension (opacity, not outcome),
+ *     so it is included at half-weight as a distinct fragility signal.
+ *   - The old formula added both finalRejectedPct and hardNoPct, which caused
+ *     double-counting because finalRejectedPct ⊆ hardNoPct.
  */
 function computeStructuralFragilityScore(
   dist: DecisionDistribution,
   attributionUnavailablePct: number
 ): number | null {
-  const score = dist.finalRejectedPct + dist.hardNoPct + attributionUnavailablePct;
+  const score =
+    dist.finalRejectedPct
+    + 0.5 * dist.rescuedConditionalPct
+    + 0.5 * attributionUnavailablePct;
   return Math.min(100, Math.round(score * 10) / 10);
 }
 
