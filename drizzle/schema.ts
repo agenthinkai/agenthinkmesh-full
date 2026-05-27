@@ -1,4 +1,4 @@
-import { bigint, boolean, decimal, index, int, longtext, mysqlEnum, mysqlTable, text, tinyint, timestamp, unique, varchar } from "drizzle-orm/mysql-core";
+import { bigint, boolean, decimal, float, index, int, longtext, mysqlEnum, mysqlTable, text, tinyint, timestamp, unique, varchar } from "drizzle-orm/mysql-core";
 
 // ── PitchMirror Shares ────────────────────────────────────────────────────────────────────
 export const pitchMirrorShares = mysqlTable("pitch_mirror_shares", {
@@ -2260,3 +2260,55 @@ export const scenarioSimTelemetry = mysqlTable("scenario_sim_telemetry", {
   sstRun: index("sst_run_idx").on(table.runId),
 }));
 export type ScenarioSimTelemetry = typeof scenarioSimTelemetry.$inferSelect;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// Simulation Fingerprint Layer v1 — one record per completed simulation run
+// ═══════════════════════════════════════════════════════════════════════════════
+export const simulationFingerprints = mysqlTable("simulation_fingerprints", {
+  id:              int("id").autoincrement().primaryKey(),
+  runId:           varchar("run_id", { length: 64 }).notNull().unique(),
+  dealId:          varchar("deal_id", { length: 64 }).notNull(),
+  dealName:        varchar("deal_name", { length: 255 }).notNull(),
+  councilMode:     varchar("council_mode", { length: 64 }),
+  scenarioCount:   int("scenario_count").notNull(),
+  simulationMode:  varchar("simulation_mode", { length: 32 }).notNull(),
+
+  approvePct:             float("approve_pct").notNull(),
+  conditionalPct:         float("conditional_pct").notNull(),
+  rejectPct:              float("reject_pct").notNull(),
+  vetoPct:                float("veto_pct").notNull(),
+  rescuedConditionalPct:  float("rescued_conditional_pct").notNull(),
+  finalRejectedPct:       float("final_rejected_pct").notNull(),
+  attributionUnavailablePct: float("attribution_unavailable_pct").notNull(),
+
+  rescueabilityScore:            float("rescueability_score"),
+  vetoConcentrationScore:        float("veto_concentration_score"),
+  structuralFragilityScore:      float("structural_fragility_score"),
+  scenarioEntropy:               float("scenario_entropy"),
+  councilDisagreementScore:      float("council_disagreement_score"),
+  councilDisagreementDataUnavailable: tinyint("council_disagreement_data_unavailable").notNull().default(0),
+
+  dominantFailureVectors:         text("dominant_failure_vectors"),
+  dominantApprovalPathways:       text("dominant_approval_pathways"),
+  sensitivityRanking:             text("sensitivity_ranking"),
+  terminalFlagFrequency:          text("terminal_flag_frequency"),
+  governanceEscalationFrequency:  text("governance_escalation_frequency"),
+
+  isUpgradedScenario:      tinyint("is_upgraded_scenario").notNull().default(0),
+  originalRunId:           varchar("original_run_id", { length: 64 }),
+  originalVerdict:         varchar("original_verdict", { length: 64 }),
+  upgradedVerdict:         varchar("upgraded_verdict", { length: 64 }),
+  resilienceDelta:         float("resilience_delta"),
+  upgradeEffectiveness:    float("upgrade_effectiveness"),
+  mitigationDependencyScore: float("mitigation_dependency_score"),
+
+  sourceSector:    varchar("source_sector", { length: 128 }),
+  sourceGeography: varchar("source_geography", { length: 128 }),
+  version:         varchar("version", { length: 16 }).notNull().default("1.0"),
+  createdAt:       timestamp("created_at").defaultNow().notNull(),
+}, (table) => ({
+  sfpRun:  index("sfp_run_idx").on(table.runId),
+  sfpDeal: index("sfp_deal_idx").on(table.dealId),
+}));
+export type SimulationFingerprintRow = typeof simulationFingerprints.$inferSelect;
+export type InsertSimulationFingerprintRow = typeof simulationFingerprints.$inferInsert;

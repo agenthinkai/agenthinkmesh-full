@@ -12,7 +12,8 @@ import { router, protectedProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { eq, desc, and } from "drizzle-orm";
 import { getDb } from "../db";
-import { scenarioSimRuns, scenarioSimTelemetry } from "../../drizzle/schema";
+import { scenarioSimRuns, scenarioSimTelemetry, simulationFingerprints } from "../../drizzle/schema";
+import { computeSimulationFingerprint } from "../simulationFingerprintEngine";
 import { randomUUID } from "crypto";
 import {
   SIMULATION_MODES,
@@ -20,9 +21,66 @@ import {
   buildScenarioBrief,
   evaluateScenario,
   type SimulationMode,
+  type ScenarioEvalResult,
 } from "../scenarioMutationEngine";
-import { aggregateSimulationResults } from "../scenarioAggregator";
+import { aggregateSimulationResults, type SimulationAggregation } from "../scenarioAggregator";
 import { invokeLLM } from "../_core/llm";
+
+// ── Fingerprint persistence helper ───────────────────────────────────────────
+
+async function persistFingerprint(
+  db: Awaited<ReturnType<typeof getDb>>,
+  aggregation: SimulationAggregation,
+  results: ScenarioEvalResult[],
+  meta: {
+    councilMode: string | null;
+    dealName: string;
+    isUpgradedScenario: boolean;
+    originalRunId: string | null;
+    originalVerdict: string | null;
+    upgradedVerdict: string | null;
+    originalApprovePct: number | null;
+  }
+): Promise<void> {
+  if (!db) return;
+  const fp = computeSimulationFingerprint({ aggregation, results, ...meta });
+  await db.insert(simulationFingerprints).values({
+    runId:                    fp.runId,
+    dealId:                   fp.dealId,
+    dealName:                 fp.sourceDealName,
+    councilMode:              fp.councilMode ?? null,
+    scenarioCount:            fp.scenarioCount,
+    simulationMode:           fp.simulationMode,
+    approvePct:               fp.approvePct,
+    conditionalPct:           fp.conditionalPct,
+    rejectPct:                fp.rejectPct,
+    vetoPct:                  fp.vetoPct,
+    rescuedConditionalPct:    fp.rescuedConditionalPct,
+    finalRejectedPct:         fp.finalRejectedPct,
+    attributionUnavailablePct: fp.attributionUnavailablePct,
+    rescueabilityScore:           fp.rescueabilityScore ?? null,
+    vetoConcentrationScore:       fp.vetoConcentrationScore ?? null,
+    structuralFragilityScore:     fp.structuralFragilityScore ?? null,
+    scenarioEntropy:              fp.scenarioEntropy ?? null,
+    councilDisagreementScore:     fp.councilDisagreementScore ?? null,
+    councilDisagreementDataUnavailable: fp.councilDisagreementDataUnavailable ? 1 : 0,
+    dominantFailureVectors:       JSON.stringify(fp.dominantFailureVectors),
+    dominantApprovalPathways:     JSON.stringify(fp.dominantApprovalPathways),
+    sensitivityRanking:           JSON.stringify(fp.sensitivityRanking),
+    terminalFlagFrequency:        JSON.stringify(fp.terminalFlagFrequency),
+    governanceEscalationFrequency: JSON.stringify(fp.governanceEscalationFrequency),
+    isUpgradedScenario:           fp.isUpgradedScenario ? 1 : 0,
+    originalRunId:                fp.originalRunId ?? null,
+    originalVerdict:              fp.originalVerdict ?? null,
+    upgradedVerdict:              fp.upgradedVerdict ?? null,
+    resilienceDelta:              fp.resilienceDelta ?? null,
+    upgradeEffectiveness:         fp.upgradeEffectiveness ?? null,
+    mitigationDependencyScore:    fp.mitigationDependencyScore ?? null,
+    sourceSector:                 fp.sourceSector ?? null,
+    sourceGeography:              fp.sourceGeography ?? null,
+    version:                      fp.version,
+  });
+}
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -154,7 +212,7 @@ export const scenarioSimRouter = router({
           })
           .where(eq(scenarioSimRuns.runId, runId));
 
-        // Write telemetry
+                // Write telemetry
         await db.insert(scenarioSimTelemetry).values({
           runId,
           chunkIndex:       0,
@@ -165,7 +223,16 @@ export const scenarioSimRouter = router({
           hardNoCount:      aggregation.decisionDistribution.hardNoCount,
           durationMs,
         });
-
+        // Persist fingerprint (fire-and-forget — never blocks the response)
+        persistFingerprint(db, aggregation, results, {
+          councilMode: input.councilMode ?? null,
+          dealName: input.dealName,
+          isUpgradedScenario: !!input.upgradedScenario,
+          originalRunId: null, // not available in sync path; originalDealId is not runId
+          originalVerdict: input.originalVerdict ?? null,
+          upgradedVerdict: input.upgradedVerdict ?? null,
+          originalApprovePct: null, // not available without fetching prior run
+        }).catch(err => console.error(`[Fingerprint] persist failed for ${runId}:`, err));
         return {
           runId,
           status: "completed" as const,
@@ -191,7 +258,8 @@ export const scenarioSimRouter = router({
         input.councilMode,
         input.baseApprovalScore ?? 0.0,
         // null = ATTRIBUTION_UNAVAILABLE; undefined = also unavailable; [] = genuinely empty; [...] = real flags
-        input.terminalFlags === undefined ? null : input.terminalFlags
+        input.terminalFlags === undefined ? null : input.terminalFlags,
+        input.dealName
       ).catch(err => {
         console.error(`[ScenarioSim] Background run failed for ${runId}:`, err);
       });
@@ -349,6 +417,61 @@ export const scenarioSimRouter = router({
       };
     }),
 
+  /** List simulation fingerprints for a deal, newest first */
+  listFingerprintsForDeal: protectedProcedure
+    .input(z.object({
+      dealId: z.string(),
+      limit: z.number().int().min(1).max(50).default(20),
+    }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const rows = await db
+        .select()
+        .from(simulationFingerprints)
+        .where(eq(simulationFingerprints.dealId, input.dealId))
+        .orderBy(desc(simulationFingerprints.createdAt))
+        .limit(input.limit);
+      return rows.map(r => ({
+        id:                    r.id,
+        runId:                 r.runId,
+        dealId:                r.dealId,
+        dealName:              r.dealName,
+        councilMode:           r.councilMode,
+        scenarioCount:         r.scenarioCount,
+        simulationMode:        r.simulationMode,
+        approvePct:            r.approvePct,
+        conditionalPct:        r.conditionalPct,
+        rejectPct:             r.rejectPct,
+        vetoPct:               r.vetoPct,
+        rescuedConditionalPct: r.rescuedConditionalPct,
+        finalRejectedPct:      r.finalRejectedPct,
+        attributionUnavailablePct: r.attributionUnavailablePct,
+        rescueabilityScore:    r.rescueabilityScore,
+        vetoConcentrationScore: r.vetoConcentrationScore,
+        structuralFragilityScore: r.structuralFragilityScore,
+        scenarioEntropy:       r.scenarioEntropy,
+        councilDisagreementScore: r.councilDisagreementScore,
+        councilDisagreementDataUnavailable: r.councilDisagreementDataUnavailable === 1,
+        dominantFailureVectors:   JSON.parse(r.dominantFailureVectors ?? "[]"),
+        dominantApprovalPathways: JSON.parse(r.dominantApprovalPathways ?? "[]"),
+        sensitivityRanking:       JSON.parse(r.sensitivityRanking ?? "[]"),
+        terminalFlagFrequency:    JSON.parse(r.terminalFlagFrequency ?? "{}"),
+        governanceEscalationFrequency: JSON.parse(r.governanceEscalationFrequency ?? "{}"),
+        isUpgradedScenario:    r.isUpgradedScenario === 1,
+        originalRunId:         r.originalRunId,
+        originalVerdict:       r.originalVerdict,
+        upgradedVerdict:       r.upgradedVerdict,
+        resilienceDelta:       r.resilienceDelta,
+        upgradeEffectiveness:  r.upgradeEffectiveness,
+        mitigationDependencyScore: r.mitigationDependencyScore,
+        sourceSector:          r.sourceSector,
+        sourceGeography:       r.sourceGeography,
+        version:               r.version,
+        createdAt:             r.createdAt,
+      }));
+    }),
+
   /** Cancel / pause a running simulation */
   cancelRun: protectedProcedure
     .input(z.object({ runId: z.string() }))
@@ -388,7 +511,8 @@ async function runDeepSimulationBackground(
   db: Awaited<ReturnType<typeof getDb>>,
   councilMode?: string,
   baseApprovalScore: number = 0.0,
-  terminalFlags: string[] | null = null
+  terminalFlags: string[] | null = null,
+  dealName: string = ""
 ): Promise<void> {
   if (!db) return;
 
@@ -443,11 +567,10 @@ async function runDeepSimulationBackground(
       .where(eq(scenarioSimRuns.runId, runId));
   }
 
-  // Aggregate and persist final results
+    // Aggregate and persist final results
   if (allResults.length > 0) {
     const aggregation = aggregateSimulationResults(allResults, runId, dealId, mode);
     const durationMs = Date.now() - startMs;
-
     await db.update(scenarioSimRuns)
       .set({
         status:               "completed",
@@ -462,5 +585,15 @@ async function runDeepSimulationBackground(
         completedAt:          new Date(),
       })
       .where(eq(scenarioSimRuns.runId, runId));
+    // Persist fingerprint (fire-and-forget)
+    persistFingerprint(db, aggregation, allResults, {
+      councilMode: councilMode ?? null,
+      dealName,
+      isUpgradedScenario: false,
+      originalRunId: null,
+      originalVerdict: null,
+      upgradedVerdict: null,
+      originalApprovePct: null,
+    }).catch(err => console.error(`[Fingerprint] persist failed for ${runId}:`, err));
   }
 }
