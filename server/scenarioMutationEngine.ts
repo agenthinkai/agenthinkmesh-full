@@ -741,13 +741,22 @@ export async function evaluateScenario(
   invokeLLM: (params: { messages: Array<{ role: string; content: string }> }) => Promise<{ choices: Array<{ message: { content: string } }> }>,
   councilMode?: string,
   baseApprovalScore: number = 0.0,
-  /** Structured terminalFlags from the deal/council result. Required for Delta Engine. */
-  terminalFlags: string[] = []
+  /**
+   * Structured terminalFlags from the deal/council result. Required for Delta Engine.
+   * Three states:
+   *   null      → ATTRIBUTION_UNAVAILABLE: field absent/unloaded/pre-field DB row.
+   *               Delta Engine marks result as attribution-unavailable, not FINAL_REJECTED.
+   *   []        → Genuinely empty: explicitly known to have zero terminal flags.
+   *               Hard-no variants final-reject per DE-4 (non-empty guard).
+   *   ["..."]   → Real structured flags: Delta Engine evaluates rescue eligibility.
+   */
+  terminalFlags: string[] | null = null
 ): Promise<ScenarioEvalResult> {
   // ── 1. Hard-no: deterministic reject, no LLM ──────────────────────────────
   if (variant.hasHardNo) {
     // Stage 1 (OR-gate) is UNCHANGED: REJECT is always emitted here.
     // Delta Engine runs post-Stage-1 to classify as RESCUED_CONDITIONAL or FINAL_REJECTED.
+    // null terminalFlags → ATTRIBUTION_UNAVAILABLE (not silently FINAL_REJECTED).
     const deltaResult = runDeltaEngine(
       variant.index,
       variant.provenance.hardNoTriggers,

@@ -171,8 +171,13 @@ function computeDecisionDistribution(
       hardNoCount++;
       if (r.deltaEngine?.rescueStatus === "RESCUED_CONDITIONAL") {
         rescuedConditionalCount++;
+      } else if (r.deltaEngine?.attributionUnavailable) {
+        // ATTRIBUTION_UNAVAILABLE: terminalFlags were null/missing.
+        // This is NOT a confident FINAL_REJECTED verdict — it is an attribution gap.
+        // Do NOT count in finalRejectedCount; the executive summary will surface this separately.
       } else {
-        // FINAL_REJECTED or no Delta Engine result (backward compat)
+        // FINAL_REJECTED (confident: terminal flags present and evaluated)
+        // Also covers backward-compat cases where deltaEngine is null.
         finalRejectedCount++;
       }
     }
@@ -441,9 +446,32 @@ function buildExecutiveSummary(
     infrastructure: "100,000-scenario infrastructure scale",
   }[mode] ?? `${total}-scenario`;
 
+  // Delta Engine rescue sentence: only rendered when non-zero and flags were attributed.
+  // ATTRIBUTION_UNAVAILABLE results are counted in finalRejectedCount but are NOT confident
+  // rejections — they are attribution gaps. The sentence distinguishes these cases.
+  const rescueSentence = (() => {
+    if (dist.hardNoCount === 0) return "";
+    const rescued = dist.rescuedConditionalCount;
+    const finalRejected = dist.finalRejectedCount;
+    const total = dist.hardNoCount;
+    if (rescued === 0 && finalRejected === 0) {
+      // All hard-nos have attribution-unavailable flags (pre-field rows or unloaded flags)
+      return `Delta Engine: terminal flag attribution unavailable for all ${total} hard-no scenario(s); rescue eligibility not evaluated. `;
+    }
+    const parts: string[] = [];
+    if (rescued > 0) {
+      parts.push(`${rescued} scenario(s) (${dist.rescuedConditionalPct}%) classified RESCUED_CONDITIONAL — default_risk flags are structurally mitigable`);
+    }
+    if (finalRejected > 0) {
+      parts.push(`${finalRejected} scenario(s) (${dist.finalRejectedPct}%) classified FINAL_REJECTED — terminal institutional blockers present`);
+    }
+    return `Delta Engine sub-classification of hard-no scenarios: ${parts.join("; ")}. `;
+  })();
+
   return `Strategic Scenario Simulation (${modeLabel}) across ${total.toLocaleString()} governed scenarios. ` +
     `Decision distribution: ${dist.approvePct}% APPROVE, ${dist.conditionalPct}% CONDITIONAL, ${dist.rejectPct}% REJECT. ` +
     `${dist.hardNoPct > 0 ? `Hard-no governance triggers activated in ${dist.hardNoPct}% of scenarios. ` : ""}` +
+    rescueSentence +
     `Primary failure vector: ${topVector?.dimensionLabel ?? "N/A"} (${topVector?.rejectionContributionPct ?? 0}% of rejections). ` +
     `Highest-impact variable: ${topSensitivity?.dimensionLabel ?? "N/A"} (impact score ${topSensitivity?.impactScore ?? 0}/100). ` +
     `Strongest approval pathway: ${topPathway?.description ?? "N/A"} (${topPathway?.estimatedApprovalPct ?? 0}% approval rate).`;

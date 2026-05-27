@@ -495,9 +495,20 @@ interface ScenarioSimDashboardProps {
    *   REJECT       → -0.15
    */
   baseApprovalScore?: number;
+  /**
+   * Structured terminalFlags from the council result for this deal.
+   * Three states (nullable wrapper distinguishes missing from empty):
+   *   undefined / omitted → ATTRIBUTION_UNAVAILABLE (field not loaded / pre-field DB row)
+   *   []                  → Genuinely empty (explicitly known to have zero terminal flags)
+   *   ["..."]             → Real structured flags — Delta Engine evaluates rescue eligibility
+   *
+   * NEVER pass [] as a fallback for unknown/unloaded flags.
+   * Pass the raw value from CouncilResult.terminalFlags without any ?? [] coercion.
+   */
+  terminalFlags?: string[];
 }
 
-export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId, onSimCompleted, councilMode, baseApprovalScore }: ScenarioSimDashboardProps) {
+export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId, onSimCompleted, councilMode, baseApprovalScore, terminalFlags }: ScenarioSimDashboardProps) {
   const [selectedMode, setSelectedMode] = useState<SimMode>("quick");
   const [runId, setRunId] = useState<string | null>(existingRunId ?? null);
   const [isRunning, setIsRunning] = useState(false);
@@ -559,6 +570,11 @@ export function ScenarioSimDashboard({ dealId, dealName, dealText, existingRunId
         confirmedGated: cfg.gated ? true : undefined,
         councilMode,
         baseApprovalScore,
+        // Pass raw terminalFlags — do NOT coerce undefined to [].
+        // undefined → ATTRIBUTION_UNAVAILABLE on the server (null wire value).
+        // []        → genuinely empty (explicitly known).
+        // ["..."]   → real structured flags.
+        terminalFlags: terminalFlags === undefined ? null : terminalFlags,
       });
       setRunId(result.runId);
       if (result.status === "completed" && result.aggregation) {

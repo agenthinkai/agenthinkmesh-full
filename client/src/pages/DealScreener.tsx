@@ -3675,6 +3675,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
             : result.verdict === "APPROVED_WITH_CONDITIONS" ? 0.20
             : -0.15
           }
+          terminalFlags={result.terminalFlags}
         />
       </div>
       {/* ── Section 12: Institutional Reports Export Hub ──────────────── */}

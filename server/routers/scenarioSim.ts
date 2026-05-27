@@ -72,9 +72,18 @@ export const scenarioSimRouter = router({
        * Structured terminalFlags from the council result for this deal.
        * Passed to the Delta Engine to classify hard-no variants as
        * RESCUED_CONDITIONAL or FINAL_REJECTED.
-       * Defaults to [] (backward compatible — all hard-nos become FINAL_REJECTED).
+       *
+       * Three states (nullable wrapper distinguishes missing from empty):
+       *   null      → ATTRIBUTION_UNAVAILABLE: field absent/unloaded/pre-field DB row.
+       *               Delta Engine will NOT silently produce FINAL_REJECTED.
+       *   []        → Genuinely empty: explicitly known to have zero terminal flags.
+       *               Hard-no variants final-reject per DE-4 (non-empty guard).
+       *   ["..."]   → Real structured flags: Delta Engine evaluates rescue eligibility.
+       *
+       * Omitting the field (undefined) is treated as ATTRIBUTION_UNAVAILABLE (same as null).
+       * NEVER pass [] as a fallback for unknown/unloaded flags.
        */
-      terminalFlags: z.array(z.string()).optional(),
+      terminalFlags: z.array(z.string()).nullable().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -119,7 +128,8 @@ export const scenarioSimRouter = router({
 
         // Evaluate all variants
         const baseScore = input.baseApprovalScore ?? 0.0;
-        const flags = input.terminalFlags ?? [];
+        // null = ATTRIBUTION_UNAVAILABLE; undefined = also unavailable; [] = genuinely empty; [...] = real flags
+        const flags: string[] | null = input.terminalFlags === undefined ? null : input.terminalFlags;
         const results = await Promise.all(
           variants.map(v => evaluateScenario(v, buildScenarioBrief(input.dealText, v), invokeLLM as any, input.councilMode, baseScore, flags))
         );
@@ -180,7 +190,8 @@ export const scenarioSimRouter = router({
         db,
         input.councilMode,
         input.baseApprovalScore ?? 0.0,
-        input.terminalFlags ?? []
+        // null = ATTRIBUTION_UNAVAILABLE; undefined = also unavailable; [] = genuinely empty; [...] = real flags
+        input.terminalFlags === undefined ? null : input.terminalFlags
       ).catch(err => {
         console.error(`[ScenarioSim] Background run failed for ${runId}:`, err);
       });
@@ -377,7 +388,7 @@ async function runDeepSimulationBackground(
   db: Awaited<ReturnType<typeof getDb>>,
   councilMode?: string,
   baseApprovalScore: number = 0.0,
-  terminalFlags: string[] = []
+  terminalFlags: string[] | null = null
 ): Promise<void> {
   if (!db) return;
 

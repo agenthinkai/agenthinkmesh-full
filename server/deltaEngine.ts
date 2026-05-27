@@ -113,6 +113,13 @@ export interface DeltaEngineResult {
    * overridden by a co-occurring terminal flag.
    */
   rescuableOverriddenBy: TerminalBlockerFlag[];
+
+  /**
+   * True when terminalFlags were null/missing at evaluation time.
+   * Consumers MUST NOT display this as a confident FINAL_REJECTED verdict.
+   * Surface as "Attribution unavailable" instead.
+   */
+  attributionUnavailable?: boolean;
 }
 
 // ── Qualitative sensitivity scores for default_risk ───────────────────────────
@@ -213,9 +220,37 @@ function isRescuable(flag: string): flag is TerminalBlockerFlag {
 export function runDeltaEngine(
   variantIndex: number,
   hardNoTriggers: string[],
-  terminalFlags: string[]
+  /**
+   * Structured terminalFlags from the deal/council result.
+   * null  → ATTRIBUTION_UNAVAILABLE: field absent/unloaded/pre-field DB row.
+   *          Do NOT silently produce FINAL_REJECTED; surface unavailability explicitly.
+   * []    → Genuinely empty: explicitly known to have zero terminal flags.
+   *          Hard-no final-rejects per non-empty guard (DE-4).
+   * [...] → Real structured flags: evaluate rescue eligibility normally.
+   */
+  terminalFlags: string[] | null
 ): DeltaEngineResult {
-  // ── Normalize flags to known TerminalBlockerFlag values ───────────────────
+  // ── Rule 0: null terminalFlags → ATTRIBUTION_UNAVAILABLE ───────────────────
+  // null means the field was absent, unloaded, or dropped by a reconstruction path.
+  // This is NOT equivalent to empty []. Do NOT silently produce FINAL_REJECTED.
+  if (terminalFlags === null) {
+    return {
+      variantIndex,
+      rescueStatus: "FINAL_REJECTED",
+      triggeringFlags: [],
+      mitigation: null,
+      residualRisk:
+        "ATTRIBUTION_UNAVAILABLE: terminalFlags field was absent, unloaded, or not reconstructed. " +
+        "Rescue eligibility cannot be evaluated. " +
+        "This is NOT a confident FINAL_REJECTED verdict — it is an attribution gap.",
+      sensitivityScores: [],
+      rejectionReason: "ATTRIBUTION_UNAVAILABLE: terminalFlags null/missing. Not a confident rejection.",
+      rescuableOverriddenBy: [],
+      attributionUnavailable: true,
+    };
+  }
+
+  // ── Normalize flags to known TerminalBlockerFlag values ─────────────────────
   // We work from terminalFlags (structured, from rescuePolicy/council output).
   // hardNoTriggers are perturbation dimension keys (e.g. "debt_severe") —
   // they are NOT the same as TerminalBlockerFlag values.
