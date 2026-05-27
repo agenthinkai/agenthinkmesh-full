@@ -1893,7 +1893,16 @@ function InfraReEngagePanel({ result }: { result: CouncilResult }) {
   // Each condition gets a threshold, rationale, and impact estimate
   const conditions: Array<{ condition: string; threshold: string; rationale: string; impact: string }> = [];
 
-  // Parse known Helios-North / infrastructure patterns from blocking issues
+  // KNOWN LIMITATION — prose-gated card rendering (display-completeness only, NOT safety-critical).
+  // InfrastructureConditionsPanel card rendering is currently gated on substring checks against
+  // blockingIssues + conditionsToProceed prose text. This is a display-completeness limitation:
+  // it does NOT affect classification, blocker naming, rescue logic, terminalFlags, or final verdicts.
+  // The council vote schema has no structured infrastructure condition-type field — only terminal_flag
+  // (fraud | capital_controls | sanctions | …) is structured. blockingIssues and conditionsToProceed
+  // are free-text string[] with no condition-type enum. A structured infrastructure condition taxonomy
+  // (e.g. conditionType: "cfd_strike" | "epc_contract" | "contingency" | "foundation" | "merchant")
+  // should replace this substring matching in a future pass once the council vote schema is extended.
+  // Until then, do NOT expand the wordlist — that is the same mistake relocated.
   const allText = [...(result.blockingIssues ?? []), ...(result.conditionsToProceed ?? [])].join(" ").toLowerCase();
 
   if (allText.includes("cfd") || allText.includes("strike") || allText.includes("£73") || allText.includes("contract for difference")) {

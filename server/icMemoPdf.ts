@@ -1598,7 +1598,12 @@ export async function generateICMemoPdf(input: ICMemoInput): Promise<Buffer> {
         .text("INFRASTRUCTURE / PROJECT FINANCE COUNCIL  ·  INSTITUTIONAL RE-ENGAGEMENT CRITERIA", ML, doc.y);
       doc.y += 16;
 
-      // Build conditions from blockingIssues + conditionsToProceed
+      // KNOWN LIMITATION — prose-gated re-engage row rendering (display-completeness only, NOT safety-critical).
+      // IC Memo PDF "Conditions to Re-engage" rows are gated on substring checks against blockingIssues +
+      // conditionsToProceed prose text. This does NOT affect classification, blocker naming, rescue logic,
+      // terminalFlags, or final verdicts. A structured infrastructure condition taxonomy should replace
+      // this substring matching in a future pass once the council vote schema is extended.
+      // Until then, do NOT expand the wordlist — that is the same mistake relocated.
       const allBlockText = [...(input.blockingIssues ?? []), ...(input.conditionsToProceed ?? [])].join(" ").toLowerCase();
       const reEngageRows: [string, string, string, string][] = [];
 
