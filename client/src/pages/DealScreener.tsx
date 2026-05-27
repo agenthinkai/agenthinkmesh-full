@@ -3776,7 +3776,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
             <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.15em", marginBottom: 10 }}>RESILIENCE IMPACT</div>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {/* Resilience Delta */}
-              <div style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 5, border: `1px solid ${BORDER}` }}>
+              <div title="Change in simulation resilience after fixes, measured in percentage points." style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 5, border: `1px solid ${BORDER}`, cursor: "help" }}>
                 <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>SIMULATION RESILIENCE DELTA</div>
                 <div style={{ fontFamily: MONO, fontSize: 13, color: upgradedFingerprint?.resilienceDelta != null
                   ? (upgradedFingerprint.resilienceDelta >= 0 ? GREEN : RED)
@@ -3788,14 +3788,14 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
                 </div>
               </div>
               {/* Upgrade Effectiveness */}
-              <div style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 5, border: `1px solid ${BORDER}` }}>
+              <div title="Label derived from the stored upgradeEffectiveness score. Indicates how much the fix improved simulated resilience." style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 5, border: `1px solid ${BORDER}`, cursor: "help" }}>
                 <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>UPGRADE EFFECTIVENESS</div>
                 <div style={{ fontFamily: MONO, fontSize: 13, color: TEXT2 }}>
                   {formatUpgradeEffectiveness(upgradedFingerprint?.upgradeEffectiveness)}
                 </div>
               </div>
               {/* Rescueability Score */}
-              <div style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 5, border: `1px solid ${BORDER}` }}>
+              <div title="Measures how many hard-no scenarios were recoverable through structured mitigation." style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 5, border: `1px solid ${BORDER}`, cursor: "help" }}>
                 <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>RESCUEABILITY SCORE</div>
                 <div style={{ fontFamily: MONO, fontSize: 13, color: TEXT2 }}>
                   {upgradedFingerprint?.rescueabilityScore != null
@@ -3804,7 +3804,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
                 </div>
               </div>
               {/* Structural Fragility Score */}
-              <div style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 5, border: `1px solid ${BORDER}` }}>
+              <div title="Higher score means the deal structure remains more fragile under stress." style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 5, border: `1px solid ${BORDER}`, cursor: "help" }}>
                 <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>STRUCTURAL FRAGILITY</div>
                 <div style={{ fontFamily: MONO, fontSize: 13, color: TEXT2 }}>
                   {upgradedFingerprint?.structuralFragilityScore != null
