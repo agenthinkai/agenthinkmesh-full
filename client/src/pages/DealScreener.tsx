@@ -2725,6 +2725,15 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
   // Derived workflow flags (resolved after effectiveSimData)
   const simulationCompleted  = effectiveSimData != null;
   const comparisonAvailable  = simulationCompleted && rerunCompleted;
+  // ── Simulation fingerprints for Resilience Impact section ────────────────
+  const { data: simFingerprints } = trpc.scenarioSim.listFingerprintsForDeal.useQuery(
+    { dealId: result.dealId ?? "", limit: 10 },
+    { enabled: !!result.dealId, staleTime: 60_000 }
+  );
+  // Most recent upgraded fingerprint — used in the Resilience Impact section
+  const upgradedFingerprint = (simFingerprints ?? []).find(
+    (fp: any) => fp.isUpgradedScenario === true
+  ) ?? null;
 
   const handleICMemoPdf = async () => {
     setIcMemoLoading(true);
@@ -3749,6 +3758,54 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
             {result.verdict === "APPROVED" || result.verdict === "APPROVED_WITH_CONDITIONS"
               ? "Deal has been structurally improved. Proceed to IC presentation with updated materials."
               : "Fixes applied but deal remains below approval threshold. Additional restructuring required before resubmission."}
+          </div>
+          {/* ── RESILIENCE IMPACT ───────────────────────────────────────────────────────────────────────── */}
+          <div
+            data-testid="resilience-impact-section"
+            style={{ marginTop: 16, paddingTop: 16, borderTop: `1px solid ${BORDER}` }}
+          >
+            <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.15em", marginBottom: 10 }}>RESILIENCE IMPACT</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {/* Resilience Delta */}
+              <div style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 5, border: `1px solid ${BORDER}` }}>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>SIMULATION RESILIENCE DELTA</div>
+                <div style={{ fontFamily: MONO, fontSize: 13, color: upgradedFingerprint?.resilienceDelta != null
+                  ? (upgradedFingerprint.resilienceDelta >= 0 ? GREEN : RED)
+                  : TEXT2 }}>
+                  {upgradedFingerprint?.resilienceDelta != null
+                    ? (upgradedFingerprint.resilienceDelta >= 0 ? "+" : "") +
+                      (upgradedFingerprint.resilienceDelta).toFixed(1) + "pp"
+                    : "Not available."}
+                </div>
+              </div>
+              {/* Upgrade Effectiveness */}
+              <div style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 5, border: `1px solid ${BORDER}` }}>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>UPGRADE EFFECTIVENESS</div>
+                <div style={{ fontFamily: MONO, fontSize: 13, color: TEXT2 }}>
+                  {upgradedFingerprint?.upgradeEffectiveness != null
+                    ? String(upgradedFingerprint.upgradeEffectiveness)
+                    : "Not available."}
+                </div>
+              </div>
+              {/* Rescueability Score */}
+              <div style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 5, border: `1px solid ${BORDER}` }}>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>RESCUEABILITY SCORE</div>
+                <div style={{ fontFamily: MONO, fontSize: 13, color: TEXT2 }}>
+                  {upgradedFingerprint?.rescueabilityScore != null
+                    ? `${upgradedFingerprint.rescueabilityScore}/100`
+                    : "Not available."}
+                </div>
+              </div>
+              {/* Structural Fragility Score */}
+              <div style={{ padding: "10px 12px", background: "rgba(255,255,255,0.02)", borderRadius: 5, border: `1px solid ${BORDER}` }}>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>STRUCTURAL FRAGILITY</div>
+                <div style={{ fontFamily: MONO, fontSize: 13, color: TEXT2 }}>
+                  {upgradedFingerprint?.structuralFragilityScore != null
+                    ? `${upgradedFingerprint.structuralFragilityScore}/100`
+                    : "Not available."}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       )}
