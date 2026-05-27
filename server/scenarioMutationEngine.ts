@@ -505,12 +505,36 @@ function seededRandom(seed: number): () => number {
 }
 
 /**
+ * Maximum number of severe-tier perturbations allowed per variant.
+ *
+ * Rationale: independent per-dimension draws at P(severe)=10% across 30
+ * dimensions produce E[severe]=3 per variant with a long right tail (mean
+ * 4.25 at seed=42). Stacking 6-8 severe perturbations simultaneously is
+ * analytically unrealistic — real portfolios face one or two severe shocks
+ * at a time, not eight. The budget caps severe draws at generation time so
+ * the sampler produces plausible compound-stress scenarios rather than
+ * implausible catastrophe piles.
+ *
+ * Excess-handling: Option B (drop to moderate).
+ * When a variant has already drawn B severe levels, any subsequent severe
+ * draw is capped to moderate (index 2). Extreme draws are NOT capped —
+ * extreme is a distinct tier reserved for catastrophic single-factor events
+ * and is already rare (P=4%). Correlation boosts in Pass 2 also respect
+ * the budget: a correlated boost cannot push a dimension from moderate to
+ * severe once the budget is exhausted.
+ */
+export const SEVERE_BUDGET = 2;
+
+/**
  * Generate N coherent scenario variants using stratified sampling.
  *
  * Strategy:
  * 1. Each scenario samples a severity level for every dimension.
+ *    A per-variant severe-tier budget (SEVERE_BUDGET) caps the number of
+ *    severe draws. Excess severe draws are capped to moderate.
  * 2. Correlated dimensions are stress-linked: if one is stressed, correlated
  *    dimensions have elevated probability of being stressed too.
+ *    Correlation boosts also respect the severe budget.
  * 3. Hard-no triggers are tracked for governance escalation.
  */
 export function generateScenarioVariants(
@@ -533,6 +557,9 @@ export function generateScenarioVariants(
     const stressFragments: string[] = [];
 
     // ── Pass 1: sample base severity for each dimension ──────────────────
+    // Track severe draws consumed so far for this variant.
+    let severeDrawsUsed = 0;
+
     for (const dim of PERTURBATION_DIMENSIONS) {
       // Severity probability weights: base=40%, mild=28%, moderate=18%, severe=10%, extreme=4%
       const r = rng();
@@ -544,11 +571,24 @@ export function generateScenarioVariants(
       else               levelIdx = Math.min(4, dim.levels.length - 1); // extreme
 
       levelIdx = Math.min(levelIdx, dim.levels.length - 1);
+
+      // ── Severe budget enforcement (Option B: drop to moderate) ──────────
+      // Extreme draws (levelIdx >= 4) are NOT budgeted — they are a distinct
+      // catastrophic tier. Only levelIdx === 3 (severe) is subject to the cap.
+      if (levelIdx === 3 && severeDrawsUsed >= SEVERE_BUDGET) {
+        levelIdx = 2; // cap to moderate
+      }
+      if (levelIdx === 3) {
+        severeDrawsUsed++;
+      }
+
       perturbations[dim.key] = dim.levels[levelIdx].id;
       deltaByDim[dim.key] = dim.levels[levelIdx].approvalDelta;
     }
 
     // ── Pass 2: apply correlation boosts ─────────────────────────────────
+    // Correlation boosts also respect the severe budget: a boost cannot push
+    // a dimension to severe if the budget is already exhausted.
     for (const dim of PERTURBATION_DIMENSIONS) {
       if (!dim.correlations) continue;
       const currentLevel = dim.levels.findIndex(l => l.id === perturbations[dim.key]);
@@ -559,8 +599,15 @@ export function generateScenarioVariants(
           if (!corrDim) continue;
           const corrLevel = corrDim.levels.findIndex(l => l.id === perturbations[corrKey]);
           if (corrLevel < currentLevel - 1) {
-            // Boost correlated dimension by 1 severity level
-            const newLevel = Math.min(corrLevel + 1, corrDim.levels.length - 1);
+            // Boost correlated dimension by 1 severity level, subject to severe budget
+            let newLevel = Math.min(corrLevel + 1, corrDim.levels.length - 1);
+            // If the boost would land on severe (index 3) and budget is exhausted, cap to moderate
+            if (newLevel === 3 && severeDrawsUsed >= SEVERE_BUDGET) {
+              newLevel = 2;
+            }
+            if (newLevel === 3 && corrLevel < 3) {
+              severeDrawsUsed++;
+            }
             perturbations[corrKey] = corrDim.levels[newLevel].id;
             deltaByDim[corrKey] = corrDim.levels[newLevel].approvalDelta;
             correlationGroupsActivated.push(`${dim.key}→${corrKey}`);

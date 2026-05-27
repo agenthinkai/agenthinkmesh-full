@@ -282,7 +282,11 @@ describe("Distribution Shape — baseApprovalScore fix", () => {
     // Also assert the specific seed=42 count matches the calibration audit.
     // This is a snapshot assertion: if the count changes, the audit is stale.
     // Update this assertion (and re-run the audit) when the library changes.
-    expect(hardNoCount).toBe(99); // calibration audit result: 99/100
+    // Snapshot updated for SEVERE_BUDGET=2 (Prompt 17.6b):
+    // Before budget: 99/100 hard-no (mean severe=4.25, many stacked hard-no triggers)
+    // After budget:  92/100 hard-no (mean severe=1.96, max 2 severe per variant)
+    // The tolerance band [85, 100] still passes; only the snapshot changes.
+    expect(hardNoCount).toBe(92); // calibration audit result post-budget: 92/100
   });
 
   // ── 3. Counts invariant ──────────────────────────────────────────────────
