@@ -1053,6 +1053,13 @@ export const dealScreenerRouter = router({
       scenarioClusters:     z.any().optional(),
       runId:                z.string().optional(),
       format:               z.enum(["pdf", "text", "json"]).default("pdf"),
+      // DR-2: upgraded fingerprint metrics for Simulation Resilience Impact section
+      upgradedFingerprint: z.object({
+        resilienceDelta:          z.number().nullable().optional(),
+        upgradeEffectiveness:     z.number().nullable().optional(),
+        rescueabilityScore:       z.number().nullable().optional(),
+        structuralFragilityScore: z.number().nullable().optional(),
+      }).nullable().optional(),
     }))
     .mutation(async ({ input }) => {
       // Normalize aggregation data: maps aggregator field names → PDF builder field names,
@@ -1061,7 +1068,11 @@ export const dealScreenerRouter = router({
         ...input,
         generatedAt: new Date().toISOString(),
       };
-      const reportInput: StressTestReportInput = normalizeStressTestReportInput(rawInput);
+      const reportInput: StressTestReportInput = {
+        ...normalizeStressTestReportInput(rawInput),
+        // DR-2: pass through fingerprint (not normalized — already correct shape)
+        upgradedFingerprint: input.upgradedFingerprint ?? undefined,
+      };
 
       console.log(
         `[StressTestReportPdf] Export requested: dealName=${reportInput.dealName}` +

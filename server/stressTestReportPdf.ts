@@ -75,6 +75,18 @@ export interface StressTestReportInput {
   runId?: string;
   /** Report version string */
   reportVersion?: string;
+  /**
+   * Upgraded scenario fingerprint metrics.
+   * When present, a "Simulation Resilience Impact" section is appended to the PDF.
+   * All four fields are optional; missing values render as "Not available."
+   * Omit this field entirely to suppress the section.
+   */
+  upgradedFingerprint?: {
+    resilienceDelta?: number | null;
+    upgradeEffectiveness?: number | null;
+    rescueabilityScore?: number | null;
+    structuralFragilityScore?: number | null;
+  } | null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -1012,6 +1024,62 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
     bodyText("Deep diligence is required before any investment decision. The simulation indicates structural fragility that cannot be resolved through standard diligence alone. Consider running a follow-up simulation after structural improvements are made.");
   }
 
+  // ── Section 13: Simulation Resilience Impact (only when upgraded fingerprint exists) ──
+  if (input.upgradedFingerprint) {
+    const fp = input.upgradedFingerprint;
+
+    // Helper: format resilienceDelta (stored as percentage points, e.g. 18.4)
+    const fmtResilienceDelta = (v: number | null | undefined): string => {
+      if (v == null) return "Not available.";
+      const sign = v >= 0 ? "+" : "";
+      return `${sign}${v.toFixed(1)}pp`;
+    };
+
+    // Helper: map upgradeEffectiveness float to label (mirrors UI formatUpgradeEffectiveness)
+    const fmtUpgradeEffectiveness = (v: number | null | undefined): string => {
+      if (v == null) return "Not available.";
+      if (v < 0.25) return "Low";
+      if (v < 0.50) return "Moderate";
+      if (v < 0.75) return "High";
+      return "Very High";
+    };
+
+    sectionHeader("13. Simulation Resilience Impact");
+    bodyText(
+      "The following metrics are derived from the upgraded scenario fingerprint and reflect how the " +
+      "structural improvements affected simulation resilience. These are simulation resilience metrics, " +
+      "not investment success probabilities."
+    );
+    doc.moveDown(0.3);
+
+    labelValue("Resilience Delta",
+      fmtResilienceDelta(fp.resilienceDelta) +
+      (fp.resilienceDelta != null ? "  (change in simulation resilience after fixes, in percentage points)" : ""));
+    labelValue("Upgrade Effectiveness",
+      fmtUpgradeEffectiveness(fp.upgradeEffectiveness) +
+      (fp.upgradeEffectiveness != null ? `  (raw score: ${fp.upgradeEffectiveness.toFixed(3)})` : ""));
+    labelValue("Rescueability Score",
+      fp.rescueabilityScore != null
+        ? `${fp.rescueabilityScore.toFixed(0)}/100  (measures how many hard-no scenarios were recoverable through structured mitigation)`
+        : "Not available.");
+    labelValue("Structural Fragility Score",
+      fp.structuralFragilityScore != null
+        ? `${fp.structuralFragilityScore.toFixed(0)}/100  (higher score = more fragile structure under stress)`
+        : "Not available.");
+
+    doc.moveDown(0.3);
+    infoBox(
+      "Interpretation Note",
+      [
+        "These metrics reflect simulation resilience only. They do not imply investment success probability,",
+        "winner selection, or a change to the original council verdict. Resilience Delta measures the",
+        "improvement in simulated approval rate after structural fixes were applied.",
+      ],
+      INFOBOX,
+      INFOBORDER
+    );
+  }
+
   // ── Footer on all pages ───────────────────────────────────────────────────────
 
   const range = doc.bufferedPageRange();
@@ -1249,6 +1317,41 @@ export function generateStressTestReportText(input: StressTestReportInput): stri
     });
   }
   lines.push("");
+
+  // DR-2: Simulation Resilience Impact section (only when upgraded fingerprint exists)
+  if (input.upgradedFingerprint) {
+    const fp = input.upgradedFingerprint;
+
+    const fmtResilienceDelta = (v: number | null | undefined): string => {
+      if (v == null) return "Not available.";
+      const sign = v >= 0 ? "+" : "";
+      return `${sign}${v.toFixed(1)}pp`;
+    };
+    const fmtUpgradeEffectiveness = (v: number | null | undefined): string => {
+      if (v == null) return "Not available.";
+      if (v < 0.25) return "Low";
+      if (v < 0.50) return "Moderate";
+      if (v < 0.75) return "High";
+      return "Very High";
+    };
+    const fmtScore = (v: number | null | undefined): string =>
+      v == null ? "Not available." : `${v.toFixed(0)}/100`;
+
+    lines.push("13. SIMULATION RESILIENCE IMPACT");
+    lines.push(dash);
+    lines.push("The following metrics are derived from the upgraded scenario fingerprint.");
+    lines.push("These are simulation resilience metrics, not investment success probabilities.");
+    lines.push("");
+    lines.push(`Resilience Delta:           ${fmtResilienceDelta(fp.resilienceDelta)}`);
+    lines.push(`Upgrade Effectiveness:      ${fmtUpgradeEffectiveness(fp.upgradeEffectiveness)}${fp.upgradeEffectiveness != null ? ` (raw: ${fp.upgradeEffectiveness.toFixed(3)})` : ""}`);
+    lines.push(`Rescueability Score:        ${fmtScore(fp.rescueabilityScore)}`);
+    lines.push(`Structural Fragility Score: ${fmtScore(fp.structuralFragilityScore)}`);
+    lines.push("");
+    lines.push("NOTE: These metrics do not imply investment success probability, winner selection,");
+    lines.push("or a change to the original council verdict.");
+    lines.push("");
+  }
+
   lines.push(sep);
   lines.push("END OF REPORT -- AgenThinkMesh Scenario Simulation Engine");
   lines.push(sep);

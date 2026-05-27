@@ -113,10 +113,18 @@ export const scenarioSimRouter = router({
       batchSize:        z.number().min(100).max(10000).optional(),
       confirmedGated:   z.boolean().optional(), // must be true for gated modes
       // Upgraded scenario metadata (set when running on a post-fix deal)
-      upgradedScenario: z.boolean().optional(),
-      originalDealId:   z.string().max(64).optional(),
-      originalVerdict:  z.string().max(64).optional(),
-      upgradedVerdict:  z.string().max(64).optional(),
+      upgradedScenario:   z.boolean().optional(),
+      originalDealId:     z.string().max(64).optional(),
+      originalVerdict:    z.string().max(64).optional(),
+      upgradedVerdict:    z.string().max(64).optional(),
+      /**
+       * Approval percentage from the original (pre-fix) simulation run.
+       * Pass the sum of approvePct + conditionalPct from the original simulation's
+       * decisionDistribution. Used by persistFingerprint to compute resilienceDelta
+       * and upgradeEffectiveness for upgraded scenario fingerprints.
+       * Null / omitted → resilienceDelta and upgradeEffectiveness remain null.
+       */
+      originalApprovePct: z.number().min(0).max(100).optional(),
       /**
        * Base approval score derived from the council verdict for this deal.
        * Anchors the simulation distribution around the deal's actual quality.
@@ -231,7 +239,8 @@ export const scenarioSimRouter = router({
           originalRunId: null, // not available in sync path; originalDealId is not runId
           originalVerdict: input.originalVerdict ?? null,
           upgradedVerdict: input.upgradedVerdict ?? null,
-          originalApprovePct: null, // not available without fetching prior run
+          // Use client-supplied originalApprovePct when available (upgraded scenario path)
+          originalApprovePct: input.originalApprovePct ?? null,
         }).catch(err => console.error(`[Fingerprint] persist failed for ${runId}:`, err));
         return {
           runId,
@@ -259,7 +268,10 @@ export const scenarioSimRouter = router({
         input.baseApprovalScore ?? 0.0,
         // null = ATTRIBUTION_UNAVAILABLE; undefined = also unavailable; [] = genuinely empty; [...] = real flags
         input.terminalFlags === undefined ? null : input.terminalFlags,
-        input.dealName
+        input.dealName,
+        input.upgradedScenario ? (input.originalApprovePct ?? null) : null,
+        input.upgradedScenario ? (input.originalVerdict ?? null) : null,
+        input.upgradedScenario ? (input.upgradedVerdict ?? null) : null
       ).catch(err => {
         console.error(`[ScenarioSim] Background run failed for ${runId}:`, err);
       });
@@ -512,7 +524,10 @@ async function runDeepSimulationBackground(
   councilMode?: string,
   baseApprovalScore: number = 0.0,
   terminalFlags: string[] | null = null,
-  dealName: string = ""
+  dealName: string = "",
+  originalApprovePct: number | null = null,
+  originalVerdict: string | null = null,
+  upgradedVerdict: string | null = null
 ): Promise<void> {
   if (!db) return;
 
@@ -586,14 +601,15 @@ async function runDeepSimulationBackground(
       })
       .where(eq(scenarioSimRuns.runId, runId));
     // Persist fingerprint (fire-and-forget)
+    // isUpgradedScenario is true when originalApprovePct was supplied (upgraded scenario path)
     persistFingerprint(db, aggregation, allResults, {
       councilMode: councilMode ?? null,
       dealName,
-      isUpgradedScenario: false,
+      isUpgradedScenario: originalApprovePct !== null,
       originalRunId: null,
-      originalVerdict: null,
-      upgradedVerdict: null,
-      originalApprovePct: null,
+      originalVerdict: originalVerdict ?? null,
+      upgradedVerdict: upgradedVerdict ?? null,
+      originalApprovePct: originalApprovePct ?? null,
     }).catch(err => console.error(`[Fingerprint] persist failed for ${runId}:`, err));
   }
 }

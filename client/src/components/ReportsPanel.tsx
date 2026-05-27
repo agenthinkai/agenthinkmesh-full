@@ -96,6 +96,16 @@ export interface ReportsPanelProps {
   simTargetCount?: number;
   simCompletedAt?: string | Date;
   simAggregation?: SimAggregation | null;
+  /**
+   * Upgraded scenario fingerprint — when present, a "Simulation Resilience Impact"
+   * section is added to the Stress Test Report PDF. Omit or pass null to suppress.
+   */
+  upgradedFingerprint?: {
+    resilienceDelta?: number | null;
+    upgradeEffectiveness?: number | null;
+    rescueabilityScore?: number | null;
+    structuralFragilityScore?: number | null;
+  } | null;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -299,6 +309,7 @@ export function ReportsPanel({
   onExportICMemo, icMemoLoading,
   upgradeProtocol, upgradeDelta,
   simRunId, simMode, simTargetCount, simCompletedAt, simAggregation,
+  upgradedFingerprint,
 }: ReportsPanelProps) {
   // ── Upgrade Protocol export state ─────────────────────────────────────────
   const [upgradeFmt, setUpgradeFmt] = useState<ExportFormat>("pdf");
@@ -387,6 +398,15 @@ export function ReportsPanel({
         // Task 2: Run ID traceability — wire through to PDF cover
         runId: simRunId ?? undefined,
         format: stressFmt,
+        // DR-2: Pass upgraded fingerprint metrics for Simulation Resilience Impact section
+        ...(upgradedFingerprint ? {
+          upgradedFingerprint: {
+            resilienceDelta:         upgradedFingerprint.resilienceDelta ?? null,
+            upgradeEffectiveness:    upgradedFingerprint.upgradeEffectiveness ?? null,
+            rescueabilityScore:      upgradedFingerprint.rescueabilityScore ?? null,
+            structuralFragilityScore: upgradedFingerprint.structuralFragilityScore ?? null,
+          },
+        } : {}),
       });
       const name = safeName(dealName);
       if (res.format === "pdf" && res.base64) {

@@ -1190,6 +1190,11 @@ const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle, {
         originalDealId: result.dealId ?? undefined,
         originalVerdict: result.verdict ?? undefined,
         upgradedVerdict: upgradedVerdict,
+        // Pass original approval pct so the server can compute resilienceDelta + upgradeEffectiveness.
+        // origApprovalPct = approvePct + conditionalPct from the original (pre-fix) simulation.
+        // If the original simulation has not yet completed, this will be null and the server
+        // will keep resilienceDelta / upgradeEffectiveness as null (safe fallback).
+        originalApprovePct: origApprovalPct ?? undefined,
       });
       setSimRunId(res.runId);
       // If synchronous completion (quick mode)
@@ -3712,6 +3717,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
           simTargetCount={effectiveSimData?.targetCount ?? undefined}
           simCompletedAt={effectiveSimData?.completedAt ?? undefined}
           simAggregation={effectiveSimData?.aggregation ?? null}
+          upgradedFingerprint={upgradedFingerprint}
         />
       </div>
       {/* ── Final Investability Summary ──────────────────────────────────────────── */}
