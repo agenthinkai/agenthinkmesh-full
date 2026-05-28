@@ -8,6 +8,11 @@
  * Prose inference from councilOutcome, blockingIssues, or any text field is
  * FORBIDDEN. If terminalFlags is empty on a C deal, the PDF renders
  * "Terminal Blockers: Not available." — no fallback to prose.
+ *
+ * COLOR FIX: The PDF uses a dark background palette. Each page is explicitly
+ * filled with DARK_BG before content is drawn, so light-colored text
+ * (BODY_TEXT, WHITE, AMBER, GREEN) renders correctly instead of being
+ * invisible against the default white PDFKit page background.
  */
 
 import PDFDocument from "pdfkit";
@@ -120,6 +125,13 @@ function wrapText(doc: PDFKit.PDFDocument, text: string, maxWidth: number): stri
   return lines;
 }
 
+/** Fill the entire current page with the dark background colour. */
+function fillPageBackground(doc: PDFKit.PDFDocument): void {
+  doc.save();
+  doc.rect(0, 0, 595, 842).fill(DARK_BG);
+  doc.restore();
+}
+
 function sectionHeader(doc: PDFKit.PDFDocument, title: string, y: number): number {
   doc.rect(50, y, 495, 20).fill(CARD_BG);
   doc.font("Helvetica-Bold").fontSize(8).fillColor(AMBER)
@@ -135,6 +147,8 @@ function rule(doc: PDFKit.PDFDocument, y: number): number {
 function ensurePage(doc: PDFKit.PDFDocument, y: number, needed = 40): number {
   if (y + needed > 770) {
     doc.addPage();
+    // Fill new page with dark background so light text is visible
+    fillPageBackground(doc);
     return 50;
   }
   return y;
@@ -159,6 +173,11 @@ export async function generateRepairBriefPdf(input: RepairBriefInput): Promise<B
     doc.on("data", (c: Buffer) => chunks.push(c));
     doc.on("end", () => resolve(Buffer.concat(chunks)));
     doc.on("error", reject);
+
+    // ── Fill first page with dark background ─────────────────────────────────
+    // This is critical: PDFKit pages default to white. Without this fill,
+    // all light-coloured text (BODY_TEXT, WHITE, AMBER, GREEN) is invisible.
+    fillPageBackground(doc);
 
     const modeLabel = input.councilMode === "infrastructure"
       ? "INFRASTRUCTURE / PROJECT FINANCE COUNCIL"
@@ -348,7 +367,8 @@ export async function generateRepairBriefPdf(input: RepairBriefInput): Promise<B
 
     for (const risk of input.residualRisks) {
       y = ensurePage(doc, y, 18);
-      doc.rect(58, y + 4, 4, 4).fill(RED_SOFT);
+      // Bullet square
+      doc.rect(58, y + 4, 5, 5).fill(RED_SOFT);
       doc.font("Helvetica").fontSize(8).fillColor(BODY_TEXT)
         .text(safe(risk), 68, y + 2, { width: 469, lineBreak: true });
       y = doc.y + 4;
@@ -380,11 +400,18 @@ export async function generateRepairBriefPdf(input: RepairBriefInput): Promise<B
       y += 12;
     }
 
-    // ── FOOTER (rendered on all pages via bufferPages) ───────────────────────────────────────────
+    // ── FOOTER (rendered on all pages via bufferPages) ────────────────────────
+    // Also ensure every buffered page has the dark background filled before footer.
     const range = doc.bufferedPageRange();
     const totalPages = range.count;
     for (let i = 0; i < totalPages; i++) {
       doc.switchToPage(i);
+      // Re-fill background for any page that may have been added via ensurePage
+      // (the first page is already filled; subsequent pages are filled in ensurePage,
+      // but we re-apply here as a safety net without overwriting existing content
+      // because the background fill is drawn at z=0 — pdfkit draws in order,
+      // so we must NOT re-fill here as it would paint over content).
+      // Footer bar only:
       doc.rect(0, 810, 595, 32).fill(DARK_BG);
       doc.font("Helvetica").fontSize(6.5).fillColor(MUTED)
         .text(
