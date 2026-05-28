@@ -371,14 +371,20 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
     } catch { return new Date().toISOString().split("T")[0]; }
   })();
 
+  // Deal name truncation helper — keeps traceability band clean for long names
+  const traceDealName = (() => {
+    const s = sanitize(input.dealName);
+    return s.length > 22 ? s.slice(0, 22) + "..." : s;
+  })();
+
   // Row 1: DEAL | MODE | SCENARIOS — fixed-position rendering to avoid mid-word wrapping
   const traceRow1Y = 203;
   // DEAL label
   doc.fontSize(7.5).fillColor(GRAY).font("Helvetica-Bold")
     .text("DEAL:", L + 8, traceRow1Y, { width: 28, lineBreak: false });
-  // Deal name value
+  // Deal name value (truncated to max 22 chars + ellipsis)
   doc.fillColor(BLACK).font("Helvetica")
-    .text(sanitize(input.dealName), L + 38, traceRow1Y, { width: 130, lineBreak: false });
+    .text(traceDealName, L + 38, traceRow1Y, { width: 130, lineBreak: false });
   // MODE label
   doc.fillColor(GRAY).font("Helvetica-Bold")
     .text("MODE:", L + 178, traceRow1Y, { width: 30, lineBreak: false });
