@@ -18,9 +18,13 @@
  *   - Uses bypassCostGuard: true (same as the cron)
  *
  * Special actions (via body.action):
- *   "env-check"   — Reports presence/absence of critical env vars (no secrets exposed)
- *   "resume-run"  — Resumes a specific run by ID (body.runId required)
- *   "test-email"  — Sends a test email to farouq@agenthink.ai via Graph API
+ *   "env-check"    — Reports presence/absence of critical env vars (no secrets exposed)
+ *   "resume-run"   — Resumes a specific run by ID (body.runId required)
+ *   "test-email"   — Sends a test email to farouq@agenthink.ai via Graph API
+ *   "fleet-export" — Exports evaluation rows for a run as a JSON fixture (body.runId required)
+ *                    Returns per-deal: evalId, ideaId, domain, subSector, targetRegion,
+ *                    classificationScore, executionScore, marketScore, finalScore,
+ *                    classification, fleetMode.  Used for regression testing and audits.
  *
  * Added: 2026-04-29 — Fix for HTTP 403 caused by Manus reverse-proxy blocking
  *   /api/scheduled/* routes before requests reach the Express app.
@@ -30,7 +34,7 @@ import { runDailyFleet } from "./jobs/founderFleetScheduler";
 import { runFleet } from "./founderFleet";
 import { sendGraphEmail } from "./graphEmail";
 import { getDb } from "./db";
-import { fleetConfig as fleetConfigTable, founderAgentRuns, founderAgentEvaluations } from "../drizzle/schema";
+import { fleetConfig as fleetConfigTable, founderAgentRuns, founderAgentEvaluations, founderAgentIdeas } from "../drizzle/schema";
 import { eq, and } from "drizzle-orm";
 
 const router = Router();
@@ -142,6 +146,53 @@ router.post("/fleet-trigger", async (req: Request, res: Response) => {
         error: msg,
         credentials: credCheck,
       });
+    }
+    return;
+  }
+
+  // ── Special action: fleet-export — export evaluation rows as JSON fixture ──
+  if (action === "fleet-export") {
+    if (!bodyRunId || typeof bodyRunId !== "number") {
+      res.status(400).json({ action: "fleet-export", error: "body.runId (number) is required" });
+      return;
+    }
+    try {
+      const db = await getDb();
+      if (!db) {
+        res.status(503).json({ action: "fleet-export", error: "Database unavailable" });
+        return;
+      }
+      const rows = await db
+        .select({
+          evalId:              founderAgentEvaluations.id,
+          ideaId:              founderAgentEvaluations.ideaId,
+          runId:               founderAgentEvaluations.runId,
+          fleetMode:           founderAgentEvaluations.fleetMode,
+          domain:              founderAgentIdeas.domain,
+          subSector:           founderAgentIdeas.subSector,
+          targetRegion:        founderAgentIdeas.targetRegion,
+          classificationScore: founderAgentEvaluations.classificationScore,
+          executionScore:      founderAgentEvaluations.executionScore,
+          marketScore:         founderAgentEvaluations.marketScore,
+          finalScore:          founderAgentEvaluations.finalScore,
+          classification:      founderAgentEvaluations.classification,
+          status:              founderAgentEvaluations.status,
+        })
+        .from(founderAgentEvaluations)
+        .innerJoin(founderAgentIdeas, eq(founderAgentEvaluations.ideaId, founderAgentIdeas.id))
+        .where(eq(founderAgentEvaluations.runId, bodyRunId));
+      console.log(`[WebhookFleetTrigger] fleet-export run #${bodyRunId}: ${rows.length} rows`);
+      res.json({
+        action: "fleet-export",
+        runId: bodyRunId,
+        count: rows.length,
+        exportedAt: timestamp,
+        rows,
+      });
+    } catch (err) {
+      const msg = (err as Error)?.message ?? String(err);
+      console.error(`[WebhookFleetTrigger] fleet-export run #${bodyRunId} error:`, msg);
+      res.status(500).json({ action: "fleet-export", error: msg });
     }
     return;
   }
