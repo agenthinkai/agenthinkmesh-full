@@ -244,31 +244,36 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
     doc.moveDown(0.2);
   }
 
-  /** Percentage row — no ASCII bar, just a clean label + colored percentage. */
+  /** Percentage row — fixed-position rendering to avoid continued:true text clubbing. */
   function metricRow(label: string, pctVal: number, color: string) {
-    ensureSpace(18);
+    ensureSpace(20);
     const safePct = safeNum(pctVal);
+    const rowY = doc.y;
+    const rowH = 16;
     const barWidth = 120;
     const filled = Math.round((Math.min(100, safePct) / 100) * barWidth);
 
-    // Label
+    // Label — fixed position, no continued
     doc.fontSize(8.5).fillColor(GRAY).font("Helvetica-Bold")
-      .text(sanitize(label), L + 8, doc.y, { continued: true, width: 150 });
+      .text(sanitize(label), L + 8, rowY, { width: 150, lineBreak: false });
 
-    // Percentage value
-    doc.fillColor(color).font("Helvetica-Bold")
-      .text(pct(safePct), { continued: true, width: 50 });
+    // Percentage value — fixed position, no continued
+    const pctX = L + 8 + 152;
+    doc.fontSize(8.5).fillColor(color).font("Helvetica-Bold")
+      .text(pct(safePct), pctX, rowY, { width: 50, lineBreak: false });
 
-    // Simple filled rectangle bar (no ASCII glyphs)
-    const barX = L + 8 + 150 + 50 + 4;
-    const barY = doc.y - 10;
+    // Bar — drawn at fixed position
+    const barX = pctX + 52;
+    const barY = rowY + 3;
     const barH = 8;
     doc.rect(barX, barY, barWidth, barH).fillColor("#E5E7EB").fill();
     if (filled > 0) {
       doc.rect(barX, barY, filled, barH).fillColor(color).fill();
     }
-    doc.text("", { width: 0 }); // flush continued
-    doc.moveDown(0.35);
+
+    // Advance cursor manually — never rely on continued flush
+    doc.y = rowY + rowH;
+    doc.moveDown(0.2);
   }
 
   /** Colored info box with left border accent. */

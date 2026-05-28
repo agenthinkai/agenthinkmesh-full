@@ -349,10 +349,12 @@ export async function generateUpgradeProtocolPdf(input: UpgradeProtocolInput): P
   function labelVal(label: string, value: string, indent = 0) {
     ensureSpace(14);
     const lw = 130;
+    const rowY = doc.y;
+    // Fixed-position rendering — no continued:true to prevent text clubbing
     doc.fontSize(8).fillColor(GRAY).font("Helvetica-Bold")
-      .text(sanitize(label) + ":", L + indent, doc.y, { continued: true, width: lw });
-    doc.fillColor(BLACK).font("Helvetica")
-      .text("  " + sanitize(value || "—"), { width: CONTENT_W - indent - lw });
+      .text(sanitize(label) + ":", L + indent, rowY, { width: lw, lineBreak: false });
+    doc.fontSize(8).fillColor(BLACK).font("Helvetica")
+      .text("  " + sanitize(value || "\u2014"), L + indent + lw, rowY, { width: CONTENT_W - indent - lw, lineBreak: true });
     doc.moveDown(0.2);
   }
 
@@ -386,41 +388,58 @@ export async function generateUpgradeProtocolPdf(input: UpgradeProtocolInput): P
       .text(`${score}`, barX + barW + 4, y, { width: 24 });
   }
 
-  /** Issue card (compressed, no verbose preamble) */
+  /** Issue card — dynamic height, no continued:true chaining to prevent text overflow */
   function issueCard(fix: UpgradeFixInput, idx: number) {
-    ensureSpace(60);
+    const titleText = `${idx + 1}. ${sanitize(fix.title)}`;
+    const descText  = sanitize(fix.description);
+    const actionText = fix.suggestion ? sanitize(fix.suggestion) : "";
+
+    // Measure heights before drawing
+    doc.fontSize(8.5).font("Helvetica-Bold");
+    const titleH = doc.heightOfString(titleText, { width: CONTENT_W - 90 });
+    doc.fontSize(8).font("Helvetica");
+    const descH = doc.heightOfString(descText, { width: CONTENT_W - 20 });
+    doc.fontSize(7.5).font("Helvetica");
+    const actionH = actionText ? doc.heightOfString(actionText, { width: CONTENT_W - 80 }) : 0;
+
+    const innerH = 8 + titleH + 4 + descH + (actionText ? 4 + 10 + actionH + 4 : 0) + 8;
+    const cardH  = Math.max(innerH, 52);
+
+    ensureSpace(cardH + 8);
     const cardY = doc.y;
 
     // Left severity stripe
     const stripeCol = severityColor(fix.tag);
-    doc.rect(L, cardY, 3, 52).fill(stripeCol);
+    doc.rect(L, cardY, 3, cardH).fill(stripeCol);
 
     // Card background
-    doc.rect(L + 3, cardY, CONTENT_W - 3, 52).fill(BGLIGHT);
+    doc.rect(L + 3, cardY, CONTENT_W - 3, cardH).fill(BGLIGHT);
 
     // Title row
-    const titleY = cardY + 6;
+    const titleY = cardY + 8;
     doc.fontSize(8.5).fillColor(NAVY).font("Helvetica-Bold")
-      .text(`${idx + 1}. ${sanitize(fix.title)}`, L + 10, titleY, { width: CONTENT_W - 90 });
+      .text(titleText, L + 10, titleY, { width: CONTENT_W - 90, lineBreak: true });
     severityPill(fix.tag, W - L - 68, titleY);
 
-    // Description (max 2 lines)
-    const descY = titleY + 14;
-    const desc = sanitize(fix.description);
+    // Description — full text, no height clipping
+    const descY = titleY + titleH + 4;
     doc.fontSize(8).fillColor(GRAY).font("Helvetica")
-      .text(desc, L + 10, descY, { width: CONTENT_W - 20, height: 18, ellipsis: true });
+      .text(descText, L + 10, descY, { width: CONTENT_W - 20, lineBreak: true });
+    // Use doc.y after rendering (not pre-calculated descH) to get actual rendered position
+    const afterDescY = doc.y;
 
-    // Recommendation
-    if (fix.suggestion) {
-      const recY = descY + 20;
+    // ACTION label + suggestion on separate lines to avoid continued:true overflow
+    if (actionText) {
+      const actionLabelY = afterDescY + 4;
       doc.fontSize(7.5).fillColor(BLUE).font("Helvetica-Bold")
-        .text("ACTION: ", L + 10, recY, { continued: true, width: 50 });
-      doc.fillColor(BLACK).font("Helvetica")
-        .text(sanitize(fix.suggestion), { width: CONTENT_W - 60, height: 12, ellipsis: true });
+        .text("ACTION:", L + 10, actionLabelY, { width: CONTENT_W - 20, lineBreak: false });
+      const actionTextY = actionLabelY + 11;
+      doc.fontSize(7.5).fillColor(BLACK).font("Helvetica")
+        .text(actionText, L + 10, actionTextY, { width: CONTENT_W - 20, lineBreak: true });
     }
 
-    doc.y = cardY + 56;
-    doc.moveDown(0.2);
+    // Advance past card bottom — use whichever is lower: pre-calculated cardH or actual doc.y
+    doc.y = Math.max(cardY + cardH, doc.y) + 4;
   }
 
   // ══════════════════════════════════════════════════════════════════════════
@@ -531,10 +550,12 @@ export async function generateUpgradeProtocolPdf(input: UpgradeProtocolInput): P
   body("Applying the following changes would most improve approval probability:");
   fastestPath.forEach((fix, i) => {
     ensureSpace(20);
+    const fpY = doc.y;
+    // Title at fixed position — no continued:true to prevent text clubbing after severityPill
     doc.fontSize(8.5).fillColor(NAVY).font("Helvetica-Bold")
-      .text(`${i + 1}. ${sanitize(fix.title)}`, L + 8, doc.y, { continued: true, width: CONTENT_W - 80 });
-    severityPill(fix.tag, W - L - 68, doc.y - 2);
-    doc.moveDown(0.15);
+      .text(`${i + 1}. ${sanitize(fix.title)}`, L + 8, fpY, { width: CONTENT_W - 80, lineBreak: false });
+    severityPill(fix.tag, W - L - 68, fpY - 1);
+    doc.y = fpY + 14;
     body(sanitize(fix.suggestion || fix.description), 16);
   });
 
@@ -595,17 +616,22 @@ export async function generateUpgradeProtocolPdf(input: UpgradeProtocolInput): P
   // ── Investor Fit Analysis ─────────────────────────────────────────────────
   sectionHeader("Investor Fit Analysis");
   ensureSpace(50);
-  const fitY = doc.y;
   const fitCol = investorFit.fit.includes("REJECT") ? RED
     : investorFit.fit.includes("FAMILY") ? AMBER
     : investorFit.fit.includes("VENTURE") ? BLUE : GREEN;
-  doc.rect(L, fitY, CONTENT_W, 36).fill(BGLIGHT);
+  // Measure rationale height before drawing the box
+  doc.fontSize(8).font("Helvetica");
+  const fitRationaleH = doc.heightOfString(sanitize(investorFit.rationale), { width: CONTENT_W - 16 });
+  const fitBoxH = Math.max(14 + 12 + fitRationaleH + 10, 44);
+  ensureSpace(fitBoxH + 8);
+  const fitY = doc.y;
+  doc.rect(L, fitY, CONTENT_W, fitBoxH).fill(BGLIGHT);
   doc.moveTo(L, fitY).lineTo(L + CONTENT_W, fitY).lineWidth(2).strokeColor(fitCol).stroke();
   doc.fontSize(9).fillColor(fitCol).font("Helvetica-Bold")
-    .text(sanitize(investorFit.fit), L + 8, fitY + 8, { width: CONTENT_W - 16 });
+    .text(sanitize(investorFit.fit), L + 8, fitY + 8, { width: CONTENT_W - 16, lineBreak: false });
   doc.fontSize(8).fillColor(GRAY).font("Helvetica")
-    .text(sanitize(investorFit.rationale), L + 8, fitY + 22, { width: CONTENT_W - 16, height: 12, ellipsis: true });
-  doc.y = fitY + 44;
+    .text(sanitize(investorFit.rationale), L + 8, fitY + 24, { width: CONTENT_W - 16, lineBreak: true });
+  doc.y = fitY + fitBoxH + 6;
 
   // ══════════════════════════════════════════════════════════════════════════
   // PAGE 4 — Risk Mitigation · Governance Concerns · Capital Readiness
