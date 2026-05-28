@@ -278,9 +278,18 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
 
   /** Colored info box with left border accent. */
   function infoBox(title: string, lines: string[], bgColor: string, borderColor: string) {
-    const lineHeight = 13;
+    // Pre-measure actual heights using PDFKit's heightOfString to avoid blank-page overflow
     const padding = 10;
-    const totalH = padding * 2 + (title ? 16 : 0) + lines.length * lineHeight + 4;
+    const textW = CONTENT_W - 20;
+    const titleH = title
+      ? (doc.fontSize(9).font("Helvetica-Bold").heightOfString(sanitize(title), { width: textW }) + 4)
+      : 0;
+    const linesH = lines.reduce((sum, line) => {
+      const s = sanitize(line);
+      if (!s) return sum + 6; // empty line gap
+      return sum + doc.fontSize(8.5).font("Helvetica").heightOfString(s, { width: textW }) + 3;
+    }, 0);
+    const totalH = padding * 2 + titleH + linesH + 4;
     ensureSpace(totalH + 10);
 
     const boxY = doc.y;
@@ -290,13 +299,18 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
     let textY = boxY + padding;
     if (title) {
       doc.fontSize(9).fillColor(borderColor).font("Helvetica-Bold")
-        .text(sanitize(title), L + 12, textY, { width: CONTENT_W - 20 });
-      textY += 16;
+        .text(sanitize(title), L + 12, textY, { width: textW });
+      textY += titleH;
     }
     lines.forEach(line => {
+      const s = sanitize(line);
+      if (!s) {
+        textY += 6; // empty line gap
+        return;
+      }
       doc.fontSize(8.5).fillColor(BLACK).font("Helvetica")
-        .text(sanitize(line), L + 12, textY, { width: CONTENT_W - 20 });
-      textY += lineHeight;
+        .text(s, L + 12, textY, { width: textW });
+      textY += doc.fontSize(8.5).font("Helvetica").heightOfString(s, { width: textW }) + 3;
     });
     doc.y = boxY + totalH + 8;
     doc.moveDown(0.2);
@@ -357,34 +371,45 @@ export async function generateStressTestReportPdf(input: StressTestReportInput):
     } catch { return new Date().toISOString().split("T")[0]; }
   })();
 
+  // Row 1: DEAL | MODE | SCENARIOS — fixed-position rendering to avoid mid-word wrapping
+  const traceRow1Y = 203;
+  // DEAL label
   doc.fontSize(7.5).fillColor(GRAY).font("Helvetica-Bold")
-    .text("DEAL:", L + 8, 205, { continued: true, width: 30 });
-  doc.font("Helvetica").fillColor(BLACK)
-    .text(` ${sanitize(input.dealName)}`, { continued: true, width: 120 });
+    .text("DEAL:", L + 8, traceRow1Y, { width: 28, lineBreak: false });
+  // Deal name value
+  doc.fillColor(BLACK).font("Helvetica")
+    .text(sanitize(input.dealName), L + 38, traceRow1Y, { width: 130, lineBreak: false });
+  // MODE label
   doc.fillColor(GRAY).font("Helvetica-Bold")
-    .text("  MODE:", { continued: true, width: 30 });
-  doc.font("Helvetica").fillColor(BLACK)
-    .text(` ${sanitize(input.mode).toUpperCase()}`, { continued: true, width: 80 });
+    .text("MODE:", L + 178, traceRow1Y, { width: 30, lineBreak: false });
+  // Mode value
+  doc.fillColor(BLACK).font("Helvetica")
+    .text(sanitize(input.mode).toUpperCase(), L + 210, traceRow1Y, { width: 90, lineBreak: false });
+  // SCENARIOS label
   doc.fillColor(GRAY).font("Helvetica-Bold")
-    .text("  SCENARIOS:", { continued: true, width: 50 });
-  doc.font("Helvetica").fillColor(BLACK)
-    .text(` ${input.targetCount.toLocaleString()}`, { width: 60 });
+    .text("SCENARIOS:", L + 308, traceRow1Y, { width: 55, lineBreak: false });
+  // Scenarios value
+  doc.fillColor(BLACK).font("Helvetica")
+    .text(input.targetCount.toLocaleString(), L + 366, traceRow1Y, { width: 80, lineBreak: false });
 
+  // Row 2: COMPLETED | GENERATED | RUN ID — fixed-position rendering
+  const traceRow2Y = 218;
+  // COMPLETED label
   doc.fontSize(7.5).fillColor(GRAY).font("Helvetica-Bold")
-    .text("COMPLETED:", L + 8, 218, { continued: true, width: 50 });
-  doc.font("Helvetica").fillColor(BLACK)
-    .text(` ${completedDateStr}`, { continued: true, width: 80 });
+    .text("COMPLETED:", L + 8, traceRow2Y, { width: 55, lineBreak: false });
+  doc.fillColor(BLACK).font("Helvetica")
+    .text(completedDateStr, L + 66, traceRow2Y, { width: 80, lineBreak: false });
+  // GENERATED label
   doc.fillColor(GRAY).font("Helvetica-Bold")
-    .text("  GENERATED:", { continued: true, width: 55 });
-  doc.font("Helvetica").fillColor(BLACK)
-    .text(` ${generatedDateStr}`, { continued: true, width: 80 });
+    .text("GENERATED:", L + 154, traceRow2Y, { width: 55, lineBreak: false });
+  doc.fillColor(BLACK).font("Helvetica")
+    .text(generatedDateStr, L + 212, traceRow2Y, { width: 80, lineBreak: false });
+  // RUN ID (optional)
   if (input.runId) {
     doc.fillColor(GRAY).font("Helvetica-Bold")
-      .text("  RUN ID:", { continued: true, width: 40 });
-    doc.font("Helvetica").fillColor(BLACK)
-      .text(` ${sanitize(input.runId).slice(0, 16)}`, { width: 120 });
-  } else {
-    doc.text("", { width: 0 });
+      .text("RUN ID:", L + 300, traceRow2Y, { width: 38, lineBreak: false });
+    doc.fillColor(BLACK).font("Helvetica")
+      .text(sanitize(input.runId).slice(0, 16), L + 341, traceRow2Y, { width: 120, lineBreak: false });
   }
 
   doc.y = 255;
