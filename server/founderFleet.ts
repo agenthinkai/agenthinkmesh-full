@@ -94,6 +94,20 @@ function classifyShariahCompliance(domain: string, subSector: string): "Complian
 
 
 // ── Scoring helpers ───────────────────────────────────────────────────────────
+/**
+ * classificationToScore — converts a cohort label to its **initial** numeric
+ * classification score at the moment of first evaluation (before re-ranking).
+ *
+ * IMPORTANT: this function is intentionally NOT called during re-ranking.
+ * reRankByPercentile preserves the raw classificationScore that was stored at
+ * evaluation time and uses it directly in computeFinalScore.  The cohort label
+ * (ENGAGE / WATCH / PASS) is updated as a separate display field only.
+ *
+ * Cohort midpoints (for reference):
+ *   ENGAGE → 87  (midpoint of 75-100)
+ *   WATCH  → 64  (midpoint of 50-79)
+ *   PASS   → 24  (midpoint of 0-49)
+ */
 export function classificationToScore(classification: string): number {
   if (classification === "ENGAGE") return 87; // midpoint of 75-100
   if (classification === "WATCH")  return 64; // midpoint of 50-79
@@ -872,12 +886,19 @@ async function assignDecisionOutcomes(runId: number): Promise<void> {
 // ── Step 6b: Percentile-based re-ranking (guarantees 20/40/40 distribution) ──
 async function reRankByPercentile(runId: number): Promise<void> {
   const db = await requireDb();
-  // Join with ideas to get domain for diversity cap
+  // Join with ideas to get domain for diversity cap.
+  // FIX (flat-midpoint overwrite): also fetch the raw classificationScore that was
+  // stored during the initial evaluation pass.  Re-ranking will update the cohort
+  // label (classification) but must NOT replace classificationScore with a flat
+  // midpoint — doing so destroyed all sub-cohort ranking signal (every PASS deal
+  // collapsed to a final score of 33).  The raw score is preserved and fed directly
+  // into computeFinalScore so that finalScore reflects genuine deal quality.
   const rows = await db.select({
-    id:             founderAgentEvaluations.id,
-    executionScore: founderAgentEvaluations.executionScore,
-    marketScore:    founderAgentEvaluations.marketScore,
-    domain:         founderAgentIdeas.domain,
+    id:                  founderAgentEvaluations.id,
+    executionScore:      founderAgentEvaluations.executionScore,
+    marketScore:         founderAgentEvaluations.marketScore,
+    classificationScore: founderAgentEvaluations.classificationScore,
+    domain:              founderAgentIdeas.domain,
   })
     .from(founderAgentEvaluations)
     .innerJoin(founderAgentIdeas, eq(founderAgentEvaluations.ideaId, founderAgentIdeas.id))
@@ -918,9 +939,13 @@ async function reRankByPercentile(runId: number): Promise<void> {
         domainEngageCount[domain] = currentCount + 1;
       }
     }
-    const classificationScore = classificationToScore(rawClassification);
+    // Preserve the raw classificationScore from the initial evaluation pass.
+    // Do NOT call classificationToScore(rawClassification) here — that would
+    // replace the granular upstream score with a flat cohort midpoint and is
+    // the root cause of every PASS deal collapsing to finalScore = 33.
+    const rawClassificationScore = row.classificationScore ?? classificationToScore(rawClassification);
     const finalScore = computeFinalScore(
-      classificationScore,
+      rawClassificationScore,
       row.executionScore ?? 0,
       row.marketScore    ?? 0,
     );
@@ -932,9 +957,11 @@ async function reRankByPercentile(runId: number): Promise<void> {
         ? "Domain cap applied — strong deal but sector quota reached for this run"
         : rawClassification === "WATCH" ? "Request more information"
         : "No action required";
+    // Only update the cohort label (classification), the recomputed finalScore, and
+    // recommendedAction.  classificationScore is intentionally NOT written here —
+    // it already holds the correct raw value from the initial evaluation pass.
     await db.update(founderAgentEvaluations).set({
-      classification:      rawClassification,
-      classificationScore,
+      classification:     rawClassification,
       finalScore,
       recommendedAction:  encryptWithMasterKey(recommendedAction),
       updatedAt: Date.now(),
