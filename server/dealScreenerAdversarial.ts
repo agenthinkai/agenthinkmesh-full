@@ -497,14 +497,16 @@ export async function runAdversarialCouncil(
       dealText;
   }
 
-  // ── Phase 1: Initial risk estimate + scaled first run ────────────────────
+  // ── Phase 1: Always run all 10 personas ─────────────────────────────────
+  // Dynamic scaling (4/6/10 based on risk) was removed because it caused
+  // the UI to show "6 YES" instead of "10 YES", misrepresenting the Council.
+  // All 10 personas always run regardless of deal risk level.
   const initialRisk        = estimateRiskLevel(effectiveDealText, mode);
-  const initialSubset      = getAgentSubset(mode, initialRisk);
-  const phase1PersonaIds   = initialSubset ?? allPersonas.map((p) => p.id);
-  const phase1ChallengerIds = challengerIds.filter((id) => phase1PersonaIds.includes(id));
+  const phase1PersonaIds   = allPersonas.map((p) => p.id); // always full council
+  const phase1ChallengerIds = challengerIds; // all challengers always active
 
   const councilStartMs = Date.now();
-  console.log(`[AdversarialCouncil] Phase 1 | Risk: ${initialRisk} | Agents: ${phase1PersonaIds.length}/${allPersonas.length} | Mode: ${mode}`);
+  console.log(`[AdversarialCouncil] Full Council | Risk: ${initialRisk} | Agents: ${phase1PersonaIds.length}/${allPersonas.length} | Mode: ${mode}`);
 
   const phase1Result = await runCouncil(effectiveDealText, {
     ...options,
@@ -512,49 +514,12 @@ export async function runAdversarialCouncil(
     challengerAgentIds: phase1ChallengerIds,
   });
 
-  // ── Phase 2: Second-stage escalation check ───────────────────────────────
-  const escalate = shouldEscalate(phase1Result, effectiveDealText, mode);
-  let finalResult: CouncilResult = phase1Result;
-  let finalRisk: RiskLevel       = initialRisk;
-  let agentsRun                  = phase1PersonaIds.length;
+  // ── Phase 2: No longer needed — all agents already ran in Phase 1 ────────
+  const finalResult: CouncilResult = phase1Result;
+  const finalRisk: RiskLevel       = initialRisk;
+  const agentsRun                  = phase1PersonaIds.length;
 
-  if (escalate && initialRisk !== "HIGH") {
-    // Run the remaining agents that were skipped in Phase 1
-    const remainingIds = allPersonas
-      .map((p) => p.id)
-      .filter((id) => !phase1PersonaIds.includes(id));
-
-    if (remainingIds.length > 0) {
-      console.log(`[AdversarialCouncil] ESCALATING to HIGH | Running ${remainingIds.length} additional agents`);
-      const remainingChallengerIds = challengerIds.filter((id) => remainingIds.includes(id));
-
-      const phase2Result = await runCouncil(effectiveDealText, {
-        ...options,
-        activePersonaIds:   remainingIds,
-        challengerAgentIds: remainingChallengerIds,
-        skipMemory:         true, // avoid double-persisting to memory
-      });
-
-      // Merge votes from both phases
-      const mergedVotes = [...phase1Result.votes, ...phase2Result.votes];
-      agentsRun = mergedVotes.length;
-
-      finalResult = {
-        ...phase1Result,
-        votes:           mergedVotes,
-        hardNoCount:     mergedVotes.filter((v) => v.vote === "HARD_NO").length,
-        noCount:         mergedVotes.filter((v) => v.vote === "HARD_NO" || v.vote === "SOFT_NO" || v.vote === "NO").length,
-        yesCount:        mergedVotes.filter((v) => v.vote === "HARD_YES" || v.vote === "SOFT_YES" || v.vote === "YES").length,
-        gccVetoTriggered: phase1Result.gccVetoTriggered || phase2Result.gccVetoTriggered,
-        // Keep phase1 verdict — it was computed on core agents with full context
-      };
-    }
-
-    finalRisk = "HIGH";
-    console.log(`[AdversarialCouncil] Escalated | Total agents: ${agentsRun}`);
-  } else {
-    console.log(`[AdversarialCouncil] No escalation | Risk: ${finalRisk} | Agents: ${agentsRun}`);
-  }
+  console.log(`[AdversarialCouncil] Complete | Risk: ${finalRisk} | Agents: ${agentsRun}`);
 
   const runtimeMs = Date.now() - councilStartMs;
   // ── Step 3: Extended Veto check on final merged result ───────────────────
