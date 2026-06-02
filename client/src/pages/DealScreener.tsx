@@ -2796,6 +2796,20 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stre
 // ── IC Report (raw Council output + boardroom IC Report tabs) ─────────────────
 function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, isHistoryView, patternContext }: { result: CouncilResult; onNewDeal: () => void; councilMode?: CouncilModeType; onRerun?: (dealName: string, dealText: string, mode: CouncilModeType) => void; isHistoryView?: boolean; patternContext?: "invested_match" | "passed_match" }) {
   const [activeTab, setActiveTab] = useState<"raw" | "boardroom">(result.icReport ? "boardroom" : "raw");
+  // ── Outcome Tracking ──────────────────────────────────────────────────────
+  const { user: outcomeUser } = useAuth();
+  const [outcomeEditOpen, setOutcomeEditOpen] = useState(false);
+  const [outcomeEditStatus, setOutcomeEditStatus] = useState<string>("UNKNOWN");
+  const [outcomeEditDate, setOutcomeEditDate] = useState("");
+  const [outcomeEditNotes, setOutcomeEditNotes] = useState("");
+  const [outcomeSaved, setOutcomeSaved] = useState(false);
+  const { data: outcomeRecord, refetch: refetchOutcome } = trpc.outcomeLedger.getByDealId.useQuery(
+    { dealId: result.dealId ?? "" },
+    { enabled: !!result.dealId, staleTime: 30_000 }
+  );
+  const updateOutcomeMutation = trpc.outcomeLedger.update.useMutation({
+    onSuccess: () => { setOutcomeSaved(true); setOutcomeEditOpen(false); refetchOutcome(); setTimeout(() => setOutcomeSaved(false), 3000); },
+  });
   // ── Re-run modal state ────────────────────────────────────────────────────
   const [rerunOpen, setRerunOpen] = useState(false);
   // Pre-fill with dealTextPreview if available (first 200 chars stored for Re-run UX)
@@ -3987,10 +4001,92 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
           </div>
         </div>
       )}
+        {/* ── Outcome Tracking Section ──────────────────────────────────────── */}
+    {result.dealId && (
+      <div style={{ margin: "24px 0 0 0", background: BG2, border: `1px solid ${BORDER}`, borderRadius: 10, padding: "20px 24px" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <span style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.15em" }}>OUTCOME LEDGER</span>
+            {outcomeRecord && (
+              <span style={{
+                padding: "2px 8px", borderRadius: 3, fontFamily: MONO, fontSize: 10, fontWeight: 700,
+                background: outcomeRecord.outcomeStatus === "SUCCEEDED" ? "rgba(0,255,135,0.15)" : outcomeRecord.outcomeStatus === "FAILED" ? "rgba(255,71,87,0.15)" : outcomeRecord.outcomeStatus === "IN_PROGRESS" ? "rgba(74,158,255,0.15)" : outcomeRecord.outcomeStatus === "RESTRUCTURED" ? "rgba(168,85,247,0.15)" : outcomeRecord.outcomeStatus === "ABANDONED" ? "rgba(255,159,67,0.15)" : "rgba(100,100,100,0.15)",
+                color: outcomeRecord.outcomeStatus === "SUCCEEDED" ? GREEN : outcomeRecord.outcomeStatus === "FAILED" ? RED : outcomeRecord.outcomeStatus === "IN_PROGRESS" ? ACCENT : outcomeRecord.outcomeStatus === "RESTRUCTURED" ? PURPLE : outcomeRecord.outcomeStatus === "ABANDONED" ? AMBER : MUTED,
+                border: `1px solid ${outcomeRecord.outcomeStatus === "SUCCEEDED" ? GREEN : outcomeRecord.outcomeStatus === "FAILED" ? RED : outcomeRecord.outcomeStatus === "IN_PROGRESS" ? ACCENT : outcomeRecord.outcomeStatus === "RESTRUCTURED" ? PURPLE : outcomeRecord.outcomeStatus === "ABANDONED" ? AMBER : BORDER}`,
+              }}>
+                {outcomeRecord.outcomeStatus}
+              </span>
+            )}
+            {outcomeSaved && <span style={{ fontFamily: MONO, fontSize: 9, color: GREEN }}>✓ SAVED</span>}
+          </div>
+          {outcomeUser?.role === "admin" && outcomeRecord && (
+            <button
+              onClick={() => { setOutcomeEditStatus(outcomeRecord.outcomeStatus); setOutcomeEditDate(outcomeRecord.outcomeDate ? new Date(outcomeRecord.outcomeDate).toISOString().split("T")[0] : ""); setOutcomeEditNotes(outcomeRecord.outcomeNotes ?? ""); setOutcomeEditOpen(true); }}
+              style={{ padding: "5px 12px", background: "transparent", border: `1px solid ${BORDER}`, color: TEXT2, fontFamily: MONO, fontSize: 9, cursor: "pointer", borderRadius: 4, letterSpacing: "0.06em" }}
+            >UPDATE OUTCOME</button>
+          )}
+        </div>
+        {outcomeRecord ? (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12 }}>
+            <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 5, padding: "10px 12px", border: `1px solid ${BORDER}` }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>ORIGINAL VERDICT</div>
+              <div style={{ fontFamily: MONO, fontSize: 12, color: TEXT2 }}>{outcomeRecord.originalVerdict}</div>
+            </div>
+            <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 5, padding: "10px 12px", border: `1px solid ${BORDER}` }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>DECISION DATE</div>
+              <div style={{ fontFamily: MONO, fontSize: 12, color: TEXT2 }}>{outcomeRecord.decisionDate ? new Date(outcomeRecord.decisionDate).toLocaleDateString("en-KW", { timeZone: "Asia/Kuwait", year: "numeric", month: "short", day: "numeric" }) : "—"}</div>
+            </div>
+            {outcomeRecord.outcomeDate && (
+              <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 5, padding: "10px 12px", border: `1px solid ${BORDER}` }}>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>OUTCOME DATE</div>
+                <div style={{ fontFamily: MONO, fontSize: 12, color: TEXT2 }}>{new Date(outcomeRecord.outcomeDate).toLocaleDateString("en-KW", { timeZone: "Asia/Kuwait", year: "numeric", month: "short", day: "numeric" })}</div>
+              </div>
+            )}
+            {outcomeRecord.outcomeNotes && (
+              <div style={{ background: "rgba(255,255,255,0.02)", borderRadius: 5, padding: "10px 12px", border: `1px solid ${BORDER}`, gridColumn: "1 / -1" }}>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>NOTES</div>
+                <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, lineHeight: 1.6 }}>{outcomeRecord.outcomeNotes}</div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ fontFamily: MONO, fontSize: 11, color: MUTED, fontStyle: "italic" }}>Outcome not yet recorded. Outcome sessions are created automatically after each council run.</div>
+        )}
+        {/* Inline admin edit form */}
+        {outcomeEditOpen && outcomeUser?.role === "admin" && outcomeRecord && (
+          <div style={{ marginTop: 16, padding: "16px", background: "rgba(255,255,255,0.03)", borderRadius: 6, border: `1px solid ${BORDER}` }}>
+            <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.15em", marginBottom: 12 }}>UPDATE OUTCOME</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end" }}>
+              <div>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 4 }}>STATUS</div>
+                <select value={outcomeEditStatus} onChange={(e) => setOutcomeEditStatus(e.target.value)} style={{ background: BG3, border: `1px solid ${BORDER}`, color: TEXT, fontFamily: MONO, fontSize: 11, padding: "6px 10px", borderRadius: 4 }}>
+                  {["UNKNOWN","IN_PROGRESS","SUCCEEDED","FAILED","ABANDONED","RESTRUCTURED"].map(s => <option key={s} value={s}>{s}</option>)}
+                </select>
+              </div>
+              <div>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 4 }}>OUTCOME DATE</div>
+                <input type="date" value={outcomeEditDate} onChange={(e) => setOutcomeEditDate(e.target.value)} style={{ background: BG3, border: `1px solid ${BORDER}`, color: TEXT, fontFamily: MONO, fontSize: 11, padding: "6px 10px", borderRadius: 4 }} />
+              </div>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 4 }}>NOTES</div>
+                <textarea value={outcomeEditNotes} onChange={(e) => setOutcomeEditNotes(e.target.value)} rows={2} maxLength={2000} style={{ width: "100%", background: BG3, border: `1px solid ${BORDER}`, color: TEXT, fontFamily: MONO, fontSize: 11, padding: "6px 10px", borderRadius: 4, resize: "vertical" }} />
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => setOutcomeEditOpen(false)} style={{ padding: "6px 14px", background: "transparent", border: `1px solid ${BORDER}`, color: TEXT2, fontFamily: MONO, fontSize: 9, cursor: "pointer", borderRadius: 4 }}>CANCEL</button>
+                <button
+                  onClick={() => updateOutcomeMutation.mutate({ id: outcomeRecord.id, outcomeStatus: outcomeEditStatus as any, outcomeDate: outcomeEditDate ? new Date(outcomeEditDate).getTime() : undefined, outcomeNotes: outcomeEditNotes || undefined })}
+                  disabled={updateOutcomeMutation.isPending}
+                  style={{ padding: "6px 14px", background: ACCENT, border: "none", color: "#fff", fontFamily: MONO, fontSize: 9, cursor: "pointer", borderRadius: 4, fontWeight: 700 }}
+                >{updateOutcomeMutation.isPending ? "SAVING…" : "SAVE"}</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    )}
     </div>
   );
 }
-
 // ──// ── Deal Form ─────────────────────────────────────────────────────
 const OWNER_EMAILS_LIST = ["farouq@agenthink.ai", "farouqsultan@gmail.com"];
 function DealForm({ onResult, onSubmitStart, onError: onSubmitError, pendingPaymentSessionId, onPaymentVerified, councilMode, setCouncilMode, onChangeWorkflow }: {

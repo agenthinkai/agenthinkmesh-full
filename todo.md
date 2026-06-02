@@ -170,7 +170,7 @@
 ### Phase 2: Platform Schema + Procedures
 - [ ] Add annotations table to drizzle schema
 - [ ] Add annotation_exports table to drizzle schema
-- [ ] Run pnpm db:push
+- [x] Run pnpm db:push
 - [ ] Add annotation.submit procedure (routes text to Arabic agent, stores structured result)
 - [ ] Add annotation.list procedure (returns annotation history with filters)
 - [ ] Add annotation.review procedure (approve/reject low-confidence annotations)
@@ -1648,7 +1648,7 @@
 
 ## Email Resend with Delivery Tracking (Apr 6 2026)
 - [ ] Add deliveryStatus, resendMsMessageId, resentAt fields to outbound_emails schema
-- [ ] Run pnpm db:push to migrate
+- [x] Run pnpm db:push to migrate
 - [ ] Build resend script: query emails from last Thursday, exclude bejul@lsvp.com, resend via MS Graph
 - [ ] Store Graph message ID + timestamp + delivery status per email
 - [ ] Produce final summary: total sent, delivered, rejected
@@ -1783,7 +1783,7 @@
 
 ## PortfolioMesh — Institutional Credibility Layer (Pasted_content_35)
 - [ ] DB schema: add isBenchmark (boolean) + benchmarkLabel (varchar) to portfolioRuns
-- [ ] Run pnpm db:push to migrate schema
+- [x] Run pnpm db:push to migrate schema
 - [ ] Server: saveBenchmark procedure (unsets previous, sets new)
 - [ ] Server: getBenchmark procedure (returns active benchmark for user)
 - [ ] Server: compareToBenchmark procedure (returns Return/Vol/Sharpe deltas)
@@ -4348,7 +4348,7 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Create server/lib/llm/evalObservability.ts (fire-and-forget log writer)
 - [ ] Wire evalRouter into councilEngine.ts at single invokeLLM call site (feature-flagged)
 - [ ] Tests: deepseekProvider, evalRouter routing, observability, councilEngine flag
-- [ ] TypeScript: 0 errors
+- [x] TypeScript: 0 errors
 - [ ] All existing tests still passing
 
 ## DeepSeek Eval Infrastructure — P1/P2 Throughput
@@ -4469,7 +4469,7 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Scene 5 (IC Memo): screenshot of IC memo with slow pan down the sections list
 - [ ] Scene 6 (Advanced): screenshot of advanced features / CFO deep dive
 - [ ] Scene 7 (CTA): keep abstract CTA — no screenshot needed
-- [ ] TypeScript: 0 errors. Tests: all passing
+- [x] TypeScript: 0 errors. Tests: all passing
 
 ## ProductDemo V2 — Real Screenshots + Zoom/Pan (2026-05-18)
 - [x] Capture screenshots: /gcc-ic (IC memo), /deals (input form), persona execution view, verdict
@@ -4486,7 +4486,7 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Consensus Workflow animated graph
 - [ ] Burst PoC case study section (actual PoC metrics)
 - [ ] Dark enterprise UI — Palantir-meets-inference-runtime aesthetic
-- [ ] TypeScript: 0 errors. Tests: all passing
+- [x] TypeScript: 0 errors. Tests: all passing
 
 ## Inference Governance Demo Layer (2026-05-19)
 - [x] InferenceGovernanceDashboard.tsx — 6-section enterprise demo page at /admin/inference-governance
@@ -4796,7 +4796,7 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Confirm DSCR / EPC / foundation / CfD / merchant as failure drivers, zero VC language
 
 ### Completion
-- [ ] TypeScript: 0 errors
+- [x] TypeScript: 0 errors
 - [ ] Full test suite passing
 - [ ] Save checkpoint
 
@@ -4852,3 +4852,23 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Final Investability Summary card (gated on comparisonAvailable): council verdict delta, simulation delta, residual blockers, governance posture
 - [x] TypeScript: 0 errors
 - [x] Full test suite: 1530 tests passing
+
+## Outcome Ledger Phase 1
+
+- [x] Schema: create outcome_sessions table
+- [x] Schema: create outcome_factors table
+- [x] Run pnpm db:push
+- [x] Backend: auto-create outcome_session after every council run
+- [x] Backend: tRPC outcomeledger.list (admin, filters)
+- [x] Backend: tRPC outcomeledger.update (admin only)
+- [x] Backend: tRPC outcomeledger.getByDealId (protected)
+- [x] Backend: tRPC outcomeledger.accuracyMetrics (by council mode)
+- [x] Backend: tRPC outcomeledger.personaAnalytics
+- [x] Admin UI: /admin/outcomes page with table and filters
+- [x] Admin UI: Update Outcome modal
+- [x] Deal View: Outcome Tracking section + Update button (admin only)
+- [x] Metrics: accuracy dashboard by council mode
+- [x] Persona analytics: vote distribution + CFA alignment + outcome agreement rate
+- [x] Vitest: outcome session auto-creation test
+- [x] Vitest: accuracy metrics calculation test
+- [x] TypeScript: 0 errors

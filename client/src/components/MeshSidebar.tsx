@@ -64,6 +64,8 @@ const NAV_ITEMS: NavItem[] = [
   { path: "/admin/usage", icon: "⚙️", label: "Admin", adminOnly: true },
   { path: "/admin/evals", icon: "📡", label: "Eval Stats", adminOnly: true },
   { path: "/admin/inference-governance", icon: "🛡", label: "Inference Gov", adminOnly: true },
+  { path: "/admin/outcomes", icon: "📋", label: "Outcome Ledger", adminOnly: true },
+  { path: "/admin/outcomes/metrics", icon: "📊", label: "Outcome Metrics", adminOnly: true },
 ];
 
 function useIsMobile() {

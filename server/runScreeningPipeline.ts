@@ -19,7 +19,7 @@
 import { randomUUID } from "crypto";
 import { eq } from "drizzle-orm";
 import { getDb } from "./db";
-import { dealScreenings } from "../drizzle/schema";
+import { dealScreenings, outcomeSessions } from "../drizzle/schema";
 import { runCouncil } from "./councilEngine";
 import { runAdversarialCouncil } from "./dealScreenerAdversarial";
 import { generateSingleDealICReport } from "./icReportEngine";
@@ -267,6 +267,26 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
     universitySignal = detectTier0Signal(dealText, dealName);
   } catch (err) {
     console.error("[runScreeningPipeline][Tier0] Signal detection failed:", err);
+  }
+
+  // ── Outcome Ledger: auto-create outcome session (non-fatal) ──────────────────
+  try {
+    const outcomeDb = await getDb();
+    if (outcomeDb) {
+      await outcomeDb.insert(outcomeSessions).values({
+        dealId,
+        councilRunId: (result as any).sessionId ?? null,
+        councilMode,
+        originalVerdict: result.verdict,
+        consensusScore: result.confidenceScore != null ? String(result.confidenceScore) : null,
+        confidenceLevel: result.confidenceScore != null ? String(result.confidenceScore) : null,
+        decisionDate: Date.now(),
+        outcomeStatus: "UNKNOWN",
+      });
+      console.log(`[OutcomeLedger] Session created for deal ${dealId} — verdict: ${result.verdict}`);
+    }
+  } catch (err) {
+    console.error("[OutcomeLedger] Failed to create outcome session (non-fatal):", err);
   }
 
   return {

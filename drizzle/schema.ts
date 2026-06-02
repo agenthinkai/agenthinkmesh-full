@@ -2373,3 +2373,68 @@ export const cfaPreferenceRecords = mysqlTable("cfa_preference_records", {
 }));
 export type CfaPreferenceRecord = typeof cfaPreferenceRecords.$inferSelect;
 export type InsertCfaPreferenceRecord = typeof cfaPreferenceRecords.$inferInsert;
+
+// ── Outcome Ledger Phase 1 ────────────────────────────────────────────────────
+// Records what happened after a Council decision.
+// Governance and data collection only — no changes to Council verdicts or CFA.
+
+export const outcomeSessions = mysqlTable("outcome_sessions", {
+  id:               int("id").autoincrement().primaryKey(),
+  dealId:           varchar("deal_id", { length: 64 }).notNull(),
+  councilRunId:     varchar("council_run_id", { length: 64 }),
+  councilMode:      varchar("council_mode", { length: 32 }).notNull(),
+
+  originalVerdict:  varchar("original_verdict", { length: 32 }).notNull(),
+  consensusScore:   decimal("consensus_score", { precision: 5, scale: 4 }),
+  confidenceLevel:  decimal("confidence_level", { precision: 5, scale: 4 }),
+  decisionDate:     bigint("decision_date", { mode: "number" }).notNull(),
+
+  outcomeStatus:    mysqlEnum("outcome_status", [
+    "UNKNOWN",
+    "IN_PROGRESS",
+    "SUCCEEDED",
+    "FAILED",
+    "ABANDONED",
+    "RESTRUCTURED",
+  ]).notNull().default("UNKNOWN"),
+  outcomeDate:      bigint("outcome_date", { mode: "number" }),
+  outcomeNotes:     text("outcome_notes"),
+
+  createdAt:        bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt:        bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  osDealIdIdx:      index("os_deal_id_idx").on(table.dealId),
+  osCouncilModeIdx: index("os_council_mode_idx").on(table.councilMode),
+  osStatusIdx:      index("os_status_idx").on(table.outcomeStatus),
+  osDecisionIdx:    index("os_decision_date_idx").on(table.decisionDate),
+}));
+
+export type OutcomeSession = typeof outcomeSessions.$inferSelect;
+export type InsertOutcomeSession = typeof outcomeSessions.$inferInsert;
+
+export const outcomeFactors = mysqlTable("outcome_factors", {
+  id:                  int("id").autoincrement().primaryKey(),
+  outcomeSessionId:    int("outcome_session_id").notNull(),
+
+  factorType:          mysqlEnum("factor_type", [
+    "FINANCIAL",
+    "TECHNICAL",
+    "CONSTRUCTION",
+    "REGULATORY",
+    "COMMERCIAL",
+    "ESG",
+  ]).notNull(),
+  factorDescription:   text("factor_description").notNull(),
+
+  wasPredicted:        tinyint("was_predicted").notNull().default(0),
+  predictedByPersona:  varchar("predicted_by_persona", { length: 64 }),
+
+  createdAt:           bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  ofSessionIdx:        index("of_session_idx").on(table.outcomeSessionId),
+  ofTypeIdx:           index("of_type_idx").on(table.factorType),
+  ofPredictedIdx:      index("of_predicted_idx").on(table.wasPredicted),
+}));
+
+export type OutcomeFactor = typeof outcomeFactors.$inferSelect;
+export type InsertOutcomeFactor = typeof outcomeFactors.$inferInsert;
