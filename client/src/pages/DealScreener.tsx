@@ -62,6 +62,33 @@ interface PersonaVote {
   timedOut?: boolean;
 }
 
+// ── CFA (Constitutional Fidelity Auditor) types ──────────────────────────────
+interface CfaPreferenceRecord {
+  personaId: string;
+  personaName: string;
+  councilMode: string;
+  inCharacter: number;
+  ruleFidelity: number;
+  evidenceGrounding: number;
+  confidenceCalibration: number;
+  fidelityScore: number;
+  violatedRules: string[];
+  changed: boolean;
+  critique: string | null;
+  originalVote: unknown;
+  revisedVote: unknown;
+}
+
+interface CfaData {
+  sessionId: string;
+  averageFidelityScore: number;
+  totalPersonasAudited: number;
+  totalChanged: number;
+  status: string | null;
+  durationMs: number | null;
+  records: CfaPreferenceRecord[];
+}
+
 interface CouncilResult {
   dealId: string;
   dealName: string;
@@ -466,7 +493,7 @@ function QuantitativeEvidenceSection({ evidenceBlob }: { evidenceBlob: string })
 }
 
 // ── VoteCard ────────────────────────────────────────────
-function VoteCard({ vote, result }: { vote: PersonaVote; result?: CouncilResult }) {
+function VoteCard({ vote, result, cfaRecord }: { vote: PersonaVote; result?: CouncilResult; cfaRecord?: CfaPreferenceRecord }) {
   const [expanded, setExpanded] = useState(false);
   const meta = PERSONA_META[vote.personaId] ?? { icon: "🤖", color: ACCENT };
   const isYes = vote.vote === "HARD_YES" || vote.vote === "SOFT_YES";
@@ -600,6 +627,33 @@ function VoteCard({ vote, result }: { vote: PersonaVote; result?: CouncilResult 
           )}
         </div>
       )}
+      {/* CFA Fidelity badge — always visible when available */}
+      {cfaRecord && (
+        <div style={{ marginTop: 8, display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" as const }}>
+          <span style={{
+            fontFamily: MONO, fontSize: 9, letterSpacing: "0.08em",
+            padding: "2px 7px", borderRadius: 3,
+            background: cfaRecord.fidelityScore >= 0.8 ? "rgba(0,255,135,0.1)" : cfaRecord.fidelityScore >= 0.6 ? "rgba(255,159,67,0.1)" : "rgba(255,71,87,0.1)",
+            border: `1px solid ${cfaRecord.fidelityScore >= 0.8 ? "rgba(0,255,135,0.35)" : cfaRecord.fidelityScore >= 0.6 ? "rgba(255,159,67,0.35)" : "rgba(255,71,87,0.35)"}`,
+            color: cfaRecord.fidelityScore >= 0.8 ? "#00ff87" : cfaRecord.fidelityScore >= 0.6 ? "#ff9f43" : "#ff4757",
+          }}>CFA {Math.round(cfaRecord.fidelityScore * 100)}%</span>
+          <span style={{
+            fontFamily: MONO, fontSize: 9, letterSpacing: "0.08em",
+            padding: "2px 7px", borderRadius: 3,
+            background: cfaRecord.fidelityScore >= 0.7 ? "rgba(0,255,135,0.08)" : "rgba(255,71,87,0.08)",
+            border: `1px solid ${cfaRecord.fidelityScore >= 0.7 ? "rgba(0,255,135,0.25)" : "rgba(255,71,87,0.25)"}`,
+            color: cfaRecord.fidelityScore >= 0.7 ? "#00ff87" : "#ff4757",
+          }}>{cfaRecord.fidelityScore >= 0.7 ? "PASS" : "REVIEW"}</span>
+          {cfaRecord.changed && (
+            <span style={{
+              fontFamily: MONO, fontSize: 9, letterSpacing: "0.08em",
+              padding: "2px 7px", borderRadius: 3,
+              background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.35)", color: "#a855f7",
+            }}>VOTE REVISED</span>
+          )}
+        </div>
+      )}
+
       {/* Expanded: conditions + blockers */}
       {expanded && (
         <div style={{ marginTop: 12, paddingTop: 12, borderTop: `1px solid ${BORDER}` }}>
@@ -625,6 +679,38 @@ function VoteCard({ vote, result }: { vote: PersonaVote; result?: CouncilResult 
           )}
           {vote.timedOut && (
             <div style={{ fontSize: 11, color: MUTED, fontFamily: MONO, marginTop: 4 }}>⚠ Persona timed out — fallback SOFT_NO applied</div>
+          )}
+          {/* CFA detailed breakdown in expanded section */}
+          {cfaRecord && (
+            <div style={{ marginTop: 10, paddingTop: 10, borderTop: `1px solid rgba(168,85,247,0.15)` }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: "#a855f7", letterSpacing: "0.1em", marginBottom: 8 }}>CONSTITUTIONAL FIDELITY AUDIT</div>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 8 }}>
+                {[
+                  { label: "IN CHARACTER", val: cfaRecord.inCharacter },
+                  { label: "RULE FIDELITY", val: cfaRecord.ruleFidelity },
+                  { label: "EVIDENCE GROUNDING", val: cfaRecord.evidenceGrounding },
+                  { label: "CONF CALIBRATION", val: cfaRecord.confidenceCalibration },
+                ].map((item) => (
+                  <div key={item.label} style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontFamily: MONO, fontSize: 9, color: "rgba(255,255,255,0.35)", letterSpacing: "0.04em" }}>{item.label}</span>
+                    <span style={{ fontFamily: MONO, fontSize: 10, fontWeight: 700, color: item.val >= 0.8 ? "#00ff87" : item.val >= 0.6 ? "#ff9f43" : "#ff4757" }}>{Math.round(item.val * 100)}%</span>
+                  </div>
+                ))}
+              </div>
+              {cfaRecord.critique && (
+                <div style={{ fontSize: 11, color: "rgba(255,255,255,0.55)", lineHeight: 1.5, fontStyle: "italic", borderLeft: "2px solid rgba(168,85,247,0.4)", paddingLeft: 8 }}>
+                  {cfaRecord.critique}
+                </div>
+              )}
+              {cfaRecord.violatedRules.length > 0 && (
+                <div style={{ marginTop: 6 }}>
+                  <div style={{ fontFamily: MONO, fontSize: 9, color: "#ff4757", marginBottom: 4, letterSpacing: "0.06em" }}>VIOLATED RULES</div>
+                  {cfaRecord.violatedRules.map((rule, i) => (
+                    <div key={i} style={{ fontSize: 10, color: "rgba(255,71,87,0.8)", marginBottom: 2, paddingLeft: 8, borderLeft: "2px solid rgba(255,71,87,0.4)" }}>{rule}</div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
       )}
@@ -2686,6 +2772,20 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
   const createShare = trpc.shareReport.create.useMutation();
   const updateTriageStage = trpc.pitch.updateStage.useMutation();
 
+  // ── CFA: fetch fidelity audit data lazily when Raw Council tab is active ──
+  const { data: cfaData, isLoading: cfaLoading } = trpc.dealScreener.getCfaByDealId.useQuery(
+    { dealId: result.dealId ?? "" },
+    { enabled: activeTab === "raw" && !!result.dealId, staleTime: 5 * 60_000, retry: 1 }
+  );
+  // Build a personaId → CFA record lookup map
+  const cfaByPersona = React.useMemo(() => {
+    if (!cfaData?.records) return {} as Record<string, CfaPreferenceRecord>;
+    return Object.fromEntries(cfaData.records.map((r) => [
+      r.personaId,
+      { ...r, changed: Boolean(r.changed) } as CfaPreferenceRecord,
+    ]));
+  }, [cfaData]);
+
   // ── Stress-tested badge: check if a completed simulation exists ───────────
   const { data: simBadgeData } = trpc.scenarioSim.hasCompletedSim.useQuery(
     { dealId: result.dealId ?? "" },
@@ -3494,10 +3594,18 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
 
       {/* Persona vote cards */}
       <div style={{ marginBottom: 20 }}>
-        <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.15em", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}><span>🗳️</span> COUNCIL VOTES — click to expand</div>
+        <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.15em", marginBottom: 12, display: "flex", alignItems: "center", gap: 8 }}>
+          <span>🗳️</span> COUNCIL VOTES — click to expand
+          {cfaLoading && <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 9, color: "rgba(168,85,247,0.6)", letterSpacing: "0.08em" }}>⏳ CFA AUDITING…</span>}
+          {cfaData && !cfaLoading && (
+            <span style={{ marginLeft: "auto", fontFamily: MONO, fontSize: 9, color: "#a855f7", letterSpacing: "0.08em" }}>
+              AVG FIDELITY {Math.round(cfaData.averageFidelityScore * 100)}% · {cfaData.totalChanged} REVISED
+            </span>
+          )}
+        </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
           {result.votes.map((v) => (
-            <VoteCard key={v.personaId} vote={v} result={result} />
+            <VoteCard key={v.personaId} vote={v} result={result} cfaRecord={cfaByPersona[v.personaId]} />
           ))}
         </div>
       </div>

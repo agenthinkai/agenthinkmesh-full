@@ -1,0 +1,1 @@
+ALTER TABLE `cfa_preference_records` MODIFY COLUMN `violated_rules_json` text NOT NULL;

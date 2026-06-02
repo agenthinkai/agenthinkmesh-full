@@ -2312,3 +2312,64 @@ export const simulationFingerprints = mysqlTable("simulation_fingerprints", {
 }));
 export type SimulationFingerprintRow = typeof simulationFingerprints.$inferSelect;
 export type InsertSimulationFingerprintRow = typeof simulationFingerprints.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONSTITUTIONAL FIDELITY AUDITOR (CFA) — Alignment Layer v1
+// Runs after every Council of 10 vote. Evaluates each persona's vote against
+// its own constitution. Never modifies official verdicts.
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── CFA Session — one record per council run audited ─────────────────────────
+export const cfaSessions = mysqlTable("cfa_sessions", {
+  id:                    int("id").autoincrement().primaryKey(),
+  sessionId:             varchar("session_id", { length: 64 }).notNull().unique(), // matches councilEngine sessionId
+  dealId:                varchar("deal_id", { length: 64 }),                       // matches dealScreenings.dealId
+  userId:                int("user_id"),                                            // nullable for system-level runs
+  councilMode:           varchar("council_mode", { length: 32 }).notNull(),        // gcc | global_vc | india_pe | gcc_equities | infrastructure
+  averageFidelityScore:  decimal("average_fidelity_score", { precision: 5, scale: 4 }).notNull(), // mean across all 10 seats
+  totalPersonasAudited:  int("total_personas_audited").notNull().default(10),
+  totalChanged:          int("total_changed").notNull().default(0),                // how many votes were revised
+  preferenceRecordsJson: longtext("preference_records_json").notNull(),            // full CFA output JSON (10 records)
+  status:                mysqlEnum("status", ["pending", "completed", "failed"]).notNull().default("pending"),
+  durationMs:            int("duration_ms"),
+  createdAt:             bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  cfaSessionIdx:  index("cfa_session_idx").on(table.sessionId),
+  cfaDealIdx:     index("cfa_deal_idx").on(table.dealId),
+  cfaUserIdx:     index("cfa_user_idx").on(table.userId),
+  cfaCreatedIdx:  index("cfa_created_idx").on(table.createdAt),
+}));
+export type CfaSession = typeof cfaSessions.$inferSelect;
+export type InsertCfaSession = typeof cfaSessions.$inferInsert;
+
+// ── CFA Preference Record — one row per persona per council run ───────────────
+// Granular per-seat alignment data for fine-tuning / reward-model training.
+export const cfaPreferenceRecords = mysqlTable("cfa_preference_records", {
+  id:                       int("id").autoincrement().primaryKey(),
+  cfaSessionId:             int("cfa_session_id").notNull(),                       // FK → cfaSessions.id
+  sessionId:                varchar("session_id", { length: 64 }).notNull(),       // denormalised for fast lookup
+  personaId:                varchar("persona_id", { length: 64 }).notNull(),
+  personaName:              varchar("persona_name", { length: 128 }),
+  councilMode:              varchar("council_mode", { length: 32 }).notNull(),
+  // Four fidelity dimensions (0.0–1.0)
+  scoreInCharacter:         decimal("score_in_character", { precision: 4, scale: 3 }).notNull(),
+  scoreRuleFidelity:        decimal("score_rule_fidelity", { precision: 4, scale: 3 }).notNull(),
+  scoreEvidenceGrounding:   decimal("score_evidence_grounding", { precision: 4, scale: 3 }).notNull(),
+  scoreConfidenceCalib:     decimal("score_confidence_calib", { precision: 4, scale: 3 }).notNull(),
+  fidelityScore:            decimal("fidelity_score", { precision: 4, scale: 3 }).notNull(), // mean of four
+  // Audit outcome
+  violatedRulesJson:        text("violated_rules_json").notNull(),                  // JSON: string[]
+  changed:                  tinyint("changed").notNull().default(0),               // 0=no revision, 1=revised
+  critique:                 varchar("critique", { length: 512 }),                  // max 2 sentences
+  // Full vote payloads for alignment training
+  originalVoteJson:         longtext("original_vote_json").notNull(),
+  revisedVoteJson:          longtext("revised_vote_json").notNull(),               // equals original when changed=0
+  createdAt:                bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  cprSessionIdx:  index("cpr_session_idx").on(table.sessionId),
+  cprPersonaIdx:  index("cpr_persona_idx").on(table.personaId),
+  cprChangedIdx:  index("cpr_changed_idx").on(table.changed),
+  cprCreatedIdx:  index("cpr_created_idx").on(table.createdAt),
+}));
+export type CfaPreferenceRecord = typeof cfaPreferenceRecords.$inferSelect;
+export type InsertCfaPreferenceRecord = typeof cfaPreferenceRecords.$inferInsert;

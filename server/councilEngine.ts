@@ -51,6 +51,7 @@ import {
 } from "./lib/navMath";
 import { fetchDisclosures, formatDisclosuresForEvidence } from "./lib/newsFeed";
 import { notifyOwner } from "./_core/notification";
+import { runCfa } from "./cfaEngine";
 
 // invokeLLM uses BUILT_IN_FORGE_API — no Anthropic SDK needed
 
@@ -140,6 +141,8 @@ export interface RunCouncilOptions {
   challengerAgentIds?: string[];
   /** Deal Screener adversarial layer: when set, only these agent IDs run (true dynamic scaling) */
   activePersonaIds?: string[];
+  /** Deal ID for CFA preference record linkage */
+  dealId?: string;
 }
 
 // ── Zod schema for each persona response ─────────────────────────────────────
@@ -1515,6 +1518,20 @@ export async function runCouncil(
   await writeAuditLog(councilResult).catch((err) =>
     console.warn("[CouncilEngine] writeAuditLog failed:", err)
   );
+
+  // CFA — Constitutional Fidelity Auditor (fire-and-forget, never throws)
+  // Runs after every council across all modes. Official verdict is never modified.
+  if (!skipMemory) {
+    runCfa(councilResult, dealText, {
+      userId,
+      dealId: options.dealId,
+    }).then((cfaResult) => {
+      // Attach CFA summary to the result for downstream consumers (UI, reports)
+      (councilResult as any).cfa = cfaResult;
+    }).catch((err) => {
+      console.warn("[CouncilEngine] CFA run failed (non-fatal):", err);
+    });
+  }
 
   // Record API spend (never throws)
   if (!skipMemory) {

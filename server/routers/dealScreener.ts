@@ -9,7 +9,7 @@ import { TRPCError } from "@trpc/server";
 import { eq, desc, and, gte } from "drizzle-orm";
 import { protectedProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
-import { dealScreenings, dealScreeningRateLimit, dealComparisons, dealScreenerPayments, signalDeals, userSignalPrefs, scenarioSimRuns } from "../../drizzle/schema";
+import { dealScreenings, dealScreeningRateLimit, dealComparisons, dealScreenerPayments, signalDeals, userSignalPrefs, scenarioSimRuns, cfaSessions, cfaPreferenceRecords } from "../../drizzle/schema";
 import { runCouncil } from "../councilEngine";
 import { runAdversarialCouncil } from "../dealScreenerAdversarial";
 import { deriveClassification, rescuePolicy, TERMINAL_FLAGS, type TerminalBlockerFlag } from "../lib/rescuePolicy";
@@ -356,6 +356,7 @@ export const dealScreenerRouter = router({
         councilMode: input.councilMode,
         investorMode: input.investorMode,
         signalPayload: input.signalPayload,
+        dealId,
       });
       const decisionIntegrity = result.decisionIntegrity;
       // Persist to database
@@ -644,6 +645,66 @@ export const dealScreenerRouter = router({
         .orderBy(desc(dealScreenings.createdAt))
         .limit(limit);
       return rows;
+    }),
+
+  /**
+   * Get CFA (Constitutional Fidelity Auditor) results for a deal by dealId.
+   * Returns the session-level average fidelity score and per-persona preference records.
+   * CFA runs async after council, so this may return null if not yet complete.
+   */
+  getCfaByDealId: protectedProcedure
+    .input(z.object({ dealId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) return null;
+
+      // Verify the deal belongs to this user
+      const dealRows = await db
+        .select({ id: dealScreenings.id })
+        .from(dealScreenings)
+        .where(and(eq(dealScreenings.dealId, input.dealId), eq(dealScreenings.userId, ctx.user.id)))
+        .limit(1);
+      if (dealRows.length === 0) return null;
+
+      // Fetch the CFA session for this deal
+      const sessionRows = await db
+        .select()
+        .from(cfaSessions)
+        .where(eq(cfaSessions.dealId, input.dealId))
+        .limit(1);
+      if (sessionRows.length === 0) return null;
+
+      const session = sessionRows[0];
+
+      // Fetch per-persona preference records
+      const records = await db
+        .select()
+        .from(cfaPreferenceRecords)
+        .where(eq(cfaPreferenceRecords.sessionId, session.sessionId));
+
+      return {
+        sessionId: session.sessionId,
+        averageFidelityScore: parseFloat(session.averageFidelityScore ?? "0"),
+        totalPersonasAudited: session.totalPersonasAudited,
+        totalChanged: session.totalChanged,
+        status: session.status,
+        durationMs: session.durationMs,
+        records: records.map((r) => ({
+          personaId: r.personaId,
+          personaName: r.personaName,
+          councilMode: r.councilMode,
+          inCharacter: parseFloat(r.scoreInCharacter ?? "0"),
+          ruleFidelity: parseFloat(r.scoreRuleFidelity ?? "0"),
+          evidenceGrounding: parseFloat(r.scoreEvidenceGrounding ?? "0"),
+          confidenceCalibration: parseFloat(r.scoreConfidenceCalib ?? "0"),
+          fidelityScore: parseFloat(r.fidelityScore ?? "0"),
+          violatedRules: JSON.parse(r.violatedRulesJson ?? "[]") as string[],
+          changed: r.changed,
+          critique: r.critique,
+          originalVote: JSON.parse(r.originalVoteJson ?? "null"),
+          revisedVote: JSON.parse(r.revisedVoteJson ?? "null"),
+        })),
+      };
     }),
 
   /**

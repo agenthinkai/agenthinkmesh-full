@@ -757,6 +757,20 @@
       "when": 1779858900091,
       "tag": "0107_cloudy_wilson_fisk",
       "breakpoints": true
+    },
+    {
+      "idx": 108,
+      "version": "5",
+      "when": 1780380165881,
+      "tag": "0108_soft_tarantula",
+      "breakpoints": true
+    },
+    {
+      "idx": 109,
+      "version": "5",
+      "when": 1780380194409,
+      "tag": "0109_fearless_the_hood",
+      "breakpoints": true
     }
   ]
 }
