@@ -192,7 +192,7 @@ export const dealScreenerRouter = router({
           evidenceBlob: ownerResult.evidenceBlob ?? null,
         });
         let ownerIcReport = null;
-        try { ownerIcReport = await generateSingleDealICReport(input.dealName, input.dealText, ownerResult); } catch {}
+        try { ownerIcReport = await generateSingleDealICReport(input.dealName, input.dealText, ownerResult, input.councilMode); } catch {}
         const ownerTier0 = detectTier0Signal(input.dealText, input.dealName);
         const ownerAre = runRealityAlignment(input.dealText, ownerResult);
         return { dealId: ownerDealId, dealName: input.dealName, ...ownerResult, investorMode: input.investorMode ?? false, icReport: ownerIcReport, universitySignal: ownerTier0, realityAlignment: ownerAre, decisionIntegrity: ownerResult.decisionIntegrity ?? null };
@@ -416,10 +416,16 @@ export const dealScreenerRouter = router({
       let icReport = null;
       const shouldGenerateReport =
         input.includeReport !== false &&
-        (result.verdict === "APPROVED" || result.verdict === "APPROVED_WITH_CONDITIONS");
+        (
+          result.verdict === "APPROVED" ||
+          result.verdict === "APPROVED_WITH_CONDITIONS" ||
+          // Infrastructure mode always generates the report — even for rejected/vetoed deals.
+          // The IC report's whatWouldChangeDecision section serves as Decision Reversal Conditions.
+          input.councilMode === "infrastructure"
+        );
       if (shouldGenerateReport) {
         try {
-          icReport = await generateSingleDealICReport(input.dealName, input.dealText, result);
+          icReport = await generateSingleDealICReport(input.dealName, input.dealText, result, input.councilMode);
         } catch (err) {
           console.error("[ICReport] Failed to generate IC report:", err);
         }

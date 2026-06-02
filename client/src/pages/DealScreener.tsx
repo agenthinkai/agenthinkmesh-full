@@ -2597,13 +2597,59 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stre
           <span style={{ fontFamily: MONO, fontSize: 13, color: RED }}>Reject: <strong>{ic.consensusBreakdown.reject}</strong></span>
           <span style={{ fontFamily: MONO, fontSize: 13, color: AMBER }}>Conditional: <strong>{ic.consensusBreakdown.conditional}</strong></span>
         </div>
-        {(ic.consensusBreakdown.keyDisagreements ?? []).length > 0 && (
-          <div>
-            <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 8 }}>KEY DISAGREEMENTS</div>
-            {ic.consensusBreakdown.keyDisagreements.map((d, i) => (
-              <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${AMBER}`, lineHeight: 1.5 }}>! {d}</div>
-            ))}
-          </div>
+        {/* Infrastructure mode: always show blocker-concentration summary */}
+        {(result.councilMode ?? councilMode) === "infrastructure" ? (() => {
+          const disagreements = ic.consensusBreakdown.keyDisagreements ?? [];
+          // Categorise each disagreement into one of four infrastructure blocker buckets
+          const buckets: Record<string, string[]> = {
+            "FINANCIAL BLOCKERS": [],
+            "TECHNOLOGY BLOCKERS": [],
+            "CONSTRUCTION BLOCKERS": [],
+            "REGULATORY BLOCKERS": [],
+          };
+          const financialKw = ["dscr", "debt", "equity", "irr", "return", "cost", "capex", "opex", "revenue", "cash", "finance", "funding", "capital", "interest", "repay", "lcoe", "tariff", "cfd", "ppa", "offtake"];
+          const techKw = ["technology", "tech", "turbine", "panel", "battery", "storage", "grid", "interconnect", "capacity", "performance", "efficiency", "mw", "gwh", "kwh", "energy", "power", "generation"];
+          const constructionKw = ["construction", "epc", "contractor", "build", "commissioning", "schedule", "delay", "timeline", "procurement", "supply chain", "material", "labour", "labor", "site", "foundation"];
+          const regulatoryKw = ["regulat", "permit", "licence", "license", "approval", "planning", "consent", "environmental", "impact", "assessment", "government", "policy", "compliance", "legal", "contract", "offtake"];
+          disagreements.forEach(d => {
+            const lower = d.toLowerCase();
+            if (regulatoryKw.some(k => lower.includes(k))) buckets["REGULATORY BLOCKERS"].push(d);
+            else if (constructionKw.some(k => lower.includes(k))) buckets["CONSTRUCTION BLOCKERS"].push(d);
+            else if (techKw.some(k => lower.includes(k))) buckets["TECHNOLOGY BLOCKERS"].push(d);
+            else buckets["FINANCIAL BLOCKERS"].push(d);
+          });
+          const bucketColors: Record<string, string> = {
+            "FINANCIAL BLOCKERS": RED,
+            "TECHNOLOGY BLOCKERS": AMBER,
+            "CONSTRUCTION BLOCKERS": "#f97316",
+            "REGULATORY BLOCKERS": PURPLE,
+          };
+          const hasAny = disagreements.length > 0;
+          return (
+            <div>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 8 }}>BLOCKER CONCENTRATION</div>
+              {!hasAny && (
+                <div style={{ fontSize: 12, color: GREEN, paddingLeft: 10, borderLeft: `2px solid ${GREEN}`, lineHeight: 1.5 }}>No blocking disagreements identified across council seats.</div>
+              )}
+              {hasAny && Object.entries(buckets).map(([label, items]) => items.length > 0 && (
+                <div key={label} style={{ marginBottom: 10 }}>
+                  <div style={{ fontFamily: MONO, fontSize: 9, color: bucketColors[label], letterSpacing: "0.08em", marginBottom: 4 }}>{label} ({items.length})</div>
+                  {items.map((item, i) => (
+                    <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 4, paddingLeft: 10, borderLeft: `2px solid ${bucketColors[label]}`, lineHeight: 1.5 }}>! {item}</div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          );
+        })() : (
+          (ic.consensusBreakdown.keyDisagreements ?? []).length > 0 && (
+            <div>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 8 }}>KEY DISAGREEMENTS</div>
+              {ic.consensusBreakdown.keyDisagreements.map((d, i) => (
+                <div key={i} style={{ fontSize: 12, color: TEXT2, marginBottom: 6, paddingLeft: 10, borderLeft: `2px solid ${AMBER}`, lineHeight: 1.5 }}>! {d}</div>
+              ))}
+            </div>
+          )
         )}
       </div>
 

@@ -144,8 +144,10 @@ RULES:
 export async function generateSingleDealICReport(
   dealName: string,
   dealText: string,
-  result: CouncilResult
+  result: CouncilResult,
+  councilMode?: string
 ): Promise<SingleDealICReport> {
+  const isInfraMode = councilMode === "infrastructure";
   const yesPct = Math.round((result.yesCount / 10) * 100);
   const confidencePct = Math.round(result.confidenceScore * 100);
   const confidenceLevel: "LOW" | "MEDIUM" | "HIGH" =
@@ -229,7 +231,7 @@ Respond with a JSON object matching this exact schema (no markdown, raw JSON onl
   },
   "executiveVerdict": {
     "decision": "APPROVE",
-    "recommendedAction": "<one of: Proceed to IC review | Validate via pilot | Defer pending conditions | Reject and archive | Request additional data>",
+    "recommendedAction": "<one of: Proceed to IC review | Validate via pilot | Defer pending conditions | Reject and archive | Request additional data | Decline at current structure | Do not proceed under current risk profile>",
     "rationale": "<one sharp sentence using conditional language>"
   },
   "investmentThesis": ["<point 1>", "<point 2>", "<point 3>"],
@@ -260,7 +262,18 @@ Respond with a JSON object matching this exact schema (no markdown, raw JSON onl
   "groundedFacts": ["<fact directly stated in the deal text>"],
   "inferredInsights": ["<INFERRED: insight derived by agents, not stated in input>"]
 }`
-  + (result.evidenceBlob ? `\n\nQUANTITATIVE EVIDENCE (GCC Equities — shown to the council verbatim):\n${result.evidenceBlob.slice(0, 1200)}` : "");
+  + (result.evidenceBlob ? `\n\nQUANTITATIVE EVIDENCE (GCC Equities — shown to the council verbatim):\n${result.evidenceBlob.slice(0, 1200)}` : "")
+  + (isInfraMode ? `
+
+INFRASTRUCTURE / PROJECT FINANCE MODE — MANDATORY OVERRIDES:
+- This is an infrastructure / project finance deal. Do NOT apply private equity or venture capital logic.
+- Do NOT reference IRR as a primary threshold. IRR is secondary to DSCR, debt structure, and contracted revenue.
+- Primary metrics to prioritise in all sections: DSCR (target ≥ 1.35x), debt structure (senior/mezzanine split), EPC risk (fixed-price vs open-book), construction contingency (minimum 5% of CAPEX), CfD adequacy (contracted vs merchant revenue split), and refinancing resilience.
+- For rejected or vetoed deals: recommendedAction MUST be one of: "Decline at current structure" or "Do not proceed under current risk profile". NEVER use "Reject and archive".
+- For approved or conditional deals: recommendedAction MUST be one of: "Proceed to IC review" or "Proceed subject to project finance conditions".
+- keyDisagreements MUST summarise blocker concentration across these categories: financial blockers, technology blockers, construction blockers, regulatory blockers. Do NOT output "No disagreements" — always categorise blockers even for approved deals.
+- whatWouldChangeDecision MUST reference infrastructure-specific conditions: DSCR improvement, EPC contract structure, CfD strike price, construction contingency, or regulatory pathway.
+- Do NOT mention "15% IRR minimum threshold" or any PE/VC fund return hurdle. Infrastructure return thresholds are DSCR-based, not IRR-based.` : "");
 
 
   const response = await invokeLLM({
