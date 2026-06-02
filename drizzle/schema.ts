@@ -2438,3 +2438,31 @@ export const outcomeFactors = mysqlTable("outcome_factors", {
 
 export type OutcomeFactor = typeof outcomeFactors.$inferSelect;
 export type InsertOutcomeFactor = typeof outcomeFactors.$inferInsert;
+
+// ── Outcome Ledger Phase 2 ────────────────────────────────────────────────────
+// Attribution records link realized outcomes back to original Council reasoning.
+// Governance only — no changes to Council verdicts, CFA, or voting logic.
+export const outcomeAttributions = mysqlTable("outcome_attributions", {
+  id:               int("id").autoincrement().primaryKey(),
+  outcomeSessionId: int("outcome_session_id").notNull(),
+  personaId:        varchar("persona_id", { length: 64 }).notNull(),
+  predictionType:   mysqlEnum("prediction_type", [
+    "FINANCIAL",
+    "TECHNICAL",
+    "CONSTRUCTION",
+    "REGULATORY",
+    "COMMERCIAL",
+    "ESG",
+  ]).notNull(),
+  predictionText:   text("prediction_text").notNull(),
+  materialized:     tinyint("materialized"),   // null = unreviewed, 1 = YES, 0 = NO
+  confidenceWeight: decimal("confidence_weight", { precision: 5, scale: 4 }),
+  createdAt:        bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  oaSessionIdx:      index("oa_session_idx").on(table.outcomeSessionId),
+  oaPersonaIdx:      index("oa_persona_idx").on(table.personaId),
+  oaMaterializedIdx: index("oa_materialized_idx").on(table.materialized),
+}));
+
+export type OutcomeAttribution = typeof outcomeAttributions.$inferSelect;
+export type InsertOutcomeAttribution = typeof outcomeAttributions.$inferInsert;

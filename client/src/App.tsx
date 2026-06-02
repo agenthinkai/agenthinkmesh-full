@@ -107,6 +107,7 @@ const AdminUserCreate = lazy(() => import("./pages/AdminUserCreate"));
 const AdminUserList = lazy(() => import("./pages/AdminUserList"));
 const OutcomeLedgerAdmin = lazy(() => import("./pages/admin/OutcomeLedger"));
 const OutcomeMetrics = lazy(() => import("./pages/admin/OutcomeMetrics"));
+const OutcomeAttribution = lazy(() => import("./pages/admin/OutcomeAttribution"));
 const SgIcDemo = lazy(() => import("./pages/SgIcDemo"));
 const JpIcDemo = lazy(() => import("./pages/JpIcDemo"));
 const UsIcDemo = lazy(() => import("./pages/UsIcDemo"));
@@ -266,6 +267,7 @@ function Router() {
       <Route path="/admin/beta-requests" component={AdminBetaRequests} />
       <Route path="/admin/demo-requests" component={AdminDemoRequests} />
       <Route path="/admin/treasury" component={AdminTreasury} />
+      <Route path="/admin/outcomes/attribution" component={OutcomeAttribution} />
       <Route path="/admin/outcomes/metrics" component={OutcomeMetrics} />
       <Route path="/admin/outcomes" component={OutcomeLedgerAdmin} />
       <Route path="/founder-fleet" component={FounderFleet} />
