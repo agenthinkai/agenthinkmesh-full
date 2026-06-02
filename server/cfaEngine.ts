@@ -630,55 +630,129 @@ function getConstitutionsForMode(councilMode: string): PersonaConstitution[] {
 
 // ── CFA LLM Prompt ────────────────────────────────────────────────────────────
 
+// Pre-processor: detect MUST-vote-HARD_NO triggers from deal text against hard rules.
+// Returns a list of triggered rule texts (sorted for determinism).
+// This is deterministic code — removes LLM non-determinism from the most critical path.
+function detectMustVoteTriggers(
+  vote: PersonaVote,
+  constitution: PersonaConstitution,
+  dealText: string,
+): string[] {
+  const triggered: string[] = [];
+  const dealUpper = dealText.toUpperCase();
+  const ratUpper  = vote.rationale.toUpperCase();
+
+  for (const rule of constitution.hardRules) {
+    const ruleUpper = rule.toUpperCase();
+    if (!ruleUpper.includes("MUST VOTE HARD_NO")) continue;
+
+    // Regulatory blocker rule: check for confirmed blocker signals in deal text
+    if (
+      ruleUpper.includes("REGULATORY BLOCKER") ||
+      ruleUpper.includes("UNLICENSED") ||
+      ruleUpper.includes("SANCTIONS")
+    ) {
+      const hasBlocker =
+        dealUpper.includes("CONFIRMED") &&
+        (dealUpper.includes("REGULATORY BLOCKER") ||
+         dealUpper.includes("UNLICENSED") ||
+         dealUpper.includes("NOTICE OF NON-COMPLIANCE") ||
+         dealUpper.includes("CEASE OPERATIONS"));
+      const voteIsNotHardNo = vote.vote !== "HARD_NO";
+      if (hasBlocker && voteIsNotHardNo) {
+        triggered.push(rule);
+      }
+    }
+
+    // Sanctions rule: check for OFAC/EU/UN sanctions signals
+    if (ruleUpper.includes("SANCTIONS") || ruleUpper.includes("OFAC")) {
+      const hasSanctions =
+        dealUpper.includes("OFAC") ||
+        dealUpper.includes("SANCTIONED") ||
+        dealUpper.includes("SANCTIONS EXPOSURE");
+      const voteIsNotHardNo = vote.vote !== "HARD_NO";
+      if (hasSanctions && voteIsNotHardNo) {
+        triggered.push(rule);
+      }
+    }
+  }
+
+  return Array.from(new Set(triggered)).sort();
+}
+
 function buildCfaPrompt(
   vote: PersonaVote,
   constitution: PersonaConstitution,
   dealText: string,
 ): string {
-  return `You are the Constitutional Fidelity Auditor (CFA). You evaluate whether a council persona's vote is aligned with its constitutional mandate and hard rules.
+  // Sort hard rules deterministically so evaluation order is stable across runs
+  const sortedRules = [...constitution.hardRules].sort();
+  const rulesText = sortedRules.map((r, i) => `${i + 1}. ${r}`).join("\n");
+
+  // Pre-detect MUST-vote triggers deterministically
+  const mustVoteTriggers = detectMustVoteTriggers(vote, constitution, dealText);
+  const triggerBlock = mustVoteTriggers.length > 0
+    ? `\n⚠️  PRE-DETECTED HARD RULE TRIGGERS (deterministic, not LLM-inferred):\n${mustVoteTriggers.map(r => `   TRIGGERED: "${r}"`).join("\n")}\n   → These rules are DEMONSTRABLY violated. You MUST include them in violated_rules and set changed=true.\n`
+    : "";
+
+  return `You are the Constitutional Fidelity Auditor (CFA). Your role is PRESERVATION, not correction.
+Default assumption: the vote is constitutionally valid. Only flag a violation when the evidence is unambiguous.
 
 PERSONA: ${constitution.personaName} (${constitution.personaId})
 MANDATE: ${constitution.mandate}
 
-HARD RULES:
-${constitution.hardRules.map((r, i) => `${i + 1}. ${r}`).join("\n")}
+HARD RULES (sorted for deterministic evaluation):
+${rulesText}
 
 ORIGINAL VOTE:
 - Decision: ${vote.vote}
 - Confidence: ${vote.confidence}
-- Rationale: ${vote.rationale}
-- Key Flags: ${vote.keyFlags?.join(", ") || "none"}
-- Conditions: ${vote.conditions?.join(", ") || "none"}
-- Blockers: ${vote.blockers?.join(", ") || "none"}
+- Rationale: ${vote.rationale.slice(0, 300)}
+- Key Flags: ${(vote.keyFlags ?? []).slice().sort().join(", ") || "none"}
+- Blockers: ${(vote.blockers ?? []).slice().sort().join(", ") || "none"}
 - Terminal Flag: ${vote.terminalFlag ?? "none"}
 
-DEAL SUMMARY (first 800 chars):
-${dealText.slice(0, 800)}
+DEAL SUMMARY (first 600 chars):
+${dealText.slice(0, 600)}
+${triggerBlock}
+AUDIT INSTRUCTIONS — READ CAREFULLY:
 
-AUDIT TASK:
-1. Score the vote on four dimensions (0.0–1.0 each):
-   - in_character: Does the vote reflect this persona's specific domain and perspective?
-   - rule_fidelity: Are all hard rules followed? (1.0 = all rules followed, 0.0 = critical rule violated)
-   - evidence_grounding: Is the rationale grounded in evidence from the deal text?
-   - confidence_calibration: Is the confidence score appropriate given the evidence quality?
+1. PRESERVE-FIRST POLICY:
+   - Default to changed=false and violated_rules=[] unless a hard rule is DEMONSTRABLY violated.
+   - Do NOT flag a violation because the rationale lacks specific framework references, unless the hard rule EXPLICITLY requires them AND the deal text contains a domain-relevant issue that the persona failed to address.
+   - Do NOT flag a violation for weak wording, style differences, or persona interpretation differences.
+   - Do NOT flag a violation outside this persona's constitutional domain. Each persona has a specific mandate. Ignore issues that belong to other personas.
+   - If constitutional compliance is PLAUSIBLE (even if not perfect), set changed=false.
 
-2. Identify any violated hard rules (list rule text, or empty array if none).
+2. CORRECTION THRESHOLD:
+   - Set changed=true ONLY when ALL of the following are true:
+     A. violated_rules is non-empty (a hard rule is demonstrably violated), AND
+     B. You are at least 90% confident the violation is real (not a plausible interpretation).
+   - If either condition is not met, set changed=false.
 
-3. Determine if the vote should be REVISED (changed=true) — ONLY when a hard rule was violated (e.g., HARD_NO required but SOFT_NO given, or domain boundary crossed). Do NOT revise for stylistic or minor issues.
+3. SCORING:
+   - Score each dimension (0.0–1.0). Be generous — a score of 0.8 means "generally aligned, minor gaps".
+   - score_rule_fidelity: 1.0 if all hard rules followed. Deduct only for clear violations.
+   - Do NOT use low scores to trigger revisions — scores are for governance analytics only.
 
-4. If changed=true, provide the revised vote fields. If changed=false, copy the original vote fields exactly.
+4. VIOLATED RULES:
+   - Only list rules that are DEMONSTRABLY violated by this specific vote.
+   - Do NOT list rules that are merely "not explicitly addressed" in the rationale.
+   - Empty array [] is the correct answer for a clean vote.
 
-5. Write a critique: 1-2 sentences max. Be specific. If no issues, write "Vote is constitutionally aligned."
+5. CRITIQUE:
+   - 1 sentence max. If no issues: write exactly "Vote is constitutionally aligned."
+   - Do NOT mention missing framework references unless a domain-relevant issue was present and ignored.
 
-Return ONLY valid JSON — no markdown, no preamble:
+Return ONLY valid JSON — no markdown, no preamble, no trailing text:
 {
-  "score_in_character": 0.0-1.0,
-  "score_rule_fidelity": 0.0-1.0,
-  "score_evidence_grounding": 0.0-1.0,
-  "score_confidence_calib": 0.0-1.0,
-  "violated_rules": ["rule text if violated"],
-  "changed": true|false,
-  "critique": "1-2 sentence critique",
+  "score_in_character": 0.0,
+  "score_rule_fidelity": 0.0,
+  "score_evidence_grounding": 0.0,
+  "score_confidence_calib": 0.0,
+  "violated_rules": [],
+  "changed": false,
+  "critique": "Vote is constitutionally aligned.",
   "revised_vote": "${vote.vote}",
   "revised_confidence": ${vote.confidence},
   "revised_rationale": "${vote.rationale.replace(/"/g, '\\"').slice(0, 200)}",
@@ -755,7 +829,64 @@ async function auditPersonaVote(
   const sCC  = clamp(parsed.score_confidence_calib   ?? 0.8);
   const fidelityScore = (sIC + sRF + sEG + sCC) / 4;
 
-  const changed = Boolean(parsed.changed);
+  // CORRECTION THRESHOLD: changed=true only when violated_rules is non-empty.
+  // This enforces the PRESERVE-FIRST policy at the code level, regardless of LLM output.
+  const llmViolatedRules: string[] = Array.isArray(parsed.violated_rules)
+    ? [...parsed.violated_rules].sort()
+    : [];
+
+  // DETERMINISTIC PRE-DETECTED TRIGGERS: merge code-detected triggers into violated_rules.
+  // This ensures that even if the LLM misses a clear violation, the code catches it.
+  const preDetectedTriggers = detectMustVoteTriggers(vote, constitution, dealText);
+
+  // HALLUCINATION FILTER: Remove LLM-reported violated_rules that cannot be code-verified.
+  // Rules are only valid if the underlying condition is verifiable from the deal text or vote data.
+  const dealUpper = dealText.toUpperCase();
+  const hasRegulatoryIssue =
+    dealUpper.includes("REGULATORY BLOCKER") ||
+    dealUpper.includes("NOTICE OF NON-COMPLIANCE") ||
+    dealUpper.includes("CEASE OPERATIONS") ||
+    dealUpper.includes("UNLICENSED") ||
+    dealUpper.includes("SANCTIONS EXPOSURE") ||
+    dealUpper.includes("OFAC");
+
+  const filteredLlmRules = llmViolatedRules.filter(rule => {
+    const rUpper = rule.toUpperCase();
+
+    // Terminal flag rule: only valid if vote actually has a terminal flag
+    if (rUpper.includes("TERMINAL FLAG") || rUpper.includes("TERMINAL_FLAG")) {
+      return vote.terminalFlag != null;
+    }
+
+    // Framework reference rule (e.g., "MUST reference GCC/Kuwait regulatory frameworks"):
+    // Only valid if the deal text actually contains a regulatory issue that was ignored.
+    // Without a domain-relevant issue, missing framework citations are a style difference, not a violation.
+    if (
+      (rUpper.includes("REFERENCE") || rUpper.includes("CITE") || rUpper.includes("MENTION")) &&
+      (rUpper.includes("FRAMEWORK") || rUpper.includes("AAOIFI") || rUpper.includes("CMA") ||
+       rUpper.includes("ADGM") || rUpper.includes("DIFC") || rUpper.includes("SCA"))
+    ) {
+      return hasRegulatoryIssue;
+    }
+
+    return true; // Allow all other LLM-reported rules through
+  });
+
+  const mergedViolatedRulesSet = new Set([...filteredLlmRules, ...preDetectedTriggers]);
+  const sortedViolatedRules: string[] = Array.from(mergedViolatedRulesSet).sort();
+  const hasViolatedRules = sortedViolatedRules.length > 0;
+
+  // HARD-RULE ENFORCEMENT: If a violated rule contains "MUST vote HARD_NO" and the original
+  // vote is not HARD_NO, force changed=true deterministically — regardless of LLM changed field.
+  const mustVoteHardNo = sortedViolatedRules.some(
+    r => r.toUpperCase().includes("MUST VOTE HARD_NO") || r.toUpperCase().includes("MUST VOTE HARD_YES")
+  );
+  const voteContradictsMustRule = mustVoteHardNo && (
+    (sortedViolatedRules.some(r => r.toUpperCase().includes("MUST VOTE HARD_NO")) && vote.vote !== "HARD_NO") ||
+    (sortedViolatedRules.some(r => r.toUpperCase().includes("MUST VOTE HARD_YES")) && vote.vote !== "HARD_YES")
+  );
+
+  const changed = hasViolatedRules && (Boolean(parsed.changed) || voteContradictsMustRule);
 
   const revisedVote: PersonaVote = changed
     ? {
@@ -776,7 +907,7 @@ async function auditPersonaVote(
     scoreEvidenceGrounding: sEG,
     scoreConfidenceCalib:   sCC,
     fidelityScore,
-    violatedRules:          Array.isArray(parsed.violated_rules) ? parsed.violated_rules : [],
+    violatedRules:          sortedViolatedRules,
     changed,
     critique:               (parsed.critique ?? "Vote is constitutionally aligned.").slice(0, 512),
     originalVote:           vote,
