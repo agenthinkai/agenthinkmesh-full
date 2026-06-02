@@ -111,7 +111,7 @@ router.post("/screen", async (req: Request, res: Response): Promise<void> => {
     }
 
     // Validate optional councilMode
-    const validModes = ["gcc", "global_vc", "india_pe"];
+    const validModes = ["gcc", "global_vc", "india_pe", "infrastructure", "gcc_equities"];
     if (councilMode && !validModes.includes(councilMode)) {
       res.status(400).json({
         success: false,
@@ -123,7 +123,7 @@ router.post("/screen", async (req: Request, res: Response): Promise<void> => {
     const result = await runScreeningPipeline({
       dealText: dealText.trim(),
       dealName: dealName?.trim(),
-      councilMode: (councilMode as "gcc" | "global_vc" | "india_pe") ?? "global_vc",
+      councilMode: (councilMode as "gcc" | "global_vc" | "india_pe" | "infrastructure" | "gcc_equities") ?? "global_vc",
       includeReport: includeReport !== false,
       forceReport: forceReport === true,
       userId,
@@ -186,7 +186,7 @@ router.post("/screen/batch", async (req: Request, res: Response): Promise<void> 
       return;
     }
 
-    const validModes = ["gcc", "global_vc", "india_pe"];
+    const validModes = ["gcc", "global_vc", "india_pe", "infrastructure", "gcc_equities"];
     if (councilMode && !validModes.includes(councilMode)) {
       res.status(400).json({
         success: false,
@@ -208,7 +208,7 @@ router.post("/screen/batch", async (req: Request, res: Response): Promise<void> 
         const result = await runScreeningPipeline({
           dealText: deal.dealText.trim(),
           dealName: deal.dealName?.trim(),
-          councilMode: (councilMode as "gcc" | "global_vc" | "india_pe") ?? "global_vc",
+          councilMode: (councilMode as "gcc" | "global_vc" | "india_pe" | "infrastructure" | "gcc_equities") ?? "global_vc",
           includeReport: includeReport !== false,
           forceReport: forceReport === true,
           userId,

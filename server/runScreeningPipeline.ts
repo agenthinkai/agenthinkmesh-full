@@ -30,7 +30,7 @@ import { runRealityAlignment, type RealityAlignmentResult } from "./realityAlign
 import { extractDealParams } from "./lib/monteCarloParams";
 import { runMonteCarloSimulation } from "./lib/monteCarlo";
 
-export type CouncilMode = "gcc" | "global_vc" | "india_pe";
+export type CouncilMode = "gcc" | "global_vc" | "india_pe" | "infrastructure" | "gcc_equities";
 export type SourceType = "manual" | "signal";
 
 export interface ScreeningInput {
@@ -250,11 +250,12 @@ export async function runScreeningPipeline(input: ScreeningInput): Promise<Scree
   const shouldGenerateReport =
     includeReport &&
     (forceReport ||
+      councilMode === "infrastructure" || // Infrastructure mode always generates IC report
       result.verdict === "APPROVED" ||
       result.verdict === "APPROVED_WITH_CONDITIONS");
   if (shouldGenerateReport) {
     try {
-      icReport = await generateSingleDealICReport(dealName, dealText, result);
+      icReport = await generateSingleDealICReport(dealName, dealText, result, councilMode);
     } catch (err) {
       console.error("[runScreeningPipeline][ICReport] Failed to generate IC report:", err);
     }
