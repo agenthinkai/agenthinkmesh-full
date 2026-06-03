@@ -2487,3 +2487,52 @@ export const outcomeAttributions = mysqlTable("outcome_attributions", {
 
 export type OutcomeAttribution = typeof outcomeAttributions.$inferSelect;
 export type InsertOutcomeAttribution = typeof outcomeAttributions.$inferInsert;
+
+// ── Institutional Pilot Conversion ────────────────────────────────────────────
+// Tracks the full lifecycle from demo request → pilot → conversion.
+// Governance only — no changes to Council verdicts, CFA, or voting logic.
+
+export const pilots = mysqlTable("pilots", {
+  id:                int("id").autoincrement().primaryKey(),
+  demoRequestId:     int("demo_request_id"),
+  orgName:           varchar("org_name", { length: 300 }).notNull(),
+  contactName:       varchar("contact_name", { length: 200 }).notNull(),
+  contactEmail:      varchar("contact_email", { length: 300 }).notNull(),
+  contactTitle:      varchar("contact_title", { length: 200 }),
+  pilotSlug:         varchar("pilot_slug", { length: 100 }).notNull().unique(),
+  councilMode:       varchar("council_mode", { length: 100 }).notNull().default("infrastructure"),
+  maxEvaluations:    int("max_evaluations").notNull().default(10),
+  status:            mysqlEnum("status", ["INVITED","ACTIVE","COMPLETED","CONVERTED","CHURNED"]).notNull().default("INVITED"),
+  accessTokenHash:   varchar("access_token_hash", { length: 64 }),
+  invitedAt:         bigint("invited_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  activatedAt:       bigint("activated_at", { mode: "number" }),
+  completedAt:       bigint("completed_at", { mode: "number" }),
+  convertedAt:       bigint("converted_at", { mode: "number" }),
+  expiresAt:         bigint("expires_at", { mode: "number" }),
+  notes:             text("notes"),
+  createdAt:         bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt:         bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  pilotSlugIdx:   index("pilot_slug_idx").on(table.pilotSlug),
+  pilotStatusIdx: index("pilot_status_idx").on(table.status),
+  pilotEmailIdx:  index("pilot_email_idx").on(table.contactEmail),
+  pilotDemoIdx:   index("pilot_demo_idx").on(table.demoRequestId),
+}));
+export type Pilot = typeof pilots.$inferSelect;
+export type InsertPilot = typeof pilots.$inferInsert;
+
+export const pilotUsage = mysqlTable("pilot_usage", {
+  id:              int("id").autoincrement().primaryKey(),
+  pilotId:         int("pilot_id").notNull(),
+  eventType:       mysqlEnum("event_type", ["EVALUATION_RUN","REPORT_VIEWED","REPORT_SHARED","DEMO_VIEWED","PDF_EXPORTED","LOGIN"]).notNull(),
+  dealId:          varchar("deal_id", { length: 100 }),
+  councilMode:     varchar("council_mode", { length: 100 }),
+  metadata:        text("metadata"),
+  createdAt:       bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  puPilotIdx:   index("pu_pilot_idx").on(table.pilotId),
+  puEventIdx:   index("pu_event_idx").on(table.eventType),
+  puCreatedIdx: index("pu_created_idx").on(table.createdAt),
+}));
+export type PilotUsage = typeof pilotUsage.$inferSelect;
+export type InsertPilotUsage = typeof pilotUsage.$inferInsert;

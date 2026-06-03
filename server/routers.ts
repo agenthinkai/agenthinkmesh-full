@@ -20,6 +20,7 @@ import { socialMediaRouter } from "./routers/socialMedia";
 import { dealScreenerRouter } from "./routers/dealScreener";
 import { outcomeLedgerRouter } from "./routers/outcomeLedger";
 import { proofEngineRouter } from "./routers/proofEngine";
+import { pilotConversionRouter } from "./routers/pilotConversion";
 import { dealSourcingRouter } from "./routers/dealSourcing";
 import { procurementRouter } from "./routers/procurement";
 import { intelligenceRouter } from "./routers/intelligence";
@@ -3443,6 +3444,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
   dealScreener: dealScreenerRouter,
   outcomeLedger: outcomeLedgerRouter,
   proofEngine: proofEngineRouter,
+  pilotConversion: pilotConversionRouter,
   dealSourcing: dealSourcingRouter,
   procurement: procurementRouter,
   shareReport: shareReportRouter,
