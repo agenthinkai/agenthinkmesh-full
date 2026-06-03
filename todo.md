@@ -4872,3 +4872,15 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Vitest: outcome session auto-creation test
 - [x] Vitest: accuracy metrics calculation test
 - [x] TypeScript: 0 errors
+
+## Outcome Calibration Engine Phase 3
+- [x] Add calibrationMetrics tRPC procedure (TP/FP/TN/FN, Precision, Recall, F1, Outcome Agreement Rate per persona)
+- [x] Add blockerCalibration tRPC procedure (Predicted/Materialized/FalseAlarm counts + Materialization Rate per blocker type)
+- [x] Add missedRisks tRPC procedure (outcome factors that materialized but were not predicted by any persona)
+- [x] Add calibrationDashboard tRPC procedure (top/bottom predictive personas, most accurate/overused blockers, most missed risks)
+- [x] Create OutcomeCalibration.tsx at client/src/pages/admin/OutcomeCalibration.tsx (5 panels)
+- [x] Register /admin/outcomes/calibration route in App.tsx
+- [x] Add Calibration Engine sidebar nav link in MeshSidebar.tsx
+- [x] Write outcomeLedgerPhase3.test.ts vitest acceptance tests (5 criteria)
+- [x] TypeScript: 0 errors
+- [x] 5/5 acceptance criteria pass
