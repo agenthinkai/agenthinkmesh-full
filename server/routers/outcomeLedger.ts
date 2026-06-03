@@ -89,6 +89,11 @@ export const outcomeLedgerRouter = router({
       outcomeStatus: z.enum(OUTCOME_STATUSES),
       outcomeDate: z.number().optional(),
       outcomeNotes: z.string().max(2000).optional(),
+      // Operation 1000 Outcomes — backfill fields
+      primaryDriver: z.enum(["FINANCIAL", "CONSTRUCTION", "REGULATORY", "TECHNOLOGY", "COMMERCIAL", "ESG"]).optional(),
+      sourceConfidence: z.enum(["HIGH", "MEDIUM", "LOW"]).optional(),
+      sourceType: z.enum(["FILING", "ANNUAL_REPORT", "REGULATORY", "LENDER", "DEVELOPER", "ANNOUNCEMENT", "MANUAL"]).optional(),
+      sourceUrl: z.string().url().max(2048).optional().or(z.literal("")),
     }))
     .mutation(async ({ ctx, input }) => {
       requireAdmin(ctx);
@@ -100,6 +105,10 @@ export const outcomeLedgerRouter = router({
           outcomeStatus: input.outcomeStatus,
           outcomeDate: input.outcomeDate ?? null,
           outcomeNotes: input.outcomeNotes ?? null,
+          primaryDriver: input.primaryDriver ?? null,
+          sourceConfidence: input.sourceConfidence ?? null,
+          sourceType: input.sourceType ?? null,
+          sourceUrl: input.sourceUrl || null,
           updatedAt: Date.now(),
         })
         .where(eq(outcomeSessions.id, input.id));
@@ -762,5 +771,83 @@ export const outcomeLedgerRouter = router({
       }));
 
       return { personas };
+    }),
+
+  // ── Operation 1000 Outcomes — Coverage KPI ─────────────────────────────
+  outcomeCoverage: protectedProcedure
+    .query(async ({ ctx }) => {
+      requireAdmin(ctx);
+      const db = await requireDb();
+
+      const [totalRow] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(outcomeSessions);
+
+      const [resolvedRow] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(outcomeSessions)
+        .where(sql`outcome_status NOT IN ('UNKNOWN', 'IN_PROGRESS')`);
+
+      const [unknownRow] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(outcomeSessions)
+        .where(eq(outcomeSessions.outcomeStatus, "UNKNOWN"));
+
+      const [inProgressRow] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(outcomeSessions)
+        .where(eq(outcomeSessions.outcomeStatus, "IN_PROGRESS"));
+
+      // Distribution by status
+      const statusRows = await db
+        .select({
+          status: outcomeSessions.outcomeStatus,
+          count: sql<number>`count(*)`,
+        })
+        .from(outcomeSessions)
+        .groupBy(outcomeSessions.outcomeStatus);
+
+      // Distribution by primary driver (backfill field)
+      const driverRows = await db
+        .select({
+          driver: outcomeSessions.primaryDriver,
+          count: sql<number>`count(*)`,
+        })
+        .from(outcomeSessions)
+        .where(sql`primary_driver IS NOT NULL`)
+        .groupBy(outcomeSessions.primaryDriver);
+
+      // Distribution by source confidence
+      const confidenceRows = await db
+        .select({
+          confidence: outcomeSessions.sourceConfidence,
+          count: sql<number>`count(*)`,
+        })
+        .from(outcomeSessions)
+        .where(sql`source_confidence IS NOT NULL`)
+        .groupBy(outcomeSessions.sourceConfidence);
+
+      const total = Number(totalRow.count);
+      const resolved = Number(resolvedRow.count);
+      const coveragePct = total > 0 ? (resolved / total) * 100 : 0;
+
+      // Phase milestones
+      const phase1Target = 250;
+      const phase2Target = 500;
+      const phase3Target = 1000;
+
+      return {
+        total,
+        resolved,
+        unknown: Number(unknownRow.count),
+        inProgress: Number(inProgressRow.count),
+        coveragePct: Math.round(coveragePct * 10) / 10,
+        phase1: { target: phase1Target, reached: resolved >= phase1Target, pct: Math.min(100, Math.round((resolved / phase1Target) * 1000) / 10) },
+        phase2: { target: phase2Target, reached: resolved >= phase2Target, pct: Math.min(100, Math.round((resolved / phase2Target) * 1000) / 10) },
+        phase3: { target: phase3Target, reached: resolved >= phase3Target, pct: Math.min(100, Math.round((resolved / phase3Target) * 1000) / 10) },
+        statusDistribution: statusRows.map((r) => ({ status: r.status, count: Number(r.count) })),
+        driverDistribution: driverRows.map((r) => ({ driver: r.driver, count: Number(r.count) })),
+        confidenceDistribution: confidenceRows.map((r) => ({ confidence: r.confidence, count: Number(r.count) })),
+      };
     }),
 });

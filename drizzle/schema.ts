@@ -2400,6 +2400,27 @@ export const outcomeSessions = mysqlTable("outcome_sessions", {
   outcomeDate:      bigint("outcome_date", { mode: "number" }),
   outcomeNotes:     text("outcome_notes"),
 
+  // ── Operation 1000 Outcomes — backfill fields ─────────────────────────────
+  primaryDriver:    mysqlEnum("primary_driver", [
+    "FINANCIAL",
+    "CONSTRUCTION",
+    "REGULATORY",
+    "TECHNOLOGY",
+    "COMMERCIAL",
+    "ESG",
+  ]),
+  sourceConfidence: mysqlEnum("source_confidence", ["HIGH", "MEDIUM", "LOW"]),
+  sourceType:       mysqlEnum("source_type", [
+    "FILING",
+    "ANNUAL_REPORT",
+    "REGULATORY",
+    "LENDER",
+    "DEVELOPER",
+    "ANNOUNCEMENT",
+    "MANUAL",
+  ]),
+  sourceUrl:        text("source_url"),
+
   createdAt:        bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
   updatedAt:        bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 }, (table) => ({

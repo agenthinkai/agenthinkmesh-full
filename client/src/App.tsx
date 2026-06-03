@@ -110,6 +110,7 @@ const OutcomeMetrics = lazy(() => import("./pages/admin/OutcomeMetrics"));
 const OutcomeAttribution = lazy(() => import("./pages/admin/OutcomeAttribution"));
 const OutcomeCalibration = lazy(() => import("./pages/admin/OutcomeCalibration"));
 const InstitutionalProof = lazy(() => import("./pages/admin/InstitutionalProof"));
+const OutcomeBackfill = lazy(() => import("./pages/admin/OutcomeBackfill"));
 const SgIcDemo = lazy(() => import("./pages/SgIcDemo"));
 const JpIcDemo = lazy(() => import("./pages/JpIcDemo"));
 const UsIcDemo = lazy(() => import("./pages/UsIcDemo"));
@@ -269,6 +270,7 @@ function Router() {
       <Route path="/admin/beta-requests" component={AdminBetaRequests} />
       <Route path="/admin/demo-requests" component={AdminDemoRequests} />
       <Route path="/admin/treasury" component={AdminTreasury} />
+      <Route path="/admin/outcomes/backfill" component={OutcomeBackfill} />
       <Route path="/admin/proof" component={InstitutionalProof} />
       <Route path="/admin/outcomes/calibration" component={OutcomeCalibration} />
       <Route path="/admin/outcomes/attribution" component={OutcomeAttribution} />

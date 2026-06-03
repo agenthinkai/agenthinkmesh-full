@@ -4884,3 +4884,16 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Write outcomeLedgerPhase3.test.ts vitest acceptance tests (5 criteria)
 - [x] TypeScript: 0 errors
 - [x] 5/5 acceptance criteria pass
+
+## Operation 1000 Outcomes (Outcome Backfill Pipeline)
+
+- [x] Extend outcomeSessions schema: add primaryDriver, sourceConfidence, sourceType, sourceUrl columns
+- [x] Push migration (ALTER TABLE outcome_sessions ADD COLUMN ...)
+- [x] Extend outcomeLedger.update mutation to accept and persist backfill fields
+- [x] Add outcomeLedger.outcomeCoverage procedure (coverage %, phase milestones, distributions)
+- [x] Create OutcomeBackfill.tsx at /admin/outcomes/backfill (bulk review queue + classify dialog)
+- [x] Add Outcome Coverage KPI card to InstitutionalProof.tsx (/admin/proof)
+- [x] Register /admin/outcomes/backfill route and sidebar link
+- [x] Write operation1000.test.ts vitest acceptance tests
+- [x] TypeScript: 0 errors
+- [x] Full test suite: 1865/1865 passing

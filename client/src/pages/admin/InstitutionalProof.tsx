@@ -365,6 +365,67 @@ export default function InstitutionalProof() {
           </div>
         </div>
 
+        {/* Outcome Coverage KPI — Operation 1000 Outcomes */}
+        {(() => {
+          const coverageQ = trpc.outcomeLedger.outcomeCoverage.useQuery();
+          const cov = coverageQ.data;
+          return (
+            <Card className="bg-slate-900 border-slate-800">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-base font-semibold text-foreground flex items-center gap-2">
+                  🎯 Outcome Coverage
+                  <span className="text-xs font-normal text-muted-foreground ml-1">Operation 1000 Outcomes</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {coverageQ.isLoading ? (
+                  <div className="text-sm text-muted-foreground">Loading...</div>
+                ) : cov ? (
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-slate-800 rounded-lg p-4">
+                        <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Coverage</div>
+                        <div className="text-3xl font-bold text-emerald-400">{cov.coveragePct}%</div>
+                        <div className="text-xs text-muted-foreground mt-1">{cov.resolved.toLocaleString()} / {cov.total.toLocaleString()} deals</div>
+                      </div>
+                      <div className="bg-slate-800 rounded-lg p-4">
+                        <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Pending</div>
+                        <div className="text-3xl font-bold text-amber-400">{cov.unknown.toLocaleString()}</div>
+                        <div className="text-xs text-muted-foreground mt-1">Unclassified</div>
+                      </div>
+                      <div className="bg-slate-800 rounded-lg p-4">
+                        <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Phase 1</div>
+                        <div className={`text-3xl font-bold ${cov.phase1.reached ? "text-emerald-400" : "text-slate-400"}`}>{cov.phase1.pct}%</div>
+                        <div className="text-xs text-muted-foreground mt-1">of {cov.phase1.target} target</div>
+                      </div>
+                      <div className="bg-slate-800 rounded-lg p-4">
+                        <div className="text-xs text-muted-foreground uppercase tracking-wide mb-1">Phase 3</div>
+                        <div className={`text-3xl font-bold ${cov.phase3.reached ? "text-emerald-400" : "text-slate-400"}`}>{cov.phase3.pct}%</div>
+                        <div className="text-xs text-muted-foreground mt-1">of {cov.phase3.target} target</div>
+                      </div>
+                    </div>
+                    {cov.driverDistribution.length > 0 && (
+                      <div>
+                        <div className="text-xs text-muted-foreground uppercase tracking-wide mb-2">By Primary Driver</div>
+                        <div className="flex flex-wrap gap-2">
+                          {cov.driverDistribution.map((d) => (
+                            <div key={d.driver} className="bg-slate-800 rounded px-3 py-1.5 text-xs">
+                              <span className="text-muted-foreground">{d.driver}</span>
+                              <span className="ml-2 font-semibold text-foreground">{d.count}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-sm text-muted-foreground">No coverage data available.</div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
+
         {/* Panel 1 — Decision Volume */}
         <Card className="bg-slate-900 border-slate-800">
           <CardHeader className="pb-3">

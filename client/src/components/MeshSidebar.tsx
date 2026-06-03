@@ -68,6 +68,7 @@ const NAV_ITEMS: NavItem[] = [
   { path: "/admin/outcomes/metrics", icon: "📊", label: "Outcome Metrics", adminOnly: true },
   { path: "/admin/outcomes/attribution", icon: "🎯", label: "Attribution Engine", adminOnly: true },
   { path: "/admin/outcomes/calibration", icon: "📊", label: "Calibration Engine", adminOnly: true },
+  { path: "/admin/outcomes/backfill", icon: "🎯", label: "Outcome Backfill", adminOnly: true },
   { path: "/admin/proof", icon: "🏛", label: "Institutional Proof", adminOnly: true },
 ];
 
