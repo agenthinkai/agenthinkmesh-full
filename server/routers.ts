@@ -19,6 +19,7 @@ import { openclawRouter } from "./routers/openclaw";
 import { socialMediaRouter } from "./routers/socialMedia";
 import { dealScreenerRouter } from "./routers/dealScreener";
 import { outcomeLedgerRouter } from "./routers/outcomeLedger";
+import { proofEngineRouter } from "./routers/proofEngine";
 import { dealSourcingRouter } from "./routers/dealSourcing";
 import { procurementRouter } from "./routers/procurement";
 import { intelligenceRouter } from "./routers/intelligence";
@@ -3441,6 +3442,7 @@ If a section is not applicable (e.g. no financial data provided), set it to null
   socialMedia: socialMediaRouter,
   dealScreener: dealScreenerRouter,
   outcomeLedger: outcomeLedgerRouter,
+  proofEngine: proofEngineRouter,
   dealSourcing: dealSourcingRouter,
   procurement: procurementRouter,
   shareReport: shareReportRouter,
