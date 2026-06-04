@@ -134,6 +134,8 @@ const TencentDemo = lazy(() => import("./pages/TencentDemo"));
 const NbkCapitalDemo = lazy(() => import("./pages/NbkCapitalDemo"));
 // D.1b Batch 2 — /demo/* prospect pages (approved 2026-05-17)
 const Core42Demo = lazy(() => import("./pages/Core42Demo"));
+// D.1b Batch 3 — /demo/rwe (RWE Infrastructure, 2026-06-04)
+const RweDemo = lazy(() => import("./pages/RweDemo"));
 const AdnocDemo = lazy(() => import("./pages/AdnocDemo"));
 const KiaCapitalDemo = lazy(() => import("./pages/KiaCapitalDemo"));
 const KamcoInvestDemo = lazy(() => import("./pages/KamcoInvestDemo"));
@@ -405,6 +407,8 @@ function Router() {
       <Route path="/demo/adnoc" component={AdnocDemo} />
       <Route path="/demo/kia" component={KiaCapitalDemo} />
       <Route path="/demo/kamco" component={KamcoInvestDemo} />
+      {/* D.1b Batch 3 */}
+      <Route path="/demo/rwe" component={RweDemo} />
       {/* Guided demo + reference */}
       <Route path="/voice-demo" component={VoiceDemoAgent} />
       <Route path="/demo-guide" component={DemoGuide} />
