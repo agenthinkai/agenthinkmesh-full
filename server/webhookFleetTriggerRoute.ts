@@ -72,7 +72,7 @@ router.post("/fleet-trigger", async (req: Request, res: Response) => {
       MS_TENANT_ID:      (process.env.MS_TENANT_ID     ?? "").length > 0 ? "SET (non-empty)" : "MISSING",
     };
     console.log("[WebhookFleetTrigger] env-check:", JSON.stringify(envReport));
-    res.json({ action: "env-check", timestamp, env: envReport });
+    res.json({ action: "env-check", timestamp, env: envReport, version: "eval-detail-v1" });
     return;
   }
 
