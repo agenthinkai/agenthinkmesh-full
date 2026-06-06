@@ -34,8 +34,9 @@ import { runDailyFleet } from "./jobs/founderFleetScheduler";
 import { runFleet } from "./founderFleet";
 import { sendGraphEmail } from "./graphEmail";
 import { getDb } from "./db";
-import { fleetConfig as fleetConfigTable, founderAgentRuns, founderAgentEvaluations, founderAgentIdeas } from "../drizzle/schema";
-import { eq, and } from "drizzle-orm";
+import { fleetConfig as fleetConfigTable, founderAgentRuns, founderAgentEvaluations, founderAgentIdeas, founderAgentPitches } from "../drizzle/schema";
+import { eq, and, inArray, desc } from "drizzle-orm";
+import { decryptWithMasterKey } from "./cmk";
 
 const router = Router();
 
@@ -193,6 +194,104 @@ router.post("/fleet-trigger", async (req: Request, res: Response) => {
       const msg = (err as Error)?.message ?? String(err);
       console.error(`[WebhookFleetTrigger] fleet-export run #${bodyRunId} error:`, msg);
       res.status(500).json({ action: "fleet-export", error: msg });
+    }
+    return;
+  }
+
+  // ── Special action: eval-detail — return full verbatim decrypted eval content ──
+  // body.evalIds: number[]  — list of specific eval IDs to fetch (max 50)
+  // body.runId: number      — optional: fetch top N evals from a run (body.topN, default 10)
+  if (action === "eval-detail") {
+    try {
+      const db = await getDb();
+      if (!db) {
+        res.status(503).json({ action: "eval-detail", error: "Database unavailable" });
+        return;
+      }
+      const evalIds: number[] = (req.body as { evalIds?: number[] }).evalIds ?? [];
+      const topN: number = (req.body as { topN?: number }).topN ?? 10;
+
+      let rows: Array<{ eval: typeof founderAgentEvaluations.$inferSelect; idea: typeof founderAgentIdeas.$inferSelect; pitch: typeof founderAgentPitches.$inferSelect }> = [];
+
+      if (evalIds.length > 0) {
+        // Fetch specific eval IDs
+        rows = await db.select({
+          eval: founderAgentEvaluations,
+          idea: founderAgentIdeas,
+          pitch: founderAgentPitches,
+        })
+          .from(founderAgentEvaluations)
+          .innerJoin(founderAgentIdeas, eq(founderAgentEvaluations.ideaId, founderAgentIdeas.id))
+          .innerJoin(founderAgentPitches, eq(founderAgentEvaluations.pitchId, founderAgentPitches.id))
+          .where(inArray(founderAgentEvaluations.id, evalIds.slice(0, 50))) as typeof rows;
+      } else if (bodyRunId && typeof bodyRunId === "number") {
+        // Fetch top N evals from a specific run
+        rows = await db.select({
+          eval: founderAgentEvaluations,
+          idea: founderAgentIdeas,
+          pitch: founderAgentPitches,
+        })
+          .from(founderAgentEvaluations)
+          .innerJoin(founderAgentIdeas, eq(founderAgentEvaluations.ideaId, founderAgentIdeas.id))
+          .innerJoin(founderAgentPitches, eq(founderAgentEvaluations.pitchId, founderAgentPitches.id))
+          .where(eq(founderAgentEvaluations.runId, bodyRunId))
+          .orderBy(desc(founderAgentEvaluations.finalScore))
+          .limit(topN) as typeof rows;
+      } else {
+        res.status(400).json({ action: "eval-detail", error: "body.evalIds (number[]) or body.runId (number) is required" });
+        return;
+      }
+
+      const result = rows.map(({ eval: e, idea, pitch }) => ({
+        evalId:              e.id,
+        runId:               e.runId,
+        ideaId:              idea.id,
+        fleetMode:           e.fleetMode,
+        createdAt:           e.createdAt,
+        updatedAt:           e.updatedAt,
+        status:              e.status,
+        // Idea fields
+        founderName:         idea.founderName,
+        domain:              idea.domain,
+        subSector:           idea.subSector,
+        targetRegion:        idea.targetRegion,
+        fundingStage:        idea.fundingStage,
+        fundingAsk:          idea.fundingAsk,
+        description:         idea.description,
+        // Pitch fields (plain text)
+        problem:             pitch.problem,
+        solution:            pitch.solution,
+        targetMarket:        pitch.targetMarket,
+        businessModel:       pitch.businessModel,
+        competitiveAdvantage: pitch.competitiveAdvantage,
+        keyRisk:             pitch.keyRisk,
+        summary3s:           pitch.summary3s,
+        // Evaluation scores
+        finalScore:          e.finalScore,
+        classificationScore: e.classificationScore,
+        executionScore:      e.executionScore,
+        marketScore:         e.marketScore,
+        classification:      e.classification,
+        shariahCompliance:   e.shariahCompliance ?? null,
+        decisionOutcome:     e.decisionOutcome ?? null,
+        // Decrypted fields
+        recommendedAction:   decryptWithMasterKey(e.recommendedAction),
+        strengths:           JSON.parse(decryptWithMasterKey(e.strengths) ?? "[]") as string[],
+        concerns:            JSON.parse(decryptWithMasterKey(e.concerns) ?? "[]") as string[],
+        flags:               JSON.parse(decryptWithMasterKey(e.flags) ?? "[]") as string[],
+        agentDisagreements:  JSON.parse(e.agentDisagreements ?? "[]") as string[],
+        // Cost/token tracking
+        durationMs:          e.durationMs,
+        tokensTotal:         e.tokensTotal,
+        costUsd:             e.costUsd,
+      }));
+
+      console.log(`[WebhookFleetTrigger] eval-detail: returned ${result.length} rows`);
+      res.json({ action: "eval-detail", count: result.length, exportedAt: timestamp, rows: result });
+    } catch (err) {
+      const msg = (err as Error)?.message ?? String(err);
+      console.error(`[WebhookFleetTrigger] eval-detail error:`, msg);
+      res.status(500).json({ action: "eval-detail", error: msg });
     }
     return;
   }
