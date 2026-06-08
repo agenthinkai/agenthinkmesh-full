@@ -16,7 +16,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { FileText, Download, Loader2, CheckCircle2, AlertCircle, FileJson, FileCode2, BarChart3 } from "lucide-react";
+import { FileText, Download, Loader2, CheckCircle2, AlertCircle, FileJson, FileCode2, BarChart3, ShieldCheck } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -87,6 +87,8 @@ export interface ReportsPanelProps {
   // IC Memo handler (already implemented in ICReport)
   onExportICMemo: () => void;
   icMemoLoading: boolean;
+  // Proof Report — requires a council session ID
+  proofSessionId?: string | null;
   // Upgrade Protocol data (lifted from DecisionUpgradePanel via callbacks)
   upgradeProtocol?: UpgradeProtocol | null;
   upgradeDelta?: DeltaOutput | null;
@@ -310,6 +312,7 @@ export function ReportsPanel({
   upgradeProtocol, upgradeDelta,
   simRunId, simMode, simTargetCount, simCompletedAt, simAggregation,
   upgradedFingerprint,
+  proofSessionId,
 }: ReportsPanelProps) {
   // ── Upgrade Protocol export state ─────────────────────────────────────────
   const [upgradeFmt, setUpgradeFmt] = useState<ExportFormat>("pdf");
@@ -324,8 +327,41 @@ export function ReportsPanel({
   // ── IC Memo done state ────────────────────────────────────────────────────
   const [icMemoDone, setIcMemoDone] = useState(false);
 
+  // ── Proof Report export state ─────────────────────────────────────────────
+  const [proofFmt, setProofFmt] = useState<ExportFormat>("pdf");
+  const [proofLoading, setProofLoading] = useState(false);
+  const [proofDone, setProofDone] = useState(false);
+
   const upgradeProtocolPdf = trpc.dealScreener.upgradeProtocolPdf.useMutation();
   const stressTestReportPdf = trpc.dealScreener.stressTestReportPdf.useMutation();
+  const proofReportMutation = trpc.proofEngine.proofReport.useMutation();
+
+  // ── Export: Proof Report ─────────────────────────────────────────────────
+  const handleExportProof = async () => {
+    if (!proofSessionId) return;
+    setProofLoading(true);
+    setProofDone(false);
+    try {
+      const res = await proofReportMutation.mutateAsync({
+        sessionId: proofSessionId,
+        format: proofFmt === "json" ? "json" : proofFmt === "pdf" ? "pdf" : "both",
+      });
+      const name = safeName(dealName);
+      if ((proofFmt === "pdf" || proofFmt === "both") && res.pdfBase64) {
+        downloadBlob(res.pdfBase64, `${name}_Institutional_Proof_Report.pdf`, "application/pdf");
+      }
+      if ((proofFmt === "json" || proofFmt === "both") && res.report) {
+        downloadText(JSON.stringify(res.report, null, 2), `${name}_Institutional_Proof_Report.json`);
+      }
+      setProofDone(true);
+      toast.success("Institutional Proof Report downloaded.");
+      setTimeout(() => setProofDone(false), 3000);
+    } catch (err: any) {
+      toast.error(`Export failed: ${err.message?.slice(0, 80)}`);
+    } finally {
+      setProofLoading(false);
+    }
+  };
 
   // ── Export: Upgrade Protocol ──────────────────────────────────────────────
   const handleExportUpgrade = async () => {
@@ -432,6 +468,7 @@ export function ReportsPanel({
     setTimeout(() => setIcMemoDone(false), 5000);
   };
 
+  const hasProof = !!proofSessionId;
   const hasUpgrade = !!upgradeProtocol;
   // Unlock if aggregation + decisionDistribution exist; mode/targetCount/completedAt are optional
   const hasStress = !!(simAggregation?.decisionDistribution);
@@ -460,7 +497,7 @@ export function ReportsPanel({
           </p>
         </CardHeader>
         <CardContent className="px-5 pb-5">
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
 
             {/* ── Report 1: IC Memo ────────────────────────────────────────── */}
             <ReportCard
@@ -541,6 +578,37 @@ export function ReportsPanel({
               )}
             </Tooltip>
 
+            {/* ── Report 4: Institutional Proof Report ─────────────────────── */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div>
+                  <ReportCard
+                    icon={<ShieldCheck className="h-4 w-4" />}
+                    title="Institutional Proof Report"
+                    subtitle={hasProof
+                      ? "13-section governance proof record. Includes release gate, evidence chain, constitution version, and full audit references."
+                      : "Requires a completed Council session with a session ID."}
+                    badge={hasProof ? "13 Sections" : "Requires Session"}
+                    badgeVariant={hasProof ? "default" : "outline"}
+                    available={hasProof}
+                    unavailableReason="A council session ID is required to generate the Proof Report."
+                    formats={["pdf", "json"]}
+                    selectedFormat={proofFmt === "text" ? "pdf" : proofFmt}
+                    onFormatChange={setProofFmt}
+                    onExport={handleExportProof}
+                    loading={proofLoading}
+                    done={proofDone}
+                    accentColor={hasProof ? "border-amber-500/20" : "border-white/5"}
+                  />
+                </div>
+              </TooltipTrigger>
+              {!hasProof && (
+                <TooltipContent side="top" className="max-w-[220px] text-xs">
+                  A completed Council session is required. Pass the session ID via the proofSessionId prop.
+                </TooltipContent>
+              )}
+            </Tooltip>
+
           </div>
 
           {/* ── Interpretation Pattern Callout ─────────────────────────────────────── */}
@@ -589,6 +657,10 @@ export function ReportsPanel({
             <div className="flex items-center gap-1.5 text-[10px] text-white/30">
               <div className={`h-1.5 w-1.5 rounded-full ${hasStress ? "bg-teal-400" : "bg-white/15"}`} />
               <span>Simulation {hasStress ? `${simTargetCount!.toLocaleString()} scenarios` : "not run"}</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] text-white/30">
+              <div className={`h-1.5 w-1.5 rounded-full ${hasProof ? "bg-amber-400" : "bg-white/15"}`} />
+              <span>Proof {hasProof ? "session ready" : "no session"}</span>
             </div>
           </div>
         </CardContent>

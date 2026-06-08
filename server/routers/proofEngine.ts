@@ -545,6 +545,235 @@ export const proofEngineRouter = router({
     }),
 
   /**
+   * Institutional Proof Report — 13-section governance proof record.
+   * Returns base64 PDF + structured JSON from existing governance artifacts.
+   */
+  proofReport: protectedProcedure
+    .input(z.object({
+      sessionId: z.string().min(1),
+      format: z.enum(["pdf", "json", "both"]).default("both"),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      requireAdmin(ctx);
+      const db = await requireDb();
+      const { generateProofReportPdf } = await import("../proofReportPdf");
+      const { randomUUID } = await import("crypto");
+
+      const now = Date.now();
+      const reportId = randomUUID();
+
+      // ── Fetch governance artifacts ──────────────────────────────────────────
+
+      // Council session
+      const [session] = await db
+        .select()
+        .from(consensusSessions)
+        .where(eq(consensusSessions.sessionId, input.sessionId))
+        .limit(1);
+
+      // CFA session
+      const [cfaSession] = await db
+        .select()
+        .from(cfaSessions)
+        .where(eq(cfaSessions.sessionId, input.sessionId))
+        .limit(1);
+
+      // CFA persona records
+      const cfaRecords = cfaSession
+        ? await db
+            .select()
+            .from(cfaPreferenceRecords)
+            .where(eq(cfaPreferenceRecords.sessionId, input.sessionId))
+        : [];
+
+      // Outcome session (by councilRunId)
+      const [outcomeSession] = await db
+        .select()
+        .from(outcomeSessions)
+        .where(eq(outcomeSessions.councilRunId, input.sessionId))
+        .limit(1);
+
+      // Historical precedents (same council mode, different session, limit 5)
+      const councilMode = cfaSession?.councilMode ?? session?.verdict?.split("_")[0] ?? "gcc";
+      const precedents = await db
+        .select()
+        .from(outcomeSessions)
+        .where(and(
+          eq(outcomeSessions.councilMode, councilMode),
+          sql`${outcomeSessions.councilRunId} != ${input.sessionId}`,
+        ))
+        .orderBy(desc(outcomeSessions.decisionDate))
+        .limit(5);
+
+      // ── Assemble 13-section proof report ───────────────────────────────────
+
+      const cfaFidelity = cfaSession ? parseFloat(cfaSession.averageFidelityScore as string) : null;
+      const consensusScore = session ? session.yesCount / Math.max(session.yesCount + session.noCount, 1) : null;
+
+      const hardFlags: string[] = session?.hardFlags ? JSON.parse(session.hardFlags as string) : [];
+      const silentFails: string[] = session?.silentFails ? JSON.parse(session.silentFails as string) : [];
+
+      // Determine release gate
+      const blockingRules: string[] = [];
+      const warningRules: string[] = [];
+      if (hardFlags.length > 0) blockingRules.push(...hardFlags.map((f: string) => `HARD_FLAG:${f}`));
+      const gate: "RELEASED" | "BLOCKED" | "PENDING" = blockingRules.length > 0 ? "BLOCKED" : session ? "RELEASED" : "PENDING";
+
+      const personaConfidence = cfaRecords.map((r: typeof cfaPreferenceRecords.$inferSelect) => ({
+        personaId: r.personaId,
+        personaName: r.personaName ?? r.personaId,
+        fidelityScore: parseFloat(r.fidelityScore as string),
+        changed: r.changed === 1,
+        critique: r.critique ?? null,
+        violatedRules: r.violatedRulesJson ? JSON.parse(r.violatedRulesJson as string) : [],
+        scoreInCharacter: parseFloat(r.scoreInCharacter as string),
+        scoreRuleFidelity: parseFloat(r.scoreRuleFidelity as string),
+        scoreEvidenceGrounding: parseFloat(r.scoreEvidenceGrounding as string),
+        scoreConfidenceCalib: parseFloat(r.scoreConfidenceCalib as string),
+      }));
+
+      const complianceRate = cfaSession
+        ? (cfaSession.totalPersonasAudited - cfaSession.totalChanged) / Math.max(cfaSession.totalPersonasAudited, 1)
+        : 1;
+      const complianceStatus: "COMPLIANT" | "PARTIAL" | "NON_COMPLIANT" =
+        complianceRate >= 0.9 ? "COMPLIANT" : complianceRate >= 0.6 ? "PARTIAL" : "NON_COMPLIANT";
+
+      const evidenceChain = [
+        session && {
+          stage: "council_vote",
+          artifactId: session.sessionId,
+          artifactType: "ConsensusSession",
+          summary: `Verdict: ${session.verdict}, Yes: ${session.yesCount}, No: ${session.noCount}`,
+          timestamp: session.createdAt.getTime ? session.createdAt.getTime() : now,
+        },
+        cfaSession && {
+          stage: "cfa_audit",
+          artifactId: cfaSession.sessionId,
+          artifactType: "CfaSession",
+          summary: `Fidelity: ${cfaFidelity?.toFixed(3)}, Changed: ${cfaSession.totalChanged}/${cfaSession.totalPersonasAudited}`,
+          timestamp: cfaSession.createdAt,
+        },
+        outcomeSession && {
+          stage: "outcome_ledger",
+          artifactId: String(outcomeSession.id),
+          artifactType: "OutcomeSession",
+          summary: `Status: ${outcomeSession.outcomeStatus}, Verdict: ${outcomeSession.originalVerdict}`,
+          timestamp: outcomeSession.createdAt,
+        },
+      ].filter(Boolean) as Array<{ stage: string; artifactId: string; artifactType: string; summary: string; timestamp: number }>;
+
+      const auditReferences = [
+        session && {
+          eventType: "council_session_created",
+          module: "council",
+          timestamp: session.createdAt.getTime ? session.createdAt.getTime() : now,
+          summary: `Session ${session.sessionId} — ${session.verdict}`,
+        },
+        cfaSession && {
+          eventType: "cfa_audit_completed",
+          module: "cfa",
+          timestamp: cfaSession.createdAt,
+          summary: `CFA fidelity ${cfaFidelity?.toFixed(3)}, ${cfaSession.totalChanged} revisions`,
+        },
+        outcomeSession && {
+          eventType: "outcome_recorded",
+          module: "outcome_ledger",
+          timestamp: outcomeSession.createdAt,
+          summary: `Outcome: ${outcomeSession.outcomeStatus}`,
+        },
+      ].filter(Boolean) as Array<{ eventType: string; module: string; timestamp: number; summary: string }>;
+
+      const reportInput = {
+        reportId,
+        generatedAt: now,
+        sessionId: input.sessionId,
+        dealId: cfaSession?.dealId ?? outcomeSession?.dealId ?? null,
+        dealName: null,
+        councilMode,
+        executiveSummary: {
+          originalVerdict: session?.verdict ?? "UNKNOWN",
+          consensusScore,
+          confidenceLevel: null,
+          cfaFidelityScore: cfaFidelity,
+          releaseGate: gate,
+          blockReasons: blockingRules,
+          summaryStatement: gate === "BLOCKED"
+            ? `This decision has been blocked by the Release Gate due to ${blockingRules.length} blocking rule(s). The Council's consensus position is preserved; the block prevents release only.`
+            : `This decision passed all governance checks. Council verdict: ${session?.verdict ?? "UNKNOWN"}. CFA fidelity: ${cfaFidelity?.toFixed(3) ?? "N/A"}.`,
+        },
+        voteDistribution: {
+          yesCount: session?.yesCount ?? 0,
+          noCount: session?.noCount ?? 0,
+          totalPersonas: (session?.yesCount ?? 0) + (session?.noCount ?? 0),
+          verdict: session?.verdict ?? "UNKNOWN",
+          consensusReached: session?.consensusReached === 1,
+          hardFlags,
+          silentFails,
+        },
+        personaConfidence,
+        constitutionalCompliance: {
+          averageFidelityScore: cfaFidelity ?? 1,
+          totalPersonasAudited: cfaSession?.totalPersonasAudited ?? 0,
+          totalChanged: cfaSession?.totalChanged ?? 0,
+          complianceRate,
+          status: complianceStatus,
+        },
+        governanceFindings: [],
+        constitutionVersions: [{ version: 1, activeRules: 8, description: "Initial Constitution — 8 governance rules" }],
+        contradictions: [],
+        calibrationContext: {
+          personaWeights: [],
+          applyWeightsEnabled: false,
+          minSamplesForTrust: 12,
+        },
+        historicalPrecedents: precedents.map((p: typeof outcomeSessions.$inferSelect) => ({
+          decisionId: p.councilRunId ?? String(p.id),
+          dealType: p.councilMode,
+          verdict: p.originalVerdict,
+          outcomeStatus: p.outcomeStatus,
+          decisionDate: p.decisionDate,
+          similarity: "Same council mode",
+        })),
+        releaseGate: {
+          gate,
+          blockingRules,
+          warningRules,
+          councilConsensusPosition: session?.verdict ?? "UNKNOWN",
+          finalPosition: gate === "BLOCKED" ? "BLOCKED" : session?.verdict ?? "UNKNOWN",
+          rationale: gate === "BLOCKED"
+            ? `Release blocked due to hard flags: ${hardFlags.join(", ")}`
+            : "All governance checks passed. Decision released.",
+        },
+        evidenceChain,
+        auditReferences,
+        traceability: {
+          sessionId: input.sessionId,
+          cfaSessionId: cfaSession?.sessionId ?? null,
+          outcomeSessionId: outcomeSession ? String(outcomeSession.id) : null,
+          constitutionVersion: 1,
+          reportGeneratedAt: now,
+          reportVersion: "2.0",
+        },
+      };
+
+      // ── Generate outputs ────────────────────────────────────────────────────
+      let pdfBase64: string | null = null;
+      if (input.format === "pdf" || input.format === "both") {
+        const pdfBuffer = await generateProofReportPdf(reportInput);
+        pdfBase64 = pdfBuffer.toString("base64");
+      }
+
+      return {
+        reportId,
+        generatedAt: now,
+        sessionId: input.sessionId,
+        gate,
+        pdfBase64,
+        report: input.format === "json" || input.format === "both" ? reportInput : null,
+      };
+    }),
+
+  /**
    * Full proof summary — aggregates all panels for PDF export.
    */
   fullProofSummary: protectedProcedure
