@@ -344,13 +344,13 @@ export function ReportsPanel({
     try {
       const res = await proofReportMutation.mutateAsync({
         sessionId: proofSessionId,
-        format: proofFmt === "json" ? "json" : proofFmt === "pdf" ? "pdf" : "both",
+        format: proofFmt === "json" ? "json" : "pdf",
       });
       const name = safeName(dealName);
-      if ((proofFmt === "pdf" || proofFmt === "both") && res.pdfBase64) {
+      if (proofFmt === "pdf" && res.pdfBase64) {
         downloadBlob(res.pdfBase64, `${name}_Institutional_Proof_Report.pdf`, "application/pdf");
       }
-      if ((proofFmt === "json" || proofFmt === "both") && res.report) {
+      if (proofFmt === "json" && res.report) {
         downloadText(JSON.stringify(res.report, null, 2), `${name}_Institutional_Proof_Report.json`);
       }
       setProofDone(true);

@@ -1,13 +1,12 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState } from "react";
 import { getLoginUrl } from "@/const";
 import Logo from "@/components/Logo";
 import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { HowItWorks } from "@/components/HowItWorks";
 import SiteNav from "@/components/SiteNav";
 
-// -- Brand palette (matches logo: deep navy + silver/platinum) --------------
+// ── Brand palette ─────────────────────────────────────────────────────────────
 const NAVY_950 = "#0B1629";
 const NAVY_900 = "#0F1E38";
 const NAVY_800 = "#152542";
@@ -18,93 +17,313 @@ const SILVER_100 = "#E8ECF2";
 const SILVER_300 = "#A8B4C8";
 const SILVER_400 = "#8494AA";
 const SILVER_500 = "#637080";
-const SILVER_GRAD = "linear-gradient(135deg, #F0F4FA 0%, #C8D4E8 40%, #E8ECF2 70%, #9AAAC0 100%)";
 const GOLD        = "#C9A84C";
+const BLUE_400    = "#7BA3D4";
+const BLUE_300    = "#60C8F5";
+const GREEN_400   = "#4ADE80";
 const MONO = "'JetBrains Mono', 'Fira Code', monospace";
 const FONT = "'Inter', system-ui, -apple-system, sans-serif";
 
-const DOMAINS = [
-  {
-    icon: "💹", name: "Finance", color: "#7BA3D4", lightBg: "rgba(123,163,212,0.08)",
-    contexts: ["VC / PE Fund", "Sovereign Wealth", "Fund Manager"],
-    agents: ["Deal Screener", "Due Diligence", "Portfolio Monitor", "LP Comms", "Valuation", "Exit Modeler"],
-  },
-  {
-    icon: "⚖️", name: "Legal", color: "#8BBFD4", lightBg: "rgba(139,191,212,0.08)",
-    contexts: ["Law Firm", "In-House Counsel"],
-    agents: ["Contract Review", "Clause Extractor", "Risk Flagger", "Jurisdiction Intel", "Draft Gen", "Redline"],
-  },
-  {
-    icon: "🏥", name: "Healthcare", color: "#7DC4A8", lightBg: "rgba(125,196,168,0.08)",
-    contexts: ["Hospital Ops", "Clinical Research"],
-    agents: ["Bed Manager", "Staffing Optimizer", "Patient Flow", "Cost Analyzer", "Safety Monitor", "Report Gen"],
-  },
-  {
-    icon: "🏢", name: "Enterprise", color: "#A89BD4", lightBg: "rgba(168,155,212,0.08)",
-    contexts: ["HR & People Ops", "Procurement", "Operations"],
-    agents: ["Talent Screener", "Vendor Screener", "Process Monitor", "KPI Tracker", "Resource Planner", "SLA Monitor"],
-  },
-  {
-    icon: "🏦", name: "GCC Wealth", color: "#C9A84C", lightBg: "rgba(201,168,76,0.08)",
-    contexts: ["Private Wealth", "Investment Banking", "Family Office", "Fund Distribution"],
-    agents: ["Client Profiler", "Suitability Checker", "Portfolio Builder", "Deal Originator", "Asset Allocator", "Investor Matcher"],
-  },
-  {
-    icon: "🏛️", name: "Insurance", color: "#0EA5E9", lightBg: "rgba(14,165,233,0.08)",
-    contexts: ["Direct Insurance", "Reinsurance", "Takaful", "Broking"],
-    agents: ["RiskIntakeParser", "TakafulClassifier", "ShariaComplianceAgent", "PricingActuary", "TreatyAnalyst", "CatastropheModeler"],
-    link: "/insurance",
-  },
-  {
-    icon: "🎯", name: "AdMesh", color: "#F97316", lightBg: "rgba(249,115,22,0.08)",
-    contexts: ["Brand Campaigns", "Product Launches", "Seasonal Promotions", "Competitor Response"],
-    agents: ["Ingestor", "Analyzer", "Strategist", "Copywriter", "Scoring", "VideoProducer"],
-    link: "/admesh",
-  },
-  {
-    icon: "📲", name: "Social AI", color: "#EC4899", lightBg: "rgba(236,72,153,0.08)",
-    contexts: ["Arabic Localisation", "Cross-Platform Publishing", "Brand Safety", "Influencer Discovery", "Crisis Detection"],
-    agents: ["ArabicLocalizer", "PlatformFormatter", "BrandSafetyGuard", "InfluencerScout", "CrisisMonitor"],
-    link: "/social",
-  },
-  {
-    icon: "🔬", name: "Deal Screener", color: "#4A9EFF", lightBg: "rgba(74,158,255,0.08)",
-    contexts: ["VC / PE", "Sovereign Wealth", "Family Office", "Corporate Venture"],
-    agents: ["GCC Regulatory", "Shariah Compliance", "CFO", "Contrarian", "Exit Strategist", "Devil's Advocate"],
-    link: "/deals",
-    description: "Council of 10 · IC-ready deal verdicts in 60 seconds",
-  },
+const card = (extra: React.CSSProperties = {}): React.CSSProperties => ({
+  background: NAVY_800,
+  border: `1px solid ${NAVY_700}`,
+  borderRadius: 14,
+  ...extra,
+});
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={{
+      fontSize: 11, color: SILVER_400, textTransform: "uppercase" as const,
+      letterSpacing: "0.12em", fontFamily: MONO, marginBottom: 14, fontWeight: 600,
+    }}>{children}</div>
+  );
+}
+
+// ── SECTION 1 — HERO ─────────────────────────────────────────────────────────
+function Hero({ loginUrl }: { loginUrl: string }) {
+  return (
+    <section style={{
+      padding: "96px 24px 80px",
+      background: `linear-gradient(180deg, ${NAVY_950} 0%, ${NAVY_900} 100%)`,
+      borderBottom: `1px solid ${NAVY_700}`,
+      position: "relative" as const,
+      overflow: "hidden",
+    }}>
+      <div style={{
+        position: "absolute" as const, inset: 0, opacity: 0.04,
+        backgroundImage: `linear-gradient(${BLUE_400} 1px, transparent 1px), linear-gradient(90deg, ${BLUE_400} 1px, transparent 1px)`,
+        backgroundSize: "60px 60px",
+        pointerEvents: "none" as const,
+      }} />
+      <div style={{ maxWidth: 900, margin: "0 auto", position: "relative" as const, zIndex: 1 }}>
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 8,
+          padding: "5px 14px", borderRadius: 6,
+          background: "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.2)",
+          fontFamily: MONO, fontSize: 11, color: GREEN_400, letterSpacing: "0.05em", marginBottom: 32,
+        }}>
+          <span style={{ width: 6, height: 6, borderRadius: "50%", background: GREEN_400, boxShadow: `0 0 8px ${GREEN_400}`, display: "inline-block" }} />
+          Governed Decision Infrastructure · Live
+        </div>
+
+        <h1 style={{
+          fontFamily: "'Playfair Display', Georgia, serif",
+          fontSize: "clamp(38px, 6vw, 72px)",
+          fontWeight: 900, lineHeight: 1.05, letterSpacing: "-0.03em",
+          color: SILVER_50, marginBottom: 28,
+        }}>
+          Governed Decision{" "}
+          <span style={{
+            background: `linear-gradient(120deg, ${BLUE_300} 0%, ${BLUE_400} 50%, ${GREEN_400} 100%)`,
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text",
+          }}>Infrastructure</span>
+        </h1>
+
+        <p style={{ fontSize: "clamp(16px, 2vw, 20px)", color: SILVER_300, maxWidth: 680, lineHeight: 1.65, marginBottom: 20, fontWeight: 500 }}>
+          AgenThink Mesh helps institutions make, govern, stress-test, and defend high-consequence decisions.
+        </p>
+
+        <p style={{ fontSize: 15, color: SILVER_400, maxWidth: 680, lineHeight: 1.8, marginBottom: 48 }}>
+          Every recommendation is evaluated by a Council of Specialists, tested against a versioned Constitution,
+          calibrated against historical outcomes, stress-tested across thousands of scenarios, and backed by a
+          machine-verifiable Proof Report.
+        </p>
+
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" as const, marginBottom: 64 }}>
+          <Link href="/deals">
+            <a style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "14px 32px", borderRadius: 8, fontWeight: 700, fontSize: 15,
+              background: BLUE_400, color: NAVY_950, textDecoration: "none",
+            }}>
+              Explore the Platform →
+            </a>
+          </Link>
+          <a href="#contact" style={{
+            display: "inline-flex", alignItems: "center", gap: 8,
+            padding: "14px 32px", borderRadius: 8, fontWeight: 600, fontSize: 15,
+            background: "transparent", color: SILVER_300,
+            border: `1px solid ${NAVY_600}`, textDecoration: "none",
+          }}>
+            Contact Us
+          </a>
+        </div>
+
+        <div style={{
+          display: "flex", gap: 0, flexWrap: "wrap" as const,
+          borderTop: `1px solid ${NAVY_700}`, paddingTop: 32,
+        }}>
+          {[
+            { num: "1,000+",  label: "Institutional Deals" },
+            { num: "48",      label: "Countries" },
+            { num: "90,000",  label: "Evaluations" },
+            { num: "30",      label: "Governance Tests" },
+            { num: "∞",       label: "Proof Reports" },
+          ].map((item, i) => (
+            <div key={i} style={{
+              flex: "1 1 140px", padding: "16px 24px",
+              borderRight: i < 4 ? `1px solid ${NAVY_700}` : "none",
+            }}>
+              <div style={{ fontSize: "clamp(20px, 3vw, 28px)", fontWeight: 800, color: BLUE_400, fontFamily: MONO, letterSpacing: "-0.02em", marginBottom: 4 }}>{item.num}</div>
+              <div style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, letterSpacing: "0.06em", textTransform: "uppercase" as const }}>{item.label}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── SECTION 2 — PROCESS FLOW ─────────────────────────────────────────────────
+const PROCESS_STEPS = [
+  { step: "01", title: "Decision Submitted",       desc: "A high-consequence decision — investment, infrastructure, procurement, or strategic — is submitted for evaluation.", color: BLUE_400 },
+  { step: "02", title: "Council of 10",            desc: "Ten specialist perspectives deliberate in parallel. Each persona applies domain expertise, stress-tests assumptions, and records a structured verdict.", color: BLUE_300 },
+  { step: "03", title: "Constitution Check",       desc: "Every recommendation is evaluated against a versioned Constitution. BLOCK violations prevent release. WARN findings are logged for review.", color: "#A78BFA" },
+  { step: "04", title: "Calibration Review",       desc: "Persona weights are adjusted based on historical accuracy. The system learns which perspectives have been most reliable over time.", color: GREEN_400 },
+  { step: "05", title: "Stress Testing",           desc: "The decision is evaluated across thousands of scenarios — rate shocks, regulatory shifts, market dislocations, and geopolitical events.", color: GOLD },
+  { step: "06", title: "Institutional Proof Report", desc: "A machine-verifiable evidence chain is produced. Every conclusion references a decision ID, rule version, finding ID, and audit reference.", color: BLUE_400 },
 ];
 
-const FEATURES = [
-  { icon: "⚡", title: "Dynamic Agent Spawning", desc: "Type a task and watch the mesh automatically spawn the right specialist agents — up to 50 — based on semantic keyword detection. No manual configuration." },
-  { icon: "🔀", title: "Parallel Execution", desc: "All agents run concurrently with a 400ms stagger. A 9-agent task that would take 45 minutes sequentially completes in under 60 seconds." },
-  { icon: "📡", title: "Live Streaming Output", desc: "Watch each agent's reasoning stream token-by-token in real time. Structured output: Summary, Key Findings, Flags, and Next Action — every time." },
-  { icon: "🗂️", title: "Document Vault", desc: "Upload PDFs, Word docs, CSVs, and spreadsheets. The vault indexes your documents and prepends relevant context to every agent's prompt automatically." },
-  { icon: "🌐", title: "14 Domain Contexts", desc: "Switch between Finance, Legal, Healthcare, Enterprise, GCC Wealth, Insurance, AdMesh, and Social AI instantly. Each context loads domain-specific agents, prompts, and suggested tasks." },
-  { icon: "📊", title: "Task History & Export", desc: "Every executed task is saved to your account. Search, review, and re-run previous tasks. Export any output as a structured PDF report." },
+function ProcessFlow() {
+  return (
+    <section style={{ padding: "80px 24px", background: NAVY_950 }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ textAlign: "center" as const, marginBottom: 56 }}>
+          <SectionLabel>How Decisions Become Defensible</SectionLabel>
+          <h2 style={{ fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>
+            From submission to proof record
+          </h2>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20 }}>
+          {PROCESS_STEPS.map((s, i) => (
+            <div key={i} style={{ ...card({ padding: "28px 24px" }), borderTop: `3px solid ${s.color}` }}>
+              <div style={{ fontSize: 11, color: s.color, fontFamily: MONO, marginBottom: 10, fontWeight: 700, letterSpacing: "0.08em" }}>{s.step}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: SILVER_50, marginBottom: 10 }}>{s.title}</div>
+              <div style={{ fontSize: 13, color: SILVER_300, lineHeight: 1.8 }}>{s.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── SECTION 3 — CAPABILITIES ─────────────────────────────────────────────────
+const CAPABILITIES = [
+  { icon: "⚖️", title: "Council of 10",           desc: "Ten specialist perspectives evaluate every decision in parallel, each recording a structured verdict with rationale and confidence score.", color: BLUE_400 },
+  { icon: "📜", title: "Constitutional Governance", desc: "A versioned Constitution defines mandatory governance constraints. BLOCK violations prevent release. Every rule change is versioned and traceable.", color: "#A78BFA" },
+  { icon: "📊", title: "Outcome Calibration",      desc: "The Calibration Loop scores each persona's historical accuracy using Brier scoring and adjusts weights accordingly.", color: GREEN_400 },
+  { icon: "🔬", title: "Strategic Stress Testing", desc: "Every decision is tested across thousands of scenarios — rate shocks, regulatory shifts, market dislocations, and geopolitical events.", color: GOLD },
+  { icon: "🔐", title: "Institutional Proof",      desc: "Every conclusion in the Proof Report references a decision ID, rule version, finding ID, and audit reference. No conclusion without a traceable source.", color: BLUE_300 },
+  { icon: "📋", title: "Audit & Traceability",     desc: "The unified audit log records every evaluation, finding, weight change, and Constitution version in an immutable append-only log.", color: "#F97316" },
 ];
 
-const HOW_IT_WORKS = [
-  { step: "01", title: "Select your domain context", desc: "Choose from 14 pre-configured contexts across Finance, Legal, Healthcare, Enterprise, GCC Wealth, Insurance, AdMesh, and Social AI. Each loads the right specialist agents automatically." },
-  { step: "02", title: "Describe your task", desc: "Type a natural language task or select from suggested tasks. The mesh reads your input and spawns additional specialist agents as needed — in real time." },
-  { step: "03", title: "Receive parallel structured output", desc: "All agents execute concurrently and stream their findings. Review each agent's output, export the full report as PDF, and save to your task history." },
+function Capabilities() {
+  return (
+    <section style={{ padding: "80px 24px", background: NAVY_900 }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ textAlign: "center" as const, marginBottom: 56 }}>
+          <SectionLabel>Platform Capabilities</SectionLabel>
+          <h2 style={{ fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>
+            Six layers of governed decision infrastructure
+          </h2>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 20 }}>
+          {CAPABILITIES.map((cap, i) => (
+            <div key={i} style={{ ...card({ padding: "28px 24px" }), borderTop: `3px solid ${cap.color}` }}>
+              <div style={{ fontSize: 28, marginBottom: 16 }}>{cap.icon}</div>
+              <div style={{ fontSize: 16, fontWeight: 700, color: SILVER_50, marginBottom: 10 }}>{cap.title}</div>
+              <div style={{ fontSize: 13, color: SILVER_300, lineHeight: 1.8 }}>{cap.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── SECTION 4 — REPORTS ───────────────────────────────────────────────────────
+const REPORTS = [
+  { title: "IC Memo",                      purpose: "Investment Committee-ready verdict with Council deliberation, risk flags, and structured rationale.", audience: "Investment Committees, Portfolio Managers, GPs",           icon: "📄", color: BLUE_400,  isNew: false },
+  { title: "Investment Readiness Report",  purpose: "Comprehensive assessment of deal readiness across financial, legal, regulatory, and strategic dimensions.", audience: "Deal Teams, Due Diligence Officers, LPs",              icon: "📊", color: GREEN_400, isNew: false },
+  { title: "Strategic Stress Test Report", purpose: "Scenario analysis across thousands of market conditions, regulatory environments, and geopolitical events.", audience: "Risk Officers, CIOs, Infrastructure Investors",         icon: "🔬", color: GOLD,      isNew: false },
+  { title: "AI IC Interpretation Guidance", purpose: "Plain-language interpretation of AI Council outputs for human decision-makers and governance committees.", audience: "Boards, Governance Committees, Compliance Officers",   icon: "🧭", color: "#A78BFA", isNew: false },
+  { title: "Institutional Proof Report",   purpose: "Machine-verifiable evidence chain. Every conclusion references a decision ID, rule version, finding ID, and audit reference. The complete governance record.", audience: "Regulators, Auditors, LPs, Institutional Boards", icon: "🔐", color: BLUE_300,  isNew: true  },
 ];
 
-const USE_CASES = [
-  { role: "VC Analyst", task: "Screen 12 inbound deals against our investment thesis and flag the top 3 for partner review", agents: 9, domain: "Finance" },
-  { role: "GCC Relationship Manager", task: "Profile a new Saudi HNWI client, check Shariah suitability, and draft a portfolio proposal", agents: 7, domain: "GCC Wealth" },
-  { role: "In-House Counsel", task: "Review this vendor contract for liability exposure and flag non-standard clauses", agents: 6, domain: "Legal" },
-  { role: "Hospital Ops Director", task: "Analyse this week's bed occupancy data and generate a staffing optimisation report", agents: 8, domain: "Healthcare" },
-  { role: "Brand Manager \u00b7 X-cite Kuwait", task: "Generate a Ramadan campaign brief with 10 bilingual ads (EN + Arabic Gulf), competitor gap analysis vs Eureka and Sharaf DG, and 2 video storyboards \u2014 in under 60 seconds", agents: 7, domain: "AdMesh" },
-  { role: "Social Media Manager \u00b7 GCC Retail Brand", task: "Localise this Eid campaign into Kuwaiti, Saudi, and Emirati Arabic dialects, check brand safety against our blocklist, and schedule cross-platform posts for Instagram, X, TikTok, Snapchat, and LinkedIn", agents: 5, domain: "Social AI" },
+function Reports() {
+  return (
+    <section style={{ padding: "80px 24px", background: NAVY_950 }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ textAlign: "center" as const, marginBottom: 56 }}>
+          <SectionLabel>Exportable Artifacts</SectionLabel>
+          <h2 style={{ fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>
+            Every decision produces a defensible record
+          </h2>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column" as const, gap: 16 }}>
+          {REPORTS.map((r, i) => (
+            <Link key={i} href="/deals">
+              <a style={{ textDecoration: "none" }}>
+                <div style={{
+                  ...card({ padding: "24px 28px" }),
+                  display: "flex", alignItems: "flex-start", gap: 20,
+                  borderLeft: `4px solid ${r.color}`,
+                  cursor: "pointer",
+                }}>
+                  <div style={{ fontSize: 28, flexShrink: 0, marginTop: 2 }}>{r.icon}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: SILVER_50 }}>{r.title}</span>
+                      {r.isNew && (
+                        <span style={{ fontSize: 9, fontWeight: 700, color: GREEN_400, background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 4, padding: "2px 7px", fontFamily: MONO, letterSpacing: "0.1em" }}>NEW</span>
+                      )}
+                    </div>
+                    <p style={{ fontSize: 13, color: SILVER_300, lineHeight: 1.7, margin: "0 0 8px" }}>{r.purpose}</p>
+                    <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, letterSpacing: "0.05em" }}>Audience: {r.audience}</div>
+                  </div>
+                  <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, flexShrink: 0, marginTop: 4 }}>PDF ↗</div>
+                </div>
+              </a>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── SECTION 5 — WHY INSTITUTIONS ─────────────────────────────────────────────
+const WHY = [
+  { title: "Decision Quality",  desc: "More perspectives, fewer blind spots. Ten specialist viewpoints — financial, legal, risk, sector, geopolitical — evaluate every decision before capital is committed.", icon: "🎯", color: BLUE_400 },
+  { title: "Governance",        desc: "Constitutional controls and release gates. A versioned Constitution defines mandatory constraints. BLOCK violations prevent release. Every rule change is logged and traceable.", icon: "📜", color: "#A78BFA" },
+  { title: "Defensibility",     desc: "Recommendations backed by evidence and audit trails. Every conclusion in the Proof Report references a traceable source. No recommendation without a verifiable chain of evidence.", icon: "🔐", color: GREEN_400 },
 ];
 
-// Contact Section Component
+function WhyInstitutions() {
+  return (
+    <section style={{ padding: "80px 24px", background: NAVY_800 }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ textAlign: "center" as const, marginBottom: 56 }}>
+          <SectionLabel>Why Institutions Use It</SectionLabel>
+          <h2 style={{ fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>
+            Built for high-consequence decisions
+          </h2>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 24 }}>
+          {WHY.map((w, i) => (
+            <div key={i} style={{ textAlign: "center" as const, padding: "40px 28px" }}>
+              <div style={{ width: 64, height: 64, borderRadius: 16, margin: "0 auto 20px", background: `${w.color}14`, border: `1px solid ${w.color}33`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 28 }}>{w.icon}</div>
+              <div style={{ fontSize: 18, fontWeight: 700, color: SILVER_50, marginBottom: 12 }}>{w.title}</div>
+              <div style={{ fontSize: 14, color: SILVER_300, lineHeight: 1.8 }}>{w.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── SECTION 6 — EVIDENCE & SCALE ─────────────────────────────────────────────
+const METRICS = [
+  { num: "1,000+",          label: "Institutional Deals",   desc: "Evaluated across investment, infrastructure, procurement, and strategic decisions" },
+  { num: "48",              label: "Countries",             desc: "Institutions across GCC, Europe, Asia, and emerging markets" },
+  { num: "90,000",          label: "Evaluations",           desc: "Stress test evaluations at 99.95% completion rate" },
+  { num: "30",              label: "Acceptance Tests",      desc: "Governance invariants verified on every build" },
+  { num: "Versioned",       label: "Constitution",          desc: "Every rule change is versioned, audited, and traceable" },
+  { num: "Machine-Verifiable", label: "Proof Reports",     desc: "Every conclusion references a traceable artifact ID" },
+];
+
+function EvidenceAndScale() {
+  return (
+    <section style={{ padding: "80px 24px", background: NAVY_950 }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ textAlign: "center" as const, marginBottom: 56 }}>
+          <SectionLabel>Evidence &amp; Scale</SectionLabel>
+          <h2 style={{ fontSize: "clamp(26px, 4vw, 40px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>
+            Platform metrics
+          </h2>
+        </div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 1, background: NAVY_700, borderRadius: 16, overflow: "hidden" }}>
+          {METRICS.map((m, i) => (
+            <div key={i} style={{ background: NAVY_900, padding: "32px 28px" }}>
+              <div style={{ fontSize: "clamp(22px, 3vw, 32px)", fontWeight: 800, color: BLUE_400, fontFamily: MONO, letterSpacing: "-0.02em", marginBottom: 6 }}>{m.num}</div>
+              <div style={{ fontSize: 13, fontWeight: 700, color: SILVER_100, marginBottom: 8, textTransform: "uppercase" as const, letterSpacing: "0.06em", fontFamily: MONO }}>{m.label}</div>
+              <div style={{ fontSize: 12, color: SILVER_400, lineHeight: 1.65 }}>{m.desc}</div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── CONTACT ───────────────────────────────────────────────────────────────────
 function ContactSection() {
   const [form, setForm] = useState({ name: "", email: "", company: "", message: "" });
-  const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,8 +339,7 @@ function ContactSection() {
         body: JSON.stringify({
           access_key: import.meta.env.VITE_WEB3FORMS_ACCESS_KEY,
           subject: `New Contact from AgenThinkMesh: ${form.name}`,
-          name: form.name,
-          email: form.email,
+          name: form.name, email: form.email,
           company: form.company || "Not provided",
           message: form.message,
           from_name: "AgenThinkMesh Contact Form",
@@ -132,103 +350,78 @@ function ContactSection() {
         setSubmitted(true);
         setForm({ name: "", email: "", company: "", message: "" });
         toast.success("Message sent! We'll be in touch shortly.");
-      } else {
-        throw new Error(data.message || "Submission failed");
-      }
+      } else { throw new Error(data.message || "Submission failed"); }
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Failed to send message. Please try again.");
-    } finally {
-      setSending(false);
-    }
+    } finally { setSending(false); }
   };
 
   const inputStyle: React.CSSProperties = {
-    width: "100%",
-    padding: "12px 16px",
-    background: "rgba(255,255,255,0.04)",
-    border: `1px solid #1C3057`,
-    borderRadius: 10,
-    fontSize: 14,
-    color: "#F5F7FA",
-    fontFamily: "'Inter', system-ui, sans-serif",
-    outline: "none",
-    boxSizing: "border-box" as const,
-    transition: "border-color 0.2s",
+    width: "100%", padding: "12px 16px",
+    background: "rgba(255,255,255,0.04)", border: `1px solid ${NAVY_700}`,
+    borderRadius: 10, fontSize: 14, color: SILVER_50,
+    fontFamily: FONT, outline: "none", boxSizing: "border-box",
   };
 
   return (
-    <section id="contact" style={{ padding: "80px 0", background: "#0F1E38", borderTop: "1px solid #1C3057" }}>
-      <div className="landing-contact-grid" style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px" }}>
-        {/* Left — copy */}
+    <section id="contact" style={{ padding: "80px 0", background: NAVY_900, borderTop: `1px solid ${NAVY_700}` }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "0 24px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "start" }}>
         <div>
-          <div style={{ fontSize: 11, color: "#8494AA", textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: "'JetBrains Mono', monospace", marginBottom: 16, fontWeight: 500 }}>Contact Us</div>
-          <h2 style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 800, letterSpacing: "-0.04em", color: "#F5F7FA", marginBottom: 20, lineHeight: 1.1 }}>
-            Let's talk about<br /><span style={{ color: "#7BA3D4" }}>your use case.</span>
+          <SectionLabel>Contact Us</SectionLabel>
+          <h2 style={{ fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 800, letterSpacing: "-0.04em", color: SILVER_50, marginBottom: 20, lineHeight: 1.1 }}>
+            Let's talk about<br /><span style={{ color: BLUE_400 }}>your use case.</span>
           </h2>
-          <p style={{ fontSize: 15, color: "#A8B4C8", lineHeight: 1.8, marginBottom: 40 }}>
-            Whether you're a VC fund, a GCC bank, a law firm, or a healthcare operator — we'd love to show you what AgenThinkMesh can do for your team.
+          <p style={{ fontSize: 15, color: SILVER_300, lineHeight: 1.8, marginBottom: 40 }}>
+            Whether you're evaluating infrastructure investments, managing sovereign capital, or building governance
+            frameworks — we'd like to understand your decision environment.
           </p>
           <div style={{ display: "flex", flexDirection: "column" as const, gap: 20 }}>
             {[
-              { icon: "✉", label: "Email", value: "info@agenthink.ai" },
-              { icon: "🌐", label: "Website", value: "agenthink-7enctkan.manus.space" },
+              { icon: "✉", label: "Email",   value: "info@agenthink.ai" },
+              { icon: "🌐", label: "Website", value: "agenthinkmesh.com" },
             ].map((item) => (
               <div key={item.label} style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                <div style={{ width: 44, height: 44, borderRadius: 10, background: "rgba(123,163,212,0.1)", border: "1px solid #1C3057", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{item.icon}</div>
+                <div style={{ width: 44, height: 44, borderRadius: 10, background: `${BLUE_400}14`, border: `1px solid ${NAVY_700}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>{item.icon}</div>
                 <div>
-                  <div style={{ fontSize: 11, color: "#637080", fontFamily: "'JetBrains Mono', monospace", marginBottom: 2 }}>{item.label}</div>
-                  <div style={{ fontSize: 14, color: "#E8ECF2", fontWeight: 500 }}>{item.value}</div>
+                  <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, marginBottom: 2 }}>{item.label}</div>
+                  <div style={{ fontSize: 14, color: SILVER_100, fontWeight: 500 }}>{item.value}</div>
                 </div>
               </div>
             ))}
           </div>
         </div>
-
-        {/* Right — form */}
-        <div style={{ background: "#152542", border: "1px solid #1C3057", borderRadius: 16, padding: "40px 28px" }}>
+        <div style={{ background: NAVY_800, border: `1px solid ${NAVY_700}`, borderRadius: 16, padding: "40px 28px" }}>
           {submitted ? (
-            <div style={{ textAlign: "center", padding: "40px 0" }}>
+            <div style={{ textAlign: "center" as const, padding: "40px 0" }}>
               <div style={{ fontSize: 48, marginBottom: 16 }}>✅</div>
-              <h3 style={{ fontSize: 22, fontWeight: 700, color: "#F5F7FA", marginBottom: 12 }}>Message Sent!</h3>
-              <p style={{ fontSize: 14, color: "#A8B4C8", lineHeight: 1.7 }}>Thank you for reaching out. Our team will get back to you at <strong style={{ color: "#7BA3D4" }}>{form.email || "your email"}</strong> shortly.</p>
-              <button onClick={() => setSubmitted(false)} style={{ marginTop: 24, padding: "10px 28px", background: "transparent", border: "1px solid #1C3057", borderRadius: 8, color: "#A8B4C8", fontSize: 13, cursor: "pointer" }}>Send another message</button>
+              <h3 style={{ fontSize: 22, fontWeight: 700, color: SILVER_50, marginBottom: 12 }}>Message Sent</h3>
+              <p style={{ fontSize: 14, color: SILVER_300, lineHeight: 1.7 }}>Our team will respond shortly.</p>
+              <button onClick={() => setSubmitted(false)} style={{ marginTop: 24, padding: "10px 28px", background: "transparent", border: `1px solid ${NAVY_700}`, borderRadius: 8, color: SILVER_400, fontSize: 13, cursor: "pointer" }}>Send another message</button>
             </div>
           ) : (
             <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column" as const, gap: 18 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: "#F5F7FA", marginBottom: 4 }}>Send us a message</h3>
-              <div className="landing-form-row">
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: SILVER_50, marginBottom: 4 }}>Send us a message</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
                 <div>
-                  <label style={{ fontSize: 11, color: "#8494AA", fontFamily: "'JetBrains Mono', monospace", display: "block", marginBottom: 6 }}>Name *</label>
-                  <input style={inputStyle} placeholder="Farouq Sultan" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} />
+                  <label style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, display: "block", marginBottom: 6 }}>Name *</label>
+                  <input style={inputStyle} value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Your name" />
                 </div>
                 <div>
-                  <label style={{ fontSize: 11, color: "#8494AA", fontFamily: "'JetBrains Mono', monospace", display: "block", marginBottom: 6 }}>Email *</label>
-                  <input style={inputStyle} type="email" placeholder="you@company.com" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} />
+                  <label style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, display: "block", marginBottom: 6 }}>Email *</label>
+                  <input style={inputStyle} type="email" value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} placeholder="you@institution.com" />
                 </div>
               </div>
               <div>
-                <label style={{ fontSize: 11, color: "#8494AA", fontFamily: "'JetBrains Mono', monospace", display: "block", marginBottom: 6 }}>Company</label>
-                <input style={inputStyle} placeholder="AgenThink" value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} />
+                <label style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, display: "block", marginBottom: 6 }}>Organisation</label>
+                <input style={inputStyle} value={form.company} onChange={e => setForm(f => ({ ...f, company: e.target.value }))} placeholder="Institution or fund name" />
               </div>
               <div>
-                <label style={{ fontSize: 11, color: "#8494AA", fontFamily: "'JetBrains Mono', monospace", display: "block", marginBottom: 6 }}>Message *</label>
-                <textarea style={{ ...inputStyle, minHeight: 120, resize: "vertical" as const }} placeholder="Tell us about your use case, team size, or what you'd like to explore..." value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} />
+                <label style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, display: "block", marginBottom: 6 }}>Message *</label>
+                <textarea style={{ ...inputStyle, minHeight: 100, resize: "vertical" as const }} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} placeholder="Describe your decision environment or use case" />
               </div>
-              <button
-                type="submit"
-                disabled={sending}
-                style={{
-                  padding: "14px 32px",
-                  background: sending ? "#1C3057" : "linear-gradient(135deg, #7BA3D4 0%, #4ADE80 100%)",
-                  color: sending ? "#637080" : "#0B1629",
-                  borderRadius: 10, fontSize: 14, fontWeight: 700, border: "none", cursor: sending ? "not-allowed" : "pointer",
-                  boxShadow: sending ? "none" : "0 2px 16px rgba(74,222,128,0.35)",
-                  transition: "all 0.2s",
-                }}
-              >
+              <button type="submit" disabled={sending} style={{ padding: "13px 24px", background: BLUE_400, color: NAVY_950, border: "none", borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: sending ? "not-allowed" : "pointer", opacity: sending ? 0.7 : 1 }}>
                 {sending ? "Sending..." : "Send Message →"}
               </button>
-              <p style={{ fontSize: 11, color: "#637080", fontFamily: "'JetBrains Mono', monospace", textAlign: "center" as const }}>We typically respond within 24 hours.</p>
             </form>
           )}
         </div>
@@ -237,862 +430,50 @@ function ContactSection() {
   );
 }
 
-// -- Reusable Neon Divider ----------------------------------------------------
-function NeonDivider() {
+// ── SECTION 7 — FOOTER ────────────────────────────────────────────────────────
+function Footer() {
   return (
-    <div style={{ position: "relative", height: 1, overflow: "visible" }}>
-      <div style={{
-        position: "absolute", left: "50%", transform: "translateX(-50%)",
-        width: "72%", height: 1,
-        background: "linear-gradient(90deg, transparent 0%, rgba(74,222,128,0.2) 15%, rgba(123,163,212,0.4) 35%, rgba(96,200,245,0.4) 50%, rgba(167,139,250,0.4) 65%, rgba(245,158,11,0.2) 85%, transparent 100%)",
-        boxShadow: "0 0 18px 2px rgba(123,163,212,0.10), 0 0 6px 1px rgba(96,200,245,0.14)",
-      }} />
-      <div style={{
-        position: "absolute", left: "50%", top: "50%",
-        transform: "translate(-50%, -50%)",
-        width: 6, height: 6, borderRadius: "50%",
-        background: "#60C8F5",
-        boxShadow: "0 0 12px 4px rgba(96,200,245,0.55), 0 0 28px 8px rgba(123,163,212,0.18)",
-      }} />
-    </div>
-  );
-}
-
-// -- Neon Hero Component (VarD) ------------------------------------------------
-// Agent card colors match mockup2-neural-dark.html exactly:
-// Card 1 (Deal Screener / Finance) → green  #4ADE80
-// Card 2 (Legal Reviewer)          → blue   #7BA3D4
-// Card 3 (Healthcare AI)           → amber  #F59E0B
-// Card 4 (GCC Wealth)              → purple #A78BFA
-const NEON_COLORS = [
-  { color: "#4ADE80", glow: "rgba(74,222,128,",  border: "rgba(74,222,128,0.18)",  shadow: "rgba(74,222,128,0.06)",  bar: "linear-gradient(90deg,#4ADE80,#22C55E)" },
-  { color: "#7BA3D4", glow: "rgba(123,163,212,", border: "rgba(123,163,212,0.18)", shadow: "rgba(123,163,212,0.06)", bar: "linear-gradient(90deg,#7BA3D4,#4A7DB5)" },
-  { color: "#F59E0B", glow: "rgba(245,158,11,",  border: "rgba(245,158,11,0.18)",  shadow: "rgba(245,158,11,0.06)",  bar: "linear-gradient(90deg,#F59E0B,#D97706)" },
-  { color: "#A78BFA", glow: "rgba(167,139,250,", border: "rgba(167,139,250,0.18)", shadow: "rgba(167,139,250,0.06)", bar: "linear-gradient(90deg,#A78BFA,#7C3AED)" },
-];
-
-const AGENT_CARDS = [
-  {
-    name: "Deal Screener",
-    domain: "Finance · Active",
-    icon: "📊",
-    description: "Screens investment opportunities against custom thesis criteria. Analyses financials, market position, and risk factors.",
-    capabilities: ["Pitch deck analysis", "Financial modelling", "Competitor benchmarking"],
-    tasksRun: 842,
-    accuracy: 96,
-    barWidth: 72,
-  },
-  {
-    name: "Legal Reviewer",
-    domain: "Legal · Standby",
-    icon: "⚖️",
-    description: "Reviews contracts, NDAs, and employment agreements. Flags risk clauses and suggests redlines in seconds.",
-    capabilities: ["Contract redlining", "Clause risk scoring", "Jurisdiction checks"],
-    tasksRun: 614,
-    accuracy: 98,
-    barWidth: 58,
-  },
-  {
-    name: "Healthcare AI",
-    domain: "Healthcare · Ready",
-    icon: "🏥",
-    description: "Processes clinical data, summarises patient records, and assists with regulatory compliance documentation.",
-    capabilities: ["Clinical summarisation", "Regulatory mapping", "Coding assistance"],
-    tasksRun: 391,
-    accuracy: 97,
-    barWidth: 44,
-  },
-  {
-    name: "GCC Wealth",
-    domain: "Wealth · Active",
-    icon: "🏦",
-    description: "Tailored for GCC wealth management. Generates client briefs, portfolio commentary, and Sharia-compliant screening.",
-    capabilities: ["Portfolio commentary", "Sharia screening", "Client brief generation"],
-    tasksRun: 558,
-    accuracy: 95,
-    barWidth: 65,
-  },
-];
-
-function NeonHero({ loginUrl, stats }: { loginUrl: string; stats: { tasksRun: number; verifiedAgents: number; domainContexts: number; avgExecSec: number } }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animRef   = useRef<number>(0);
-  const [hoveredCard, setHoveredCard] = useState<number | null>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
-    const dpr = window.devicePixelRatio || 1;
-    const resize = () => {
-      canvas.width  = canvas.offsetWidth  * dpr;
-      canvas.height = canvas.offsetHeight * dpr;
-      ctx.scale(dpr, dpr);
-    };
-    resize();
-    window.addEventListener("resize", resize);
-
-    const W = () => canvas.offsetWidth;
-    const H = () => canvas.offsetHeight;
-
-    // Canvas node/ray colors match mockup2-neural-dark.html 5-color palette
-    const neonList = [
-      { color: "#7BA3D4", glow: "rgba(123,163,212," },
-      { color: "#4ADE80", glow: "rgba(74,222,128," },
-      { color: "#F59E0B", glow: "rgba(245,158,11," },
-      { color: "#A78BFA", glow: "rgba(167,139,250," },
-      { color: "#60C8F5", glow: "rgba(96,200,245," },
-    ];
-
-    const nodes = Array.from({ length: 65 }, () => {
-      const n = neonList[Math.floor(Math.random() * neonList.length)];
-      return {
-        x: Math.random() * W(), y: Math.random() * H(),
-        vx: (Math.random() - 0.5) * 0.38, vy: (Math.random() - 0.5) * 0.38,
-        r: Math.random() * 2.2 + 0.9,
-        color: n.color, glow: n.glow,
-        pulse: Math.random() * Math.PI * 2,
-        isHub: Math.random() < 0.1,
-      };
-    });
-
-    const draw = () => {
-      ctx.clearRect(0, 0, W(), H());
-      nodes.forEach(n => {
-        n.x += n.vx; n.y += n.vy; n.pulse += 0.017;
-        if (n.x < 0 || n.x > W()) n.vx *= -1;
-        if (n.y < 0 || n.y > H()) n.vy *= -1;
-      });
-      // Connections
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const dx = nodes[i].x - nodes[j].x, dy = nodes[i].y - nodes[j].y;
-          const d = Math.sqrt(dx * dx + dy * dy);
-          if (d < 155) {
-            const a = (1 - d / 155) * 0.22;
-            const grad = ctx.createLinearGradient(nodes[i].x, nodes[i].y, nodes[j].x, nodes[j].y);
-            grad.addColorStop(0, nodes[i].glow + (a * 1.5).toFixed(2) + ")");
-            grad.addColorStop(1, nodes[j].glow + (a * 1.5).toFixed(2) + ")");
-            ctx.beginPath();
-            ctx.moveTo(nodes[i].x, nodes[i].y);
-            ctx.lineTo(nodes[j].x, nodes[j].y);
-            ctx.strokeStyle = grad;
-            ctx.lineWidth = 0.75;
-            ctx.stroke();
-          }
-        }
-      }
-      // Nodes
-      nodes.forEach(n => {
-        const p = Math.sin(n.pulse) * 0.5 + 0.5;
-        const r = n.isHub ? n.r * 2.2 : n.r;
-        const glowR = r * (n.isHub ? 8 : 5);
-        const g = ctx.createRadialGradient(n.x, n.y, 0, n.x, n.y, glowR);
-        g.addColorStop(0, n.glow + (n.isHub ? "0.55" : "0.38") + ")");
-        g.addColorStop(0.4, n.glow + "0.12)");
-        g.addColorStop(1, "transparent");
-        ctx.beginPath(); ctx.arc(n.x, n.y, glowR, 0, Math.PI * 2);
-        ctx.fillStyle = g; ctx.fill();
-        ctx.beginPath(); ctx.arc(n.x, n.y, r + p * 0.8, 0, Math.PI * 2);
-        ctx.fillStyle = n.color; ctx.fill();
-        if (n.isHub) {
-          ctx.beginPath(); ctx.arc(n.x, n.y, r * 2.5, 0, Math.PI * 2);
-          ctx.strokeStyle = n.glow + "0.3)";
-          ctx.lineWidth = 0.8; ctx.stroke();
-        }
-      });
-      animRef.current = requestAnimationFrame(draw);
-    };
-    draw();
-    return () => {
-      cancelAnimationFrame(animRef.current);
-      window.removeEventListener("resize", resize);
-    };
-  }, []);
-
-  return (
-    <section className="neon-hero-split">
-      {/* -- LEFT PANEL -- */}
-      <div className="neon-hero-left">
-        {/* Vertical accent line */}
-        <div style={{ position: "absolute", left: 0, top: "15%", bottom: "15%", width: 2, background: "linear-gradient(to bottom, transparent, #7BA3D4, #4ADE80, transparent)", borderRadius: 2 }} />
-
-        {/* Live badge */}
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 14px", borderRadius: 6, background: "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.2)", fontFamily: MONO, fontSize: 11, color: "#4ADE80", letterSpacing: "0.05em", marginBottom: 28 }}>
-          <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#4ADE80", boxShadow: "0 0 8px #4ADE80", display: "inline-block", animation: "neonPulse 2s ease-in-out infinite" }} />
-          <span style={{ fontWeight: 700 }}>{stats.verifiedAgents}</span> verified specialist agents · Live
+    <footer style={{ padding: "24px 24px", background: NAVY_950, borderTop: `1px solid ${NAVY_700}` }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap" as const, gap: 16 }}>
+        <Logo size={28} />
+        <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, textAlign: "center" as const, letterSpacing: "0.04em" }}>
+          AgenThink Mesh · Governed Decision Infrastructure
         </div>
-
-        {/* Headline */}
-        <h1 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: "clamp(36px, 5vw, 68px)", fontWeight: 900, lineHeight: 1.05, letterSpacing: "-0.03em", color: "#F0F4FA", marginBottom: 24 }}>
-          A structured{" "}
-          <span style={{ background: "linear-gradient(120deg, #60C8F5 0%, #7BA3D4 40%, #4ADE80 70%, #A78BFA 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text", filter: "drop-shadow(0 0 30px rgba(96,200,245,0.5))" }}>decision layer</span>
-          <br />for institutional workflows
-        </h1>
-
-        {/* Subtext */}
-        <p style={{ fontSize: 16, color: "#6B7A8D", maxWidth: 480, lineHeight: 1.75, marginBottom: 40 }}>
-          <strong style={{ color: "#A8C4E0" }}>AgenThinkMesh</strong> transforms unstructured inputs into consistent, auditable outputs across multiple institutional domains. Now extended with PortfolioMesh and Education.
-        </p>
-
-        {/* Search bar */}
-        <div style={{ marginBottom: 14, width: "100%" }}>
-          <div className="neon-search-bar">
-            <span style={{ color: "#3D4F63", fontSize: 14, marginRight: 10, flexShrink: 0 }}>⊙</span>
-            <input readOnly value="" placeholder="Describe a task — e.g. Screen 5 deals against our VC thesis"
-              style={{ flex: 1, background: "none", border: "none", outline: "none", fontSize: 14, color: "#C8D4E0", fontFamily: FONT, minWidth: 0 }}
-              onClick={() => { window.location.href = '/ask'; }}
-            />
-            <a href="/persona-setup" className="neon-activate-btn">⚡ Try the Mesh</a>
-          </div>
-        </div>
-        <p style={{ fontFamily: MONO, fontSize: 12, color: "#4ADE80", marginBottom: 6, fontWeight: 700, letterSpacing: "0.04em" }}>Free for 60 days. 50 runs. No credit card required.</p>
-        <p style={{ fontFamily: MONO, fontSize: 11, color: "#3D4F63", marginBottom: 16 }}>No sign-in required to preview · {stats.verifiedAgents} specialist agents ready</p>
-
-        {/* Workflow CTAs — primary entry point, above the fold */}
-        <div style={{ marginBottom: 20, width: "100%" }}>
-          <div style={{ fontSize: 10, fontFamily: MONO, color: "#3D4F63", letterSpacing: "0.1em", marginBottom: 10, textTransform: "uppercase" }}>Live Workflows</div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {/* Pitch Triage CTA — primary action */}
-            <a
-              href="/pitch-triage"
-              style={{
-                display: "flex", alignItems: "center", gap: 14,
-                padding: "14px 20px",
-                background: "rgba(167,139,250,0.08)",
-                border: "1px solid rgba(167,139,250,0.40)",
-                borderRadius: 10, textDecoration: "none",
-                transition: "border-color 0.15s, background 0.15s, transform 0.1s",
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(167,139,250,0.85)"; (e.currentTarget as HTMLAnchorElement).style.background = "rgba(167,139,250,0.16)"; (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-1px)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(167,139,250,0.40)"; (e.currentTarget as HTMLAnchorElement).style.background = "rgba(167,139,250,0.08)"; (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0)"; }}
-            >
-              <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(167,139,250,0.14)", border: "1px solid rgba(167,139,250,0.30)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, position: "relative" }}>
-                ⚡
-                <span style={{ position: "absolute", top: -4, right: -4, fontFamily: MONO, fontSize: 7, padding: "1px 4px", borderRadius: 3, background: "rgba(167,139,250,0.22)", border: "1px solid rgba(167,139,250,0.55)", color: "#c4b5fd", letterSpacing: "0.06em" }}>LIVE</span>
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 10, fontFamily: MONO, color: "rgba(167,139,250,0.75)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 3 }}>Primary Workflow</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#E2E8F0", display: "flex", alignItems: "center", gap: 6 }}>Evaluate a deal <span style={{ fontSize: 12 }}>→</span></div>
-              </div>
-            </a>
-            {/* Deal Screening CTA */}
-            <a
-              href="/deals"
-              style={{
-                display: "flex", alignItems: "center", gap: 14,
-                padding: "14px 20px",
-                background: "rgba(74,158,255,0.06)",
-                border: "1px solid rgba(74,158,255,0.30)",
-                borderRadius: 10, textDecoration: "none",
-                transition: "border-color 0.15s, background 0.15s, transform 0.1s",
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(74,158,255,0.7)"; (e.currentTarget as HTMLAnchorElement).style.background = "rgba(74,158,255,0.12)"; (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-1px)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(74,158,255,0.30)"; (e.currentTarget as HTMLAnchorElement).style.background = "rgba(74,158,255,0.06)"; (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0)"; }}
-            >
-              <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(74,158,255,0.12)", border: "1px solid rgba(74,158,255,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0 }}>📊</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 10, fontFamily: MONO, color: "rgba(74,158,255,0.7)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 3 }}>Investment Workflow</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#E2E8F0", display: "flex", alignItems: "center", gap: 6 }}>Run Deal Screening <span style={{ fontSize: 12 }}>→</span></div>
-              </div>
-            </a>
-            {/* Procurement Evaluation CTA */}
-            <a
-              href="/procurement"
-              style={{
-                display: "flex", alignItems: "center", gap: 14,
-                padding: "14px 20px",
-                background: "rgba(0,255,135,0.06)",
-                border: "1px solid rgba(0,255,135,0.35)",
-                borderRadius: 10, textDecoration: "none",
-                transition: "border-color 0.15s, background 0.15s, transform 0.1s",
-              }}
-              onMouseEnter={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "#00ff87"; (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,255,135,0.12)"; (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(-1px)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLAnchorElement).style.borderColor = "rgba(0,255,135,0.35)"; (e.currentTarget as HTMLAnchorElement).style.background = "rgba(0,255,135,0.06)"; (e.currentTarget as HTMLAnchorElement).style.transform = "translateY(0)"; }}
-            >
-              <div style={{ width: 36, height: 36, borderRadius: 8, background: "rgba(0,255,135,0.10)", border: "1px solid rgba(0,255,135,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, flexShrink: 0, position: "relative" }}>
-                🏗️
-                <span style={{ position: "absolute", top: -4, right: -4, fontFamily: MONO, fontSize: 7, padding: "1px 4px", borderRadius: 3, background: "rgba(0,255,135,0.20)", border: "1px solid rgba(0,255,135,0.5)", color: "#4ADE80", letterSpacing: "0.06em" }}>LIVE</span>
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 10, fontFamily: MONO, color: "rgba(74,222,128,0.7)", letterSpacing: "0.08em", textTransform: "uppercase", marginBottom: 3 }}>Procurement Workflow</div>
-                <div style={{ fontSize: 14, fontWeight: 700, color: "#E2E8F0", display: "flex", alignItems: "center", gap: 6 }}>Run Procurement Evaluation <span style={{ fontSize: 12 }}>→</span></div>
-              </div>
-            </a>
-          </div>
-        </div>
-
-        {/* Book a Demo text link */}
-        <div style={{ marginBottom: 12 }}>
-          <a
-            href="/contact"
-            style={{
-              fontSize: 13,
-              color: "rgba(226,232,240,0.55)",
-              textDecoration: "none",
-              cursor: "pointer",
-              transition: "color 0.2s",
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = "#00ffb4")}
-            onMouseLeave={e => (e.currentTarget.style.color = "rgba(226,232,240,0.55)")}
-          >
-            Book a Demo →
-          </a>
-        </div>
-
-        {/* Trust copy */}
-        <p style={{ fontSize: 12, color: "rgba(226,232,240,0.3)", marginBottom: 48, textAlign: "center" }}>
-          Trusted by institutional investors across Kuwait, Saudi Arabia, and UAE
-        </p>
-
-        {/* Stats row */}
-        <div style={{ display: "flex", gap: 32, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
           {[
-            { num: `${stats.tasksRun.toLocaleString()}+`, label: "tasks run",       neon: "#4ADE80" },
-            { num: String(stats.verifiedAgents),          label: "verified agents", neon: "#60C8F5" },
-            { num: String(stats.domainContexts),          label: "domain contexts", neon: "#7BA3D4" },
-            { num: `avg. ${stats.avgExecSec}s`,           label: "execution time",  neon: "#A78BFA" },
-          ].map((item, i) => (
-            <div key={i}>
-              <div style={{ fontSize: 22, fontWeight: 900, color: item.neon, letterSpacing: "-0.03em", lineHeight: 1, textShadow: `0 0 16px ${item.neon}80` }}>{item.num}</div>
-              <div style={{ fontSize: 11, color: "#3D4F63", marginTop: 3, fontWeight: 500, letterSpacing: "0.05em" }}>{item.label}</div>
-            </div>
+            { label: "Privacy",  href: "/privacy" },
+            { label: "Terms",    href: "/terms" },
+            { label: "Security", href: "/security" },
+            { label: "Contact",  href: "#contact" },
+          ].map(l => (
+            <a key={l.label} href={l.href} style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, textDecoration: "none", letterSpacing: "0.04em" }}>{l.label}</a>
           ))}
         </div>
       </div>
-
-      {/* -- RIGHT PANEL: Canvas + Floating Agent Cards -- */}
-      <div className="neon-hero-right">
-        {/* Left-fade overlay so canvas blends into left panel (desktop) */}
-        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to right, #060D1A 0%, transparent 28%)", zIndex: 2, pointerEvents: "none" }} />
-        {/* Top-fade overlay so canvas blends into section above (mobile) */}
-        <div className="neon-canvas-top-fade" />
-        {/* Bottom-fade overlay so canvas blends into section below (mobile) */}
-        <div className="neon-canvas-bottom-fade" />
-        <canvas ref={canvasRef} style={{ display: "block", width: "100%", height: "100%" }} />
-
-        {/* Floating agent cards */}
-        <div className="neon-agent-float">
-          {AGENT_CARDS.map((ac, i) => {
-            const isHovered = hoveredCard === i;
-            return (
-              <div
-                key={i}
-                className="neon-agent-float-card"
-                onMouseEnter={() => setHoveredCard(i)}
-                onMouseLeave={() => setHoveredCard(null)}
-                style={{
-                  border: `1px solid ${isHovered ? NEON_COLORS[i].color + "55" : "rgba(123,163,212,0.15)"}`,
-                  boxShadow: isHovered
-                    ? `0 8px 40px rgba(0,0,0,0.7), 0 0 24px ${NEON_COLORS[i].color}33`
-                    : "0 8px 32px rgba(0,0,0,0.5)",
-                  transform: isHovered ? "translateX(-6px) scale(1.04)" : "translateX(0) scale(1)",
-                  transition: "all 0.28s cubic-bezier(0.34,1.56,0.64,1)",
-                  cursor: "pointer",
-                  animationDelay: `${i}s`,
-                }}
-              >
-                {/* Top accent line */}
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 1, background: `linear-gradient(90deg, transparent, ${NEON_COLORS[i].color}99, transparent)` }} />
-
-                {/* Header */}
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                  <span style={{ width: 7, height: 7, borderRadius: "50%", background: NEON_COLORS[i].color, boxShadow: `0 0 8px ${NEON_COLORS[i].color}`, flexShrink: 0, display: "inline-block" }} />
-                  <span style={{ fontSize: 12, fontWeight: 700, color: isHovered ? NEON_COLORS[i].color : "#C8D4E0", transition: "color 0.2s" }}>{ac.name}</span>
-                </div>
-
-                {/* Domain */}
-                <div style={{ fontFamily: MONO, fontSize: 10, color: "#4A5568", marginBottom: 8 }}>{ac.domain}</div>
-
-                {/* Progress bar */}
-                <div style={{ height: 3, borderRadius: 2, background: "rgba(255,255,255,0.06)", overflow: "hidden" }}>
-                  <div style={{ height: "100%", borderRadius: 2, background: NEON_COLORS[i].bar, width: `${ac.barWidth}%`, animation: "barFill 3s ease-in-out infinite alternate" }} />
-                </div>
-
-                {/* Hover details */}
-                {isHovered && (
-                  <div style={{ marginTop: 10, animation: "fadeSlideUp 0.22s ease forwards" }}>
-                    <p style={{ fontSize: 11, color: "#7AAAC8", lineHeight: 1.6, marginBottom: 8 }}>{ac.description}</p>
-                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontFamily: MONO, fontSize: 10, color: "#3D4F63" }}>{ac.tasksRun.toLocaleString()} tasks · {ac.accuracy}% acc</span>
-                      <a href={loginUrl} style={{ fontSize: 10, color: NEON_COLORS[i].color, textDecoration: "none", fontWeight: 700, fontFamily: MONO }}>View →</a>
-                    </div>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </section>
+    </footer>
   );
 }
 
-// Shared card style
-const card = (extra?: React.CSSProperties): React.CSSProperties => ({
-  background: NAVY_800,
-  border: `1px solid ${NAVY_700}`,
-  borderRadius: 14,
-  ...extra,
-});
-
+// ── MAIN EXPORT ───────────────────────────────────────────────────────────────
 export default function Landing() {
   const loginUrl = getLoginUrl();
-
-
-  const { data: stats } = trpc.public.platformStats.useQuery(undefined, {
+  // Keep analytics hook for existing tracking
+  const { data: _stats } = trpc.public.platformStats.useQuery(undefined, {
     refetchInterval: 30_000,
     staleTime: 20_000,
   });
 
-  const s = {
-    tasksRun:       stats?.tasksRun       ?? 2405,
-    verifiedAgents: stats?.verifiedAgents ?? 115,
-    domainContexts: stats?.domainContexts ?? 14,
-    avgExecSec:     stats?.avgExecSec     ?? 47,
-  };
-
   return (
     <div style={{ minHeight: "100vh", background: NAVY_950, fontFamily: FONT, color: SILVER_100, overflowX: "hidden" }}>
-
-      {/* -- Shared sticky navbar -- */}
       <SiteNav isLandingPage />
-
-      {/* -- Hero (VarD Neon) -- */}
-      <NeonHero loginUrl={loginUrl} stats={s} />
-
-      <HowItWorks />
-
-      {false && <section id="how-it-works" style={{ padding: "72px 24px", background: NAVY_950 }}>
-        <div style={{ maxWidth: 960, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>How it works</div>
-            <h2 style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>From task to structured output<br />in under 60 seconds.</h2>
-          </div>
-          <div className="landing-3col-grid">
-            {HOW_IT_WORKS.map((step, i) => (
-              <div key={i} style={{ ...card({ padding: "28px 22px", position: "relative" }) }}>
-                <div style={{ fontSize: 44, fontWeight: 800, color: NAVY_700, letterSpacing: "-0.04em", lineHeight: 1, marginBottom: 14 }}>{step.step}</div>
-                <div style={{ fontSize: 15, fontWeight: 700, color: SILVER_50, marginBottom: 9 }}>{step.title}</div>
-                <div style={{ fontSize: 13, color: SILVER_300, lineHeight: 1.75 }}>{step.desc}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>}
-
-      {/* -- Domain showcase -- */}
-      <section id="domains" style={{ padding: "72px 24px", background: NAVY_950 }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ fontSize: 11, color: SILVER_400, textTransform: "uppercase", letterSpacing: "0.1em", fontFamily: MONO, marginBottom: 12, fontWeight: 500 }}>Domain coverage</div>
-            <h2 style={{ fontSize: "clamp(26px, 4vw, 36px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.15 }}>5 verticals. {s.domainContexts} contexts.<br />{s.verifiedAgents} specialist agents.</h2>
-          </div>
-          {/* Finance ETF Spotlight */}
-          <div style={{ marginBottom: 32, background: "linear-gradient(135deg, rgba(123,163,212,0.12) 0%, rgba(74,222,128,0.06) 100%)", border: "1px solid rgba(123,163,212,0.35)", borderRadius: 16, padding: "28px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 18, flex: 1, minWidth: 260 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(123,163,212,0.15)", border: "1px solid rgba(123,163,212,0.3)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>📊</div>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#7BA3D4" }}>ETF Launch Studio</span>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: "#4ADE80", background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.25)", borderRadius: 4, padding: "2px 6px", fontFamily: MONO, letterSpacing: "0.08em" }}>NEW · FINANCE</span>
-                </div>
-                <div style={{ fontSize: 12, color: "#94A3B8", lineHeight: 1.5, maxWidth: 480 }}>Design, screen, and backtest a Boursa Kuwait ETF in 5 guided stages — Shariah screening, macro overlay, momentum factors, index construction, and NAV accounting.</div>
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-              <div style={{ display: "flex", gap: 6 }}>
-                {["7 ML Models", "Shariah", "BK Premier"].map(tag => (
-                  <span key={tag} style={{ fontSize: 9, color: "#7BA3D4", background: "rgba(123,163,212,0.1)", border: "1px solid rgba(123,163,212,0.2)", borderRadius: 4, padding: "3px 7px", fontFamily: MONO, fontWeight: 600 }}>{tag}</span>
-                ))}
-              </div>
-              <a href="/agents/etf-studio" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 18px", background: "linear-gradient(135deg, #7BA3D4 0%, #4A90D4 100%)", color: "#0B1629", borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: "none", fontFamily: FONT, whiteSpace: "nowrap", boxShadow: "0 4px 16px rgba(123,163,212,0.3)" }}>
-                Launch Studio →
-              </a>
-            </div>
-          </div>
-
-          {/* Rosie Protocol Spotlight */}
-          <div style={{ marginBottom: 32, background: "linear-gradient(135deg, rgba(56,189,248,0.10) 0%, rgba(167,139,250,0.08) 100%)", border: "1px solid rgba(56,189,248,0.30)", borderRadius: 16, padding: "28px 28px", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24, flexWrap: "wrap" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 18, flex: 1, minWidth: 260 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 12, background: "rgba(56,189,248,0.12)", border: "1px solid rgba(56,189,248,0.25)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>🧬</div>
-              <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                  <span style={{ fontSize: 13, fontWeight: 700, color: "#38BDF8" }}>Rosie Protocol</span>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: "#A78BFA", background: "rgba(167,139,250,0.12)", border: "1px solid rgba(167,139,250,0.25)", borderRadius: 4, padding: "2px 6px", fontFamily: MONO, letterSpacing: "0.08em" }}>NEW · HEALTHCARE</span>
-                </div>
-                <div style={{ fontSize: 12, color: "#94A3B8", lineHeight: 1.5, maxWidth: 520 }}>A 6-agent sequential AI pipeline for cancer treatment research. Intake → Literature Review → Mutation Analysis → Structural Binding → Therapeutic Strategy → Validation. Shared blackboard memory. Institutional PDF dossier export.</div>
-              </div>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
-              <div style={{ display: "flex", gap: 6 }}>
-                {["6 Agents", "Blackboard AI", "PDF Dossier"].map(tag => (
-                  <span key={tag} style={{ fontSize: 9, color: "#38BDF8", background: "rgba(56,189,248,0.08)", border: "1px solid rgba(56,189,248,0.2)", borderRadius: 4, padding: "3px 7px", fontFamily: MONO, fontWeight: 600 }}>{tag}</span>
-                ))}
-              </div>
-              <a href="/rosie" style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "9px 18px", background: "linear-gradient(135deg, #38BDF8 0%, #0EA5E9 100%)", color: "#050D1A", borderRadius: 8, fontSize: 12, fontWeight: 700, textDecoration: "none", fontFamily: FONT, whiteSpace: "nowrap", boxShadow: "0 4px 16px rgba(56,189,248,0.25)" }}>
-                Run Protocol →
-              </a>
-            </div>
-          </div>
-
-          <div className="landing-domains-grid">
-            {DOMAINS.map((d, i) => (
-              <a key={i} href={(d as { link?: string }).link ?? `/domain/${encodeURIComponent(d.name)}`}
-                style={{ textDecoration: "none", display: "block", background: d.lightBg, border: `1px solid ${d.color}33`, borderRadius: 14, padding: "22px 18px", transition: "border-color 0.2s, transform 0.2s", cursor: "pointer" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = `${d.color}66`; (e.currentTarget as HTMLElement).style.transform = "translateY(-3px)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = `${d.color}33`; (e.currentTarget as HTMLElement).style.transform = "none"; }}
-              >
-                <div style={{ fontSize: 26, marginBottom: 10 }}>{d.icon}</div>
-                <div style={{ fontSize: 13, fontWeight: 700, color: d.color, marginBottom: 6 }}>{d.name}</div>
-                <div style={{ fontSize: 10, color: SILVER_400, fontFamily: MONO, marginBottom: 14, lineHeight: 1.6 }}>
-                  {d.contexts.join(" · ")}
-                </div>
-                <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 14 }}>
-                  {d.agents.map((ag, j) => (
-                    <div key={j} style={{ fontSize: 11, color: SILVER_300, display: "flex", alignItems: "center", gap: 6 }}>
-                      <span style={{ width: 4, height: 4, borderRadius: "50%", background: d.color, opacity: 0.7, display: "inline-block", flexShrink: 0 }} />
-                      {ag}
-                    </div>
-                  ))}
-                </div>
-                <div style={{ display: "inline-flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 700, color: d.color, fontFamily: MONO, padding: "5px 12px", borderRadius: 6, background: `${d.color}14`, border: `1px solid ${d.color}30` }}>
-                  Try {d.name} agents →
-                </div>
-              </a>
-            ))}
-          </div>
-        </div>
-      </section>
-
-
-
-      {/* Arabic Labeling section removed */}
-      {false && <section id="arabic-labeling" style={{ padding: "80px 24px", background: "#080F1E", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", inset: 0, backgroundImage: `radial-gradient(${GOLD}18 1px, transparent 1px)`, backgroundSize: "32px 32px", pointerEvents: "none" }} />
-        <div style={{ position: "absolute", top: 0, right: 0, width: 480, height: 480, background: `radial-gradient(circle at 80% 20%, ${GOLD}18 0%, transparent 70%)`, pointerEvents: "none" }} />
-        <div style={{ position: "absolute", bottom: 0, left: 0, width: 360, height: 360, background: "radial-gradient(circle at 20% 80%, rgba(123,163,212,0.1) 0%, transparent 70%)", pointerEvents: "none" }} />
-
-        <div style={{ maxWidth: 1060, margin: "0 auto", position: "relative" }}>
-          {/* Hero row */}
-          <div className="landing-arabic-hero" style={{ marginBottom: 56 }}>
-            <div>
-              <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "5px 14px", background: `${GOLD}18`, border: `1px solid ${GOLD}50`, borderRadius: 999, marginBottom: 24 }}>
-                <span style={{ fontSize: 10, color: GOLD, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 600 }}>GCC AI Infrastructure</span>
-              </div>
-              <h2 style={{ fontSize: "clamp(28px, 4vw, 52px)", fontWeight: 800, letterSpacing: "-0.04em", color: SILVER_50, lineHeight: 1.1, marginBottom: 20 }}>
-                Arabic Data Labeling<br />
-                <span style={{ background: `linear-gradient(135deg, ${GOLD} 0%, #8B6914 100%)`, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
-                  for GCC LLM Teams.
-                </span>
-              </h2>
-              <p style={{ fontSize: 15, color: SILVER_300, lineHeight: 1.8, marginBottom: 32, maxWidth: 480 }}>
-                Every Arabic LLM initiative in the Gulf hits the same wall: not enough high-quality, domain-specific, annotated training data. AgenThink Mesh provides the annotation infrastructure GCC governments and enterprises need to build sovereign Arabic AI.
-              </p>
-              <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                <Link href="/annotate" style={{
-                  padding: "12px 24px", background: `linear-gradient(135deg, ${GOLD} 0%, #8B6914 100%)`, color: "#0B1629",
-                  borderRadius: 10, fontSize: 13, fontWeight: 700, textDecoration: "none",
-                  boxShadow: `0 4px 20px ${GOLD}40`,
-                }}>
-                  Open Annotation Studio &rarr;
-                </Link>
-                <Link href="/registry" style={{
-                  padding: "12px 24px", background: "transparent", color: SILVER_300,
-                  borderRadius: 10, fontSize: 13, fontWeight: 600, textDecoration: "none",
-                  border: `1px solid ${NAVY_700}`,
-                }}>
-                  Browse Arabic Agents
-                </Link>
-              </div>
-            </div>
-
-            {/* Live annotation demo card */}
-            <div style={{ background: `${NAVY_800}CC`, border: `1px solid ${NAVY_700}`, borderRadius: 16, padding: "28px 20px" }}>
-              <div style={{ fontSize: 10, color: GOLD, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 16, fontWeight: 600 }}>Live annotation example</div>
-              <div style={{ background: `${NAVY_950}CC`, borderRadius: 10, padding: "16px 18px", marginBottom: 16, direction: "rtl", textAlign: "right" }}>
-                <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, marginBottom: 8, direction: "ltr", textAlign: "left" }}>input_text</div>
-                <div style={{ fontSize: 15, color: SILVER_100, lineHeight: 1.8, fontFamily: "'Noto Naskh Arabic', 'Arial', sans-serif" }}>
-                  والله الخدمة في هذا البنك وايد زينة، ما قصروا معي أبد.
-                </div>
-              </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-                {[
-                  { key: "label", value: "positive", color: "#4ADE80" },
-                  { key: "dialect", value: "gulf", color: GOLD },
-                  { key: "confidence", value: "0.95", color: "#7BA3D4" },
-                  { key: "requires_review", value: "false", color: "#A89BD4" },
-                ].map((item, i) => (
-                  <div key={i} style={{ background: `${NAVY_950}CC`, borderRadius: 8, padding: "10px 12px" }}>
-                    <div style={{ fontSize: 9, color: SILVER_500, fontFamily: MONO, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>{item.key}</div>
-                    <div style={{ fontSize: 13, color: item.color, fontFamily: MONO, fontWeight: 600 }}>{item.value}</div>
-                  </div>
-                ))}
-              </div>
-              <div style={{ marginTop: 12, padding: "10px 12px", background: `${NAVY_950}CC`, borderRadius: 8 }}>
-                <div style={{ fontSize: 9, color: SILVER_500, fontFamily: MONO, marginBottom: 4, textTransform: "uppercase", letterSpacing: "0.08em" }}>rationale</div>
-                <div style={{ fontSize: 11, color: SILVER_300, lineHeight: 1.6 }}>Strong positive Gulf dialect markers: وايد زينة, ما قصروا — high confidence, no review needed</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Five agent cards */}
-          <div style={{ marginBottom: 48 }}>
-            <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 20, fontWeight: 500 }}>5 specialist Arabic annotation agents</div>
-            <div className="landing-5col-grid">
-              {[
-                { icon: "💬", name: "Gulf Sentiment", desc: "Classifies sentiment with dialect detection across all 6 Gulf states", tag: "gulf · msa · levantine" },
-                { icon: "🏷️", name: "Arabic NER", desc: "Extracts persons, orgs, locations, dates from Arabic text", tag: "ner · entities · tagging" },
-                { icon: "🕌", name: "Islamic Finance Intent", desc: "Classifies intent across murabaha, sukuk, takaful, zakat queries", tag: "islamic · banking · intent" },
-                { icon: "⚖️", name: "Legal Clause Extractor", desc: "Identifies and flags clauses in Arabic contracts and regulations", tag: "legal · gcc · contracts" },
-                { icon: "🔀", name: "Code-Switch Detector", desc: "Annotates Arabic-English mixing patterns common in Gulf professional text", tag: "arabizi · bilingual · nlp" },
-              ].map((agent, i) => (
-                <div key={i} style={{ background: `${NAVY_800}CC`, border: `1px solid ${NAVY_700}`, borderRadius: 12, padding: "20px 16px" }}>
-                  <div style={{ fontSize: 22, marginBottom: 10 }}>{agent.icon}</div>
-                  <div style={{ fontSize: 12, fontWeight: 700, color: SILVER_50, marginBottom: 8, lineHeight: 1.3 }}>{agent.name}</div>
-                  <div style={{ fontSize: 11, color: SILVER_400, lineHeight: 1.6, marginBottom: 12 }}>{agent.desc}</div>
-                  <div style={{ fontSize: 9, color: GOLD, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.06em" }}>{agent.tag}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Government use cases */}
-          <div className="landing-3col-grid" style={{ marginBottom: 48 }}>
-            <div style={{ gridColumn: "1 / -1", fontSize: 11, color: SILVER_500, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 500, marginBottom: 4 }}>Government and enterprise use cases</div>
-            {[
-              { org: "National AI Authority", flag: "🇸🇦", task: "Annotate 50,000 Gulf dialect customer service transcripts for national Arabic chatbot training", output: "JSONL export · sentiment labels · dialect tags · review queue" },
-              { org: "Islamic Development Bank", flag: "🇸🇦", task: "Label 20,000 Arabic banking queries with Islamic finance intent classes for Shariah-compliant AI", output: "Intent labels · product mentions · sharia sensitivity flags" },
-              { org: "Ministry of Justice", flag: "🇦🇪", task: "Extract and classify clauses from 5,000 Arabic legal contracts for judicial AI training data", output: "Clause types · risk flags · legal entity tags · review queue" },
-            ].map((uc, i) => (
-              <div key={i} style={{ background: `${NAVY_800}CC`, border: `1px solid ${NAVY_700}`, borderRadius: 14, padding: "24px 20px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 14 }}>
-                  <span style={{ fontSize: 20 }}>{uc.flag}</span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: SILVER_50 }}>{uc.org}</span>
-                </div>
-                <div style={{ fontSize: 13, color: SILVER_300, lineHeight: 1.7, marginBottom: 14, fontStyle: "italic" }}>
-                  &ldquo;{uc.task}&rdquo;
-                </div>
-                <div style={{ fontSize: 10, color: GOLD, fontFamily: MONO, lineHeight: 1.6 }}>{uc.output}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Stats row */}
-          <div className="landing-stats-grid" style={{ background: NAVY_700, borderRadius: 14, overflow: "hidden", gap: 1 }}>
-            {[
-              { value: "5", label: "Arabic Dialects Supported", sub: "Gulf · MSA · Levantine · Egyptian · Maghrebi" },
-              { value: "JSONL", label: "Fine-Tuning Export Format", sub: "Compatible with OpenAI, Gemini, Llama fine-tuning" },
-              { value: "<3s", label: "Avg Annotation Latency", sub: "Structured JSON output with confidence scores" },
-              { value: "100%", label: "Sovereign Data", sub: "No data leaves your infrastructure" },
-            ].map((item, i) => (
-              <div key={i} style={{ background: NAVY_800, padding: "24px 20px", textAlign: "center" }}>
-                <div style={{ fontSize: "clamp(22px, 4vw, 32px)", fontWeight: 800, letterSpacing: "-0.04em", lineHeight: 1, marginBottom: 8, background: SILVER_GRAD, WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>{item.value}</div>
-                <div style={{ fontSize: 11, fontWeight: 700, color: SILVER_100, marginBottom: 6 }}>{item.label}</div>
-                <div style={{ fontSize: 10, color: SILVER_400, fontFamily: MONO, lineHeight: 1.5 }}>{item.sub}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>}
-
-
-
-      {/* -- Enterprise Use Cases -- */}
-      <section style={{ padding: "72px 24px", background: NAVY_800 }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 40 }}>
-            <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 500, marginBottom: 10 }}>How enterprise teams use AgenThinkMesh</div>
-            <h2 style={{ fontSize: "clamp(22px, 3.5vw, 32px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.2, margin: 0 }}>Real tasks. Real domains. Real results.</h2>
-          </div>
-          <div className="landing-domains-grid">
-            {USE_CASES.map((uc, i) => {
-              const domainColors: Record<string, string> = {
-                Finance: "#7BA3D4",
-                "GCC Wealth": "#C9A84C",
-                Legal: "#8BBFD4",
-                Healthcare: "#7DC4A8",
-                AdMesh: "#F97316",
-              };
-              const color = domainColors[uc.domain] ?? GOLD;
-              return (
-                <div key={i} style={{ background: "#0F1E38", border: `1px solid ${NAVY_700}`, borderRadius: 14, padding: "24px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: SILVER_50 }}>{uc.role}</span>
-                    <span style={{ fontSize: 10, fontFamily: MONO, fontWeight: 600, color, background: `${color}18`, border: `1px solid ${color}40`, borderRadius: 6, padding: "2px 8px" }}>{uc.domain}</span>
-                  </div>
-                  <div style={{ fontSize: 13, color: SILVER_300, lineHeight: 1.7, fontStyle: "italic", flex: 1 }}>
-                    &ldquo;{uc.task}&rdquo;
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <span style={{ fontSize: 10, color: SILVER_500, fontFamily: MONO }}>{uc.agents} agents</span>
-                    <span style={{ width: 3, height: 3, borderRadius: "50%", background: SILVER_500, display: "inline-block" }} />
-                    <span style={{ fontSize: 10, color: color, fontFamily: MONO }}>auto-spawned</span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* -- What's New Changelog -- */}
-      <section style={{ padding: "72px 24px", background: NAVY_950 }}>
-        <div style={{ maxWidth: 760, margin: "0 auto" }}>
-          <div style={{ textAlign: "center", marginBottom: 48 }}>
-            <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, textTransform: "uppercase", letterSpacing: "0.12em", fontWeight: 500, marginBottom: 10 }}>Changelog</div>
-            <h2 style={{ fontSize: "clamp(22px, 3.5vw, 32px)", fontWeight: 800, letterSpacing: "-0.03em", color: SILVER_50, lineHeight: 1.2, margin: "0 0 10px" }}>What's New</h2>
-            <p style={{ fontSize: 14, color: SILVER_400, margin: 0 }}>AgenThinkMesh ships weekly. Here's what's live.</p>
-          </div>
-
-          {/* Timeline */}
-          <div style={{ position: "relative", paddingLeft: 32 }}>
-            {/* Vertical line */}
-            <div style={{ position: "absolute", left: 7, top: 8, bottom: 8, width: 2, background: "rgba(56,189,248,0.18)", borderRadius: 2 }} />
-
-            {[
-              {
-                date: "Mar 27, 2026",
-                tag: "LIVE",
-                title: "Book Demo + Activity Tab",
-                body: "New /contact Book Demo page with direct form submission. ForecastDetail now has an Activity tab showing a full probability, revenue, and EBITDA history timeline per forecast.",
-              },
-              {
-                date: "Mar 26, 2026",
-                tag: "LIVE",
-                title: "ForecastMesh + Knowledge Vault + Pricing",
-                body: "ForecastMesh launched with probability-weighted forecasting, Recharts revenue/EBITDA charts, and 8 pre-seeded GCC enterprise scenarios. Knowledge Vault RAG layer live with 460 GCC institutional scenarios across 8 domains. Pricing page added with Starter, Professional, and Enterprise tiers.",
-              },
-              {
-                date: "Mar 26, 2026",
-                tag: "LIVE",
-                title: "Demo Mode — No Sign-Up Required",
-                body: "Enterprise prospects can now explore the full platform as a guest with pre-loaded GCC institutional data. Deal Screener, MVNO Intel, and ForecastMesh all accessible without an account.",
-              },
-              {
-                date: "Mar 25, 2026",
-                tag: "LIVE",
-                title: "MVNO Intelligence Module",
-                body: "Kuwait MVNO Intelligence module launched at /telco. Five specialist agents analyse subscriber churn, ARPU, network quality, regulatory compliance, and competitive positioning. Includes IC-grade PDF export.",
-              },
-              {
-                date: "Mar 24, 2026",
-                tag: "LIVE",
-                title: "Social AI + OpenClaw Agent Protocol",
-                body: "Social AI module with 5 streaming workflows (Arabic Localiser, Cross-Platform Publisher, Brand Safety Guardian, Influencer Discovery, Crisis Detection). OpenClaw open agent protocol launched — any external agent can register, get discovered, and be invoked by the Mesh.",
-              },
-              {
-                date: "Mar 17, 2026",
-                tag: "LIVE",
-                title: "Rosie Protocol — Clinical Multi-Agent Engine",
-                body: "Six-agent sequential outcome engine for clinical decision support. Stateful blackboard memory, Fortress Gateway domain whitelist, live workflow rail UI, and institutional PDF Clinical Dossier export.",
-              },
-              {
-                date: "Mar 16, 2026",
-                tag: "LIVE",
-                title: "Intent Classifier + ETF Launch Studio",
-                body: "Mesh tasks now route through an Intent Classifier that detects draft, code, decision, compliance, and financial model intents — short-circuiting the 5-agent chain for execution tasks. ETF Launch Studio launched with Shariah screening, backtest summary, NAV calculation, and Boursa Kuwait integration.",
-              },
-              {
-                date: "Mar 15, 2026",
-                tag: "LIVE",
-                title: "Mesh Identity Layer + 100-Hour Turnaround",
-                body: "Persona Selector with 14 domain tiles and 90 built-in agents. Silent persona inference after first query. 100-Hour Turnaround Workflow with 6 agents, live countdown timer, leadership alerts, and async PPTX export.",
-              },
-              {
-                date: "Mar 11, 2026",
-                tag: "LIVE",
-                title: "Arabic Data Labeling Studio",
-                body: "First-class Arabic annotation feature for GCC government and LLM training use cases. RTL input, 5 Arabic NLP agents (Gulf Sentiment, NER, Islamic Finance Intent, Legal Clause, Code-Switch), JSONL/CSV export.",
-              },
-              {
-                date: "Mar 09, 2026",
-                tag: "LIVE",
-                title: "AgenThinkMesh Platform Launch",
-                body: "Platform launched with Manus OAuth, 14 domain contexts, 115 specialist agents, radial mesh canvas, Deal Screener, Document Vault, Agent Registry, and /build developer docs. All agents verified and health-checked every 30 minutes.",
-              },
-              {
-                date: "Coming Soon",
-                tag: "SOON",
-                title: "Custom RAG Training on Your Institutional Data",
-                body: "Upload your own deal memos, IC reports, and client profiles. AgenThinkMesh will fine-tune the RAG layer to your specific institutional context. Available on Enterprise tier.",
-              },
-            ].map((entry, i) => {
-              const isLive = entry.tag === "LIVE";
-              const tagColor = isLive ? "#34D399" : "#F59E0B";
-              const tagBg = isLive ? "rgba(52,211,153,0.12)" : "rgba(245,158,11,0.12)";
-              const tagBorder = isLive ? "rgba(52,211,153,0.3)" : "rgba(245,158,11,0.3)";
-              const dotColor = isLive ? "#38BDF8" : "#F59E0B";
-              return (
-                <div key={i} style={{ position: "relative", marginBottom: 24 }}>
-                  {/* Timeline dot */}
-                  <div style={{
-                    position: "absolute",
-                    left: -28,
-                    top: 6,
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    background: dotColor,
-                    border: `2px solid ${NAVY_950}`,
-                    boxShadow: `0 0 6px ${dotColor}88`,
-                  }} />
-
-                  {/* Card */}
-                  <div style={{
-                    background: NAVY_900,
-                    border: `1px solid rgba(56,189,248,0.12)`,
-                    borderLeft: `3px solid ${dotColor}`,
-                    borderRadius: 10,
-                    padding: "16px 18px",
-                  }}>
-                    {/* Date */}
-                    <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, marginBottom: 6 }}>{entry.date}</div>
-
-                    {/* Title + badge */}
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: SILVER_50 }}>{entry.title}</span>
-                      <span style={{
-                        fontSize: 10, fontWeight: 700,
-                        padding: "2px 8px", borderRadius: 20,
-                        background: tagBg, color: tagColor, border: `1px solid ${tagBorder}`,
-                        fontFamily: MONO, letterSpacing: "0.06em",
-                      }}>{entry.tag}</span>
-                    </div>
-
-                    {/* Body */}
-                    <p style={{ fontSize: 13, color: SILVER_400, margin: 0, lineHeight: 1.65 }}>{entry.body}</p>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* -- Contact Us -- */}
+      <Hero loginUrl={loginUrl} />
+      <ProcessFlow />
+      <Capabilities />
+      <Reports />
+      <WhyInstitutions />
+      <EvidenceAndScale />
       <ContactSection />
-
-      <NeonDivider />
-
-      {/* -- Footer -- */}
-      <footer style={{ padding: "20px 24px", background: NAVY_950, borderTop: "1px solid #1C3057" }}>
-        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 12 }}>
-          <Logo size={28} />
-          <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, textAlign: "center" }}>
-            {s.verifiedAgents} agents · {s.domainContexts} contexts · 5 domains · Institutional AI orchestration
-          </div>
-          <div style={{ display: "flex", gap: 24, alignItems: "center" }}>
-            <a href="/privacy" style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, textDecoration: "none", letterSpacing: "0.04em" }}>Privacy</a>
-            <a href="/terms" style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, textDecoration: "none", letterSpacing: "0.04em" }}>Terms</a>
-            <a href="/security" style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, textDecoration: "none", letterSpacing: "0.04em" }}>Security</a>
-            <a href="/demos" style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, textDecoration: "none", letterSpacing: "0.04em" }}>Examples</a>
-            <a href="/contact" style={{ fontSize: 11, color: SILVER_400, fontFamily: MONO, textDecoration: "none", letterSpacing: "0.04em" }}>Contact</a>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }
