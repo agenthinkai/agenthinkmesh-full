@@ -4921,3 +4921,10 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Extend recovery guidance to all REJECT/BLOCKED outcomes (Class B panel)
 - [x] Write vitest tests for recovery engine (server/recoveryEngine.test.ts — 12/12 passing)
 - [x] Verify TypeScript 0 errors
+
+## Deal Recovery Engine — Auto-Surface on Rejection
+
+- [x] Auto-trigger generateRecovery immediately when verdict is REJECTED/VETOED/BLOCKED (no extra click)
+- [x] Show inline Recovery Engine summary below verdict: Conditions for Reconsideration, Most Viable Recovery Path, Earliest Re-entry Date
+- [x] Show Export Recovery Memo CTA immediately below verdict
+- [x] TypeScript: 0 errors

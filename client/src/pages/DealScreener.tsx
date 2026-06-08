@@ -2292,15 +2292,14 @@ const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle, {
           )}
         </div>
       )}
-    </div>
+        </div>
   );
 }
-
+);
 // ── Infrastructure Conditions to Re-engage Panel ─────────────────────────────
 // Shown only in infrastructure mode when verdict is REJECT or VETOED.
 // Derives structured re-engagement criteria from the council's upgrade triggers
 // and the blocking issues, formatted as an institutional checklist table.
-);
 
 function InfraReEngagePanel({ result }: { result: CouncilResult }) {
   const isRejectOrVeto = result.verdict === "REJECTED" || result.verdict === "VETOED";
@@ -2671,6 +2670,225 @@ function InfraReEngagePanel({ result }: { result: CouncilResult }) {
   );
 }
 
+// ── Inline Recovery Panel ────────────────────────────────────────────────────
+// Auto-triggers generateRecovery on mount for every REJECTED/VETOED deal.
+// Surfaces: recovery probability, most viable path, earliest re-entry date,
+// conditions for reconsideration, and Export Recovery Memo CTA — no extra clicks.
+function InlineRecoveryPanel({ result, councilMode }: { result: CouncilResult; councilMode?: string }) {
+  const isRejection = ["REJECTED", "VETOED"].includes(result.verdict);
+  const recoveryMutation = trpc.dealScreener.generateRecovery.useMutation();
+  const exportRecoveryMutation = trpc.dealScreener.exportRecoveryMemo.useMutation();
+  const [recoveryResult, setRecoveryResult] = React.useState<RecoveryEngineResult | null>(null);
+  const [exportingPdf, setExportingPdf] = React.useState(false);
+  const triggered = React.useRef(false);
+
+  React.useEffect(() => {
+    if (!isRejection || triggered.current || recoveryMutation.isPending) return;
+    triggered.current = true;
+    const outcome = `Verdict: ${result.verdict} · ${result.yesCount}/10 YES · Confidence: ${Math.round((result.confidenceScore ?? 0) * 100)}%\nTop blockers: ${(result.blockingIssues ?? []).slice(0, 3).join("; ")}`;
+    const icSummary = result.icReport?.rawText?.slice(0, 2000) ?? "";
+    recoveryMutation.mutate({
+      dealName: result.dealName ?? "Deal",
+      dealText: result.dealText ?? result.dealTextPreview ?? "",
+      councilOutcome: outcome,
+      verdict: result.verdict,
+      terminalFlags: (result.terminalFlags ?? []) as string[],
+      classificationRationale: "",
+      councilMode: councilMode,
+      icMemoSummary: icSummary,
+    }, {
+      onSuccess: (data) => setRecoveryResult(data as RecoveryEngineResult),
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isRejection]);
+
+  const handleExportPdf = async () => {
+    if (!recoveryResult) return;
+    setExportingPdf(true);
+    try {
+      const dealName = result.dealName ?? "Deal";
+      const today = new Date();
+      const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
+      const filename = `${dealName.replace(/[^a-zA-Z0-9]/g, "_")}_RecoveryMemo_${dateStr}.pdf`;
+      const res = await exportRecoveryMutation.mutateAsync({
+        dealName,
+        verdict: result.verdict,
+        councilMode: councilMode,
+        terminalFlags: (result.terminalFlags ?? []) as string[],
+        result: recoveryResult,
+      });
+      const blob = new Blob([Uint8Array.from(atob(res.pdfBase64), c => c.charCodeAt(0))], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
+  if (!isRejection) return null;
+
+  return (
+    <div style={{
+      marginBottom: 20,
+      background: "rgba(74,158,255,0.04)",
+      border: `1px solid ${ACCENT}33`,
+      borderLeft: `4px solid ${ACCENT}`,
+      borderRadius: 8,
+      padding: "18px 22px",
+    }} className="no-print">
+      {/* Header row */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+        <div>
+          <div style={{ fontFamily: MONO, fontSize: 11, color: ACCENT, fontWeight: 700, letterSpacing: "0.06em", marginBottom: 3 }}>
+            ⟳ DEAL RECOVERY ENGINE
+          </div>
+          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED }}>
+            Council verdict preserved. Answering: &ldquo;What would need to change?&rdquo;
+          </div>
+        </div>
+        {/* Export CTA — always visible once result is ready */}
+        {recoveryResult && (
+          <button
+            onClick={handleExportPdf}
+            disabled={exportingPdf || exportRecoveryMutation.isPending}
+            style={{
+              padding: "8px 18px",
+              background: exportingPdf ? `${ACCENT}08` : `${ACCENT}12`,
+              border: `1px solid ${ACCENT}`,
+              color: ACCENT,
+              fontFamily: MONO, fontSize: 10, cursor: exportingPdf ? "not-allowed" : "pointer",
+              borderRadius: 4, letterSpacing: "0.06em", fontWeight: 700,
+              opacity: exportingPdf ? 0.7 : 1,
+              whiteSpace: "nowrap",
+            }}
+          >
+            {exportingPdf ? "GENERATING PDF..." : "EXPORT RECOVERY MEMO"}
+          </button>
+        )}
+      </div>
+
+      {/* Loading state */}
+      {recoveryMutation.isPending && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0" }}>
+          <div style={{
+            width: 14, height: 14, borderRadius: "50%",
+            border: `2px solid ${ACCENT}33`,
+            borderTop: `2px solid ${ACCENT}`,
+            animation: "spin 0.8s linear infinite",
+            flexShrink: 0,
+          }} />
+          <span style={{ fontFamily: MONO, fontSize: 10, color: MUTED }}>Analysing failure modes · mapping recovery paths · computing re-entry conditions...</span>
+        </div>
+      )}
+
+      {/* Error state */}
+      {recoveryMutation.isError && (
+        <div style={{ fontFamily: MONO, fontSize: 10, color: RED }}>
+          Recovery analysis unavailable — {recoveryMutation.error?.message ?? "Unknown error"}
+        </div>
+      )}
+
+      {/* Result — 4 key facts immediately visible */}
+      {recoveryResult && (
+        <div>
+          {/* Top metrics row */}
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 16 }}>
+            {/* Recovery probability */}
+            <div style={{
+              flex: "0 0 auto", minWidth: 110,
+              padding: "10px 14px",
+              background: "rgba(13,20,33,0.6)",
+              border: `1px solid ${BORDER}`,
+              borderRadius: 6,
+              textAlign: "center" as const,
+            }}>
+              <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>RECOVERY PROBABILITY</div>
+              <div style={{
+                fontFamily: MONO, fontSize: 24, fontWeight: 800,
+                color: recoveryResult.overallProbabilityOfRecovery.pct >= 40 ? GREEN
+                  : recoveryResult.overallProbabilityOfRecovery.pct >= 20 ? AMBER : RED,
+              }}>
+                {recoveryResult.overallProbabilityOfRecovery.pct}%
+              </div>
+              <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED, marginTop: 2 }}>
+                PATH {recoveryResult.overallProbabilityOfRecovery.mostViablePath} MOST VIABLE
+              </div>
+            </div>
+            {/* Most viable path */}
+            <div style={{
+              flex: "1 1 200px",
+              padding: "10px 14px",
+              background: "rgba(13,20,33,0.6)",
+              border: `1px solid ${BORDER}`,
+              borderRadius: 6,
+            }}>
+              <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>MOST VIABLE RECOVERY PATH</div>
+              {(() => {
+                const best = recoveryResult.overallProbabilityOfRecovery.mostViablePath;
+                const path = best === "A" ? recoveryResult.recoveryPathA : best === "B" ? recoveryResult.recoveryPathB : recoveryResult.recoveryPathC;
+                return (
+                  <>
+                    <div style={{ fontFamily: MONO, fontSize: 11, color: ACCENT, fontWeight: 700, marginBottom: 4 }}>PATH {path.label}: {path.title}</div>
+                    <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, lineHeight: 1.5 }}>{path.description.length > 160 ? path.description.slice(0, 160) + "…" : path.description}</div>
+                    <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginTop: 6 }}>Timeline: <span style={{ color: AMBER }}>{path.estimatedTimeline}</span></div>
+                  </>
+                );
+              })()}
+            </div>
+            {/* Earliest re-entry date */}
+            <div style={{
+              flex: "0 0 auto", minWidth: 130,
+              padding: "10px 14px",
+              background: "rgba(13,20,33,0.6)",
+              border: `1px solid ${BORDER}`,
+              borderRadius: 6,
+              textAlign: "center" as const,
+            }}>
+              <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED, letterSpacing: "0.1em", marginBottom: 4 }}>EARLIEST RE-ENTRY DATE</div>
+              <div style={{ fontFamily: MONO, fontSize: 13, color: ACCENT, fontWeight: 700, lineHeight: 1.3 }}>
+                {recoveryResult.suggestedNextReviewDate}
+              </div>
+            </div>
+          </div>
+
+          {/* Conditions for reconsideration */}
+          {recoveryResult.conditionsForReconsideration.length > 0 && (
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 8 }}>CONDITIONS FOR RECONSIDERATION</div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                {recoveryResult.conditionsForReconsideration.slice(0, 4).map((c, i) => (
+                  <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+                    <span style={{ fontFamily: MONO, fontSize: 9, color: ACCENT, minWidth: 14, flexShrink: 0, marginTop: 1 }}>▶</span>
+                    <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, lineHeight: 1.6 }}>{c}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Trust badges + export error */}
+          <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            {["Machine-Verifiable", "Audit Ready", "Governance Traceable"].map(badge => (
+              <span key={badge} style={{
+                fontFamily: MONO, fontSize: 8, color: GREEN,
+                background: `${GREEN}10`, border: `1px solid ${GREEN}22`,
+                borderRadius: 3, padding: "2px 7px",
+              }}>{badge}</span>
+            ))}
+            {exportRecoveryMutation.isError && (
+              <span style={{ fontFamily: MONO, fontSize: 9, color: RED, marginLeft: 8 }}>
+                Export failed — {exportRecoveryMutation.error?.message ?? "Unknown error"}
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stressTested, councilMode, onRerun, onUpgradedSimCompleted, onFixesApplied, onRerunCompleted, fixPanelRef }: { ic: ICReportData; result: CouncilResult; onCopy: (text: string) => void; onNewDeal: () => void; patternContext?: "invested_match" | "passed_match"; stressTested?: boolean; councilMode?: string; onRerun?: (dealName: string, dealText: string, mode: CouncilModeType) => void; onUpgradedSimCompleted?: (data: { runId: string; mode: string; targetCount: number; completedAt: string; aggregation: any }) => void; onFixesApplied?: () => void; onRerunCompleted?: () => void; fixPanelRef?: React.Ref<FixTheDealPanelHandle> }) {
   // Color derived from council verdict (not IC executive verdict) for consistency
   const verdictColor = result.verdict === "APPROVED" ? GREEN
@@ -2879,6 +3097,11 @@ function BoardroomICReport({ ic, result, onCopy, onNewDeal, patternContext, stre
         )}
         <p style={{ margin: 0, fontSize: 13, color: TEXT, lineHeight: 1.6 }}>{ic.executiveVerdict.rationale}</p>
       </div>
+
+      {/* Inline Recovery Engine — auto-triggers for every REJECTED/VETOED deal */}
+      {(result.verdict === "REJECTED" || result.verdict === "VETOED") && (
+        <InlineRecoveryPanel result={result} councilMode={councilMode} />
+      )}
 
       {/* 2-column grid: Thesis + Risks */}
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
