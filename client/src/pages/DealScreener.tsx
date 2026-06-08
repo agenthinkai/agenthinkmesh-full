@@ -2671,39 +2671,94 @@ function InfraReEngagePanel({ result }: { result: CouncilResult }) {
 }
 
 // ── Inline Recovery Panel ────────────────────────────────────────────────────
-// Auto-triggers generateRecovery on mount for every REJECTED/VETOED deal.
-// Surfaces: recovery probability, most viable path, earliest re-entry date,
-// conditions for reconsideration, and Export Recovery Memo CTA — no extra clicks.
+// Auto-triggers generateRecovery ONCE per component mount for REJECTED/VETOED.
+// Guardrails:
+//   • triggered ref prevents re-generation on tab switch / scroll / re-render
+//   • no automatic retry on failure — user must click "Retry Recovery Analysis"
+//   • analytics events fired at each lifecycle stage
+//   • advisory note always visible
 function InlineRecoveryPanel({ result, councilMode }: { result: CouncilResult; councilMode?: string }) {
   const isRejection = ["REJECTED", "VETOED"].includes(result.verdict);
   const recoveryMutation = trpc.dealScreener.generateRecovery.useMutation();
   const exportRecoveryMutation = trpc.dealScreener.exportRecoveryMemo.useMutation();
+  // Stable cache: once set, never cleared by re-renders or tab switches
   const [recoveryResult, setRecoveryResult] = React.useState<RecoveryEngineResult | null>(null);
   const [exportingPdf, setExportingPdf] = React.useState(false);
+  // Idempotency guard: true once generation has been initiated (success OR failure)
   const triggered = React.useRef(false);
+  // Stable input snapshot — captured once at trigger time, never re-read from props
+  const inputSnapshot = React.useRef<{
+    dealName: string; dealText: string; councilOutcome: string;
+    verdict: string; terminalFlags: string[]; icMemoSummary: string;
+  } | null>(null);
 
-  React.useEffect(() => {
-    if (!isRejection || triggered.current || recoveryMutation.isPending) return;
-    triggered.current = true;
-    const outcome = `Verdict: ${result.verdict} · ${result.yesCount}/10 YES · Confidence: ${Math.round((result.confidenceScore ?? 0) * 100)}%\nTop blockers: ${(result.blockingIssues ?? []).slice(0, 3).join("; ")}`;
-    const icSummary = result.icReport?.rawText?.slice(0, 2000) ?? "";
+  // Analytics helper — fire-and-forget, never throws
+  const fireEvent = React.useCallback((eventName: string, extra?: Record<string, unknown>) => {
+    try {
+      if (typeof window !== "undefined" && (window as any).analytics?.track) {
+        (window as any).analytics.track(eventName, { dealName: result.dealName, verdict: result.verdict, ...extra });
+      }
+      // Also log to console in dev for visibility
+      if (import.meta.env.DEV) {
+        console.debug(`[RecoveryEngine] ${eventName}`, { dealName: result.dealName, verdict: result.verdict, ...extra });
+      }
+    } catch { /* silent */ }
+  }, [result.dealName, result.verdict]);
+
+  // Trigger generation — extracted so it can be called both on mount and on retry
+  const triggerGeneration = React.useCallback(() => {
+    if (!isRejection || recoveryMutation.isPending) return;
+    // Snapshot inputs once — stable for the lifetime of this component instance
+    if (!inputSnapshot.current) {
+      inputSnapshot.current = {
+        dealName: result.dealName ?? "Deal",
+        dealText: result.dealText ?? result.dealTextPreview ?? "",
+        councilOutcome: `Verdict: ${result.verdict} · ${result.yesCount}/10 YES · Confidence: ${Math.round((result.confidenceScore ?? 0) * 100)}%\nTop blockers: ${(result.blockingIssues ?? []).slice(0, 3).join("; ")}`,
+        verdict: result.verdict,
+        terminalFlags: (result.terminalFlags ?? []) as string[],
+        icMemoSummary: result.icReport?.rawText?.slice(0, 2000) ?? "",
+      };
+    }
+    const snap = inputSnapshot.current;
+    fireEvent("recovery_auto_generate_started");
     recoveryMutation.mutate({
-      dealName: result.dealName ?? "Deal",
-      dealText: result.dealText ?? result.dealTextPreview ?? "",
-      councilOutcome: outcome,
-      verdict: result.verdict,
-      terminalFlags: (result.terminalFlags ?? []) as string[],
+      dealName: snap.dealName,
+      dealText: snap.dealText,
+      councilOutcome: snap.councilOutcome,
+      verdict: snap.verdict,
+      terminalFlags: snap.terminalFlags,
       classificationRationale: "",
       councilMode: councilMode,
-      icMemoSummary: icSummary,
+      icMemoSummary: snap.icMemoSummary,
     }, {
-      onSuccess: (data) => setRecoveryResult(data as RecoveryEngineResult),
+      onSuccess: (data) => {
+        setRecoveryResult(data as RecoveryEngineResult);
+        fireEvent("recovery_auto_generate_succeeded");
+      },
+      onError: (err) => {
+        fireEvent("recovery_auto_generate_failed", { error: err?.message });
+      },
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isRejection]);
+  }, [isRejection, councilMode]);
+
+  // Auto-trigger ONCE on mount — stable dep array prevents re-fires on re-renders
+  React.useEffect(() => {
+    if (!isRejection || triggered.current) return;
+    triggered.current = true;
+    triggerGeneration();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // empty deps: intentionally run only on mount
+
+  const handleRetry = React.useCallback(() => {
+    // Allow retry after failure — reset mutation state then re-trigger
+    recoveryMutation.reset();
+    triggerGeneration();
+  }, [recoveryMutation, triggerGeneration]);
 
   const handleExportPdf = async () => {
     if (!recoveryResult) return;
+    fireEvent("recovery_memo_export_clicked");
     setExportingPdf(true);
     try {
       const dealName = result.dealName ?? "Deal";
@@ -2739,7 +2794,7 @@ function InlineRecoveryPanel({ result, councilMode }: { result: CouncilResult; c
       padding: "18px 22px",
     }} className="no-print">
       {/* Header row */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14, flexWrap: "wrap", gap: 10 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10, flexWrap: "wrap", gap: 10 }}>
         <div>
           <div style={{ fontFamily: MONO, fontSize: 11, color: ACCENT, fontWeight: 700, letterSpacing: "0.06em", marginBottom: 3 }}>
             ⟳ DEAL RECOVERY ENGINE
@@ -2748,7 +2803,7 @@ function InlineRecoveryPanel({ result, councilMode }: { result: CouncilResult; c
             Council verdict preserved. Answering: &ldquo;What would need to change?&rdquo;
           </div>
         </div>
-        {/* Export CTA — always visible once result is ready */}
+        {/* Export CTA — visible once result is ready */}
         {recoveryResult && (
           <button
             onClick={handleExportPdf}
@@ -2769,6 +2824,18 @@ function InlineRecoveryPanel({ result, councilMode }: { result: CouncilResult; c
         )}
       </div>
 
+      {/* Advisory note — always visible */}
+      <div style={{
+        fontFamily: MONO, fontSize: 9, color: MUTED,
+        background: "rgba(255,255,255,0.03)",
+        border: `1px solid ${BORDER}`,
+        borderRadius: 4, padding: "6px 10px",
+        marginBottom: 14,
+        letterSpacing: "0.04em",
+      }}>
+        ⚠ Recovery analysis is advisory and does not alter the Council verdict.
+      </div>
+
       {/* Loading state */}
       {recoveryMutation.isPending && (
         <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 0" }}>
@@ -2783,10 +2850,25 @@ function InlineRecoveryPanel({ result, councilMode }: { result: CouncilResult; c
         </div>
       )}
 
-      {/* Error state */}
-      {recoveryMutation.isError && (
-        <div style={{ fontFamily: MONO, fontSize: 10, color: RED }}>
-          Recovery analysis unavailable — {recoveryMutation.error?.message ?? "Unknown error"}
+      {/* Error state — manual retry only, no auto-loop */}
+      {recoveryMutation.isError && !recoveryMutation.isPending && (
+        <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap", padding: "8px 0" }}>
+          <span style={{ fontFamily: MONO, fontSize: 10, color: RED }}>
+            ✕ Recovery analysis failed — {recoveryMutation.error?.message ?? "Unknown error"}
+          </span>
+          <button
+            onClick={handleRetry}
+            style={{
+              padding: "6px 14px",
+              background: "rgba(255,59,48,0.08)",
+              border: `1px solid ${RED}`,
+              color: RED,
+              fontFamily: MONO, fontSize: 9, cursor: "pointer",
+              borderRadius: 4, letterSpacing: "0.06em", fontWeight: 700,
+            }}
+          >
+            RETRY RECOVERY ANALYSIS
+          </button>
         </div>
       )}
 

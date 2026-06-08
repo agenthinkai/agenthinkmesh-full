@@ -4928,3 +4928,12 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Show inline Recovery Engine summary below verdict: Conditions for Reconsideration, Most Viable Recovery Path, Earliest Re-entry Date
 - [x] Show Export Recovery Memo CTA immediately below verdict
 - [x] TypeScript: 0 errors
+
+## Deal Recovery Engine — Auto-Generation Guardrails
+
+- [x] Generate recovery output only once per report/session/verdict (idempotent — use ref + stable deps)
+- [x] Do not re-trigger on tab switch, scroll, parent re-render, or expand/collapse
+- [x] Error state: show clear error message + "Retry Recovery Analysis" button (no auto-retry loop)
+- [x] Analytics events: recovery_auto_generate_started, recovery_auto_generate_succeeded, recovery_auto_generate_failed, recovery_memo_export_clicked
+- [x] Add advisory note: "Recovery analysis is advisory and does not alter the Council verdict."
+- [x] TypeScript: 0 errors
