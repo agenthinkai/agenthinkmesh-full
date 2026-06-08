@@ -4937,3 +4937,12 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Analytics events: recovery_auto_generate_started, recovery_auto_generate_succeeded, recovery_auto_generate_failed, recovery_memo_export_clicked
 - [x] Add advisory note: "Recovery analysis is advisory and does not alter the Council verdict."
 - [x] TypeScript: 0 errors
+
+## Institutional Proof Report — Fix Dead-End UX
+
+- [x] Build deterministic SAMPLE_PROOF_REPORT constant with all 7 sections
+- [x] Build SampleProofReportModal component (or inline panel) with View Sample Report + Export Sample PDF
+- [x] Update Export Hub: when no session, show sample card instead of "Requires Session" dead-end
+- [x] Wire homepage "View Sample Proof Report" CTA to open the sample report
+- [x] Preserve real-session export behavior (Export PDF + Export JSON) unchanged
+- [x] TypeScript: 0 errors

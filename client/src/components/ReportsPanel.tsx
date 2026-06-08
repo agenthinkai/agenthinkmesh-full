@@ -16,7 +16,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
-import { FileText, Download, Loader2, CheckCircle2, AlertCircle, FileJson, FileCode2, BarChart3, ShieldCheck } from "lucide-react";
+import { FileText, Download, Loader2, CheckCircle2, AlertCircle, FileJson, FileCode2, BarChart3, ShieldCheck, Sparkles } from "lucide-react";
+import { SampleProofReportModal } from "@/components/SampleProofReportModal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -332,6 +333,9 @@ export function ReportsPanel({
   const [proofLoading, setProofLoading] = useState(false);
   const [proofDone, setProofDone] = useState(false);
 
+  // ── Sample Proof Report modal state ──────────────────────────────────────
+  const [sampleModalOpen, setSampleModalOpen] = useState(false);
+
   const upgradeProtocolPdf = trpc.dealScreener.upgradeProtocolPdf.useMutation();
   const stressTestReportPdf = trpc.dealScreener.stressTestReportPdf.useMutation();
   const proofReportMutation = trpc.proofEngine.proofReport.useMutation();
@@ -579,35 +583,55 @@ export function ReportsPanel({
             </Tooltip>
 
             {/* ── Report 4: Institutional Proof Report ─────────────────────── */}
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <div>
-                  <ReportCard
-                    icon={<ShieldCheck className="h-4 w-4" />}
-                    title="Institutional Proof Report"
-                    subtitle={hasProof
-                      ? "13-section governance proof record. Includes release gate, evidence chain, constitution version, and full audit references."
-                      : "Requires a completed Council session with a session ID."}
-                    badge={hasProof ? "13 Sections" : "Requires Session"}
-                    badgeVariant={hasProof ? "default" : "outline"}
-                    available={hasProof}
-                    unavailableReason="A council session ID is required to generate the Proof Report."
-                    formats={["pdf", "json"]}
-                    selectedFormat={proofFmt === "text" ? "pdf" : proofFmt}
-                    onFormatChange={setProofFmt}
-                    onExport={handleExportProof}
-                    loading={proofLoading}
-                    done={proofDone}
-                    accentColor={hasProof ? "border-amber-500/20" : "border-white/5"}
-                  />
+            {hasProof ? (
+              /* Real session — existing export behavior unchanged */
+              <ReportCard
+                icon={<ShieldCheck className="h-4 w-4" />}
+                title="Institutional Proof Report"
+                subtitle="13-section governance proof record. Includes release gate, evidence chain, constitution version, and full audit references."
+                badge="13 Sections"
+                badgeVariant="default"
+                available
+                formats={["pdf", "json"]}
+                selectedFormat={proofFmt === "text" ? "pdf" : proofFmt}
+                onFormatChange={setProofFmt}
+                onExport={handleExportProof}
+                loading={proofLoading}
+                done={proofDone}
+                accentColor="border-amber-500/20"
+              />
+            ) : (
+              /* No session — show sample card so prospects can inspect the report */
+              <div className="flex flex-col gap-2 rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-950/30 to-slate-950/60 p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-4 w-4 text-violet-400" />
+                    <span className="text-sm font-semibold text-white/85">Institutional Proof Report</span>
+                  </div>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-violet-400/30 bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold text-violet-300 uppercase tracking-wider">
+                    <Sparkles className="h-2.5 w-2.5" /> NEW
+                  </span>
                 </div>
-              </TooltipTrigger>
-              {!hasProof && (
-                <TooltipContent side="top" className="max-w-[220px] text-xs">
-                  A completed Council session is required. Pass the session ID via the proofSessionId prop.
-                </TooltipContent>
-              )}
-            </Tooltip>
+                <p className="text-xs text-white/45 leading-relaxed">
+                  Machine-verifiable explanation of a completed Council recommendation. Includes Executive Summary, Governance Findings, Constitution Version, Calibration Context, Historical Precedents, Release Gate, and Audit References.
+                </p>
+                <div className="flex flex-col gap-1.5 mt-1">
+                  <Button
+                    size="sm"
+                    className="w-full bg-violet-600 hover:bg-violet-500 text-white text-xs h-8"
+                    onClick={() => setSampleModalOpen(true)}
+                  >
+                    <ShieldCheck className="h-3.5 w-3.5 mr-1.5" />
+                    View Sample Report
+                  </Button>
+                </div>
+                <div className="flex items-center gap-3 mt-0.5">
+                  {["Machine-Verifiable", "Audit Ready", "Governance Traceable"].map(t => (
+                    <span key={t} className="text-[9px] text-violet-400/70 font-medium">✓ {t}</span>
+                  ))}
+                </div>
+              </div>
+            )}
 
           </div>
 
@@ -665,6 +689,9 @@ export function ReportsPanel({
           </div>
         </CardContent>
       </Card>
+
+      {/* Sample Proof Report Modal */}
+      <SampleProofReportModal open={sampleModalOpen} onClose={() => setSampleModalOpen(false)} />
     </TooltipProvider>
   );
 }

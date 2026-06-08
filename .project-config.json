@@ -12,10 +12,10 @@
   "experiments": null,
   "git_remote": {
     "repo_url": "s3://vida-prod-gitrepo/webdev-git/310519663268376562/7EnctkaNppkKLbjFfnH6YY",
-    "access_key_id": "ASIAZV3A2ECZDG6K5OY7",
-    "secret_access_key": "EavVGLixvuM/f+ZTtHCygQWHvWih24WVkHtVCYTC",
-    "session_token": "IQoJb3JpZ2luX2VjEML//////////wEaCXVzLWVhc3QtMSJHMEUCIEQc0YU8g7szcetKmf1MlWWNNufNCamnwtYXy1fGbfJDAiEA7nN867mIQ4+FlrVxYqTHzj0L2FqXCCHLlmnUohWoaCwq/wMIi///////////ARAEGgw2NjUzODYwOTg4NjYiDP787Vn60J6qFR099SrTAxCHwEzLsbe/wZ01LOEMDk8cmBYDO6QsWbOXq8dhZL9BxKZ6xGmW4s/vZCezBym7q8IR6/J0FsN182bS/1f75vR3Oemqg/+t9Pijej+qcKqKGURj8POeenP3KssYOj3InQefqyKDCHCNXtJ7uIuQQuxVnt1A0GBOYD/ScpJbjd74ojmFW2DPRmGIWaww5ZTX+X9khxt/mhiT6/epnHdzbGT3wxKseEiiKLWZDUMZu/nO2U/cQqSN8y9+8bQtaCjdVHXQeZk5ZRWg953YDCTzuhJ9iPubefnzSl3wh1EWQWTl9pMYrTyMc8HO5n1WyXKA2v0jPqmkANdjv7lizEPodsTTlHPuRY3ym18lQTKt2VJknnuK393UvZm3DLewf1f4oV+l65Tuzrs5KY9fuPU0/yb/CdKMHWp4ZRjsy/UKhiYD3SfQkIu/Qr8LC4QgFtueWPY+Rd0dccYGF1kfj7zHZPJnTNPYNhYgvnIHVlsUckqQBisVXBsuOL0uMk+KNZcvXvFr6YTjKsYVIZBRTC8awaaPXvNe8sD1cMeAuoGkwnOfkWviXImnVcNU3R8nZ2LlguDZ4Wv13gF8LcOr2zQJbltcHu2nAoRupK2zBaN9Y/W5BxmaMMuQ2dAGOp0BFgbddwZTFEWzHtFa0AZSsfMKLFbLFmes77k28QqsWT8FKrgE1RJJKZWblTDlFMf/Fgt8PooEzYfs8Bomn9JshVb4ReTKVzJpVSWCOLNQvwv/bt7jDFDnaTkoNo4hNgKUdW0AngkA6QzOVYjyZFSi0x7PIgOe4T+epLE6dcYR8inYukjJJH1wguAtTkBedJjYaS7dklXPMPFKdEK5XQ==",
-    "expiration": "2026-05-27T13:26:35.000Z"
+    "access_key_id": "ASIAZV3A2ECZOFC7PELE",
+    "secret_access_key": "y6JhSmJzABUkpJd1ESKTW1LvDOA8qxL9qn7B8TMb",
+    "session_token": "IQoJb3JpZ2luX2VjEO///////////wEaCXVzLWVhc3QtMSJHMEUCIDaJ7j+w/jKvsxqBpekajtu1fup4NzFXec+nLrvPhlsyAiEAk8+PmdogpCv+n0npAbFe6dkSsY2jh2lk6dgYriBi3oQq/wMIuP//////////ARAEGgw2NjUzODYwOTg4NjYiDKVaOEAjSnG20WN3NCrTA2j5NM92xr7+YSZ57UF3oReG01fulfYp2C+Zr4IszmJ+HJjs6nduA0bt8H2hCnlRI3vGAzpK2e31WkaqQxWig9TQmt0K8LwKCWYWSxCoyoANdYptwvOa/Qz8LdOdCpqe4VrJ000kRMeHLNG715hfarnL012dZb9c6QT826E51BIk0TKUaJ+os1otUu1O5dmcV0plRH8OLNm0Qc1kE5RktxNqTzqjCJoVHKUe3+vBm524/3L+oM2ZHKjSnCFZajowSBMxfUlSKBjz6Z6UwmQOr90Z+aXjStgIqSQENDCb5qYUVTnrKzdzZctpSDCVWO/e0Qahc+ssEjDvM5S8nKfqXaQDvFcwsDqS8M7uQpKsaWFU8FShZoNmd7P8RUeDSpx+3grW7VCz8VjIJbzjD17W8dA7CONdViv5eyGw5FV0j71m0wROK5EnUgqFVf7yyKb2189rEI3zJSZJu0zVjUnAlUCsJnISbabavlAusyJQmMUu/Oiyh1AAEF4pM7CciBFG73f4eBUJwQ7CJr7M2dEsopc4IVWQJOV+XHPALN1XKe/dXP+DWSHj3WFmzfn6mxpvbYdwKaB1743sG5sBMlZYgBoo1KsrKttvfkThgWHJOR9Qin8jMJOgm9EGOp0Bd5l2szUZSXK4teEOCACqRQmDqLbPG3e2TxkWofUkoNp8HtuAz/sR37R660Bc5B6QKzjwnJCJMKRJeQXwFHc4pz7iPOTkRAwc5rgRRLiyEzgs0rguO2YDu5qg9vbdyux/GM517lKaa7mY+zZ3xxfDWYNBdZxmBNOwYxxvSPOsk6IrPZpsX6ghkEeDPjND872wVZ2w3zXUO+muBffyHQ==",
+    "expiration": "2026-06-09T02:22:11.000Z"
   },
   "name": "agenthinkmesh-full",
   "path": "/home/ubuntu/agenthinkmesh-full",

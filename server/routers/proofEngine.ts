@@ -6,7 +6,7 @@
  *
  * No changes to Council logic, CFA, Attribution, or Calibration.
  */
-import { protectedProcedure, router } from "../_core/trpc";
+import { protectedProcedure, publicProcedure, router } from "../_core/trpc";
 import { getDb } from "../db";
 import { TRPCError } from "@trpc/server";
 
@@ -882,9 +882,24 @@ export const proofEngineRouter = router({
           avgCfaFidelity: cfaAvg.avgFidelity ? parseFloat(cfaAvg.avgFidelity as string) : null,
         },
         topPersonas: personaScores,
-        blockerPerformance,
+                blockerPerformance,
+      };
+    }),
+
+  /**
+   * sampleProofReport — Public procedure.
+   * Generates a sample Institutional Proof Report PDF from deterministic demo data.
+   * No Council session required. Safe for unauthenticated prospects.
+   */
+  sampleProofReport: publicProcedure
+    .input(z.object({}).optional())
+    .mutation(async () => {
+      const { generateSampleProofReportPdf } = await import("../sampleProofReportPdf");
+      const pdfBuffer = await generateSampleProofReportPdf();
+      return {
+        pdfBase64: pdfBuffer.toString("base64"),
+        filename: "Helios-North_Institutional_Proof_Report_SAMPLE.pdf",
       };
     }),
 });
-
 export type ProofEngineRouter = typeof proofEngineRouter;

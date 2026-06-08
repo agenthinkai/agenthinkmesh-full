@@ -5,6 +5,7 @@ import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import SiteNav from "@/components/SiteNav";
+import { SampleProofReportModal } from "@/components/SampleProofReportModal";
 
 // ── Brand palette ─────────────────────────────────────────────────────────────
 const NAVY_950 = "#0B1629";
@@ -41,7 +42,7 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
 }
 
 // ── SECTION 1 — HERO ─────────────────────────────────────────────────────────
-function Hero({ loginUrl }: { loginUrl: string }) {
+function Hero({ loginUrl, onSampleProofOpen }: { loginUrl: string; onSampleProofOpen: () => void }) {
   return (
     <section style={{
       padding: "96px 24px 80px",
@@ -100,14 +101,18 @@ function Hero({ loginUrl }: { loginUrl: string }) {
               Explore Platform →
             </a>
           </Link>
-          <a href="#proof-report" style={{
-            display: "inline-flex", alignItems: "center", gap: 8,
-            padding: "14px 32px", borderRadius: 8, fontWeight: 600, fontSize: 15,
-            background: "transparent", color: SILVER_300,
-            border: `1px solid ${NAVY_600}`, textDecoration: "none",
-          }}>
+          <button
+            onClick={onSampleProofOpen}
+            style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "14px 32px", borderRadius: 8, fontWeight: 600, fontSize: 15,
+              background: "transparent", color: SILVER_300,
+              border: `1px solid ${NAVY_600}`, cursor: "pointer",
+              fontFamily: FONT,
+            }}
+          >
             View Sample Proof Report
-          </a>
+          </button>
         </div>
 
         <div style={{
@@ -243,7 +248,7 @@ function Capabilities() {
 }
 
 // ── PROOF REPORT BANNER ─────────────────────────────────────────────────────────
-function ProofReportBanner() {
+function ProofReportBanner({ onSampleProofOpen }: { onSampleProofOpen: () => void }) {
   return (
     <section id="proof-report" style={{
       padding: "48px 24px",
@@ -295,13 +300,26 @@ function ProofReportBanner() {
               ))}
             </div>
           </div>
-          <div style={{ flexShrink: 0, alignSelf: "center" as const }}>
+          <div style={{ flexShrink: 0, alignSelf: "center" as const, display: "flex", flexDirection: "column" as const, gap: 10 }}>
+            <button
+              onClick={onSampleProofOpen}
+              style={{
+                display: "inline-flex", alignItems: "center", gap: 8,
+                padding: "13px 28px", borderRadius: 8, fontWeight: 700, fontSize: 14,
+                background: BLUE_300, color: NAVY_950, cursor: "pointer",
+                border: "none", fontFamily: FONT,
+              }}
+            >
+              View Sample Report →
+            </button>
             <a href="/deals" style={{
               display: "inline-flex", alignItems: "center", gap: 8,
-              padding: "13px 28px", borderRadius: 8, fontWeight: 700, fontSize: 14,
-              background: BLUE_300, color: NAVY_950, textDecoration: "none",
+              padding: "11px 28px", borderRadius: 8, fontWeight: 600, fontSize: 13,
+              background: "transparent", color: SILVER_300,
+              border: `1px solid ${NAVY_600}`, textDecoration: "none",
+              textAlign: "center" as const, justifyContent: "center",
             }}>
-              Generate Report →
+              Generate Real Report →
             </a>
           </div>
         </div>
@@ -562,6 +580,7 @@ function Footer() {
 // ── MAIN EXPORT ───────────────────────────────────────────────────────────────
 export default function Landing() {
   const loginUrl = getLoginUrl();
+  const [sampleProofOpen, setSampleProofOpen] = useState(false);
   // Keep analytics hook for existing tracking
   const { data: _stats } = trpc.public.platformStats.useQuery(undefined, {
     refetchInterval: 30_000,
@@ -572,8 +591,8 @@ export default function Landing() {
     <div style={{ minHeight: "100vh", background: NAVY_950, fontFamily: FONT, color: SILVER_100, overflowX: "hidden" }}>
       <SiteNav isLandingPage />
       <SolutionsNav />
-      <Hero loginUrl={loginUrl} />
-      <ProofReportBanner />
+      <Hero loginUrl={loginUrl} onSampleProofOpen={() => setSampleProofOpen(true)} />
+      <ProofReportBanner onSampleProofOpen={() => setSampleProofOpen(true)} />
       <ProcessFlow />
       <Capabilities />
       <Reports />
@@ -581,6 +600,7 @@ export default function Landing() {
       <EvidenceAndScale />
       <ContactSection />
       <Footer />
+      <SampleProofReportModal open={sampleProofOpen} onClose={() => setSampleProofOpen(false)} />
     </div>
   );
 }
