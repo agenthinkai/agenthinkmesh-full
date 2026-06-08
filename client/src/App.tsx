@@ -210,11 +210,13 @@ function Router() {
   return (
     <Suspense fallback={<PageLoader />}>
     <Switch>
-      {/* UAE Real Estate Council — public root, no auth required */}
-      <Route path="/">{() => <UaeRealEstateCouncil />}</Route>
+      {/* Governed Decision Infrastructure — primary homepage */}
+      <Route path="/" component={Landing} />
+      <Route path="/platform" component={Landing} />
+      {/* UAE Real Estate Council — moved from / to /real-estate */}
+      <Route path="/real-estate">{() => <UaeRealEstateCouncil />}</Route>
       {/* Old landing pages */}
       <Route path="/home" component={Home} />
-      <Route path="/platform" component={Landing} />
 
       {/* 3-Screen MVP — core user journey */}
       <Route path="/ask" component={AskScreen} />

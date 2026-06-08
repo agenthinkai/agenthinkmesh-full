@@ -1495,10 +1495,10 @@ export default function UaeRealEstateCouncil() {
         <div className="max-w-4xl mx-auto px-4 h-12 flex items-center justify-between">
           <span className="text-sm font-semibold text-slate-800 tracking-tight">AgenThink Mesh</span>
           <div className="flex items-center gap-5">
-            <a href="/" className="text-xs text-slate-600 hover:text-sky-600 transition-colors font-medium">UAE Real Estate</a>
-            <a href="/home#examples" className="text-xs text-slate-600 hover:text-sky-600 transition-colors">Examples</a>
+            <a href="/real-estate" className="text-xs text-slate-600 hover:text-sky-600 transition-colors font-medium">UAE Real Estate</a>
+            <a href="/#examples" className="text-xs text-slate-600 hover:text-sky-600 transition-colors">Examples</a>
             <a href="/contact" className="text-xs text-slate-600 hover:text-sky-600 transition-colors">Contact</a>
-            <a href="/home" className="text-xs bg-sky-600 hover:bg-sky-700 text-white px-3 py-1.5 rounded-md transition-colors font-medium">Open Dashboard</a>
+            <a href="/" className="text-xs bg-sky-600 hover:bg-sky-700 text-white px-3 py-1.5 rounded-md transition-colors font-medium">Platform Home</a>
           </div>
         </div>
       </nav>

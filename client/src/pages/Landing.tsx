@@ -97,16 +97,16 @@ function Hero({ loginUrl }: { loginUrl: string }) {
               padding: "14px 32px", borderRadius: 8, fontWeight: 700, fontSize: 15,
               background: BLUE_400, color: NAVY_950, textDecoration: "none",
             }}>
-              Explore the Platform →
+              Explore Platform →
             </a>
           </Link>
-          <a href="#contact" style={{
+          <a href="#proof-report" style={{
             display: "inline-flex", alignItems: "center", gap: 8,
             padding: "14px 32px", borderRadius: 8, fontWeight: 600, fontSize: 15,
             background: "transparent", color: SILVER_300,
             border: `1px solid ${NAVY_600}`, textDecoration: "none",
           }}>
-            Contact Us
+            View Sample Proof Report
           </a>
         </div>
 
@@ -132,6 +132,45 @@ function Hero({ loginUrl }: { loginUrl: string }) {
         </div>
       </div>
     </section>
+  );
+}
+
+// ── SOLUTIONS NAV ───────────────────────────────────────────────────────────────
+const SOLUTIONS = [
+  { label: "Real Estate Council", href: "/real-estate" },
+  { label: "Deal Screener",       href: "/deals" },
+  { label: "Infrastructure",      href: "/deals" },
+  { label: "Procurement",         href: "/deals" },
+  { label: "SADO",                href: "/deals" },
+];
+
+function SolutionsNav() {
+  return (
+    <div style={{
+      background: NAVY_900, borderBottom: `1px solid ${NAVY_700}`,
+      padding: "0 24px",
+    }}>
+      <div style={{
+        maxWidth: 1100, margin: "0 auto",
+        display: "flex", alignItems: "center", gap: 0,
+        overflowX: "auto" as const,
+      }}>
+        <span style={{ fontSize: 10, color: SILVER_500, fontFamily: MONO, letterSpacing: "0.1em", textTransform: "uppercase" as const, marginRight: 20, flexShrink: 0, paddingTop: 1 }}>Solutions</span>
+        {SOLUTIONS.map((s, i) => (
+          <a key={i} href={s.href} style={{
+            display: "inline-block", padding: "14px 18px",
+            fontSize: 12, fontWeight: 600, color: SILVER_400,
+            textDecoration: "none", whiteSpace: "nowrap" as const,
+            borderBottom: "2px solid transparent",
+            fontFamily: MONO, letterSpacing: "0.04em",
+            transition: "color 0.15s",
+          }}
+            onMouseEnter={e => { (e.target as HTMLElement).style.color = SILVER_100; (e.target as HTMLElement).style.borderBottomColor = BLUE_400; }}
+            onMouseLeave={e => { (e.target as HTMLElement).style.color = SILVER_400; (e.target as HTMLElement).style.borderBottomColor = "transparent"; }}
+          >{s.label}</a>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -197,6 +236,74 @@ function Capabilities() {
               <div style={{ fontSize: 13, color: SILVER_300, lineHeight: 1.8 }}>{cap.desc}</div>
             </div>
           ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── PROOF REPORT BANNER ─────────────────────────────────────────────────────────
+function ProofReportBanner() {
+  return (
+    <section id="proof-report" style={{
+      padding: "48px 24px",
+      background: `linear-gradient(135deg, ${NAVY_900} 0%, #0D1F3C 100%)`,
+      borderTop: `1px solid ${NAVY_700}`,
+      borderBottom: `1px solid ${NAVY_700}`,
+    }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{
+          ...card({ padding: "40px 40px" }),
+          borderLeft: `5px solid ${BLUE_300}`,
+          display: "flex", alignItems: "flex-start", gap: 32,
+          flexWrap: "wrap" as const,
+        }}>
+          <div style={{ fontSize: 48, flexShrink: 0 }}>🔐</div>
+          <div style={{ flex: 1, minWidth: 260 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 12 }}>
+              <span style={{ fontSize: 22, fontWeight: 800, color: SILVER_50 }}>Institutional Proof Report</span>
+              <span style={{
+                fontSize: 9, fontWeight: 700, color: GREEN_400,
+                background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)",
+                borderRadius: 4, padding: "3px 9px", fontFamily: MONO, letterSpacing: "0.12em",
+              }}>NEW</span>
+            </div>
+            <p style={{ fontSize: 15, color: SILVER_300, lineHeight: 1.8, marginBottom: 20, maxWidth: 680 }}>
+              Machine-verifiable explanation of every recommendation. Every conclusion references a decision ID,
+              rule version, finding ID, and audit reference. No conclusion without a traceable source.
+            </p>
+            <div style={{ display: "flex", gap: 12, flexWrap: "wrap" as const, marginBottom: 24 }}>
+              {["PDF", "JSON"].map(fmt => (
+                <span key={fmt} style={{
+                  padding: "6px 16px", borderRadius: 6,
+                  background: `${BLUE_300}14`, border: `1px solid ${BLUE_300}40`,
+                  fontSize: 12, fontWeight: 700, color: BLUE_300,
+                  fontFamily: MONO, letterSpacing: "0.08em",
+                }}>{fmt}</span>
+              ))}
+            </div>
+            <div style={{ display: "flex", gap: 24, flexWrap: "wrap" as const }}>
+              {[
+                "13 structured sections",
+                "Versioned Constitution reference",
+                "Release gate determination",
+                "Full audit trail",
+              ].map((item, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12, color: SILVER_400, fontFamily: MONO }}>
+                  <span style={{ color: GREEN_400, fontSize: 10 }}>✓</span> {item}
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ flexShrink: 0, alignSelf: "center" as const }}>
+            <a href="/deals" style={{
+              display: "inline-flex", alignItems: "center", gap: 8,
+              padding: "13px 28px", borderRadius: 8, fontWeight: 700, fontSize: 14,
+              background: BLUE_300, color: NAVY_950, textDecoration: "none",
+            }}>
+              Generate Report →
+            </a>
+          </div>
         </div>
       </div>
     </section>
@@ -466,7 +573,9 @@ export default function Landing() {
   return (
     <div style={{ minHeight: "100vh", background: NAVY_950, fontFamily: FONT, color: SILVER_100, overflowX: "hidden" }}>
       <SiteNav isLandingPage />
+      <SolutionsNav />
       <Hero loginUrl={loginUrl} />
+      <ProofReportBanner />
       <ProcessFlow />
       <Capabilities />
       <Reports />
