@@ -4910,3 +4910,14 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Add ProofTab component to RweDemo.tsx with RWE/infrastructure-specific content (Helios-North)
 - [x] Add proof tab to TABS array in RweDemo.tsx (7th tab with NEW badge)
 - [x] TypeScript: 0 errors confirmed
+
+## Deal Recovery Engine Upgrade
+
+- [x] Build server/recoveryEngine.ts with generateRecovery LLM procedure (5-section schema: failure analysis, 3 recovery paths, re-entry conditions, probability of recovery, required structural changes)
+- [x] Build server/recoveryMemoPdf.ts PDF generator for Export Recovery Memo
+- [x] Add generateRecovery and exportRecoveryMemo procedures to server/routers/dealScreener.ts
+- [x] Replace Class C "CANNOT BE REPAIRED" terminal panel in DealScreener.tsx with full Recovery Engine UI (terminal blockers, recovery paths A/B/C, re-entry conditions, conditions for reconsideration, next review date, probability of recovery)
+- [x] Add Export Recovery Memo (PDF) CTA to Recovery Engine UI
+- [x] Extend recovery guidance to all REJECT/BLOCKED outcomes (Class B panel)
+- [x] Write vitest tests for recovery engine (server/recoveryEngine.test.ts — 12/12 passing)
+- [x] Verify TypeScript 0 errors

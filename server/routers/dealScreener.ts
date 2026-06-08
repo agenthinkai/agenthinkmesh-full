@@ -28,6 +28,8 @@ import { checkDuplicate } from "../dealDedup";
 import { runRealityAlignment } from "../realityAlignmentEngine";
 import { invokeLLM } from "../_core/llm";
 import { generateRepairBriefPdf, type RepairBriefInput } from "../repairBriefPdf";
+import { generateRecovery, type RecoveryEngineInput } from "../recoveryEngine";
+import { generateRecoveryMemoPdf, type RecoveryMemoPdfInput } from "../recoveryMemoPdf";
 
 // ── Owner whitelist — these users always bypass payment and rate limits ────────
 const OWNER_EMAILS = ["farouq@agenthink.ai", "farouqsultan@gmail.com"];
@@ -1737,6 +1739,107 @@ ${namedBlockers.map((b, i) => `${i + 1}. ${b}`).join('\n')}`;
 
       // Echo back the structured terminalFlags so callers can verify which blockers were named.
       return { memo: memoText, terminalFlags: input.terminalFlags };
+    }),
+
+  // ── Generate Recovery Analysis (all REJECT / VETOED / BLOCKED outcomes) ─────
+  // Produces a 5-section recovery analysis: failure analysis, 3 recovery paths,
+  // re-entry conditions, probability of recovery, required structural changes.
+  // GOVERNANCE INVARIANT: never overrides Council verdict. Answers only:
+  // "What would need to change for this deal to be reconsidered?"
+  generateRecovery: protectedProcedure
+    .input(z.object({
+      dealName:                z.string().min(1).max(200).trim(),
+      dealText:                z.string().min(1).max(10000).trim(),
+      councilOutcome:          z.string().min(1).max(5000).trim(),
+      verdict:                 z.string().min(1).max(50).trim(),
+      terminalFlags:           z.array(z.string()).max(10).default([]),
+      classificationRationale: z.string().max(2000).default(""),
+      councilMode:             z.string().optional(),
+      icMemoSummary:           z.string().max(2000).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const recoveryInput: RecoveryEngineInput = {
+        dealName:                input.dealName,
+        dealText:                input.dealText,
+        councilOutcome:          input.councilOutcome,
+        verdict:                 input.verdict,
+        terminalFlags:           input.terminalFlags,
+        classificationRationale: input.classificationRationale,
+        councilMode:             input.councilMode,
+        icMemoSummary:           input.icMemoSummary,
+      };
+      const result = await generateRecovery(recoveryInput);
+      return result;
+    }),
+
+  // ── Export Recovery Memo PDF ──────────────────────────────────────────────────
+  exportRecoveryMemo: protectedProcedure
+    .input(z.object({
+      dealName:      z.string().min(1).max(200).trim(),
+      verdict:       z.string().min(1).max(50).trim(),
+      councilMode:   z.string().optional(),
+      terminalFlags: z.array(z.string()).max(10).default([]),
+      result: z.object({
+        failureAnalysis: z.object({
+          primaryFailureMode:      z.string(),
+          rootCauses:              z.array(z.any()),
+          whyRepairIsInsufficient: z.string(),
+        }),
+        terminalBlockers: z.array(z.any()),
+        recoveryPathA: z.object({
+          label:                 z.string(),
+          title:                 z.string(),
+          description:           z.string(),
+          governingBlocker:      z.string(),
+          councilConcern:        z.string(),
+          constitutionalFinding: z.string(),
+          probabilityPct:        z.number(),
+          estimatedTimeline:     z.string(),
+          milestones:            z.array(z.string()),
+        }),
+        recoveryPathB: z.object({
+          label:                 z.string(),
+          title:                 z.string(),
+          description:           z.string(),
+          governingBlocker:      z.string(),
+          councilConcern:        z.string(),
+          constitutionalFinding: z.string(),
+          probabilityPct:        z.number(),
+          estimatedTimeline:     z.string(),
+          milestones:            z.array(z.string()),
+        }),
+        recoveryPathC: z.object({
+          label:                 z.string(),
+          title:                 z.string(),
+          description:           z.string(),
+          governingBlocker:      z.string(),
+          councilConcern:        z.string(),
+          constitutionalFinding: z.string(),
+          probabilityPct:        z.number(),
+          estimatedTimeline:     z.string(),
+          milestones:            z.array(z.string()),
+        }),
+        reentryConditions:            z.array(z.any()),
+        conditionsForReconsideration: z.array(z.string()),
+        suggestedNextReviewDate:      z.string(),
+        overallProbabilityOfRecovery: z.object({
+          pct:            z.number(),
+          rationale:      z.string(),
+          mostViablePath: z.string(),
+        }),
+        requiredStructuralChanges: z.array(z.any()),
+      }),
+    }))
+    .mutation(async ({ input }) => {
+      const pdfInput: RecoveryMemoPdfInput = {
+        dealName:      input.dealName,
+        verdict:       input.verdict,
+        councilMode:   input.councilMode,
+        terminalFlags: input.terminalFlags,
+        result:        input.result as any,
+      };
+      const buffer = await generateRecoveryMemoPdf(pdfInput);
+      return { pdfBase64: buffer.toString("base64") };
     }),
 
 });

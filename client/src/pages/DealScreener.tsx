@@ -1078,6 +1078,35 @@ interface FixTheDealResult {
    */
   terminalFlags?: string[];
 }
+// ── Recovery Engine types (mirrors server/recoveryEngine.ts) ─────────────────
+interface RecoveryPath {
+  label: "A" | "B" | "C";
+  title: string;
+  description: string;
+  governingBlocker: string;
+  councilConcern: string;
+  constitutionalFinding: string;
+  probabilityPct: number;
+  estimatedTimeline: string;
+  milestones: string[];
+}
+interface RecoveryEngineResult {
+  failureAnalysis: {
+    primaryFailureMode: string;
+    rootCauses: Array<{ category: string; description: string; governingBlocker: string; councilConcern: string; constitutionalFinding: string }>;
+    whyRepairIsInsufficient: string;
+  };
+  terminalBlockers: Array<{ flag: string; label: string; governingBlocker: string; councilConcern: string; constitutionalFinding: string; residualRisk: string }>;
+  recoveryPathA: RecoveryPath;
+  recoveryPathB: RecoveryPath;
+  recoveryPathC: RecoveryPath;
+  reentryConditions: Array<{ condition: string; measurableThreshold: string; verificationMethod: string; timeframe: string }>;
+  conditionsForReconsideration: string[];
+  suggestedNextReviewDate: string;
+  overallProbabilityOfRecovery: { pct: number; rationale: string; mostViablePath: "A" | "B" | "C" };
+  requiredStructuralChanges: Array<{ rank: number; change: string; rationale: string; governingBlocker: string; councilConcern: string }>;
+}
+
 interface FixTheDealPanelHandle {
   triggerFix: () => void;
   isPending: () => boolean;
@@ -1118,6 +1147,11 @@ const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle, {
   const fixMutation = trpc.dealScreener.fixTheDeal.useMutation();
   const exportMutation = trpc.dealScreener.exportRepairBrief.useMutation();
   const memoMutation = trpc.dealScreener.requestRestructuringMemo.useMutation();
+  const recoveryMutation = trpc.dealScreener.generateRecovery.useMutation();
+  const exportRecoveryMutation = trpc.dealScreener.exportRecoveryMemo.useMutation();
+  const [recoveryResult, setRecoveryResult] = useState<RecoveryEngineResult | null>(null);
+  const [recoveryActiveTab, setRecoveryActiveTab] = useState<"overview" | "pathA" | "pathB" | "pathC" | "conditions" | "changes">("overview");
+  const [recoveryExporting, setRecoveryExporting] = useState(false);
 
   const startSimMutation = trpc.scenarioSim.startRun.useMutation();
   // ── Original simulation data (for comparison card left column) ────────────
@@ -1239,6 +1273,54 @@ const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle, {
       councilMode: councilMode,
     });
     setMemoText(res.memo);
+  };
+
+  const handleGenerateRecovery = async () => {
+    if (!d) return;
+    setRecoveryResult(null);
+    const outcome = `Verdict: ${result.verdict} · ${result.yesCount}/10 YES · Confidence: ${Math.round((result.confidenceScore ?? 0) * 100)}%\nTop blockers: ${(result.blockingIssues ?? []).slice(0, 3).join("; ")}`;
+    const icSummary = result.icReport?.rawText?.slice(0, 2000) ?? "";
+    const flags = (d.terminalFlags ?? []) as string[];
+    const res = await recoveryMutation.mutateAsync({
+      dealName: result.dealName ?? "Deal",
+      dealText: result.dealText ?? result.dealTextPreview ?? "",
+      councilOutcome: outcome,
+      verdict: result.verdict,
+      terminalFlags: flags,
+      classificationRationale: d.classificationRationale,
+      councilMode: councilMode,
+      icMemoSummary: icSummary,
+    });
+    setRecoveryResult(res as RecoveryEngineResult);
+    setRecoveryActiveTab("overview");
+  };
+
+  const handleExportRecoveryMemo = async () => {
+    if (!recoveryResult || !d) return;
+    setRecoveryExporting(true);
+    try {
+      const dealName = result.dealName ?? "Deal";
+      const today = new Date();
+      const dateStr = `${today.getFullYear()}${String(today.getMonth() + 1).padStart(2, "0")}${String(today.getDate()).padStart(2, "0")}`;
+      const filename = `${dealName.replace(/[^a-zA-Z0-9]/g, "_")}_RecoveryMemo_${dateStr}.pdf`;
+      const flags = (d.terminalFlags ?? []) as string[];
+      const res = await exportRecoveryMutation.mutateAsync({
+        dealName,
+        verdict: result.verdict,
+        councilMode: councilMode,
+        terminalFlags: flags,
+        result: recoveryResult,
+      });
+      const blob = new Blob([Uint8Array.from(atob(res.pdfBase64), c => c.charCodeAt(0))], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setRecoveryExporting(false);
+    }
   };
 
   const handleRerun = () => {
@@ -1428,95 +1510,354 @@ const FixTheDealPanel = React.forwardRef<FixTheDealPanelHandle, {
           {/* Results */}
           {d && !fixMutation.isPending && (
             <>
-              {/* ── CLASS C: FULL EARLY-EXIT PATH ─────────────────────────────────── */}
+              {/* ── CLASS C: DEAL RECOVERY ENGINE ────────────────────────────────── */}
               {isClassC && (
                 <>
-                  {/* Red institutional warning banner */}
+                  {/* Governance verdict banner — preserved, never overridden */}
                   <div
                     data-testid="class-c-warning"
                     style={{
-                      marginBottom: 20,
-                      padding: "20px 22px",
-                      background: "rgba(255,71,87,0.07)",
-                      border: `2px solid ${RED}`,
-                      borderLeft: `6px solid ${RED}`,
+                      marginBottom: 16,
+                      padding: "16px 20px",
+                      background: "rgba(255,71,87,0.06)",
+                      border: `1px solid ${RED}55`,
+                      borderLeft: `5px solid ${RED}`,
                       borderRadius: 6,
                     }}
                   >
-                    <div style={{ fontFamily: MONO, fontSize: 13, color: RED, fontWeight: 700, letterSpacing: "0.06em", marginBottom: 4 }}>
-                      THIS DEAL CANNOT BE REPAIRED
+                    <div style={{ fontFamily: MONO, fontSize: 11, color: RED, fontWeight: 700, letterSpacing: "0.06em", marginBottom: 3 }}>
+                      COUNCIL VERDICT: FUNDAMENTALLY NON-VIABLE
                     </div>
-                    <div style={{ fontFamily: MONO, fontSize: 10, color: `${RED}cc`, letterSpacing: "0.04em", marginBottom: 14 }}>
-                      Fundamental restructuring required before resubmission
+                    <div style={{ fontFamily: MONO, fontSize: 9, color: `${RED}99`, letterSpacing: "0.04em", marginBottom: 10 }}>
+                      This verdict is final and cannot be overridden by the Recovery Engine.
                     </div>
-                    <div style={{ fontFamily: MONO, fontSize: 11, color: TEXT2, lineHeight: 1.7, marginBottom: 16, padding: "10px 14px", background: "rgba(255,71,87,0.05)", borderRadius: 4 }}>
+                    <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, lineHeight: 1.7, padding: "8px 12px", background: "rgba(255,71,87,0.04)", borderRadius: 4 }}>
                       {d.classificationRationale}
                     </div>
-                    {d.rootCauses.length > 0 && (
-                      <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.12em", marginBottom: 8 }}>
-                          STRUCTURAL CHANGES REQUIRED TO REACH CLASS B VIABILITY
-                        </div>
-                        {d.rootCauses.slice(0, 3).map((rc: any, i: number) => (
-                          <div key={i} style={{
-                            display: "flex", gap: 10, alignItems: "flex-start",
-                            padding: "8px 12px", marginBottom: 4,
-                            background: "rgba(255,71,87,0.05)",
-                            borderLeft: `3px solid ${RED}66`,
-                            borderRadius: 3,
-                          }}>
-                            <span style={{ fontFamily: MONO, fontSize: 9, color: RED, fontWeight: 700, minWidth: 20, paddingTop: 1 }}>{i + 1}.</span>
-                            <span style={{ fontFamily: MONO, fontSize: 9, color: ACCENT, minWidth: 28, paddingTop: 1 }}>[{rc.category}]</span>
-                            <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, lineHeight: 1.5 }}>{rc.description}</span>
-                          </div>
+                  </div>
+
+                  {/* Recovery Engine CTA */}
+                  {!recoveryResult && !recoveryMutation.isPending && (
+                    <div style={{
+                      marginBottom: 16,
+                      padding: "18px 22px",
+                      background: "rgba(74,158,255,0.05)",
+                      border: `1px solid ${ACCENT}33`,
+                      borderLeft: `4px solid ${ACCENT}`,
+                      borderRadius: 6,
+                    }}>
+                      <div style={{ fontFamily: MONO, fontSize: 11, color: ACCENT, fontWeight: 700, letterSpacing: "0.05em", marginBottom: 6 }}>
+                        DEAL RECOVERY ENGINE
+                      </div>
+                      <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, lineHeight: 1.7, marginBottom: 14 }}>
+                        The Council has rejected this deal. The Recovery Engine will not override this verdict.
+                        Instead, it answers: <span style={{ color: ACCENT }}>&ldquo;What would need to change for this deal to be reconsidered?&rdquo;</span>
+                      </div>
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 14 }}>
+                        {["Failure Analysis", "3 Recovery Paths", "Re-entry Conditions", "Probability of Recovery", "Required Structural Changes"].map(s => (
+                          <span key={s} style={{ fontFamily: MONO, fontSize: 8, color: ACCENT, background: `${ACCENT}10`, border: `1px solid ${ACCENT}22`, borderRadius: 3, padding: "2px 7px" }}>{s}</span>
                         ))}
                       </div>
-                    )}
-                    <div>
-                      <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.12em", marginBottom: 8 }}>RECOMMENDED ALTERNATIVES</div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                        {["Phased entry", "Smaller ticket", "Different financing structure", "Strategic partnership", "Alternative instrument", "Hold / wait strategy"].map(alt => (
-                          <span key={alt} style={{
-                            fontFamily: MONO, fontSize: 9, color: AMBER,
-                            background: `${AMBER}12`, border: `1px solid ${AMBER}33`,
-                            borderRadius: 4, padding: "3px 8px",
-                          }}>{alt}</span>
+                      <button
+                        onClick={handleGenerateRecovery}
+                        data-testid="generate-recovery"
+                        style={{
+                          padding: "9px 22px",
+                          background: `${ACCENT}15`,
+                          border: `1px solid ${ACCENT}`,
+                          color: ACCENT,
+                          fontFamily: MONO, fontSize: 11, cursor: "pointer",
+                          borderRadius: 4, letterSpacing: "0.06em", fontWeight: 700,
+                        }}
+                      >
+                        GENERATE RECOVERY ANALYSIS
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Recovery loading */}
+                  {recoveryMutation.isPending && (
+                    <div style={{ fontFamily: MONO, fontSize: 11, color: MUTED, padding: "20px 0", textAlign: "center" }}>
+                      ANALYSING FAILURE MODES · MAPPING RECOVERY PATHS · COMPUTING RE-ENTRY CONDITIONS...
+                    </div>
+                  )}
+
+                  {/* Recovery error */}
+                  {recoveryMutation.isError && (
+                    <div style={{ fontFamily: MONO, fontSize: 11, color: RED, padding: "10px 0" }}>
+                      RECOVERY ENGINE ERROR — {recoveryMutation.error?.message ?? "Unknown error"}
+                    </div>
+                  )}
+
+                  {/* Recovery result */}
+                  {recoveryResult && (
+                    <div style={{ marginBottom: 16 }}>
+                      {/* Header */}
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+                        <div>
+                          <div style={{ fontFamily: MONO, fontSize: 11, color: ACCENT, fontWeight: 700, letterSpacing: "0.05em" }}>DEAL RECOVERY ANALYSIS</div>
+                          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginTop: 2 }}>Governance-governed. Council verdict preserved.</div>
+                        </div>
+                        {/* Overall probability badge */}
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <div style={{ textAlign: "center" }}>
+                            <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED, marginBottom: 2 }}>RECOVERY PROBABILITY</div>
+                            <div style={{ fontFamily: MONO, fontSize: 20, color: recoveryResult.overallProbabilityOfRecovery.pct >= 40 ? GREEN : recoveryResult.overallProbabilityOfRecovery.pct >= 20 ? AMBER : RED, fontWeight: 700 }}>
+                              {recoveryResult.overallProbabilityOfRecovery.pct}%
+                            </div>
+                          </div>
+                          <div style={{ textAlign: "center" }}>
+                            <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED, marginBottom: 2 }}>NEXT REVIEW</div>
+                            <div style={{ fontFamily: MONO, fontSize: 11, color: ACCENT, fontWeight: 700 }}>{recoveryResult.suggestedNextReviewDate}</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Tabs */}
+                      <div style={{ display: "flex", gap: 2, marginBottom: 14, borderBottom: `1px solid ${BORDER}`, flexWrap: "wrap" }}>
+                        {([
+                          { id: "overview", label: "OVERVIEW" },
+                          { id: "pathA", label: "PATH A" },
+                          { id: "pathB", label: "PATH B" },
+                          { id: "pathC", label: "PATH C" },
+                          { id: "conditions", label: "CONDITIONS" },
+                          { id: "changes", label: "CHANGES" },
+                        ] as const).map(tab => (
+                          <button
+                            key={tab.id}
+                            onClick={() => setRecoveryActiveTab(tab.id)}
+                            style={{
+                              fontFamily: MONO, fontSize: 9, padding: "6px 12px",
+                              background: recoveryActiveTab === tab.id ? `${ACCENT}15` : "transparent",
+                              border: "none",
+                              borderBottom: recoveryActiveTab === tab.id ? `2px solid ${ACCENT}` : "2px solid transparent",
+                              color: recoveryActiveTab === tab.id ? ACCENT : MUTED,
+                              cursor: "pointer", letterSpacing: "0.06em", fontWeight: 600,
+                            }}
+                          >{tab.label}</button>
                         ))}
+                      </div>
+
+                      {/* OVERVIEW TAB */}
+                      {recoveryActiveTab === "overview" && (
+                        <div>
+                          {/* Failure analysis */}
+                          <div style={{ marginBottom: 14, padding: "12px 16px", background: "rgba(255,71,87,0.05)", borderLeft: `3px solid ${RED}`, borderRadius: 4 }}>
+                            <div style={{ fontFamily: MONO, fontSize: 9, color: RED, letterSpacing: "0.1em", marginBottom: 6 }}>FAILURE ANALYSIS</div>
+                            <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, lineHeight: 1.7, marginBottom: 8 }}>{recoveryResult.failureAnalysis.primaryFailureMode}</div>
+                            <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 4 }}>WHY REPAIR IS INSUFFICIENT</div>
+                            <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, lineHeight: 1.6 }}>{recoveryResult.failureAnalysis.whyRepairIsInsufficient}</div>
+                          </div>
+                          {/* Terminal blockers */}
+                          {recoveryResult.terminalBlockers.length > 0 && (
+                            <div style={{ marginBottom: 14 }}>
+                              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 8 }}>TERMINAL BLOCKERS</div>
+                              {recoveryResult.terminalBlockers.map((tb, i) => (
+                                <div key={i} style={{ marginBottom: 8, padding: "10px 14px", background: "rgba(255,71,87,0.04)", borderLeft: `3px solid ${RED}55`, borderRadius: 4 }}>
+                                  <div style={{ fontFamily: MONO, fontSize: 10, color: RED, fontWeight: 700, marginBottom: 4 }}>{tb.label}</div>
+                                  <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 2 }}>GOVERNING BLOCKER: <span style={{ color: AMBER }}>{tb.governingBlocker}</span></div>
+                                  <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 2 }}>COUNCIL CONCERN: <span style={{ color: TEXT2 }}>{tb.councilConcern}</span></div>
+                                  <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED }}>CONSTITUTIONAL FINDING: <span style={{ color: TEXT2 }}>{tb.constitutionalFinding}</span></div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {/* Path summary cards */}
+                          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 8 }}>RECOVERY PATHS</div>
+                          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                            {([recoveryResult.recoveryPathA, recoveryResult.recoveryPathB, recoveryResult.recoveryPathC] as RecoveryPath[]).map((p, i) => {
+                              const pathColors = [GREEN, AMBER, ACCENT];
+                              const pc = pathColors[i];
+                              return (
+                                <div
+                                  key={p.label}
+                                  onClick={() => setRecoveryActiveTab(i === 0 ? "pathA" : i === 1 ? "pathB" : "pathC")}
+                                  style={{ flex: "1 1 140px", padding: "10px 12px", background: `${pc}08`, border: `1px solid ${pc}33`, borderRadius: 5, cursor: "pointer" }}
+                                >
+                                  <div style={{ fontFamily: MONO, fontSize: 9, color: pc, fontWeight: 700, marginBottom: 3 }}>PATH {p.label}</div>
+                                  <div style={{ fontFamily: MONO, fontSize: 9, color: TEXT2, marginBottom: 6, lineHeight: 1.4 }}>{p.title}</div>
+                                  <div style={{ fontFamily: MONO, fontSize: 16, color: p.probabilityPct >= 40 ? GREEN : p.probabilityPct >= 20 ? AMBER : RED, fontWeight: 700 }}>{p.probabilityPct}%</div>
+                                  <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED }}>{p.estimatedTimeline}</div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                          {/* Conditions for reconsideration */}
+                          {recoveryResult.conditionsForReconsideration.length > 0 && (
+                            <div style={{ marginTop: 14 }}>
+                              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 8 }}>CONDITIONS FOR RECONSIDERATION</div>
+                              {recoveryResult.conditionsForReconsideration.map((c, i) => (
+                                <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: "5px 0" }}>
+                                  <span style={{ fontFamily: MONO, fontSize: 9, color: ACCENT, minWidth: 14 }}>▶</span>
+                                  <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, lineHeight: 1.6 }}>{c}</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* PATH TABS */}
+                      {(["pathA", "pathB", "pathC"] as const).map((tabId, i) => {
+                        const path = i === 0 ? recoveryResult.recoveryPathA : i === 1 ? recoveryResult.recoveryPathB : recoveryResult.recoveryPathC;
+                        const pathColors = [GREEN, AMBER, ACCENT];
+                        const pc = pathColors[i];
+                        if (recoveryActiveTab !== tabId || !path) return null;
+                        return (
+                          <div key={tabId}>
+                            <div style={{ padding: "14px 16px", background: `${pc}08`, border: `1px solid ${pc}22`, borderLeft: `4px solid ${pc}`, borderRadius: 5, marginBottom: 12 }}>
+                              <div style={{ fontFamily: MONO, fontSize: 11, color: pc, fontWeight: 700, marginBottom: 3 }}>PATH {path.label}: {path.title}</div>
+                              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 8 }}>{path.estimatedTimeline}</div>
+                              <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, lineHeight: 1.7, marginBottom: 10 }}>{path.description}</div>
+                              {/* Probability bar */}
+                              <div style={{ marginBottom: 10 }}>
+                                <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED, marginBottom: 4 }}>PROBABILITY OF RECONSIDERATION</div>
+                                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                                  <div style={{ flex: 1, height: 6, background: "rgba(255,255,255,0.06)", borderRadius: 3 }}>
+                                    <div style={{ width: `${path.probabilityPct}%`, height: "100%", background: path.probabilityPct >= 40 ? GREEN : path.probabilityPct >= 20 ? AMBER : RED, borderRadius: 3 }} />
+                                  </div>
+                                  <span style={{ fontFamily: MONO, fontSize: 12, color: path.probabilityPct >= 40 ? GREEN : path.probabilityPct >= 20 ? AMBER : RED, fontWeight: 700, minWidth: 36 }}>{path.probabilityPct}%</span>
+                                </div>
+                              </div>
+                              {/* Citation chain */}
+                              <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED, marginBottom: 2 }}>GOVERNING BLOCKER: <span style={{ color: AMBER }}>{path.governingBlocker}</span></div>
+                              <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED, marginBottom: 2 }}>COUNCIL CONCERN: <span style={{ color: TEXT2 }}>{path.councilConcern}</span></div>
+                              <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED }}>CONSTITUTIONAL FINDING: <span style={{ color: TEXT2 }}>{path.constitutionalFinding}</span></div>
+                            </div>
+                            {/* Milestones */}
+                            {path.milestones.length > 0 && (
+                              <div>
+                                <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 6 }}>MILESTONES</div>
+                                {path.milestones.map((m, mi) => (
+                                  <div key={mi} style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: "4px 0" }}>
+                                    <span style={{ fontFamily: MONO, fontSize: 9, color: pc, minWidth: 18 }}>{mi + 1}.</span>
+                                    <span style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, lineHeight: 1.5 }}>{m}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+
+                      {/* CONDITIONS TAB */}
+                      {recoveryActiveTab === "conditions" && (
+                        <div>
+                          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 10 }}>RE-ENTRY CONDITIONS</div>
+                          {recoveryResult.reentryConditions.map((rc, i) => (
+                            <div key={i} style={{ marginBottom: 10, padding: "10px 14px", background: i % 2 === 0 ? "rgba(13,20,33,0.8)" : "rgba(10,15,30,0.6)", borderLeft: `3px solid ${ACCENT}44`, borderRadius: 4 }}>
+                              <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT, fontWeight: 600, marginBottom: 5 }}>{rc.condition}</div>
+                              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 2 }}>THRESHOLD: <span style={{ color: GREEN }}>{rc.measurableThreshold}</span></div>
+                              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, marginBottom: 2 }}>VERIFICATION: <span style={{ color: TEXT2 }}>{rc.verificationMethod}</span></div>
+                              <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED }}>TIMEFRAME: <span style={{ color: AMBER }}>{rc.timeframe}</span></div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* CHANGES TAB */}
+                      {recoveryActiveTab === "changes" && (
+                        <div>
+                          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 10 }}>REQUIRED STRUCTURAL CHANGES</div>
+                          {recoveryResult.requiredStructuralChanges.map((ch, i) => (
+                            <div key={i} style={{ display: "flex", gap: 10, alignItems: "flex-start", padding: "8px 12px", marginBottom: 4, background: "rgba(255,255,255,0.02)", borderRadius: 4 }}>
+                              <span style={{ fontFamily: MONO, fontSize: 10, color: AMBER, fontWeight: 700, minWidth: 20 }}>#{ch.rank}</span>
+                              <div style={{ flex: 1 }}>
+                                <div style={{ fontFamily: MONO, fontSize: 10, color: TEXT, marginBottom: 3 }}>{ch.change}</div>
+                                <div style={{ fontFamily: MONO, fontSize: 9, color: TEXT2, marginBottom: 2 }}>{ch.rationale}</div>
+                                <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED }}>BLOCKER: <span style={{ color: RED }}>{ch.governingBlocker}</span> · CONCERN: <span style={{ color: MUTED }}>{ch.councilConcern}</span></div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Export Recovery Memo CTA */}
+                      <div style={{ marginTop: 18, padding: "14px 18px", background: "rgba(74,158,255,0.04)", border: `1px solid ${ACCENT}22`, borderRadius: 6 }}>
+                        <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.1em", marginBottom: 8 }}>EXPORT RECOVERY MEMO</div>
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center" }}>
+                          <button
+                            onClick={handleExportRecoveryMemo}
+                            disabled={recoveryExporting || exportRecoveryMutation.isPending}
+                            data-testid="export-recovery-memo"
+                            style={{
+                              padding: "8px 18px",
+                              background: recoveryExporting ? `${ACCENT}08` : `${ACCENT}12`,
+                              border: `1px solid ${ACCENT}`,
+                              color: ACCENT,
+                              fontFamily: MONO, fontSize: 10, cursor: recoveryExporting ? "not-allowed" : "pointer",
+                              borderRadius: 4, letterSpacing: "0.06em", fontWeight: 700,
+                              opacity: recoveryExporting ? 0.7 : 1,
+                            }}
+                          >
+                            {recoveryExporting ? "GENERATING PDF..." : "EXPORT RECOVERY MEMO (PDF)"}
+                          </button>
+                          {["Machine-Verifiable", "Audit Ready", "Governance Traceable"].map(badge => (
+                            <span key={badge} style={{ fontFamily: MONO, fontSize: 8, color: GREEN, background: `${GREEN}10`, border: `1px solid ${GREEN}22`, borderRadius: 3, padding: "2px 7px" }}>{badge}</span>
+                          ))}
+                        </div>
+                        {exportRecoveryMutation.isError && (
+                          <div style={{ fontFamily: MONO, fontSize: 9, color: RED, marginTop: 6 }}>
+                            Export failed — {exportRecoveryMutation.error?.message ?? "Unknown error"}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Re-run recovery button */}
+                      <div style={{ marginTop: 10, display: "flex", gap: 8 }}>
+                        <button
+                          onClick={handleGenerateRecovery}
+                          disabled={recoveryMutation.isPending}
+                          style={{
+                            padding: "7px 14px",
+                            background: "transparent",
+                            border: `1px solid ${MUTED}55`,
+                            color: MUTED,
+                            fontFamily: MONO, fontSize: 9, cursor: "pointer",
+                            borderRadius: 4, letterSpacing: "0.05em",
+                          }}
+                        >
+                          REGENERATE ANALYSIS
+                        </button>
                       </div>
                     </div>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                    <button
-                      onClick={handleRequestMemo}
-                      disabled={memoMutation.isPending}
-                      data-testid="request-restructuring-memo"
-                      style={{
-                        padding: "9px 20px",
-                        background: memoMutation.isPending ? "rgba(255,71,87,0.08)" : "rgba(255,71,87,0.12)",
-                        border: `1px solid ${RED}`,
-                        color: RED,
-                        fontFamily: MONO, fontSize: 11, cursor: memoMutation.isPending ? "not-allowed" : "pointer",
-                        borderRadius: 4, letterSpacing: "0.06em", fontWeight: 700,
-                        opacity: memoMutation.isPending ? 0.7 : 1,
-                      }}
-                    >
-                      {memoMutation.isPending ? "GENERATING MEMO..." : "REQUEST RESTRUCTURING MEMO"}
-                    </button>
-                    {memoMutation.isError && (
-                      <span style={{ fontFamily: MONO, fontSize: 10, color: RED }}>
-                        Memo generation failed — {memoMutation.error?.message ?? "Unknown error"}
-                      </span>
-                    )}
-                  </div>
-                  {memoText && (
-                    <div style={{ marginTop: 16, padding: "16px 20px", background: "rgba(13,20,33,0.98)", border: `1px solid ${BORDER}`, borderRadius: 6 }}>
-                      <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.12em", marginBottom: 10 }}>
-                        RESTRUCTURING MEMO — IC PARTNER TO SPONSOR
+                  )}
+
+                  {/* Legacy: Restructuring Memo (still available for Class C) */}
+                  {d.terminalFlags && d.terminalFlags.length > 0 && (
+                    <div style={{ marginTop: 12 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                        <button
+                          onClick={handleRequestMemo}
+                          disabled={memoMutation.isPending}
+                          data-testid="request-restructuring-memo"
+                          style={{
+                            padding: "7px 16px",
+                            background: "transparent",
+                            border: `1px solid ${MUTED}44`,
+                            color: MUTED,
+                            fontFamily: MONO, fontSize: 9, cursor: memoMutation.isPending ? "not-allowed" : "pointer",
+                            borderRadius: 4, letterSpacing: "0.05em",
+                            opacity: memoMutation.isPending ? 0.7 : 1,
+                          }}
+                        >
+                          {memoMutation.isPending ? "GENERATING MEMO..." : "REQUEST RESTRUCTURING MEMO"}
+                        </button>
                       </div>
-                      <pre style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, lineHeight: 1.8, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{memoText}</pre>
-                      <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED, marginTop: 12, borderTop: `1px solid ${BORDER}`, paddingTop: 8 }}>
-                        AI-assisted deal analysis. Not investment advice. © AgenThink Mesh.
-                      </div>
+                      {memoMutation.isError && (
+                        <span style={{ fontFamily: MONO, fontSize: 9, color: RED, marginTop: 4, display: "block" }}>
+                          Memo generation failed — {memoMutation.error?.message ?? "Unknown error"}
+                        </span>
+                      )}
+                      {memoText && (
+                        <div style={{ marginTop: 12, padding: "14px 18px", background: "rgba(13,20,33,0.98)", border: `1px solid ${BORDER}`, borderRadius: 6 }}>
+                          <div style={{ fontFamily: MONO, fontSize: 9, color: MUTED, letterSpacing: "0.12em", marginBottom: 8 }}>RESTRUCTURING MEMO — IC PARTNER TO SPONSOR</div>
+                          <pre style={{ fontFamily: MONO, fontSize: 10, color: TEXT2, lineHeight: 1.8, whiteSpace: "pre-wrap", wordBreak: "break-word", margin: 0 }}>{memoText}</pre>
+                          <div style={{ fontFamily: MONO, fontSize: 8, color: MUTED, marginTop: 10, borderTop: `1px solid ${BORDER}`, paddingTop: 6 }}>
+                            AI-assisted deal analysis. Not investment advice. © AgenThink Mesh.
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </>
