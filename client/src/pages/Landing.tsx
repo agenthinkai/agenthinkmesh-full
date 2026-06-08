@@ -331,29 +331,27 @@ function Reports() {
         </div>
         <div style={{ display: "flex", flexDirection: "column" as const, gap: 16 }}>
           {REPORTS.map((r, i) => (
-            <Link key={i} href="/deals">
-              <a style={{ textDecoration: "none" }}>
-                <div style={{
-                  ...card({ padding: "24px 28px" }),
-                  display: "flex", alignItems: "flex-start", gap: 20,
-                  borderLeft: `4px solid ${r.color}`,
-                  cursor: "pointer",
-                }}>
-                  <div style={{ fontSize: 28, flexShrink: 0, marginTop: 2 }}>{r.icon}</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
-                      <span style={{ fontSize: 15, fontWeight: 700, color: SILVER_50 }}>{r.title}</span>
-                      {r.isNew && (
-                        <span style={{ fontSize: 9, fontWeight: 700, color: GREEN_400, background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 4, padding: "2px 7px", fontFamily: MONO, letterSpacing: "0.1em" }}>NEW</span>
-                      )}
-                    </div>
-                    <p style={{ fontSize: 13, color: SILVER_300, lineHeight: 1.7, margin: "0 0 8px" }}>{r.purpose}</p>
-                    <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, letterSpacing: "0.05em" }}>Audience: {r.audience}</div>
+            <a key={i} href="/deals" style={{ textDecoration: "none", display: "block" }}>
+              <div style={{
+                ...card({ padding: "24px 28px" }),
+                display: "flex", alignItems: "flex-start", gap: 20,
+                borderLeft: `4px solid ${r.color}`,
+                cursor: "pointer",
+              }}>
+                <div style={{ fontSize: 28, flexShrink: 0, marginTop: 2 }}>{r.icon}</div>
+                <div style={{ flex: 1 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                    <span style={{ fontSize: 15, fontWeight: 700, color: SILVER_50 }}>{r.title}</span>
+                    {r.isNew && (
+                      <span style={{ fontSize: 9, fontWeight: 700, color: GREEN_400, background: "rgba(74,222,128,0.12)", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 4, padding: "2px 7px", fontFamily: MONO, letterSpacing: "0.1em" }}>NEW</span>
+                    )}
                   </div>
-                  <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, flexShrink: 0, marginTop: 4 }}>PDF ↗</div>
+                  <p style={{ fontSize: 13, color: SILVER_300, lineHeight: 1.7, margin: "0 0 8px" }}>{r.purpose}</p>
+                  <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, letterSpacing: "0.05em" }}>Audience: {r.audience}</div>
                 </div>
-              </a>
-            </Link>
+                <div style={{ fontSize: 11, color: SILVER_500, fontFamily: MONO, flexShrink: 0, marginTop: 4 }}>PDF ↗</div>
+              </div>
+            </a>
           ))}
         </div>
       </div>

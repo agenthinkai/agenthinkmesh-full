@@ -87,6 +87,7 @@ const TABS = [
   { id: "memo", label: "IC Memo", badge: null },
   { id: "drivers", label: "Decision Drivers", badge: null },
   { id: "test", label: "Test Your Own Project", badge: null },
+  { id: "proof", label: "Proof Report", badge: "NEW" },
 ] as const;
 
 type TabId = (typeof TABS)[number]["id"];
@@ -1015,6 +1016,157 @@ function TestTab({ logEvent }: { logEvent: (event: string) => void }) {
   );
 }
 
+// ── Tab: Proof Report ────────────────────────────────────────────────────────
+
+function ProofTab() {
+  const PROOF_REPORT = {
+    executiveSummary:
+      "The Infrastructure Council of 10 evaluated the Helios-North Offshore Wind project — a 450MW North Sea development — for FID readiness. The council reached conditional consensus (82% confidence) to proceed subject to EPC contract finalisation and grid connection confirmation. Every infrastructure governance finding — from DSCR stress testing through CfD adequacy review to construction risk assessment — is recorded in this proof record and exportable for IC and lender review.",
+    governanceFindings: [
+      "FID Readiness Agent confirmed the project meets 7 of 9 FID readiness criteria; 2 conditions outstanding: EPC contract execution and grid connection long-stop date confirmation.",
+      "DSCR Resilience Agent stress-tested the debt service coverage ratio under 3 scenarios; minimum DSCR of 1.18x under the P90 wind scenario is above the 1.10x covenant floor.",
+      "EPC Risk Agent flagged the current EPC contract structure as non-standard; liquidated damages cap is below the 15% threshold recommended for North Sea projects.",
+      "CfD Adequacy Agent confirmed the 15-year CfD at £87/MWh provides adequate revenue certainty for the proposed financing structure.",
+      "Grid Connection Agent flagged the 14-month connection timeline as the critical path risk; confirmed Ofgem connection agreement is in place but long-stop date is unconfirmed.",
+      "Construction Delay Agent modelled 3, 6, and 12-month delay scenarios; 6-month delay triggers an DSCR covenant breach under the base case financing structure.",
+      "All 8 constitutional rules passed. No violations detected.",
+    ],
+    constitutionVersion: "AgenThinkMesh Constitution v2.1 — 8 rules active",
+    calibrationContext:
+      "Persona weights reflect 28 prior infrastructure and renewable energy project evaluations. FID Readiness Agent carries trust weight 0.89, reflecting strong calibration on North Sea offshore wind projects. DSCR Resilience Agent weight is 0.87. EPC Risk Agent weight is 0.83. All personas above minimum sample threshold (12). Brier score 0.11 — strong predictive calibration for infrastructure FID scenarios.",
+    historicalPrecedents: [
+      "Offshore wind FID evaluation — North Sea 380MW, Q3 2025: CONDITIONAL PROCEED at 79% confidence. Outcome: EPC conditions met within 45 days, FID achieved on schedule.",
+      "Infrastructure DSCR stress test — Onshore Wind 220MW, Q4 2025: PROCEED TO FID at 84% confidence. Outcome: financing closed, construction commenced on schedule.",
+      "Grid connection risk assessment — Offshore Wind 500MW, Q1 2026: ESCALATE TO IC at 71% confidence. Outcome: grid connection timeline renegotiated, project proceeded 3 months later.",
+    ],
+    releaseGateDetermination:
+      "CONDITIONAL RELEASE — The proof record is cleared for IC presentation subject to the following gate conditions: (1) EPC contract execution with liquidated damages cap at or above 15% of contract value; (2) written confirmation of grid connection long-stop date from Ofgem. Upon resolution of both conditions, a targeted re-evaluation of the EPC Risk and Grid Connection Agent nodes only is required. All other council findings remain valid and support the CONDITIONAL PROCEED verdict.",
+    auditReferences: [
+      "Council session: IC-RWE-HELIOS-2026-0517-001 · 10 agent votes logged · 2 dissents recorded",
+      "CFA session: CFA-RWE-HELIOS-2026-0517-001 · 8 constitution rules evaluated · 0 violations",
+      "Calibration state: CAL-RWE-2026-0517 · 28 prior evaluations · Brier score 0.11",
+      "Orchestration run: ORCH-RWE-HELIOS-2026-0517-001 · 7-node pipeline · construct_proof_chain completed",
+    ],
+    exportCtaText:
+      "Every infrastructure recommendation can be exported as an Institutional Proof Report — machine-verifiable, audit-ready, and formatted for IC, lender, and regulatory review.",
+  };
+
+  const releaseColor = "border-amber-400/30 bg-amber-400/5";
+  const releaseTextColor = "text-amber-300";
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="border border-violet-400/20 bg-violet-400/5 rounded-xl px-5 py-4">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xs font-mono uppercase tracking-widest text-violet-300">
+            Institutional Proof Report
+          </span>
+          <span className="text-xs font-mono px-2 py-0.5 rounded border border-violet-400/30 text-violet-300 bg-transparent">
+            NEW
+          </span>
+        </div>
+        <p className="text-xs text-slate-400 leading-relaxed">
+          Simulated proof record based on publicly available information — not investment advice.
+          This report demonstrates the governance artifact structure produced by AgenThinkMesh for RWE Infrastructure Investment.
+        </p>
+      </div>
+
+      {/* 1. Executive Summary */}
+      <Card>
+        <SectionLabel>1 · Executive Summary</SectionLabel>
+        <p className="text-sm text-slate-300 leading-relaxed">{PROOF_REPORT.executiveSummary}</p>
+      </Card>
+
+      {/* 2. Governance Findings */}
+      <Card>
+        <SectionLabel>2 · Governance Findings</SectionLabel>
+        <ul className="space-y-2.5">
+          {PROOF_REPORT.governanceFindings.map((finding, i) => (
+            <li key={i} className="flex items-start gap-2.5 text-sm text-slate-300">
+              <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-violet-400 shrink-0" />
+              <span className="leading-relaxed">{finding}</span>
+            </li>
+          ))}
+        </ul>
+      </Card>
+
+      {/* 3 & 4. Constitution Version + Calibration Context */}
+      <div className="grid sm:grid-cols-2 gap-4">
+        <Card>
+          <SectionLabel>3 · Constitution Version</SectionLabel>
+          <p className="text-sm text-slate-300 font-mono">{PROOF_REPORT.constitutionVersion}</p>
+        </Card>
+        <Card>
+          <SectionLabel>4 · Calibration Context</SectionLabel>
+          <p className="text-sm text-slate-300 leading-relaxed">{PROOF_REPORT.calibrationContext}</p>
+        </Card>
+      </div>
+
+      {/* 5. Historical Precedents */}
+      <Card>
+        <SectionLabel>5 · Historical Precedents</SectionLabel>
+        <div className="space-y-3">
+          {PROOF_REPORT.historicalPrecedents.map((precedent, i) => (
+            <div key={i} className="border-l-2 border-violet-400/30 pl-3">
+              <p className="text-sm text-slate-300 leading-relaxed">{precedent}</p>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* 6. Release Gate Determination */}
+      <div className={`border rounded-xl p-5 ${releaseColor}`}>
+        <div className={`text-xs font-mono uppercase tracking-widest mb-3 ${releaseTextColor}`}>
+          6 · Release Gate Determination
+        </div>
+        <p className="text-sm text-slate-200 leading-relaxed font-medium">
+          {PROOF_REPORT.releaseGateDetermination}
+        </p>
+      </div>
+
+      {/* 7. Audit References */}
+      <Card>
+        <SectionLabel>7 · Audit References</SectionLabel>
+        <div className="space-y-2">
+          {PROOF_REPORT.auditReferences.map((ref, i) => (
+            <div key={i} className="flex items-start gap-2 text-xs font-mono text-slate-400">
+              <span className="text-violet-400 shrink-0">#{i + 1}</span>
+              <span>{ref}</span>
+            </div>
+          ))}
+        </div>
+      </Card>
+
+      {/* Export CTA */}
+      <div className="border border-violet-400/20 bg-violet-400/5 rounded-xl p-6">
+        <div className="text-xs font-mono uppercase tracking-widest text-violet-300 mb-2">
+          Export Proof Report
+        </div>
+        <p className="text-sm text-slate-300 leading-relaxed mb-4">{PROOF_REPORT.exportCtaText}</p>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <a
+            href="https://agenthink-7enctkan.manus.space"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 bg-violet-600 hover:bg-violet-500 text-white font-semibold text-sm px-5 py-2.5 rounded-lg transition-colors"
+          >
+            Export as PDF ↗
+          </a>
+          <a
+            href="https://agenthink-7enctkan.manus.space"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 bg-white/10 hover:bg-white/15 text-white font-semibold text-sm px-5 py-2.5 rounded-lg transition-colors border border-white/20"
+          >
+            Export as JSON ↗
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main component ────────────────────────────────────────────────────────────
 
 export default function RweDemo() {
@@ -1157,6 +1309,7 @@ export default function RweDemo() {
         {activeTab === "test" && (
           <TestTab logEvent={(event) => logEvent(event)} />
         )}
+        {activeTab === "proof" && <ProofTab />}
       </div>
     </div>
   );

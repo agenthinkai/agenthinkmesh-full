@@ -9,6 +9,17 @@
  * Batch 2 (ship May 26): core42, adnoc, kia, kamco
  */
 
+export interface ProofReportConfig {
+  executiveSummary: string;
+  governanceFindings: string[];
+  constitutionVersion: string;
+  calibrationContext: string;
+  historicalPrecedents: string[];
+  releaseGateDetermination: string;
+  auditReferences: string[];
+  exportCtaText: string;
+}
+
 export interface ProspectConfig {
   slug: string;                  // URL path segment — /demo/{slug}
   name: string;                  // Display name shown in hero
@@ -34,6 +45,8 @@ export interface ProspectConfig {
   overallVerdict: string;
   overallConfidence: number;
   overallSummary: string;
+  // Institutional Proof Report content
+  proofReport: ProofReportConfig;
 }
 
 // ── Batch 1 ───────────────────────────────────────────────────────────────────
@@ -98,6 +111,35 @@ const stc: ProspectConfig = {
   overallConfidence: 0.81,
   overallSummary:
     "Council reached conditional consensus. Sovereign AI governance layer is a strong fit for STC's regulated AI deployment mandate. Key condition: confirm SADO jurisdiction routing config before production rollout. Recommend a 30-day pilot on a bounded workload.",
+  proofReport: {
+    executiveSummary:
+      "The Council of 10 evaluated a governed AI workload orchestration scenario for a major GCC telecom operator. The council reached conditional consensus (81% confidence) to proceed, contingent on SADO jurisdiction routing verification. All governance artifacts — agent votes, dissent logs, constitution checks, and calibration weights — are preserved in this proof record.",
+    governanceFindings: [
+      "SADO Jurisdiction Agent flagged 2 data movement paths requiring residency confirmation before production deployment.",
+      "Regulatory Compliance Agent confirmed CITC and TRA alignment across all proposed workload categories.",
+      "Challenger Agent raised token consumption forecasting uncertainty; Quantitative Agent provided a bounded estimate with ±12% confidence interval.",
+      "No constitution violations detected. All 8 constitutional rules passed without exception.",
+      "Consensus weight applied via authorized consensus_weight() path only. APPLY_WEIGHTS_TO_CONSENSUS remained False throughout evaluation.",
+    ],
+    constitutionVersion: "AgenThinkMesh Constitution v2.1 — 8 rules active",
+    calibrationContext:
+      "Persona weights reflect 47 prior telecom-sector evaluations. SADO Jurisdiction Agent carries elevated trust weight (0.91) based on 12 consecutive accurate jurisdiction flags. Challenger Agent weight is 0.74 — within normal operating range. Minimum sample threshold (12) met for all active personas.",
+    historicalPrecedents: [
+      "Sovereign AI deployment evaluation — GCC Telecom, Q4 2025: CONDITIONAL ENGAGE at 79% confidence. Outcome: pilot launched, 3 of 4 conditions met within 45 days.",
+      "Regulated AI orchestration review — Regional MNO, Q1 2026: ENGAGE at 84% confidence. Outcome: full deployment approved by regulator within 60 days.",
+      "SADO jurisdiction routing evaluation — Cloud Infrastructure Provider, Q1 2026: BLOCK issued. Outcome: deployment paused, routing config corrected, re-evaluated to ENGAGE.",
+    ],
+    releaseGateDetermination:
+      "CONDITIONAL RELEASE — The proof record is cleared for committee presentation subject to the following gate condition: written confirmation from the SADO compliance team that jurisdiction routing config meets data residency requirements. Release gate will be re-evaluated upon receipt of confirmation. No further council re-run required if condition is met without material scope change.",
+    auditReferences: [
+      "Council session: IC-STC-2026-0517-001 · 10 agent votes logged · 2 dissents recorded",
+      "CFA session: CFA-STC-2026-0517-001 · 8 constitution rules evaluated · 0 violations",
+      "Calibration state: CAL-STC-2026-0517 · 47 prior evaluations · Brier score 0.14",
+      "Orchestration run: ORCH-STC-2026-0517-001 · 7-node pipeline · construct_proof_chain completed",
+    ],
+    exportCtaText:
+      "Technology governance decisions can be exported as institutional proof records — machine-verifiable, audit-ready, and formatted for regulatory review.",
+  },
 };
 
 const tencent: ProspectConfig = {
@@ -160,6 +202,35 @@ const tencent: ProspectConfig = {
   overallConfidence: 0.78,
   overallSummary:
     "Council reached consensus to engage. AgenThinkMesh's cross-jurisdiction governance layer is directly relevant to Tencent's GCC expansion strategy. Recommend a joint architecture review focused on SADO-compliant data routing and enterprise API integration.",
+  proofReport: {
+    executiveSummary:
+      "The Council of 10 evaluated a cross-jurisdiction AI governance scenario for a major APAC cloud and AI platform operator expanding into the GCC. The council reached consensus to engage (78% confidence). Every governance decision in this evaluation is traceable through a machine-verifiable evidence chain — from initial agent votes through constitution checks to the final proof record.",
+    governanceFindings: [
+      "SADO Jurisdiction Agent confirmed that APAC ↔ GCC data routing is achievable with compliant endpoint configuration under PDPL and PIPL frameworks.",
+      "Cross-Jurisdiction Routing Agent identified 3 data flow categories requiring explicit consent logging under PIPL Article 38.",
+      "Enterprise AI Governance Agent assessed multi-tenant isolation requirements; no blocking issues identified.",
+      "Challenger Agent raised integration timeline risk for enterprise clients; Quantitative Agent bounded the estimate at 14–21 days for standard API integration.",
+      "All 8 constitutional rules passed. No violations detected.",
+    ],
+    constitutionVersion: "AgenThinkMesh Constitution v2.1 — 8 rules active",
+    calibrationContext:
+      "Persona weights reflect 31 prior cross-jurisdiction AI governance evaluations. SADO Jurisdiction Agent carries trust weight 0.88. Cross-Jurisdiction Routing Agent weight is 0.82, reflecting strong calibration on APAC ↔ GCC data flow scenarios. All personas above minimum sample threshold.",
+    historicalPrecedents: [
+      "Cross-border AI governance evaluation — APAC Cloud Provider, Q3 2025: ENGAGE at 76% confidence. Outcome: joint architecture deployed within 90 days.",
+      "SADO-PIPL dual-jurisdiction review — Enterprise Platform, Q4 2025: CONDITIONAL ENGAGE at 71% confidence. Outcome: consent logging implemented, full deployment approved.",
+      "Multi-tenant AI governance assessment — Regional Cloud, Q1 2026: ENGAGE at 81% confidence. Outcome: 4 enterprise clients onboarded within 60 days.",
+    ],
+    releaseGateDetermination:
+      "FULL RELEASE — The proof record is cleared for committee presentation without conditions. The council reached unqualified consensus. No blocking constitution violations. Release gate passed on first evaluation.",
+    auditReferences: [
+      "Council session: IC-TENCENT-2026-0517-001 · 10 agent votes logged · 1 dissent recorded",
+      "CFA session: CFA-TENCENT-2026-0517-001 · 8 constitution rules evaluated · 0 violations",
+      "Calibration state: CAL-TENCENT-2026-0517 · 31 prior evaluations · Brier score 0.18",
+      "Orchestration run: ORCH-TENCENT-2026-0517-001 · 7-node pipeline · construct_proof_chain completed",
+    ],
+    exportCtaText:
+      "Every governance decision is traceable through a machine-verifiable evidence chain — exportable as an Institutional Proof Report for partner and regulatory review.",
+  },
 };
 
 const nbk: ProspectConfig = {
@@ -222,6 +293,35 @@ const nbk: ProspectConfig = {
   overallConfidence: 0.74,
   overallSummary:
     "Council reached conditional consensus. EBITDA validation agent flagged a 15% gap between management projections and comparable transaction multiples. Recommend a second-pass evaluation with updated financials before committee presentation. Compliance evidence package ready for CBK review.",
+  proofReport: {
+    executiveSummary:
+      "The Council of 10 evaluated a PE deal screening scenario for a mid-market GCC industrial target at a $50M ticket size. The council reached conditional consensus (74% confidence). Investment committee recommendations include audit-ready proof artifacts — structured agent votes, dissent logs, compliance evidence, and a machine-verifiable decision chain formatted for CBK and CMA Kuwait review.",
+    governanceFindings: [
+      "Valuation Agent flagged a 15% EBITDA gap between management projections and comparable transaction multiples — logged as a blocking condition requiring updated financials.",
+      "Macro Agent assessed GCC industrial sector headwinds; flagged 2 macro risk factors with moderate materiality.",
+      "Challenger Agent raised 3 structural objections to the deal thesis; all three were addressed by the Sector Specialist Agent with supporting evidence.",
+      "Compliance Evidence Agent confirmed CBK and CMA Kuwait reporting requirements are met by the current output format.",
+      "No constitution violations detected across all 8 rules. Audit trail complete.",
+    ],
+    constitutionVersion: "AgenThinkMesh Constitution v2.1 — 8 rules active",
+    calibrationContext:
+      "Persona weights reflect 58 prior PE deal screening evaluations in the GCC financial services sector. Valuation Agent carries trust weight 0.87, reflecting strong calibration on GCC mid-market comparables. Challenger Agent weight is 0.79. Compliance Evidence Agent weight is 0.93 — highest trust in this council configuration.",
+    historicalPrecedents: [
+      "PE deal screening — GCC Industrial Target, Q3 2025: CONDITIONAL ENGAGE at 71% confidence. Outcome: updated financials submitted, deal closed within 90 days.",
+      "Mid-market credit review — Kuwait Banking Sector, Q4 2025: ENGAGE at 83% confidence. Outcome: credit facility approved, no compliance issues raised by CBK.",
+      "Investment committee augmentation — GCC Asset Manager, Q1 2026: CONDITIONAL ENGAGE at 76% confidence. Outcome: 2 of 3 conditions met, deal restructured and re-evaluated to ENGAGE.",
+    ],
+    releaseGateDetermination:
+      "CONDITIONAL RELEASE — The proof record is cleared for committee presentation subject to the following gate condition: submission of updated EBITDA financials reconciling the 15% gap identified by the Valuation Agent. Upon receipt of updated financials, a targeted re-evaluation of the Valuation Agent node only is required. All other council findings remain valid.",
+    auditReferences: [
+      "Council session: IC-NBK-2026-0517-001 · 10 agent votes logged · 3 dissents recorded",
+      "CFA session: CFA-NBK-2026-0517-001 · 8 constitution rules evaluated · 0 violations",
+      "Calibration state: CAL-NBK-2026-0517 · 58 prior evaluations · Brier score 0.12",
+      "Orchestration run: ORCH-NBK-2026-0517-001 · 7-node pipeline · construct_proof_chain completed",
+    ],
+    exportCtaText:
+      "Investment committee recommendations include audit-ready proof artifacts — exportable as Institutional Proof Reports for regulator and board review.",
+  },
 };
 
 // ── Batch 2 (configs defined, routes NOT wired until approved) ─────────────────
@@ -282,6 +382,36 @@ const core42: ProspectConfig = {
   overallConfidence: 0.85,
   overallSummary:
     "Council reached strong consensus to engage. Core42's sovereign compute infrastructure is the ideal deployment target for AgenThinkMesh's governance layer. Recommend a joint architecture review and a 30-day pilot on a bounded UAE enterprise workload.",
+  proofReport: {
+    executiveSummary:
+      "The Council of 10 evaluated a sovereign AI workload governance scenario for a UAE national AI compute infrastructure provider. The council reached strong consensus to engage (85% confidence). Every governance layer evaluation — from model routing decisions to multi-tenant isolation checks — is recorded in this proof record and exportable for UAE AI Strategy compliance review.",
+    governanceFindings: [
+      "Sovereign Deployment Agent confirmed AgenThinkMesh can operate fully within Core42's infrastructure perimeter with no external data dependencies.",
+      "SADO Jurisdiction Agent validated that all proposed workload categories comply with UAE data residency requirements under the UAE AI Strategy framework.",
+      "GPU Workload Governance Agent assessed resource utilisation profiles; no capacity constraints identified for the proposed pilot scope.",
+      "Model Routing Agent confirmed DeepSeek Flash and Falcon 40B are both compatible with sovereign deployment configuration.",
+      "Multi-Tenant Governance Agent verified tenant isolation architecture; no cross-tenant data leakage vectors identified.",
+      "All 8 constitutional rules passed. No violations detected.",
+    ],
+    constitutionVersion: "AgenThinkMesh Constitution v2.1 — 8 rules active",
+    calibrationContext:
+      "Persona weights reflect 22 prior sovereign cloud AI governance evaluations. Sovereign Deployment Agent carries trust weight 0.94 — highest in this council configuration. SADO Jurisdiction Agent weight is 0.91. All personas above minimum sample threshold (12). Brier score 0.09 — strong predictive calibration.",
+    historicalPrecedents: [
+      "Sovereign AI deployment evaluation — UAE Government Entity, Q4 2025: ENGAGE at 88% confidence. Outcome: full deployment completed within 45 days, zero compliance issues.",
+      "GPU workload governance review — GCC Cloud Provider, Q1 2026: ENGAGE at 82% confidence. Outcome: 3 enterprise tenants onboarded, all within SADO compliance parameters.",
+      "Multi-tenant AI governance assessment — Sovereign Infrastructure, Q1 2026: ENGAGE at 86% confidence. Outcome: pilot expanded to full production deployment.",
+    ],
+    releaseGateDetermination:
+      "FULL RELEASE — The proof record is cleared for committee presentation without conditions. The council reached strong unqualified consensus. No blocking constitution violations. All sovereign deployment requirements confirmed. Release gate passed on first evaluation.",
+    auditReferences: [
+      "Council session: IC-CORE42-2026-0517-001 · 10 agent votes logged · 0 dissents recorded",
+      "CFA session: CFA-CORE42-2026-0517-001 · 8 constitution rules evaluated · 0 violations",
+      "Calibration state: CAL-CORE42-2026-0517 · 22 prior evaluations · Brier score 0.09",
+      "Orchestration run: ORCH-CORE42-2026-0517-001 · 7-node pipeline · construct_proof_chain completed",
+    ],
+    exportCtaText:
+      "Every AI workload governance decision on sovereign infrastructure is exportable as an Institutional Proof Report — audit-ready for UAE AI Strategy and SADO compliance review.",
+  },
 };
 
 const adnoc: ProspectConfig = {
@@ -339,6 +469,36 @@ const adnoc: ProspectConfig = {
   overallConfidence: 0.77,
   overallSummary:
     "Council reached conditional consensus. ESG agent flagged two holdings with elevated Scope 3 emissions exposure. Geopolitical risk agent flagged USD-peg sensitivity in the capex allocation model. Recommend a second-pass evaluation with updated ESG data before board presentation.",
+  proofReport: {
+    executiveSummary:
+      "The Council of 10 evaluated a capex allocation governance scenario for a major UAE energy and industrial enterprise. The council reached conditional consensus (77% confidence). Two ESG conditions and one geopolitical risk flag must be resolved before board presentation. All governance artifacts are preserved in this proof record and formatted for ADNOC internal governance and UAE ESG compliance review.",
+    governanceFindings: [
+      "ESG Compliance Agent flagged 2 holdings with elevated Scope 3 emissions exposure exceeding the ADNOC internal ESG threshold — logged as blocking conditions.",
+      "Geopolitical Risk Agent flagged USD-peg sensitivity in the capex allocation model under a sustained oil price scenario below $65/bbl.",
+      "Macro Agent confirmed GCC macro environment is broadly supportive; flagged 1 tail risk scenario requiring stress test documentation.",
+      "Capex Allocation Agent validated the proposed allocation framework against 14 comparable energy sector capex decisions.",
+      "SADO Jurisdiction Agent confirmed all data movement in the evaluation complies with UAE data residency requirements.",
+      "All 8 constitutional rules passed. No violations detected.",
+    ],
+    constitutionVersion: "AgenThinkMesh Constitution v2.1 — 8 rules active",
+    calibrationContext:
+      "Persona weights reflect 39 prior energy sector governance evaluations. ESG Compliance Agent carries trust weight 0.89, reflecting strong calibration on UAE ESG framework assessments. Geopolitical Risk Agent weight is 0.83. Macro Agent weight is 0.86. All personas above minimum sample threshold.",
+    historicalPrecedents: [
+      "Capex allocation review — GCC Energy Operator, Q3 2025: CONDITIONAL ENGAGE at 74% confidence. Outcome: ESG conditions met within 30 days, board approval granted.",
+      "ESG-screened investment evaluation — UAE Industrial, Q4 2025: ENGAGE at 81% confidence. Outcome: allocation proceeded, Scope 3 reporting framework implemented.",
+      "Geopolitical risk assessment — Energy Sector, Q1 2026: CONDITIONAL ENGAGE at 72% confidence. Outcome: stress test documentation completed, allocation approved with hedging overlay.",
+    ],
+    releaseGateDetermination:
+      "CONDITIONAL RELEASE — The proof record is cleared for internal review pending resolution of two gate conditions: (1) updated ESG data for the two flagged holdings confirming Scope 3 emissions are within ADNOC internal threshold; (2) geopolitical stress test documentation addressing the USD-peg sensitivity scenario. Upon resolution, a targeted re-evaluation of the ESG and Geopolitical Risk Agent nodes only is required.",
+    auditReferences: [
+      "Council session: IC-ADNOC-2026-0517-001 · 10 agent votes logged · 2 dissents recorded",
+      "CFA session: CFA-ADNOC-2026-0517-001 · 8 constitution rules evaluated · 0 violations",
+      "Calibration state: CAL-ADNOC-2026-0517 · 39 prior evaluations · Brier score 0.13",
+      "Orchestration run: ORCH-ADNOC-2026-0517-001 · 7-node pipeline · construct_proof_chain completed",
+    ],
+    exportCtaText:
+      "Every industrial AI governance decision is exportable as an Institutional Proof Report — audit-ready for board, regulator, and ESG compliance review.",
+  },
 };
 
 const kia: ProspectConfig = {
@@ -397,6 +557,36 @@ const kia: ProspectConfig = {
   overallConfidence: 0.69,
   overallSummary:
     "Council flagged elevated geopolitical risk. Oil correlation stress test shows 23% drawdown scenario under a sustained USD-peg realignment. Macro agent recommends reducing GCC equity concentration by 8–12% before rebalancing. Recommend holding current allocation pending Q3 macro review.",
+  proofReport: {
+    executiveSummary:
+      "The Council of 10 evaluated a sovereign portfolio rebalancing scenario under a geopolitical stress scenario for a major Gulf sovereign wealth fund. The council issued a WATCH verdict (69% confidence), recommending holding current allocation pending Q3 macro review. Every investment committee finding is traceable through a machine-verifiable evidence chain, formatted for KIA internal governance and CBK review.",
+    governanceFindings: [
+      "Geopolitical Risk Agent flagged elevated risk across 3 portfolio segments under a sustained USD-peg realignment scenario — primary driver of the WATCH verdict.",
+      "Macro Agent ran oil correlation stress test; identified 23% drawdown scenario under sustained oil price below $60/bbl with USD-peg pressure.",
+      "Concentration Risk Agent flagged GCC equity concentration at 34% of portfolio — above the recommended 25% ceiling for the current macro environment.",
+      "Challenger Agent contested the rebalancing timeline, recommending a 60-day delay pending Q3 macro data publication.",
+      "Valuation Agent confirmed current portfolio valuations are within fair value range; no immediate valuation-driven action required.",
+      "All 8 constitutional rules passed. No violations detected.",
+    ],
+    constitutionVersion: "AgenThinkMesh Constitution v2.1 — 8 rules active",
+    calibrationContext:
+      "Persona weights reflect 64 prior sovereign wealth portfolio evaluations. Geopolitical Risk Agent carries trust weight 0.91, reflecting strong calibration on GCC geopolitical scenarios. Macro Agent weight is 0.88. Concentration Risk Agent weight is 0.85. All personas above minimum sample threshold. Brier score 0.11 — strong predictive calibration for sovereign portfolio scenarios.",
+    historicalPrecedents: [
+      "Sovereign portfolio rebalance — GCC SWF, Q2 2025: WATCH at 67% confidence. Outcome: rebalance delayed 45 days, macro conditions improved, subsequent ENGAGE at 79% confidence.",
+      "Geopolitical stress test — Sovereign Portfolio, Q3 2025: WATCH at 71% confidence. Outcome: GCC equity concentration reduced by 9%, portfolio resilience improved.",
+      "USD-peg sensitivity assessment — Kuwait Institutional, Q4 2025: CONDITIONAL ENGAGE at 73% confidence. Outcome: hedging overlay implemented, rebalance proceeded within parameters.",
+    ],
+    releaseGateDetermination:
+      "WATCH — HOLD FOR Q3 MACRO DATA. The proof record is cleared for internal committee review. The council recommends no rebalancing action until Q3 macro data is published. Release gate for rebalancing action will be re-evaluated upon receipt of Q3 macro data. Current portfolio allocation is within acceptable parameters for the hold period.",
+    auditReferences: [
+      "Council session: IC-KIA-2026-0517-001 · 10 agent votes logged · 4 dissents recorded",
+      "CFA session: CFA-KIA-2026-0517-001 · 8 constitution rules evaluated · 0 violations",
+      "Calibration state: CAL-KIA-2026-0517 · 64 prior evaluations · Brier score 0.11",
+      "Orchestration run: ORCH-KIA-2026-0517-001 · 7-node pipeline · construct_proof_chain completed",
+    ],
+    exportCtaText:
+      "Every sovereign portfolio decision is exportable as an Institutional Proof Report — machine-verifiable, explainable, and formatted for investment committee and regulatory review.",
+  },
 };
 
 const kamco: ProspectConfig = {
@@ -454,6 +644,36 @@ const kamco: ProspectConfig = {
   overallConfidence: 0.82,
   overallSummary:
     "Council reached consensus to engage. 5Y GRE Sukuk issuance meets conservative risk band criteria. Yield spread analysis shows 45bps pickup over comparable sovereign. Shariah screen passed. Tax agent flagged withholding tax treatment — recommend legal review before allocation.",
+  proofReport: {
+    executiveSummary:
+      "The Council of 10 evaluated a Sukuk allocation strategy for a 5-year GRE issuance under a conservative risk mandate. The council reached consensus to engage (82% confidence). A withholding tax flag requires legal review before allocation. Every diligence finding — from yield spread analysis to Shariah compliance screening — is recorded in this proof record and exportable as a committee-ready institutional artifact.",
+    governanceFindings: [
+      "Yield Analysis Agent confirmed 45bps pickup over comparable sovereign Sukuk — within the conservative mandate's target range.",
+      "Shariah Compliance Agent applied AAOIFI-compliant screening criteria; the 5Y GRE Sukuk structure passed all Shariah screens.",
+      "Tax Agent flagged withholding tax treatment uncertainty for non-resident investors — logged as a non-blocking condition requiring legal review.",
+      "Fixed Income Risk Agent assessed duration risk at 4.2 years; within conservative mandate parameters.",
+      "Credit Quality Agent confirmed issuer credit profile is investment grade with stable outlook.",
+      "All 8 constitutional rules passed. No violations detected.",
+    ],
+    constitutionVersion: "AgenThinkMesh Constitution v2.1 — 8 rules active",
+    calibrationContext:
+      "Persona weights reflect 43 prior GCC fixed income and Sukuk evaluations. Shariah Compliance Agent carries trust weight 0.92, reflecting strong calibration on AAOIFI-compliant Sukuk structures. Yield Analysis Agent weight is 0.88. Tax Agent weight is 0.81. All personas above minimum sample threshold. Brier score 0.13.",
+    historicalPrecedents: [
+      "Sukuk allocation evaluation — GCC Asset Manager, Q3 2025: ENGAGE at 79% confidence. Outcome: allocation executed, yield target achieved within 30 days.",
+      "Fixed income mandate review — Kuwait Investment Fund, Q4 2025: ENGAGE at 84% confidence. Outcome: portfolio allocation completed, Shariah compliance confirmed by external auditor.",
+      "GRE Sukuk assessment — GCC Institutional, Q1 2026: CONDITIONAL ENGAGE at 77% confidence. Outcome: tax treatment clarified, allocation proceeded within 21 days.",
+    ],
+    releaseGateDetermination:
+      "CONDITIONAL RELEASE — The proof record is cleared for committee presentation subject to the following gate condition: legal review of withholding tax treatment for non-resident investors. The tax flag is non-blocking for the allocation decision but must be resolved before settlement. All other council findings support immediate allocation within the conservative mandate parameters.",
+    auditReferences: [
+      "Council session: IC-KAMCO-2026-0517-001 · 10 agent votes logged · 1 dissent recorded",
+      "CFA session: CFA-KAMCO-2026-0517-001 · 8 constitution rules evaluated · 0 violations",
+      "Calibration state: CAL-KAMCO-2026-0517 · 43 prior evaluations · Brier score 0.13",
+      "Orchestration run: ORCH-KAMCO-2026-0517-001 · 7-node pipeline · construct_proof_chain completed",
+    ],
+    exportCtaText:
+      "Every diligence evaluation is exportable as an Institutional Proof Report — committee-ready, Shariah-screened, and formatted for your existing investment memo templates.",
+  },
 };
 
 // ── Registry ──────────────────────────────────────────────────────────────────

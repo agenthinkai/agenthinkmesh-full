@@ -4897,3 +4897,16 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Write operation1000.test.ts vitest acceptance tests
 - [x] TypeScript: 0 errors
 - [x] Full test suite: 1865/1865 passing
+
+## Institutional Proof Report Integration — All 8 Demo Routes (Jun 2026)
+
+- [x] Add ProofReportConfig interface to ProspectConfig in prospectConfigs.ts
+- [x] Add proof report content (7 sections) to all 7 ProspectPage-based configs (stc, tencent, nbk, core42, adnoc, kia, kamco)
+- [x] Build ProofReportSection component in ProspectPage.tsx with 7 sections: Executive Summary, Governance Findings, Constitution Version, Calibration Context, Historical Precedents, Release Gate Determination, Audit References
+- [x] Add Proof Report tab to ProspectPage.tsx (Overview / Proof Report tab system)
+- [x] Add Proof Report Highlight Banner to ProspectPage.tsx (violet, with "View report →" button)
+- [x] Add Demo Gallery to ProspectPage.tsx (5 report types: IC Memo, Readiness Report, Stress Test Report, Interpretation Guidance, Institutional Proof Report NEW)
+- [x] Add Export CTA (PDF + JSON) with prospect-specific exportCtaText to each proof report
+- [x] Add ProofTab component to RweDemo.tsx with RWE/infrastructure-specific content (Helios-North)
+- [x] Add proof tab to TABS array in RweDemo.tsx (7th tab with NEW badge)
+- [x] TypeScript: 0 errors confirmed
