@@ -4957,3 +4957,31 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Preserve sample report for no-session state (unchanged)
 - [ ] Write vitest test for real session proof report assembly
 - [ ] TypeScript: 0 errors
+
+## Institutional Proof Report — Bug Fix (2026-06-09)
+- [ ] Rewrite proofReportPdf.ts with strict page-break guards and no overlapping text
+- [ ] Add Proof Completeness panel (6 data sources: council, CFA, outcome, calibration, precedents, audit trail)
+- [ ] Separate Decision Status / Governance Compliance / Report Release Status labels
+- [ ] Fix misleading "RELEASE GATE: RELEASED" when verdict is REJECTED
+- [ ] Populate governanceFindings from cfaPreferenceRecords.violatedRulesJson in proofEngine.ts
+- [ ] Populate calibrationContext.personaWeights from cfaPreferenceRecords in proofEngine.ts
+- [ ] Add explicit "Data Not Available" explanations for all missing proof sections
+- [ ] Verify confidence level field is populated from cfaSession or consensusSessions
+- [ ] Regenerate test PDF and confirm no overlapping text
+- [ ] Run TypeScript check and vitest tests after all changes
+
+## Institutional Proof Report Fixes (2026-06-09)
+- [x] Audit layout overlap root cause in proofReportPdf.ts
+- [x] Rewrite proofReportPdf.ts with strict page-break guards (ensureSpace + bufferPages)
+- [x] Fix footer rendering to use PDFKit bufferPages + switchToPage + height clamp
+- [x] Eliminate blank interleaved pages from PDF output
+- [x] Add Proof Completeness panel to page 1
+- [x] Separate Council Verdict / Governance Compliance / Report Release Status labels
+- [x] Add clarification note in Release Gate section: RELEASED = export eligible, not approved
+- [x] Fix governanceFindings: derive from cfaPreferenceRecords.violatedRulesJson
+- [x] Fix calibrationContext.personaWeights: derive from agentWeights table
+- [x] Fix dealName: use session.thesis instead of null
+- [x] Fix confidenceLevel: use cfaFidelity as proxy instead of null
+- [x] Add fail-fast validation: empty sections show explicit "Data Not Available" explanations
+- [x] TypeScript check: 0 errors
+- [x] Test PDF generation: 4 content pages, no overlaps, no blank pages

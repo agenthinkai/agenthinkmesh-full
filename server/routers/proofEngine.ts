@@ -27,6 +27,7 @@ import {
   cfaSessions,
   cfaPreferenceRecords,
   consensusSessions,
+  agentWeights,
 } from "../../drizzle/schema";
 import { and, eq, gte, isNotNull, sql, desc, avg, count } from "drizzle-orm";
 import { z } from "zod";
@@ -605,10 +606,20 @@ export const proofEngineRouter = router({
         .orderBy(desc(outcomeSessions.decisionDate))
         .limit(5);
 
+      // Calibration weights from agentWeights table
+      const calibWeights = await db
+        .select()
+        .from(agentWeights)
+        .orderBy(desc(agentWeights.totalEvaluations));
+
+      const MIN_TRUST_SAMPLES = 12;
+
       // ── Assemble 13-section proof report ───────────────────────────────────
 
       const cfaFidelity = cfaSession ? parseFloat(cfaSession.averageFidelityScore as string) : null;
       const consensusScore = session ? session.yesCount / Math.max(session.yesCount + session.noCount, 1) : null;
+      // Confidence level: use cfaFidelity as proxy when no explicit confidence field
+      const confidenceLevel: number | null = cfaFidelity;
 
       const hardFlags: string[] = session?.hardFlags ? JSON.parse(session.hardFlags as string) : [];
       const silentFails: string[] = session?.silentFails ? JSON.parse(session.silentFails as string) : [];
@@ -688,12 +699,12 @@ export const proofEngineRouter = router({
         generatedAt: now,
         sessionId: input.sessionId,
         dealId: cfaSession?.dealId ?? outcomeSession?.dealId ?? null,
-        dealName: null,
+        dealName: session?.thesis ?? cfaSession?.dealId ?? null,
         councilMode,
         executiveSummary: {
           originalVerdict: session?.verdict ?? "UNKNOWN",
           consensusScore,
-          confidenceLevel: null,
+          confidenceLevel,
           cfaFidelityScore: cfaFidelity,
           releaseGate: gate,
           blockReasons: blockingRules,
@@ -718,13 +729,51 @@ export const proofEngineRouter = router({
           complianceRate,
           status: complianceStatus,
         },
-        governanceFindings: [],
+        governanceFindings: (() => {
+          // Derive governance findings from CFA violated rules per persona
+          const findings: Array<{
+            findingId: string;
+            ruleId: string;
+            ruleText: string;
+            severity: string;
+            status: "violation" | "pass";
+            detectedAt: number;
+            constitutionVersion: number;
+          }> = [];
+          for (const r of cfaRecords) {
+            const violated: string[] = r.violatedRulesJson
+              ? JSON.parse(r.violatedRulesJson as string)
+              : [];
+            if (violated.length > 0) {
+              for (const ruleId of violated) {
+                findings.push({
+                  findingId: `gf-${r.personaId}-${ruleId}`.slice(0, 32),
+                  ruleId,
+                  ruleText: `Rule ${ruleId} violated by persona ${r.personaName ?? r.personaId}`,
+                  severity: r.fidelityScore != null && parseFloat(r.fidelityScore as string) < 0.5 ? "critical" : "warning",
+                  status: "violation",
+                  detectedAt: r.createdAt,
+                  constitutionVersion: 1,
+                });
+              }
+            }
+          }
+          return findings;
+        })(),
         constitutionVersions: [{ version: 1, activeRules: 8, description: "Initial Constitution — 8 governance rules" }],
         contradictions: [],
         calibrationContext: {
-          personaWeights: [],
-          applyWeightsEnabled: false,
-          minSamplesForTrust: 12,
+          personaWeights: calibWeights.map((w) => ({
+            personaId: w.personaId,
+            weight: parseFloat(w.weight as string),
+            sampleSize: w.totalEvaluations,
+            brierScore: w.totalEvaluations > 0
+              ? 1 - (w.correctPredictions / w.totalEvaluations)
+              : 0.5,
+            trusted: w.totalEvaluations >= MIN_TRUST_SAMPLES,
+          })),
+          applyWeightsEnabled: calibWeights.some((w) => w.totalEvaluations >= MIN_TRUST_SAMPLES),
+          minSamplesForTrust: MIN_TRUST_SAMPLES,
         },
         historicalPrecedents: precedents.map((p: typeof outcomeSessions.$inferSelect) => ({
           decisionId: p.councilRunId ?? String(p.id),
@@ -752,7 +801,7 @@ export const proofEngineRouter = router({
           outcomeSessionId: outcomeSession ? String(outcomeSession.id) : null,
           constitutionVersion: 1,
           reportGeneratedAt: now,
-          reportVersion: "2.0",
+          reportVersion: "3.0",
         },
       };
 
