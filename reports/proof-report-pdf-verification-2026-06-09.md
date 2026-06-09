@@ -70,3 +70,26 @@ Sections that lack true upstream evidence are now rendered with explicit institu
 | Historical precedents rendered when available | Pass | Table renders correctly |
 | Audit references rendered | Pass | Table renders correctly |
 
+
+## Header redesign review — first pass
+
+Visual inspection of the regenerated PDF after the header redesign confirms that the new hierarchy is materially clearer for institutional readers.
+
+Observed improvements:
+
+| Area | Result |
+| --- | --- |
+| Final recommendation prominence | The left card now dominates visually and clearly communicates the investment decision first |
+| Governance vs audit separation | The right-side stacked cards clearly separate governance review from audit/export status |
+| Release ambiguity reduction | The new audit-status footnote explains that release status is not investment approval |
+| Consensus wording | The header now uses vote-split framing instead of the old "30% consensus" phrasing |
+| Institutional framing | The new Institutional Proof Statement improves trust framing and explains why the artifact exists |
+
+Remaining refinement identified in review:
+
+| Issue | Action required |
+| --- | --- |
+| Governance review card shows CFA fidelity as a raw decimal (`0.8`) instead of institutional percentage format (`84.1%`) | Update the generator to render CFA fidelity as percentage in the card |
+| The sample summary statement still contains the legacy phrase `30% consensus` because the test payload still uses old wording | Update the test export payload to use the new vote-split language for screenshots/export delivery |
+
+Source reviewed: `/tmp/proof-report-test.pdf` pages 1-4.

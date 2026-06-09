@@ -369,41 +369,104 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
 
     doc.y = 168;
 
-    // ── Three decision-status boxes ───────────────────────────────────────────
-    const boxW = Math.floor(PAGE_W / 3) - 6;
-    const boxH = 68;
-    const boxY = doc.y;
+    // ── IC-Grade Three-Card Header ────────────────────────────────────────────
+    // Layout: Card 1 (dominant, left 52%) | Card 2 + Card 3 (right 48%, stacked)
+    // Card 1 is the investment decision — it must dominate visually.
+    const card1W = Math.floor(PAGE_W * 0.52);
+    const card23W = PAGE_W - card1W - 10;
+    const card1H = 120;
+    const card23H = 56;
+    const cardY = doc.y;
 
-    // Box 1 — Council Verdict
-    doc.rect(ML, boxY, boxW, boxH).fill("#f0f4ff").strokeColor(verdictC).lineWidth(2).stroke();
-    doc.fillColor(TEXT_MUTED).fontSize(6.5).font("Helvetica-Bold")
-      .text("COUNCIL VERDICT", ML + 8, boxY + 8, { width: boxW - 16 });
-    doc.fillColor(verdictC).fontSize(10.5).font("Helvetica-Bold")
-      .text(input.executiveSummary.originalVerdict.replace(/_/g, " "), ML + 8, boxY + 22, { width: boxW - 16 });
-    doc.fillColor(TEXT_MUTED).fontSize(7).font("Helvetica")
-      .text(`${fmtPct(input.executiveSummary.consensusScore)} consensus`, ML + 8, boxY + 48, { width: boxW - 16 });
+    // Vote-split label — never use "X% consensus" as primary decision statistic
+    const vd = input.voteDistribution;
+    const voteSplitLine = vd.totalPersonas > 0
+      ? `${vd.noCount} of ${vd.totalPersonas} Personas Opposed Approval`
+      : "Vote distribution not available";
+    const confidenceLine = input.executiveSummary.confidenceLevel != null
+      ? `Confidence: ${fmtPct(input.executiveSummary.confidenceLevel)}`
+      : "";
 
-    // Box 2 — Governance Compliance
-    const box2X = ML + boxW + 8;
-    doc.rect(box2X, boxY, boxW, boxH).fill("#f0f4ff").strokeColor(complianceC).lineWidth(2).stroke();
+    // CARD 1 — FINAL RECOMMENDATION (dominant, left half)
+    doc.rect(ML, cardY, card1W, card1H).fill("#fff8f8").strokeColor(verdictC).lineWidth(3).stroke();
+    doc.rect(ML, cardY, card1W, 5).fill(verdictC);  // top accent bar
     doc.fillColor(TEXT_MUTED).fontSize(6.5).font("Helvetica-Bold")
-      .text("GOVERNANCE COMPLIANCE", box2X + 8, boxY + 8, { width: boxW - 16 });
+      .text("FINAL RECOMMENDATION", ML + 10, cardY + 14, { width: card1W - 20 });
+    doc.fillColor(verdictC).fontSize(22).font("Helvetica-Bold")
+      .text(input.executiveSummary.originalVerdict.replace(/_/g, " "), ML + 10, cardY + 30, { width: card1W - 20 });
+    doc.fillColor(TEXT_SECONDARY).fontSize(8.5).font("Helvetica")
+      .text(voteSplitLine, ML + 10, cardY + 72, { width: card1W - 20 });
+    if (confidenceLine) {
+      doc.fillColor(TEXT_MUTED).fontSize(8).font("Helvetica")
+        .text(confidenceLine, ML + 10, cardY + 90, { width: card1W - 20 });
+    }
+
+    // CARD 2 — GOVERNANCE REVIEW (top-right)
+    const card2X = ML + card1W + 10;
+    doc.rect(card2X, cardY, card23W, card23H).fill("#f7f8ff").strokeColor(complianceC).lineWidth(1.5).stroke();
+    doc.rect(card2X, cardY, card23W, 4).fill(complianceC);  // top accent bar
+    doc.fillColor(TEXT_MUTED).fontSize(6.5).font("Helvetica-Bold")
+      .text("GOVERNANCE REVIEW", card2X + 8, cardY + 12, { width: card23W - 16 });
     doc.fillColor(complianceC).fontSize(10.5).font("Helvetica-Bold")
-      .text(input.constitutionalCompliance.status, box2X + 8, boxY + 22, { width: boxW - 16 });
+      .text(
+        input.constitutionalCompliance.status === "COMPLIANT" ? "FULL COMPLIANCE"
+        : input.constitutionalCompliance.status === "PARTIAL" ? "PARTIAL COMPLIANCE"
+        : "NON-COMPLIANT",
+        card2X + 8, cardY + 24, { width: card23W - 16 }
+      );
+    const revisionNote = input.constitutionalCompliance.totalChanged > 0
+      ? `   ·   ${input.constitutionalCompliance.totalChanged} Revision${input.constitutionalCompliance.totalChanged > 1 ? "s" : ""} Applied`
+      : "";
+    // Show CFA fidelity as percentage (e.g. 84.1%) not raw decimal (0.841)
+    const cfaFidelityPct = input.constitutionalCompliance.averageFidelityScore != null
+      ? `${(input.constitutionalCompliance.averageFidelityScore * 100).toFixed(1)}%`
+      : "—";
     doc.fillColor(TEXT_MUTED).fontSize(7).font("Helvetica")
-      .text(`Fidelity: ${fmtScore(input.constitutionalCompliance.averageFidelityScore)}`, box2X + 8, boxY + 48, { width: boxW - 16 });
+      .text(
+        `CFA Fidelity: ${cfaFidelityPct}${revisionNote}`,
+        card2X + 8, cardY + 40, { width: card23W - 16 }
+      );
 
-    // Box 3 — Report Release Status
-    const box3X = ML + (boxW + 8) * 2;
-    doc.rect(box3X, boxY, boxW, boxH).fill("#f0f4ff").strokeColor(gateC).lineWidth(2).stroke();
+    // CARD 3 — AUDIT STATUS (bottom-right)
+    const card3Y = cardY + card23H + 8;
+    doc.rect(card2X, card3Y, card23W, card23H).fill("#f7fff9").strokeColor(gateC).lineWidth(1.5).stroke();
+    doc.rect(card2X, card3Y, card23W, 4).fill(gateC);  // top accent bar
     doc.fillColor(TEXT_MUTED).fontSize(6.5).font("Helvetica-Bold")
-      .text("REPORT RELEASE STATUS", box3X + 8, boxY + 8, { width: boxW - 16 });
+      .text("AUDIT STATUS", card2X + 8, card3Y + 12, { width: card23W - 16 });
     doc.fillColor(gateC).fontSize(10.5).font("Helvetica-Bold")
-      .text(input.releaseGate.gate, box3X + 8, boxY + 22, { width: boxW - 16 });
+      .text(input.releaseGate.gate, card2X + 8, card3Y + 24, { width: card23W - 16 });
     doc.fillColor(TEXT_MUTED).fontSize(7).font("Helvetica")
-      .text(input.releaseGate.gate === "RELEASED" ? "Eligible for export" : "Export blocked", box3X + 8, boxY + 48, { width: boxW - 16 });
+      .text(
+        input.releaseGate.gate === "RELEASED" ? "Eligible for Institutional Export" : "Export Blocked",
+        card2X + 8, card3Y + 40, { width: card23W - 16 }
+      );
 
-    doc.y = boxY + boxH + 18;
+    // Footnote: clarify RELEASED ≠ APPROVED
+    const footnoteY = cardY + card1H + 6;
+    doc.fillColor(TEXT_MUTED).fontSize(6.5).font("Helvetica")
+      .text(
+        "† Audit Status indicates whether this proof record is eligible for export and audit review. It does not indicate investment approval.",
+        ML, footnoteY, { width: PAGE_W }
+      );
+
+    doc.y = footnoteY + 16;
+
+    // ── Institutional Proof Statement ─────────────────────────────────────────
+    ensureSpace(70);
+    const ipsY = doc.y;
+    doc.rect(ML, ipsY, PAGE_W, 58).fill("#f0f4ff").strokeColor(BRAND_BLUE).lineWidth(0.8).stroke();
+    doc.fillColor(BRAND_DARK).fontSize(7.5).font("Helvetica-Bold")
+      .text("INSTITUTIONAL PROOF STATEMENT", ML + 12, ipsY + 8, { width: PAGE_W - 24 });
+    const personaCount = input.voteDistribution.totalPersonas || 10;
+    const constitutionVer = `Constitution v${input.traceability.constitutionVersion}`;
+    doc.fillColor(TEXT_SECONDARY).fontSize(8.5).font("Helvetica")
+      .text(
+        `This recommendation was produced through a ${personaCount}-persona deliberative process, audited against ${constitutionVer}, ` +
+        `evaluated using calibration data and historical precedents, and validated through governance controls. ` +
+        `The recommendation below represents the final council position after all constitutional review procedures were completed.`,
+        ML + 12, ipsY + 22, { width: PAGE_W - 24 }
+      );
+    doc.y = ipsY + 68;
 
     // ── Proof Completeness Panel ──────────────────────────────────────────────
     const pcPanelH = 148;
@@ -455,12 +518,16 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
     // SECTION 1 — Executive Summary
     // ═══════════════════════════════════════════════════════════════════════════
     sectionHeader("Executive Summary", 1);
-    kv("Council Verdict", input.executiveSummary.originalVerdict.replace(/_/g, " "), { valueColor: verdictC });
-    kv("Report Release Status", input.releaseGate.gate, { valueColor: gateC });
-    kv("Governance Compliance", input.constitutionalCompliance.status, { valueColor: complianceC });
-    kv("CFA Fidelity Score", fmtScore(input.executiveSummary.cfaFidelityScore));
-    kv("Consensus Score", fmtPct(input.executiveSummary.consensusScore));
+    kv("Final Recommendation", input.executiveSummary.originalVerdict.replace(/_/g, " "), { valueColor: verdictC });
+    // Vote split — never use raw consensus percentage as the primary decision statistic
+    const execVoteSplit = input.voteDistribution.totalPersonas > 0
+      ? `${input.voteDistribution.noCount} of ${input.voteDistribution.totalPersonas} Personas Opposed Approval  (Vote Split: ${input.voteDistribution.yesCount} Approval / ${input.voteDistribution.noCount} Reject)`
+      : "Vote distribution not available";
+    kv("Vote Outcome", execVoteSplit);
     kv("Confidence Level", fmtPct(input.executiveSummary.confidenceLevel));
+    kv("CFA Fidelity Score", fmtScore(input.executiveSummary.cfaFidelityScore));
+    kv("Governance Review", input.constitutionalCompliance.status, { valueColor: complianceC });
+    kv("Audit Status", `${input.releaseGate.gate} — Eligible for institutional export only`, { valueColor: gateC });
     if (input.executiveSummary.blockReasons.length > 0) {
       kv("Block Reasons", input.executiveSummary.blockReasons.join("; "), { valueColor: BLOCKED_RED });
     }
@@ -469,8 +536,12 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
     // SECTION 2 — Council Vote Distribution
     // ═══════════════════════════════════════════════════════════════════════════
     sectionHeader("Council Vote Distribution", 2);
-    kv("Verdict", input.voteDistribution.verdict.replace(/_/g, " "), { valueColor: verdictColor(input.voteDistribution.verdict) });
-    kv("Vote Split", `${input.voteDistribution.yesCount} YES  /  ${input.voteDistribution.noCount} NO  (${input.voteDistribution.totalPersonas} personas)`);
+    kv("Recommendation", input.voteDistribution.verdict.replace(/_/g, " "), { valueColor: verdictColor(input.voteDistribution.verdict) });
+    // Primary vote statistic: show vote split, not consensus percentage
+    const totalP = input.voteDistribution.totalPersonas || 1;
+    const negShare = Math.round((input.voteDistribution.noCount / totalP) * 100);
+    kv("Vote Split", `${input.voteDistribution.yesCount} Approval  /  ${input.voteDistribution.noCount} Reject  (${input.voteDistribution.totalPersonas} personas total)`);
+    kv("Negative Vote Share", `${negShare}% — ${input.voteDistribution.noCount} of ${input.voteDistribution.totalPersonas} personas opposed approval`);
     kv("Consensus Reached", input.voteDistribution.consensusReached ? "Yes" : "No");
     kv("Hard Flags", input.voteDistribution.hardFlags.length > 0 ? input.voteDistribution.hardFlags.join(", ") : "None",
       { valueColor: input.voteDistribution.hardFlags.length > 0 ? BLOCKED_RED : TEXT_PRIMARY });
