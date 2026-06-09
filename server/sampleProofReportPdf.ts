@@ -294,33 +294,17 @@ export async function generateSampleProofReportPdf(): Promise<Buffer> {
 
     // ── SECTION 3 — PERSONA CONFIDENCE ───────────────────────────────────────
     sec(3, "Persona Confidence Summary");
-    // Two-column layout: 5 items per column
-    const half = Math.ceil(S.personaConf.length / 2);
-    const colHalfW = Math.floor(W / 2) - 4;
-    S.personaConf.forEach((p, i) => {
-      const col = i < half ? 0 : 1;
-      const row = i < half ? i : i - half;
-      const x = L + col * (colHalfW + 8);
-      const y = doc.y - (col === 1 && row === 0 ? (half * 9) : 0);
+    // Simple sequential rows — safe, no y-coordinate tricks
+    S.personaConf.forEach((p, idx) => {
+      const rowY = doc.y;
+      const bg = idx % 2 === 0 ? "#ffffff" : SECTION_BG;
+      doc.rect(L, rowY, W, 9).fill(bg);
       const sc = p.stance === "APPROVE" ? GREEN : RED;
-      if (col === 0) {
-        // left column — advance doc.y normally
-        doc.fillColor(TEXT_SECONDARY).fontSize(6.5).font("Helvetica")
-           .text(p.persona, L + 4, doc.y, { width: colHalfW * 0.6 });
-        doc.fillColor(sc).fontSize(6.5).font("Helvetica-Bold")
-           .text(`${p.score} ${p.stance}`, L + 4 + colHalfW * 0.6, doc.y - 9, { width: colHalfW * 0.38 });
-        doc.moveDown(0.08);
-      }
-      // right column items are rendered alongside left column items
-      if (col === 1) {
-        const rightX = L + colHalfW + 8;
-        const rightY = doc.y - ((half - row) * 9);
-        doc.fillColor(TEXT_SECONDARY).fontSize(6.5).font("Helvetica")
-           .text(p.persona, rightX + 4, rightY, { width: colHalfW * 0.6 });
-        doc.fillColor(sc).fontSize(6.5).font("Helvetica-Bold")
-           .text(`${p.score} ${p.stance}`, rightX + 4 + colHalfW * 0.6, rightY, { width: colHalfW * 0.38 });
-      }
-      void x; void y; // suppress unused warnings
+      doc.fillColor(TEXT_SECONDARY).fontSize(6.5).font("Helvetica")
+         .text(p.persona, L + 4, rowY + 1.5, { width: W * 0.55 });
+      doc.fillColor(sc).fontSize(6.5).font("Helvetica-Bold")
+         .text(`${p.score}  ${p.stance}`, L + 4 + W * 0.55, rowY + 1.5, { width: W * 0.42 });
+      doc.y = rowY + 10;
     });
 
     // ── SECTION 4 — CONSTITUTIONAL COMPLIANCE ────────────────────────────────
