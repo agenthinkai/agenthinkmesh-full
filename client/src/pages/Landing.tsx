@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { getLoginUrl } from "@/const";
 import Logo from "@/components/Logo";
-import { Link } from "wouter";
 import { trpc } from "@/lib/trpc";
 import { toast } from "sonner";
 import SiteNav from "@/components/SiteNav";
@@ -92,15 +91,13 @@ function Hero({ loginUrl, onSampleProofOpen }: { loginUrl: string; onSampleProof
         </p>
 
         <div style={{ display: "flex", gap: 16, flexWrap: "wrap" as const, marginBottom: 64 }}>
-          <Link href="/deals">
-            <a style={{
+          <a href="/deals" style={{
               display: "inline-flex", alignItems: "center", gap: 8,
               padding: "14px 32px", borderRadius: 8, fontWeight: 700, fontSize: 15,
               background: BLUE_400, color: NAVY_950, textDecoration: "none",
             }}>
               Explore Platform →
             </a>
-          </Link>
           <button
             onClick={onSampleProofOpen}
             style={{
