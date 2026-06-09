@@ -122,6 +122,7 @@ interface CouncilResult {
   investorMode?: boolean;
   createdAt?: Date | string | null;
   dealTextPreview?: string | null;
+  sessionId?: string;
 }
 
 // ── Decision Integrity type (Adversarial Council) ──────────────────────────────────────────────
@@ -4541,6 +4542,7 @@ function ICReport({ result, onNewDeal, councilMode: councilModeProp, onRerun, is
           simCompletedAt={effectiveSimData?.completedAt ?? undefined}
           simAggregation={effectiveSimData?.aggregation ?? null}
           upgradedFingerprint={upgradedFingerprint}
+          proofSessionId={result.sessionId ?? null}
         />
       </div>
       {/* ── Final Investability Summary ──────────────────────────────────────────── */}

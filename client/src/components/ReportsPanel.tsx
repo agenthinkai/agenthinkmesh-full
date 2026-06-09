@@ -341,20 +341,22 @@ export function ReportsPanel({
   const proofReportMutation = trpc.proofEngine.proofReport.useMutation();
 
   // ── Export: Proof Report ─────────────────────────────────────────────────
-  const handleExportProof = async () => {
+  const handleExportProof = async (fmtOverride?: ExportFormat) => {
     if (!proofSessionId) return;
+    const effectiveFmt = fmtOverride ?? proofFmt;
+    if (fmtOverride) setProofFmt(fmtOverride);
     setProofLoading(true);
     setProofDone(false);
     try {
       const res = await proofReportMutation.mutateAsync({
         sessionId: proofSessionId,
-        format: proofFmt === "json" ? "json" : "pdf",
+        format: effectiveFmt === "json" ? "json" : "pdf",
       });
       const name = safeName(dealName);
-      if (proofFmt === "pdf" && res.pdfBase64) {
+      if (effectiveFmt === "pdf" && res.pdfBase64) {
         downloadBlob(res.pdfBase64, `${name}_Institutional_Proof_Report.pdf`, "application/pdf");
       }
-      if (proofFmt === "json" && res.report) {
+      if (effectiveFmt === "json" && res.report) {
         downloadText(JSON.stringify(res.report, null, 2), `${name}_Institutional_Proof_Report.json`);
       }
       setProofDone(true);
@@ -584,22 +586,65 @@ export function ReportsPanel({
 
             {/* ── Report 4: Institutional Proof Report ─────────────────────── */}
             {hasProof ? (
-              /* Real session — existing export behavior unchanged */
-              <ReportCard
-                icon={<ShieldCheck className="h-4 w-4" />}
-                title="Institutional Proof Report"
-                subtitle="13-section governance proof record. Includes release gate, evidence chain, constitution version, and full audit references."
-                badge="13 Sections"
-                badgeVariant="default"
-                available
-                formats={["pdf", "json"]}
-                selectedFormat={proofFmt === "text" ? "pdf" : proofFmt}
-                onFormatChange={setProofFmt}
-                onExport={handleExportProof}
-                loading={proofLoading}
-                done={proofDone}
-                accentColor="border-amber-500/20"
-              />
+              /* Real session — show status, session ID, and both export buttons */
+              <div className="flex flex-col gap-3 rounded-xl border border-amber-500/20 bg-white/[0.03] p-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start gap-3">
+                    <ShieldCheck className="h-4 w-4 text-amber-400 mt-0.5 shrink-0" />
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-semibold text-white/90">Institutional Proof Report</span>
+                        <Badge variant="default" className="text-[10px] px-1.5 py-0">13 Sections</Badge>
+                      </div>
+                      <p className="text-xs text-white/40 mt-0.5 leading-relaxed">Machine-verifiable governance proof record. Includes release gate, evidence chain, constitution version, and full audit references.</p>
+                    </div>
+                  </div>
+                </div>
+                {/* Status + Session ID */}
+                <div className="flex flex-col gap-1 rounded-lg border border-amber-500/10 bg-amber-500/5 px-3 py-2">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 className="h-3 w-3 text-emerald-400 shrink-0" />
+                    <span className="text-[11px] font-semibold text-emerald-400 uppercase tracking-wider">Status: Available</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] text-white/30 font-medium">Session ID:</span>
+                    <span className="text-[10px] font-mono text-white/50 truncate">{proofSessionId}</span>
+                  </div>
+                </div>
+                {/* Export buttons */}
+                <div className="flex items-center gap-2 mt-1">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleExportProof("pdf")}
+                    disabled={proofLoading}
+                    className="flex-1 h-7 text-xs gap-1.5 bg-white/5 border-white/15 hover:bg-white/10 text-white/80"
+                  >
+                    {proofLoading && proofFmt === "pdf" ? (
+                      <><Loader2 className="h-3 w-3 animate-spin" /> Generating…</>
+                    ) : proofDone && proofFmt === "pdf" ? (
+                      <><CheckCircle2 className="h-3 w-3 text-emerald-400" /> Downloaded</>
+                    ) : (
+                      <><Download className="h-3 w-3" /> Export PDF</>
+                    )}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleExportProof("json")}
+                    disabled={proofLoading}
+                    className="flex-1 h-7 text-xs gap-1.5 bg-white/5 border-white/15 hover:bg-white/10 text-white/80"
+                  >
+                    {proofLoading && proofFmt === "json" ? (
+                      <><Loader2 className="h-3 w-3 animate-spin" /> Generating…</>
+                    ) : proofDone && proofFmt === "json" ? (
+                      <><CheckCircle2 className="h-3 w-3 text-emerald-400" /> Downloaded</>
+                    ) : (
+                      <><FileJson className="h-3 w-3" /> Export JSON</>
+                    )}
+                  </Button>
+                </div>
+              </div>
             ) : (
               /* No session — show sample card so prospects can inspect the report */
               <div className="flex flex-col gap-2 rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-950/30 to-slate-950/60 p-4">

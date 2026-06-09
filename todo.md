@@ -4946,3 +4946,14 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Wire homepage "View Sample Proof Report" CTA to open the sample report
 - [x] Preserve real-session export behavior (Export PDF + Export JSON) unchanged
 - [x] TypeScript: 0 errors
+
+## Institutional Proof Report — Real Session Connection
+
+- [ ] Audit proofEngine router procedures and proofReportPdf to understand existing session data mapping
+- [ ] Build/extend generateProofReport server procedure to assemble 7 sections from real session data (council recommendation, governance findings, constitution version, calibration context, historical precedents, release gate, audit references)
+- [ ] Build exportProofReportJson procedure to return structured JSON of real session proof data
+- [ ] Update PDF export to use actual session data (not sample)
+- [ ] Update ReportsPanel: when session exists show "Status: Available", session ID, Export PDF + Export JSON buttons
+- [ ] Preserve sample report for no-session state (unchanged)
+- [ ] Write vitest test for real session proof report assembly
+- [ ] TypeScript: 0 errors
