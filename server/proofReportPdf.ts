@@ -128,6 +128,24 @@ export interface ProofReportInput {
     reportGeneratedAt: number;
     reportVersion: string;
   };
+  // ── Phase 2 additions ─────────────────────────────────────────────────────
+  /** Ranked decision drivers for Section A — Why the Council Reached This Verdict */
+  decisionDrivers?: Array<{
+    rank: number;
+    factor: string;
+    impactLevel: "Critical" | "High" | "Moderate";
+    personasCiting: number;
+    totalPersonas: number;
+    supportTypes: Array<"constitutional" | "calibration" | "precedent">;
+  }>;
+  /** Outcome performance statistics for Section C */
+  outcomePerformance?: {
+    resolvedDecisions: number;
+    predictionAccuracy: number | null;  // 0–1
+    falsePositiveRate: number | null;
+    falseNegativeRate: number | null;
+    materializationRate: number | null;
+  } | null;
 }
 
 // ── Palette ───────────────────────────────────────────────────────────────────
@@ -195,60 +213,63 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
     const FOOTER_H = 40;
     const BOTTOM_LIMIT = PAGE_H - FOOTER_H - 30;
 
-    // Track page numbers for footer rendering.
-    // PDFKit draws footers using the buffered page approach:
-    // we keep a per-page footer queue and flush them via the pageAdded event.
+    // Footer system: automatically queue a footer entry for every page.
+    // We use the 'pageAdded' event so we never need to call drawFooter() manually.
+    // All footers are flushed at the end using bufferPages + switchToPage.
     let pageNum = 1;
-    // Store footer data per page index so we can render them at doc.end time
     const footerQueue: Array<{ pageIndex: number; num: number }> = [];
 
-    // Register footer for the current page (called before addPage)
-    function queueFooter() {
-      footerQueue.push({ pageIndex: doc.bufferedPageRange().start + doc.bufferedPageRange().count - 1, num: pageNum });
+    function queueFooterForCurrentPage() {
+      const range = doc.bufferedPageRange();
+      const pageIndex = range.start + range.count - 1;
+      footerQueue.push({ pageIndex, num: pageNum });
     }
 
+    // Queue footer for the very first page immediately
+    queueFooterForCurrentPage();
+
     // Flush all queued footers by switching to each buffered page.
-    // IMPORTANT: After doc.text() with explicit y, PDFKit sets doc.y = y + textHeight.
-    // If that exceeds page height, PDFKit auto-creates a new page.
-    // We prevent this by clamping doc.y back to a safe value after each text call.
+    // Deduplicates by pageIndex (last entry wins) to handle double-queueing.
     function flushFooters() {
       const range = doc.bufferedPageRange();
-      const safeY = BOTTOM_LIMIT - 10; // safe cursor position within page bounds
+      // Build a deduplicated map: pageIndex -> num (last write wins)
+      const pageFooterMap = new Map<number, number>();
       for (const { pageIndex, num } of footerQueue) {
+        pageFooterMap.set(pageIndex, num);
+      }
+      for (const [pageIndex, num] of Array.from(pageFooterMap.entries())) {
         const relIndex = pageIndex - range.start;
         if (relIndex < 0 || relIndex >= range.count) continue;
         doc.switchToPage(pageIndex);
         const y = PAGE_H - FOOTER_H;
+        // Draw footer line
         doc
+          .save()
           .moveTo(ML, y)
           .lineTo(ML + PAGE_W, y)
           .strokeColor(BORDER_COLOR)
           .lineWidth(0.5)
-          .stroke();
-        doc
-          .fillColor(TEXT_MUTED)
-          .fontSize(7)
-          .font("Helvetica")
-          .text(
-            `AgenThink Mesh — Institutional Proof Engine   ·   Report ID: ${input.reportId}   ·   ${fmtDate(input.generatedAt)}   ·   Page ${num}`,
-            ML,
-            y + 8,
-            { width: PAGE_W, align: "center", height: 20, ellipsis: false }
-          );
-        // Clamp cursor back to prevent PDFKit from auto-creating overflow pages
-        doc.y = safeY;
+          .stroke()
+          .restore();
+        // Draw footer text with explicit bounded height to prevent overflow
+        doc.save();
+        doc.fillColor(TEXT_MUTED).fontSize(7).font("Helvetica");
+        // Use doc.text with explicit coordinates and a height cap of 16px
+        // This prevents PDFKit from advancing the cursor past the page boundary
+        const footerText = `AgenThink Mesh — Institutional Proof Engine   ·   Report ID: ${input.reportId}   ·   ${fmtDate(input.generatedAt)}   ·   Page ${num}`;
+        doc.text(footerText, ML, y + 8, { width: PAGE_W, align: "center", height: 16, lineBreak: false });
+        doc.restore();
+        // Explicitly reset cursor to a safe position within the current page
+        doc.y = y - 5;
       }
     }
 
-    function drawFooter() {
-      // Called at the very end for the last page — just queue it.
-      queueFooter();
-    }
-
     function addPage() {
-      queueFooter();
+      queueFooterForCurrentPage();
       doc.addPage();
       pageNum++;
+      // Queue footer for the newly created page
+      queueFooterForCurrentPage();
       doc.y = 50;
     }
 
@@ -533,9 +554,286 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
-    // SECTION 2 — Council Vote Distribution
+    // SECTION A — Why the Council Reached This Verdict (Decision Drivers)
     // ═══════════════════════════════════════════════════════════════════════════
-    sectionHeader("Council Vote Distribution", 2);
+    sectionHeader("Why the Council Reached This Verdict", 2);
+    {
+      const drivers = input.decisionDrivers ?? [];
+      if (drivers.length === 0) {
+        naBlock(
+          "Decision driver analysis is not yet available. This section is populated when the council session includes structured factor attribution. " +
+          "Factors are derived from governance findings, hard flags, and persona critique patterns."
+        );
+      } else {
+        // Sub-heading
+        doc.moveDown(0.3);
+        ensureSpace(16);
+        doc.fillColor(TEXT_SECONDARY).fontSize(8).font("Helvetica-Bold")
+          .text("PRIMARY DECISION DRIVERS", ML, doc.y, { width: PAGE_W });
+        doc.moveDown(0.4);
+        // Column widths: rank, factor, impact, personas, support
+        const dCols = [28, 180, 70, 80, PAGE_W - 28 - 180 - 70 - 80];
+        const dHeaders = ["#", "Factor", "Impact Level", "Personas Citing", "Evidence Support"];
+        // Header row
+        ensureSpace(22);
+        const dHdrY = doc.y;
+        let dX = ML;
+        doc.fillColor("#ffffff").rect(ML, dHdrY, PAGE_W, 18).fill();
+        doc.fillColor(TEXT_MUTED).fontSize(7).font("Helvetica-Bold");
+        dHeaders.forEach((h, i) => {
+          doc.text(h, dX + 4, dHdrY + 5, { width: dCols[i] - 8, lineBreak: false });
+          dX += dCols[i];
+        });
+        doc.rect(ML, dHdrY, PAGE_W, 18).strokeColor(BORDER_COLOR).lineWidth(0.5).stroke();
+        doc.y = dHdrY + 18;
+        // Data rows
+        const impactColor = (lvl: string) =>
+          lvl === "Critical" ? BLOCKED_RED : lvl === "High" ? WARN_AMBER : TEXT_SECONDARY;
+        for (const d of drivers) {
+          const supportLabel = d.supportTypes.length > 0
+            ? d.supportTypes.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")
+            : "—";
+          const cells = [
+            String(d.rank),
+            d.factor,
+            d.impactLevel,
+            `${d.personasCiting} of ${d.totalPersonas}`,
+            supportLabel,
+          ];
+          // Measure row height
+          const rowH = Math.max(
+            18,
+            ...cells.map((c, i) => {
+              const lines = Math.ceil(doc.widthOfString(c) / Math.max(dCols[i] - 8, 1));
+              return Math.max(1, lines) * 11 + 8;
+            })
+          );
+          ensureSpace(rowH + 4);
+          const rowY = doc.y;
+          const rowBg = drivers.indexOf(d) % 2 === 0 ? SECTION_BG : "#ffffff";
+          doc.fillColor(rowBg).rect(ML, rowY, PAGE_W, rowH).fill();
+          doc.rect(ML, rowY, PAGE_W, rowH).strokeColor(BORDER_COLOR).lineWidth(0.3).stroke();
+          let rx = ML;
+          cells.forEach((cell, ci) => {
+            const color = ci === 2 ? impactColor(d.impactLevel) : TEXT_PRIMARY;
+            doc.fillColor(color).fontSize(8)
+              .font(ci === 2 ? "Helvetica-Bold" : "Helvetica")
+              .text(cell, rx + 4, rowY + 5, { width: dCols[ci] - 8, lineBreak: true });
+            rx += dCols[ci];
+          });
+          doc.y = rowY + rowH;
+        }
+        doc.moveDown(0.5);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SECTION B — Why This Recommendation Can Be Trusted (Trust Evidence)
+    // ═══════════════════════════════════════════════════════════════════════════
+    sectionHeader("Why This Recommendation Can Be Trusted", 3);
+    {
+      // Evidence source checklist
+      const hasCfaForTrust = (input.personaConfidence?.length ?? 0) > 0;
+      const hasHistorical = (input.historicalPrecedents?.length ?? 0) > 0;
+      const hasCalibration = (input.calibrationContext?.personaWeights?.length ?? 0) > 0;
+      const hasAuditTrail = (input.auditReferences?.length ?? 0) > 0;
+      const hasOutcome = input.traceability.outcomeSessionId != null;
+      const hasCouncil = (input.voteDistribution?.totalPersonas ?? 0) > 0;
+      const sources: Array<{ label: string; available: boolean }> = [
+        { label: "Council Deliberation", available: hasCouncil },
+        { label: "Constitutional Audit (CFA)", available: hasCfaForTrust },
+        { label: "Historical Precedents", available: hasHistorical },
+        { label: "Calibration Review", available: hasCalibration },
+        { label: "Audit Trail", available: hasAuditTrail },
+        { label: "Outcome Record", available: hasOutcome },
+      ];
+      const availableCount = sources.filter(s => s.available).length;
+      const completenessScore = Math.round((availableCount / sources.length) * 100);
+
+      // Sub-heading
+      doc.moveDown(0.3);
+      ensureSpace(16);
+      doc.fillColor(TEXT_SECONDARY).fontSize(8).font("Helvetica-Bold")
+        .text("EVIDENCE SOURCE STATUS", ML, doc.y, { width: PAGE_W });
+      doc.moveDown(0.4);
+
+      // Two-column checklist
+      const half = Math.ceil(sources.length / 2);
+      const colW = PAGE_W / 2 - 10;
+      for (let i = 0; i < half; i++) {
+        const left = sources[i];
+        const right = sources[i + half];
+        ensureSpace(18);
+        const rowY = doc.y;
+        // Left
+        const lColor = left.available ? RELEASED_GREEN : BLOCKED_RED;
+        const lMark = left.available ? "\u2713" : "\u2717";
+        doc.fillColor(lColor).fontSize(9).font("Helvetica-Bold")
+          .text(lMark, ML, rowY, { width: 14, lineBreak: false });
+        doc.fillColor(TEXT_PRIMARY).fontSize(8).font("Helvetica")
+          .text(left.label, ML + 16, rowY, { width: colW - 16, lineBreak: false });
+        // Right (if exists)
+        if (right) {
+          const rColor = right.available ? RELEASED_GREEN : BLOCKED_RED;
+          const rMark = right.available ? "\u2713" : "\u2717";
+          doc.fillColor(rColor).fontSize(9).font("Helvetica-Bold")
+            .text(rMark, ML + PAGE_W / 2 + 10, rowY, { width: 14, lineBreak: false });
+          doc.fillColor(TEXT_PRIMARY).fontSize(8).font("Helvetica")
+            .text(right.label, ML + PAGE_W / 2 + 26, rowY, { width: colW - 16, lineBreak: false });
+        }
+        doc.y = rowY + 16;
+      }
+
+      // Proof Completeness Score box
+      doc.moveDown(0.6);
+      ensureSpace(50);
+      const scoreBoxY = doc.y;
+      const scoreBoxH = 44;
+      const scoreColor = completenessScore >= 80 ? RELEASED_GREEN : completenessScore >= 50 ? WARN_AMBER : BLOCKED_RED;
+      doc.fillColor(scoreColor).rect(ML, scoreBoxY, PAGE_W, scoreBoxH).fill();
+      doc.fillColor("#ffffff").fontSize(8).font("Helvetica-Bold")
+        .text("PROOF COMPLETENESS SCORE", ML + 12, scoreBoxY + 8, { width: PAGE_W - 24, lineBreak: false });
+      doc.fillColor("#ffffff").fontSize(20).font("Helvetica-Bold")
+        .text(`${completenessScore}%`, ML + 12, scoreBoxY + 20, { width: 80, lineBreak: false });
+      doc.fillColor("rgba(255,255,255,0.85)").fontSize(8).font("Helvetica")
+        .text(`${availableCount} of ${sources.length} evidence sources available`, ML + 100, scoreBoxY + 24, { width: PAGE_W - 120, lineBreak: false });
+      doc.y = scoreBoxY + scoreBoxH + 8;
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SECTION C — Outcome Performance Summary
+    // ═══════════════════════════════════════════════════════════════════════════
+    sectionHeader("Outcome Performance Summary", 4);
+    {
+      const op = input.outcomePerformance;
+      if (!op || op.resolvedDecisions === 0) {
+        naBlock(
+          "Outcome Intelligence Not Yet Available.\n\n" +
+          "This section is populated as council decisions are resolved over time. " +
+          "Outcome data is recorded when a deal reaches a verifiable post-decision state (closed, failed, materially changed). " +
+          "Once sufficient resolved decisions are available, this section will display prediction accuracy, false positive rate, " +
+          "false negative rate, and materialization rate."
+        );
+      } else {
+        doc.moveDown(0.3);
+        kv("Resolved Decisions", String(op.resolvedDecisions));
+        kv("Prediction Accuracy",
+          op.predictionAccuracy != null ? `${Math.round(op.predictionAccuracy * 100)}%` : "—");
+        kv("False Positive Rate",
+          op.falsePositiveRate != null ? `${Math.round(op.falsePositiveRate * 100)}%` : "—");
+        kv("False Negative Rate",
+          op.falseNegativeRate != null ? `${Math.round(op.falseNegativeRate * 100)}%` : "—");
+        if (op.materializationRate != null) {
+          kv("Materialization Rate", `${Math.round(op.materializationRate * 100)}%`);
+        }
+        doc.moveDown(0.3);
+        ensureSpace(30);
+        doc.fillColor(SECTION_BG).rect(ML, doc.y, PAGE_W, 28).fill();
+        doc.fillColor(TEXT_MUTED).fontSize(7).font("Helvetica")
+          .text(
+            "Outcome data is derived from the AgenThink Mesh Outcome Ledger. Prediction accuracy reflects the proportion of council verdicts " +
+            "that matched the verified post-decision outcome. False positive rate reflects APPROVED decisions that subsequently failed. " +
+            "False negative rate reflects REJECTED decisions that subsequently succeeded.",
+            ML + 8, doc.y + 6, { width: PAGE_W - 16, lineBreak: true }
+          );
+        doc.moveDown(0.5);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SECTION D — Why AgenThink Mesh Is Different
+    // ═══════════════════════════════════════════════════════════════════════════
+    sectionHeader("Why AgenThink Mesh Is Different", 5);
+    {
+      doc.moveDown(0.3);
+      ensureSpace(16);
+      doc.fillColor(TEXT_SECONDARY).fontSize(8).font("Helvetica-Bold")
+        .text("TRADITIONAL IC REVIEW vs. AGENTHINKMESH", ML, doc.y, { width: PAGE_W });
+      doc.moveDown(0.4);
+
+      const diffRows: Array<{ dimension: string; traditional: string; mesh: string }> = [
+        {
+          dimension: "Decision Process",
+          traditional: "3–5 human analysts, sequential review, subject to anchoring bias and availability heuristics.",
+          mesh: "10 calibrated AI personas deliberate in parallel, each with a defined constitutional role and bias profile.",
+        },
+        {
+          dimension: "Historical Recall",
+          traditional: "Analyst memory and manually curated precedent databases. Coverage is limited and inconsistent.",
+          mesh: "Automated precedent retrieval from the Outcome Ledger across all prior council decisions.",
+        },
+        {
+          dimension: "Governance Audit",
+          traditional: "Post-hoc compliance review. Governance is checked after the decision, not during deliberation.",
+          mesh: "Constitutional Fidelity Auditor (CFA) runs during deliberation. Every persona vote is audited against the active constitution.",
+        },
+        {
+          dimension: "Outcome Calibration",
+          traditional: "Analyst track records are informal and rarely quantified. Brier scores are not computed.",
+          mesh: "Each persona carries a Brier score and calibration weight derived from resolved historical decisions.",
+        },
+        {
+          dimension: "Traceability",
+          traditional: "Meeting notes and email trails. Reconstruction is manual and incomplete.",
+          mesh: "Every vote, revision, and governance event is logged with a cryptographic session ID and timestamp.",
+        },
+        {
+          dimension: "Exportable Audit Trail",
+          traditional: "Not standardised. Audit preparation requires significant manual effort.",
+          mesh: "This report. Exportable on demand. Includes evidence chain, audit references, and traceability appendix.",
+        },
+      ];
+
+      // Column widths
+      const dc = [130, (PAGE_W - 130) / 2, (PAGE_W - 130) / 2];
+      const dh = ["DIMENSION", "TRADITIONAL IC REVIEW", "AGENTHINKMESH"];
+
+      // Header
+      ensureSpace(22);
+      const dhY = doc.y;
+      doc.fillColor(BRAND_DARK).rect(ML, dhY, PAGE_W, 20).fill();
+      let dhX = ML;
+      dh.forEach((h, i) => {
+        doc.fillColor("#ffffff").fontSize(7).font("Helvetica-Bold")
+          .text(h, dhX + 6, dhY + 6, { width: dc[i] - 12, lineBreak: false });
+        dhX += dc[i];
+      });
+      doc.y = dhY + 20;
+
+      for (const row of diffRows) {
+        const cells = [row.dimension, row.traditional, row.mesh];
+        // Measure height
+        const rowH = Math.max(
+          24,
+          ...cells.map((c, i) => {
+            const approxCharsPerLine = Math.floor((dc[i] - 12) / 4.5);
+            const lines = Math.ceil(c.length / Math.max(approxCharsPerLine, 1));
+            return Math.max(2, lines) * 10 + 10;
+          })
+        );
+        ensureSpace(rowH + 4);
+        const ry = doc.y;
+        const isEven = diffRows.indexOf(row) % 2 === 0;
+        doc.fillColor(isEven ? SECTION_BG : "#ffffff").rect(ML, ry, PAGE_W, rowH).fill();
+        doc.rect(ML, ry, PAGE_W, rowH).strokeColor(BORDER_COLOR).lineWidth(0.3).stroke();
+        let rx = ML;
+        cells.forEach((cell, ci) => {
+          const isLast = ci === 2;
+          doc.fillColor(isLast ? RELEASED_GREEN : ci === 0 ? TEXT_PRIMARY : TEXT_SECONDARY)
+            .fontSize(7.5)
+            .font(ci === 0 ? "Helvetica-Bold" : "Helvetica")
+            .text(cell, rx + 6, ry + 6, { width: dc[ci] - 12, lineBreak: true });
+          rx += dc[ci];
+        });
+        doc.y = ry + rowH;
+      }
+      doc.moveDown(0.5);
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════════
+    // SECTION 2 — Council Vote Distribution (renumbered to 6)
+    // ═══════════════════════════════════════════════════════════════════════════
+    sectionHeader("Council Vote Distribution", 6);
     kv("Recommendation", input.voteDistribution.verdict.replace(/_/g, " "), { valueColor: verdictColor(input.voteDistribution.verdict) });
     // Primary vote statistic: show vote split, not consensus percentage
     const totalP = input.voteDistribution.totalPersonas || 1;
@@ -552,7 +850,7 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
     // ═══════════════════════════════════════════════════════════════════════════
     // SECTION 3 — Persona Confidence Analysis
     // ═══════════════════════════════════════════════════════════════════════════
-    sectionHeader("Persona Confidence Analysis", 3);
+    sectionHeader("Persona Confidence Analysis", 7);
     if (!hasCfa) {
       naBlock(
         "CFA audit records are not yet available. The Constitutional Fidelity Auditor runs asynchronously after the council vote. " +
@@ -593,7 +891,7 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
     // ═══════════════════════════════════════════════════════════════════════════
     // SECTION 4 — Constitutional Compliance Review
     // ═══════════════════════════════════════════════════════════════════════════
-    sectionHeader("Constitutional Compliance Review", 4);
+    sectionHeader("Constitutional Compliance Review", 8);
     kv("Compliance Status", input.constitutionalCompliance.status, { valueColor: complianceC });
     kv("Average Fidelity Score", fmtScore(input.constitutionalCompliance.averageFidelityScore));
     kv("Compliance Rate", fmtPct(input.constitutionalCompliance.complianceRate));
@@ -603,7 +901,7 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
     // ═══════════════════════════════════════════════════════════════════════════
     // SECTION 5 — Governance Findings
     // ═══════════════════════════════════════════════════════════════════════════
-    sectionHeader("Governance Findings", 5);
+    sectionHeader("Governance Findings", 9);
     if (input.governanceFindings.length === 0) {
       naBlock(
         "No governance rule violations detected. All council personas operated within their constitutional mandates. " +
@@ -627,7 +925,7 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
     // ═══════════════════════════════════════════════════════════════════════════
     // SECTION 6 — Constitution Version References
     // ═══════════════════════════════════════════════════════════════════════════
-    sectionHeader("Constitution Version References", 6);
+    sectionHeader("Constitution Version References", 10);
     if (input.constitutionVersions.length === 0) {
       naBlock("Constitution version data not available.");
     } else {
@@ -642,7 +940,7 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
     // ═══════════════════════════════════════════════════════════════════════════
     // SECTION 7 — Contradiction Analysis
     // ═══════════════════════════════════════════════════════════════════════════
-    sectionHeader("Contradiction Analysis", 7);
+    sectionHeader("Contradiction Analysis", 11);
     if (input.contradictions.length === 0) {
       naBlock(
         "No inter-decision contradictions detected. This module requires at least two completed decisions " +
@@ -665,7 +963,7 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
     // ═══════════════════════════════════════════════════════════════════════════
     // SECTION 8 — Calibration Context
     // ═══════════════════════════════════════════════════════════════════════════
-    sectionHeader("Calibration Context", 8);
+    sectionHeader("Calibration Context", 12);
     kv("Apply Weights to Consensus", input.calibrationContext.applyWeightsEnabled ? "ENABLED" : "DISABLED (safety gate active)");
     kv("Minimum Samples for Trust", String(input.calibrationContext.minSamplesForTrust));
     doc.moveDown(0.3);
@@ -694,7 +992,7 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
     // ═══════════════════════════════════════════════════════════════════════════
     // SECTION 9 — Historical Precedents
     // ═══════════════════════════════════════════════════════════════════════════
-    sectionHeader("Historical Precedents", 9);
+    sectionHeader("Historical Precedents", 13);
     if (!hasPrecedents) {
       naBlock(
         "No comparable historical decisions found. Historical precedents are drawn from the Outcome Ledger " +
@@ -718,7 +1016,7 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
     // ═══════════════════════════════════════════════════════════════════════════
     // SECTION 10 — Release Gate Determination
     // ═══════════════════════════════════════════════════════════════════════════
-    sectionHeader("Release Gate Determination", 10);
+    sectionHeader("Release Gate Determination", 14);
     const rg = input.releaseGate;
     kv("Gate Decision (Report Export Eligibility)", rg.gate, { valueColor: gateC });
     kv("Council Consensus Position", rg.councilConsensusPosition.replace(/_/g, " "));
@@ -743,7 +1041,7 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
     // ═══════════════════════════════════════════════════════════════════════════
     // SECTION 11 — Evidence Chain
     // ═══════════════════════════════════════════════════════════════════════════
-    sectionHeader("Evidence Chain", 11);
+    sectionHeader("Evidence Chain", 15);
     if (input.evidenceChain.length === 0) {
       naBlock("No evidence chain artifacts recorded for this session.");
     } else {
@@ -764,7 +1062,7 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
     // ═══════════════════════════════════════════════════════════════════════════
     // SECTION 12 — Audit References
     // ═══════════════════════════════════════════════════════════════════════════
-    sectionHeader("Audit References", 12);
+    sectionHeader("Audit References", 16);
     if (!hasAuditTrail) {
       naBlock("No audit log entries found for this session.");
     } else {
@@ -792,17 +1090,19 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
     // ═══════════════════════════════════════════════════════════════════════════
     // SECTION 13 — Traceability Appendix
     // ═══════════════════════════════════════════════════════════════════════════
-    sectionHeader("Traceability Appendix", 13);
+    sectionHeader("Traceability Appendix", 17);
     const tr = input.traceability;
+    // Ensure all 6 kv fields fit on the same page (6 × 32px each)
+    ensureSpace(6 * 32);
     kv("Session ID", tr.sessionId);
     kv("CFA Session ID", tr.cfaSessionId ?? "Not yet available — CFA runs asynchronously after council");
     kv("Outcome Session ID", tr.outcomeSessionId ?? "Not yet recorded — outcome is logged post-decision");
     kv("Constitution Version", `v${tr.constitutionVersion}`);
     kv("Report Generated At", fmtDate(tr.reportGeneratedAt));
     kv("Report Version", tr.reportVersion);
-    doc.moveDown(1);
 
-    drawFooter();
+    // No drawFooter call needed — the last page's footer was already queued by addPage()
+    // or by the initial queueFooterForCurrentPage() call for single-page reports.
     flushFooters();
     doc.end();
   });

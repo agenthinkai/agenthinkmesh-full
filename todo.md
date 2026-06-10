@@ -4985,3 +4985,11 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Add fail-fast validation: empty sections show explicit "Data Not Available" explanations
 - [x] TypeScript check: 0 errors
 - [x] Test PDF generation: 4 content pages, no overlaps, no blank pages
+
+## Proof Report Phase 2 — Institutional Trust Sections (2026-06-10)
+- [ ] Section A: Decision Drivers — ranked top 3-5 factors with impact level, persona count, support type
+- [ ] Section B: Trust Evidence — Evidence Source Status checklist + Proof Completeness Score
+- [ ] Section C: Outcome Performance Summary — resolved decisions, accuracy, false positive/negative rates
+- [ ] Section D: AgenThink Mesh Differentiation — Moody's-style comparison table vs Traditional IC Review
+- [ ] Extend ProofReportInput type with decisionDrivers, outcomePerformance optional fields
+- [ ] Extend proofEngine.ts proofReport procedure to populate new section data
