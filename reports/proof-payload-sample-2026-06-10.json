@@ -1,0 +1,102 @@
+{
+  "decisionDrivers": [
+    {
+      "rank": 1,
+      "factor": "Liquidity Risk",
+      "impactLevel": "Critical",
+      "personaCount": 8,
+      "evidenceSupport": "Constitutional + Calibration"
+    },
+    {
+      "rank": 2,
+      "factor": "Insufficient Contingency Reserve",
+      "impactLevel": "Critical",
+      "personaCount": 7,
+      "evidenceSupport": "Constitutional"
+    },
+    {
+      "rank": 3,
+      "factor": "ESG Compliance Gap",
+      "impactLevel": "High",
+      "personaCount": 6,
+      "evidenceSupport": "Constitutional + Precedent"
+    },
+    {
+      "rank": 4,
+      "factor": "Regulatory Uncertainty",
+      "impactLevel": "High",
+      "personaCount": 5,
+      "evidenceSupport": "Constitutional"
+    },
+    {
+      "rank": 5,
+      "factor": "Concentration Exposure",
+      "impactLevel": "Moderate",
+      "personaCount": 3,
+      "evidenceSupport": "Constitutional"
+    }
+  ],
+  "outcomePerformance": {
+    "resolvedDecisions": 118,
+    "predictionAccuracy": 81,
+    "falsePositiveRate": 9,
+    "falseNegativeRate": 11,
+    "materializationRate": 64
+  },
+  "historicalPrecedents": [
+    {
+      "decisionId": "sess-windpark-2024",
+      "dealType": "INFRASTRUCTURE_DEBT",
+      "verdict": "REJECTED",
+      "outcomeStatus": "FAILED",
+      "decisionDate": 1765497600000,
+      "similarity": "74% match"
+    },
+    {
+      "decisionId": "sess-solarfarm-202",
+      "dealType": "INFRASTRUCTURE_DEBT",
+      "verdict": "APPROVED",
+      "outcomeStatus": "SUCCEEDED",
+      "decisionDate": 1755129600000,
+      "similarity": "68% match"
+    },
+    {
+      "decisionId": "sess-offshore-2023",
+      "dealType": "INFRASTRUCTURE_DEBT",
+      "verdict": "REJECTED",
+      "outcomeStatus": "ABANDONED",
+      "decisionDate": 1734393600000,
+      "similarity": "Same council mode"
+    }
+  ],
+  "institutionalProofScore": {
+    "total": 71,
+    "components": {
+      "governance": {
+        "score": 21,
+        "max": 25,
+        "label": "Governance & CFA Fidelity"
+      },
+      "calibration": {
+        "score": 18,
+        "max": 20,
+        "label": "Calibration Evidence"
+      },
+      "historicalEvidence": {
+        "score": 14,
+        "max": 20,
+        "label": "Historical Precedents"
+      },
+      "outcomeEvidence": {
+        "score": 13,
+        "max": 25,
+        "label": "Outcome Performance"
+      },
+      "traceability": {
+        "score": 7,
+        "max": 10,
+        "label": "Audit Traceability"
+      }
+    }
+  }
+}
