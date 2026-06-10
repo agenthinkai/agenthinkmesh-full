@@ -4993,3 +4993,15 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Section D: AgenThink Mesh Differentiation — Moody's-style comparison table vs Traditional IC Review
 - [ ] Extend ProofReportInput type with decisionDrivers, outcomePerformance optional fields
 - [ ] Extend proofEngine.ts proofReport procedure to populate new section data
+
+- [ ] Phase 3A: decisionDrivers extraction from persona rationale text
+- [ ] Phase 3B: outcomePerformance wired from Attribution Engine / Outcome Ledger
+- [ ] Phase 3C: historicalPrecedents similarity ranking
+- [ ] Phase 3D: Institutional Proof Score weighted model (PDF + proofEngine)
+- [x] Proof Report Phase 3 — Part A: decisionDrivers extraction from persona rationale votesJson
+- [x] Proof Report Phase 3 — Part B: outcomePerformance wired from outcomeSessions table
+- [x] Proof Report Phase 3 — Part C: historicalPrecedents with similarity scoring from decisionMemory/outcomeSessions
+- [x] Proof Report Phase 3 — Part D: Institutional Proof Score weighted composite (Governance 25, Calibration 20, Historical 20, Outcome 25, Traceability 10)
+- [x] Proof Report Phase 3 — PDF type updated for personaCount/evidenceSupport/institutionalProofScore
+- [x] Proof Report Phase 3 — IPS component bar chart rendered in Section 3
+- [x] Proof Report Phase 3 — TypeScript 0 errors confirmed

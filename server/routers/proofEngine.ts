@@ -28,6 +28,7 @@ import {
   cfaPreferenceRecords,
   consensusSessions,
   agentWeights,
+  decisionMemory,
 } from "../../drizzle/schema";
 import { and, eq, gte, isNotNull, sql, desc, avg, count } from "drizzle-orm";
 import { z } from "zod";
@@ -614,6 +615,212 @@ export const proofEngineRouter = router({
 
       const MIN_TRUST_SAMPLES = 12;
 
+      // ── Part A: Decision Drivers — extract from votesJson ─────────────────
+      // Parse persona votes from consensusSessions.votesJson
+      const rawVotesJson: string | null = session?.votesJson as string ?? null;
+      const personaVotes: Array<{
+        personaId: string; personaName: string; vote: string;
+        rationale: string; keyFlags: string[]; blockers: string[];
+        confidence: number;
+      }> = [];
+      if (rawVotesJson) {
+        try {
+          const parsed = JSON.parse(rawVotesJson);
+          const arr = Array.isArray(parsed) ? parsed : (parsed.votes ?? []);
+          for (const v of arr) {
+            personaVotes.push({
+              personaId: v.personaId ?? v.persona_id ?? "",
+              personaName: v.personaName ?? v.persona_name ?? v.personaId ?? "",
+              vote: v.vote ?? "",
+              rationale: v.rationale ?? "",
+              keyFlags: Array.isArray(v.keyFlags) ? v.keyFlags : (Array.isArray(v.key_flags) ? v.key_flags : []),
+              blockers: Array.isArray(v.blockers) ? v.blockers : [],
+              confidence: parseFloat(v.confidence ?? "0"),
+            });
+          }
+        } catch { /* votesJson malformed — skip */ }
+      }
+
+      // Aggregate flags and blockers across all personas
+      const flagFreq = new Map<string, { count: number; voters: string[]; isBlocker: boolean }>();
+      for (const pv of personaVotes) {
+        const isNegativeVote = pv.vote === "HARD_NO" || pv.vote === "SOFT_NO";
+        const allFactors = [
+          ...pv.keyFlags.map((f) => ({ text: f, isBlocker: false })),
+          ...pv.blockers.map((b) => ({ text: b, isBlocker: true })),
+        ];
+        for (const { text, isBlocker } of allFactors) {
+          if (!text || text.length < 3) continue;
+          const key = text.toLowerCase().trim();
+          if (!flagFreq.has(key)) flagFreq.set(key, { count: 0, voters: [], isBlocker });
+          const entry = flagFreq.get(key)!;
+          entry.count++;
+          if (!entry.voters.includes(pv.personaId)) entry.voters.push(pv.personaId);
+          if (isBlocker) entry.isBlocker = true;
+        }
+      }
+
+      // Map flag text to evidence support type
+      function detectEvidenceSupport(flag: string): string {
+        const f = flag.toLowerCase();
+        if (f.includes("liquidity") || f.includes("dscr") || f.includes("debt") || f.includes("leverage") || f.includes("financial")) return "Constitutional + Calibration";
+        if (f.includes("esg") || f.includes("environment") || f.includes("social") || f.includes("governance")) return "Constitutional + Precedent";
+        if (f.includes("regulatory") || f.includes("permit") || f.includes("compliance") || f.includes("licence")) return "Constitutional";
+        if (f.includes("construction") || f.includes("epc") || f.includes("technical") || f.includes("engineering")) return "Calibration";
+        if (f.includes("market") || f.includes("commercial") || f.includes("revenue") || f.includes("merchant")) return "Precedent + Calibration";
+        if (f.includes("concentration") || f.includes("exposure") || f.includes("counterparty")) return "Constitutional";
+        return "Council Deliberation";
+      }
+
+      // Build ranked decision drivers (top 5 by persona count)
+      const decisionDrivers = Array.from(flagFreq.entries())
+        .sort((a, b) => b[1].voters.length - a[1].voters.length)
+        .slice(0, 5)
+        .map(([factor, data], idx) => ({
+          rank: idx + 1,
+          factor: factor.charAt(0).toUpperCase() + factor.slice(1),
+          impactLevel: data.isBlocker ? "Critical" : data.voters.length >= 6 ? "Critical" : data.voters.length >= 4 ? "High" : "Moderate" as "Critical" | "High" | "Moderate",
+          personaCount: data.voters.length,
+          evidenceSupport: detectEvidenceSupport(factor),
+        }));
+
+      // ── Part B: Outcome Performance — from outcomeSessions aggregate ──────
+      const allOutcomeSessions = await db
+        .select({
+          originalVerdict: outcomeSessions.originalVerdict,
+          outcomeStatus: outcomeSessions.outcomeStatus,
+        })
+        .from(outcomeSessions)
+        .where(sql`${outcomeSessions.outcomeStatus} NOT IN ('UNKNOWN', 'IN_PROGRESS')`);
+
+      let resolvedCount = 0;
+      let correctPredictions = 0;
+      let approvedCount = 0;
+      let approvedFailed = 0;
+      let rejectedCount = 0;
+      let rejectedSucceeded = 0;
+      let succeededCount = 0;
+
+      for (const s of allOutcomeSessions) {
+        resolvedCount++;
+        const verdict = (s.originalVerdict ?? "").toUpperCase();
+        const outcome = s.outcomeStatus;
+        const isApproved = verdict.includes("APPROVED") || verdict.includes("INVEST") || verdict.includes("PASS");
+        const isRejected = verdict.includes("VETOED") || verdict.includes("REJECT") || verdict.includes("NO");
+        const isSucceeded = outcome === "SUCCEEDED";
+        const isFailed = outcome === "FAILED" || outcome === "ABANDONED";
+
+        if (isApproved && isSucceeded) correctPredictions++;
+        if (isRejected && isFailed) correctPredictions++;
+        if (isApproved) approvedCount++;
+        if (isApproved && isFailed) approvedFailed++;
+        if (isRejected) rejectedCount++;
+        if (isRejected && isSucceeded) rejectedSucceeded++;
+        if (isSucceeded) succeededCount++;
+      }
+
+      const outcomePerformance = resolvedCount > 0 ? {
+        resolvedDecisions: resolvedCount,
+        predictionAccuracy: Math.round((correctPredictions / resolvedCount) * 100),
+        falsePositiveRate: approvedCount > 0 ? Math.round((approvedFailed / approvedCount) * 100) : 0,
+        falseNegativeRate: rejectedCount > 0 ? Math.round((rejectedSucceeded / rejectedCount) * 100) : 0,
+        materializationRate: Math.round((succeededCount / resolvedCount) * 100),
+      } : null;
+
+      // ── Part C: Historical Precedents with similarity scoring ─────────────
+      // Fetch top 3 from decisionMemory by same domain/verdict for cosine-free ranking
+      const sessionVerdict = session?.verdict ?? "UNKNOWN";
+      const memoryPrecedents = await db
+        .select()
+        .from(decisionMemory)
+        .where(
+          sql`${decisionMemory.taskId} != ${input.sessionId} OR ${decisionMemory.taskId} IS NULL`
+        )
+        .orderBy(desc(decisionMemory.createdAt))
+        .limit(20);
+
+      // Score each memory entry by similarity to current session
+      function computeSimilarity(mem: typeof decisionMemory.$inferSelect): number {
+        let score = 0.0;
+        // Same council mode / domain
+        if (mem.taskDomain && councilMode && mem.taskDomain.toLowerCase().includes(councilMode.toLowerCase())) score += 0.35;
+        // Same verdict direction
+        const memVerdict = (mem.finalVerdict ?? "").toUpperCase();
+        const curVerdict = sessionVerdict.toUpperCase();
+        const memIsNeg = memVerdict.includes("REJECT") || memVerdict.includes("NO") || memVerdict.includes("VETO");
+        const curIsNeg = curVerdict.includes("REJECT") || curVerdict.includes("NO") || curVerdict.includes("VETO");
+        if (memIsNeg === curIsNeg) score += 0.30;
+        // Confidence proximity
+        const memConf = parseFloat(mem.confidenceScore as string ?? "0");
+        const curConf = confidenceLevel ?? 0.5;
+        const confDiff = Math.abs(memConf - curConf);
+        score += Math.max(0, 0.20 - confDiff * 0.4);
+        // Recency bonus (within 180 days)
+        const ageDays = (Date.now() - mem.createdAt.getTime()) / (1000 * 60 * 60 * 24);
+        if (ageDays < 180) score += 0.15 * (1 - ageDays / 180);
+        return Math.min(score, 0.99);
+      }
+
+      const rankedMemoryPrecedents = memoryPrecedents
+        .map((m) => ({ ...m, similarityScore: computeSimilarity(m) }))
+        .sort((a, b) => b.similarityScore - a.similarityScore)
+        .slice(0, 3);
+
+      // Merge with outcomeSessions precedents (prefer outcome-tracked ones)
+      const mergedPrecedents = [
+        ...rankedMemoryPrecedents.map((m) => ({
+          decisionId: m.taskId ?? String(m.id),
+          dealType: m.taskDomain ?? councilMode,
+          verdict: m.finalVerdict ?? "UNKNOWN",
+          outcomeStatus: "UNKNOWN",
+          decisionDate: m.createdAt.getTime(),
+          similarity: `${Math.round(m.similarityScore * 100)}% match`,
+          realizedOutcome: null as string | null,
+        })),
+        ...precedents.map((p: typeof outcomeSessions.$inferSelect) => ({
+          decisionId: p.councilRunId ?? String(p.id),
+          dealType: p.councilMode,
+          verdict: p.originalVerdict,
+          outcomeStatus: p.outcomeStatus,
+          decisionDate: p.decisionDate,
+          similarity: "Same council mode",
+          realizedOutcome: p.outcomeStatus !== "UNKNOWN" ? p.outcomeStatus : null,
+        })),
+      ].slice(0, 5);
+
+      // ── Part D: Institutional Proof Score ─────────────────────────────────
+      // Weighted composite: Governance 25, Calibration 20, Historical 20, Outcome 25, Traceability 10
+      const govScore = cfaSession ? Math.round(parseFloat(cfaSession.averageFidelityScore as string) * 25) : 0;
+      const calibScore = (() => {
+        const trustedCount = calibWeights.filter((w) => w.totalEvaluations >= MIN_TRUST_SAMPLES).length;
+        const totalCount = Math.max(calibWeights.length, 1);
+        return Math.round((trustedCount / totalCount) * 20);
+      })();
+      const histScore = (() => {
+        const resolvedPrecedents = mergedPrecedents.filter((p) => p.outcomeStatus && p.outcomeStatus !== "UNKNOWN").length;
+        return Math.min(Math.round((resolvedPrecedents / 3) * 20), 20);
+      })();
+      const outcomeScore = outcomePerformance
+        ? Math.round((outcomePerformance.predictionAccuracy / 100) * 25)
+        : 0;
+      const traceScore = (() => {
+        let pts = 0;
+        if (session) pts += 4;
+        if (cfaSession) pts += 3;
+        if (outcomeSession) pts += 3;
+        return pts;
+      })();
+      const institutionalProofScore = {
+        total: govScore + calibScore + histScore + outcomeScore + traceScore,
+        components: {
+          governance: { score: govScore, max: 25, label: "Governance & CFA Fidelity" },
+          calibration: { score: calibScore, max: 20, label: "Calibration Evidence" },
+          historicalEvidence: { score: histScore, max: 20, label: "Historical Precedents" },
+          outcomeEvidence: { score: outcomeScore, max: 25, label: "Outcome Performance" },
+          traceability: { score: traceScore, max: 10, label: "Audit Traceability" },
+        },
+      };
+
       // ── Assemble 13-section proof report ───────────────────────────────────
 
       const cfaFidelity = cfaSession ? parseFloat(cfaSession.averageFidelityScore as string) : null;
@@ -775,14 +982,7 @@ export const proofEngineRouter = router({
           applyWeightsEnabled: calibWeights.some((w) => w.totalEvaluations >= MIN_TRUST_SAMPLES),
           minSamplesForTrust: MIN_TRUST_SAMPLES,
         },
-        historicalPrecedents: precedents.map((p: typeof outcomeSessions.$inferSelect) => ({
-          decisionId: p.councilRunId ?? String(p.id),
-          dealType: p.councilMode,
-          verdict: p.originalVerdict,
-          outcomeStatus: p.outcomeStatus,
-          decisionDate: p.decisionDate,
-          similarity: "Same council mode",
-        })),
+        historicalPrecedents: mergedPrecedents,
         releaseGate: {
           gate,
           blockingRules,
@@ -801,8 +1001,11 @@ export const proofEngineRouter = router({
           outcomeSessionId: outcomeSession ? String(outcomeSession.id) : null,
           constitutionVersion: 1,
           reportGeneratedAt: now,
-          reportVersion: "3.0",
+          reportVersion: "3.1",
         },
+        decisionDrivers,
+        outcomePerformance,
+        institutionalProofScore,
       };
 
       // ── Generate outputs ────────────────────────────────────────────────────

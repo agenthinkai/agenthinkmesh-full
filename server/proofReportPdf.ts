@@ -134,18 +134,37 @@ export interface ProofReportInput {
     rank: number;
     factor: string;
     impactLevel: "Critical" | "High" | "Moderate";
-    personasCiting: number;
-    totalPersonas: number;
-    supportTypes: Array<"constitutional" | "calibration" | "precedent">;
+    /** New backend field: number of personas that cited this factor */
+    personaCount?: number;
+    /** Legacy field name — same as personaCount */
+    personasCiting?: number;
+    /** Total personas in council (for display as "N of M") */
+    totalPersonas?: number;
+    /** Free-text evidence support description (new backend format) */
+    evidenceSupport?: string;
+    /** Legacy array format */
+    supportTypes?: Array<"constitutional" | "calibration" | "precedent">;
   }>;
-  /** Outcome performance statistics for Section C */
+  /** Outcome performance statistics for Section C.
+   *  Values are integers 0–100 (percentages) from the backend. */
   outcomePerformance?: {
     resolvedDecisions: number;
-    predictionAccuracy: number | null;  // 0–1
-    falsePositiveRate: number | null;
-    falseNegativeRate: number | null;
-    materializationRate: number | null;
+    predictionAccuracy: number | null;  // integer 0–100
+    falsePositiveRate: number | null;   // integer 0–100
+    falseNegativeRate: number | null;   // integer 0–100
+    materializationRate: number | null; // integer 0–100
   } | null;
+  /** Institutional Proof Score — weighted composite (0–100) */
+  institutionalProofScore?: {
+    total: number;
+    components: {
+      governance:         { score: number; max: number; label: string };
+      calibration:        { score: number; max: number; label: string };
+      historicalEvidence: { score: number; max: number; label: string };
+      outcomeEvidence:    { score: number; max: number; label: string };
+      traceability:       { score: number; max: number; label: string };
+    };
+  };
 }
 
 // ── Palette ───────────────────────────────────────────────────────────────────
@@ -590,14 +609,19 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
         const impactColor = (lvl: string) =>
           lvl === "Critical" ? BLOCKED_RED : lvl === "High" ? WARN_AMBER : TEXT_SECONDARY;
         for (const d of drivers) {
-          const supportLabel = d.supportTypes.length > 0
-            ? d.supportTypes.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")
-            : "—";
+          // Normalise field names: backend sends personaCount/evidenceSupport; legacy sends personasCiting/supportTypes
+          const citing = d.personaCount ?? d.personasCiting ?? 0;
+          const total  = d.totalPersonas ?? 10;
+          const supportLabel = d.evidenceSupport
+            ? d.evidenceSupport
+            : (d.supportTypes && d.supportTypes.length > 0
+                ? d.supportTypes.map(s => s.charAt(0).toUpperCase() + s.slice(1)).join(", ")
+                : "—");
           const cells = [
             String(d.rank),
             d.factor,
             d.impactLevel,
-            `${d.personasCiting} of ${d.totalPersonas}`,
+            `${citing} of ${total}`,
             supportLabel,
           ];
           // Measure row height
@@ -698,6 +722,45 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
       doc.fillColor("rgba(255,255,255,0.85)").fontSize(8).font("Helvetica")
         .text(`${availableCount} of ${sources.length} evidence sources available`, ML + 100, scoreBoxY + 24, { width: PAGE_W - 120, lineBreak: false });
       doc.y = scoreBoxY + scoreBoxH + 8;
+
+      // Institutional Proof Score breakdown (if available)
+      const ips = input.institutionalProofScore;
+      if (ips) {
+        doc.moveDown(0.6);
+        ensureSpace(16);
+        doc.fillColor(TEXT_SECONDARY).fontSize(8).font("Helvetica-Bold")
+          .text("INSTITUTIONAL PROOF SCORE", ML, doc.y, { width: PAGE_W });
+        doc.moveDown(0.3);
+        // Score badge
+        ensureSpace(40);
+        const ipsY = doc.y;
+        const ipsColor = ips.total >= 75 ? RELEASED_GREEN : ips.total >= 50 ? WARN_AMBER : BLOCKED_RED;
+        doc.fillColor(ipsColor).rect(ML, ipsY, 80, 36).fill();
+        doc.fillColor("#ffffff").fontSize(22).font("Helvetica-Bold")
+          .text(String(ips.total), ML + 8, ipsY + 6, { width: 64, lineBreak: false });
+        doc.fillColor("#ffffff").fontSize(7).font("Helvetica")
+          .text("/ 100", ML + 8, ipsY + 26, { width: 64, lineBreak: false });
+        // Component bars
+        const components = Object.values(ips.components);
+        const barX = ML + 90;
+        const barW = PAGE_W - 90;
+        const barH = 10;
+        const barGap = 5;
+        components.forEach((comp, ci) => {
+          const cy = ipsY + ci * (barH + barGap + 10);
+          ensureSpace(barH + barGap + 12);
+          doc.fillColor(TEXT_MUTED).fontSize(7).font("Helvetica")
+            .text(`${comp.label}`, barX, cy, { width: barW - 40, lineBreak: false });
+          doc.fillColor(TEXT_MUTED).fontSize(7).font("Helvetica-Bold")
+            .text(`${comp.score}/${comp.max}`, barX + barW - 36, cy, { width: 36, align: "right", lineBreak: false });
+          const barY2 = cy + 9;
+          doc.fillColor(BORDER_COLOR).rect(barX, barY2, barW, barH).fill();
+          const fillW = Math.round((comp.score / comp.max) * barW);
+          const barFillColor = comp.score >= comp.max * 0.75 ? RELEASED_GREEN : comp.score >= comp.max * 0.5 ? WARN_AMBER : BLOCKED_RED;
+          doc.fillColor(barFillColor).rect(barX, barY2, fillW, barH).fill();
+        });
+        doc.y = ipsY + components.length * (barH + barGap + 10) + 8;
+      }
     }
 
     // ═══════════════════════════════════════════════════════════════════════════
@@ -717,14 +780,15 @@ export async function generateProofReportPdf(input: ProofReportInput): Promise<B
       } else {
         doc.moveDown(0.3);
         kv("Resolved Decisions", String(op.resolvedDecisions));
+        // Values are already integers 0–100 from the backend
         kv("Prediction Accuracy",
-          op.predictionAccuracy != null ? `${Math.round(op.predictionAccuracy * 100)}%` : "—");
+          op.predictionAccuracy != null ? `${op.predictionAccuracy}%` : "—");
         kv("False Positive Rate",
-          op.falsePositiveRate != null ? `${Math.round(op.falsePositiveRate * 100)}%` : "—");
+          op.falsePositiveRate != null ? `${op.falsePositiveRate}%` : "—");
         kv("False Negative Rate",
-          op.falseNegativeRate != null ? `${Math.round(op.falseNegativeRate * 100)}%` : "—");
+          op.falseNegativeRate != null ? `${op.falseNegativeRate}%` : "—");
         if (op.materializationRate != null) {
-          kv("Materialization Rate", `${Math.round(op.materializationRate * 100)}%`);
+          kv("Materialization Rate", `${op.materializationRate}%`);
         }
         doc.moveDown(0.3);
         ensureSpace(30);
