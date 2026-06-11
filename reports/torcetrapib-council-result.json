@@ -1,0 +1,406 @@
+{
+  "reportId": "IPR-PHARMA-RETRO-TORCETRAPIB-2026-06-11",
+  "generatedAt": "2026-06-11T12:27:20.903Z",
+  "pilot": "Torcetrapib Retrospective Validation Pilot v1.0",
+  "evidenceCutoff": "December 31, 2005",
+  "evidenceBoundaryStatement": "EVIDENCE BOUNDARY CONFIRMED: All evidence provided to the council is dated on or before December 31, 2005. The ILLUMINATE Phase III trial results (December 2, 2006), the 82 vs 51 death finding, the $800M write-off, the market cap loss, and the Forrest et al. 2008 off-target mechanism confirmation are EXCLUDED from council input. These post-failure data points appear only in the Retrospective Outcome Appendix of the Institutional Proof Report, clearly separated from the council deliberation record.",
+  "constitution": {
+    "version": "Pharma-Constitution-v1.0",
+    "date": "2026-06-11",
+    "rules": [
+      {
+        "id": "PC-001",
+        "title": "Evidence Primacy",
+        "text": "All deliberation must be grounded in the Phase II evidence package. Extrapolation beyond the evidence must be explicitly flagged as inference, not fact."
+      },
+      {
+        "id": "PC-002",
+        "title": "Safety Signal Priority",
+        "text": "Safety signals are evaluated before efficacy signals. A safety signal that cannot be mechanistically explained does not become less concerning because the efficacy signal is strong."
+      },
+      {
+        "id": "PC-003",
+        "title": "Financial Independence",
+        "text": "Financial investment in a drug candidate does not constitute evidence of safety or efficacy. The council's safety assessment must be documented as independent of financial considerations."
+      },
+      {
+        "id": "PC-004",
+        "title": "Surrogate Endpoint Scrutiny",
+        "text": "Advancement decisions based on surrogate endpoints require explicit documentation of the validated pathway from surrogate to clinical benefit."
+      },
+      {
+        "id": "PC-005",
+        "title": "Competitive Class Analysis",
+        "text": "Safety signals not shared by competing compounds in the same class must be investigated as molecule-specific effects before Phase III advancement."
+      },
+      {
+        "id": "PC-006",
+        "title": "Quantitative Risk-Benefit",
+        "text": "All safety signals must be quantified using established epidemiological relationships before the council votes."
+      },
+      {
+        "id": "PC-007",
+        "title": "Mechanistic Investigation Requirement",
+        "text": "Safety signals in the primary Phase II dataset require mechanistic investigation before Phase III advancement, regardless of the magnitude of the efficacy signal."
+      },
+      {
+        "id": "PC-008",
+        "title": "DSMB Charter Alignment",
+        "text": "Phase III trials in cardiovascular populations must have DSMB stopping rules that explicitly address all Phase II safety signals."
+      },
+      {
+        "id": "PC-009",
+        "title": "Regulatory Risk Documentation",
+        "text": "Regulatory risk arising from unresolved safety signals must be documented and mitigated before Phase III commitment."
+      },
+      {
+        "id": "PC-010",
+        "title": "Dissent Documentation",
+        "text": "All dissenting votes must be documented with full reasoning. A dissent overruled by the majority must be preserved in the Institutional Proof Report as a minority opinion."
+      }
+    ]
+  },
+  "decisionBrief": {
+    "drug": "Torcetrapib (CP-529,414)",
+    "company": "Pfizer Inc.",
+    "mechanism": "CETP (cholesteryl ester transfer protein) inhibitor",
+    "indication": "Cardiovascular risk reduction in patients with low HDL-C / high LDL-C",
+    "decisionType": "Phase II → Phase III advancement",
+    "decisionDate": "Late 2005 / Early 2006",
+    "evidenceCutoff": "December 31, 2005",
+    "phaseIIITrial": "ILLUMINATE (NCT00134264) — 15,000 patients planned",
+    "phaseIIEvidence": {
+      "primaryPublication": "Brousseau ME et al. NEJM 2004;350:1505-15",
+      "sampleSize": "493 subjects (dose-ranging study)",
+      "hdlIncrease": "HDL-C +44% to +66% with torcetrapib 60mg + atorvastatin",
+      "ldlDecrease": "LDL-C -41% to -60% with torcetrapib 60mg + atorvastatin",
+      "bpSignal": "Systolic blood pressure increase of +2 mm Hg at 60mg dose (primary dataset, NEJM 2004 Table 3)",
+      "bpCharacterization": "Pfizer characterized as 'small but statistically significant'",
+      "safetyProfile": "No serious adverse events reported in Phase II. BP increase was the primary safety signal.",
+      "dosingSelected": "60mg torcetrapib + atorvastatin selected for Phase III"
+    },
+    "competitiveLandscape": {
+      "cetp_competitors": [
+        "Dalcetrapib (Roche) — Phase I, no BP signal reported",
+        "Anacetrapib (Merck) — Phase I, no BP signal reported",
+        "Evacetrapib (Eli Lilly) — preclinical, no BP signal reported"
+      ],
+      "note": "No competing CETP inhibitor showed a comparable blood pressure signal in available public data as of Dec 31 2005."
+    },
+    "epidemiologicalContext": {
+      "bpRiskReference": "Lewington et al. Lancet 2002;360:1903-13",
+      "bpRiskQuantified": "Each 2 mmHg increase in systolic BP = 7% increase in stroke mortality, 4% increase in ischemic heart disease mortality (Lewington 2002)",
+      "targetPopulation": "High cardiovascular risk patients — the population most sensitive to BP increases"
+    },
+    "regulatoryContext": {
+      "fdaRequirement": "FDA will require a cardiovascular outcomes trial for this indication",
+      "phaseIIIDesign": "ILLUMINATE: 15,067 patients, primary endpoint: major cardiovascular events",
+      "dsmbRequired": "Independent DSMB required for cardiovascular outcomes trial",
+      "bpStoppingRules": "No explicit BP-related DSMB stopping rules documented in public protocol"
+    },
+    "financialContext": {
+      "rdInvestment": "Approximately $800M invested over 15 years (public analyst estimates, 2005)",
+      "strategicImperative": "Lipitor patent expiring 2010 (~$13B/year revenue). Torcetrapib positioned as successor.",
+      "pfizer_statement": "Pfizer leadership: 'net benefits of the drug will greatly benefit patients' (LaMattina, 2005)"
+    },
+    "evidenceBoundaryStatement": "EVIDENCE BOUNDARY CONFIRMED: All evidence provided to the council is dated on or before December 31, 2005. The ILLUMINATE Phase III trial results (December 2, 2006), the 82 vs 51 death finding, the $800M write-off, the market cap loss, and the Forrest et al. 2008 off-target mechanism confirmation are EXCLUDED from council input. These post-failure data points appear only in the Retrospective Outcome Appendix of the Institutional Proof Report, clearly separated from the council deliberation record."
+  },
+  "councilResult": {
+    "sessionId": "PHARMA-RETRO-TORCETRAPIB-1781180831427",
+    "drug": "Torcetrapib (CP-529,414)",
+    "company": "Pfizer Inc.",
+    "decisionDate": "Late 2005 / Early 2006",
+    "evidenceCutoff": "December 31, 2005",
+    "verdict": "WAIT",
+    "verdictRationale": "10 of 10 council members voted WAIT or NO-GO. The primary blocker is the unresolved systolic blood pressure signal (+2 mmHg) in the Phase II dataset, which requires mechanistic investigation before enrolling 15,000 high-cardiovascular-risk patients in Phase III.",
+    "goCount": 0,
+    "waitCount": 8,
+    "noGoCount": 2,
+    "votes": [
+      {
+        "personaId": "chief-biostatistician",
+        "personaName": "Chief Biostatistician",
+        "personaRole": "Statistical rigor, signal detection, power analysis",
+        "vote": "WAIT",
+        "confidence": 95,
+        "rationale": "The +2 mmHg BP increase, while 'small,' is statistically significant and epidemiologically concerning for the target population. Lack of mechanistic explanation (PC-007) and absence in competitors (PC-005) demand further investigation before committing to a large outcomes trial. The surrogate-to-clinical pathway for CETP inhibition is unproven, making the BP signal even more critical.",
+        "keyFlags": [
+          "BP signal mechanistic investigation pending",
+          "Competitive landscape BP signal discrepancy",
+          "Unvalidated surrogate-to-clinical pathway"
+        ],
+        "constitutionRules": [
+          "PC-001",
+          "PC-002",
+          "PC-004",
+          "PC-005",
+          "PC-006",
+          "PC-007",
+          "PC-008",
+          "PC-009"
+        ],
+        "safetyObjection": "Statistically significant +2 mmHg systolic BP increase, lacking mechanistic explanation and not observed in competing CETP inhibitors. This translates to a quantifiable increase in stroke and ischemic heart disease mortality risk (PC-006) in a high-risk population.",
+        "regulatoryRisk": "Advancing to Phase III with an unexplained and potentially detrimental BP signal, especially when not observed in competitors, poses significant regulatory risk. The FDA will require a CV outcomes trial, and an unaddressed safety signal could jeopardize approval. Lack of explicit BP-related DSMB stopping rules (PC-008) further compounds this risk (PC-009).",
+        "timedOut": false
+      },
+      {
+        "personaId": "clinical-pharmacologist",
+        "personaName": "Clinical Pharmacologist",
+        "personaRole": "Drug mechanism, off-target pharmacology, ADMET",
+        "vote": "WAIT",
+        "confidence": 85,
+        "rationale": "The observed blood pressure increase is a significant safety signal requiring urgent mechanistic investigation (PC-007). Its absence in competing CETP inhibitors suggests a molecule-specific off-target effect (PC-005). Advancing without this understanding and explicit BP-related DSMB rules (PC-008) is premature given the target population's vulnerability and quantified risk.",
+        "keyFlags": [
+          "Unexplained BP signal",
+          "Potential off-target effect",
+          "Lack of mechanistic understanding"
+        ],
+        "constitutionRules": [
+          "PC-002",
+          "PC-005",
+          "PC-007",
+          "PC-008",
+          "PC-009"
+        ],
+        "safetyObjection": "Systolic blood pressure increase of +2 mmHg, potentially molecule-specific and mechanistically unexplained, with quantified cardiovascular risk (7% stroke, 4% IHD mortality per 2mmHg increase).",
+        "regulatoryRisk": "Advancing to a large outcomes trial (ILLUMINATE) without understanding the BP mechanism or implementing specific DSMB stopping rules for BP increases poses significant regulatory risk, especially given the high-risk patient population and the FDA's requirement for outcomes data.",
+        "timedOut": false
+      },
+      {
+        "personaId": "regulatory-strategist",
+        "personaName": "Regulatory Strategist",
+        "personaRole": "FDA pathway, DSMB design, regulatory risk",
+        "vote": "WAIT",
+        "confidence": 95,
+        "rationale": "The BP signal is concerning, especially given the target population and epidemiological context. The Phase III protocol lacks explicit DSMB stopping rules for this signal, violating PC-008. Regulatory risk from unresolved safety signals (PC-009) is high. Mechanistic investigation (PC-007) and competitive class analysis (PC-005) are also needed.",
+        "keyFlags": [
+          "BP signal unresolved",
+          "DSMB charter inadequate",
+          "Mechanistic investigation pending"
+        ],
+        "constitutionRules": [
+          "PC-001",
+          "PC-002",
+          "PC-005",
+          "PC-006",
+          "PC-007",
+          "PC-008",
+          "PC-009"
+        ],
+        "safetyObjection": "The +2 mmHg systolic BP increase is statistically significant and, per Lewington 2002, translates to a 7% increase in stroke mortality and 4% in ischemic heart disease mortality in a high-risk population. This cannot be overlooked without further mechanistic investigation and specific mitigation in the DSMB charter.",
+        "regulatoryRisk": "Advancing to Phase III without adequately addressing the BP signal via mechanistic investigation (PC-007) and without explicit DSMB stopping rules (PC-008) creates significant regulatory risk. The FDA will scrutinize this given the cardiovascular indication. Failure to address this could jeopardize trial completion or market approval.",
+        "timedOut": false
+      },
+      {
+        "personaId": "drug-safety-expert",
+        "personaName": "Drug Safety Expert",
+        "personaRole": "Pharmacovigilance, safety signal assessment, risk-benefit",
+        "vote": "WAIT",
+        "confidence": 95,
+        "rationale": "The +2 mmHg SBP increase is a significant safety signal, especially in a high-CV-risk population, per Lewington 2002. It requires mechanistic investigation (PC-007) and explicit DSMB stopping rules (PC-008) before advancing to a 15,000-patient trial. Unresolved regulatory risk exists (PC-009).",
+        "keyFlags": [
+          "Systolic BP increase (+2 mmHg)",
+          "High cardiovascular risk population",
+          "Lewington 2002 quantification"
+        ],
+        "constitutionRules": [
+          "PC-001",
+          "PC-002",
+          "PC-006",
+          "PC-007",
+          "PC-008",
+          "PC-009"
+        ],
+        "safetyObjection": "The +2 mmHg SBP increase, quantified by Lewington 2002, represents a clinically significant risk (7% stroke mortality, 4% IHD mortality increase per 2 mmHg) in the target high-CV-risk population. This signal lacks a mechanistic explanation and is not observed with other CETP inhibitors.",
+        "regulatoryRisk": "Advancing without a mechanistic understanding of the BP signal and without explicit BP-related DSMB stopping rules for a large cardiovascular outcomes trial creates significant regulatory risk, particularly given the FDA's requirement for outcomes data and the sensitivity of the target population to BP changes.",
+        "timedOut": false
+      },
+      {
+        "personaId": "portfolio-manager",
+        "personaName": "Portfolio Manager",
+        "personaRole": "R&D investment risk, portfolio strategy, sunk-cost governance",
+        "vote": "WAIT",
+        "confidence": 90,
+        "rationale": "Significant BP safety signal (PC-002, PC-007) requires mechanistic investigation and quantitative risk-benefit analysis (PC-006) before Phase III. Lack of explicit BP stopping rules for DSMB (PC-008) and competitive landscape discrepancy (PC-005) are critical concerns.",
+        "keyFlags": [
+          "BP signal unexplained",
+          "DSMB charter inadequate",
+          "Competitive class discrepancy"
+        ],
+        "constitutionRules": [
+          "PC-001",
+          "PC-002",
+          "PC-003",
+          "PC-005",
+          "PC-006",
+          "PC-007",
+          "PC-008",
+          "PC-009"
+        ],
+        "safetyObjection": "Systolic blood pressure increase of +2 mm Hg, which is statistically significant and carries quantifiable cardiovascular risk (Lewington 2002), is not mechanistically explained and not shared by competitors.",
+        "regulatoryRisk": "Advancing with an unexplained BP signal and inadequate DSMB stopping rules for this signal creates high regulatory risk for FDA approval, especially given the requirement for a cardiovascular outcomes trial.",
+        "timedOut": false
+      },
+      {
+        "personaId": "scientific-skeptic",
+        "personaName": "Scientific Skeptic",
+        "personaRole": "Hypothesis challenge, assumption testing, failure mode analysis",
+        "vote": "WAIT",
+        "confidence": 95,
+        "rationale": "The HDL hypothesis is unvalidated for clinical outcomes. The BP increase, though 'small', is mechanistically unexplained, epidemiologically significant, and unique among CETP inhibitors. Failure to address this safety signal and its mechanistic basis before Phase III poses unacceptable patient and regulatory risk.",
+        "keyFlags": [
+          "Unvalidated HDL-C surrogate",
+          "Unexplained BP increase",
+          "Competitive class divergence"
+        ],
+        "constitutionRules": [
+          "PC-001",
+          "PC-002",
+          "PC-004",
+          "PC-005",
+          "PC-006",
+          "PC-007",
+          "PC-008",
+          "PC-009"
+        ],
+        "safetyObjection": "Persistent, unexplained +2 mmHg SBP increase, which translates to a quantifiable increase in stroke and ischemic heart disease mortality in the target population. This signal is unique among competitors and lacks mechanistic investigation.",
+        "regulatoryRisk": "Advancing an unvalidated surrogate endpoint with an unexplained, epidemiologically significant safety signal, especially one not shared by competitors, will likely lead to heightened regulatory scrutiny, potential trial delays/failure, and challenges in market approval. Lack of explicit BP-related DSMB stopping rules further compounds this risk.",
+        "timedOut": false
+      },
+      {
+        "personaId": "commercial-assessor",
+        "personaName": "Commercial Assessor",
+        "personaRole": "Market opportunity, commercial risk, pricing and access",
+        "vote": "WAIT",
+        "confidence": 85,
+        "rationale": "Significant market opportunity for a novel lipid-modifying agent, especially as a Lipitor successor. However, the unmitigated BP signal and lack of explicit BP-related DSMB stopping rules pose substantial commercial and regulatory risk, requiring further investigation before advancement.",
+        "keyFlags": [
+          "Unmitigated BP signal",
+          "Competitive landscape BP signal discrepancy",
+          "Regulatory risk of unaddressed safety"
+        ],
+        "constitutionRules": [
+          "PC-001",
+          "PC-002",
+          "PC-003",
+          "PC-005",
+          "PC-006",
+          "PC-007",
+          "PC-008",
+          "PC-009"
+        ],
+        "safetyObjection": "Systolic BP increase of +2 mmHg, quantified as 7% stroke mortality and 4% ischemic heart disease mortality increase, unaddressed and not seen in competitors.",
+        "regulatoryRisk": "FDA will require CV outcomes data. Unresolved BP signal with no explicit DSMB stopping rules for BP increases poses significant risk of trial failure or regulatory rejection due to safety concerns.",
+        "timedOut": false
+      },
+      {
+        "personaId": "patient-advocate",
+        "personaName": "Patient Advocate",
+        "personaRole": "Patient benefit, unmet need, informed consent, risk tolerance",
+        "vote": "NO-GO",
+        "confidence": 95,
+        "rationale": "The 2 mmHg BP increase is a significant safety signal in a high-risk population, translating to increased mortality. This risk is not offset by a surrogate HDL benefit, especially when competing compounds lack this signal. Patients would likely not accept this trade-off without clear clinical benefit.",
+        "keyFlags": [
+          "Unmet Need",
+          "BP Sensitivity",
+          "Informed Consent"
+        ],
+        "constitutionRules": [
+          "PC-002",
+          "PC-006",
+          "PC-007",
+          "PC-004",
+          "PC-005",
+          "PC-008",
+          "PC-009"
+        ],
+        "safetyObjection": "The 2 mmHg systolic BP increase, while small, is statistically significant and epidemiologically linked to increased stroke and ischemic heart disease mortality in the target high-risk population. This is a direct, quantifiable harm.",
+        "regulatoryRisk": "Advancing with an unexplained, mechanistically uninvestigated BP signal not seen in competitors creates high regulatory risk. Lack of explicit BP stopping rules in the DSMB charter further compounds this, potentially leading to trial failure or post-market safety issues.",
+        "timedOut": false
+      },
+      {
+        "personaId": "quality-compliance-expert",
+        "personaName": "Quality / Compliance Expert",
+        "personaRole": "GCP compliance, protocol integrity, audit trail",
+        "vote": "WAIT",
+        "confidence": 95,
+        "rationale": "Phase II BP signal documentation was adequate, but its implications for Phase III are not. The DSMB charter lacks explicit BP-related stopping rules, violating PC-008. The informed consent's BP risk disclosure is unverified. Regulatory risk from an unmitigated safety signal is high (PC-009).",
+        "keyFlags": [
+          "DSMB Charter Inadequate (PC-008)",
+          "Unmitigated Safety Signal (BP)",
+          "Regulatory Risk Undocumented/Unmitigated (PC-009)"
+        ],
+        "constitutionRules": [
+          "PC-001",
+          "PC-002",
+          "PC-005",
+          "PC-006",
+          "PC-007",
+          "PC-008",
+          "PC-009"
+        ],
+        "safetyObjection": "Systolic BP increase of +2 mmHg, quantified as a 7% stroke mortality and 4% ischemic heart disease mortality increase, is unmitigated in the Phase III DSMB charter, especially given the high-risk target population and lack of mechanistic explanation (PC-002, PC-006, PC-007).",
+        "regulatoryRisk": "High regulatory risk due to advancing a cardiovascular outcomes trial with a known, unmechanized, and unmitigated BP safety signal without explicit DSMB stopping rules addressing it (PC-008, PC-009). This could lead to trial suspension or non-approval.",
+        "timedOut": false
+      },
+      {
+        "personaId": "devils-advocate",
+        "personaName": "Devil's Advocate",
+        "personaRole": "Contrarian challenge, assumption inversion, worst-case analysis",
+        "vote": "NO-GO",
+        "confidence": 95,
+        "rationale": "The BP signal is a serious, unmechanized cardiovascular safety concern, directly contradicting the drug's purpose. Advancing without mechanistic understanding risks widespread harm in a vulnerable population, potentially leading to a catastrophic regulatory failure and immense human cost.",
+        "keyFlags": [
+          "Unexplained BP elevation",
+          "Off-target cardiovascular effect risk",
+          "High-risk patient population"
+        ],
+        "constitutionRules": [
+          "PC-002",
+          "PC-007",
+          "PC-005",
+          "PC-006",
+          "PC-009"
+        ],
+        "safetyObjection": "The +2 mmHg systolic BP increase, while seemingly 'small,' translates to a 7% increase in stroke mortality and 4% increase in ischemic heart disease mortality per Lewington (2002). This signal is unexplained mechanistically (PC-007) and is not observed with other CETP inhibitors (PC-005), suggesting a molecule-specific, off-target effect. If this 'small' signal is indeed a harbinger of a more serious, dose-dependent, or cumulative cardiovascular effect, especially in a high-risk population, the consequences could be devastating. The worst-case scenario is that torcetrapib, intended to reduce CV risk, actively increases it, leading to thousands of preventable cardiovascular events and deaths in the ILLUMINATE trial and beyond, before the DSMB can act. This would be a catastrophic public health failure, directly attributable to ignoring a clear safety signal.",
+        "regulatoryRisk": "Advancing with an unmechanized, molecule-specific BP signal, especially given the lack of explicit BP-related DSMB stopping rules (PC-008), creates significant regulatory risk. The FDA will require a cardiovascular outcomes trial. If the BP signal proves to be a true, detrimental off-target effect, leading to increased MACE, the drug will be rejected, potentially leading to a complete halt of the CETP class, and severe reputational damage. The lack of mechanistic investigation prior to Phase III (PC-007) would be a critical regulatory deficiency, indicating a failure to prioritize patient safety over financial imperatives (PC-003).",
+        "timedOut": false
+      }
+    ],
+    "keyBlockers": [
+      "BP signal mechanistic investigation pending",
+      "Competitive landscape BP signal discrepancy",
+      "Unvalidated surrogate-to-clinical pathway",
+      "Unexplained BP signal",
+      "Potential off-target effect",
+      "Lack of mechanistic understanding"
+    ],
+    "safetyObjections": [
+      "Chief Biostatistician: Statistically significant +2 mmHg systolic BP increase, lacking mechanistic explanation and not observed in competing CETP inhibitors. This translates to a quantifiable increase in stroke and ischemic heart disease mortality risk (PC-006) in a high-risk population.",
+      "Clinical Pharmacologist: Systolic blood pressure increase of +2 mmHg, potentially molecule-specific and mechanistically unexplained, with quantified cardiovascular risk (7% stroke, 4% IHD mortality per 2mmHg increase).",
+      "Regulatory Strategist: The +2 mmHg systolic BP increase is statistically significant and, per Lewington 2002, translates to a 7% increase in stroke mortality and 4% in ischemic heart disease mortality in a high-risk population. This cannot be overlooked without further mechanistic investigation and specific mitigation in the DSMB charter.",
+      "Drug Safety Expert: The +2 mmHg SBP increase, quantified by Lewington 2002, represents a clinically significant risk (7% stroke mortality, 4% IHD mortality increase per 2 mmHg) in the target high-CV-risk population. This signal lacks a mechanistic explanation and is not observed with other CETP inhibitors.",
+      "Portfolio Manager: Systolic blood pressure increase of +2 mm Hg, which is statistically significant and carries quantifiable cardiovascular risk (Lewington 2002), is not mechanistically explained and not shared by competitors."
+    ],
+    "regulatoryConcerns": [
+      "Chief Biostatistician: Advancing to Phase III with an unexplained and potentially detrimental BP signal, especially when not observed in competitors, poses significant regulatory risk. The FDA will require a CV outcomes trial, and an unaddressed safety signal could jeopardize approval. Lack of explicit BP-related DSMB stopping rules (PC-008) further compounds this risk (PC-009).",
+      "Clinical Pharmacologist: Advancing to a large outcomes trial (ILLUMINATE) without understanding the BP mechanism or implementing specific DSMB stopping rules for BP increases poses significant regulatory risk, especially given the high-risk patient population and the FDA's requirement for outcomes data.",
+      "Regulatory Strategist: Advancing to Phase III without adequately addressing the BP signal via mechanistic investigation (PC-007) and without explicit DSMB stopping rules (PC-008) creates significant regulatory risk. The FDA will scrutinize this given the cardiovascular indication. Failure to address this could jeopardize trial completion or market approval.",
+      "Drug Safety Expert: Advancing without a mechanistic understanding of the BP signal and without explicit BP-related DSMB stopping rules for a large cardiovascular outcomes trial creates significant regulatory risk, particularly given the FDA's requirement for outcomes data and the sensitivity of the target population to BP changes.",
+      "Portfolio Manager: Advancing with an unexplained BP signal and inadequate DSMB stopping rules for this signal creates high regulatory risk for FDA approval, especially given the requirement for a cardiovascular outcomes trial."
+    ],
+    "constitutionVersion": "Pharma-Constitution-v1.0",
+    "proofScore": 93,
+    "durationMs": 9474,
+    "evidenceBoundaryStatement": "EVIDENCE BOUNDARY CONFIRMED: All evidence provided to the council is dated on or before December 31, 2005. The ILLUMINATE Phase III trial results (December 2, 2006), the 82 vs 51 death finding, the $800M write-off, the market cap loss, and the Forrest et al. 2008 off-target mechanism confirmation are EXCLUDED from council input. These post-failure data points appear only in the Retrospective Outcome Appendix of the Institutional Proof Report, clearly separated from the council deliberation record."
+  },
+  "retrospectiveOutcome": {
+    "note": "POST-FAILURE DATA — EXCLUDED FROM COUNCIL INPUT. For audit trail only.",
+    "illuminateTermination": "December 2, 2006 — ILLUMINATE trial terminated by DSMB",
+    "deaths": "82 deaths (torcetrapib arm) vs 51 deaths (control arm)",
+    "rdWriteOff": "~$800M R&D write-off",
+    "marketCapLoss": "~$21B Pfizer market cap loss on termination announcement",
+    "offTargetMechanism": "Forrest et al. 2008 (NEJM): aldosterone-mediated hypertension confirmed as off-target effect of torcetrapib molecule, not CETP class effect",
+    "retrospectiveValidation": "Council WAIT verdict was retrospectively correct. The BP signal was a harbinger of the off-target aldosterone effect."
+  }
+}

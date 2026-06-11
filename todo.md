@@ -5005,3 +5005,15 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Proof Report Phase 3 — PDF type updated for personaCount/evidenceSupport/institutionalProofScore
 - [x] Proof Report Phase 3 — IPS component bar chart rendered in Section 3
 - [x] Proof Report Phase 3 — TypeScript 0 errors confirmed
+
+## Torcetrapib Retrospective Pilot (Pharma Council V1)
+
+- [x] Build pharmaCouncilV1.ts: Pharma Constitution v1 (10 rules), 10 personas, Torcetrapib decision brief, LLM runner
+- [x] Build torcetrapibProofReportPdf.ts: Institutional Proof Report PDF generator (15 sections + retrospective appendix)
+- [x] Build pharmaPilot.ts tRPC router: runTorcetrapibPilot, generatePilotReport, getPilotMetadata
+- [x] Register pharmaPilotRouter in routers.ts
+- [x] Run live council deliberation: 10 personas, pre-ILLUMINATE evidence only (cutoff Dec 31 2005)
+- [x] Capture vote distribution: 0 GO / 8 WAIT / 2 NO-GO — Verdict: WAIT — Proof Score: 93/100
+- [x] Generate Institutional Proof Report PDF with retrospective outcome appendix (Section 15)
+- [x] Save raw JSON payload to /tmp/torcetrapib-council-result.json
+- [x] Save checkpoint after pilot deliverables verified
