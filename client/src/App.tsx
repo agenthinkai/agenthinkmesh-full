@@ -156,6 +156,7 @@ const InfraSimCase = lazy(() => import("./pages/InfraSimCase"));
 const InfraSimRunDetail = lazy(() => import("./pages/InfraSimRunDetail"));
 const InfraSimCouncil = lazy(() => import("./pages/InfraSimCouncil"));
 const InfraSimMonitor = lazy(() => import("./pages/InfraSimMonitor"));
+const PharmaDemoPage = lazy(() => import("./pages/PharmaDemoPage"));
 
 // ── Page-level loading fallback ───────────────────────────────────────────────
 function PageLoader() {
@@ -439,6 +440,9 @@ function Router() {
       <Route path="/infra-sim/run/:id">{() => <MeshSidebar><InfraSimRunDetail /></MeshSidebar>}</Route>
       <Route path="/infra-sim/council/:id">{() => <MeshSidebar><InfraSimCouncil /></MeshSidebar>}</Route>
       <Route path="/infra-sim/monitor/:id">{() => <MeshSidebar><InfraSimMonitor /></MeshSidebar>}</Route>
+
+      {/* Pharma Validation Demo */}
+      <Route path="/pharma">{() => <PharmaDemoPage />}</Route>
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />
