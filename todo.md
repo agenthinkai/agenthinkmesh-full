@@ -5017,3 +5017,39 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Generate Institutional Proof Report PDF with retrospective outcome appendix (Section 15)
 - [x] Save raw JSON payload to /tmp/torcetrapib-council-result.json
 - [x] Save checkpoint after pilot deliverables verified
+
+## Project ATLAS — Phase 2 Commercial Validation Sprint
+
+### Phase A — Target Universe (100 companies)
+- [x] Research 20 Banks (US/UK/Canada/Australia/Singapore) — executive dossier, decision twin, opportunity score
+- [x] Research 20 Infrastructure Investors (US/UK/Canada/Australia/Singapore) — executive dossier, decision twin, opportunity score
+- [x] Research 20 Telecom Operators (US/UK/Canada/Australia/Singapore) — executive dossier, decision twin, opportunity score
+- [x] Research 20 Asset Managers (US/UK/Canada/Australia/Singapore) — executive dossier, decision twin, opportunity score
+- [x] Research 20 Energy Companies (US/UK/Canada/Australia/Singapore) — executive dossier, decision twin, opportunity score
+- [x] Rank all 100 opportunities by score
+- [x] Save 100-company universe as structured JSON + Excel
+
+### Phase B — Decision Detection
+- [x] Identify active strategic initiatives, M&A, AI transformation, capital allocation, data modernization for all 100 companies
+- [x] Score and rank top 20 opportunities
+- [x] Produce Decision Detection Report (top 20 with evidence)
+
+### Phase C — Outreach Test
+- [x] Generate personalized outreach email for each top-20 company
+- [x] Generate executive brief (1-page) for each top-20 company
+- [x] Generate SDR teaser for each top-20 company
+- [x] Build approval queue document (staged for human review)
+- [x] Project response rate, meeting rate, proposal rate
+
+### Phase D — Revenue Loop
+- [x] Build revenue loop tracker: Company → Outreach → Meeting → Proposal → Customer
+- [x] Measure conversion at every stage (projected/simulated)
+- [x] Save as Excel tracker with pipeline model
+
+### Phase E — Token Economics
+- [x] Track tokens consumed per workflow
+- [x] Compute cost per opportunity, cost per meeting, cost per proposal
+- [x] Build token economics model
+
+### Final Deliverable
+- [x] Produce Commercial Validation Report (PDF) answering all 6 questions
