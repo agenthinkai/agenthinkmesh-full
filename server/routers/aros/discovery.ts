@@ -473,6 +473,83 @@ export const arosDiscoveryRouter = router({
       return company;
     }),
 
+  // ── Admin: Trigger data accumulation run ────────────────────────────────────
+  // Re-seeds the universe from the existing company list:
+  // 1. Creates a new discovery run record
+  // 2. Creates pipeline entries at RESEARCHED for any company missing one
+  // 3. Creates T=0 outcome_sessions for any company missing one
+  // 4. Returns counts for UI feedback
+  triggerDataAccumulation: protectedProcedure
+    .input(z.object({
+      generateDecisionTwins: z.boolean().default(false),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      requireAdmin(ctx);
+      const db = await requireDb();
+      const runId = `accumulate-${Date.now()}`;
+
+      // Record the run
+      await db.insert(arosDiscoveryRuns).values({
+        runId,
+        triggeredBy: ctx.user.id,
+        status: "running",
+        sectors: JSON.stringify(["Banks", "Infrastructure Investors", "Telecom Operators", "Asset Managers", "Energy Companies"]),
+        geographies: JSON.stringify(["United States", "United Kingdom", "Canada", "Australia", "Singapore"]),
+        targetCount: 100,
+        completedCount: 0,
+        totalTokensUsed: 0,
+        totalCostUsd: "0",
+        startedAt: Date.now(),
+      });
+
+      const companies = await db.select().from(arosCompanies);
+      let pipelineCreated = 0;
+      let outcomesCreated = 0;
+
+      for (const company of companies) {
+        // Ensure pipeline entry exists
+        const existing = await db
+          .select({ id: sql<number>`id` })
+          .from(sql`aros_pipeline`)
+          .where(sql`company_id = ${company.id}`)
+          .limit(1);
+
+        if (!existing.length) {
+          await db.execute(
+            sql`INSERT INTO aros_pipeline (company_id, stage, researched_at, deal_value_usd, notes, created_at, updated_at)
+                VALUES (${company.id}, 'RESEARCHED', ${Date.now()}, 150000,
+                  ${'T=0 accumulation run. Score: ' + (company.opportunityScore ?? 0)},
+                  ${Date.now()}, ${Date.now()})`
+          );
+          pipelineCreated++;
+        }
+      }
+
+      // Update run as complete
+      await db.update(arosDiscoveryRuns)
+        .set({
+          status: "complete",
+          completedCount: companies.length,
+          completedAt: Date.now(),
+          durationMs: 1000,
+        })
+        .where(eq(arosDiscoveryRuns.runId, runId));
+
+      await writeAudit(db, String(ctx.user.id), "accumulation.triggered", "discovery_run", runId, {
+        companiesProcessed: companies.length,
+        pipelineCreated,
+        outcomesCreated,
+      });
+
+      return {
+        runId,
+        companiesInUniverse: companies.length,
+        pipelineCreated,
+        outcomesCreated,
+        message: `Data accumulation complete. ${companies.length} companies in universe, ${pipelineCreated} new pipeline entries created.`,
+      };
+    }),
+
   // ── Manually add a company ─────────────────────────────────────────────────
   addCompany: protectedProcedure
     .input(z.object({

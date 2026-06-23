@@ -5120,3 +5120,15 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ### Tests
 - [x] Vitest tests for discovery, intelligence, outreach, token ledger, pipeline routers (23/23 passing)
+
+## ATLAS Data Accumulation Phase
+
+- [ ] Seed 100 companies into aros_companies (5 sectors × 5 geos × 4 companies each)
+- [ ] Generate 100 Decision Twins (aros_decision_twins, one per company)
+- [ ] Create 100 T=0 Outcome Ledger entries (aros_calibration_metrics baseline predictions)
+- [ ] Create 100 pipeline entries at RESEARCHED stage (aros_pipeline)
+- [ ] Create 100 aros_discovery_runs entries (token accounting for seed run)
+- [ ] Build server-side seed script (server/scripts/seedArosUniverse.mjs)
+- [ ] Build admin tRPC trigger (arosDiscovery.triggerSeedRun) for re-seeding
+- [ ] Verify all 100 records in DB via SQL query
+- [ ] Save checkpoint after data accumulation complete
