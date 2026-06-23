@@ -2536,3 +2536,324 @@ export const pilotUsage = mysqlTable("pilot_usage", {
 }));
 export type PilotUsage = typeof pilotUsage.$inferSelect;
 export type InsertPilotUsage = typeof pilotUsage.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// AROS — AUTONOMOUS REVENUE OPERATING SYSTEM
+// P0: Core Infrastructure
+// P1: Swarms + Factory + Command Center
+// P2: CRM + Email + Proposals
+// P3: Calibration + Attribution Engines
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── AROS: Target Universe (Phase A companies) ─────────────────────────────────
+export const arosCompanies = mysqlTable("aros_companies", {
+  id: int("id").autoincrement().primaryKey(),
+  // Identity
+  companyName: varchar("company_name", { length: 255 }).notNull(),
+  sector: varchar("sector", { length: 64 }).notNull(),           // Banks | Infrastructure Investors | Telecom | Asset Managers | Energy
+  country: varchar("country", { length: 64 }).notNull(),
+  hqCity: varchar("hq_city", { length: 100 }),
+  revenueUsdBn: decimal("revenue_usd_bn", { precision: 10, scale: 2 }),
+  employees: int("employees"),
+  // Executive
+  ceoName: varchar("ceo_name", { length: 200 }),
+  ceoEmail: varchar("ceo_email", { length: 320 }),
+  ceoLinkedin: varchar("ceo_linkedin", { length: 512 }),
+  // Scoring
+  opportunityScore: int("opportunity_score").notNull().default(0),   // 0-100
+  agenthinkFitScore: int("agenthink_fit_score").notNull().default(0),
+  decisionComplexityScore: int("decision_complexity_score").notNull().default(0),
+  // Intelligence
+  keyDecisionDomain: varchar("key_decision_domain", { length: 128 }),
+  activeStrategicInitiative: text("active_strategic_initiative"),
+  aiTransformationSignal: text("ai_transformation_signal"),
+  opportunityType: varchar("opportunity_type", { length: 128 }),
+  decisionTwin: text("decision_twin"),                              // JSON: the Decision Twin object
+  executiveDossier: text("executive_dossier"),                      // full dossier text
+  // Status
+  universeRank: int("universe_rank"),
+  runId: varchar("run_id", { length: 64 }),                         // which discovery run produced this
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  arosCoSectorIdx: index("aros_co_sector_idx").on(table.sector),
+  arosCoCountryIdx: index("aros_co_country_idx").on(table.country),
+  arosCoScoreIdx: index("aros_co_score_idx").on(table.opportunityScore),
+  arosCoRunIdx: index("aros_co_run_idx").on(table.runId),
+}));
+export type ArosCompany = typeof arosCompanies.$inferSelect;
+export type InsertArosCompany = typeof arosCompanies.$inferInsert;
+
+// ── AROS: Discovery Runs (Phase A execution records) ─────────────────────────
+export const arosDiscoveryRuns = mysqlTable("aros_discovery_runs", {
+  id: int("id").autoincrement().primaryKey(),
+  runId: varchar("run_id", { length: 64 }).notNull().unique(),
+  triggeredBy: int("triggered_by").notNull(),                       // FK → users.id
+  status: mysqlEnum("status", ["pending", "running", "complete", "failed"]).notNull().default("pending"),
+  sectors: text("sectors").notNull(),                               // JSON string[]
+  geographies: text("geographies").notNull(),                       // JSON string[]
+  targetCount: int("target_count").notNull().default(100),
+  completedCount: int("completed_count").notNull().default(0),
+  // Token accounting
+  totalTokensUsed: int("total_tokens_used").notNull().default(0),
+  totalCostUsd: decimal("total_cost_usd", { precision: 10, scale: 6 }).notNull().default("0"),
+  // Timing
+  startedAt: bigint("started_at", { mode: "number" }),
+  completedAt: bigint("completed_at", { mode: "number" }),
+  durationMs: int("duration_ms"),
+  errorMessage: text("error_message"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  arosRunStatusIdx: index("aros_run_status_idx").on(table.status),
+  arosRunUserIdx: index("aros_run_user_idx").on(table.triggeredBy),
+}));
+export type ArosDiscoveryRun = typeof arosDiscoveryRuns.$inferSelect;
+export type InsertArosDiscoveryRun = typeof arosDiscoveryRuns.$inferInsert;
+
+// ── AROS: Outreach Queue (Phase C approval queue) ─────────────────────────────
+export const arosOutreachQueue = mysqlTable("aros_outreach_queue", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("company_id").notNull(),                           // FK → aros_companies.id
+  runId: varchar("run_id", { length: 64 }),
+  // Outreach assets
+  emailSubject: varchar("email_subject", { length: 512 }),
+  emailBody: text("email_body"),
+  executiveBrief: text("executive_brief"),
+  sdrTeaser: text("sdr_teaser"),
+  // Targeting
+  targetName: varchar("target_name", { length: 200 }),
+  targetEmail: varchar("target_email", { length: 320 }),
+  targetTitle: varchar("target_title", { length: 200 }),
+  estimatedDealSizeUsd: int("estimated_deal_size_usd").notNull().default(25000),
+  priority: mysqlEnum("priority", ["IMMEDIATE", "HIGH", "MEDIUM", "LOW"]).notNull().default("HIGH"),
+  // Approval workflow
+  approvalStatus: mysqlEnum("approval_status", [
+    "PENDING_CEO_REVIEW", "APPROVED", "REJECTED", "SENT", "BOUNCED"
+  ]).notNull().default("PENDING_CEO_REVIEW"),
+  approvedBy: int("approved_by"),                                   // FK → users.id
+  approvedAt: bigint("approved_at", { mode: "number" }),
+  rejectionReason: text("rejection_reason"),
+  // Send tracking
+  sentAt: bigint("sent_at", { mode: "number" }),
+  openedAt: bigint("opened_at", { mode: "number" }),
+  repliedAt: bigint("replied_at", { mode: "number" }),
+  trackingToken: varchar("tracking_token", { length: 64 }).unique(),
+  // Token cost
+  tokensUsed: int("tokens_used").notNull().default(0),
+  costUsd: decimal("cost_usd", { precision: 10, scale: 6 }).notNull().default("0"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  arosOqCompanyIdx: index("aros_oq_company_idx").on(table.companyId),
+  arosOqStatusIdx: index("aros_oq_status_idx").on(table.approvalStatus),
+  arosOqPriorityIdx: index("aros_oq_priority_idx").on(table.priority),
+  arosOqRunIdx: index("aros_oq_run_idx").on(table.runId),
+}));
+export type ArosOutreachQueue = typeof arosOutreachQueue.$inferSelect;
+export type InsertArosOutreachQueue = typeof arosOutreachQueue.$inferInsert;
+
+// ── AROS: CRM Pipeline (Phase D revenue loop) ────────────────────────────────
+export const arosPipeline = mysqlTable("aros_pipeline", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("company_id").notNull(),                           // FK → aros_companies.id
+  outreachId: int("outreach_id"),                                   // FK → aros_outreach_queue.id
+  // Pipeline stage
+  stage: mysqlEnum("stage", [
+    "RESEARCHED",
+    "OUTREACH_SENT",
+    "RESPONSE_RECEIVED",
+    "MEETING_BOOKED",
+    "MEETING_HELD",
+    "PROPOSAL_SENT",
+    "NEGOTIATION",
+    "CUSTOMER",
+    "CHURNED",
+    "DISQUALIFIED"
+  ]).notNull().default("RESEARCHED"),
+  // Stage timestamps
+  researchedAt: bigint("researched_at", { mode: "number" }),
+  outreachSentAt: bigint("outreach_sent_at", { mode: "number" }),
+  responseReceivedAt: bigint("response_received_at", { mode: "number" }),
+  meetingBookedAt: bigint("meeting_booked_at", { mode: "number" }),
+  meetingHeldAt: bigint("meeting_held_at", { mode: "number" }),
+  proposalSentAt: bigint("proposal_sent_at", { mode: "number" }),
+  customerAt: bigint("customer_at", { mode: "number" }),
+  // Deal value
+  dealValueUsd: int("deal_value_usd").notNull().default(25000),
+  dealType: mysqlEnum("deal_type", ["pilot", "platform", "enterprise"]).notNull().default("pilot"),
+  // Meeting details
+  meetingCalendarLink: varchar("meeting_calendar_link", { length: 512 }),
+  meetingNotes: text("meeting_notes"),
+  // Proposal
+  proposalUrl: varchar("proposal_url", { length: 512 }),
+  proposalText: text("proposal_text"),
+  // Attribution
+  assignedTo: int("assigned_to"),                                   // FK → users.id (SDR/AE)
+  // Notes
+  notes: text("notes"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  arosPipelineCompanyIdx: index("aros_pipeline_company_idx").on(table.companyId),
+  arosPipelineStageIdx: index("aros_pipeline_stage_idx").on(table.stage),
+  arosPipelineOutreachIdx: index("aros_pipeline_outreach_idx").on(table.outreachId),
+}));
+export type ArosPipeline = typeof arosPipeline.$inferSelect;
+export type InsertArosPipeline = typeof arosPipeline.$inferInsert;
+
+// ── AROS: Token Ledger (Phase E — per-workflow token accounting) ──────────────
+export const arosTokenLedger = mysqlTable("aros_token_ledger", {
+  id: int("id").autoincrement().primaryKey(),
+  runId: varchar("run_id", { length: 64 }),
+  companyId: int("company_id"),
+  workflow: mysqlEnum("workflow", [
+    "company_research",
+    "decision_detection",
+    "outreach_generation",
+    "council_deliberation",
+    "proposal_generation",
+    "calibration",
+    "attribution"
+  ]).notNull(),
+  model: varchar("model", { length: 64 }).notNull().default("gpt-4o-mini"),
+  inputTokens: int("input_tokens").notNull().default(0),
+  outputTokens: int("output_tokens").notNull().default(0),
+  totalTokens: int("total_tokens").notNull().default(0),
+  costUsd: decimal("cost_usd", { precision: 10, scale: 8 }).notNull().default("0"),
+  triggeredBy: int("triggered_by"),                                 // FK → users.id
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  arosTlRunIdx: index("aros_tl_run_idx").on(table.runId),
+  arosTlWorkflowIdx: index("aros_tl_workflow_idx").on(table.workflow),
+  arosTlCompanyIdx: index("aros_tl_company_idx").on(table.companyId),
+  arosTlCreatedIdx: index("aros_tl_created_idx").on(table.createdAt),
+}));
+export type ArosTokenLedger = typeof arosTokenLedger.$inferSelect;
+export type InsertArosTokenLedger = typeof arosTokenLedger.$inferInsert;
+
+// ── AROS: Audit Log (append-only event log) ───────────────────────────────────
+export const arosAuditLog = mysqlTable("aros_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  actor: varchar("actor", { length: 128 }).notNull(),               // userId or "system"
+  action: varchar("action", { length: 128 }).notNull(),             // e.g. "outreach.approved"
+  entityType: varchar("entity_type", { length: 64 }).notNull(),     // e.g. "outreach_queue"
+  entityId: varchar("entity_id", { length: 64 }),
+  payload: text("payload"),                                         // JSON — before/after state
+  ipAddress: varchar("ip_address", { length: 64 }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  arosAlActorIdx: index("aros_al_actor_idx").on(table.actor),
+  arosAlActionIdx: index("aros_al_action_idx").on(table.action),
+  arosAlEntityIdx: index("aros_al_entity_idx").on(table.entityType, table.entityId),
+  arosAlCreatedIdx: index("aros_al_created_idx").on(table.createdAt),
+}));
+export type ArosAuditLog = typeof arosAuditLog.$inferSelect;
+export type InsertArosAuditLog = typeof arosAuditLog.$inferInsert;
+
+// ── AROS: Calibration Records (P3) ───────────────────────────────────────────
+export const arosCalibration = mysqlTable("aros_calibration", {
+  id: int("id").autoincrement().primaryKey(),
+  runId: varchar("run_id", { length: 64 }),
+  metric: varchar("metric", { length: 64 }).notNull(),              // e.g. "response_rate"
+  predictedRate: decimal("predicted_rate", { precision: 5, scale: 4 }).notNull(),
+  actualRate: decimal("actual_rate", { precision: 5, scale: 4 }),   // null until observed
+  sampleSize: int("sample_size").notNull().default(0),
+  observedAt: bigint("observed_at", { mode: "number" }),
+  notes: text("notes"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  arosCalRunIdx: index("aros_cal_run_idx").on(table.runId),
+  arosCalMetricIdx: index("aros_cal_metric_idx").on(table.metric),
+}));
+export type ArosCalibration = typeof arosCalibration.$inferSelect;
+export type InsertArosCalibration = typeof arosCalibration.$inferInsert;
+
+// ── AROS: Opportunity Signals (per-company detected signals) ─────────────────
+export const arosOpportunitySignals = mysqlTable("aros_opportunity_signals", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("company_id").notNull(),                             // FK → aros_companies.id
+  signalType: mysqlEnum("signal_type", [
+    "AI_TRANSFORMATION",
+    "MA_ACTIVITY",
+    "CAPITAL_ALLOCATION",
+    "DATA_MODERNIZATION",
+    "REGULATORY_CHANGE",
+    "LEADERSHIP_CHANGE",
+    "EARNINGS_PRESSURE",
+    "STRATEGIC_PARTNERSHIP",
+    "TECHNOLOGY_INVESTMENT",
+    "WORKFORCE_RESTRUCTURING"
+  ]).notNull(),
+  signalTitle: varchar("signal_title", { length: 512 }).notNull(),
+  signalEvidence: text("signal_evidence").notNull(),                  // raw evidence text
+  sourceUrl: varchar("source_url", { length: 1024 }),
+  sourceDate: bigint("source_date", { mode: "number" }),
+  urgencyScore: int("urgency_score").notNull().default(0),            // 0-100
+  acvEstimateUsd: int("acv_estimate_usd").notNull().default(0),       // estimated annual contract value
+  confidenceScore: int("confidence_score").notNull().default(0),      // 0-100
+  isActive: boolean("is_active").notNull().default(true),
+  detectedByRunId: varchar("detected_by_run_id", { length: 64 }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  arosSignalCompanyIdx: index("aros_signal_company_idx").on(table.companyId),
+  arosSignalTypeIdx: index("aros_signal_type_idx").on(table.signalType),
+  arosSignalUrgencyIdx: index("aros_signal_urgency_idx").on(table.urgencyScore),
+  arosSignalActiveIdx: index("aros_signal_active_idx").on(table.isActive),
+}));
+export type ArosOpportunitySignal = typeof arosOpportunitySignals.$inferSelect;
+export type InsertArosOpportunitySignal = typeof arosOpportunitySignals.$inferInsert;
+
+// ── AROS: Monitoring Jobs (continuous scan state per company) ─────────────────
+export const arosMonitoringJobs = mysqlTable("aros_monitoring_jobs", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("company_id").notNull().unique(),                    // FK → aros_companies.id
+  funnelTier: mysqlEnum("funnel_tier", [
+    "UNIVERSE",          // 10,000 — monitored monthly
+    "ACTIVE",            // 1,000  — monitored weekly
+    "HIGH_PRIORITY",     // 200    — monitored daily
+    "OUTREACH_CANDIDATE" // 50     — monitored continuously
+  ]).notNull().default("UNIVERSE"),
+  monitoringFrequencyDays: int("monitoring_frequency_days").notNull().default(30),
+  lastMonitoredAt: bigint("last_monitored_at", { mode: "number" }),
+  nextMonitorAt: bigint("next_monitor_at", { mode: "number" }),
+  lastRunId: varchar("last_run_id", { length: 64 }),
+  lastSignalCount: int("last_signal_count").notNull().default(0),
+  consecutiveNoSignalRuns: int("consecutive_no_signal_runs").notNull().default(0),
+  status: mysqlEnum("status", ["active", "paused", "error"]).notNull().default("active"),
+  errorMessage: text("error_message"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  arosJobTierIdx: index("aros_job_tier_idx").on(table.funnelTier),
+  arosJobNextRunIdx: index("aros_job_next_run_idx").on(table.nextMonitorAt),
+  arosJobStatusIdx: index("aros_job_status_idx").on(table.status),
+}));
+export type ArosMonitoringJob = typeof arosMonitoringJobs.$inferSelect;
+export type InsertArosMonitoringJob = typeof arosMonitoringJobs.$inferInsert;
+
+// ── AROS: Funnel Snapshot (point-in-time funnel state) ────────────────────────
+export const arosFunnelSnapshots = mysqlTable("aros_funnel_snapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  snapshotDate: varchar("snapshot_date", { length: 10 }).notNull(),   // YYYY-MM-DD
+  universeCount: int("universe_count").notNull().default(0),
+  activeCount: int("active_count").notNull().default(0),
+  highPriorityCount: int("high_priority_count").notNull().default(0),
+  outreachCandidateCount: int("outreach_candidate_count").notNull().default(0),
+  // Pipeline
+  outreachSentCount: int("outreach_sent_count").notNull().default(0),
+  responseCount: int("response_count").notNull().default(0),
+  meetingCount: int("meeting_count").notNull().default(0),
+  proposalCount: int("proposal_count").notNull().default(0),
+  customerCount: int("customer_count").notNull().default(0),
+  // Token economics
+  totalTokensUsed: int("total_tokens_used").notNull().default(0),
+  totalCostUsd: decimal("total_cost_usd", { precision: 10, scale: 4 }).notNull().default("0"),
+  revenueGeneratedUsd: int("revenue_generated_usd").notNull().default(0),
+  tokenRoi: decimal("token_roi", { precision: 12, scale: 2 }).notNull().default("0"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  arosFsDateIdx: index("aros_fs_date_idx").on(table.snapshotDate),
+}));
+export type ArosFunnelSnapshot = typeof arosFunnelSnapshots.$inferSelect;
+export type InsertArosFunnelSnapshot = typeof arosFunnelSnapshots.$inferInsert;

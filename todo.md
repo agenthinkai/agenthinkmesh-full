@@ -5053,3 +5053,70 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ### Final Deliverable
 - [x] Produce Commercial Validation Report (PDF) answering all 6 questions
+
+## Project ATLAS — Build Mode (P0–P3)
+
+### P0 — Core Infrastructure
+- [ ] PostgreSQL schema: outcome_ledger, agent_registry, token_accounting, audit_log tables
+- [ ] Run db:push migration for all P0 tables
+- [ ] Outcome Ledger API: create/read/update entries, status transitions
+- [ ] Agent Registry API: register agent, list agents, update status/metrics
+- [ ] Token Accounting API: record usage, compute cost, query by workflow/agent
+- [ ] Audit Log API: append-only event log with actor/action/entity/payload
+- [ ] Vitest tests for all P0 procedures
+
+### P1 — Swarms + Factory + Command Center
+- [ ] Discovery Swarm: run company research workflow (dossier + decision twin + score)
+- [ ] Intelligence Swarm: run decision detection on a company
+- [ ] Decision Detection Swarm: identify top opportunities from a universe
+- [ ] Outreach Factory: generate CEO email + executive brief + SDR teaser
+- [ ] Revenue Command Center UI: dashboard showing pipeline, outreach queue, token metrics
+- [ ] Vitest tests for all P1 procedures
+
+### P2 — Integrations
+- [ ] CRM pipeline: company → outreach → meeting → proposal → customer stage tracking
+- [ ] Calendar integration: Calendly-style booking link generation per outreach
+- [ ] Email infrastructure: approval queue → send workflow with tracking
+- [ ] Proposal generation workflow: full proposal from meeting context
+- [ ] Vitest tests for all P2 procedures
+
+### P3 — Engines
+- [ ] Calibration Engine: track predicted vs actual conversion rates
+- [ ] Attribution Engine: attribute revenue to workflow/agent/run
+- [ ] Outcome Ledger scoring: compute outcome scores and update ledger
+- [ ] Vitest tests for all P3 procedures
+
+## ATLAS Scaling Directive — 10,000-Company Architecture
+
+### Schema & DB (P0 Extension)
+- [x] Extend aros_companies: monitoring_tier, acv_estimate_usd, last_monitored_at, monitoring_frequency, funnel_tier
+- [x] Add aros_opportunity_signals table: per-company detected signals with type, urgency, evidence
+- [x] Add aros_monitoring_jobs table: continuous scan state, next_run_at, last_result
+- [x] Run migration for all new tables
+
+### Server Routers (P1)
+- [x] server/routers/aros/discovery.ts — batch ingestion, dedup, sector/geo targeting
+- [x] server/routers/aros/intelligence.ts — Decision Twin generation, strategic initiative detection
+- [x] server/routers/aros/decisionDetection.ts — urgency scoring, ACV estimation, opportunity ranking
+- [x] server/routers/aros/outreachFactory.ts — approval queue, outreach generation
+- [x] server/routers/aros/tokenLedger.ts — per-workflow cost tracking, ROI computation
+- [x] server/routers/aros/pipeline.ts — stage progression, conversion tracking
+- [x] server/routers/aros/calibration.ts — Outcome Ledger feedback loop
+- [x] Wire all AROS routers into server/routers.ts
+
+### Revenue Command Center UI (P1)
+- [x] /aros route with DashboardLayout sidebar entry
+- [x] Funnel overview: 10K → 1K → 200 → 50 tier counts
+- [x] Opportunity ranking table: sortable by score, ACV, urgency, sector
+- [x] Outreach approval queue with approve/reject actions
+- [x] Token ROI panel: cost per opportunity/meeting/proposal, total ROI
+- [x] Pipeline Kanban: Researched → Outreach → Meeting → Proposal → Customer
+- [x] Outcome Ledger growth chart
+
+### P3 Engines
+- [x] Calibration Engine: predicted vs actual rate comparison, weight updates
+- [x] Attribution Engine: link outcomes back to discovery run quality
+- [x] Outcome Ledger scoring: auto-score based on pipeline progression
+
+### Tests
+- [x] Vitest tests for discovery, intelligence, outreach, token ledger, pipeline routers (23/23 passing)

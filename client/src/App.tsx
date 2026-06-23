@@ -157,6 +157,13 @@ const InfraSimRunDetail = lazy(() => import("./pages/InfraSimRunDetail"));
 const InfraSimCouncil = lazy(() => import("./pages/InfraSimCouncil"));
 const InfraSimMonitor = lazy(() => import("./pages/InfraSimMonitor"));
 const PharmaDemoPage = lazy(() => import("./pages/PharmaDemoPage"));
+// AROS — Revenue Operating System
+const ArosCommandCenter = lazy(() => import("./pages/aros/ArosCommandCenter").then(m => ({ default: m.ArosCommandCenter })));
+const ArosUniverse = lazy(() => import("./pages/aros/ArosUniverse").then(m => ({ default: m.ArosUniverse })));
+const ArosOpportunities = lazy(() => import("./pages/aros/ArosOpportunities").then(m => ({ default: m.ArosOpportunities })));
+const ArosOutreach = lazy(() => import("./pages/aros/ArosOutreach").then(m => ({ default: m.ArosOutreach })));
+const ArosPipeline = lazy(() => import("./pages/aros/ArosPipeline").then(m => ({ default: m.ArosPipeline })));
+const ArosTokenRoi = lazy(() => import("./pages/aros/ArosTokenRoi").then(m => ({ default: m.ArosTokenRoi })));
 
 // ── Page-level loading fallback ───────────────────────────────────────────────
 function PageLoader() {
@@ -443,6 +450,14 @@ function Router() {
 
       {/* Pharma Validation Demo */}
       <Route path="/pharma">{() => <PharmaDemoPage />}</Route>
+
+      {/* AROS — Revenue Operating System */}
+      <Route path="/aros" component={ArosCommandCenter} />
+      <Route path="/aros/universe" component={ArosUniverse} />
+      <Route path="/aros/opportunities" component={ArosOpportunities} />
+      <Route path="/aros/outreach" component={ArosOutreach} />
+      <Route path="/aros/pipeline" component={ArosPipeline} />
+      <Route path="/aros/token-roi" component={ArosTokenRoi} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

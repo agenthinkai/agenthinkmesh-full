@@ -49,6 +49,15 @@ import { councilRouter } from "./routers/council";
 import { infraSimRouter } from "./routers/infraSim";
 import { scenarioSimRouter } from "./routers/scenarioSim";
 import { pharmaPilotRouter } from "./routers/pharmaPilot";
+import {
+  arosDiscoveryRouter,
+  arosIntelligenceRouter,
+  arosDecisionDetectionRouter,
+  arosOutreachFactoryRouter,
+  arosTokenLedgerRouter,
+  arosPipelineRouter,
+  arosCalibrationRouter,
+} from "./routers/aros";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
 import { eq, desc, asc, gte, lte, sql, and, like, or, isNull, lt, count } from "drizzle-orm";
@@ -136,6 +145,15 @@ export const appRouter = router({
   infraSim: infraSimRouter,
   scenarioSim: scenarioSimRouter,
   pharmaPilot: pharmaPilotRouter,
+
+  // ── AROS — Autonomous Revenue Operating System ───────────────────────────────
+  arosDiscovery: arosDiscoveryRouter,
+  arosIntelligence: arosIntelligenceRouter,
+  arosDecisionDetection: arosDecisionDetectionRouter,
+  arosOutreachFactory: arosOutreachFactoryRouter,
+  arosTokenLedger: arosTokenLedgerRouter,
+  arosPipeline: arosPipelineRouter,
+  arosCalibration: arosCalibrationRouter,
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   auth: router({

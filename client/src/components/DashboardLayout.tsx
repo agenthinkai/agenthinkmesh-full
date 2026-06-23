@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Zap, History, Network, ChevronRight, Signal, Shield, Users, BarChart2, TrendingUp } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Zap, History, Network, ChevronRight, Signal, Shield, Users, BarChart2, TrendingUp, Target, Radar, Mail, GitBranch, Coins, Crosshair } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -105,6 +105,12 @@ const menuItems = [
   { icon: Users, label: "Demo Requests", path: "/admin/demo-requests", group: "advanced" },
   { icon: BarChart2, label: "Eval Stats", path: "/admin/evals", group: "advanced" },
   { icon: TrendingUp, label: "Infra Stress Sim", path: "/infra-sim", group: "advanced" },
+  { icon: Crosshair, label: "AROS Command", path: "/aros", group: "advanced" },
+  { icon: Radar, label: "AROS Universe", path: "/aros/universe", group: "advanced" },
+  { icon: Target, label: "AROS Top 20", path: "/aros/opportunities", group: "advanced" },
+  { icon: Mail, label: "AROS Outreach", path: "/aros/outreach", group: "advanced" },
+  { icon: GitBranch, label: "AROS Pipeline", path: "/aros/pipeline", group: "advanced" },
+  { icon: Coins, label: "AROS Token ROI", path: "/aros/token-roi", group: "advanced" },
   { icon: Shield, label: "Security Keys", path: "/security-keys", group: "account" },
 ];
 
