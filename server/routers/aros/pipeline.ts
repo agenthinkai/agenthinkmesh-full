@@ -18,6 +18,7 @@ import {
   arosCompanies,
   arosOutreachQueue,
   arosAuditLog,
+  arosCalibration,
 } from "../../../drizzle/schema";
 
 async function requireDb() {
@@ -179,6 +180,43 @@ export const arosPipelineRouter = router({
         entityId: String(input.pipelineId),
         payload: JSON.stringify({ from: entry.stage, to: input.newStage, notes: input.notes }),
       });
+
+      // ── Auto-calibration: recalculate conversion rates on every stage transition ──
+      try {
+        const stageCounts = await db
+          .select({ stage: arosPipeline.stage, count: sql<number>`count(*)` })
+          .from(arosPipeline)
+          .groupBy(arosPipeline.stage);
+
+        const cm: Record<string, number> = {};
+        for (const s of stageCounts) cm[s.stage] = Number(s.count);
+
+        const totalOutreach = (cm["OUTREACH_SENT"] ?? 0) + (cm["RESPONSE_RECEIVED"] ?? 0) +
+          (cm["MEETING_BOOKED"] ?? 0) + (cm["MEETING_HELD"] ?? 0) +
+          (cm["PROPOSAL_SENT"] ?? 0) + (cm["NEGOTIATION"] ?? 0) + (cm["CUSTOMER"] ?? 0);
+
+        if (totalOutreach > 0) {
+          const metricsToUpdate = [
+            { metric: "response_rate", actual: (cm["RESPONSE_RECEIVED"] ?? 0) / totalOutreach, predicted: 0.10 },
+            { metric: "meeting_rate", actual: ((cm["MEETING_BOOKED"] ?? 0) + (cm["MEETING_HELD"] ?? 0)) / totalOutreach, predicted: 0.05 },
+            { metric: "proposal_rate", actual: (cm["PROPOSAL_SENT"] ?? 0) / totalOutreach, predicted: 0.025 },
+            { metric: "customer_rate", actual: (cm["CUSTOMER"] ?? 0) / totalOutreach, predicted: 0.01 },
+          ];
+
+          for (const m of metricsToUpdate) {
+            await db.insert(arosCalibration).values({
+              metric: m.metric,
+              predictedRate: String(m.predicted),
+              actualRate: String(m.actual),
+              sampleSize: totalOutreach,
+              observedAt: Date.now(),
+              notes: `Auto-calibrated on stage transition ${entry.stage}→${input.newStage}. Actual: ${(m.actual * 100).toFixed(2)}% vs predicted: ${(m.predicted * 100).toFixed(1)}%`,
+            });
+          }
+        }
+      } catch (_calibErr) {
+        // Non-blocking — calibration failure should not block stage transition
+      }
 
       return { success: true, newStage: input.newStage };
     }),
