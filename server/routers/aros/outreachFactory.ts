@@ -467,6 +467,107 @@ export const arosOutreachFactoryRouter = router({
       return { success: true };
     }),
 
+  // ── Send email via Resend ──────────────────────────────────────────────────
+  sendEmail: protectedProcedure
+    .input(z.object({
+      outreachId: z.number(),
+      toEmail: z.string().email(),
+      toName: z.string().optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      requireAdmin(ctx);
+      const db = await requireDb();
+
+      const [item] = await db
+        .select()
+        .from(arosOutreachQueue)
+        .where(eq(arosOutreachQueue.id, input.outreachId))
+        .limit(1);
+      if (!item) throw new TRPCError({ code: "NOT_FOUND", message: "Outreach item not found" });
+      if (item.approvalStatus !== "APPROVED") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Outreach must be APPROVED before sending" });
+      }
+      if (item.sentAt) {
+        throw new TRPCError({ code: "CONFLICT", message: "Email already sent" });
+      }
+
+      const resendApiKey = process.env.RESEND_API_KEY;
+      if (!resendApiKey) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "RESEND_API_KEY not configured" });
+
+      // Build tracking pixel URL
+      const trackingPixelUrl = `${process.env.VITE_FRONTEND_FORGE_API_URL ?? "https://agenthink-7enctkan.manus.space"}/api/trpc/arosOutreach.trackOpen?token=${item.trackingToken}`;
+
+      // Format email body as HTML with tracking pixel
+      const htmlBody = `<div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #333;">
+${(item.emailBody ?? "").split("\n").map((line: string) => line.trim() ? `<p>${line}</p>` : "<br/>").join("\n")}
+<img src="${trackingPixelUrl}" width="1" height="1" style="display:none" />
+</div>`;
+
+      // Send via Resend
+      const resendRes = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from: "Farouq Sultan <farouq@agenthink.ai>",
+          to: [input.toEmail],
+          cc: ["farouqsultan@gmail.com"],
+          subject: item.emailSubject ?? "AgenThink — Decision Intelligence Partnership",
+          html: htmlBody,
+          text: item.emailBody ?? "",
+          reply_to: "farouq@agenthink.ai",
+        }),
+      });
+
+      if (!resendRes.ok) {
+        const errBody = await resendRes.text();
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: `Resend API error ${resendRes.status}: ${errBody}`,
+        });
+      }
+
+      const resendData = await resendRes.json() as { id?: string };
+
+      // Mark as sent and advance pipeline
+      await db.update(arosOutreachQueue)
+        .set({
+          approvalStatus: "SENT",
+          sentAt: Date.now(),
+          targetEmail: input.toEmail,
+          targetName: input.toName ?? item.targetName,
+          updatedAt: Date.now(),
+        })
+        .where(eq(arosOutreachQueue.id, input.outreachId));
+
+      await db.update(arosPipeline)
+        .set({ stage: "OUTREACH_SENT", outreachSentAt: Date.now(), updatedAt: Date.now() })
+        .where(eq(arosPipeline.companyId, item.companyId));
+
+      await db.insert(arosAuditLog).values({
+        actor: String(ctx.user.id),
+        action: "outreach.email_sent",
+        entityType: "aros_outreach_queue",
+        entityId: String(input.outreachId),
+        payload: JSON.stringify({ resendId: resendData.id, toEmail: input.toEmail }),
+      });
+
+      return { success: true, resendId: resendData.id, sentAt: Date.now() };
+    }),
+
+  // ── Public tracking pixel endpoint (open tracking) ────────────────────────
+  trackOpen: protectedProcedure
+    .input(z.object({ token: z.string() }))
+    .query(async ({ input }) => {
+      const db = await requireDb();
+      await db.update(arosOutreachQueue)
+        .set({ openedAt: Date.now(), updatedAt: Date.now() })
+        .where(eq(arosOutreachQueue.trackingToken, input.token));
+      return { tracked: true };
+    }),
+
   // ── Get queue stats ────────────────────────────────────────────────────────
   getQueueStats: protectedProcedure
     .query(async ({ ctx }) => {

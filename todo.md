@@ -5170,3 +5170,19 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 ### Tests + Checkpoint
 - [x] Write vitest tests for hiddenVariable and monitoring routers (21/21 passing)
 - [x] Save Phase 5 checkpoint
+
+## ATLAS Phase 6 — Reality Contact
+
+- [ ] Audit top 20 outreach queue — select top 5 for first batch
+- [ ] Finalize email content for top 5 (no banned sentence, proper formatting, CC farouqsultan@gmail.com)
+- [ ] Integrate Resend API for email delivery (RESEND_API_KEY already in env)
+- [ ] Add send email procedure to outreachFactory.ts (sendOutreach, trackOpen, recordReply)
+- [ ] Add email tracking fields to aros_outreach_queue (sent_at, opened_at, replied_at, meeting_at)
+- [ ] Build send batch UI in ArosOutreach.tsx — send button, delivery status, open/reply tracking
+- [ ] Configure outreach.agenthink.ai sending domain in Resend
+- [ ] Send first batch of 5 emails (from: farouq@agenthink.ai, CC: farouqsultan@gmail.com)
+- [ ] Deliver domain setup DNS instructions + first-batch send guide
+- [ ] Track FIRST_EXECUTIVE_REPLY milestone
+- [ ] Track FIRST_MEETING milestone
+- [ ] Track FIRST_PROPOSAL milestone
+- [ ] Track FIRST_CUSTOMER milestone

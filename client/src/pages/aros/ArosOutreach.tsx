@@ -25,7 +25,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mail, CheckCircle2, XCircle, Send, Eye, RefreshCw, AlertTriangle } from "lucide-react";
+import { Mail, CheckCircle2, XCircle, Send, Eye, RefreshCw, AlertTriangle, MessageSquare, Calendar, TrendingUp, DollarSign, Loader2 } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 
 type OutreachStatus = "PENDING_CEO_REVIEW" | "APPROVED" | "REJECTED" | "SENT" | "BOUNCED";
@@ -80,8 +82,31 @@ export function ArosOutreach() {
     onError: (err) => toast.error(`Error: `),
   });
 
+  const [sendDialogItem, setSendDialogItem] = useState<{ id: number; subject: string | null; body: string | null; company: string } | null>(null);
+  const [sendToEmail, setSendToEmail] = useState("");
+  const [sendToName, setSendToName] = useState("");
+
+  const sendEmailMutation = trpc.arosOutreachFactory.sendEmail.useMutation({
+    onSuccess: (data: { resendId?: string }) => {
+      toast.success(`Email sent! Resend ID: ${data.resendId}`);
+      setSendDialogItem(null);
+      setSendToEmail("");
+      setSendToName("");
+      refetch();
+    },
+    onError: (err: { message: string }) => toast.error(`Send failed: ${err.message}`),
+  });
+
+  const recordReplyMutation = trpc.arosOutreachFactory.recordReply.useMutation({
+    onSuccess: () => { toast.success("Reply recorded — pipeline advanced"); refetch(); },
+    onError: (err: { message: string }) => toast.error(`Error: ${err.message}`),
+  });
+
+  const { data: statsData } = trpc.arosOutreachFactory.getQueueStats.useQuery();
   const rows = data?.rows ?? [];
   const pending = rows.filter(r => r.outreach.approvalStatus === "PENDING_CEO_REVIEW").length;
+  const sentCount = statsData?.find(s => s.status === "SENT")?.count ?? 0;
+  const repliedCount = rows.filter(r => r.outreach.repliedAt).length;
 
   return (
     <DashboardLayout>
@@ -118,6 +143,45 @@ export function ArosOutreach() {
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
+        </div>
+
+        {/* Milestone Tracker */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: "FIRST_EXECUTIVE_REPLY", achieved: repliedCount > 0, icon: <MessageSquare className="h-4 w-4" /> },
+            { label: "FIRST_MEETING", achieved: false, icon: <Calendar className="h-4 w-4" /> },
+            { label: "FIRST_PROPOSAL", achieved: false, icon: <TrendingUp className="h-4 w-4" /> },
+            { label: "FIRST_CUSTOMER", achieved: false, icon: <DollarSign className="h-4 w-4" /> },
+          ].map((m) => (
+            <Card key={m.label} className={`border ${m.achieved ? "border-green-400 bg-green-50 dark:bg-green-950/20" : "border-border"}`}>
+              <CardContent className="p-3">
+                <div className={`flex items-center gap-2 mb-1 text-xs font-mono ${m.achieved ? "text-green-600" : "text-muted-foreground"}`}>
+                  {m.icon}{m.label}
+                </div>
+                <div className={`text-sm font-semibold ${m.achieved ? "text-green-700" : "text-foreground"}`}>
+                  {m.achieved ? "✓ ACHIEVED" : "Pending"}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
+          {[
+            { label: "Total", value: data?.total ?? 0 },
+            { label: "Pending Review", value: pending },
+            { label: "Approved", value: statsData?.find(s => s.status === "APPROVED")?.count ?? 0 },
+            { label: "Sent", value: sentCount },
+            { label: "Replied", value: repliedCount },
+          ].map((s) => (
+            <Card key={s.label}>
+              <CardContent className="p-3">
+                <div className="text-xs text-muted-foreground">{s.label}</div>
+                <div className="text-xl font-bold mt-1">{s.value}</div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
 
         {/* Queue */}
@@ -210,10 +274,27 @@ export function ArosOutreach() {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700"
-                        onClick={() => markSentMutation.mutate({ outreachId: outreach.id })}
+                        className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700"
+                        title="Send via Resend"
+                        onClick={() => {
+                          setSendDialogItem({ id: outreach.id, subject: outreach.emailSubject, body: outreach.emailBody, company: company.companyName });
+                          setSendToEmail(outreach.targetEmail ?? "");
+                          setSendToName(outreach.targetName ?? "");
+                        }}
                       >
                         <Send className="h-4 w-4" />
+                      </Button>
+                    )}
+                    {outreach.approvalStatus === "SENT" && !outreach.repliedAt && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700"
+                        title="Record reply"
+                        onClick={() => recordReplyMutation.mutate({ outreachId: outreach.id })}
+                        disabled={recordReplyMutation.isPending}
+                      >
+                        <MessageSquare className="h-4 w-4" />
                       </Button>
                     )}
                   </div>
@@ -261,6 +342,55 @@ export function ArosOutreach() {
                   <CheckCircle2 className="h-4 w-4 mr-1" /> Approve
                 </Button>
               )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Send Email Dialog */}
+        <Dialog open={!!sendDialogItem} onOpenChange={() => setSendDialogItem(null)}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Send Email — {sendDialogItem?.company}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 py-2">
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-800 dark:text-amber-300">
+                Sends from <strong>farouq@agenthink.ai</strong> with CC to <strong>farouqsultan@gmail.com</strong>. A copy is always sent to your review address.
+              </div>
+              <div>
+                <Label className="text-xs">Recipient Email *</Label>
+                <Input
+                  value={sendToEmail}
+                  onChange={(e) => setSendToEmail(e.target.value)}
+                  placeholder="ceo@company.com"
+                  className="mt-1 text-sm"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Recipient Name</Label>
+                <Input
+                  value={sendToName}
+                  onChange={(e) => setSendToName(e.target.value)}
+                  placeholder="John Smith"
+                  className="mt-1 text-sm"
+                />
+              </div>
+              {sendDialogItem?.subject && (
+                <div className="p-3 bg-muted/40 rounded text-xs">
+                  <div className="font-semibold mb-1">Subject: {sendDialogItem.subject}</div>
+                  <div className="text-muted-foreground line-clamp-3">{sendDialogItem.body?.substring(0, 200)}...</div>
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSendDialogItem(null)}>Cancel</Button>
+              <Button
+                onClick={() => sendDialogItem && sendEmailMutation.mutate({ outreachId: sendDialogItem.id, toEmail: sendToEmail, toName: sendToName })}
+                disabled={!sendToEmail || sendEmailMutation.isPending}
+                className="bg-emerald-600 hover:bg-emerald-700"
+              >
+                {sendEmailMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
+                Send Now
+              </Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
