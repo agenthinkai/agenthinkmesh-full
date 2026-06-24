@@ -5140,3 +5140,33 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Build continuous calibration loop — update rate models from every pipeline transition
 - [x] Verify 1,000 records in DB (1,001 confirmed)
 - [x] Save checkpoint and deliver compounding status report
+
+## ATLAS Phase 5 — Revenue + Compounding Mode
+
+### Schema Upgrades
+- [x] Add aros_decision_twins table (V2: 10 fields — primary objective, secondary objective, strategic decision, hidden variable, confidence score, monitoring signals, decision timeline, ACV, urgency score, engagement path)
+- [x] Add hidden_variable, hidden_variable_confidence, hidden_variable_review_date, hidden_variable_monitoring_signal columns to aros_companies
+- [x] Expand outcome_sessions with decision_twin_id, hidden_variable, assumptions, monitoring_signals, calibration_baseline fields
+- [x] Run migration for all new tables/columns
+
+### Engine B — Hidden Variable Engine
+- [x] server/routers/aros/hiddenVariable.ts — detect and store hidden variable per company via LLM
+- [x] Backfill all 1,001 companies with V2 Decision Twins (structured JSON in aros_decision_twins)
+- [x] Backfill all 1,001 companies with Hidden Variable entries
+- [x] Wire hiddenVariable router into appRouter
+
+### Revenue Command Center V2 UI
+- [x] Upgrade /aros to show 8 KPI dashboards: Executive Conversations, Meetings, Proposals, Customers Won, Hidden Variable Accuracy, Decision Twin Accuracy, Outcome Ledger Growth, Revenue Forecast Accuracy
+- [x] Add Hidden Variable accuracy trend chart
+- [x] Add Decision Twin accuracy trend chart
+- [x] Add Outcome Ledger growth chart (cumulative entries over time)
+- [x] Add Revenue Forecast vs Actual chart
+
+### Autonomous Monitoring Network
+- [x] server/routers/aros/monitoring.ts — event detection, signal processing, auto-update Decision Twin + Outcome Ledger + Opportunity Score
+- [x] Wire monitoring router into appRouter
+- [x] Add monitoring trigger to aros_monitoring_jobs (scan on schedule)
+
+### Tests + Checkpoint
+- [x] Write vitest tests for hiddenVariable and monitoring routers (21/21 passing)
+- [x] Save Phase 5 checkpoint

@@ -10,3 +10,5 @@ export { arosOutreachFactoryRouter } from "./outreachFactory";
 export { arosTokenLedgerRouter } from "./tokenLedger";
 export { arosPipelineRouter } from "./pipeline";
 export { arosCalibrationRouter } from "./calibration";
+export { arosHiddenVariableRouter } from "./hiddenVariable";
+export { arosMonitoringRouter } from "./monitoring";

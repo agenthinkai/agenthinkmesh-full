@@ -57,6 +57,8 @@ import {
   arosTokenLedgerRouter,
   arosPipelineRouter,
   arosCalibrationRouter,
+  arosHiddenVariableRouter,
+  arosMonitoringRouter,
 } from "./routers/aros";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
@@ -154,6 +156,8 @@ export const appRouter = router({
   arosTokenLedger: arosTokenLedgerRouter,
   arosPipeline: arosPipelineRouter,
   arosCalibration: arosCalibrationRouter,
+  arosHiddenVariable: arosHiddenVariableRouter,
+  arosMonitoring: arosMonitoringRouter,
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   auth: router({

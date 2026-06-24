@@ -159,6 +159,7 @@ const InfraSimMonitor = lazy(() => import("./pages/InfraSimMonitor"));
 const PharmaDemoPage = lazy(() => import("./pages/PharmaDemoPage"));
 // AROS — Revenue Operating System
 const ArosCommandCenter = lazy(() => import("./pages/aros/ArosCommandCenter").then(m => ({ default: m.ArosCommandCenter })));
+const ArosCommandCenterV2 = lazy(() => import("./pages/aros/ArosCommandCenterV2"));
 const ArosUniverse = lazy(() => import("./pages/aros/ArosUniverse").then(m => ({ default: m.ArosUniverse })));
 const ArosOpportunities = lazy(() => import("./pages/aros/ArosOpportunities").then(m => ({ default: m.ArosOpportunities })));
 const ArosOutreach = lazy(() => import("./pages/aros/ArosOutreach").then(m => ({ default: m.ArosOutreach })));
@@ -458,6 +459,7 @@ function Router() {
       <Route path="/aros/outreach" component={ArosOutreach} />
       <Route path="/aros/pipeline" component={ArosPipeline} />
       <Route path="/aros/token-roi" component={ArosTokenRoi} />
+      <Route path="/aros/command-center" component={ArosCommandCenterV2} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

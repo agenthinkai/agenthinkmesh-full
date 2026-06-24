@@ -2857,3 +2857,221 @@ export const arosFunnelSnapshots = mysqlTable("aros_funnel_snapshots", {
 }));
 export type ArosFunnelSnapshot = typeof arosFunnelSnapshots.$inferSelect;
 export type InsertArosFunnelSnapshot = typeof arosFunnelSnapshots.$inferInsert;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ATLAS PHASE 5 — DECISION OBSERVATION NETWORK
+// ═══════════════════════════════════════════════════════════════════════════
+
+// ── Decision Twin V2 ─────────────────────────────────────────────────────────
+// Structured per-company decision intelligence record (10 required fields)
+export const arosDecisionTwinsV2 = mysqlTable("aros_decision_twins_v2", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("company_id").notNull(),
+
+  // Core 10 fields (Phase 5 spec)
+  primaryObjective: varchar("primary_objective", { length: 300 }).notNull(),
+  secondaryObjective: varchar("secondary_objective", { length: 300 }),
+  strategicDecision: varchar("strategic_decision", { length: 400 }).notNull(),
+  hiddenVariable: varchar("hidden_variable", { length: 300 }).notNull(),
+  hiddenVariableConfidence: decimal("hidden_variable_confidence", { precision: 5, scale: 4 }).notNull().default("0"),
+  monitoringSignals: text("monitoring_signals"),        // JSON array of signal strings
+  estimatedDecisionTimeline: varchar("estimated_decision_timeline", { length: 100 }),
+  estimatedAcvUsd: int("estimated_acv_usd").notNull().default(0),
+  urgencyScore: int("urgency_score").notNull().default(0),  // 0–100
+  recommendedEngagementPath: varchar("recommended_engagement_path", { length: 500 }),
+
+  // Accuracy tracking (updated as real outcomes arrive)
+  predictionAccuracy: decimal("prediction_accuracy", { precision: 5, scale: 4 }),
+  lastValidatedAt: bigint("last_validated_at", { mode: "number" }),
+  validationNotes: text("validation_notes"),
+
+  // Versioning
+  version: int("version").notNull().default(2),
+  generatedBy: varchar("generated_by", { length: 50 }).notNull().default("atlas_phase5"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  arosDtV2CompanyIdx: index("aros_dt_v2_company_idx").on(table.companyId),
+  arosDtV2UrgencyIdx: index("aros_dt_v2_urgency_idx").on(table.urgencyScore),
+}));
+export type ArosDecisionTwinV2 = typeof arosDecisionTwinsV2.$inferSelect;
+export type InsertArosDecisionTwinV2 = typeof arosDecisionTwinsV2.$inferInsert;
+
+// ── Hidden Variable Ledger ────────────────────────────────────────────────────
+// Tracks the single variable most likely to determine success/failure per company
+// and records whether the prediction was correct when reality arrives
+export const arosHiddenVariables = mysqlTable("aros_hidden_variables", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("company_id").notNull(),
+  decisionTwinV2Id: int("decision_twin_v2_id"),
+
+  // The prediction
+  hiddenVariable: varchar("hidden_variable", { length: 300 }).notNull(),
+  hiddenVariableType: mysqlEnum("hidden_variable_type", [
+    "REGULATORY_DELAY",
+    "AI_GOVERNANCE_FAILURE",
+    "CAPITAL_ALLOCATION_ERROR",
+    "DATA_SOVEREIGNTY_CONSTRAINT",
+    "COMPETITIVE_RESPONSE",
+    "INFRASTRUCTURE_BOTTLENECK",
+    "TALENT_SHORTAGE",
+    "EXECUTION_RISK",
+    "MARKET_TIMING",
+    "OTHER",
+  ]).notNull().default("OTHER"),
+  confidence: decimal("confidence", { precision: 5, scale: 4 }).notNull().default("0.5"),
+  monitoringSignal: varchar("monitoring_signal", { length: 400 }),
+  reviewDate: bigint("review_date", { mode: "number" }),
+
+  // Reality check (filled in when outcome is known)
+  actualOutcome: text("actual_outcome"),
+  predictionCorrect: boolean("prediction_correct"),
+  validatedAt: bigint("validated_at", { mode: "number" }),
+  accuracyDelta: decimal("accuracy_delta", { precision: 5, scale: 4 }),
+
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  arosHvCompanyIdx: index("aros_hv_company_idx").on(table.companyId),
+  arosHvTypeIdx: index("aros_hv_type_idx").on(table.hiddenVariableType),
+  arosHvReviewIdx: index("aros_hv_review_idx").on(table.reviewDate),
+}));
+export type ArosHiddenVariable = typeof arosHiddenVariables.$inferSelect;
+export type InsertArosHiddenVariable = typeof arosHiddenVariables.$inferInsert;
+
+// ── Autonomous Monitoring Events ──────────────────────────────────────────────
+// Every detected real-world event that triggers a Decision Twin / Outcome Ledger update
+export const arosMonitoringEvents = mysqlTable("aros_monitoring_events", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("company_id").notNull(),
+
+  eventType: mysqlEnum("event_type", [
+    "MA_ACTIVITY",
+    "AI_INITIATIVE",
+    "DATA_CENTER_INVESTMENT",
+    "DIGITAL_TRANSFORMATION",
+    "INFRASTRUCTURE_PROJECT",
+    "REGULATORY_CHANGE",
+    "CAPITAL_ALLOCATION",
+    "LEADERSHIP_CHANGE",
+    "EARNINGS_SIGNAL",
+    "PARTNERSHIP",
+    "OTHER",
+  ]).notNull().default("OTHER"),
+
+  eventTitle: varchar("event_title", { length: 300 }).notNull(),
+  eventSummary: text("event_summary"),
+  sourceUrl: varchar("source_url", { length: 500 }),
+  detectedAt: bigint("detected_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+
+  // Impact on Decision Twin
+  opportunityScoreDelta: int("opportunity_score_delta").notNull().default(0),
+  urgencyScoreDelta: int("urgency_score_delta").notNull().default(0),
+  acvDelta: int("acv_delta").notNull().default(0),
+
+  // Processing state
+  processed: boolean("processed").notNull().default(false),
+  processedAt: bigint("processed_at", { mode: "number" }),
+  dtUpdated: boolean("dt_updated").notNull().default(false),
+  olUpdated: boolean("ol_updated").notNull().default(false),
+
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  arosMeCompanyIdx: index("aros_me_company_idx").on(table.companyId),
+  arosMeTypeIdx: index("aros_me_type_idx").on(table.eventType),
+  arosMeDetectedIdx: index("aros_me_detected_idx").on(table.detectedAt),
+  arosMeProcessedIdx: index("aros_me_processed_idx").on(table.processed),
+}));
+export type ArosMonitoringEvent = typeof arosMonitoringEvents.$inferSelect;
+export type InsertArosMonitoringEvent = typeof arosMonitoringEvents.$inferInsert;
+
+// ── Outcome Ledger V2 Entries ─────────────────────────────────────────────────
+// Extended T=0 records with Decision Twin linkage, hidden variable, and calibration baseline
+export const arosOutcomeLedgerV2 = mysqlTable("aros_outcome_ledger_v2", {
+  id: int("id").autoincrement().primaryKey(),
+  companyId: int("company_id").notNull(),
+  decisionTwinV2Id: int("decision_twin_v2_id"),
+  hiddenVariableId: int("hidden_variable_id"),
+
+  // Baseline prediction fields
+  hiddenVariable: varchar("hidden_variable", { length: 300 }),
+  hiddenVariableConfidence: decimal("hidden_variable_confidence", { precision: 5, scale: 4 }),
+  assumptions: text("assumptions"),          // JSON array of assumption strings
+  monitoringSignals: text("monitoring_signals"), // JSON array
+  calibrationBaseline: text("calibration_baseline"), // JSON: { response_rate, meeting_rate, proposal_rate, customer_rate }
+  reviewDate: bigint("review_date", { mode: "number" }),
+
+  // T=0 snapshot
+  opportunityScoreAtT0: int("opportunity_score_at_t0").notNull().default(0),
+  acvAtT0: int("acv_at_t0").notNull().default(0),
+  urgencyAtT0: int("urgency_at_t0").notNull().default(0),
+
+  // Outcome (filled in when reality arrives)
+  outcomeStatus: mysqlEnum("outcome_status", [
+    "PENDING",
+    "RESPONSE_RECEIVED",
+    "MEETING_HELD",
+    "PROPOSAL_SENT",
+    "CUSTOMER_WON",
+    "CUSTOMER_LOST",
+    "NO_ENGAGEMENT",
+  ]).notNull().default("PENDING"),
+  outcomeNotes: text("outcome_notes"),
+  outcomeDate: bigint("outcome_date", { mode: "number" }),
+
+  // Accuracy metrics (computed on outcome)
+  dtAccuracy: decimal("dt_accuracy", { precision: 5, scale: 4 }),
+  hvAccuracy: decimal("hv_accuracy", { precision: 5, scale: 4 }),
+  revenueForecasted: int("revenue_forecasted").notNull().default(0),
+  revenueActual: int("revenue_actual").notNull().default(0),
+
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  arosOlV2CompanyIdx: index("aros_ol_v2_company_idx").on(table.companyId),
+  arosOlV2StatusIdx: index("aros_ol_v2_status_idx").on(table.outcomeStatus),
+  arosOlV2ReviewIdx: index("aros_ol_v2_review_idx").on(table.reviewDate),
+}));
+export type ArosOutcomeLedgerV2 = typeof arosOutcomeLedgerV2.$inferSelect;
+export type InsertArosOutcomeLedgerV2 = typeof arosOutcomeLedgerV2.$inferInsert;
+
+// ── Calibration Accuracy Snapshots ───────────────────────────────────────────
+// Daily/weekly snapshots of all accuracy metrics for trend charting
+export const arosAccuracySnapshots = mysqlTable("aros_accuracy_snapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  snapshotDate: varchar("snapshot_date", { length: 10 }).notNull(), // YYYY-MM-DD
+
+  // Conversion accuracy
+  responseRatePredicted: decimal("response_rate_predicted", { precision: 5, scale: 4 }),
+  responseRateActual: decimal("response_rate_actual", { precision: 5, scale: 4 }),
+  meetingRatePredicted: decimal("meeting_rate_predicted", { precision: 5, scale: 4 }),
+  meetingRateActual: decimal("meeting_rate_actual", { precision: 5, scale: 4 }),
+  proposalRatePredicted: decimal("proposal_rate_predicted", { precision: 5, scale: 4 }),
+  proposalRateActual: decimal("proposal_rate_actual", { precision: 5, scale: 4 }),
+  customerRatePredicted: decimal("customer_rate_predicted", { precision: 5, scale: 4 }),
+  customerRateActual: decimal("customer_rate_actual", { precision: 5, scale: 4 }),
+
+  // Decision Twin accuracy
+  dtAccuracyAvg: decimal("dt_accuracy_avg", { precision: 5, scale: 4 }),
+  dtSampleSize: int("dt_sample_size").notNull().default(0),
+
+  // Hidden Variable accuracy
+  hvAccuracyAvg: decimal("hv_accuracy_avg", { precision: 5, scale: 4 }),
+  hvSampleSize: int("hv_sample_size").notNull().default(0),
+
+  // Revenue forecast accuracy
+  revenueForecastedTotal: int("revenue_forecasted_total").notNull().default(0),
+  revenueActualTotal: int("revenue_actual_total").notNull().default(0),
+  revenueForecastAccuracy: decimal("revenue_forecast_accuracy", { precision: 5, scale: 4 }),
+
+  // Universe size
+  totalCompanies: int("total_companies").notNull().default(0),
+  totalOutcomeLedgerEntries: int("total_outcome_ledger_entries").notNull().default(0),
+  totalCalibrationRecords: int("total_calibration_records").notNull().default(0),
+
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  arosAsDateIdx: index("aros_as_date_idx").on(table.snapshotDate),
+}));
+export type ArosAccuracySnapshot = typeof arosAccuracySnapshots.$inferSelect;
+export type InsertArosAccuracySnapshot = typeof arosAccuracySnapshots.$inferInsert;
