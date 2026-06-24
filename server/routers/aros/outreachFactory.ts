@@ -491,45 +491,74 @@ export const arosOutreachFactoryRouter = router({
         throw new TRPCError({ code: "CONFLICT", message: "Email already sent" });
       }
 
-      const resendApiKey = process.env.RESEND_API_KEY;
-      if (!resendApiKey) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "RESEND_API_KEY not configured" });
+      // ── Microsoft Graph: acquire token ──────────────────────────────────────
+      const clientId = process.env.MS_CLIENT_ID;
+      const clientSecret = process.env.MS_CLIENT_SECRET;
+      const tenantId = process.env.MS_TENANT_ID;
+      if (!clientId || !clientSecret || !tenantId) {
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "MS Graph credentials (MS_CLIENT_ID / MS_CLIENT_SECRET / MS_TENANT_ID) not configured" });
+      }
 
-      // Build tracking pixel URL
-      const trackingPixelUrl = `${process.env.VITE_FRONTEND_FORGE_API_URL ?? "https://agenthink-7enctkan.manus.space"}/api/trpc/arosOutreach.trackOpen?token=${item.trackingToken}`;
+      const tokenParams = new URLSearchParams({
+        grant_type: "client_credentials",
+        client_id: clientId,
+        client_secret: clientSecret,
+        scope: "https://graph.microsoft.com/.default",
+      });
+      const tokenRes = await fetch(
+        `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`,
+        { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: tokenParams.toString() }
+      );
+      if (!tokenRes.ok) {
+        const err = await tokenRes.text();
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `MS Graph token error: ${err}` });
+      }
+      const { access_token } = await tokenRes.json() as { access_token: string };
 
-      // Format email body as HTML with tracking pixel
+      // ── Build tracking pixel URL ──────────────────────────────────────────────
+      const appBase = process.env.VITE_FRONTEND_FORGE_API_URL ?? "https://agenthink-7enctkan.manus.space";
+      const trackingPixelUrl = `${appBase}/api/trpc/arosOutreachFactory.trackOpen?token=${item.trackingToken}`;
+
+      // ── Format HTML body ──────────────────────────────────────────────────────
       const htmlBody = `<div style="font-family: Arial, sans-serif; font-size: 14px; line-height: 1.6; color: #333;">
 ${(item.emailBody ?? "").split("\n").map((line: string) => line.trim() ? `<p>${line}</p>` : "<br/>").join("\n")}
 <img src="${trackingPixelUrl}" width="1" height="1" style="display:none" />
 </div>`;
 
-      // Send via Resend
-      const resendRes = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${resendApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: "Farouq Sultan <farouq@agenthink.ai>",
-          to: [input.toEmail],
-          cc: ["farouqsultan@gmail.com"],
-          subject: item.emailSubject ?? "AgenThink — Decision Intelligence Partnership",
-          html: htmlBody,
-          text: item.emailBody ?? "",
-          reply_to: "farouq@agenthink.ai",
-        }),
-      });
+      // ── Send via Microsoft Graph sendMail ─────────────────────────────────────
+      const SENDER_UPN = "farouq@agenthink.ai";
+      const graphRes = await fetch(
+        `https://graph.microsoft.com/v1.0/users/${SENDER_UPN}/sendMail`,
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${access_token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            message: {
+              subject: item.emailSubject ?? "AgenThink — Decision Intelligence Partnership",
+              body: { contentType: "HTML", content: htmlBody },
+              toRecipients: [{ emailAddress: { address: input.toEmail, name: input.toName ?? "" } }],
+              ccRecipients: [{ emailAddress: { address: "farouqsultan@gmail.com", name: "Farouq Sultan" } }],
+              replyTo: [{ emailAddress: { address: SENDER_UPN } }],
+            },
+            saveToSentItems: true,
+          }),
+        }
+      );
 
-      if (!resendRes.ok) {
-        const errBody = await resendRes.text();
+      if (!graphRes.ok) {
+        const errBody = await graphRes.text();
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
-          message: `Resend API error ${resendRes.status}: ${errBody}`,
+          message: `MS Graph sendMail error ${graphRes.status}: ${errBody}`,
         });
       }
 
-      const resendData = await resendRes.json() as { id?: string };
+      // Graph sendMail returns 202 Accepted with no body — use a synthetic message ID
+      const graphMessageId = `graph-${Date.now()}-${item.id}`;
+      const resendData = { id: graphMessageId };
 
       // Mark as sent and advance pipeline
       await db.update(arosOutreachQueue)
