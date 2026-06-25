@@ -5219,3 +5219,13 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Update ArosPipeline.tsx: "Outreach → Response" → "Note Delivered → Response"
 - [x] Update ArosTokenRoi.tsx: "Cost per Outreach" → "Cost per Intelligence Note", sublabel updated
 - [x] Update ArosOperations.tsx: "Emails Sent" → "Notes Delivered", "Outreach Sent" → "Notes Delivered", "Outreach Ready" → "Intelligence Ready"
+
+## AgenThink Mesh Constitution Embedding
+
+- [x] Update executiveIntelligenceFactory.ts LLM system prompt with full Constitution text
+- [x] Embed four questions as hard constraints in LLM prompt (Decision, Hidden Variable, Timing, Closing Question)
+- [x] Embed four tests as hard constraints in LLM prompt (specificity, "I had not considered that", insight before attention, standalone value)
+- [x] Update JSON field descriptions to enforce Constitution structure per field
+- [x] Create ArosConstitution.tsx — full Constitution page with all sections rendered
+- [x] Register /aros/constitution route in App.tsx
+- [x] Add "Atlas Constitution" nav item to DashboardLayout sidebar

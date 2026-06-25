@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Zap, History, Network, ChevronRight, Signal, Shield, Users, BarChart2, TrendingUp, Target, Radar, Mail, Brain, GitBranch, Coins, Crosshair, Activity } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Zap, History, Network, ChevronRight, Signal, Shield, Users, BarChart2, TrendingUp, Target, Radar, Mail, Brain, GitBranch, Coins, Crosshair, Activity, BookOpen } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -113,6 +113,7 @@ const menuItems = [
   { icon: Coins, label: "AROS Token ROI", path: "/aros/token-roi", group: "advanced" },
   { icon: Activity, label: "AROS Command V2", path: "/aros/command-center", group: "advanced" },
   { icon: Zap, label: "AROS Operations", path: "/aros/operations", group: "advanced" },
+  { icon: BookOpen, label: "Atlas Constitution", path: "/aros/constitution", group: "advanced" },
   { icon: Shield, label: "Security Keys", path: "/security-keys", group: "account" },
 ];
 
