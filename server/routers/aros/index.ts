@@ -6,7 +6,9 @@
 export { arosDiscoveryRouter } from "./discovery";
 export { arosIntelligenceRouter } from "./intelligence";
 export { arosDecisionDetectionRouter } from "./decisionDetection";
-export { arosOutreachFactoryRouter } from "./outreachFactory";
+export { arosExecutiveIntelligenceFactoryRouter } from "./executiveIntelligenceFactory";
+// Backward-compat alias so existing router wiring compiles without changes
+export { arosExecutiveIntelligenceFactoryRouter as arosOutreachFactoryRouter } from "./executiveIntelligenceFactory";
 export { arosTokenLedgerRouter } from "./tokenLedger";
 export { arosPipelineRouter } from "./pipeline";
 export { arosCalibrationRouter } from "./calibration";

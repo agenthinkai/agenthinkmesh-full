@@ -1,7 +1,7 @@
 import { toast } from "sonner";
 /**
  * AROS Opportunities — Top 20 ranked opportunities
- * Decision Detection output with urgency, ACV, and outreach actions
+ * Decision Detection output with urgency, ACV, and intelligence generation actions
  */
 
 import { useState } from "react";
@@ -34,19 +34,19 @@ export function ArosOpportunities() {
   
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [dossierCompany, setDossierCompany] = useState<{ name: string; dossier: string; twin: string } | null>(null);
-  const [generatingOutreach, setGeneratingOutreach] = useState<number | null>(null);
+  const [generatingNote, setGeneratingNote] = useState<number | null>(null);
   const [scoringId, setScoringId] = useState<number | null>(null);
 
   const { data: top20, isLoading, refetch } = trpc.arosDecisionDetection.getTop20.useQuery();
 
   const generateOutreachMutation = trpc.arosOutreachFactory.generate.useMutation({
     onSuccess: () => {
-      setGeneratingOutreach(null);
-      toast.success("Outreach Generated: Added to approval queue");
+      setGeneratingNote(null);
+      toast.success("Intelligence note generated — added to review queue");
     },
     onError: (err) => {
-      setGeneratingOutreach(null);
-      toast.error(`Error: `);
+      setGeneratingNote(null);
+      toast.error(`Error: ${err.message}`);
     },
   });
 
@@ -161,15 +161,15 @@ export function ArosOpportunities() {
                           size="sm"
                           variant="outline"
                           className="h-8 text-xs"
-                          disabled={generatingOutreach === co.id}
+                          disabled={generatingNote === co.id}
                           onClick={() => {
-                            setGeneratingOutreach(co.id);
+                            setGeneratingNote(co.id);
                             generateOutreachMutation.mutate({ companyId: co.id });
                           }}
                         >
-                          {generatingOutreach === co.id
+                          {generatingNote === co.id
                             ? <><RefreshCw className="h-3 w-3 mr-1 animate-spin" /> Generating...</>
-                            : <><Mail className="h-3 w-3 mr-1" /> Generate Outreach</>}
+                            : <><Brain className="h-3 w-3 mr-1" /> Generate Intelligence Note</>}
                         </Button>
                         <Button
                           size="sm"

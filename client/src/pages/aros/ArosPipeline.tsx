@@ -87,7 +87,7 @@ export function ArosPipeline() {
         {overview && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <Card className="p-3">
-              <p className="text-xs text-muted-foreground">Outreach → Response</p>
+              <p className="text-xs text-muted-foreground">Note Delivered → Response</p>
               <p className="text-xl font-bold">{(overview.conversionRates?.outreachToResponse ?? 0).toFixed(1)}%</p>
             </Card>
             <Card className="p-3">

@@ -152,6 +152,9 @@ export const appRouter = router({
   arosDiscovery: arosDiscoveryRouter,
   arosIntelligence: arosIntelligenceRouter,
   arosDecisionDetection: arosDecisionDetectionRouter,
+  // New canonical key — all new client code should use this
+  arosExecutiveIntelligenceFactory: arosOutreachFactoryRouter,
+  // Backward-compat alias — existing client calls still resolve
   arosOutreachFactory: arosOutreachFactoryRouter,
   arosTokenLedger: arosTokenLedgerRouter,
   arosPipeline: arosPipelineRouter,

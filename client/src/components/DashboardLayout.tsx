@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Zap, History, Network, ChevronRight, Signal, Shield, Users, BarChart2, TrendingUp, Target, Radar, Mail, GitBranch, Coins, Crosshair, Activity } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Zap, History, Network, ChevronRight, Signal, Shield, Users, BarChart2, TrendingUp, Target, Radar, Mail, Brain, GitBranch, Coins, Crosshair, Activity } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -108,7 +108,7 @@ const menuItems = [
   { icon: Crosshair, label: "AROS Command", path: "/aros", group: "advanced" },
   { icon: Radar, label: "AROS Universe", path: "/aros/universe", group: "advanced" },
   { icon: Target, label: "AROS Top 20", path: "/aros/opportunities", group: "advanced" },
-  { icon: Mail, label: "AROS Outreach", path: "/aros/outreach", group: "advanced" },
+  { icon: Brain, label: "Intelligence Factory", path: "/aros/outreach", group: "advanced" },
   { icon: GitBranch, label: "AROS Pipeline", path: "/aros/pipeline", group: "advanced" },
   { icon: Coins, label: "AROS Token ROI", path: "/aros/token-roi", group: "advanced" },
   { icon: Activity, label: "AROS Command V2", path: "/aros/command-center", group: "advanced" },

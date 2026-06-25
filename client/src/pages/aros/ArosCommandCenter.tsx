@@ -135,9 +135,9 @@ export function ArosCommandCenter() {
             onClick={() => setLocation("/aros/opportunities")}
           />
           <MetricCard
-            title="Outreach Candidates"
+            title="Intelligence Ready"
             value={funnelLoading ? "..." : (funnel?.outreachCandidate ?? 0).toLocaleString()}
-            sub="Ready for CEO email"
+            sub="Ready for intelligence note"
             icon={Mail}
             color="border-l-purple-500"
             onClick={() => setLocation("/aros/outreach")}
@@ -203,9 +203,9 @@ export function ArosCommandCenter() {
                   <FunnelBar label="Universe (10K target)" count={funnel?.totalCompanies ?? 0} max={10000} color="bg-blue-500" />
                   <FunnelBar label="Active (1K target)" count={funnel?.active ?? 0} max={1000} color="bg-indigo-500" />
                   <FunnelBar label="High Priority (200 target)" count={funnel?.highPriority ?? 0} max={200} color="bg-orange-500" />
-                  <FunnelBar label="Outreach Candidates (50 target)" count={funnel?.outreachCandidate ?? 0} max={50} color="bg-purple-500" />
+                  <FunnelBar label="Intelligence Ready (50 target)" count={funnel?.outreachCandidate ?? 0} max={50} color="bg-purple-500" />
                   <div className="pt-2 border-t space-y-1">
-                    <FunnelBar label="Outreach Sent" count={economics?.pipelineSummary?.outreach ?? 0} max={Math.max(economics?.pipelineSummary?.outreach ?? 0, 1)} color="bg-pink-500" />
+                    <FunnelBar label="Notes Delivered" count={economics?.pipelineSummary?.outreach ?? 0} max={Math.max(economics?.pipelineSummary?.outreach ?? 0, 1)} color="bg-pink-500" />
                     <FunnelBar label="Meetings" count={economics?.pipelineSummary?.meetings ?? 0} max={Math.max(economics?.pipelineSummary?.meetings ?? 0, 1)} color="bg-rose-500" />
                     <FunnelBar label="Customers" count={economics?.pipelineSummary?.customers ?? 0} max={Math.max(economics?.pipelineSummary?.customers ?? 0, 1)} color="bg-green-500" />
                   </div>
@@ -267,7 +267,7 @@ export function ArosCommandCenter() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <Mail className="h-4 w-4" /> Outreach Queue Status
+                  <Mail className="h-4 w-4" /> Intelligence Queue Status
                 </CardTitle>
                 <Button variant="ghost" size="sm" onClick={() => setLocation("/aros/outreach")}>
                   Manage <ArrowRight className="h-3 w-3 ml-1" />
@@ -277,7 +277,7 @@ export function ArosCommandCenter() {
             <CardContent>
               {!queueStats || queueStats.length === 0 ? (
                 <div className="text-sm text-muted-foreground py-4 text-center">
-                  No outreach generated yet.
+                  No intelligence notes generated yet.
                 </div>
               ) : (
                 <div className="space-y-2">
@@ -320,7 +320,7 @@ export function ArosCommandCenter() {
                 <div className="space-y-2">
                   {[
                     { label: "Cost per Opportunity", value: economics?.costPerOpportunity ?? 0 },
-                    { label: "Cost per Outreach", value: economics?.costPerOutreach ?? 0 },
+                    { label: "Cost per Intelligence Note", value: economics?.costPerOutreach ?? 0 },
                     { label: "Cost per Meeting", value: economics?.costPerMeeting ?? 0 },
                     { label: "Cost per Proposal", value: economics?.costPerProposal ?? 0 },
                     { label: "Cost per Customer", value: economics?.costPerCustomer ?? 0 },
@@ -358,7 +358,7 @@ export function ArosCommandCenter() {
                 <Target className="h-4 w-4 mr-1" /> Rank Opportunities
               </Button>
               <Button variant="outline" size="sm" onClick={() => setLocation("/aros/outreach")}>
-                <Mail className="h-4 w-4 mr-1" /> Approve Outreach
+                <Mail className="h-4 w-4 mr-1" /> Intelligence Factory
               </Button>
               <Button variant="outline" size="sm" onClick={() => setLocation("/aros/pipeline")}>
                 <GitBranch className="h-4 w-4 mr-1" /> Pipeline Kanban

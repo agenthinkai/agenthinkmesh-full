@@ -136,9 +136,9 @@ export function ArosTokenRoi() {
                     sub="Discovery + scoring"
                   />
                   <EconRow
-                    label="Cost per Outreach"
+                    label="Cost per Intelligence Note"
                     value={economics?.costPerOutreach ? `$${economics.costPerOutreach.toFixed(6)}` : "—"}
-                    sub="Email + brief + teaser"
+                    sub="Decision note + executive brief + LinkedIn message"
                   />
                   <EconRow
                     label="Cost per Meeting"
@@ -259,7 +259,7 @@ export function ArosTokenRoi() {
                   <p className="text-xl font-bold">{economics.pipelineSummary.companies}</p>
                 </div>
                 <div>
-                  <p className="text-xs text-muted-foreground">Outreach</p>
+                  <p className="text-xs text-muted-foreground">Notes Delivered</p>
                   <p className="text-xl font-bold">{economics.pipelineSummary.outreach}</p>
                 </div>
                 <div>

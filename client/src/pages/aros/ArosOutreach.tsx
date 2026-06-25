@@ -1,7 +1,6 @@
-import { toast } from "sonner";
 /**
- * AROS Outreach Queue — Approval queue for CEO emails
- * Approve, reject, mark sent, view email content
+ * Executive Intelligence Factory — Approval queue for Executive Decision Notes
+ * Review, approve, reject, and deliver intelligence notes to executives.
  */
 
 import { useState } from "react";
@@ -25,19 +24,27 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Mail, CheckCircle2, XCircle, Send, Eye, RefreshCw, AlertTriangle, MessageSquare, Calendar, TrendingUp, DollarSign, Loader2 } from "lucide-react";
+import { Brain, CheckCircle2, XCircle, Send, Eye, RefreshCw, AlertTriangle, MessageSquare, Calendar, TrendingUp, DollarSign, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
+type NoteStatus = "PENDING_CEO_REVIEW" | "APPROVED" | "REJECTED" | "SENT" | "BOUNCED";
 
-type OutreachStatus = "PENDING_CEO_REVIEW" | "APPROVED" | "REJECTED" | "SENT" | "BOUNCED";
-
-const STATUS_COLORS: Record<OutreachStatus, string> = {
+const STATUS_COLORS: Record<NoteStatus, string> = {
   PENDING_CEO_REVIEW: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
   APPROVED: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
   REJECTED: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
   SENT: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
   BOUNCED: "bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400",
+};
+
+const STATUS_LABELS: Record<NoteStatus, string> = {
+  PENDING_CEO_REVIEW: "Pending Review",
+  APPROVED: "Approved",
+  REJECTED: "Rejected",
+  SENT: "Delivered",
+  BOUNCED: "Bounced",
 };
 
 const PRIORITY_COLORS: Record<string, string> = {
@@ -48,14 +55,13 @@ const PRIORITY_COLORS: Record<string, string> = {
 };
 
 export function ArosOutreach() {
-  
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [viewItem, setViewItem] = useState<{
     id: number;
     subject: string;
     body: string;
     brief: string;
-    teaser: string;
+    linkedin: string;
     company: string;
     target: string | null;
   } | null>(null);
@@ -63,23 +69,23 @@ export function ArosOutreach() {
   const [rejectReason, setRejectReason] = useState("");
 
   const { data, isLoading, refetch } = trpc.arosOutreachFactory.listQueue.useQuery({
-    status: statusFilter !== "all" ? (statusFilter as OutreachStatus) : undefined,
+    status: statusFilter !== "all" ? (statusFilter as NoteStatus) : undefined,
     limit: 100,
   });
 
   const approveMutation = trpc.arosOutreachFactory.approve.useMutation({
-    onSuccess: () => { toast.success("Approved"); refetch(); },
-    onError: (err) => toast.error(`Error: `),
+    onSuccess: () => { toast.success("Intelligence note approved"); refetch(); },
+    onError: (err) => toast.error(`Error: ${err.message}`),
   });
 
   const rejectMutation = trpc.arosOutreachFactory.reject.useMutation({
-    onSuccess: () => { toast.success("Rejected"); setRejectId(null); setRejectReason(""); refetch(); },
-    onError: (err) => toast.error(`Error: `),
+    onSuccess: () => { toast.success("Intelligence note rejected"); setRejectId(null); setRejectReason(""); refetch(); },
+    onError: (err) => toast.error(`Error: ${err.message}`),
   });
 
   const markSentMutation = trpc.arosOutreachFactory.markSent.useMutation({
-    onSuccess: () => { toast.success("Marked as Sent"); refetch(); },
-    onError: (err) => toast.error(`Error: `),
+    onSuccess: () => { toast.success("Marked as delivered"); refetch(); },
+    onError: (err) => toast.error(`Error: ${err.message}`),
   });
 
   const [sendDialogItem, setSendDialogItem] = useState<{ id: number; subject: string | null; body: string | null; company: string } | null>(null);
@@ -88,24 +94,24 @@ export function ArosOutreach() {
 
   const sendEmailMutation = trpc.arosOutreachFactory.sendEmail.useMutation({
     onSuccess: (data: { resendId?: string }) => {
-      toast.success(`Email sent! Resend ID: ${data.resendId}`);
+      toast.success(`Intelligence note delivered. ID: ${data.resendId}`);
       setSendDialogItem(null);
       setSendToEmail("");
       setSendToName("");
       refetch();
     },
-    onError: (err: { message: string }) => toast.error(`Send failed: ${err.message}`),
+    onError: (err: { message: string }) => toast.error(`Delivery failed: ${err.message}`),
   });
 
   const recordReplyMutation = trpc.arosOutreachFactory.recordReply.useMutation({
-    onSuccess: () => { toast.success("Reply recorded — pipeline advanced"); refetch(); },
+    onSuccess: () => { toast.success("Executive reply recorded — pipeline advanced"); refetch(); },
     onError: (err: { message: string }) => toast.error(`Error: ${err.message}`),
   });
 
   const { data: statsData } = trpc.arosOutreachFactory.getQueueStats.useQuery();
   const rows = data?.rows ?? [];
   const pending = rows.filter(r => r.outreach.approvalStatus === "PENDING_CEO_REVIEW").length;
-  const sentCount = statsData?.find(s => s.status === "SENT")?.count ?? 0;
+  const deliveredCount = statsData?.find(s => s.status === "SENT")?.count ?? 0;
   const repliedCount = rows.filter(r => r.outreach.repliedAt).length;
 
   return (
@@ -115,27 +121,27 @@ export function ArosOutreach() {
         <div className="flex items-center justify-between">
           <div>
             <div className="flex items-center gap-2 mb-1">
-              <Mail className="h-5 w-5 text-primary" />
-              <h1 className="text-xl font-bold">Outreach Approval Queue</h1>
+              <Brain className="h-5 w-5 text-primary" />
+              <h1 className="text-xl font-bold">Executive Intelligence Factory</h1>
             </div>
             <p className="text-sm text-muted-foreground">
               {pending > 0 ? (
                 <span className="text-yellow-600 font-medium flex items-center gap-1">
-                  <AlertTriangle className="h-3.5 w-3.5" /> {pending} pending CEO review
+                  <AlertTriangle className="h-3.5 w-3.5" /> {pending} intelligence notes pending review
                 </span>
-              ) : "All outreach reviewed"}
+              ) : "All intelligence notes reviewed"}
             </p>
           </div>
           <div className="flex gap-2">
             <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-44 h-9">
+              <SelectTrigger className="w-48 h-9">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="PENDING_CEO_REVIEW">Pending Review</SelectItem>
                 <SelectItem value="APPROVED">Approved</SelectItem>
-                <SelectItem value="SENT">Sent</SelectItem>
+                <SelectItem value="SENT">Delivered</SelectItem>
                 <SelectItem value="REJECTED">Rejected</SelectItem>
               </SelectContent>
             </Select>
@@ -169,11 +175,11 @@ export function ArosOutreach() {
         {/* Stats */}
         <div className="grid grid-cols-3 md:grid-cols-5 gap-3">
           {[
-            { label: "Total", value: data?.total ?? 0 },
+            { label: "Total Notes", value: data?.total ?? 0 },
             { label: "Pending Review", value: pending },
             { label: "Approved", value: statsData?.find(s => s.status === "APPROVED")?.count ?? 0 },
-            { label: "Sent", value: sentCount },
-            { label: "Replied", value: repliedCount },
+            { label: "Delivered", value: deliveredCount },
+            { label: "Executive Replies", value: repliedCount },
           ].map((s) => (
             <Card key={s.label}>
               <CardContent className="p-3">
@@ -186,11 +192,11 @@ export function ArosOutreach() {
 
         {/* Queue */}
         {isLoading ? (
-          <div className="text-center py-12 text-muted-foreground">Loading queue...</div>
+          <div className="text-center py-12 text-muted-foreground">Loading intelligence queue...</div>
         ) : rows.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center text-muted-foreground">
-              No outreach in queue. Generate outreach from the Top 20 Opportunities page.
+              No intelligence notes in queue. Generate from the Top 20 Opportunities page.
             </CardContent>
           </Card>
         ) : (
@@ -210,7 +216,7 @@ export function ArosOutreach() {
                     <p className="font-semibold text-sm">{company.companyName}</p>
                     <p className="text-xs text-muted-foreground">{company.sector} · {company.country}</p>
                     <p className="text-xs mt-0.5 text-muted-foreground truncate">
-                      Subject: {outreach.emailSubject}
+                      Note: {outreach.emailSubject}
                     </p>
                     {outreach.targetName && (
                       <p className="text-xs text-muted-foreground">To: {outreach.targetName} ({outreach.targetTitle})</p>
@@ -227,8 +233,8 @@ export function ArosOutreach() {
 
                   {/* Status */}
                   <div className="shrink-0">
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[outreach.approvalStatus as OutreachStatus] ?? ""}`}>
-                      {outreach.approvalStatus?.replace(/_/g, " ")}
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[outreach.approvalStatus as NoteStatus] ?? ""}`}>
+                      {STATUS_LABELS[outreach.approvalStatus as NoteStatus] ?? outreach.approvalStatus?.replace(/_/g, " ")}
                     </span>
                   </div>
 
@@ -238,12 +244,13 @@ export function ArosOutreach() {
                       variant="ghost"
                       size="sm"
                       className="h-8 w-8 p-0"
+                      title="View intelligence note"
                       onClick={() => setViewItem({
                         id: outreach.id,
                         subject: outreach.emailSubject ?? "",
                         body: outreach.emailBody ?? "",
                         brief: outreach.executiveBrief ?? "",
-                        teaser: outreach.sdrTeaser ?? "",
+                        linkedin: outreach.sdrTeaser ?? "",
                         company: company.companyName,
                         target: outreach.targetName,
                       })}
@@ -256,6 +263,7 @@ export function ArosOutreach() {
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0 text-green-600 hover:text-green-700"
+                          title="Approve"
                           onClick={() => approveMutation.mutate({ outreachId: outreach.id })}
                         >
                           <CheckCircle2 className="h-4 w-4" />
@@ -264,6 +272,7 @@ export function ArosOutreach() {
                           variant="ghost"
                           size="sm"
                           className="h-8 w-8 p-0 text-red-600 hover:text-red-700"
+                          title="Reject"
                           onClick={() => setRejectId(outreach.id)}
                         >
                           <XCircle className="h-4 w-4" />
@@ -275,7 +284,7 @@ export function ArosOutreach() {
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700"
-                        title="Send via Resend"
+                        title="Deliver intelligence note"
                         onClick={() => {
                           setSendDialogItem({ id: outreach.id, subject: outreach.emailSubject, body: outreach.emailBody, company: company.companyName });
                           setSendToEmail(outreach.targetEmail ?? "");
@@ -290,7 +299,7 @@ export function ArosOutreach() {
                         variant="ghost"
                         size="sm"
                         className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700"
-                        title="Record reply"
+                        title="Record executive reply"
                         onClick={() => recordReplyMutation.mutate({ outreachId: outreach.id })}
                         disabled={recordReplyMutation.isPending}
                       >
@@ -304,24 +313,24 @@ export function ArosOutreach() {
           </div>
         )}
 
-        {/* View Email Modal */}
+        {/* View Intelligence Note Modal */}
         <Dialog open={!!viewItem} onOpenChange={() => setViewItem(null)}>
           <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>{viewItem?.company} — Outreach Package</DialogTitle>
+              <DialogTitle>{viewItem?.company} — Intelligence Package</DialogTitle>
             </DialogHeader>
             {viewItem && (
               <div className="space-y-4 text-sm">
                 <div className="bg-muted/30 rounded-lg p-4">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">CEO Email</p>
+                  <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">Executive Decision Note</p>
                   <p className="font-medium mb-2">Subject: {viewItem.subject}</p>
                   {viewItem.target && <p className="text-muted-foreground mb-2">To: {viewItem.target}</p>}
                   <p className="whitespace-pre-wrap leading-relaxed">{viewItem.body}</p>
                 </div>
-                {viewItem.teaser && (
+                {viewItem.linkedin && (
                   <div className="bg-muted/30 rounded-lg p-4">
-                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">SDR Teaser</p>
-                    <p className="leading-relaxed">{viewItem.teaser}</p>
+                    <p className="text-xs font-semibold text-muted-foreground uppercase mb-2">LinkedIn Intelligence Message</p>
+                    <p className="leading-relaxed">{viewItem.linkedin}</p>
                   </div>
                 )}
                 {viewItem.brief && (
@@ -346,18 +355,18 @@ export function ArosOutreach() {
           </DialogContent>
         </Dialog>
 
-        {/* Send Email Dialog */}
+        {/* Deliver Intelligence Note Dialog */}
         <Dialog open={!!sendDialogItem} onOpenChange={() => setSendDialogItem(null)}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Send Email — {sendDialogItem?.company}</DialogTitle>
+              <DialogTitle>Deliver Intelligence Note — {sendDialogItem?.company}</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 py-2">
               <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded text-xs text-amber-800 dark:text-amber-300">
-                Sends from <strong>farouq@agenthink.ai</strong> with CC to <strong>farouqsultan@gmail.com</strong>. A copy is always sent to your review address.
+                Delivers from <strong>farouq@agenthink.ai</strong> with CC to <strong>farouqsultan@gmail.com</strong>. A copy is always sent to your review address.
               </div>
               <div>
-                <Label className="text-xs">Recipient Email *</Label>
+                <Label className="text-xs">Executive Email *</Label>
                 <Input
                   value={sendToEmail}
                   onChange={(e) => setSendToEmail(e.target.value)}
@@ -366,7 +375,7 @@ export function ArosOutreach() {
                 />
               </div>
               <div>
-                <Label className="text-xs">Recipient Name</Label>
+                <Label className="text-xs">Executive Name</Label>
                 <Input
                   value={sendToName}
                   onChange={(e) => setSendToName(e.target.value)}
@@ -389,7 +398,7 @@ export function ArosOutreach() {
                 className="bg-emerald-600 hover:bg-emerald-700"
               >
                 {sendEmailMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Send className="h-4 w-4 mr-2" />}
-                Send Now
+                Deliver Now
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -399,10 +408,10 @@ export function ArosOutreach() {
         <Dialog open={!!rejectId} onOpenChange={() => { setRejectId(null); setRejectReason(""); }}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Reject Outreach</DialogTitle>
+              <DialogTitle>Reject Intelligence Note</DialogTitle>
             </DialogHeader>
             <Textarea
-              placeholder="Reason for rejection..."
+              placeholder="Reason for rejection — Atlas will use this to improve future notes..."
               value={rejectReason}
               onChange={e => setRejectReason(e.target.value)}
               rows={3}

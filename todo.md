@@ -5201,3 +5201,21 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Create daily loop Heartbeat cron (0 0 6 * * 1-4,0 — Sun-Thu 06:00 UTC = 09:00 Kuwait)
 - [x] Create weekly expand Heartbeat cron (0 0 5 * * 0 — Sunday 05:00 UTC = 08:00 Kuwait)
 - [ ] Verify both crons listed and active in Heartbeat dashboard
+
+## Executive Intelligence Factory Rename
+
+- [x] Create server/routers/aros/executiveIntelligenceFactory.ts with new 4-paragraph LLM prompt
+- [x] LLM prompt: Decision Recognition, Hidden Variable, Decision Twin, Invitation structure
+- [x] Quality tests in prompt: specificity, curiosity, tone
+- [x] Remove all "email/outreach" language from LLM system prompt; use "intelligence note" throughout
+- [x] Deliverables renamed: emailSubject → noteSubject, emailBody → noteBody, sdrTeaser → linkedinMessage
+- [x] Export new router from aros/index.ts with backward-compat alias for existing client calls
+- [x] Register arosExecutiveIntelligenceFactory as canonical router key in routers.ts
+- [x] Rename nav item: "AROS Outreach" → "Intelligence Factory" in DashboardLayout
+- [x] Rewrite ArosOutreach.tsx: all labels use Executive Intelligence Factory terminology
+- [x] Update ArosOpportunities.tsx: "Generate Outreach" → "Generate Intelligence Note"
+- [x] Update ArosCommandCenter.tsx: "Outreach Candidates" → "Intelligence Ready", "Outreach Sent" → "Notes Delivered", "Outreach Queue Status" → "Intelligence Queue Status"
+- [x] Update ArosCommandCenterV2.tsx: "Outreach" → "Notes Delivered", funnel label, calibration rate label
+- [x] Update ArosPipeline.tsx: "Outreach → Response" → "Note Delivered → Response"
+- [x] Update ArosTokenRoi.tsx: "Cost per Outreach" → "Cost per Intelligence Note", sublabel updated
+- [x] Update ArosOperations.tsx: "Emails Sent" → "Notes Delivered", "Outreach Sent" → "Notes Delivered", "Outreach Ready" → "Intelligence Ready"

@@ -317,9 +317,9 @@ export default function ArosOperations() {
           />
           <StatusCard
             icon={Mail}
-            label="Emails Sent"
+            label="Notes Delivered"
             value={fmt(emailsSent)}
-            subValue={`${fmt(emailsPending)} pending approval`}
+            subValue={`${fmt(emailsPending)} pending review`}
             color="text-violet-400"
             status={emailsPending > 0 ? "warning" : "ok"}
           />
@@ -387,7 +387,7 @@ export default function ArosOperations() {
             <CardContent>
               {[
                 { stage: "Researched", count: stageMap["RESEARCHED"] ?? 0, color: "bg-slate-600" },
-                { stage: "Outreach Sent", count: totalOutreach, color: "bg-blue-500" },
+                { stage: "Notes Delivered", count: totalOutreach, color: "bg-blue-500" },
                 { stage: "Responses", count: totalResponses, color: "bg-violet-500" },
                 { stage: "Meetings", count: totalMeetings, color: "bg-amber-500" },
                 { stage: "Proposals", count: totalProposals, color: "bg-orange-500" },
@@ -516,7 +516,7 @@ export default function ArosOperations() {
                 { tier: "UNIVERSE", label: "Universe", count: funnel?.universe ?? 0, color: "text-slate-400", bg: "bg-slate-700/30", desc: "Monthly monitoring" },
                 { tier: "ACTIVE", label: "Active", count: funnel?.active ?? 0, color: "text-blue-400", bg: "bg-blue-500/10", desc: "Weekly monitoring" },
                 { tier: "HIGH_PRIORITY", label: "High Priority", count: funnel?.highPriority ?? 0, color: "text-amber-400", bg: "bg-amber-500/10", desc: "Daily monitoring" },
-                { tier: "OUTREACH_CANDIDATE", label: "Outreach Ready", count: funnel?.outreachCandidate ?? 0, color: "text-emerald-400", bg: "bg-emerald-500/10", desc: "Continuous monitoring" },
+                { tier: "OUTREACH_CANDIDATE", label: "Intelligence Ready", count: funnel?.outreachCandidate ?? 0, color: "text-emerald-400", bg: "bg-emerald-500/10", desc: "Continuous monitoring" },
               ].map(({ label, count, color, bg, desc }) => (
                 <div key={label} className={`${bg} rounded-lg p-4 border border-slate-700/30`}>
                   <p className="text-xs text-slate-500 mb-1">{label}</p>

@@ -304,7 +304,7 @@ export default function ArosCommandCenterV2() {
             </div>
             <div className="grid grid-cols-4 gap-2 text-center">
               {[
-                { label: "Outreach", value: totalOutreach },
+                { label: "Notes Delivered", value: totalOutreach },
                 { label: "Responses", value: totalResponses },
                 { label: "Meetings", value: totalMeetings },
                 { label: "Customers", value: totalCustomers },
@@ -344,7 +344,7 @@ export default function ArosCommandCenterV2() {
             icon={MessageSquare}
             label="Executive Conversations"
             value={String(totalResponses)}
-            subValue={`${totalOutreach} outreach sent`}
+            subValue={`${totalOutreach} notes delivered`}
             color="text-blue-400"
           />
           <KpiCard
@@ -422,7 +422,7 @@ export default function ArosCommandCenterV2() {
                 <CardContent className="space-y-3">
                   {[
                     { label: "Researched", value: funnel?.totalCompanies ?? 0, color: "bg-slate-600", pctOf: null },
-                    { label: "Outreach Sent", value: totalOutreach, color: "bg-blue-600", pctOf: funnel?.totalCompanies },
+                    { label: "Notes Delivered", value: totalOutreach, color: "bg-blue-600", pctOf: funnel?.totalCompanies },
                     { label: "Responses", value: totalResponses, color: "bg-cyan-600", pctOf: totalOutreach },
                     { label: "Meetings", value: totalMeetings, color: "bg-amber-600", pctOf: totalResponses },
                     { label: "Proposals", value: totalProposals, color: "bg-orange-600", pctOf: totalMeetings },
@@ -497,7 +497,7 @@ export default function ArosCommandCenterV2() {
                 </CardHeader>
                 <CardContent className="space-y-5">
                   <AccuracyGauge
-                    label="Outreach → Response Rate"
+                    label="Note Delivered → Response Rate"
                     predicted={0.10}
                     actual={totalOutreach > 0 ? totalResponses / totalOutreach : null}
                     sampleSize={totalOutreach}
