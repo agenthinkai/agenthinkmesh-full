@@ -5186,3 +5186,18 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Track FIRST_MEETING milestone
 - [ ] Track FIRST_PROPOSAL milestone
 - [ ] Track FIRST_CUSTOMER milestone
+
+## ATLAS Phase 7 — Operational Mode (Continuous Autonomous Loop)
+
+- [x] Apply §5c patches to server/_core/sdk.ts and server/_core/types/manusTypes.ts for cron auth
+- [x] Build /api/scheduled/atlas-daily-loop handler (all 16 steps)
+- [x] Build /api/scheduled/atlas-weekly-expand handler (universe growth, DT generation, calibration) — atlasWeeklyExpansion.ts
+- [x] Mount both handlers in server/_core/index.ts before Vite fallthrough
+- [x] Build ArosOperations.tsx dashboard (primary + secondary KPIs, cron schedules, pipeline funnel, calibration, token economics)
+- [x] Add AROS Operations nav item to DashboardLayout sidebar
+- [x] Register /aros/operations route in App.tsx
+- [x] Write vitest tests for both scheduled handlers (server/scheduled.test.ts — 7 tests, all passing)
+- [ ] Save checkpoint and deploy
+- [x] Create daily loop Heartbeat cron (0 0 6 * * 1-4,0 — Sun-Thu 06:00 UTC = 09:00 Kuwait)
+- [x] Create weekly expand Heartbeat cron (0 0 5 * * 0 — Sunday 05:00 UTC = 08:00 Kuwait)
+- [ ] Verify both crons listed and active in Heartbeat dashboard

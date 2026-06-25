@@ -112,6 +112,7 @@ const menuItems = [
   { icon: GitBranch, label: "AROS Pipeline", path: "/aros/pipeline", group: "advanced" },
   { icon: Coins, label: "AROS Token ROI", path: "/aros/token-roi", group: "advanced" },
   { icon: Activity, label: "AROS Command V2", path: "/aros/command-center", group: "advanced" },
+  { icon: Zap, label: "AROS Operations", path: "/aros/operations", group: "advanced" },
   { icon: Shield, label: "Security Keys", path: "/security-keys", group: "account" },
 ];
 

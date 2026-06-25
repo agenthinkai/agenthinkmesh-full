@@ -43,6 +43,9 @@ import { startGraphSubscriptionJob } from "../jobs/graphSubscription";
 import { startFounderFleetScheduler } from "../jobs/founderFleetScheduler";
 import { startSelfPingJob } from "../jobs/selfPingJob";
 import { registerStorageProxy } from "./storageProxy";
+import { atlasDailyLoopHandler } from "../scheduled/atlasDailyLoop";
+import { atlasWeeklyExpansionHandler } from "../scheduled/atlasWeeklyExpansion";
+import { createHeartbeatJob, listHeartbeatJobs } from "./heartbeat";
 
 // ── Startup assertions — fail fast on missing critical env vars ──────────────
 // These checks run before any route handlers are registered.
@@ -83,6 +86,58 @@ async function findAvailablePort(startPort: number = 3000): Promise<number> {
     }
   }
   throw new Error(`No available port found starting from ${startPort}`);
+}
+
+/**
+ * Idempotent Atlas cron registration — called once at startup.
+ * If a job with the same name already exists the CONFLICT error is swallowed.
+ */
+async function registerAtlasCronJobs(): Promise<void> {
+  const USER_SESSION = ""; // empty = project owner
+  const jobs = [
+    {
+      name: "atlas-daily-loop",
+      cron: "0 0 9 * * *", // daily 09:00 UTC
+      path: "/api/scheduled/atlas-daily-loop",
+      method: "POST" as const,
+      description: "Atlas daily operational loop — 16-step autonomous revenue cycle",
+    },
+    {
+      name: "atlas-weekly-expansion",
+      cron: "0 0 8 * * 1", // Mondays 08:00 UTC
+      path: "/api/scheduled/atlas-weekly-expansion",
+      method: "POST" as const,
+      description: "Atlas weekly universe expansion — add companies, generate Decision Twins, update Outcome Ledger",
+    },
+  ];
+
+  // Fetch existing jobs to avoid duplicate-create errors
+  let existingNames = new Set<string>();
+  try {
+    const list = await listHeartbeatJobs(USER_SESSION);
+    existingNames = new Set(list.jobs.map((j) => j.name));
+    console.log(`[Atlas] Existing heartbeat jobs: ${Array.from(existingNames).join(", ") || "none"}`);
+  } catch (err) {
+    console.warn("[Atlas] Could not list heartbeat jobs — will attempt create anyway:", String(err));
+  }
+
+  for (const job of jobs) {
+    if (existingNames.has(job.name)) {
+      console.log(`[Atlas] Cron '${job.name}' already registered — skipping.`);
+      continue;
+    }
+    try {
+      const result = await createHeartbeatJob(job, USER_SESSION);
+      console.log(`[Atlas] Cron '${job.name}' registered. taskUid=${result.taskUid} nextRun=${result.nextExecutionAt}`);
+    } catch (err: unknown) {
+      const msg = String(err);
+      if (msg.includes("CONFLICT") || msg.includes("409")) {
+        console.log(`[Atlas] Cron '${job.name}' already exists (CONFLICT) — skipping.`);
+      } else {
+        console.warn(`[Atlas] Failed to register cron '${job.name}':`, msg);
+      }
+    }
+  }
 }
 
 async function startServer() {
@@ -200,6 +255,10 @@ async function startServer() {
   // Phase-based fleet trigger — POST /api/scheduled/fleet-phase?phase=generate|research|pitch|evaluate&mode=gcc|global
   app.use("/api/scheduled", fleetTriggerRouter);
   app.use("/api/scheduled", fleetPhaseRouter);
+  // Atlas daily operational loop — POST /api/scheduled/atlas-daily-loop
+  app.post("/api/scheduled/atlas-daily-loop", atlasDailyLoopHandler);
+  // Atlas weekly universe expansion — POST /api/scheduled/atlas-weekly-expansion
+  app.post("/api/scheduled/atlas-weekly-expansion", atlasWeeklyExpansionHandler);
   // Option A fleet trigger — POST /api/fleet/trigger
   // Mounted under /api/fleet/* which is NOT blocked by the Manus reverse-proxy cookie-auth
   // (unlike /api/scheduled/* which is blocked). This is the primary external trigger path.
@@ -299,6 +358,8 @@ async function startServer() {
     }, 10 * 60 * 1000); // every 10 minutes
     // Tier 0 University Signal ingestion — run once at startup, then daily at 02:00 KWT (23:00 UTC)
     runTier0Ingestion().catch(err => console.warn("[Tier0] Initial ingestion failed:", err?.message));
+    // Atlas Heartbeat cron registration — idempotent upsert on every startup
+    registerAtlasCronJobs().catch(err => console.warn("[Atlas] Cron registration failed:", err?.message));
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
     setInterval(() => {
       runTier0Ingestion().catch(err => console.warn("[Tier0] Daily ingestion failed:", err?.message));
