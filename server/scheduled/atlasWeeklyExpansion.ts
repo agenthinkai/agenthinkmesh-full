@@ -37,17 +37,60 @@ const COMPANIES_PER_RUN = 20; // new companies to add each week
 const DT_BATCH_SIZE = 10;     // Decision Twins to generate for new companies
 
 // Rotating sector/geography pairs to ensure diverse coverage
+// V2 Global Coverage: 10 sectors × 7 regions = 70 target pairs
+// Directive sectors: AI Transformation, Capital Allocation, Acquisition/Divestiture,
+//   CEO Transition, Infrastructure Investment, Regulatory Change, Data Sovereignty,
+//   Platform Transformation, Market Expansion, Digital Operating Model Redesign
+// Directive regions: North America, Europe, United Kingdom, Middle East, Asia-Pacific,
+//   Major Sovereign Funds, Global Banks
 const EXPANSION_TARGETS = [
-  { sector: "Banks", geography: "United States" },
+  // North America
+  { sector: "Global Banks", geography: "United States" },
+  { sector: "Infrastructure Investors", geography: "United States" },
+  { sector: "Healthcare Systems", geography: "United States" },
+  { sector: "Industrial Technology", geography: "United States" },
+  { sector: "Asset Managers", geography: "Canada" },
+  { sector: "Energy Companies", geography: "Canada" },
+  // Europe
+  { sector: "Global Banks", geography: "Germany" },
+  { sector: "Telecommunications", geography: "Germany" },
+  { sector: "Industrial Technology", geography: "France" },
+  { sector: "Asset Managers", geography: "Netherlands" },
+  { sector: "Energy Companies", geography: "Norway" },
+  { sector: "Healthcare Systems", geography: "Switzerland" },
+  // United Kingdom
+  { sector: "Global Banks", geography: "United Kingdom" },
   { sector: "Asset Managers", geography: "United Kingdom" },
-  { sector: "Infrastructure Investors", geography: "Australia" },
-  { sector: "Telecom Operators", geography: "Germany" },
-  { sector: "Energy Companies", geography: "UAE" },
-  { sector: "Banks", geography: "Canada" },
+  { sector: "Infrastructure Investors", geography: "United Kingdom" },
+  { sector: "Telecommunications", geography: "United Kingdom" },
+  // Middle East
+  { sector: "Sovereign Funds", geography: "Saudi Arabia" },
+  { sector: "Global Banks", geography: "UAE" },
+  { sector: "Infrastructure Investors", geography: "UAE" },
+  { sector: "Energy Companies", geography: "Kuwait" },
+  { sector: "Sovereign Funds", geography: "Qatar" },
+  { sector: "Asset Managers", geography: "Bahrain" },
+  // Asia-Pacific
+  { sector: "Global Banks", geography: "Japan" },
+  { sector: "Industrial Technology", geography: "Japan" },
+  { sector: "Telecommunications", geography: "South Korea" },
   { sector: "Asset Managers", geography: "Singapore" },
-  { sector: "Infrastructure Investors", geography: "Saudi Arabia" },
-  { sector: "Telecom Operators", geography: "France" },
-  { sector: "Energy Companies", geography: "Japan" },
+  { sector: "Infrastructure Investors", geography: "Australia" },
+  { sector: "Healthcare Systems", geography: "Australia" },
+  { sector: "Energy Companies", geography: "India" },
+  { sector: "Industrial Technology", geography: "China" },
+  // Major Sovereign Funds (global)
+  { sector: "Sovereign Funds", geography: "Norway" },
+  { sector: "Sovereign Funds", geography: "Singapore" },
+  { sector: "Sovereign Funds", geography: "Abu Dhabi" },
+  { sector: "Sovereign Funds", geography: "China" },
+  { sector: "Sovereign Funds", geography: "Kuwait" },
+  // Global Banks (cross-border)
+  { sector: "Global Banks", geography: "Switzerland" },
+  { sector: "Global Banks", geography: "France" },
+  { sector: "Global Banks", geography: "Singapore" },
+  { sector: "Global Banks", geography: "Japan" },
+  { sector: "Global Banks", geography: "India" },
 ] as const;
 
 // Monitoring frequency by tier (days)

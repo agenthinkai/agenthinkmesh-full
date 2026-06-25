@@ -307,18 +307,19 @@ Return JSON array: [{"company_name": string, "signal_type": "ai_transformation"|
     results.push({ step: "5_recalculate_scores", count: scoresUpdated });
 
     // ── Step 6 & 7: Generate outreach candidates and queue ───────────────────
+    // V2: Triple-gate — SSS≥90, ESI≥85, Confidence≥80
+    // Queue classification: IMMEDIATE (max 10/day) | WATCH | MONITOR
     let outreachQueued = 0;
+    let immediateQueued = 0;
+    const IMMEDIATE_MAX_PER_DAY = 10;
     const topCandidates = await dbClient
       .select()
       .from(arosCompanies)
       .where(
-        and(
-          sql`${arosCompanies.opportunityScore} >= 85`,
-          sql`${arosCompanies.opportunityScore} >= 70`
-        )
+        sql`${arosCompanies.opportunityScore} >= 65`
       )
       .orderBy(desc(arosCompanies.opportunityScore))
-      .limit(OUTREACH_CANDIDATES_PER_DAY * 2);
+      .limit(OUTREACH_CANDIDATES_PER_DAY * 4);
 
     // Check which ones don't already have queued outreach
     for (const candidate of topCandidates) {
@@ -332,22 +333,60 @@ Return JSON array: [{"company_name": string, "signal_type": "ai_transformation"|
 
       if (existing.length > 0) continue;
 
+      // ── V2 Triple-Gate: classify queue before generating brief ────────────
+      const sss = candidate.sss ?? 0;
+      const esi = candidate.esi ?? 0;
+      const confidence = candidate.opportunityScore ?? 0;
+      const qualityGatePassed = candidate.qualityGatePassed === 1;
+
+      // Determine queue classification
+      let atlasQueue: "IMMEDIATE" | "WATCH" | "MONITOR" = "MONITOR";
+      if (sss >= 90 && esi >= 85 && confidence >= 80 && qualityGatePassed) {
+        atlasQueue = "IMMEDIATE";
+      } else if (sss >= 65 || esi >= 60) {
+        atlasQueue = "WATCH";
+      }
+
+      // Only generate a brief for IMMEDIATE queue (max 10/day)
+      if (atlasQueue !== "IMMEDIATE" || immediateQueued >= IMMEDIATE_MAX_PER_DAY) {
+        // Still record the WATCH/MONITOR entry so it appears in the daily ranked table
+        if (atlasQueue === "WATCH") {
+          await dbClient.insert(arosOutreachQueue).values({
+            companyId: candidate.id,
+            emailSubject: `[WATCH] ${candidate.companyName} — Strategic Decision Detected`,
+            emailBody: `SSS: ${sss} | ESI: ${esi} | Confidence: ${confidence}. Decision not yet mature enough for brief generation. Continue monitoring.`,
+            executiveBrief: candidate.decisionTwin ?? "Decision Twin pending",
+            sdrTeaser: "Monitoring active",
+            approvalStatus: "PENDING_CEO_REVIEW",
+            priority: "MEDIUM",
+            sss,
+            esi,
+            decisionLevel: candidate.decisionLevel ?? "LEVEL_3",
+            qualityGatePassed: 0,
+            atlasQueue: "WATCH",
+            updatedAt: Date.now(),
+          });
+          outreachQueued++;
+        }
+        continue;
+      }
+
       try {
         const outreachResponse = await invokeLLM({
           messages: [
             {
               role: "system",
-              content: "You are an enterprise sales strategist. Write a concise, personalized outreach email for a C-suite executive."
+              content: "You are Atlas, an Executive Intelligence Operating System. You generate unsolicited strategic intelligence notes for C-suite executives. Every note must answer: What decision is this executive facing? What is the one hidden variable? Why does it matter now? What question should they be asking?"
             },
             {
               role: "user",
-              content: `Write outreach for ${candidate.companyName} (${candidate.sector}, ${candidate.country}). Score: ${candidate.opportunityScore}/100. Focus on AI transformation opportunity. Return JSON with: email_subject, email_body (150-200 words), executive_brief (50 words), sdr_teaser (30 words).`
+              content: `Generate an Executive Intelligence Brief for ${candidate.companyName} (${candidate.sector}, ${candidate.country}). SSS: ${sss}/100. ESI: ${esi}/100. Decision Twin: ${candidate.decisionTwin ?? "Not available"}. Active Strategic Initiative: ${candidate.activeStrategicInitiative ?? "Not available"}. Return JSON with: email_subject, email_body (150-200 words, 4-paragraph structure: Decision Recognition, Hidden Variable, Decision Twin outcome, Invitation), executive_brief (50 words), sdr_teaser (30 words), confidence (0-100).`
             }
           ],
           response_format: {
             type: "json_schema",
             json_schema: {
-              name: "outreach_content",
+              name: "intelligence_brief",
               strict: true,
               schema: {
                 type: "object",
@@ -355,9 +394,10 @@ Return JSON array: [{"company_name": string, "signal_type": "ai_transformation"|
                   email_subject: { type: "string" },
                   email_body: { type: "string" },
                   executive_brief: { type: "string" },
-                  sdr_teaser: { type: "string" }
+                  sdr_teaser: { type: "string" },
+                  confidence: { type: "number" }
                 },
-                required: ["email_subject", "email_body", "executive_brief", "sdr_teaser"],
+                required: ["email_subject", "email_body", "executive_brief", "sdr_teaser", "confidence"],
                 additionalProperties: false
               }
             }
@@ -367,21 +407,27 @@ Return JSON array: [{"company_name": string, "signal_type": "ai_transformation"|
         const rawContent = outreachResponse.choices?.[0]?.message?.content;
         const content = typeof rawContent === "string" ? rawContent : null;
         if (content) {
-          const outreach = JSON.parse(content);
+          const brief = JSON.parse(content) as { email_subject: string; email_body: string; executive_brief: string; sdr_teaser: string; confidence: number };
           await dbClient.insert(arosOutreachQueue).values({
             companyId: candidate.id,
-            emailSubject: outreach.email_subject,
-            emailBody: outreach.email_body,
-            executiveBrief: outreach.executive_brief,
-            sdrTeaser: outreach.sdr_teaser,
+            emailSubject: brief.email_subject,
+            emailBody: brief.email_body,
+            executiveBrief: brief.executive_brief,
+            sdrTeaser: brief.sdr_teaser,
             approvalStatus: "PENDING_CEO_REVIEW",
-            priority: candidate.opportunityScore >= 95 ? "IMMEDIATE" : candidate.opportunityScore >= 85 ? "HIGH" : "MEDIUM",
+            priority: "IMMEDIATE",
+            sss,
+            esi,
+            decisionLevel: candidate.decisionLevel ?? "LEVEL_4",
+            qualityGatePassed: 1,
+            atlasQueue: "IMMEDIATE",
             updatedAt: Date.now(),
           });
           outreachQueued++;
+          immediateQueued++;
         }
       } catch (err) {
-        console.error(`[DailyLoop] Outreach generation error for ${candidate.companyName}:`, err);
+        console.error(`[DailyLoop] Brief generation error for ${candidate.companyName}:`, err);
       }
     }
 

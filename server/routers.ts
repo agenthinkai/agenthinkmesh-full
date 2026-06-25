@@ -60,6 +60,7 @@ import {
   arosHiddenVariableRouter,
   arosMonitoringRouter,
   constitutionRouter,
+  significanceConfigRouter,
 } from "./routers/aros";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
@@ -163,6 +164,7 @@ export const appRouter = router({
   arosHiddenVariable: arosHiddenVariableRouter,
   arosMonitoring: arosMonitoringRouter,
   arosConstitution: constitutionRouter,
+  arosSignificance: significanceConfigRouter,
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   auth: router({

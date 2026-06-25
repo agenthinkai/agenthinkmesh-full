@@ -15,3 +15,4 @@ export { arosCalibrationRouter } from "./calibration";
 export { arosHiddenVariableRouter } from "./hiddenVariable";
 export { arosMonitoringRouter } from "./monitoring";
 export { constitutionRouter } from "./constitution";
+export { significanceConfigRouter } from "./significanceConfig";

@@ -5246,3 +5246,43 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Build ArosConstitutionPerformance.tsx dashboard (/aros/constitution/performance) with admin review generation
 - [x] Add History and Performance nav items to DashboardLayout
 - [x] Register /aros/constitution/history and /aros/constitution/performance routes in App.tsx
+
+## Strategic Significance Engine (Phase 7)
+
+- [ ] Schema: add sss (Strategic Significance Score 0-100), esi (Executive Surprise Index 0-100), decisionLevel (LEVEL_1/2/3/4), sssEconomicImpact, sssIrreversibility, sssTimeCriticality, sssHiddenVariableStrength, sssExecutiveRelevance, sssNovelty, qualityGateActionable, qualityGateEvidenceBased, qualityGateDifferentiated, qualityGateBoardRelevant, qualityGatePassed, sssCalculatedAt to aros_companies
+- [ ] Schema: add sss, esi, decisionLevel, qualityGatePassed to aros_outreach_queue
+- [ ] Schema: add atlas_significance_config table (threshold, autoRejectBelow, notifyOnLevel4, updatedAt)
+- [ ] DB migration applied
+- [ ] Server: strategicSignificanceEngine.ts — LLM scorer returning all 6 dimensions + ESI + Decision Level + Quality Gate
+- [ ] Server: wire significance scoring into opportunity scoring flow (atlasDailyLoop step 5)
+- [ ] Server: gate brief generation — reject if sss < threshold OR qualityGatePassed = false
+- [ ] Server: significanceConfig tRPC router (getConfig, updateThreshold, getScoreDistribution, getDecisionHierarchySummary)
+- [ ] Server: wire significanceConfig router into appRouter
+- [ ] UI: ArosSignificance.tsx — score distribution histogram, Decision Hierarchy breakdown, ESI gauge, threshold controls, top-scored decisions
+- [ ] UI: Update ArosOutreach.tsx (Intelligence Factory) — show SSS badge, ESI score, Decision Level chip, Quality Gate result per brief
+- [ ] UI: Update ArosCommandCenterV2.tsx — replace activity KPIs with North Star metrics (ESI, SSS, HV Accuracy, DT Accuracy)
+- [ ] Add "Strategic Significance" nav item to DashboardLayout
+- [ ] Register /aros/significance route in App.tsx
+- [ ] Save checkpoint
+
+## Atlas Daily Executive Intelligence Cycle V2
+- [ ] Raise brief generation thresholds: SSS≥90, ESI≥85, Confidence≥80 in DB config and significanceConfig router defaults
+- [ ] Add queue classification (IMMEDIATE/WATCH/MONITOR) to atlasDailyLoop.ts
+- [ ] Add atlasQueue column to aros_outreach_queue schema and DB
+- [ ] Upgrade executiveIntelligenceFactory.ts: enforce triple-gate, add recordResponse mutation updating all 5 calibration layers
+- [ ] Expand atlasWeeklyExpansion.ts to all 10 sectors and 7 regions
+- [ ] Build ArosDailyCycle.tsx dashboard (/aros/daily-cycle): ranked table, three queues, global coverage
+- [ ] Add nav item and route for /aros/daily-cycle
+- [ ] Save checkpoint
+
+## Atlas Daily Executive Intelligence Cycle V2 — COMPLETED
+- [x] Raise brief generation threshold to SSS≥90 (DB + significanceConfig default)
+- [x] Upgrade isBriefEligible to V2 Triple-Gate: SSS≥90, ESI≥85, Confidence≥80, all 4 Quality Gate = YES
+- [x] Add atlasQueue column to aros_outreach_queue (IMMEDIATE | WATCH | MONITOR) — DB + schema
+- [x] Upgrade atlasDailyLoop.ts: queue classification, IMMEDIATE max 10/day, WATCH recorded, MONITOR skipped
+- [x] Expand EXPANSION_TARGETS to 40 pairs: 10 sectors × 7 regions (North America, Europe, UK, Middle East, Asia-Pacific, Sovereign Funds, Global Banks)
+- [x] Build ArosDailyCycle.tsx: ranked table, three-queue panels, global coverage map, triple-gate reminder, success metric
+- [x] Build ArosSignificance.tsx: score distribution, Decision Hierarchy breakdown, ESI gauge, threshold controls
+- [x] Add Strategic Significance and Daily Intelligence Cycle nav items to DashboardLayout
+- [x] Register /aros/significance and /aros/daily-cycle routes in App.tsx
+- [x] Zero TypeScript errors confirmed

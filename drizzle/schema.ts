@@ -2580,6 +2580,23 @@ export const arosCompanies = mysqlTable("aros_companies", {
   dtCalibrationSnapshot: varchar("dt_calibration_snapshot", { length: 64 }),  // snapshot ID
   dtEvidenceManifestHash: varchar("dt_evidence_manifest_hash", { length: 64 }), // SHA-256 of evidence inputs
   dtGeneratedAt: bigint("dt_generated_at", { mode: "number" }),
+  // ── Strategic Significance Engine (Phase 7) ──────────────────────────────────
+  sss: int("sss").default(0),                                          // Strategic Significance Score 0-100
+  esi: int("esi").default(0),                                          // Executive Surprise Index 0-100
+  decisionLevel: varchar("decision_level", { length: 16 }),            // LEVEL_1 | LEVEL_2 | LEVEL_3 | LEVEL_4
+  sssEconomicImpact: int("sss_economic_impact").default(0),            // 0-100 sub-score
+  sssIrreversibility: int("sss_irreversibility").default(0),           // 0-100 sub-score
+  sssTimeCriticality: int("sss_time_criticality").default(0),          // 0-100 sub-score
+  sssHiddenVariableStrength: int("sss_hidden_variable_strength").default(0), // 0-100 sub-score
+  sssExecutiveRelevance: int("sss_executive_relevance").default(0),    // 0-100 sub-score
+  sssNovelty: int("sss_novelty").default(0),                           // 0-100 sub-score
+  qualityGateActionable: int("quality_gate_actionable").default(0),    // 0|1
+  qualityGateEvidenceBased: int("quality_gate_evidence_based").default(0), // 0|1
+  qualityGateDifferentiated: int("quality_gate_differentiated").default(0), // 0|1
+  qualityGateBoardRelevant: int("quality_gate_board_relevant").default(0),  // 0|1
+  qualityGatePassed: int("quality_gate_passed").default(0),            // 0|1 — all four must pass
+  sssRationale: text("sss_rationale"),                                 // LLM explanation
+  sssCalculatedAt: bigint("sss_calculated_at", { mode: "number" }),
   createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 }, (table) => ({
@@ -2655,6 +2672,12 @@ export const arosOutreachQueue = mysqlTable("aros_outreach_queue", {
   calibrationEngineVersion: varchar("calibration_engine_version", { length: 32 }).default("1.0"),
   llmModelVersion: varchar("llm_model_version", { length: 128 }),
   generationTimestamp: bigint("generation_timestamp", { mode: "number" }),
+  // ── Strategic Significance Engine: per-brief scores ─────────────────────────
+  sss: int("sss").default(0),                                          // Strategic Significance Score 0-100
+  esi: int("esi").default(0),                                          // Executive Surprise Index 0-100
+  decisionLevel: varchar("decision_level", { length: 16 }),            // LEVEL_1 | LEVEL_2 | LEVEL_3 | LEVEL_4
+  qualityGatePassed: int("quality_gate_passed").default(0),            // 0|1
+  atlasQueue: varchar("atlas_queue", { length: 20 }).default("MONITOR"), // IMMEDIATE | WATCH | MONITOR
   createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 }, (table) => ({
@@ -2662,6 +2685,8 @@ export const arosOutreachQueue = mysqlTable("aros_outreach_queue", {
   arosOqStatusIdx: index("aros_oq_status_idx").on(table.approvalStatus),
   arosOqPriorityIdx: index("aros_oq_priority_idx").on(table.priority),
   arosOqRunIdx: index("aros_oq_run_idx").on(table.runId),
+  arosOqSssIdx: index("aros_oq_sss_idx").on(table.sss),
+  arosOqDecisionLevelIdx: index("aros_oq_decision_level_idx").on(table.decisionLevel),
 }));
 export type ArosOutreachQueue = typeof arosOutreachQueue.$inferSelect;
 export type InsertArosOutreachQueue = typeof arosOutreachQueue.$inferInsert;
@@ -3150,3 +3175,25 @@ export const atlasConstitutionReviews = mysqlTable("atlas_constitution_reviews",
 }));
 export type AtlasConstitutionReview = typeof atlasConstitutionReviews.$inferSelect;
 export type InsertAtlasConstitutionReview = typeof atlasConstitutionReviews.$inferInsert;
+
+// ── Strategic Significance Engine: Configuration ─────────────────────────────
+export const atlasSignificanceConfig = mysqlTable("atlas_significance_config", {
+  id: int("id").autoincrement().primaryKey(),
+  // Threshold: minimum SSS required to generate a brief
+  briefGenerationThreshold: int("brief_generation_threshold").notNull().default(85),
+  // Auto-reject: SSS below this value is immediately classified LEVEL_1 (store only)
+  autoRejectBelow: int("auto_reject_below").notNull().default(40),
+  // Notify owner immediately when a LEVEL_4 decision is detected
+  notifyOnLevel4: int("notify_on_level_4").notNull().default(1),
+  // Dimension weights (must sum to 100)
+  weightEconomicImpact: int("weight_economic_impact").notNull().default(25),
+  weightIrreversibility: int("weight_irreversibility").notNull().default(20),
+  weightTimeCriticality: int("weight_time_criticality").notNull().default(15),
+  weightHiddenVariableStrength: int("weight_hidden_variable_strength").notNull().default(20),
+  weightExecutiveRelevance: int("weight_executive_relevance").notNull().default(10),
+  weightNovelty: int("weight_novelty").notNull().default(10),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedBy: varchar("updated_by", { length: 128 }),
+});
+export type AtlasSignificanceConfig = typeof atlasSignificanceConfig.$inferSelect;
+export type InsertAtlasSignificanceConfig = typeof atlasSignificanceConfig.$inferInsert;

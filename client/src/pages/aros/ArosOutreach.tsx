@@ -223,6 +223,34 @@ export function ArosOutreach() {
                     )}
                   </div>
 
+                  {/* SSS + ESI + Decision Level */}
+                  {(outreach as { sss?: number; esi?: number; decisionLevel?: string }).sss != null && (
+                    <div className="flex flex-col items-center gap-1 shrink-0">
+                      <div className="flex gap-2">
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground">SSS</p>
+                          <p className={`text-sm font-bold ${
+                            ((outreach as { sss?: number }).sss ?? 0) >= 85 ? "text-red-400" :
+                            ((outreach as { sss?: number }).sss ?? 0) >= 65 ? "text-amber-400" : "text-blue-400"
+                          }`}>{(outreach as { sss?: number }).sss}</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-xs text-muted-foreground">ESI</p>
+                          <p className="text-sm font-bold text-purple-400">{(outreach as { esi?: number }).esi}</p>
+                        </div>
+                      </div>
+                      {(outreach as { decisionLevel?: string }).decisionLevel && (
+                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${
+                          (outreach as { decisionLevel?: string }).decisionLevel === "LEVEL_4" ? "bg-red-900/40 text-red-400" :
+                          (outreach as { decisionLevel?: string }).decisionLevel === "LEVEL_3" ? "bg-amber-900/40 text-amber-400" :
+                          "bg-blue-900/40 text-blue-400"
+                        }`}>
+                          {(outreach as { decisionLevel?: string }).decisionLevel?.replace("LEVEL_", "L")}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
                   {/* ACV */}
                   {outreach.estimatedDealSizeUsd && (
                     <div className="text-center shrink-0">

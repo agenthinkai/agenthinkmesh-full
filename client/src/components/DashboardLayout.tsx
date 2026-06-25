@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Zap, History, Network, ChevronRight, Signal, Shield, Users, BarChart2, TrendingUp, Target, Radar, Mail, Brain, GitBranch, Coins, Crosshair, Activity, BookOpen } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Zap, History, Network, ChevronRight, Signal, Shield, Users, BarChart2, TrendingUp, Target, Radar, Mail, Brain, GitBranch, Coins, Crosshair, Activity, BookOpen, Globe } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -116,6 +116,8 @@ const menuItems = [
   { icon: BookOpen, label: "Atlas Constitution", path: "/aros/constitution", group: "advanced" },
   { icon: History, label: "Constitution History", path: "/aros/constitution/history", group: "advanced" },
   { icon: BarChart2, label: "Constitution Performance", path: "/aros/constitution/performance", group: "advanced" },
+  { icon: Crosshair, label: "Strategic Significance", path: "/aros/significance", group: "advanced" },
+  { icon: Globe, label: "Daily Intelligence Cycle", path: "/aros/daily-cycle", group: "advanced" },
   { icon: Shield, label: "Security Keys", path: "/security-keys", group: "account" },
 ];
 

@@ -36,6 +36,7 @@ import {
   arosPipeline,
 } from "../../../drizzle/schema";
 import { invokeLLM } from "../../_core/llm";
+import { scoreAndPersistCompany, isBriefEligible, loadSignificanceConfig } from "./strategicSignificanceEngine";
 
 async function requireDb() {
   const db = await getDb();
@@ -260,6 +261,29 @@ export const arosExecutiveIntelligenceFactoryRouter = router({
         .orderBy(desc(arosOpportunitySignals.urgencyScore))
         .limit(1);
 
+      // ── Strategic Significance Gate ────────────────────────────────────────────
+      // Score the decision before generating any brief.
+      // Atlas is rewarded for fewer, better, more consequential briefs.
+      const sigCfg = await loadSignificanceConfig();
+      const sssResult = await scoreAndPersistCompany(company.id, {
+        companyName: company.companyName,
+        sector: company.sector,
+        country: company.country,
+        detectedDecision: company.activeStrategicInitiative ?? company.keyDecisionDomain ?? "Strategic decision detected",
+        hiddenVariable: company.aiTransformationSignal ?? "Hidden variable under analysis",
+        decisionTwinSummary: company.decisionTwin ? JSON.stringify(company.decisionTwin).slice(0, 400) : "Decision Twin not yet generated",
+        revenueUsdBn: company.revenueUsdBn ? Number(company.revenueUsdBn) : undefined,
+        employees: company.employees ?? undefined,
+      });
+
+      const eligibility = isBriefEligible(sssResult, sigCfg?.briefGenerationThreshold ?? 85);
+      if (!eligibility.eligible) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: `Strategic Significance Gate: ${eligibility.reason}`,
+        });
+      }
+
       const pkg = await generateIntelligencePackage(company, topSignal ?? undefined);
 
       // Log tokens
@@ -295,6 +319,11 @@ export const arosExecutiveIntelligenceFactoryRouter = router({
         trackingToken,
         tokensUsed: inputTok + outputTok,
         costUsd: cost.toFixed(6),
+        // Strategic Significance scores stamped on every brief
+        sss: sssResult.sss,
+        esi: sssResult.esi,
+        decisionLevel: sssResult.decisionLevel,
+        qualityGatePassed: sssResult.qualityGatePassed ? 1 : 0,
       }).$returningId();
 
       // Create pipeline entry if not exists
@@ -322,7 +351,16 @@ export const arosExecutiveIntelligenceFactoryRouter = router({
         payload: JSON.stringify({ companyId: input.companyId, priority: pkg.priority }),
       });
 
-      return { id: inserted?.id, trackingToken, priority: pkg.priority, estimatedDealSizeUsd: pkg.estimatedDealSizeUsd };
+      return {
+        id: inserted?.id,
+        trackingToken,
+        priority: pkg.priority,
+        estimatedDealSizeUsd: pkg.estimatedDealSizeUsd,
+        sss: sssResult.sss,
+        esi: sssResult.esi,
+        decisionLevel: sssResult.decisionLevel,
+        qualityGatePassed: sssResult.qualityGatePassed,
+      };
     }),
 
   // ── Batch generate intelligence packages (up to 50 companies) ────────────
