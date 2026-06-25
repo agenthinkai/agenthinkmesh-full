@@ -5229,3 +5229,20 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Create ArosConstitution.tsx — full Constitution page with all sections rendered
 - [x] Register /aros/constitution route in App.tsx
 - [x] Add "Atlas Constitution" nav item to DashboardLayout sidebar
+
+## Atlas Constitution V2 — Evidence-Governed Operating System
+- [x] Schema: add atlas_constitution_versions table (id, version, effectiveDate, description, createdBy, status, checksum, createdAt, 8 performance metrics, 5 totals)
+- [x] Schema: add atlas_constitution_reviews table (monthly review reports, suggested amendments, failure patterns)
+- [x] Schema: add constitutionVersion, decisionTwinVersion, hiddenVariableEngineVersion, calibrationEngineVersion, llmModelVersion, generationTimestamp to aros_outreach_queue
+- [x] Schema: add dtConstitutionVersion, dtPromptVersion, dtHiddenVariableVersion, dtCalibrationSnapshot, dtEvidenceManifestHash, dtGeneratedAt to aros_companies (Decision Twin traceability)
+- [x] DB migration applied via webdev_execute_sql (CREATE TABLE IF NOT EXISTS + ALTER TABLE ADD COLUMN IF NOT EXISTS)
+- [x] Server: seed Constitution V1.0 record on startup (ensureConstitutionV1)
+- [x] Server: add constitution router (getActive, getHistory, getPerformance, getReviews, generateReview)
+- [x] Server: wire constitution router into appRouter as arosConstitution
+- [x] LLM prompt: Evidence Governance principle added to executiveIntelligenceFactory.ts
+- [x] Scheduled handler: atlasConstitutionReview.ts — monthly review, evidence-based, never auto-modifies
+- [x] Monthly cron registered: atlas-constitution-review (0 0 7 1 * * — 1st of month 07:00 UTC)
+- [x] Build ArosConstitutionHistory.tsx page (/aros/constitution/history)
+- [x] Build ArosConstitutionPerformance.tsx dashboard (/aros/constitution/performance) with admin review generation
+- [x] Add History and Performance nav items to DashboardLayout
+- [x] Register /aros/constitution/history and /aros/constitution/performance routes in App.tsx

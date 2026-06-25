@@ -114,6 +114,8 @@ const menuItems = [
   { icon: Activity, label: "AROS Command V2", path: "/aros/command-center", group: "advanced" },
   { icon: Zap, label: "AROS Operations", path: "/aros/operations", group: "advanced" },
   { icon: BookOpen, label: "Atlas Constitution", path: "/aros/constitution", group: "advanced" },
+  { icon: History, label: "Constitution History", path: "/aros/constitution/history", group: "advanced" },
+  { icon: BarChart2, label: "Constitution Performance", path: "/aros/constitution/performance", group: "advanced" },
   { icon: Shield, label: "Security Keys", path: "/security-keys", group: "account" },
 ];
 

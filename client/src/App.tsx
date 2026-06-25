@@ -167,6 +167,8 @@ const ArosPipeline = lazy(() => import("./pages/aros/ArosPipeline").then(m => ({
 const ArosTokenRoi = lazy(() => import("./pages/aros/ArosTokenRoi").then(m => ({ default: m.ArosTokenRoi })));
 const ArosOperations = lazy(() => import("./pages/aros/ArosOperations"));
 const ArosConstitution = lazy(() => import("./pages/aros/ArosConstitution"));
+const ArosConstitutionHistory = lazy(() => import("./pages/aros/ArosConstitutionHistory"));
+const ArosConstitutionPerformance = lazy(() => import("./pages/aros/ArosConstitutionPerformance"));
 
 // ── Page-level loading fallback ───────────────────────────────────────────────
 function PageLoader() {
@@ -464,6 +466,8 @@ function Router() {
       <Route path="/aros/command-center" component={ArosCommandCenterV2} />
       <Route path="/aros/operations" component={ArosOperations} />
       <Route path="/aros/constitution" component={ArosConstitution} />
+      <Route path="/aros/constitution/history" component={ArosConstitutionHistory} />
+      <Route path="/aros/constitution/performance" component={ArosConstitutionPerformance} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

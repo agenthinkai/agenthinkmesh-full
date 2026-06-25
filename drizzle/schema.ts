@@ -2573,6 +2573,13 @@ export const arosCompanies = mysqlTable("aros_companies", {
   // Status
   universeRank: int("universe_rank"),
   runId: varchar("run_id", { length: 64 }),                         // which discovery run produced this
+  // ── Constitution V2: Decision Twin Traceability (append-only, never overwrite) ──
+  dtConstitutionVersion: varchar("dt_constitution_version", { length: 32 }).default("1.0"),
+  dtPromptVersion: varchar("dt_prompt_version", { length: 32 }).default("1.0"),
+  dtHiddenVariableVersion: varchar("dt_hidden_variable_version", { length: 32 }).default("1.0"),
+  dtCalibrationSnapshot: varchar("dt_calibration_snapshot", { length: 64 }),  // snapshot ID
+  dtEvidenceManifestHash: varchar("dt_evidence_manifest_hash", { length: 64 }), // SHA-256 of evidence inputs
+  dtGeneratedAt: bigint("dt_generated_at", { mode: "number" }),
   createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 }, (table) => ({
@@ -2641,6 +2648,13 @@ export const arosOutreachQueue = mysqlTable("aros_outreach_queue", {
   // Token cost
   tokensUsed: int("tokens_used").notNull().default(0),
   costUsd: decimal("cost_usd", { precision: 10, scale: 6 }).notNull().default("0"),
+  // ── Constitution V2: Audit Trail ─────────────────────────────────────────
+  constitutionVersion: varchar("constitution_version", { length: 32 }).default("1.0"),
+  decisionTwinVersion: varchar("decision_twin_version", { length: 32 }).default("1.0"),
+  hiddenVariableEngineVersion: varchar("hidden_variable_engine_version", { length: 32 }).default("1.0"),
+  calibrationEngineVersion: varchar("calibration_engine_version", { length: 32 }).default("1.0"),
+  llmModelVersion: varchar("llm_model_version", { length: 128 }),
+  generationTimestamp: bigint("generation_timestamp", { mode: "number" }),
   createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
   updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
 }, (table) => ({
@@ -3075,3 +3089,64 @@ export const arosAccuracySnapshots = mysqlTable("aros_accuracy_snapshots", {
 }));
 export type ArosAccuracySnapshot = typeof arosAccuracySnapshots.$inferSelect;
 export type InsertArosAccuracySnapshot = typeof arosAccuracySnapshots.$inferInsert;
+
+// ── Atlas Constitution Versions ───────────────────────────────────────────────
+// Every version of the Atlas Constitution is stored permanently.
+// Nothing is overwritten. Only ACTIVE status changes to RETIRED when superseded.
+export const atlasConstitutionVersions = mysqlTable("atlas_constitution_versions", {
+  id: int("id").autoincrement().primaryKey(),
+  version: varchar("version", { length: 32 }).notNull().unique(),       // e.g. "1.0", "1.1", "2.0"
+  effectiveDate: bigint("effective_date", { mode: "number" }).notNull(), // UTC timestamp ms
+  description: text("description").notNull(),                            // human-readable summary of changes
+  createdBy: varchar("created_by", { length: 200 }).notNull().default("system"),
+  status: mysqlEnum("status", ["ACTIVE", "RETIRED"]).notNull().default("ACTIVE"),
+  checksum: varchar("checksum", { length: 64 }).notNull(),               // SHA-256 of the full prompt text
+  // Performance metrics (updated by calibration jobs)
+  executiveResponseRate: decimal("executive_response_rate", { precision: 5, scale: 4 }).default("0"),
+  meetingRate: decimal("meeting_rate", { precision: 5, scale: 4 }).default("0"),
+  proposalRate: decimal("proposal_rate", { precision: 5, scale: 4 }).default("0"),
+  customerRate: decimal("customer_rate", { precision: 5, scale: 4 }).default("0"),
+  decisionTwinAccuracy: decimal("decision_twin_accuracy", { precision: 5, scale: 4 }).default("0"),
+  hiddenVariableAccuracy: decimal("hidden_variable_accuracy", { precision: 5, scale: 4 }).default("0"),
+  revenueForecastAccuracy: decimal("revenue_forecast_accuracy", { precision: 5, scale: 4 }).default("0"),
+  outcomeLedgerAccuracy: decimal("outcome_ledger_accuracy", { precision: 5, scale: 4 }).default("0"),
+  totalBriefsSent: int("total_briefs_sent").notNull().default(0),
+  totalResponses: int("total_responses").notNull().default(0),
+  totalMeetings: int("total_meetings").notNull().default(0),
+  totalProposals: int("total_proposals").notNull().default(0),
+  totalCustomers: int("total_customers").notNull().default(0),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  acvStatusIdx: index("acv_status_idx").on(table.status),
+  acvVersionIdx: index("acv_version_idx").on(table.version),
+}));
+export type AtlasConstitutionVersion = typeof atlasConstitutionVersions.$inferSelect;
+export type InsertAtlasConstitutionVersion = typeof atlasConstitutionVersions.$inferInsert;
+
+// ── Atlas Constitution Review Reports ─────────────────────────────────────────
+// Monthly auto-generated reports. Never modify the Constitution automatically.
+// Only produce evidence. Human approval creates the next version.
+export const atlasConstitutionReviews = mysqlTable("atlas_constitution_reviews", {
+  id: int("id").autoincrement().primaryKey(),
+  constitutionVersionId: int("constitution_version_id").notNull(), // FK → atlas_constitution_versions.id
+  reviewPeriodStart: bigint("review_period_start", { mode: "number" }).notNull(),
+  reviewPeriodEnd: bigint("review_period_end", { mode: "number" }).notNull(),
+  calibratedOutcomeCount: int("calibrated_outcome_count").notNull().default(0),
+  // LLM-generated analysis sections
+  constitutionPerformance: text("constitution_performance"),      // JSON
+  calibrationImprovements: text("calibration_improvements"),     // JSON
+  hiddenVariablePerformance: text("hidden_variable_performance"), // JSON
+  decisionTwinAccuracy: text("decision_twin_accuracy"),          // JSON
+  executiveEngagementTrends: text("executive_engagement_trends"),// JSON
+  suggestedAmendments: text("suggested_amendments"),             // JSON array of proposed changes
+  principlesImproved: text("principles_improved"),               // JSON array
+  principlesReduced: text("principles_reduced"),                 // JSON array
+  recurringFailurePatterns: text("recurring_failure_patterns"),  // JSON array
+  status: mysqlEnum("status", ["DRAFT", "PUBLISHED", "ARCHIVED"]).notNull().default("DRAFT"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+}, (table) => ({
+  acrVersionIdx: index("acr_version_idx").on(table.constitutionVersionId),
+  acrCreatedIdx: index("acr_created_idx").on(table.createdAt),
+}));
+export type AtlasConstitutionReview = typeof atlasConstitutionReviews.$inferSelect;
+export type InsertAtlasConstitutionReview = typeof atlasConstitutionReviews.$inferInsert;

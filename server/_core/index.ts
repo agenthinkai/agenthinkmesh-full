@@ -45,6 +45,8 @@ import { startSelfPingJob } from "../jobs/selfPingJob";
 import { registerStorageProxy } from "./storageProxy";
 import { atlasDailyLoopHandler } from "../scheduled/atlasDailyLoop";
 import { atlasWeeklyExpansionHandler } from "../scheduled/atlasWeeklyExpansion";
+import { atlasConstitutionReviewHandler } from "../scheduled/atlasConstitutionReview";
+import { ensureConstitutionV1 } from "../routers/aros/constitution";
 import { createHeartbeatJob, listHeartbeatJobs } from "./heartbeat";
 
 // ── Startup assertions — fail fast on missing critical env vars ──────────────
@@ -108,6 +110,13 @@ async function registerAtlasCronJobs(): Promise<void> {
       path: "/api/scheduled/atlas-weekly-expansion",
       method: "POST" as const,
       description: "Atlas weekly universe expansion — add companies, generate Decision Twins, update Outcome Ledger",
+    },
+    {
+      name: "atlas-constitution-review",
+      cron: "0 0 7 1 * *", // 1st of every month at 07:00 UTC
+      path: "/api/scheduled/atlas-constitution-review",
+      method: "POST" as const,
+      description: "Monthly Atlas Constitution Review — analyse performance data, generate evidence-based amendment recommendations. Never auto-modifies the Constitution.",
     },
   ];
 
@@ -259,6 +268,8 @@ async function startServer() {
   app.post("/api/scheduled/atlas-daily-loop", atlasDailyLoopHandler);
   // Atlas weekly universe expansion — POST /api/scheduled/atlas-weekly-expansion
   app.post("/api/scheduled/atlas-weekly-expansion", atlasWeeklyExpansionHandler);
+  // Atlas monthly Constitution Review — POST /api/scheduled/atlas-constitution-review
+  app.post("/api/scheduled/atlas-constitution-review", atlasConstitutionReviewHandler);
   // Option A fleet trigger — POST /api/fleet/trigger
   // Mounted under /api/fleet/* which is NOT blocked by the Manus reverse-proxy cookie-auth
   // (unlike /api/scheduled/* which is blocked). This is the primary external trigger path.
@@ -360,6 +371,8 @@ async function startServer() {
     runTier0Ingestion().catch(err => console.warn("[Tier0] Initial ingestion failed:", err?.message));
     // Atlas Heartbeat cron registration — idempotent upsert on every startup
     registerAtlasCronJobs().catch(err => console.warn("[Atlas] Cron registration failed:", err?.message));
+    // Ensure Constitution V1.0 is seeded in the database
+    ensureConstitutionV1().catch(err => console.warn("[Atlas] Constitution V1.0 seed failed:", err?.message));
     const TWENTY_FOUR_HOURS = 24 * 60 * 60 * 1000;
     setInterval(() => {
       runTier0Ingestion().catch(err => console.warn("[Tier0] Daily ingestion failed:", err?.message));
