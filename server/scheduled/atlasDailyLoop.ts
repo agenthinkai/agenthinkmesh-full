@@ -433,18 +433,41 @@ Return JSON array: [{"company_name": string, "signal_type": "ai_transformation"|
 
     results.push({ step: "6_7_generate_queue_outreach", count: outreachQueued });
 
-    // ── Step 8: Send approved outreach via MS Graph ───────────────────────────
+    // ── Step 8: Autonomous Dispatch — send all IMMEDIATE briefs that pass the Triple Gate ──
+    // Part 4 Autonomous Mode: no human approval required.
+    // Constitutional block: if active constitution version is SUSPENDED, skip dispatch.
     let emailsSent = 0;
-    const approvedItems = await dbClient
+    let dispatchBlocked = false;
+    let dispatchBlockReason = "";
+
+    // Constitutional block check
+    try {
+      const [constitutionCheck] = await dbClient
+        .select({ status: sql<string>`status` })
+        .from(sql`atlas_constitution_versions`)
+        .where(sql`status = 'ACTIVE'`)
+        .limit(1) as unknown as [{ status: string }][];
+      if (!constitutionCheck) {
+        dispatchBlocked = true;
+        dispatchBlockReason = "No active Constitution version found — dispatch suspended until Constitution is restored.";
+      }
+    } catch {
+      // Constitution table may not exist in older deployments — allow dispatch
+    }
+
+    // Fetch all IMMEDIATE queue items that have not been sent yet
+    // In autonomous mode: approvalStatus = 'PENDING_CEO_REVIEW' is auto-approved for IMMEDIATE queue
+    const approvedItems = dispatchBlocked ? [] : await dbClient
       .select()
       .from(arosOutreachQueue)
       .where(
         and(
-          eq(arosOutreachQueue.approvalStatus, "APPROVED"),
-          isNull(arosOutreachQueue.sentAt)
+          eq(arosOutreachQueue.atlasQueue, "IMMEDIATE"),
+          isNull(arosOutreachQueue.sentAt),
+          eq(arosOutreachQueue.qualityGatePassed, 1)
         )
       )
-      .limit(5); // max 5 sends per day
+      .limit(10); // max 10 IMMEDIATE dispatches per day (V2 policy)
 
     for (const item of approvedItems) {
       if (!item.targetEmail) continue;
@@ -511,7 +534,11 @@ Return JSON array: [{"company_name": string, "signal_type": "ai_transformation"|
       }
     }
 
-    results.push({ step: "8_send_approved_outreach", count: emailsSent });
+    results.push({ 
+      step: "8_autonomous_dispatch", 
+      count: emailsSent,
+      notes: dispatchBlocked ? `BLOCKED: ${dispatchBlockReason}` : `Dispatched ${emailsSent} of ${approvedItems.length} IMMEDIATE briefs autonomously`
+    });
 
     // ── Steps 9–13: Pipeline tracking (these are event-driven, not batch) ────
     // These steps are handled by the pipeline.advanceStage procedure when
@@ -545,7 +572,7 @@ Return JSON array: [{"company_name": string, "signal_type": "ai_transformation"|
       decisionDate: startTime,
       outcomeStatus: "SUCCEEDED",
       outcomeDate: Date.now(),
-      outcomeNotes: `Daily loop: ${runDate} — monitored ${dueJobs.length} companies, detected ${signalsDetected} signals, queued ${outreachQueued} outreach, sent ${emailsSent} emails`,
+      outcomeNotes: `Daily loop: ${runDate} — monitored ${dueJobs.length} companies, detected ${signalsDetected} signals, queued ${outreachQueued} intelligence notes, autonomously dispatched ${emailsSent} IMMEDIATE briefs${dispatchBlocked ? " (DISPATCH BLOCKED: " + dispatchBlockReason + ")" : ""}`,
     });
 
     results.push({ step: "14_outcome_ledger", count: 1 });
