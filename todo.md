@@ -5286,3 +5286,15 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Add Strategic Significance and Daily Intelligence Cycle nav items to DashboardLayout
 - [x] Register /aros/significance and /aros/daily-cycle routes in App.tsx
 - [x] Zero TypeScript errors confirmed
+
+## Phase 8 — Continuous Readiness Mode & Dispatch Preview
+- [x] Build continuousReadiness.ts — event-triggered pipeline: DT update → HV → SSS → ESI → queue classification
+- [x] Hook runContinuousReadiness into monitoring.ts ingestEvent (fires after every signal ingestion)
+- [x] Hook runContinuousReadiness into monitoring.ts autoScanBatch (fires after each company scan)
+- [x] Add tomorrowsDispatch tRPC procedure to executiveIntelligenceFactory (IMMEDIATE/WATCH/MONITOR queues, next dispatch date, validation gates)
+- [x] Add dispatchPreview tRPC procedure (15-field payload, 9-point validation, block reasons)
+- [x] Build ArosTomorrowsDispatch.tsx (/aros/tomorrows-dispatch) — live IMMEDIATE queue with 9-point validation expand
+- [x] Build ArosDispatchPreview.tsx (/aros/dispatch-preview) — full payload view, 6 action controls (View/Edit/Regenerate/Approve/Reject/Send Immediately)
+- [x] Register both routes in App.tsx
+- [x] Add Tomorrow's Dispatch and Dispatch Preview nav items to DashboardLayout
+- [ ] Save checkpoint

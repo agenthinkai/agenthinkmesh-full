@@ -24,6 +24,7 @@ import {
   arosAuditLog,
 } from "../../../drizzle/schema";
 import { invokeLLM } from "../../_core/llm";
+import { runContinuousReadiness } from "./continuousReadiness";
 
 async function requireDb() {
   const db = await getDb();
@@ -215,12 +216,19 @@ export const arosMonitoringRouter = router({
         payload: JSON.stringify({ companyId: input.companyId, eventType: input.eventType }),
       });
 
+      // ── Continuous Readiness: trigger full DT/HV/SSS/ESI pipeline ────────────
+      // Non-blocking — runs in background, result is not awaited to keep response fast
+      runContinuousReadiness(input.companyId, ctx.user.id).catch((err) =>
+        console.error(`[ContinuousReadiness] Background pipeline error for company ${input.companyId}:`, err)
+      );
+
       return {
         eventId: eventResult.id,
         companyName: company.companyName,
         dtUpdated: !!dt,
         olUpdated: !!ol,
         newOpportunityScore: Math.max(0, Math.min(100, (company.opportunityScore ?? 0) + input.opportunityScoreDelta)),
+        continuousReadinessTriggered: true,
       };
     }),
 
@@ -291,7 +299,14 @@ export const arosMonitoringRouter = router({
             totalEvents++;
           }
 
-          results.push({ companyId: company.id, companyName: company.companyName, eventsDetected: events.length });
+          // Trigger Continuous Readiness pipeline for this company (non-blocking)
+          if (events.length > 0) {
+            runContinuousReadiness(company.id, "system").catch((err) =>
+              console.error(`[ContinuousReadiness] AutoScan pipeline error for company ${company.id}:`, err)
+            );
+          }
+
+          results.push({ companyId: company.id, companyName: company.companyName, eventsDetected: events.length, readinessTriggered: events.length > 0 });
         } catch (err) {
           console.error(`Scan failed for ${company.companyName}:`, err);
           results.push({ companyId: company.id, companyName: company.companyName, eventsDetected: 0, error: true });

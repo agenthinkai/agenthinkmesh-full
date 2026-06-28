@@ -734,6 +734,228 @@ ${(item.emailBody ?? "").split("\n").map((line: string) => line.trim() ? `<p sty
       return { tracked: true };
     }),
 
+  // ── Tomorrow's Dispatch — live IMMEDIATE queue with 9-point validation ────
+  tomorrowsDispatch: protectedProcedure
+    .query(async ({ ctx }) => {
+      requireAdmin(ctx);
+      const db = await requireDb();
+
+      // IMMEDIATE queue: not yet sent, quality gate passed
+      const immediateRows = await db
+        .select({
+          outreach: arosOutreachQueue,
+          company: {
+            id: arosCompanies.id,
+            companyName: arosCompanies.companyName,
+            sector: arosCompanies.sector,
+            country: arosCompanies.country,
+            ceoName: arosCompanies.ceoName,
+            ceoEmail: arosCompanies.ceoEmail,
+            sss: arosCompanies.sss,
+            esi: arosCompanies.esi,
+            decisionLevel: arosCompanies.decisionLevel,
+            qualityGatePassed: arosCompanies.qualityGatePassed,
+            sssRationale: arosCompanies.sssRationale,
+            dtGeneratedAt: arosCompanies.dtGeneratedAt,
+            keyDecisionDomain: arosCompanies.keyDecisionDomain,
+            activeStrategicInitiative: arosCompanies.activeStrategicInitiative,
+          },
+        })
+        .from(arosOutreachQueue)
+        .innerJoin(arosCompanies, eq(arosOutreachQueue.companyId, arosCompanies.id))
+        .where(
+          and(
+            eq(arosOutreachQueue.atlasQueue, "IMMEDIATE"),
+            isNull(arosOutreachQueue.sentAt)
+          )
+        )
+        .orderBy(desc(arosOutreachQueue.createdAt))
+        .limit(10);
+
+      // WATCH queue: not yet sent
+      const watchRows = await db
+        .select({
+          outreach: arosOutreachQueue,
+          company: {
+            id: arosCompanies.id,
+            companyName: arosCompanies.companyName,
+            sector: arosCompanies.sector,
+            country: arosCompanies.country,
+            sss: arosCompanies.sss,
+            esi: arosCompanies.esi,
+            decisionLevel: arosCompanies.decisionLevel,
+          },
+        })
+        .from(arosOutreachQueue)
+        .innerJoin(arosCompanies, eq(arosOutreachQueue.companyId, arosCompanies.id))
+        .where(
+          and(
+            eq(arosOutreachQueue.atlasQueue, "WATCH"),
+            isNull(arosOutreachQueue.sentAt)
+          )
+        )
+        .orderBy(desc(arosOutreachQueue.createdAt))
+        .limit(20);
+
+      // MONITOR queue count
+      const [monitorCount] = await db
+        .select({ count: sql<number>`count(*)` })
+        .from(arosOutreachQueue)
+        .where(
+          and(
+            eq(arosOutreachQueue.atlasQueue, "MONITOR"),
+            isNull(arosOutreachQueue.sentAt)
+          )
+        );
+
+      // 9-point validation for each IMMEDIATE item
+      const immediateWithValidation = immediateRows.map(row => {
+        const sss = row.outreach.sss ?? 0;
+        const esi = row.outreach.esi ?? 0;
+        const qgp = row.outreach.qualityGatePassed === 1;
+        const hasSubject = !!row.outreach.emailSubject;
+        const hasBody = !!row.outreach.emailBody;
+        const hasRecipient = !!row.outreach.targetEmail;
+        const hasBrief = !!row.outreach.executiveBrief;
+        const dtFresh = row.company.dtGeneratedAt
+          ? (Date.now() - row.company.dtGeneratedAt) < 7 * 24 * 60 * 60 * 1000
+          : false;
+        const constitutionVersion = row.outreach.constitutionVersion;
+
+        const validationGates = [
+          { gate: "SSS ≥ 90", passed: sss >= 90, value: sss },
+          { gate: "ESI ≥ 85", passed: esi >= 85, value: esi },
+          { gate: "Quality Gate", passed: qgp, value: qgp ? 1 : 0 },
+          { gate: "Subject Line", passed: hasSubject, value: hasSubject ? 1 : 0 },
+          { gate: "Note Body", passed: hasBody, value: hasBody ? 1 : 0 },
+          { gate: "Recipient Email", passed: hasRecipient, value: hasRecipient ? 1 : 0 },
+          { gate: "Executive Brief", passed: hasBrief, value: hasBrief ? 1 : 0 },
+          { gate: "Decision Twin Fresh", passed: dtFresh, value: dtFresh ? 1 : 0 },
+          { gate: "Constitution Version", passed: !!constitutionVersion, value: constitutionVersion ? 1 : 0 },
+        ];
+
+        const allPassed = validationGates.every(g => g.passed);
+        const passedCount = validationGates.filter(g => g.passed).length;
+
+        return {
+          ...row,
+          validationGates,
+          allValidationsPassed: allPassed,
+          validationScore: passedCount,
+        };
+      });
+
+      return {
+        immediate: immediateWithValidation,
+        watch: watchRows,
+        monitorCount: Number(monitorCount?.count ?? 0),
+        dispatchScheduledUtc: "09:00 UTC",
+        nextDispatchDate: (() => {
+          const now = new Date();
+          const day = now.getUTCDay();
+          // Next business day (Sun=0, Mon=1, Tue=2, Wed=3, Thu=4, Fri=5, Sat=6)
+          // Business days: Sun-Thu (Kuwait work week)
+          const isBusinessDay = day >= 0 && day <= 4;
+          if (isBusinessDay) {
+            const next = new Date(now);
+            next.setUTCHours(9, 0, 0, 0);
+            if (now.getUTCHours() >= 9) {
+              // Already past 09:00 today — next is tomorrow if it's a business day
+              next.setUTCDate(next.getUTCDate() + 1);
+              const nextDay = next.getUTCDay();
+              if (nextDay === 5) next.setUTCDate(next.getUTCDate() + 2); // skip Fri
+              if (nextDay === 6) next.setUTCDate(next.getUTCDate() + 1); // skip Sat
+            }
+            return next.toISOString();
+          } else {
+            // Weekend — next Sunday
+            const next = new Date(now);
+            next.setUTCHours(9, 0, 0, 0);
+            const daysUntilSun = (7 - day) % 7 || 7;
+            next.setUTCDate(next.getUTCDate() + daysUntilSun);
+            return next.toISOString();
+          }
+        })(),
+      };
+    }),
+
+  // ── Dispatch Preview — full payload for a single queue item ───────────────
+  dispatchPreview: protectedProcedure
+    .input(z.object({ queueId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      requireAdmin(ctx);
+      const db = await requireDb();
+
+      const [row] = await db
+        .select({
+          outreach: arosOutreachQueue,
+          company: arosCompanies,
+        })
+        .from(arosOutreachQueue)
+        .innerJoin(arosCompanies, eq(arosOutreachQueue.companyId, arosCompanies.id))
+        .where(eq(arosOutreachQueue.id, input.queueId))
+        .limit(1);
+
+      if (!row) throw new TRPCError({ code: "NOT_FOUND", message: "Queue item not found" });
+
+      const sss = row.outreach.sss ?? 0;
+      const esi = row.outreach.esi ?? 0;
+      const qgp = row.outreach.qualityGatePassed === 1;
+      const hasSubject = !!row.outreach.emailSubject;
+      const hasBody = !!row.outreach.emailBody;
+      const hasRecipient = !!row.outreach.targetEmail;
+      const hasBrief = !!row.outreach.executiveBrief;
+      const dtFresh = row.company.dtGeneratedAt
+        ? (Date.now() - row.company.dtGeneratedAt) < 7 * 24 * 60 * 60 * 1000
+        : false;
+
+      const validationGates = [
+        { gate: "SSS ≥ 90", passed: sss >= 90, value: String(sss), blockReason: sss < 90 ? `SSS is ${sss}, minimum is 90` : undefined },
+        { gate: "ESI ≥ 85", passed: esi >= 85, value: String(esi), blockReason: esi < 85 ? `ESI is ${esi}, minimum is 85` : undefined },
+        { gate: "Quality Gate", passed: qgp, value: qgp ? "PASS" : "FAIL", blockReason: !qgp ? "One or more quality gate criteria failed" : undefined },
+        { gate: "Subject Line", passed: hasSubject, value: hasSubject ? "Present" : "Missing", blockReason: !hasSubject ? "No subject line generated" : undefined },
+        { gate: "Note Body", passed: hasBody, value: hasBody ? "Present" : "Missing", blockReason: !hasBody ? "No note body generated" : undefined },
+        { gate: "Recipient Email", passed: hasRecipient, value: hasRecipient ? row.outreach.targetEmail! : "Missing", blockReason: !hasRecipient ? "No recipient email address" : undefined },
+        { gate: "Executive Brief", passed: hasBrief, value: hasBrief ? "Present" : "Missing", blockReason: !hasBrief ? "No executive brief generated" : undefined },
+        { gate: "Decision Twin Fresh (< 7 days)", passed: dtFresh, value: row.company.dtGeneratedAt ? new Date(row.company.dtGeneratedAt).toISOString().slice(0, 10) : "Never", blockReason: !dtFresh ? "Decision Twin is stale or missing" : undefined },
+        { gate: "Constitution Version", passed: !!row.outreach.constitutionVersion, value: row.outreach.constitutionVersion ?? "None", blockReason: !row.outreach.constitutionVersion ? "No Constitution version recorded" : undefined },
+      ];
+
+      const allPassed = validationGates.every(g => g.passed);
+
+      return {
+        queueItem: row.outreach,
+        company: row.company,
+        validationGates,
+        allValidationsPassed: allPassed,
+        blockReasons: validationGates.filter(g => !g.passed).map(g => g.blockReason).filter(Boolean),
+        // 15 preview fields
+        preview: {
+          company: row.company.companyName,
+          sector: row.company.sector,
+          country: row.company.country,
+          executive: row.outreach.targetName ?? row.company.ceoName,
+          executiveTitle: row.outreach.targetTitle ?? "CEO",
+          recipientEmail: row.outreach.targetEmail ?? row.company.ceoEmail,
+          sss,
+          esi,
+          decisionLevel: row.outreach.decisionLevel ?? row.company.decisionLevel,
+          queue: row.outreach.atlasQueue,
+          subjectLine: row.outreach.emailSubject,
+          noteBody: row.outreach.emailBody,
+          executiveBrief: row.outreach.executiveBrief,
+          linkedInMessage: row.outreach.sdrTeaser,
+          constitutionVersion: row.outreach.constitutionVersion,
+          decisionTwinVersion: row.outreach.decisionTwinVersion,
+          estimatedAcv: row.outreach.estimatedDealSizeUsd,
+          approvalStatus: row.outreach.approvalStatus,
+          sentAt: row.outreach.sentAt,
+          openedAt: row.outreach.openedAt,
+          repliedAt: row.outreach.repliedAt,
+        },
+      };
+    }),
+
   // ── Get queue stats ────────────────────────────────────────────────────────
   getQueueStats: protectedProcedure
     .query(async ({ ctx }) => {
