@@ -5298,3 +5298,18 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Register both routes in App.tsx
 - [x] Add Tomorrow's Dispatch and Dispatch Preview nav items to DashboardLayout
 - [ ] Save checkpoint
+
+## Phase 9 — Executive Memory & Learning Engine
+- [x] Schema: atlas_executive_memory table (executiveId, companyId, name, title, email, relationshipScore, totalInteractions, lastInteractionDate, responseHistory, meetingHistory, proposalHistory, notes)
+- [x] Schema: atlas_conversation_timeline table (executiveMemoryId, companyId, eventType, eventDate, summary, detail, sss, esi, atlasQueue, constitutionVersion)
+- [x] Schema: atlas_learning_events table (companyId, executiveMemoryId, triggerType, subjectLineEffectiveness, hiddenVariableEffectiveness, decisionFramingAccuracy, constitutionEffectiveness, whatWorked, whatFailed, recommendedImprovements, eventDate, sector)
+- [x] Schema: atlas_org_intelligence table (companyId, companyName, decisionHistory, hiddenVariableHistory, executiveChanges, aiInitiatives, capitalAllocationDecisions, regulatoryContext, previousAtlasObservations, competitiveIntelligence, updatedAt)
+- [x] DB migrations applied via webdev_execute_sql
+- [x] Server: executiveMemory.ts tRPC router (upsertMemory, getMemory, list, getSummaryStats, getTimeline, getOrgProfile, updateProfile, getLearningStats, getRecentLearningEvents)
+- [x] Server: learningEngine.ts (post-interaction LLM analysis answering 6 questions: subject line, hidden variable, decision framing, constitution, what worked, what failed)
+- [x] Server: dailyLearningReport.ts scheduled handler (daily 08:00 UTC, generates learning summary, updates org intelligence, notifies owner)
+- [x] Daily learning cron registered: atlas-daily-learning (0 0 8 * * * — daily 08:00 UTC)
+- [x] ArosExecutiveMemory.tsx page (/aros/executive-memory) — executive list with relationship scores, conversation timeline, org intelligence profile
+- [x] ArosLearning.tsx page (/aros/learning) — 9-panel Learning Dashboard (subject line effectiveness, hidden variable accuracy, decision framing, constitution effectiveness, sector performance, trigger types, recent events)
+- [x] Routes registered in App.tsx
+- [x] Executive Memory and Learning Dashboard nav items added to DashboardLayout

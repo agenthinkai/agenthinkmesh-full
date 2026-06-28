@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Zap, History, Network, ChevronRight, Signal, Shield, Users, BarChart2, TrendingUp, Target, Radar, Mail, Brain, GitBranch, Coins, Crosshair, Activity, BookOpen, Globe, Send, CalendarClock } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Zap, History, Network, ChevronRight, Signal, Shield, Users, BarChart2, TrendingUp, Target, Radar, Mail, Brain, GitBranch, Coins, Crosshair, Activity, BookOpen, Globe, Send, CalendarClock, UserCircle, Lightbulb } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -120,6 +120,8 @@ const menuItems = [
   { icon: Globe, label: "Daily Intelligence Cycle", path: "/aros/daily-cycle", group: "advanced" },
   { icon: CalendarClock, label: "Tomorrow's Dispatch", path: "/aros/tomorrows-dispatch", group: "advanced" },
   { icon: Send, label: "Dispatch Preview", path: "/aros/dispatch-preview", group: "advanced" },
+  { icon: UserCircle, label: "Executive Memory", path: "/aros/executive-memory", group: "advanced" },
+  { icon: Lightbulb, label: "Learning Dashboard", path: "/aros/learning", group: "advanced" },
   { icon: Shield, label: "Security Keys", path: "/security-keys", group: "account" },
 ];
 

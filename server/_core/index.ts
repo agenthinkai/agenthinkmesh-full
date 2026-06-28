@@ -47,6 +47,7 @@ import { atlasDailyLoopHandler } from "../scheduled/atlasDailyLoop";
 import { atlasWeeklyExpansionHandler } from "../scheduled/atlasWeeklyExpansion";
 import { atlasConstitutionReviewHandler } from "../scheduled/atlasConstitutionReview";
 import { ensureConstitutionV1 } from "../routers/aros/constitution";
+import { handleDailyLearningReport } from "../scheduled/dailyLearningReport";
 import { createHeartbeatJob, listHeartbeatJobs } from "./heartbeat";
 
 // ── Startup assertions — fail fast on missing critical env vars ──────────────
@@ -117,6 +118,13 @@ async function registerAtlasCronJobs(): Promise<void> {
       path: "/api/scheduled/atlas-constitution-review",
       method: "POST" as const,
       description: "Monthly Atlas Constitution Review — analyse performance data, generate evidence-based amendment recommendations. Never auto-modifies the Constitution.",
+    },
+    {
+      name: "atlas-daily-learning",
+      cron: "0 0 10 * * *", // daily 10:00 UTC (1h after dispatch)
+      path: "/api/scheduled/atlas-daily-learning",
+      method: "POST" as const,
+      description: "Atlas Daily Learning Report — aggregate learning events, compute effectiveness rates, notify owner.",
     },
   ];
 
@@ -270,6 +278,8 @@ async function startServer() {
   app.post("/api/scheduled/atlas-weekly-expansion", atlasWeeklyExpansionHandler);
   // Atlas monthly Constitution Review — POST /api/scheduled/atlas-constitution-review
   app.post("/api/scheduled/atlas-constitution-review", atlasConstitutionReviewHandler);
+  // Atlas daily learning report — POST /api/scheduled/atlas-daily-learning
+  app.post("/api/scheduled/atlas-daily-learning", handleDailyLearningReport);
   // Option A fleet trigger — POST /api/fleet/trigger
   // Mounted under /api/fleet/* which is NOT blocked by the Manus reverse-proxy cookie-auth
   // (unlike /api/scheduled/* which is blocked). This is the primary external trigger path.

@@ -3197,3 +3197,95 @@ export const atlasSignificanceConfig = mysqlTable("atlas_significance_config", {
 });
 export type AtlasSignificanceConfig = typeof atlasSignificanceConfig.$inferSelect;
 export type InsertAtlasSignificanceConfig = typeof atlasSignificanceConfig.$inferInsert;
+
+// ─── Phase 9: Executive Memory & Learning Engine ─────────────────────────────
+
+export const atlasExecutiveMemory = mysqlTable("atlas_executive_memory", {
+  id: int("id").primaryKey().autoincrement(),
+  companyId: int("company_id"),
+  companyName: varchar("company_name", { length: 255 }).notNull(),
+  executiveName: varchar("executive_name", { length: 255 }).notNull(),
+  executiveEmail: varchar("executive_email", { length: 255 }),
+  role: varchar("role", { length: 128 }),
+  firstContactDate: bigint("first_contact_date", { mode: "number" }),
+  lastContactDate: bigint("last_contact_date", { mode: "number" }),
+  totalBriefsDelivered: int("total_briefs_delivered").default(0),
+  totalReplies: int("total_replies").default(0),
+  meetings: int("meetings").default(0),
+  proposals: int("proposals").default(0),
+  customers: int("customers").default(0),
+  interests: text("interests"),
+  objections: text("objections"),
+  preferredTopics: text("preferred_topics"),
+  preferredCommunicationStyle: varchar("preferred_communication_style", { length: 128 }),
+  responsePattern: text("response_pattern"),
+  relationshipScore: int("relationship_score").default(0),
+  nextRecommendedAction: text("next_recommended_action"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type AtlasExecutiveMemory = typeof atlasExecutiveMemory.$inferSelect;
+export type InsertAtlasExecutiveMemory = typeof atlasExecutiveMemory.$inferInsert;
+
+export const atlasConversationTimeline = mysqlTable("atlas_conversation_timeline", {
+  id: int("id").primaryKey().autoincrement(),
+  companyId: int("company_id"),
+  executiveMemoryId: int("executive_memory_id"),
+  companyName: varchar("company_name", { length: 255 }).notNull(),
+  executiveName: varchar("executive_name", { length: 255 }).notNull(),
+  eventType: varchar("event_type", { length: 64 }).notNull(),
+  eventDate: bigint("event_date", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  summary: text("summary"),
+  detail: text("detail"),
+  outreachQueueId: int("outreach_queue_id"),
+  sss: int("sss"),
+  esi: int("esi"),
+  constitutionVersion: varchar("constitution_version", { length: 32 }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type AtlasConversationTimeline = typeof atlasConversationTimeline.$inferSelect;
+export type InsertAtlasConversationTimeline = typeof atlasConversationTimeline.$inferInsert;
+
+export const atlasLearningEvents = mysqlTable("atlas_learning_events", {
+  id: int("id").primaryKey().autoincrement(),
+  eventDate: bigint("event_date", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  triggerType: varchar("trigger_type", { length: 64 }).notNull(),
+  companyId: int("company_id"),
+  companyName: varchar("company_name", { length: 255 }),
+  executiveName: varchar("executive_name", { length: 255 }),
+  sector: varchar("sector", { length: 128 }),
+  subjectLineEffectiveness: varchar("subject_line_effectiveness", { length: 32 }),
+  hiddenVariableEffectiveness: varchar("hidden_variable_effectiveness", { length: 32 }),
+  decisionFramingEffectiveness: varchar("decision_framing_effectiveness", { length: 32 }),
+  executiveResponsePattern: text("executive_response_pattern"),
+  industryResponsePattern: text("industry_response_pattern"),
+  constitutionEffectiveness: varchar("constitution_effectiveness", { length: 32 }),
+  whatWorked: text("what_worked"),
+  whatFailed: text("what_failed"),
+  recommendedImprovements: text("recommended_improvements"),
+  rawLlmAnalysis: text("raw_llm_analysis"),
+  constitutionVersion: varchar("constitution_version", { length: 32 }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type AtlasLearningEvent = typeof atlasLearningEvents.$inferSelect;
+export type InsertAtlasLearningEvent = typeof atlasLearningEvents.$inferInsert;
+
+export const atlasOrgIntelligence = mysqlTable("atlas_org_intelligence", {
+  id: int("id").primaryKey().autoincrement(),
+  companyId: int("company_id").notNull(),
+  companyName: varchar("company_name", { length: 255 }).notNull(),
+  decisionHistory: text("decision_history"),
+  hiddenVariableHistory: text("hidden_variable_history"),
+  executiveChanges: text("executive_changes"),
+  aiInitiatives: text("ai_initiatives"),
+  capitalAllocationDecisions: text("capital_allocation_decisions"),
+  maActivity: text("ma_activity"),
+  regulatoryEvents: text("regulatory_events"),
+  previousAtlasObservations: text("previous_atlas_observations"),
+  previousAtlasPredictions: text("previous_atlas_predictions"),
+  outcomeHistory: text("outcome_history"),
+  lastUpdated: bigint("last_updated", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type AtlasOrgIntelligence = typeof atlasOrgIntelligence.$inferSelect;
+export type InsertAtlasOrgIntelligence = typeof atlasOrgIntelligence.$inferInsert;
