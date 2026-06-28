@@ -3,7 +3,7 @@ import { trpc } from "@/lib/trpc";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "wouter";
+import { useLocation } from "wouter";
 import {
   CheckCircle2,
   XCircle,
@@ -73,7 +73,7 @@ function QueueBadge({ queue }: { queue: string | null }) {
 }
 
 export default function ArosTomorrowsDispatch() {
-  const navigate = useNavigate();
+  const [, setLocation] = useLocation();
   const [expanded, setExpanded] = useState<number | null>(null);
 
   const { data, isLoading, refetch } = trpc.arosExecutiveIntelligenceFactory.tomorrowsDispatch.useQuery(undefined, {
@@ -263,7 +263,7 @@ export default function ArosTomorrowsDispatch() {
                           variant="outline"
                           size="sm"
                           className="border-slate-600 text-slate-300 hover:text-white text-xs"
-                          onClick={() => navigate(`/aros/dispatch-preview?id=${item.outreach.id}`)}
+                          onClick={() => setLocation(`/aros/dispatch-preview?id=${item.outreach.id}`)}
                         >
                           <Eye className="w-3.5 h-3.5 mr-1" />
                           Preview

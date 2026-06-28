@@ -430,11 +430,9 @@ export default function ArosDispatchPreview() {
                   size="sm"
                   className="w-full border-slate-600 text-slate-300 hover:text-white justify-start"
                   onClick={() =>
-                    generateMutation.mutate({
+                generateMutation.mutate({
                       companyId: item.companyId!,
                       targetEmail: item.targetEmail ?? "",
-                      targetName: item.targetName ?? "",
-                      targetTitle: item.targetTitle ?? "CEO",
                     })
                   }
                   disabled={generateMutation.isPending}
@@ -449,7 +447,7 @@ export default function ArosDispatchPreview() {
                     variant="outline"
                     size="sm"
                     className="w-full border-emerald-700/50 text-emerald-300 hover:bg-emerald-500/10 justify-start"
-                    onClick={() => approveMutation.mutate({ queueId: item.id })}
+                onClick={() => approveMutation.mutate({ outreachId: item.id })}
                     disabled={approveMutation.isPending}
                   >
                     <ThumbsUp className="w-3.5 h-3.5 mr-2" />
@@ -461,7 +459,7 @@ export default function ArosDispatchPreview() {
                 <Button
                   size="sm"
                   className="w-full bg-emerald-600 hover:bg-emerald-500 text-white justify-start"
-                  onClick={() => sendMutation.mutate({ queueId: item.id })}
+              onClick={() => sendMutation.mutate({ outreachId: item.id })}
                   disabled={sendMutation.isPending || !allValidationsPassed}
                 >
                   <Send className="w-3.5 h-3.5 mr-2" />
@@ -499,7 +497,7 @@ export default function ArosDispatchPreview() {
                         variant="destructive"
                         className="flex-1 text-xs"
                         onClick={() =>
-                          rejectMutation.mutate({ queueId: item.id, reason: rejectionReason })
+                  rejectMutation.mutate({ outreachId: item.id, reason: rejectionReason })
                         }
                         disabled={rejectMutation.isPending}
                       >
