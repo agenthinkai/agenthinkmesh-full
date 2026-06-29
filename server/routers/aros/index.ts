@@ -17,3 +17,4 @@ export { arosMonitoringRouter } from "./monitoring";
 export { constitutionRouter } from "./constitution";
 export { significanceConfigRouter } from "./significanceConfig";
 export { executiveMemoryRouter } from "./executiveMemory";
+export { editorBriefsRouter } from "./editorBriefs";

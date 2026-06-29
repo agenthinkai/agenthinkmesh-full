@@ -26,11 +26,13 @@ import {
   arosOutcomeLedgerV2,
   arosOutreachQueue,
   arosTokenLedger,
+  atlasBriefDrafts,
 } from "../../../drizzle/schema";
 import { eq, desc, isNull, and } from "drizzle-orm";
 import { invokeLLM } from "../../_core/llm";
 import { scoreAndPersistCompany, isBriefEligible, loadSignificanceConfig } from "./strategicSignificanceEngine";
 import { notifyOwner } from "../../_core/notification";
+import { randomUUID } from "crypto";
 
 const HV_TYPES = [
   "REGULATORY_DELAY",
@@ -328,6 +330,57 @@ export async function runContinuousReadiness(
           updatedAt: Date.now(),
         })
         .where(eq(arosOutreachQueue.id, pending.id));
+    }
+
+    // ── Auto-promote: if Triple Gate passes and an APPROVED draft exists, promote it ──
+    if (eligibility.eligible && eligibility.queue === "IMMEDIATE") {
+      try {
+        const [approvedDraft] = await db
+          .select()
+          .from(atlasBriefDrafts)
+          .where(
+            and(
+              eq(atlasBriefDrafts.companyId, companyId),
+              eq(atlasBriefDrafts.editorStatus, "APPROVED")
+            )
+          )
+          .orderBy(desc(atlasBriefDrafts.version))
+          .limit(1);
+
+        if (approvedDraft) {
+          const now = Date.now();
+          const trackingToken = randomUUID();
+          await db.insert(arosOutreachQueue).values({
+            companyId,
+            emailSubject: approvedDraft.briefContent?.split("\n")[0]?.replace("SUBJECT: ", "") ?? `Intelligence Brief — ${company.companyName}`,
+            emailBody: approvedDraft.briefContent ?? "",
+            executiveBrief: approvedDraft.briefContent ?? "",
+            targetName: approvedDraft.executiveName ?? company.ceoName ?? "CEO",
+            targetEmail: approvedDraft.executiveEmail ?? company.ceoEmail ?? "",
+            targetTitle: approvedDraft.executiveTitle ?? "Chief Executive Officer",
+            estimatedDealSizeUsd: 50000,
+            priority: "IMMEDIATE",
+            approvalStatus: "APPROVED",
+            approvedAt: now,
+            trackingToken,
+            sss: sssResult.sss,
+            esi: sssResult.esi,
+            qualityGatePassed: 1,
+            atlasQueue: "IMMEDIATE",
+            constitutionVersion: approvedDraft.constitutionVersion ?? "1.0",
+            generationTimestamp: now,
+            createdAt: now,
+            updatedAt: now,
+          });
+          await db
+            .update(atlasBriefDrafts)
+            .set({ editorStatus: "SCHEDULED", promotedAt: now, updatedAt: now })
+            .where(eq(atlasBriefDrafts.id, approvedDraft.id));
+          console.log(`[ContinuousReadiness] Auto-promoted approved draft for ${company.companyName} to SCHEDULED`);
+        }
+      } catch (promoteErr) {
+        console.error(`[ContinuousReadiness] Auto-promote failed for ${company.companyName}:`, promoteErr);
+      }
     }
 
     // Notify owner on new LEVEL_4 detection

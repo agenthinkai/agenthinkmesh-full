@@ -3289,3 +3289,37 @@ export const atlasOrgIntelligence = mysqlTable("atlas_org_intelligence", {
 });
 export type AtlasOrgIntelligence = typeof atlasOrgIntelligence.$inferSelect;
 export type InsertAtlasOrgIntelligence = typeof atlasOrgIntelligence.$inferInsert;
+
+// ─── Atlas Brief Drafts — Pre-Dispatch Editor Mode ───────────────────────────
+// One record per version per company. The CEO edits/approves briefs here before
+// dispatch day. When Triple Gate passes, APPROVED drafts auto-promote to SCHEDULED.
+export const atlasBriefDrafts = mysqlTable("atlas_brief_drafts", {
+  id: int("id").primaryKey().autoincrement(),
+  companyId: int("company_id"),
+  companyName: varchar("company_name", { length: 255 }).notNull(),
+  executiveName: varchar("executive_name", { length: 255 }),
+  executiveTitle: varchar("executive_title", { length: 255 }),
+  executiveEmail: varchar("executive_email", { length: 255 }),
+  strategicDecision: text("strategic_decision"),
+  hiddenVariable: text("hidden_variable"),
+  sss: int("sss").default(0),
+  esi: int("esi").default(0),
+  evidenceConfidence: int("evidence_confidence").default(0),
+  tripleGateSss: int("triple_gate_sss").default(0),
+  tripleGateEsi: int("triple_gate_esi").default(0),
+  tripleGateConf: int("triple_gate_conf").default(0),
+  briefContent: text("brief_content"),
+  editorStatus: varchar("editor_status", { length: 20 }).notNull().default("DRAFT"),
+  version: int("version").notNull().default(1),
+  parentVersionId: int("parent_version_id"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  approvedAt: bigint("approved_at", { mode: "number" }),
+  promotedAt: bigint("promoted_at", { mode: "number" }),
+  outreachQueueId: int("outreach_queue_id"),
+  traceabilityToken: varchar("traceability_token", { length: 64 }),
+  constitutionVersion: varchar("constitution_version", { length: 32 }),
+  generatedBy: varchar("generated_by", { length: 64 }).default("atlas_editor"),
+});
+export type AtlasBriefDraft = typeof atlasBriefDrafts.$inferSelect;
+export type InsertAtlasBriefDraft = typeof atlasBriefDrafts.$inferInsert;

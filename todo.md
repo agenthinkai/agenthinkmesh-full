@@ -5313,3 +5313,38 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] ArosLearning.tsx page (/aros/learning) — 9-panel Learning Dashboard (subject line effectiveness, hidden variable accuracy, decision framing, constitution effectiveness, sector performance, trigger types, recent events)
 - [x] Routes registered in App.tsx
 - [x] Executive Memory and Learning Dashboard nav items added to DashboardLayout
+
+## Phase 10 — Pre-Dispatch Editor Mode (/aros/editor)
+
+### DB Schema
+- [x] Add atlas_brief_drafts table: id, companyId, companyName, executiveName, executiveTitle, strategicDecision, hiddenVariable, sss, esi, evidenceConfidence, briefContent, editorStatus (DRAFT/READY/APPROVED/SCHEDULED/SENT), version, parentVersionId, createdAt, updatedAt, approvedAt, promotedAt, traceabilityToken
+- [x] Run DB migration via webdev_execute_sql
+
+### Server: editorBriefs tRPC router
+- [x] getTop25: query top 25 companies by SSS desc, join with latest brief draft per company
+- [x] getBrief: get full brief + all version history for a company
+- [x] generateDraft: invoke LLM with Constitution-aligned 4-paragraph prompt, save as new version, status=DRAFT (no Triple Gate required)
+- [x] saveEdit: update briefContent for a draft, bump version, status=DRAFT or READY
+- [x] approve: set status=APPROVED, record approvedAt
+- [x] compareVersions: return two versions side-by-side for diff display
+- [x] autoPromote: when Triple Gate passes, find APPROVED draft for company, set status=SCHEDULED, insert into aros_outreach_queue without re-generating
+- [x] Register editorBriefsRouter in server/routers/aros/index.ts and server/routers.ts
+
+### Server: continuousReadiness integration
+- [x] In continuousReadiness.ts scoreAndQueue: after queue classification, if company reaches IMMEDIATE and has an APPROVED draft → call autoPromote instead of generating new brief
+
+### UI: ArosEditor.tsx (/aros/editor)
+- [x] Left panel: ranked table of top 25 companies (rank, company, executive, SSS badge, ESI badge, Confidence badge, editorStatus chip: DRAFT/READY/APPROVED/SCHEDULED/SENT)
+- [x] Right panel: brief editor for selected company — shows full brief content in editable textarea
+- [x] Header row: company name, executive, strategic decision, hidden variable, SSS/ESI/Confidence scores
+- [x] Status chip with colour coding: DRAFT=gray, READY=blue, APPROVED=green, SCHEDULED=amber, SENT=emerald
+- [x] Action bar: Edit button (enable textarea), Regenerate button (calls generateDraft), Save Draft button (calls saveEdit), Approve button (calls approve), Compare Versions button (opens diff modal)
+- [x] Version history sidebar: list of all versions with timestamp and who saved
+- [x] Compare Versions modal: side-by-side diff of two selected versions
+- [x] Triple Gate status indicator: shows which gates pass/fail for selected company
+- [x] Auto-refresh every 60s to pick up new scores
+- [x] Loading skeletons, empty states, error handling
+
+### Navigation
+- [x] Add "Pre-Dispatch Editor" nav item to DashboardLayout under AROS section
+- [x] Register /aros/editor route in App.tsx with lazy import

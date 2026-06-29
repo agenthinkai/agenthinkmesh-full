@@ -22,7 +22,7 @@ import {
 } from "@/components/ui/sidebar";
 import { getLoginUrl } from "@/const";
 import { useIsMobile } from "@/hooks/useMobile";
-import { LayoutDashboard, LogOut, PanelLeft, Zap, History, Network, ChevronRight, Signal, Shield, Users, BarChart2, TrendingUp, Target, Radar, Mail, Brain, GitBranch, Coins, Crosshair, Activity, BookOpen, Globe, Send, CalendarClock, UserCircle, Lightbulb } from "lucide-react";
+import { LayoutDashboard, LogOut, PanelLeft, Zap, History, Network, ChevronRight, Signal, Shield, Users, BarChart2, TrendingUp, Target, Radar, Mail, Brain, GitBranch, Coins, Crosshair, Activity, BookOpen, Globe, Send, CalendarClock, UserCircle, Lightbulb, Edit3 } from "lucide-react";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { DashboardLayoutSkeleton } from './DashboardLayoutSkeleton';
@@ -118,6 +118,7 @@ const menuItems = [
   { icon: BarChart2, label: "Constitution Performance", path: "/aros/constitution/performance", group: "advanced" },
   { icon: Crosshair, label: "Strategic Significance", path: "/aros/significance", group: "advanced" },
   { icon: Globe, label: "Daily Intelligence Cycle", path: "/aros/daily-cycle", group: "advanced" },
+  { icon: Edit3, label: "Pre-Dispatch Editor", path: "/aros/editor", group: "advanced" },
   { icon: CalendarClock, label: "Tomorrow's Dispatch", path: "/aros/tomorrows-dispatch", group: "advanced" },
   { icon: Send, label: "Dispatch Preview", path: "/aros/dispatch-preview", group: "advanced" },
   { icon: UserCircle, label: "Executive Memory", path: "/aros/executive-memory", group: "advanced" },
