@@ -63,6 +63,7 @@ import {
   significanceConfigRouter,
   executiveMemoryRouter,
   editorBriefsRouter,
+  morningReviewRouter,
 } from "./routers/aros";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
@@ -169,6 +170,7 @@ export const appRouter = router({
   arosSignificance: significanceConfigRouter,
   arosExecutiveMemory: executiveMemoryRouter,
   arosEditorBriefs: editorBriefsRouter,
+  arosMorningReview: morningReviewRouter,
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   auth: router({

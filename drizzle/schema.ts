@@ -3323,3 +3323,24 @@ export const atlasBriefDrafts = mysqlTable("atlas_brief_drafts", {
 });
 export type AtlasBriefDraft = typeof atlasBriefDrafts.$inferSelect;
 export type InsertAtlasBriefDraft = typeof atlasBriefDrafts.$inferInsert;
+
+// ── Atlas Editorial Reviews ────────────────────────────────────────────────
+export const atlasEditorialReviews = mysqlTable("atlas_editorial_reviews", {
+  id: int("id").primaryKey().autoincrement(),
+  briefDraftId: int("brief_draft_id").notNull(),
+  companyId: int("company_id"),
+  companyName: varchar("company_name", { length: 255 }).notNull(),
+  isOpeningCompelling: tinyint("is_opening_compelling").notNull().default(0),
+  isHiddenVariableUnique: tinyint("is_hidden_variable_unique").notNull().default(0),
+  hasMarketingLanguage: tinyint("has_marketing_language").notNull().default(0),
+  wouldCeoForward: tinyint("would_ceo_forward").notNull().default(0),
+  weakOrGenericNotes: text("weak_or_generic_notes"),
+  editorialScore: int("editorial_score").notNull().default(0),
+  recommendation: varchar("recommendation", { length: 20 }).notNull().default("REGENERATE"),
+  generatedAt: bigint("generated_at", { mode: "number" }).notNull(),
+  reviewerNotes: text("reviewer_notes"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type AtlasEditorialReview = typeof atlasEditorialReviews.$inferSelect;
+export type InsertAtlasEditorialReview = typeof atlasEditorialReviews.$inferInsert;

@@ -118,6 +118,7 @@ const menuItems = [
   { icon: BarChart2, label: "Constitution Performance", path: "/aros/constitution/performance", group: "advanced" },
   { icon: Crosshair, label: "Strategic Significance", path: "/aros/significance", group: "advanced" },
   { icon: Globe, label: "Daily Intelligence Cycle", path: "/aros/daily-cycle", group: "advanced" },
+  { icon: BookOpen, label: "Morning Editorial Review", path: "/aros/morning-review", group: "advanced" },
   { icon: Edit3, label: "Pre-Dispatch Editor", path: "/aros/editor", group: "advanced" },
   { icon: CalendarClock, label: "Tomorrow's Dispatch", path: "/aros/tomorrows-dispatch", group: "advanced" },
   { icon: Send, label: "Dispatch Preview", path: "/aros/dispatch-preview", group: "advanced" },

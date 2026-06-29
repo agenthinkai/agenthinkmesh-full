@@ -176,6 +176,7 @@ const ArosDispatchPreview = lazy(() => import("./pages/aros/ArosDispatchPreview"
 const ArosExecutiveMemory = lazy(() => import("./pages/aros/ArosExecutiveMemory"));
 const ArosLearning = lazy(() => import("./pages/aros/ArosLearning"));
 const ArosEditor = lazy(() => import("./pages/aros/ArosEditor"));
+const ArosMorningReview = lazy(() => import("./pages/aros/ArosMorningReview"));
 
 // ── Page-level loading fallback ───────────────────────────────────────────────
 function PageLoader() {
@@ -482,6 +483,7 @@ function Router() {
       <Route path="/aros/executive-memory" component={ArosExecutiveMemory} />
       <Route path="/aros/learning" component={ArosLearning} />
       <Route path="/aros/editor" component={ArosEditor} />
+      <Route path="/aros/morning-review" component={ArosMorningReview} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

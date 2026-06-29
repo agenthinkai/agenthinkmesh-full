@@ -5348,3 +5348,33 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 ### Navigation
 - [x] Add "Pre-Dispatch Editor" nav item to DashboardLayout under AROS section
 - [x] Register /aros/editor route in App.tsx with lazy import
+
+## Phase 11 — CEO Morning Editorial Review (/aros/morning-review)
+### DB Schema
+- [ ] Add atlas_editorial_reviews table: id, briefDraftId, companyId, companyName, isOpeningCompelling (bool), isHiddenVariableUnique (bool), hasMarketingLanguage (bool), wouldCeoForward (bool), weakOrGenericNotes (text), editorialScore (int 0-100), recommendation (APPROVE/REGENERATE), generatedAt (bigint), reviewerNotes (text)
+- [ ] Run DB migration
+### Server: morningReview tRPC router
+- [ ] getPublication: return all SCHEDULED/APPROVED briefs for next dispatch window with full metadata + editorial review if exists
+- [ ] generateEditorialOpinion: LLM self-critique of brief (6 structured questions + score 0-100), auto-flag REGENERATE if score < 90, save to atlas_editorial_reviews
+- [ ] getRecommendedOne: LLM picks the single best brief to send if only one could go out, with explanation
+- [ ] approveAll: set all SCHEDULED briefs to APPROVED status
+- [ ] approveSelected: set selected brief IDs to APPROVED
+- [ ] rejectBrief: set brief to DRAFT status with rejection note
+- [ ] regenerateBrief: call generateDraft for brief, reset editorial review
+- [ ] scheduleDispatch: confirm scheduled send time for brief
+- [ ] sendImmediately: mark brief as SENT, trigger outreach queue entry
+- [ ] getPublicationSummary: aggregate stats (count, avg SSS, avg ESI, avg confidence, avg editorial score, expected response rate, expected meetings, expected proposals, expected revenue)
+- [ ] Register morningReviewRouter in server/routers/aros/index.ts and server/routers.ts
+### UI: ArosMorningReview.tsx (/aros/morning-review)
+- [ ] Section 6 (top): CEO Question "If I could send only ONE brief tomorrow..." — Atlas recommendation card with company, executive, and explanation
+- [ ] Section 1: Publication cards grid — colour-coded by SSS tier, each card shows company, executive, strategic decision, hidden variable, SSS/ESI/confidence badges, decision level, scheduled send time, editorial score chip
+- [ ] Section 2: Right panel — full brief text exactly as it will be delivered (subject + body), no truncation
+- [ ] Section 3: Editorial Opinion panel — 6 structured critique answers, score badge, APPROVE/REGENERATE recommendation
+- [ ] Section 4: Publication Controls bar — Approve All, Approve Selected, Reject, Regenerate, Edit, Schedule, Send Immediately
+- [ ] Section 5: Tomorrow's Summary strip — companies scheduled, avg SSS, avg ESI, avg confidence, avg editorial score, expected response rate, meetings, proposals, revenue opportunity
+- [ ] Section 7: Final Rule gate — if any brief has no editorial review, block Approve All with warning "Every brief must pass editorial review before dispatch"
+- [ ] Auto-generate editorial opinions for all briefs without one on page load
+- [ ] Loading skeletons, empty states, error handling
+### Navigation
+- [ ] Add "Morning Review" nav item to DashboardLayout (top of AROS section, visually prominent)
+- [ ] Register /aros/morning-review route in App.tsx with lazy import
