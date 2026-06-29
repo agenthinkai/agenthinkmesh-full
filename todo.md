@@ -5378,3 +5378,9 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 ### Navigation
 - [ ] Add "Morning Review" nav item to DashboardLayout (top of AROS section, visually prominent)
 - [ ] Register /aros/morning-review route in App.tsx with lazy import
+
+## Phase 11 — Institutional Proof Dashboard (/aros/proof)
+- [x] institutionalProof tRPC router: getNorthStar, getExecutiveImpact, getDecisionQuality, getLearning, getProofOfLearning, getCustomerProof
+- [x] ArosProof.tsx: all 6 sections (North Star hero, Executive Impact, Decision Quality, Learning, Proof of Learning timeline, Customer Proof library)
+- [ ] Real-data-only enforcement: no simulated metrics, null-safe display for empty data
+- [ ] Nav item: Institutional Proof Dashboard in DashboardLayout sidebar
