@@ -49,6 +49,7 @@ import { atlasConstitutionReviewHandler } from "../scheduled/atlasConstitutionRe
 import { ensureConstitutionV1 } from "../routers/aros/constitution";
 import { handleDailyLearningReport } from "../scheduled/dailyLearningReport";
 import { createHeartbeatJob, listHeartbeatJobs } from "./heartbeat";
+import boardPackRouter from "../boardPackRoute";
 
 // ── Startup assertions — fail fast on missing critical env vars ──────────────
 // These checks run before any route handlers are registered.
@@ -219,6 +220,8 @@ async function startServer() {
   app.use("/api/intelligence/parse-document", intelligenceParseRouter);
   // Gmail OAuth for Reply Tracker
   app.use("/api/gmail", gmailOAuthRouter);
+  // Board Intelligence Pack — PDF/PPTX/DOCX download endpoints
+  app.use("/api/board-pack", boardPackRouter);
   // Embedded specialist agent endpoints
   app.use("/api/agents", agentRouter);
 

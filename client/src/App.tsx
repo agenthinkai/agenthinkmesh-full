@@ -178,6 +178,7 @@ const ArosLearning = lazy(() => import("./pages/aros/ArosLearning"));
 const ArosEditor = lazy(() => import("./pages/aros/ArosEditor"));
 const ArosMorningReview = lazy(() => import("./pages/aros/ArosMorningReview"));
 const ArosProof = lazy(() => import("./pages/aros/ArosProof"));
+const ArosBoardPack = lazy(() => import("./pages/aros/ArosBoardPack"));
 
 // ── Page-level loading fallback ───────────────────────────────────────────────
 function PageLoader() {
@@ -486,6 +487,7 @@ function Router() {
       <Route path="/aros/editor" component={ArosEditor} />
       <Route path="/aros/morning-review" component={ArosMorningReview} />
       <Route path="/aros/proof" component={ArosProof} />
+      <Route path="/aros/board-pack" component={ArosBoardPack} />
 
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

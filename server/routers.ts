@@ -65,6 +65,7 @@ import {
   editorBriefsRouter,
   morningReviewRouter,
   institutionalProofRouter,
+  boardPackRouter,
 } from "./routers/aros";
 import { storagePut } from "./storage";
 import { extractFileContent } from "./fileExtract";
@@ -173,6 +174,7 @@ export const appRouter = router({
   arosEditorBriefs: editorBriefsRouter,
   arosMorningReview: morningReviewRouter,
   arosInstitutionalProof: institutionalProofRouter,
+  arosBoardPack: boardPackRouter,
 
   // ── Auth ──────────────────────────────────────────────────────────────────
   auth: router({

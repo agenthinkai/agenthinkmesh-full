@@ -20,3 +20,4 @@ export { executiveMemoryRouter } from "./executiveMemory";
 export { editorBriefsRouter } from "./editorBriefs";
 export { morningReviewRouter } from "./morningReview";
 export { institutionalProofRouter } from "./institutionalProof";
+export { boardPackRouter } from "./boardPack";

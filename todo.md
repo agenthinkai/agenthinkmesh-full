@@ -5384,3 +5384,12 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] ArosProof.tsx: all 6 sections (North Star hero, Executive Impact, Decision Quality, Learning, Proof of Learning timeline, Customer Proof library)
 - [ ] Real-data-only enforcement: no simulated metrics, null-safe display for empty data
 - [ ] Nav item: Institutional Proof Dashboard in DashboardLayout sidebar
+
+## Phase 11 — Board Intelligence Pack
+- [x] boardPack tRPC router: generatePack, getPackHistory, downloadPack (PDF/PPTX/DOCX)
+- [ ] Server-side PDF export engine (pdfkit) with 8 sections
+- [ ] Server-side PPTX export engine (pptxgenjs) with 8 sections
+- [ ] Server-side DOCX export engine (docx) with 8 sections
+- [x] ArosBoardPack.tsx UI: company selector, 8-section preview, one-click export
+- [ ] Route /aros/board-pack registered in App.tsx
+- [x] Board Intelligence Pack nav item in DashboardLayout sidebar
