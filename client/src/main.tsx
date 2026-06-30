@@ -52,6 +52,14 @@ const trpcClient = trpc.createClient({
   ],
 });
 
+// Normalise /twin/:templateId to lowercase so /twin/Warba → /twin/warba
+const _twinPath = window.location.pathname;
+const _twinMatch = _twinPath.match(/^(\/twin\/)(.+)$/);
+if (_twinMatch && _twinMatch[2] !== _twinMatch[2].toLowerCase()) {
+  const corrected = _twinMatch[1] + _twinMatch[2].toLowerCase();
+  history.replaceState(null, '', corrected + window.location.search + window.location.hash);
+}
+
 createRoot(document.getElementById("root")!).render(
   <trpc.Provider client={trpcClient} queryClient={queryClient}>
     <QueryClientProvider client={queryClient}>
