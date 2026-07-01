@@ -701,12 +701,191 @@ export const ZAIN_TEMPLATE: CompanyTemplate = {
   },
 };
 
+// ─── Alghanim Industries ─────────────────────────────────────────────────────
+// Data sources: Alghanim Industries official website (alghanim.com), Wikipedia,
+// Forbes Middle East 2025 rankings, company press releases (Dec 2025 – Mar 2026)
+// Estimated revenue: $4.1–5B (last disclosed $2.5B in 2009; industry estimates)
+// 30+ business units · 40 countries · 15,000+ employees · Founded Kuwait 1932
+// Single organising question: Is Alghanim a distributor with digital assets,
+// or a digital platform that still runs distribution?
+export const ALGHANIM_TEMPLATE: CompanyTemplate = {
+  id: "alghanim",
+  name: "Alghanim Industries",
+  industry: "Diversified Conglomerate — Retail / Automotive / Industrial / Digital",
+  region: "Kuwait · GCC · India · Southeast Asia · 40 Countries",
+  brand: "#1A3A5C",
+  brandDark: "#0F2540",
+  geoLabels: { ksa: "Saudi Arabia / GCC", uae: "UAE / Levant", kw: "Kuwait (Core)", other: "India / SEA / Other" },
+  sliderOverrides: {
+    pricingName: "Platform vs. Distribution Mix",
+    pricingLow: "Pure Distributor",
+    pricingHigh: "Digital Platform",
+    pricingFmt: (v: number) => v < 25 ? "Distributor" : v < 55 ? "Hybrid" : v < 80 ? "Platform-Led" : "Digital Conglomerate",
+    gccName: "Regional Expansion Velocity",
+    gccLow: "Kuwait-Centric",
+    gccHigh: "Pan-GCC + India/SEA",
+  },
+  defaults: {
+    // Estimated actuals: Revenue ~$4.1B · EBITDA ~$410M (10% margin estimate)
+    // 15,000+ employees · 30+ business units · 40 countries
+    // Retail/Automotive ~60% of revenue · Industrial ~20% · Services/Digital ~20%
+    rev: 4100, eb: 410, emp: 15000, fee: 12000, util: 72,
+    geo: { ksa: 18, uae: 14, kw: 52, other: 16 },
+    svc: { arch: 0, eng: 0, pm: 28, pgm: 44, da: 28 },
+    dig: 12,
+  },
+  overviewText: "Alghanim Industries is one of the Gulf's largest privately owned conglomerates — <b>$4B+ in estimated revenue</b>, 30+ business units, 15,000 employees across 40 countries. It is ranked <b>#1 company in Kuwait</b> by Forbes Middle East 2025. The business was built as a <b>distributor</b>: automotive franchises (11 brands including BYD and Ford), consumer electronics (Xcite), food franchises (Costa Coffee, Wendy's), and industrial systems (Kirby Steel). In 2025–2026 Alghanim made three strategic moves that signal something different: <b>Barq</b> (EV charging infrastructure), <b>Sama X</b> (Starlink satellite internet reseller), and <b>Fixly</b> (digital home services platform). The question is not whether Alghanim is successful — it clearly is. The question is: <b>is Alghanim becoming a digital platform that happens to run distribution, or a distributor that is experimenting with digital?</b> The answer determines whether the next decade looks like Majid Al Futtaim (AED 35.9B revenue, 41% net profit growth through platform economics) or a well-managed but structurally capped portfolio.",
+  scenarios: {
+    current: {
+      name: "Conglomerate Distributor", tag: "today's business model", base: true,
+      set: { ai: 12, pricing: 18, share: 8, growth: 5, costInfl: 6, daGrowth: 12, gcc: 20 },
+      rec: "Alghanim is a high-quality distributor with strong brand relationships and Kuwait market leadership. The current model generates stable cash flows but is structurally capped by distribution margins and franchise dependency. The digital experiments (Barq, Sama X, Fixly) are real but sub-scale.",
+      conf: "Moderate",
+      assum: ["Kuwait remains the primary revenue base (~52% of revenue)", "Automotive and retail distribution margins hold at current levels", "Digital ventures remain below 5% of group revenue"],
+      risks: ["Distribution margins compress as OEMs build direct channels", "EV transition disrupts the 11-brand automotive portfolio", "Digital experiments remain perpetually sub-scale without dedicated capital"],
+      acts: ["Define which digital ventures receive dedicated capital vs. remain experiments", "Set a 3-year target for digital revenue as a % of group", "Evaluate which automotive brands are EV-ready vs. structurally declining"],
+      opp: ["Kuwait market leadership provides a stable base for digital experimentation", "Strong brand relationships create distribution moat", "Family ownership enables long-term capital allocation without quarterly pressure"],
+      rsk: ["Franchise dependency means OEM decisions outside Alghanim's control", "Kuwait concentration creates macro exposure", "Digital experiments without dedicated capital remain perpetually small"],
+    },
+    aiaug: {
+      name: "AI-Augmented Operations", tag: "efficiency across 30+ units",
+      set: { ai: 68, pricing: 22, share: 9, growth: 7, costInfl: 3, daGrowth: 35, gcc: 25 },
+      rec: "Deploy AI across Xcite (personalised retail), automotive service (predictive maintenance), and Alghanim Freight (route optimisation). A conglomerate with 15,000 employees and 30+ units has more AI leverage than a single-business firm — but only if AI is deployed as a shared capability, not 30 separate experiments.",
+      conf: "Moderate-High",
+      assum: ["AI deployment is centralised across business units, not fragmented", "Xcite and automotive service are the primary AI leverage points", "EBITDA margin improves from ~10% toward 12–13% over 3 years"],
+      risks: ["30+ business units create coordination complexity for AI rollout", "Talent to build and maintain models across sectors is scarce in Kuwait", "AI investment competes with digital venture capital allocation"],
+      acts: ["Establish a central AI capability team serving all business units", "Deploy AI personalisation in Xcite first — highest ROI and fastest proof point", "Build predictive maintenance AI for the 11 automotive brands"],
+      opp: ["EBITDA margin expansion from 10% to 13% adds ~$120M annually at current revenue", "Xcite AI personalisation increases basket size and repeat purchase", "Freight route optimisation reduces cost-to-serve across logistics network"],
+      rsk: ["Fragmented AI deployment delivers marginal gains, not structural improvement", "Talent war with regional tech companies for AI engineers", "AI investment timeline is 18–24 months before material EBITDA impact"],
+    },
+    digital: {
+      name: "Digital Platform Transformation", tag: "the Majid Al Futtaim path",
+      set: { ai: 55, pricing: 72, share: 11, growth: 12, costInfl: 3, daGrowth: 85, gcc: 55 },
+      rec: "Alghanim builds a consumer digital ecosystem: Xcite (electronics), Safat Home (furniture), Costa/Wendy's (F&B), Barq (EV charging), Sama X (connectivity), Fixly (home services) — unified under a single app and loyalty platform. This is the Majid Al Futtaim playbook: physical retail + digital platform + loyalty = a consumer relationship that no single-category competitor can replicate.",
+      conf: "Moderate",
+      assum: ["Xcite, Safat Home, and F&B franchises can be unified under a single digital platform", "Kuwait and GCC consumers adopt the super-app model (precedent: Careem, Noon, Talabat)", "Alghanim commits $200–300M in platform investment over 3 years"],
+      risks: ["Super-app competition from Noon, Talabat, Careem is already entrenched", "Consumer loyalty across categories is harder to build than within a single category", "Platform investment requires 3–5 years before network effects materialise"],
+      acts: ["Launch unified Alghanim consumer app with Xcite + Safat Home + F&B + Barq", "Build a single loyalty currency across all consumer-facing businesses", "Acquire or build a fintech/payments layer to capture transaction economics"],
+      opp: ["Platform economics: each additional service increases retention across all services", "Loyalty data creates a consumer intelligence asset no competitor can replicate", "GCC super-app market is still contested — first-mover advantage is available"],
+      rsk: ["Platform investment is long-dated with uncertain returns", "Noon and Talabat have 5+ year head starts in e-commerce", "Consumer behaviour change is slower than technology deployment"],
+    },
+    ev: {
+      name: "EV Infrastructure Leader", tag: "Barq + 5 Chinese brands",
+      set: { ai: 35, pricing: 45, share: 10, growth: 9, costInfl: 4, daGrowth: 45, gcc: 40 },
+      rec: "Alghanim is already positioned on both sides of the EV transition: 5 Chinese EV brands (BYD, Chery, Exeed, JAC, Hongqi) in the automotive portfolio, and Barq as Kuwait's first dedicated EV charging infrastructure operator. If Kuwait's $200M government EV infrastructure allocation accelerates, Alghanim is the only private operator with both the vehicles and the charging network.",
+      conf: "Moderate-High",
+      assum: ["Kuwait EV adoption accelerates on government incentives and infrastructure investment", "Barq secures anchor charging contracts at Kuwait's major retail and commercial locations", "Chinese EV brands (BYD especially) capture 15–25% of Kuwait new car sales by 2028"],
+      risks: ["Kuwait EV adoption is slower than government targets (infrastructure chicken-and-egg)", "Chinese EV brand quality perception risk in GCC premium segment", "Barq faces competition from petrol station operators (KNPC, Q8) entering EV charging"],
+      acts: ["Secure Barq charging contracts at Xcite, Safat Home, and Costa locations — own the retail charging network", "Position BYD as the volume EV brand; Hongqi as the premium EV brand", "Lobby for government fleet electrification contracts through Barq"],
+      opp: ["EV charging is a recurring revenue model vs. one-time vehicle sale", "Barq + BYD creates a vertically integrated EV ecosystem unique in Kuwait", "Government EV infrastructure allocation ($200M) is available to private operators"],
+      rsk: ["EV charging infrastructure is capital-intensive with 7–10 year payback", "Chinese EV brand loyalty is unproven in GCC", "Petrol station operators have better real estate for charging infrastructure"],
+    },
+    margin: {
+      name: "Distribution Margin Compression", tag: "the warning case",
+      set: { ai: 10, pricing: 8, share: 6, growth: 2, costInfl: 9, daGrowth: 8, gcc: 12 },
+      rec: "OEMs (Ford, GM, Honda) accelerate direct-to-consumer channels in GCC. Automotive distribution margins compress from 4–6% to 2–3%. Xcite faces margin pressure from Amazon.ae and Noon. Kuwait macro softness reduces consumer spending. This is not a collapse — it is a slow structural deterioration that is hard to see until it is too late.",
+      conf: "Moderate",
+      assum: ["OEM direct channel expansion in GCC accelerates (Ford Model e direct sales model)", "E-commerce platforms capture 15–20% of Kuwait consumer electronics market", "Kuwait government spending softens on oil price weakness below $65/barrel"],
+      risks: ["Automotive distribution margin compression from 5% to 2–3% over 5 years", "Xcite revenue pressure from Amazon.ae and Noon in electronics", "Kuwait consumer confidence declines on macro softness"],
+      acts: ["Accelerate digital platform investment before margin compression forces it", "Negotiate long-term franchise agreements with EV-ready OEMs", "Diversify revenue base away from Kuwait concentration"],
+      opp: ["Compression forces overdue portfolio rationalisation", "Weak macro makes acquisitions cheaper", "Digital transformation becomes politically easier in a compression scenario"],
+      rsk: ["Automotive distribution is 40%+ of estimated revenue — compression is material", "Xcite faces structural headwinds from e-commerce regardless of macro", "Kuwait concentration (52% of revenue) amplifies any Kuwait-specific shock"],
+    },
+    regional: {
+      name: "GCC + India/SEA Expansion", tag: "40 countries, 3 regions",
+      set: { ai: 40, pricing: 35, share: 12, growth: 14, costInfl: 5, daGrowth: 50, gcc: 80 },
+      rec: "Alghanim already operates in 40 countries with presence in India and Southeast Asia. The question is whether to deepen these positions or remain a Kuwait-headquartered conglomerate with international distribution. Majid Al Futtaim chose depth in GCC; Abdul Latif Jameel chose breadth globally. Both strategies work — but they require different capital allocation and management models.",
+      conf: "Moderate",
+      assum: ["India and SEA operations can scale to 20%+ of group revenue by 2030", "Alghanim's Kuwait brand and relationships translate to new markets", "Capital is available for regional expansion alongside Kuwait investment"],
+      risks: ["India and SEA require local partners and regulatory navigation", "Management bandwidth is finite — 40 countries with 30+ units is already complex", "Regional expansion competes with digital platform investment for capital"],
+      acts: ["Define 3 priority markets outside Kuwait for deepened investment", "Evaluate Kirby Building Systems for GCC infrastructure boom positioning", "Build Sama X (Starlink) as a regional connectivity play, not just Kuwait"],
+      opp: ["India infrastructure boom: Kirby steel buildings have a large addressable market", "SEA digital commerce: Alghanim's retail expertise is transferable", "GCC Vision 2030/2035 projects create multi-year industrial demand"],
+      rsk: ["Regional expansion without focus dilutes returns", "Local competition in India and SEA is intense and well-capitalised", "Kuwait-centric management culture may not adapt to multi-market complexity"],
+    },
+  },
+  growthPaths: [
+    {
+      t: "Consumer Super-App: Xcite + Safat + F&B + Barq",
+      d: "Alghanim's consumer-facing businesses (Xcite Electronics, Safat Home, Costa Coffee, Wendy's, Barq EV charging) serve the same Kuwait middle-to-upper-income household. A unified digital platform with a single loyalty currency would create a consumer relationship that no single-category competitor can replicate. Majid Al Futtaim built AED 35.9B in revenue on exactly this model.",
+      live: s => s.pricing >= 55 && s.daGrowth >= 60,
+    },
+    {
+      t: "EV Ecosystem: Barq + 5 Chinese Brands",
+      d: "Alghanim is the only private operator in Kuwait with both EV vehicles (BYD, Chery, Exeed, JAC, Hongqi) and EV charging infrastructure (Barq). Kuwait's $200M government EV allocation creates a first-mover window. Barq charging at Xcite and Safat Home locations creates a vertically integrated EV ecosystem.",
+      live: s => s.gcc >= 35 && s.daGrowth >= 40,
+    },
+    {
+      t: "Kirby Steel + GCC Infrastructure Boom",
+      d: "Kirby Building Systems (pre-engineered steel) is positioned for the GCC infrastructure cycle: NEOM, Lusail, Kuwait Vision 2035. Kirby already has GCC presence. Scaling Kirby as a dedicated GCC infrastructure play — separate from the consumer portfolio — could add $200–400M in revenue by 2028.",
+      live: s => s.gcc >= 50 && s.growth >= 10,
+    },
+    {
+      t: "Sama X: Connectivity Infrastructure",
+      d: "Sama X (Starlink authorized reseller, launched March 2026) is a connectivity infrastructure play. If Alghanim expands Sama X beyond Kuwait to GCC and India/SEA markets, it becomes a B2B connectivity provider for industrial sites, remote locations, and maritime — a recurring revenue model with infrastructure characteristics.",
+      live: s => s.daGrowth >= 50 && s.gcc >= 45,
+    },
+  ],
+  failPaths: [
+    {
+      t: "Automotive Distribution Disruption",
+      d: "Ford, GM, and Honda are all piloting direct-to-consumer sales models. If OEMs accelerate direct channels in GCC, Alghanim's automotive distribution business (estimated 40%+ of revenue) faces structural margin compression. The 11-brand portfolio becomes a liability rather than an asset if franchise agreements are not renewed on current terms.",
+      live: s => s.pricing < 25 && s.growth < 5,
+    },
+    {
+      t: "Digital Experiments Without Commitment",
+      d: "Barq, Sama X, and Fixly are all real businesses — but they are small. Without dedicated capital allocation and management focus, they remain perpetually sub-scale. The risk is not that they fail — it is that they succeed just enough to absorb management attention without ever reaching the scale needed to change the group's multiple.",
+      live: s => s.daGrowth < 25 && s.pricing < 30,
+    },
+    {
+      t: "Kuwait Concentration Risk",
+      d: "~52% of estimated revenue is Kuwait-based. Kuwait's economy is oil-dependent and government spending is the primary demand driver. A sustained oil price below $65/barrel for 18+ months would compress Kuwait government spending, consumer confidence, and Alghanim's core revenue base simultaneously.",
+      live: s => s.gcc < 20 && s.growth < 4,
+    },
+    {
+      t: "Super-App Competition Too Late",
+      d: "Noon, Talabat, Careem, and Amazon.ae have 5+ year head starts in GCC digital commerce. If Alghanim waits another 2–3 years before committing to a unified digital platform, the window for building a differentiated consumer super-app may close. The risk is not losing to a startup — it is losing to a well-capitalised regional platform that already has the consumer relationship.",
+      live: s => s.daGrowth < 20 && s.pricing < 20,
+    },
+  ],
+  historicalPrecedents: [
+    {
+      name: "Majid Al Futtaim (UAE)",
+      outcome: "Revenue grew from AED 15B to AED 35.9B (2015–2025) through unified digital platform, Carrefour franchise, and loyalty programme (SHARE). Net profit grew 41% in 2024. The key move: treating retail, F&B, and entertainment as one consumer relationship, not 10 separate businesses.",
+      relevance: "The closest strategic analogue to Alghanim's consumer portfolio. MAF's SHARE loyalty programme is the mechanism that unified the portfolio. Alghanim has the same raw ingredients — it lacks the unifying platform.",
+    },
+    {
+      name: "Abdul Latif Jameel (Saudi Arabia)",
+      outcome: "Diversified from Toyota distribution into renewable energy (Abdul Latif Jameel Energy), fintech, and healthcare. Revenue estimated $10B+. Ranked #1 Forbes Arab Family Business 2026. The key move: using distribution cash flows to fund new-economy businesses before the distribution model was disrupted.",
+      relevance: "The strategic template for using distribution profits to fund digital/new-economy transformation. Alghanim has the same distribution cash flows and the same transformation imperative.",
+    },
+    {
+      name: "Jardine Matheson (Hong Kong/Asia)",
+      outcome: "Asian conglomerate with $35B revenue across automotive, retail, property, and industrial. Maintained relevance through 150+ years by continuously rotating the portfolio — exiting declining businesses and entering new ones. Automotive distribution remains a core business.",
+      relevance: "The long-term conglomerate management model. Jardine's portfolio rotation discipline — not loyalty to any single business — is the governance principle that has sustained it across multiple economic cycles.",
+    },
+    {
+      name: "Inchcape (UK/Global)",
+      outcome: "Pure-play automotive distribution company, $12B revenue, 40+ markets. Inchcape chose depth in automotive rather than diversification. EV transition is its primary strategic challenge — it is actively building EV-specific capabilities and renegotiating OEM agreements.",
+      relevance: "The cautionary tale for automotive distribution concentration. Inchcape's EV transition challenge is exactly the challenge Alghanim faces with its 11-brand automotive portfolio — and Inchcape has a 5-year head start in addressing it.",
+    },
+  ],
+  outcomeLedgerEntry: {
+    ref: "OL-004",
+    decision: "Alghanim Industries: Is the company a distributor with digital assets, or a digital platform that still runs distribution? The answer determines capital allocation for the next decade.",
+    hiddenVariable: "Platform Commitment Threshold — Alghanim's digital ventures (Barq, Sama X, Fixly) are real but sub-scale. The hidden variable is whether the Alghanim family is willing to allocate $200–300M in dedicated platform capital — enough to reach escape velocity — or whether digital remains a portfolio of experiments that never changes the group's identity or multiple.",
+    recommendation: "Commit to the consumer super-app strategy with dedicated capital. The window is 18–24 months before Noon and Talabat entrench the consumer relationship in Kuwait. The EV ecosystem (Barq + 5 Chinese brands) is the most differentiated asset in the portfolio — it should be the anchor of the digital narrative, not a footnote.",
+    confidence: 65,
+    reviewDates: ["December 2026", "June 2027", "December 2027"],
+  },
+};
+
 // ─── Template Registry ────────────────────────────────────────────────────────
 
 export const TEMPLATES: Record<string, CompanyTemplate> = {
   keo: KEO_TEMPLATE,
   warba: WARBA_TEMPLATE,
   zain: ZAIN_TEMPLATE,
+  alghanim: ALGHANIM_TEMPLATE,
 };
 
 export function getTemplate(id: string): CompanyTemplate {
