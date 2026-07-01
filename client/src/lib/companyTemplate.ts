@@ -879,6 +879,308 @@ export const ALGHANIM_TEMPLATE: CompanyTemplate = {
   },
 };
 
+// ─── Core42 ──────────────────────────────────────────────────────────────────
+// Data sources: Core42 press releases (May–June 2026), LinkedIn (Talal Al Kaissi, Dec 2025),
+// HSBC trade finance announcement ($550M, May 2026), Buffalo 42MW expansion (June 2026),
+// ABI Research neocloud report (Dec 2025), McKinsey inference workload forecast (Feb 2026),
+// G42/Microsoft $1.5B partnership (April 2024)
+// Private company — no public financials. Revenue estimated $300–500M (analyst estimates).
+// Single organising question: Is Core42 a sovereign AI infrastructure provider that is
+// expanding commercially, or a commercial cloud provider that uses sovereign credentials
+// as a differentiator? The answer determines everything: positioning, pricing, partnerships,
+// and whether the $550M capital deployment creates durable value or dilutes the only moat
+// that hyperscalers cannot replicate.
+export const CORE42_TEMPLATE: CompanyTemplate = {
+  id: "core42",
+  name: "Core42",
+  industry: "Sovereign AI Infrastructure / Cloud Computing / HPC",
+  region: "UAE (Abu Dhabi) · US · Europe · Middle East",
+  brand: "#0A2342",
+  brandDark: "#061628",
+  geoLabels: { ksa: "Saudi Arabia / MENA", uae: "UAE / GCC (Core)", kw: "Europe (Dublin HQ)", other: "US (Buffalo / NY)" },
+  sliderOverrides: {
+    pricingName: "Sovereign vs. Commercial Mix",
+    pricingLow: "Pure Sovereign",
+    pricingHigh: "Full Commercial",
+    pricingFmt: (v: number) => v < 20 ? "Sovereign-Only" : v < 45 ? "Sovereign-Led" : v < 70 ? "Hybrid Neocloud" : v < 88 ? "Commercial-Led" : "Hyperscaler Competitor",
+    gccName: "US/Europe Expansion Velocity",
+    gccLow: "MENA-Centric",
+    gccHigh: "Tier-1 Global Cloud",
+  },
+  defaults: {
+    // Estimated: Revenue ~$400M · EBITDA ~$80M (20% margin estimate for infrastructure)
+    // $550M HSBC facility (May 2026) · 10 operational sites · 42MW Buffalo (June 2026)
+    // G42 parent ~$10B+ valuation · Microsoft/G42 $1.5B partnership (April 2024)
+    rev: 400, eb: 80, emp: 2000, fee: 1200, util: 74,
+    geo: { ksa: 22, uae: 48, kw: 12, other: 18 },
+    svc: { arch: 0, eng: 0, pm: 18, pgm: 52, da: 30 },
+    dig: 85,
+  },
+  overviewText: "Core42 is a G42 company and the world's most credible <b>sovereign AI infrastructure provider</b> — 10 operational sites, $550M in fresh capital (HSBC, May 2026), a 42MW expansion at Buffalo (June 2026), and a European HQ in Dublin. It is the only neocloud that can credibly tell a government: <i>your data never leaves your jurisdiction, and we are not owned by a US hyperscaler.</i> That is an asset AWS, Azure, and Google cannot replicate. But Core42 is now deploying $550M to compete for <b>US and European enterprise workloads</b> — the same market where AWS, Azure, and Google have 3x–10x its scale. The tension is live: <b>Is Core42 a sovereign AI infrastructure provider that is expanding commercially, or a commercial cloud provider that uses sovereign credentials as a differentiator?</b> The answer determines whether the $550M creates durable value or dilutes the only moat hyperscalers cannot buy.",
+  scenarios: {
+    current: {
+      name: "Sovereign Neocloud", tag: "today's identity and position", base: true,
+      set: { ai: 35, pricing: 28, share: 8, growth: 40, costInfl: 12, daGrowth: 85, gcc: 22 },
+      rec: "Core42 is the world's leading sovereign AI infrastructure provider — a position no hyperscaler can replicate. The current model generates strong growth from government and regulated enterprise clients who need data residency, compliance, and non-hyperscaler optionality. The $550M capital deployment and Buffalo expansion signal a commercial push that is already underway. The strategic question is not whether to expand — it is whether the expansion preserves or dilutes the sovereign identity that makes Core42 irreplaceable.",
+      conf: "Moderate-High",
+      assum: [
+        "Sovereign AI demand from governments and regulated industries continues to grow",
+        "Core42's non-hyperscaler positioning remains a credible differentiator",
+        "Interim CEO Talal Al Kaissi executes the $550M deployment without strategic drift",
+      ],
+      risks: [
+        "Commercial expansion dilutes sovereign identity before new commercial revenue is material",
+        "Permanent CEO appointment resets strategic priorities mid-deployment",
+        "Microsoft/G42 partnership constrains Core42's commercial independence in US market",
+      ],
+      acts: [
+        "Define the sovereign identity boundary: which workloads are sovereign-only, which are commercial",
+        "Appoint permanent CEO before the $550M deployment reaches its critical decision points",
+        "Establish a public sovereign AI standard that competitors cannot meet",
+      ],
+      opp: [
+        "Sovereign AI demand is accelerating — EU AI Act, US Executive Order, GCC national AI programmes",
+        "No hyperscaler can credibly offer data sovereignty to a government",
+        "First-mover advantage in sovereign AI infrastructure is compounding",
+      ],
+      rsk: [
+        "Identity dilution: competing for enterprise workloads makes Core42 look like a smaller AWS",
+        "Interim leadership creates strategic uncertainty during a critical capital deployment",
+        "Oracle is winning government cloud contracts in UAE and EU — direct sovereign competitor",
+      ],
+    },
+    commercial: {
+      name: "Commercial Cloud Expansion", tag: "the $550M deployment path",
+      set: { ai: 55, pricing: 72, share: 11, growth: 65, costInfl: 15, daGrowth: 90, gcc: 75 },
+      rec: "Deploy the $550M to compete for US and European enterprise GPU workloads. Scale Buffalo from 42MW toward 200MW+. Compete with CoreWeave, Nscale, and Lambda Labs for AI training and inference capacity. The commercial opportunity is real — but Core42 enters this market at a scale disadvantage against both hyperscalers and well-capitalised US neoclouds.",
+      conf: "Moderate",
+      assum: [
+        "Enterprise AI workload demand in US/Europe continues to grow at 40%+ annually",
+        "Core42 can compete on price and reliability against CoreWeave and Nscale",
+        "$550M is sufficient to reach minimum viable scale in US/Europe enterprise market",
+      ],
+      risks: [
+        "CoreWeave, Nscale, Lambda Labs have 2–3 year head starts in US enterprise GPU market",
+        "Hyperscalers can undercut on price and bundle with existing enterprise relationships",
+        "Commercial expansion requires talent (sales, enterprise, cloud engineering) Core42 does not yet have at scale",
+      ],
+      acts: [
+        "Hire US enterprise sales leadership with hyperscaler relationships",
+        "Establish a commercial SLA and pricing model competitive with CoreWeave",
+        "Build a US-specific go-to-market that does not rely on sovereign positioning",
+      ],
+      opp: [
+        "US enterprise AI compute demand is structurally undersupplied",
+        "Buffalo's renewable energy advantage (Lake Erie) is a real cost differentiator",
+        "NVIDIA partnership provides access to latest GPU generations",
+      ],
+      rsk: [
+        "Scale disadvantage vs. hyperscalers is structural, not temporary",
+        "Commercial positioning erodes sovereign trust with government clients",
+        "$550M may be insufficient for meaningful US/Europe enterprise market share",
+      ],
+    },
+    sovereign: {
+      name: "Sovereign AI Standard", tag: "the irreplaceable position",
+      set: { ai: 45, pricing: 35, share: 9, growth: 45, costInfl: 10, daGrowth: 80, gcc: 30 },
+      rec: "Consolidate Core42 as the world's definitive sovereign AI infrastructure standard. Build the certification, compliance, and governance framework that governments require — and that hyperscalers structurally cannot offer. Become the ISO 27001 of sovereign AI: the standard that every government AI programme must meet. This is the path where Core42's moat is permanent.",
+      conf: "Moderate-High",
+      assum: [
+        "Sovereign AI regulation accelerates globally (EU AI Act, US EO, GCC national programmes)",
+        "Core42 can define and own the sovereign AI certification standard",
+        "Government AI budgets grow faster than enterprise AI budgets through 2030",
+      ],
+      risks: [
+        "Sovereign market ceiling: government AI budgets are large but finite",
+        "Oracle, AWS GovCloud, and Azure Government are investing heavily in sovereign positioning",
+        "Geopolitical risk: UAE/Abu Dhabi ownership creates trust issues in some Western government markets",
+      ],
+      acts: [
+        "Launch a Sovereign AI Certification programme with independent governance",
+        "Win 3 G7 government AI infrastructure contracts in 18 months",
+        "Publish a Sovereign AI white paper that becomes the industry reference document",
+      ],
+      opp: [
+        "No competitor has yet defined the sovereign AI standard — the position is available",
+        "EU AI Act creates mandatory sovereign AI requirements for member states",
+        "GCC national AI programmes (UAE, Saudi, Qatar) are multi-billion dollar opportunities",
+      ],
+      rsk: [
+        "Sovereign-only positioning limits total addressable market",
+        "Geopolitical complexity in G7 markets (US, UK, Germany) due to UAE ownership",
+        "Standard-setting requires regulatory relationships Core42 is still building in Europe",
+      ],
+    },
+    hybrid: {
+      name: "Hybrid Neocloud", tag: "sovereign credentials as commercial differentiator",
+      set: { ai: 50, pricing: 55, share: 10, growth: 52, costInfl: 12, daGrowth: 88, gcc: 50 },
+      rec: "Use sovereign credentials as the commercial differentiator for enterprise customers who need data residency, compliance, and non-hyperscaler optionality — without abandoning the sovereign identity. This is the most commercially attractive path, but it requires the clearest positioning: Core42 must be able to explain in one sentence why it is better than AWS for regulated enterprise and better than Oracle for sovereign governments.",
+      conf: "Moderate",
+      assum: [
+        "Regulated enterprise (financial services, healthcare, defence) is willing to pay a premium for sovereign-grade infrastructure",
+        "Core42 can build a commercial sales motion without diluting government trust",
+        "The hybrid positioning is coherent enough to win in both markets simultaneously",
+      ],
+      risks: [
+        "Unclear positioning: neither fully sovereign nor fully commercial is a common failure mode",
+        "Sales motion for regulated enterprise is different from government sales — requires different talent",
+        "Competitors will claim sovereign credentials without the substance Core42 has",
+      ],
+      acts: [
+        "Define the regulated enterprise ICP (ideal customer profile) with precision",
+        "Build a sovereign compliance layer that enterprise customers can audit independently",
+        "Separate the go-to-market: sovereign team for governments, regulated enterprise team for commercial",
+      ],
+      opp: [
+        "Regulated enterprise (BFSI, healthcare, defence) is the fastest-growing segment of enterprise cloud",
+        "GDPR, EU AI Act, and US data residency requirements create structural demand",
+        "Core42 is the only neocloud with both sovereign credentials and hyperscale infrastructure",
+      ],
+      rsk: [
+        "Positioning ambiguity loses to focused competitors in both segments",
+        "Two separate go-to-market motions require 2x the commercial investment",
+        "Enterprise sales cycles are 12–18 months — commercial revenue is slow to materialise",
+      ],
+    },
+    inference: {
+      name: "Inference Infrastructure Leader", tag: "the 2027–2030 workload shift",
+      set: { ai: 78, pricing: 60, share: 10, growth: 58, costInfl: 10, daGrowth: 92, gcc: 45 },
+      rec: "ABI Research (December 2025) projects inference workloads will account for 80% of neocloud market by 2030. McKinsey (February 2026) confirms inference will surpass training as the dominant workload. Core42's infrastructure is currently weighted toward training. The strategic move is to rebalance toward inference — which has different economics (lower GPU density, higher throughput, recurring revenue) and is less dominated by hyperscalers.",
+      conf: "Moderate-High",
+      assum: [
+        "Inference workloads grow to 80% of neocloud market by 2030 (ABI Research, Dec 2025)",
+        "Core42 can rebalance its infrastructure mix from training-heavy to inference-optimised",
+        "Inference pricing is more stable and recurring than training burst pricing",
+      ],
+      risks: [
+        "Inference optimisation requires different hardware mix (AMD MI300X, custom ASICs) vs. training (NVIDIA H100)",
+        "Hyperscalers are already building inference-optimised infrastructure at scale",
+        "Transition period creates a capability gap while training revenue declines and inference revenue builds",
+      ],
+      acts: [
+        "Publish a public inference roadmap with specific capacity targets by 2027",
+        "Partner with AMD for inference-optimised GPU deployment alongside existing NVIDIA capacity",
+        "Build inference-specific SLAs (latency, throughput, uptime) that training-focused competitors cannot match",
+      ],
+      opp: [
+        "Inference market is less consolidated than training — Core42 can win meaningful share",
+        "Recurring inference revenue is more predictable than burst training revenue",
+        "Sovereign inference (government AI assistants, national LLMs) is an uncontested segment",
+      ],
+      rsk: [
+        "Hardware transition costs are significant — AMD + NVIDIA dual-stack increases capex",
+        "Inference market develops slower than ABI Research projects",
+        "Hyperscalers bundle inference with existing enterprise relationships",
+      ],
+    },
+    warning: {
+      name: "Identity Dilution", tag: "the strategic warning case",
+      set: { ai: 25, pricing: 45, share: 7, growth: 20, costInfl: 18, daGrowth: 55, gcc: 60 },
+      rec: "Core42 pursues commercial expansion without resolving the sovereign identity question. The $550M is deployed into US/Europe enterprise workloads. Government clients begin to question whether Core42 is still sovereign. Commercial clients see Core42 as a smaller, more expensive AWS. Neither market is won decisively. This is the most likely failure mode — not a collapse, but a permanent positioning trap.",
+      conf: "Moderate",
+      assum: [
+        "Commercial expansion proceeds without a clear sovereign identity boundary",
+        "Government clients begin to perceive Core42 as commercially motivated",
+        "Commercial clients compare Core42 unfavourably to hyperscalers on price and scale",
+      ],
+      risks: [
+        "Sovereign trust erosion: the most valuable asset cannot be rebuilt once lost",
+        "Commercial revenue insufficient to offset sovereign revenue at risk",
+        "Permanent positioning trap: too commercial for governments, too sovereign for enterprises",
+      ],
+      acts: [
+        "Define and publish the sovereign identity boundary before the $550M is fully deployed",
+        "Conduct a sovereign client survey to measure trust levels before and after commercial expansion",
+        "Establish a sovereign advisory board with government clients to maintain accountability",
+      ],
+      opp: [
+        "Identity dilution forces a strategic choice that should have been made earlier",
+        "Crisis creates the political will for a decisive repositioning",
+        "Competitor consolidation may create acquisition opportunities",
+      ],
+      rsk: [
+        "Sovereign trust, once lost, cannot be rebuilt — it is a one-way door",
+        "Positioning trap is self-reinforcing: unclear identity attracts neither segment decisively",
+        "Interim CEO transition amplifies the risk of strategic drift",
+      ],
+    },
+  },
+  growthPaths: [
+    {
+      t: "Sovereign AI Standard Ownership",
+      d: "Define and own the global sovereign AI certification standard. Every government AI programme that requires data residency and non-hyperscaler infrastructure must meet the Core42 standard. This is the path where the moat is permanent — no hyperscaler can buy their way into sovereign trust.",
+      live: s => s.pricing <= 45 && s.gcc <= 40,
+    },
+    {
+      t: "Inference Infrastructure Leadership",
+      d: "Rebalance from training-heavy to inference-optimised infrastructure as ABI Research's 80% inference projection materialises. Inference has recurring revenue characteristics, lower GPU density requirements, and is less dominated by hyperscalers. Core42's sovereign inference segment (national LLMs, government AI assistants) is uncontested.",
+      live: s => s.ai >= 60 && s.daGrowth >= 75,
+    },
+    {
+      t: "Regulated Enterprise Neocloud",
+      d: "Use sovereign credentials as the commercial differentiator for regulated enterprise (BFSI, healthcare, defence). These customers need data residency and compliance that hyperscalers structurally cannot provide. Core42 is the only neocloud with both sovereign credentials and hyperscale infrastructure — a combination no competitor can replicate quickly.",
+      live: s => s.pricing >= 45 && s.pricing <= 75 && s.gcc >= 35,
+    },
+    {
+      t: "GCC National AI Programme Anchor",
+      d: "Become the infrastructure anchor for GCC national AI programmes — UAE, Saudi Arabia, Qatar, Kuwait. These are multi-billion dollar, multi-year programmes where sovereign identity is the primary selection criterion. Core42's Abu Dhabi base and G42 relationships make it the natural choice. Oracle and AWS cannot credibly compete for the sovereign mandate.",
+      live: s => s.gcc <= 35 && s.pricing <= 40,
+    },
+  ],
+  failPaths: [
+    {
+      t: "Sovereign Identity Dilution",
+      d: "Commercial expansion proceeds without a clear sovereign identity boundary. Government clients begin to question whether Core42 is still sovereign. Commercial clients see Core42 as a smaller, more expensive AWS. Neither market is won decisively. Sovereign trust, once lost, cannot be rebuilt — it is a one-way door.",
+      live: s => s.pricing >= 55 && s.gcc >= 55,
+    },
+    {
+      t: "Hyperscaler Price Competition",
+      d: "AWS, Azure, and Google respond to Core42's US/Europe expansion with targeted pricing discounts for the same enterprise segments. Core42's $550M is insufficient to sustain a price war with competitors who have 10x the capital. Commercial revenue fails to materialise at the scale required to justify the expansion.",
+      live: s => s.pricing >= 65 && s.costInfl >= 15,
+    },
+    {
+      t: "Interim Leadership Strategic Drift",
+      d: "The $550M capital deployment proceeds under an interim CEO mandate without a permanent strategic direction. The permanent CEO appointment resets priorities mid-deployment. Capital is committed to infrastructure that does not align with the new strategic direction. The transition cost is measured in both capital and time.",
+      live: s => s.growth >= 50 && s.share <= 8,
+    },
+    {
+      t: "Microsoft Partnership Constraint",
+      d: "The G42/Microsoft $1.5B partnership (April 2024) constrains Core42's commercial independence in the US market. Core42 cannot compete directly against Azure for enterprise workloads without damaging its most important strategic partnership. The constraint is structural — it cannot be resolved without renegotiating the partnership terms.",
+      live: s => s.gcc >= 60 && s.pricing >= 60,
+    },
+  ],
+  historicalPrecedents: [
+    {
+      name: "Oracle Cloud Infrastructure (OCI)",
+      outcome: "Oracle entered the cloud market 10 years after AWS. Rather than competing on breadth, Oracle focused on regulated enterprise and government workloads where AWS had structural disadvantages. OCI won the US DoD JEDI-equivalent contract and multiple EU government contracts. Revenue grew from $1B to $8B+ in 5 years.",
+      relevance: "The most direct precedent for Core42's hybrid neocloud path. Oracle succeeded by finding the segments where hyperscalers had structural disadvantages — not by competing on hyperscaler terms. Core42's sovereign positioning is the equivalent of Oracle's regulated enterprise focus.",
+    },
+    {
+      name: "CoreWeave (US Neocloud)",
+      outcome: "CoreWeave raised $1.1B in 2023 and $7.5B in 2024 to build GPU-optimised cloud infrastructure. Focused on AI training workloads for enterprise customers. Achieved $1.9B revenue in 2024. IPO in March 2025 at $19B valuation. Competes directly with AWS and Azure for GPU workloads.",
+      relevance: "The cautionary tale for Core42's commercial expansion path. CoreWeave has 3x Core42's capital, a 3-year head start in US enterprise GPU market, and a public market valuation anchor. Core42 entering the same market with $550M faces a structural disadvantage against a competitor that has already proven the model.",
+    },
+    {
+      name: "Palantir Technologies",
+      outcome: "Palantir built its business on government contracts (CIA, NSA, US Army) before expanding to commercial enterprise. The government work created a data and trust moat that commercial competitors could not replicate. Commercial revenue grew from 20% to 55% of total revenue between 2020 and 2025 without abandoning government identity.",
+      relevance: "The sovereign-to-commercial expansion model that preserves identity. Palantir succeeded because it expanded into commercial enterprise with the same sovereign-grade security and compliance posture — not by abandoning it. Core42's hybrid neocloud path follows the same logic.",
+    },
+    {
+      name: "Equinix (Data Centre / Interconnection)",
+      outcome: "Equinix built a $80B+ market cap by owning the physical interconnection layer between hyperscalers, enterprises, and networks. It does not compete with AWS — it is the infrastructure that AWS depends on. Revenue grew from $1B to $8B+ through a neutral interconnection model.",
+      relevance: "The neutral infrastructure model. Core42 could pursue a version of the Equinix model in sovereign AI — owning the physical infrastructure layer that governments and regulated enterprises use to connect to hyperscalers, without competing against them. This is the path where Core42 is complementary to AWS, not competitive.",
+    },
+  ],
+  outcomeLedgerEntry: {
+    ref: "OL-005",
+    decision: "Core42: Does the company preserve its sovereign AI identity while expanding commercially, or does commercial expansion dilute the one asset that hyperscalers cannot replicate?",
+    hiddenVariable: "Sovereign Identity Boundary — Core42's $550M capital deployment and Buffalo expansion are already commercial plays, not sovereign plays. The hidden variable is whether leadership has made the sovereign-to-commercial transition consciously and with a defined identity boundary, or whether they are drifting into it under an interim CEO mandate. The decision is not about geography or scale — it is about whether Core42 knows what it is.",
+    recommendation: "Define the sovereign identity boundary before the $550M is fully deployed. The hybrid neocloud path (sovereign credentials as commercial differentiator for regulated enterprise) is the most commercially attractive and the most defensible. But it requires a clear answer to the unanswered question: if Core42 succeeds in becoming a Tier-1 global cloud provider, does it cease to be sovereign?",
+    confidence: 68,
+    reviewDates: ["December 2026", "June 2027", "December 2027"],
+  },
+};
+
 // ─── Template Registry ────────────────────────────────────────────────────────
 
 export const TEMPLATES: Record<string, CompanyTemplate> = {
@@ -886,6 +1188,7 @@ export const TEMPLATES: Record<string, CompanyTemplate> = {
   warba: WARBA_TEMPLATE,
   zain: ZAIN_TEMPLATE,
   alghanim: ALGHANIM_TEMPLATE,
+  core42: CORE42_TEMPLATE,
 };
 
 export function getTemplate(id: string): CompanyTemplate {
