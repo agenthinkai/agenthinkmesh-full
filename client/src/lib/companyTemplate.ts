@@ -183,6 +183,7 @@ export interface CompanyTemplate {
   telcoDefaults?: TelcoDefaults;
   engineeringMode?: boolean;
   engineeringDefaults?: EngineeringDefaults;
+  conglomerateMode?: boolean;
   currency?: string;
 }
 
@@ -768,6 +769,7 @@ export const ZAIN_TEMPLATE: CompanyTemplate = {
 export const ALGHANIM_TEMPLATE: CompanyTemplate = {
   id: "alghanim",
   name: "Alghanim Industries",
+  conglomerateMode: true,
   industry: "Diversified Conglomerate — Retail / Automotive / Industrial / Digital",
   region: "Kuwait · GCC · India · Southeast Asia · 40 Countries",
   brand: "#1A3A5C",
@@ -950,6 +952,7 @@ export const ALGHANIM_TEMPLATE: CompanyTemplate = {
 export const CORE42_TEMPLATE: CompanyTemplate = {
   id: "core42",
   name: "Core42",
+  conglomerateMode: true,
   industry: "Sovereign AI Infrastructure / Cloud Computing / HPC",
   region: "UAE (Abu Dhabi) · US · Europe · Middle East",
   brand: "#0A2342",
