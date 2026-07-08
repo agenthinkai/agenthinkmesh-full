@@ -1,23 +1,16 @@
-import { useState, useMemo } from "react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-  ResponsiveContainer,
-} from "recharts";
-import { LP_REGISTRY, type LimitedPartner, type FundStrategy } from "@/lib/lpRegistry";
-import { runSimulation, computeFitScore, type FundParams } from "@/lib/capTwinEngine";
-import { runComplianceCheck } from "@/lib/regInterceptor";
-import { simulateIC, saveDecisionLedgerEntry, loadDecisionLedger } from "@/lib/capTwinAgents";
+// ─────────────────────────────────────────────────────────────────────────────
+// CapTwin v2.0 — Capital Formation Digital Twin
+// Spec-compliant: 3-column layout, correct LP registry, SEC 506(c), Kuwait CMA,
+// PDF export, adversarial IC, auto-calibration Decision Ledger
+// ─────────────────────────────────────────────────────────────────────────────
+
+import { useState, useCallback, useEffect, useRef } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -25,12 +18,319 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
+import {
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  FileText,
+  TrendingUp,
+  Shield,
+  Users,
+  Printer,
+  ChevronRight,
+} from "lucide-react";
+import { LP_REGISTRY, LimitedPartner, FundStrategy } from "@/lib/lpRegistry";
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Types ──────────────────────────────────────────────────────────────────────
+
+interface FundParams {
+  strategy: FundStrategy;
+  targetCapM: number;
+  managementFeePct: number;
+  trackRecordYrs: number;
+  priorFundIRR: number;
+  velocityScore: number; // 0–100
+  placementAgent: boolean;
+}
+
+interface SimResult {
+  grossRaisedM: number;
+  netAumM: number;
+  estFinalCloseMonth: number;
+  cumulativeMgmtFeesM: number;
+  placementCommissionsM: number;
+  feeDragPct: number;
+  fitScore: number;
+  fitBreakdown: { strategyFit: number; pedigreeFit: number; feeAlignment: number; penalties: number };
+  sCurveData: { month: number; raised: number; netAum: number }[];
+  complianceFlags: ComplianceFlag[];
+  pitch: string;
+  icDebate: ICDebate;
+}
+
+interface ComplianceFlag {
+  rule: string;
+  status: "pass" | "warn" | "fail";
+  message: string;
+}
+
+interface ICDebate {
+  objections: string[];
+  verdict: "Approved" | "Conditional Watchlist" | "Rejected";
+  rationale: string;
+}
+
+interface LedgerEntry {
+  ts: number;
+  lpId: string;
+  fitScore: number;
+  verdict: string;
+  grossRaisedM: number;
+}
+
+// ── Deterministic Math (whatIfEngine) ─────────────────────────────────────────
+
+function logisticSCurve(
+  targetM: number,
+  velocityScore: number,
+  placementAgent: boolean,
+  months: number
+): { month: number; raised: number }[] {
+  const k = 0.08 + (velocityScore / 100) * 0.14;
+  const agentMultiplier = placementAgent ? 1.25 : 1.0;
+  const midpoint = 18 - (velocityScore / 100) * 8;
+  const data: { month: number; raised: number }[] = [];
+  for (let t = 0; t <= months; t++) {
+    const raw = targetM / (1 + Math.exp(-k * agentMultiplier * (t - midpoint)));
+    data.push({ month: t, raised: Math.min(raw, targetM) });
+  }
+  return data;
+}
+
+function calcNetAUM(
+  raised: number,
+  cumulativeMonths: number,
+  mgmtFeePct: number,
+  placementAgent: boolean,
+  targetM: number
+): { netAum: number; mgmtFees: number; placementComm: number } {
+  const monthlyFeeRate = mgmtFeePct / 100 / 12;
+  const mgmtFees = raised * monthlyFeeRate * cumulativeMonths;
+  const placementComm = placementAgent ? raised * 0.02 : 0;
+  return {
+    netAum: Math.max(raised - mgmtFees - placementComm, 0),
+    mgmtFees,
+    placementComm,
+  };
+}
+
+function calcFitScore(
+  params: FundParams,
+  lp: LimitedPartner
+): { score: number; strategyFit: number; pedigreeFit: number; feeAlignment: number; penalties: number } {
+  // Strategy fit
+  const strategyFit = lp.strategies.includes(params.strategy) ? 100 : 30;
+
+  // Pedigree fit — track record vs limit
+  const pedigreeFit =
+    params.trackRecordYrs <= lp.trackRecordLimit ? 100 : Math.max(0, 100 - (params.trackRecordYrs - lp.trackRecordLimit) * 15);
+
+  // Fee alignment
+  const feeAlignment =
+    params.managementFeePct <= lp.maxManagementFee ? 100 : Math.max(0, 100 - (params.managementFeePct - lp.maxManagementFee) * 40);
+
+  // Penalties
+  let penalties = 0;
+  if (lp.shariaRequired && !["Infrastructure", "Private Credit"].includes(params.strategy)) {
+    penalties += 40; // Sharia mismatch
+  }
+  if (lp.complianceFlags.includes("sec-506c") && !lp.complianceFlags.includes("accreditation-required")) {
+    penalties += 30; // Missing accreditation footer
+  }
+  if (lp.irrHurdle !== null && params.priorFundIRR < lp.irrHurdle) {
+    penalties += 20;
+  }
+
+  const raw = 0.5 * strategyFit + 0.3 * pedigreeFit + 0.2 * feeAlignment - penalties;
+  return {
+    score: Math.max(0, Math.min(100, Math.round(raw))),
+    strategyFit: Math.round(strategyFit),
+    pedigreeFit: Math.round(pedigreeFit),
+    feeAlignment: Math.round(feeAlignment),
+    penalties,
+  };
+}
+
+// ── RegInterceptor ─────────────────────────────────────────────────────────────
+
+const BLOCKED_PHRASES_506B = [
+  "public offering",
+  "retail crowd",
+  "advertisement",
+  "open to everyone",
+  "general solicitation",
+];
+
+function runRegInterceptor(pitch: string, lp: LimitedPartner): ComplianceFlag[] {
+  const flags: ComplianceFlag[] = [];
+  const pitchLower = pitch.toLowerCase();
+
+  // SEC 506(b) — block public solicitation phrases
+  const blockedFound = BLOCKED_PHRASES_506B.filter((p) => pitchLower.includes(p));
+  if (blockedFound.length > 0) {
+    flags.push({
+      rule: "SEC Rule 506(b)",
+      status: "fail",
+      message: `Blocked phrase(s) detected: "${blockedFound.join('", "')}". Public solicitation is prohibited under 506(b).`,
+    });
+  } else {
+    flags.push({
+      rule: "SEC Rule 506(b)",
+      status: "pass",
+      message: "No public solicitation phrases detected.",
+    });
+  }
+
+  // SEC 506(c) — Individual investors require accreditation footer
+  if (lp.segment === "Individual") {
+    const hasFooter = pitchLower.includes("accredited investor") || pitchLower.includes("rule 506(c)");
+    flags.push({
+      rule: "SEC Rule 506(c)",
+      status: hasFooter ? "pass" : "fail",
+      message: hasFooter
+        ? "Verified accredited-investor disclosure footer present."
+        : "MISSING: Verified accredited-investor status disclosure footer required for SEC Rule 506(c) compliance.",
+    });
+  }
+
+  // EU AIFMD
+  if (lp.complianceFlags.includes("eu-aifmd")) {
+    const hasPassport = pitchLower.includes("aifmd") || pitchLower.includes("passporting");
+    flags.push({
+      rule: "EU AIFMD",
+      status: hasPassport ? "pass" : "warn",
+      message: hasPassport
+        ? "AIFMD passporting disclosure present."
+        : "WARNING: Marketing to EU allocators without AIFMD passporting disclosure may breach Directive 2011/61/EU.",
+    });
+  }
+
+  // Kuwait CMA — KWD 100,000 minimum ticket
+  if (lp.complianceFlags.includes("kuwait-cma")) {
+    const ticketMinKWD = lp.ticketMin * 0.31; // approx USD to KWD
+    flags.push({
+      rule: "Kuwait CMA",
+      status: ticketMinKWD >= 0.1 ? "pass" : "fail",
+      message:
+        ticketMinKWD >= 0.1
+          ? `Minimum ticket (KWD ${(ticketMinKWD * 1000).toFixed(0)}k) meets Kuwait CMA private placement minimum of KWD 100,000.`
+          : `FAIL: Minimum ticket (KWD ${(ticketMinKWD * 1000).toFixed(0)}k) falls below Kuwait CMA private placement minimum of KWD 100,000.`,
+    });
+  }
+
+  // Sharia AAOIFI
+  if (lp.shariaRequired) {
+    const hasSharia = pitchLower.includes("sharia") || pitchLower.includes("murabaha") || pitchLower.includes("ijara") || pitchLower.includes("aaoifi");
+    flags.push({
+      rule: "Sharia / AAOIFI",
+      status: hasSharia ? "pass" : "fail",
+      message: hasSharia
+        ? "Sharia-compliant structuring language present."
+        : "FAIL: No Sharia-compliant structuring language detected. AAOIFI documentation required.",
+    });
+  }
+
+  return flags;
+}
+
+// ── Pitch Generator ────────────────────────────────────────────────────────────
+
+function generatePitch(params: FundParams, lp: LimitedPartner): string {
+  const base = `We are raising a ${params.strategy} fund targeting $${params.targetCapM}M in commitments. ` +
+    `Our team brings ${params.trackRecordYrs} years of GP track record with a prior fund net IRR of ${params.priorFundIRR}%. ` +
+    `Management fee is ${params.managementFeePct}% per annum with standard 20% carried interest.`;
+
+  let segmentClause = "";
+
+  if (lp.segment === "SWF") {
+    segmentClause =
+      " We offer a dedicated sovereign share-class with preferred liquidity rights and side-letter provisions. " +
+      "All instruments are structured under Murabaha and Ijara frameworks in compliance with AAOIFI standards. " +
+      "Sharia supervisory board oversight is maintained throughout the fund lifecycle.";
+  } else if (lp.segment === "Pension") {
+    segmentClause =
+      " This fund is registered under AIFMD with full EU marketing passport. " +
+      "We provide SFDR Article 9 sustainability risk disclosure and full ESG integration reporting. " +
+      "Long-duration capital is welcome with a 10–15 year investment horizon.";
+  } else if (lp.segment === "SFO") {
+    segmentClause =
+      " GP-LP carry alignment is reinforced by a mandatory GP co-investment of 2% of fund size. " +
+      "Our LPA includes a key-man succession clause and deputy PM continuity provisions. " +
+      "All instruments are structured under Sharia-compliant frameworks with AAOIFI documentation.";
+  } else if (lp.segment === "Individual") {
+    segmentClause =
+      " Digital onboarding is fully supported with simplified capital call processes accessible via secure portal. " +
+      "This offering is made exclusively to verified accredited investors pursuant to SEC Rule 506(c). " +
+      "ACCREDITED INVESTOR DISCLOSURE: This offering is available only to accredited investors as defined under " +
+      "SEC Rule 501(a). Participation requires verified accredited-investor status. This is not a public offering. " +
+      "Past performance does not guarantee future results.";
+  }
+
+  return base + segmentClause;
+}
+
+// ── IC Debate Simulator ────────────────────────────────────────────────────────
+
+function simulateICDebate(fitScore: number, lp: LimitedPartner, params: FundParams): ICDebate {
+  const objections = lp.objections;
+
+  let verdict: "Approved" | "Conditional Watchlist" | "Rejected";
+  let rationale: string;
+
+  if (fitScore >= 70) {
+    verdict = "Approved";
+    rationale = `Fit score of ${fitScore}/100 clears our minimum threshold. Strategy alignment, pedigree, and fee structure are acceptable. Proceeding to due diligence.`;
+  } else if (fitScore >= 45) {
+    verdict = "Conditional Watchlist";
+    rationale = `Fit score of ${fitScore}/100 is below our preferred threshold but above hard rejection. Conditional approval subject to resolution of compliance and structural objections within 30 days.`;
+  } else {
+    verdict = "Rejected";
+    rationale = `Fit score of ${fitScore}/100 falls below our minimum acceptance threshold. Structural mismatches and compliance gaps cannot be resolved within the current fund terms.`;
+  }
+
+  return { objections, verdict, rationale };
+}
+
+// ── Auto-Calibration (Pattern Moat) ───────────────────────────────────────────
+
+const LEDGER_KEY = "captwin_decision_ledger_v2";
+
+function loadLedger(): LedgerEntry[] {
+  try {
+    return JSON.parse(localStorage.getItem(LEDGER_KEY) || "[]");
+  } catch {
+    return [];
+  }
+}
+
+function saveLedger(entries: LedgerEntry[]) {
+  localStorage.setItem(LEDGER_KEY, JSON.stringify(entries.slice(-200)));
+}
+
+function calcPatternMoat(entries: LedgerEntry[]): number {
+  if (entries.length < 3) return 1.0;
+  const approvedEntries = entries.filter((e) => e.verdict === "Approved");
+  if (approvedEntries.length === 0) return 1.0;
+  const avgScore = approvedEntries.reduce((s, e) => s + e.fitScore, 0) / approvedEntries.length;
+  // Ridge-style approximation: multiplier grows with calibration data
+  const multiplier = 1.0 + Math.min(0.08, (entries.length / 200) * 0.08) * (avgScore / 100);
+  return Math.round(multiplier * 1000) / 1000;
+}
+
+// ── Main Component ─────────────────────────────────────────────────────────────
 
 const STRATEGIES: FundStrategy[] = [
-  "Infrastructure",
   "Private Equity",
+  "Infrastructure",
   "Private Credit",
   "Real Estate",
   "Growth Equity",
@@ -38,632 +338,577 @@ const STRATEGIES: FundStrategy[] = [
   "Hedge Fund",
 ];
 
-const DEFAULT_PARAMS: FundParams = {
-  targetCapital: 500,
-  managementFee: 1.75,
-  carry: 20,
-  trackRecord: 8,
-  velocityLever: 50,
-  placementAgent: false,
-  strategy: "Private Equity",
-  priorIRR: 14,
-};
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function verdictColor(verdict: string) {
-  if (verdict === "Approved") return "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
-  if (verdict === "Conditional Watchlist") return "bg-amber-500/20 text-amber-300 border-amber-500/40";
-  return "bg-red-500/20 text-red-300 border-red-500/40";
-}
-
-function scoreColor(score: number) {
-  if (score >= 70) return "text-emerald-400";
-  if (score >= 45) return "text-amber-400";
-  return "text-red-400";
-}
-
-function complianceBadge(passed: boolean) {
-  return passed
-    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-    : "bg-red-500/20 text-red-300 border-red-500/40";
-}
-
-// ── Main Component ────────────────────────────────────────────────────────────
-
 export default function CapTwin() {
-  const [params, setParams] = useState<FundParams>(DEFAULT_PARAMS);
+  const [params, setParams] = useState<FundParams>({
+    strategy: "Private Equity",
+    targetCapM: 500,
+    managementFeePct: 1.75,
+    trackRecordYrs: 8,
+    priorFundIRR: 14,
+    velocityScore: 50,
+    placementAgent: false,
+  });
+
   const [selectedLPId, setSelectedLPId] = useState<string>(LP_REGISTRY[0].id);
-  const [activeTab, setActiveTab] = useState("cockpit");
-  const [savedToLedger, setSavedToLedger] = useState(false);
+  const [result, setResult] = useState<SimResult | null>(null);
+  const [ledger, setLedger] = useState<LedgerEntry[]>(loadLedger);
+  const [running, setRunning] = useState(false);
+  const printRef = useRef<HTMLDivElement>(null);
 
-  const selectedLP: LimitedPartner = LP_REGISTRY.find((lp) => lp.id === selectedLPId)!;
+  const selectedLP = LP_REGISTRY.find((lp) => lp.id === selectedLPId) ?? LP_REGISTRY[0];
 
-  // ── Deterministic computations ─────────────────────────────────────────────
-  const simulation = useMemo(() => runSimulation(params), [params]);
-  const fitResult = useMemo(() => computeFitScore(params, selectedLP), [params, selectedLP]);
-  const icResult = useMemo(() => simulateIC(params, selectedLP, fitResult), [params, selectedLP, fitResult]);
-  const compliance = useMemo(
-    () => runComplianceCheck(icResult.tailoredPitch, params, selectedLP),
-    [icResult.tailoredPitch, params, selectedLP]
-  );
-  const ledger = useMemo(() => loadDecisionLedger(), [savedToLedger]);
+  const runSimulation = useCallback(() => {
+    setRunning(true);
+    setTimeout(() => {
+      const MONTHS = 24;
+      const sCurveRaw = logisticSCurve(params.targetCapM, params.velocityScore, params.placementAgent, MONTHS);
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
-  function updateParam<K extends keyof FundParams>(key: K, value: FundParams[K]) {
-    setParams((p) => ({ ...p, [key]: value }));
-    setSavedToLedger(false);
-  }
+      const grossRaisedM = sCurveRaw[MONTHS].raised;
+      const { netAum, mgmtFees, placementComm } = calcNetAUM(
+        grossRaisedM,
+        MONTHS,
+        params.managementFeePct,
+        params.placementAgent,
+        params.targetCapM
+      );
 
-  function handleSaveToLedger() {
-    saveDecisionLedgerEntry({
-      lpId: selectedLP.id,
-      strategy: params.strategy,
-      fitScore: fitResult.score,
-      icVerdict: icResult.icVerdict,
-    });
-    setSavedToLedger(true);
-  }
+      // Estimate final close month (first month >= 90% of target)
+      const estFinalCloseMonth = sCurveRaw.find((d) => d.raised >= params.targetCapM * 0.9)?.month ?? MONTHS;
 
-  // ── Chart data ─────────────────────────────────────────────────────────────
-  const chartData = simulation.timeSeries.map((d) => ({
-    month: `M${d.month}`,
-    "Gross Raised": d.cumulativeRaised,
-    "Net AUM": d.netAUM,
-    "Fee Drag": d.cumulativeFees,
-  }));
+      // Build S-curve with net AUM overlay
+      const sCurveData = sCurveRaw.map((d) => {
+        const { netAum: na } = calcNetAUM(d.raised, d.month, params.managementFeePct, params.placementAgent, params.targetCapM);
+        return { month: d.month, raised: Math.round(d.raised * 10) / 10, netAum: Math.round(na * 10) / 10 };
+      });
 
-  // ── Render ─────────────────────────────────────────────────────────────────
+      const fitBreakdown = calcFitScore(params, selectedLP);
+      const moat = calcPatternMoat(ledger);
+      const adjustedScore = Math.min(100, Math.round(fitBreakdown.score * moat));
+
+      const pitch = generatePitch(params, selectedLP);
+      const complianceFlags = runRegInterceptor(pitch, selectedLP);
+      const icDebate = simulateICDebate(adjustedScore, selectedLP, params);
+
+      const simResult: SimResult = {
+        grossRaisedM: Math.round(grossRaisedM * 10) / 10,
+        netAumM: Math.round(netAum * 10) / 10,
+        estFinalCloseMonth,
+        cumulativeMgmtFeesM: Math.round(mgmtFees * 10) / 10,
+        placementCommissionsM: Math.round(placementComm * 10) / 10,
+        feeDragPct: Math.round(((mgmtFees + placementComm) / Math.max(grossRaisedM, 1)) * 1000) / 10,
+        fitScore: adjustedScore,
+        fitBreakdown,
+        sCurveData,
+        complianceFlags,
+        pitch,
+        icDebate,
+      };
+
+      setResult(simResult);
+
+      // Save to Decision Ledger
+      const entry: LedgerEntry = {
+        ts: Date.now(),
+        lpId: selectedLP.id,
+        fitScore: adjustedScore,
+        verdict: icDebate.verdict,
+        grossRaisedM: simResult.grossRaisedM,
+      };
+      const newLedger = [...ledger, entry];
+      setLedger(newLedger);
+      saveLedger(newLedger);
+
+      setRunning(false);
+    }, 400);
+  }, [params, selectedLP, ledger]);
+
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const moat = calcPatternMoat(ledger);
+
+  const verdictColor = result
+    ? result.icDebate.verdict === "Approved"
+      ? "text-green-400"
+      : result.icDebate.verdict === "Conditional Watchlist"
+      ? "text-yellow-400"
+      : "text-red-400"
+    : "";
+
   return (
-    <div className="min-h-screen bg-[#0a0f1e] text-slate-100 font-sans">
-      {/* Header */}
-      <div className="border-b border-slate-800 bg-[#0d1426] px-6 py-4">
-        <div className="max-w-screen-2xl mx-auto flex items-center justify-between">
+    <>
+      {/* Print styles */}
+      <style>{`
+        @media print {
+          @page { size: A4; margin: 18mm; }
+          body * { visibility: hidden; }
+          #captwin-print-area, #captwin-print-area * { visibility: visible; }
+          #captwin-print-area { position: absolute; left: 0; top: 0; width: 100%; }
+          .no-print { display: none !important; }
+        }
+      `}</style>
+
+      <div className="min-h-screen bg-[#0B1629] text-slate-100 font-sans">
+        {/* Header */}
+        <div className="border-b border-slate-800 px-6 py-4 flex items-center justify-between no-print">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight text-white">
-              Capital Formation Digital Twin
-            </h1>
+            <h1 className="text-lg font-semibold text-white">Capital Formation Digital Twin</h1>
             <p className="text-xs text-slate-400 mt-0.5">
               Deterministic LP simulation · Compliance gate · Adversarial IC · Auto-calibration
             </p>
           </div>
-          <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">
-            CapTwin v1.0 · AgenThinkMesh
-          </Badge>
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">
+              CapTwin v2.0 · AgenThinkMesh
+            </Badge>
+            <Badge variant="outline" className="text-xs border-blue-700 text-blue-400">
+              Pattern Moat {moat.toFixed(3)}×
+            </Badge>
+            <Badge variant="outline" className="text-xs border-slate-600 text-slate-400">
+              {ledger.length} runs calibrated
+            </Badge>
+          </div>
         </div>
-      </div>
 
-      <div className="max-w-screen-2xl mx-auto px-4 py-6">
-        <div className="grid grid-cols-12 gap-5">
+        {/* 3-Column Layout */}
+        <div className="grid grid-cols-[280px_1fr_320px] gap-0 h-[calc(100vh-65px)]">
 
-          {/* ── LEFT PANEL: Controls ─────────────────────────────────────── */}
-          <div className="col-span-12 lg:col-span-3 space-y-4">
+          {/* ── LEFT PANEL — Strategic GP Levers ─────────────────────────────── */}
+          <div className="border-r border-slate-800 overflow-y-auto p-5 space-y-5 no-print">
+            <div>
+              <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-4">
+                GP Levers
+              </h2>
 
-            {/* Fund Parameters */}
-            <Card className="bg-[#0d1426] border-slate-800">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-slate-300">Fund Parameters</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-5">
+              {/* Fund Strategy */}
+              <div className="space-y-1.5 mb-4">
+                <Label className="text-xs text-slate-300">Fund Strategy</Label>
+                <Select
+                  value={params.strategy}
+                  onValueChange={(v) => setParams((p) => ({ ...p, strategy: v as FundStrategy }))}
+                >
+                  <SelectTrigger className="bg-slate-800 border-slate-700 text-sm h-8">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent className="bg-slate-800 border-slate-700">
+                    {STRATEGIES.map((s) => (
+                      <SelectItem key={s} value={s} className="text-sm">
+                        {s}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-                {/* Strategy */}
+              {/* Target Capital */}
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between">
+                  <Label className="text-xs text-slate-300">Target Capital</Label>
+                  <span className="text-xs text-blue-400 font-mono">${params.targetCapM}M</span>
+                </div>
+                <Slider
+                  min={50} max={5000} step={50}
+                  value={[params.targetCapM]}
+                  onValueChange={([v]) => setParams((p) => ({ ...p, targetCapM: v }))}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-[10px] text-slate-500">
+                  <span>$50M</span><span>$5,000M</span>
+                </div>
+              </div>
+
+              {/* Management Fee */}
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between">
+                  <Label className="text-xs text-slate-300">Management Fee</Label>
+                  <span className="text-xs text-blue-400 font-mono">{params.managementFeePct.toFixed(2)}%</span>
+                </div>
+                <Slider
+                  min={0.5} max={2.5} step={0.05}
+                  value={[params.managementFeePct]}
+                  onValueChange={([v]) => setParams((p) => ({ ...p, managementFeePct: v }))}
+                />
+                <div className="flex justify-between text-[10px] text-slate-500">
+                  <span>0.50%</span><span>2.50%</span>
+                </div>
+              </div>
+
+              {/* GP Track Record */}
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between">
+                  <Label className="text-xs text-slate-300">GP Track Record</Label>
+                  <span className="text-xs text-blue-400 font-mono">{params.trackRecordYrs} yrs</span>
+                </div>
+                <Slider
+                  min={1} max={25} step={1}
+                  value={[params.trackRecordYrs]}
+                  onValueChange={([v]) => setParams((p) => ({ ...p, trackRecordYrs: v }))}
+                />
+                <div className="flex justify-between text-[10px] text-slate-500">
+                  <span>1 yr</span><span>25 yrs</span>
+                </div>
+              </div>
+
+              {/* Prior Fund Net IRR */}
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between">
+                  <Label className="text-xs text-slate-300">Prior Fund Net IRR</Label>
+                  <span className="text-xs text-blue-400 font-mono">{params.priorFundIRR}%</span>
+                </div>
+                <Slider
+                  min={0} max={35} step={0.5}
+                  value={[params.priorFundIRR]}
+                  onValueChange={([v]) => setParams((p) => ({ ...p, priorFundIRR: v }))}
+                />
+                <div className="flex justify-between text-[10px] text-slate-500">
+                  <span>0%</span><span>35%</span>
+                </div>
+              </div>
+
+              {/* Fundraising Velocity */}
+              <div className="space-y-2 mb-4">
+                <div className="flex justify-between">
+                  <Label className="text-xs text-slate-300">Fundraising Velocity</Label>
+                  <span className="text-xs text-blue-400 font-mono">{params.velocityScore}/100</span>
+                </div>
+                <Slider
+                  min={0} max={100} step={1}
+                  value={[params.velocityScore]}
+                  onValueChange={([v]) => setParams((p) => ({ ...p, velocityScore: v }))}
+                />
+                <div className="flex justify-between text-[10px] text-slate-500">
+                  <span>Slow</span><span>Aggressive</span>
+                </div>
+              </div>
+
+              {/* Placement Agent */}
+              <div className="flex items-center justify-between py-2 border-t border-slate-800">
                 <div>
-                  <label className="text-xs text-slate-400 mb-1.5 block">Strategy</label>
-                  <Select
-                    value={params.strategy}
-                    onValueChange={(v) => updateParam("strategy", v as FundStrategy)}
-                  >
-                    <SelectTrigger className="bg-slate-900 border-slate-700 text-slate-200 text-sm h-8">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-slate-700">
-                      {STRATEGIES.map((s) => (
-                        <SelectItem key={s} value={s} className="text-slate-200 text-sm">
-                          {s}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <Label className="text-xs text-slate-300">Placement Agent</Label>
+                  <p className="text-[10px] text-slate-500 mt-0.5">+25% velocity, 2% commission</p>
                 </div>
+                <Switch
+                  checked={params.placementAgent}
+                  onCheckedChange={(v) => setParams((p) => ({ ...p, placementAgent: v }))}
+                />
+              </div>
+            </div>
 
-                {/* Target Capital */}
-                <div>
-                  <div className="flex justify-between mb-1.5">
-                    <label className="text-xs text-slate-400">Target Capital</label>
-                    <span className="text-xs text-white font-mono">${params.targetCapital}M</span>
-                  </div>
-                  <Slider
-                    min={50} max={5000} step={50}
-                    value={[params.targetCapital]}
-                    onValueChange={([v]) => updateParam("targetCapital", v)}
-                    className="[&>span]:bg-blue-500"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-600 mt-1">
-                    <span>$50M</span><span>$5,000M</span>
-                  </div>
-                </div>
-
-                {/* Management Fee */}
-                <div>
-                  <div className="flex justify-between mb-1.5">
-                    <label className="text-xs text-slate-400">Management Fee</label>
-                    <span className="text-xs text-white font-mono">{params.managementFee.toFixed(2)}%</span>
-                  </div>
-                  <Slider
-                    min={0.5} max={2.5} step={0.05}
-                    value={[params.managementFee]}
-                    onValueChange={([v]) => updateParam("managementFee", v)}
-                    className="[&>span]:bg-blue-500"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-600 mt-1">
-                    <span>0.50%</span><span>2.50%</span>
-                  </div>
-                </div>
-
-                {/* Track Record */}
-                <div>
-                  <div className="flex justify-between mb-1.5">
-                    <label className="text-xs text-slate-400">GP Track Record</label>
-                    <span className="text-xs text-white font-mono">{params.trackRecord} yrs</span>
-                  </div>
-                  <Slider
-                    min={1} max={25} step={1}
-                    value={[params.trackRecord]}
-                    onValueChange={([v]) => updateParam("trackRecord", v)}
-                    className="[&>span]:bg-blue-500"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-600 mt-1">
-                    <span>1 yr</span><span>25 yrs</span>
-                  </div>
-                </div>
-
-                {/* Prior IRR */}
-                <div>
-                  <div className="flex justify-between mb-1.5">
-                    <label className="text-xs text-slate-400">Prior Fund Net IRR</label>
-                    <span className="text-xs text-white font-mono">{params.priorIRR}%</span>
-                  </div>
-                  <Slider
-                    min={0} max={35} step={0.5}
-                    value={[params.priorIRR]}
-                    onValueChange={([v]) => updateParam("priorIRR", v)}
-                    className="[&>span]:bg-blue-500"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-600 mt-1">
-                    <span>0%</span><span>35%</span>
-                  </div>
-                </div>
-
-                {/* Velocity Lever */}
-                <div>
-                  <div className="flex justify-between mb-1.5">
-                    <label className="text-xs text-slate-400">Fundraising Velocity</label>
-                    <span className="text-xs text-white font-mono">{params.velocityLever}/100</span>
-                  </div>
-                  <Slider
-                    min={0} max={100} step={5}
-                    value={[params.velocityLever]}
-                    onValueChange={([v]) => updateParam("velocityLever", v)}
-                    className="[&>span]:bg-violet-500"
-                  />
-                  <div className="flex justify-between text-[10px] text-slate-600 mt-1">
-                    <span>Slow</span><span>Aggressive</span>
-                  </div>
-                </div>
-
-                {/* Placement Agent */}
-                <div className="flex items-center justify-between">
-                  <label className="text-xs text-slate-400">Placement Agent</label>
-                  <button
-                    onClick={() => updateParam("placementAgent", !params.placementAgent)}
-                    className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors ${
-                      params.placementAgent ? "bg-blue-600" : "bg-slate-700"
-                    }`}
-                  >
-                    <span
-                      className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white transition-transform ${
-                        params.placementAgent ? "translate-x-4" : "translate-x-1"
-                      }`}
-                    />
-                  </button>
-                </div>
-                {params.placementAgent && (
-                  <p className="text-[10px] text-amber-400">+25% velocity · 2% commission drag</p>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* LP Selector */}
-            <Card className="bg-[#0d1426] border-slate-800">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-sm font-medium text-slate-300">Target LP</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
+            {/* Target LP Selector */}
+            <div className="border-t border-slate-800 pt-4">
+              <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest mb-3">
+                Target LP
+              </h2>
+              <div className="space-y-2">
                 {LP_REGISTRY.map((lp) => (
                   <button
                     key={lp.id}
                     onClick={() => setSelectedLPId(lp.id)}
                     className={`w-full text-left p-3 rounded-lg border transition-all ${
                       selectedLPId === lp.id
-                        ? "border-blue-500/60 bg-blue-500/10"
-                        : "border-slate-700 bg-slate-900/50 hover:border-slate-600"
+                        ? "border-blue-500 bg-blue-950/40"
+                        : "border-slate-700 bg-slate-800/40 hover:border-slate-600"
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium text-slate-200">{lp.name}</span>
-                      <Badge variant="outline" className="text-[10px] border-slate-600 text-slate-400 px-1.5 py-0">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="text-xs font-medium text-white truncate">{lp.name}</p>
+                        <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-2">{lp.description.slice(0, 80)}…</p>
+                      </div>
+                      <Badge variant="outline" className="text-[9px] border-slate-600 text-slate-400 shrink-0">
                         {lp.region}
                       </Badge>
                     </div>
-                    <p className="text-[10px] text-slate-500 leading-snug line-clamp-2">{lp.description}</p>
-                    <div className="flex gap-2 mt-2">
-                      <span className="text-[10px] text-slate-400">${lp.ticketMin}M–${lp.ticketMax}M</span>
+                    <div className="flex gap-1 mt-1.5 flex-wrap">
+                      <Badge variant="outline" className="text-[9px] border-slate-700 text-slate-500">
+                        ${lp.ticketMin}M–${lp.ticketMax}M
+                      </Badge>
                       {lp.shariaRequired && (
-                        <span className="text-[10px] text-amber-400">Sharia</span>
+                        <Badge variant="outline" className="text-[9px] border-amber-800 text-amber-400">Sharia</Badge>
                       )}
-                      <span className="text-[10px] text-slate-500">ESG {lp.esgPriority}/10</span>
+                      {lp.complianceFlags.includes("eu-aifmd") && (
+                        <Badge variant="outline" className="text-[9px] border-blue-800 text-blue-400">AIFMD</Badge>
+                      )}
+                      {lp.segment === "Individual" && (
+                        <Badge variant="outline" className="text-[9px] border-purple-800 text-purple-400">506(c)</Badge>
+                      )}
+                      <Badge variant="outline" className="text-[9px] border-slate-700 text-slate-500">
+                        ESG {lp.esgPriority}/10
+                      </Badge>
                     </div>
                   </button>
                 ))}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
+
+            {/* Run Button */}
+            <Button
+              onClick={runSimulation}
+              disabled={running}
+              className="w-full bg-blue-600 hover:bg-blue-500 text-white font-semibold"
+            >
+              {running ? "Simulating…" : "Run Simulation"}
+              {!running && <ChevronRight className="w-4 h-4 ml-1" />}
+            </Button>
           </div>
 
-          {/* ── CENTER + RIGHT PANELS ────────────────────────────────────── */}
-          <div className="col-span-12 lg:col-span-9">
-            <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="bg-slate-900 border border-slate-800 mb-4">
-                <TabsTrigger value="cockpit" className="text-xs data-[state=active]:bg-slate-700">
-                  Executive Cockpit
-                </TabsTrigger>
-                <TabsTrigger value="simulation" className="text-xs data-[state=active]:bg-slate-700">
-                  S-Curve Simulation
-                </TabsTrigger>
-                <TabsTrigger value="ic" className="text-xs data-[state=active]:bg-slate-700">
-                  IC Simulation
-                </TabsTrigger>
-                <TabsTrigger value="compliance" className="text-xs data-[state=active]:bg-slate-700">
-                  Compliance Gate
-                </TabsTrigger>
-                <TabsTrigger value="ledger" className="text-xs data-[state=active]:bg-slate-700">
-                  Decision Ledger
-                </TabsTrigger>
-              </TabsList>
+          {/* ── CENTER PANEL — Simulation Output ─────────────────────────────── */}
+          <div className="overflow-y-auto p-5 space-y-4" id="captwin-print-area" ref={printRef}>
+            {!result ? (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <TrendingUp className="w-12 h-12 text-slate-700 mb-4" />
+                <p className="text-slate-400 text-sm">Configure GP levers and select a target LP,<br />then click <strong>Run Simulation</strong>.</p>
+              </div>
+            ) : (
+              <>
+                {/* Tailored Pitch */}
+                <Card className="bg-slate-800/60 border-slate-700">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-blue-400" />
+                      Tailored Pitch — {selectedLP.name}
+                      <Badge variant="outline" className="ml-auto text-[10px] border-slate-600 text-slate-400">
+                        {selectedLP.segment}
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-wrap">{result.pitch}</p>
+                  </CardContent>
+                </Card>
 
-              {/* ── TAB 1: Executive Cockpit ─────────────────────────────── */}
-              <TabsContent value="cockpit">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                {/* RegInterceptor Audit */}
+                <Card className="bg-slate-800/60 border-slate-700">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Shield className="w-4 h-4 text-green-400" />
+                      RegInterceptor Audit
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {result.complianceFlags.map((flag, i) => (
+                      <div key={i} className="flex items-start gap-2 text-xs">
+                        {flag.status === "pass" ? (
+                          <CheckCircle className="w-3.5 h-3.5 text-green-400 mt-0.5 shrink-0" />
+                        ) : flag.status === "warn" ? (
+                          <AlertTriangle className="w-3.5 h-3.5 text-yellow-400 mt-0.5 shrink-0" />
+                        ) : (
+                          <XCircle className="w-3.5 h-3.5 text-red-400 mt-0.5 shrink-0" />
+                        )}
+                        <div>
+                          <span className="font-medium text-slate-200">{flag.rule}: </span>
+                          <span className={flag.status === "pass" ? "text-slate-400" : flag.status === "warn" ? "text-yellow-300" : "text-red-300"}>
+                            {flag.message}
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </CardContent>
+                </Card>
+
+                {/* IC Debate */}
+                <Card className="bg-slate-800/60 border-slate-700">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Users className="w-4 h-4 text-purple-400" />
+                      Simulated Investment Committee
+                      <span className={`ml-auto text-xs font-bold ${verdictColor}`}>
+                        {result.icDebate.verdict}
+                      </span>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="space-y-2">
+                      {result.icDebate.objections.map((obj, i) => (
+                        <div key={i} className="flex items-start gap-2 text-xs">
+                          <span className="text-slate-500 font-mono shrink-0">IC{i + 1}</span>
+                          <span className="text-slate-300">{obj}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="border-t border-slate-700 pt-2">
+                      <p className="text-xs text-slate-400 italic">{result.icDebate.rationale}</p>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Fundraising Health Score */}
+                <Card className="bg-slate-800/60 border-slate-700">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Fundraising Health Score</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2">
+                    {[
+                      { label: "Strategy Fit", value: result.fitBreakdown.strategyFit, color: "bg-blue-500" },
+                      { label: "Pedigree Fit", value: result.fitBreakdown.pedigreeFit, color: "bg-green-500" },
+                      { label: "Fee Alignment", value: result.fitBreakdown.feeAlignment, color: "bg-purple-500" },
+                    ].map((item) => (
+                      <div key={item.label} className="flex items-center gap-3 text-xs">
+                        <span className="w-24 text-slate-400 shrink-0">{item.label}</span>
+                        <div className="flex-1 bg-slate-700 rounded-full h-1.5">
+                          <div
+                            className={`${item.color} h-1.5 rounded-full transition-all`}
+                            style={{ width: `${item.value}%` }}
+                          />
+                        </div>
+                        <span className="w-8 text-right font-mono text-slate-300">{item.value}</span>
+                      </div>
+                    ))}
+                    {result.fitBreakdown.penalties > 0 && (
+                      <div className="flex items-center gap-2 text-xs text-red-400 mt-1">
+                        <AlertTriangle className="w-3 h-3" />
+                        <span>Penalty: −{result.fitBreakdown.penalties} pts applied</span>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Export */}
+                <div className="no-print">
+                  <Button
+                    variant="outline"
+                    onClick={handlePrint}
+                    className="w-full border-slate-600 text-slate-300 hover:bg-slate-700"
+                  >
+                    <Printer className="w-4 h-4 mr-2" />
+                    Export Board Brief (PDF)
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* ── RIGHT PANEL — Deterministic Projections ───────────────────────── */}
+          <div className="border-l border-slate-800 overflow-y-auto p-5 space-y-4 no-print">
+            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">
+              Deterministic Projections
+            </h2>
+
+            {result ? (
+              <>
+                {/* Headline Metrics */}
+                <div className="grid grid-cols-2 gap-2">
                   {[
-                    { label: "Gross Raised (M24)", value: `$${simulation.grossRaised.toFixed(0)}M`, sub: `of $${params.targetCapital}M target` },
-                    { label: "Net Investable AUM", value: `$${simulation.netAUM.toFixed(0)}M`, sub: `after fee & commission drag` },
-                    { label: "Est. Final Close", value: `Month ${simulation.estimatedCloseMonth}`, sub: `at 90% of target` },
-                    { label: "LP Fit Score", value: `${fitResult.score}/100`, sub: icResult.icVerdict, scoreVal: fitResult.score },
-                  ].map((kpi) => (
-                    <Card key={kpi.label} className="bg-[#0d1426] border-slate-800">
-                      <CardContent className="pt-4 pb-3">
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-1">{kpi.label}</p>
-                        <p className={`text-2xl font-bold font-mono ${kpi.scoreVal !== undefined ? scoreColor(kpi.scoreVal) : "text-white"}`}>
-                          {kpi.value}
-                        </p>
-                        <p className="text-[10px] text-slate-500 mt-0.5">{kpi.sub}</p>
+                    { label: "Est. Gross Raised", value: `$${result.grossRaisedM}M`, sub: `of $${params.targetCapM}M target` },
+                    { label: "Net Investable AUM", value: `$${result.netAumM}M`, sub: "after fee & commission drag" },
+                    { label: "Est. Final Close", value: `Month ${result.estFinalCloseMonth}`, sub: "at 90% of target" },
+                    {
+                      label: "LP Fit Score",
+                      value: `${result.fitScore}/100`,
+                      sub: result.icDebate.verdict,
+                      highlight: result.fitScore < 45 ? "text-red-400" : result.fitScore < 70 ? "text-yellow-400" : "text-green-400",
+                    },
+                  ].map((m) => (
+                    <Card key={m.label} className="bg-slate-800/60 border-slate-700">
+                      <CardContent className="p-3">
+                        <p className="text-[10px] text-slate-400 uppercase tracking-wide">{m.label}</p>
+                        <p className={`text-lg font-bold mt-0.5 ${m.highlight ?? "text-white"}`}>{m.value}</p>
+                        <p className="text-[10px] text-slate-500 mt-0.5">{m.sub}</p>
                       </CardContent>
                     </Card>
                   ))}
                 </div>
 
-                {/* Fundraising Health Score */}
-                <Card className="bg-[#0d1426] border-slate-800 mb-4">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-slate-300">Fundraising Health Score</CardTitle>
+                {/* Capital Formation Economics */}
+                <Card className="bg-slate-800/60 border-slate-700">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xs text-slate-400 uppercase tracking-wide">Capital Formation Economics</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-3 gap-4">
-                      {[
-                        { label: "Strategy Fit", value: fitResult.strategyFit, max: 100 },
-                        { label: "Pedigree Fit", value: fitResult.pedigreeFit, max: 100 },
-                        { label: "Fee Alignment", value: fitResult.feeAlignment, max: 100 },
-                      ].map((metric) => (
-                        <div key={metric.label}>
-                          <div className="flex justify-between mb-1.5">
-                            <span className="text-xs text-slate-400">{metric.label}</span>
-                            <span className={`text-xs font-mono font-medium ${scoreColor(metric.value)}`}>
-                              {metric.value.toFixed(0)}
-                            </span>
-                          </div>
-                          <div className="h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                            <div
-                              className={`h-full rounded-full transition-all ${
-                                metric.value >= 70 ? "bg-emerald-500" : metric.value >= 45 ? "bg-amber-500" : "bg-red-500"
-                              }`}
-                              style={{ width: `${metric.value}%` }}
-                            />
-                          </div>
-                        </div>
-                      ))}
+                  <CardContent className="grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                      <p className="text-slate-400">Total Mgmt Fees (24M)</p>
+                      <p className="text-white font-semibold">${result.cumulativeMgmtFeesM}M</p>
                     </div>
-                    {fitResult.penaltyReasons.length > 0 && (
-                      <div className="mt-4 space-y-1.5">
-                        <p className="text-[10px] text-slate-500 uppercase tracking-wider">Penalty Flags</p>
-                        {fitResult.penaltyReasons.map((r, i) => (
-                          <div key={i} className="flex items-start gap-2">
-                            <span className="text-red-400 text-xs mt-0.5">⚠</span>
-                            <span className="text-xs text-slate-400">{r}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Fee Drag Summary */}
-                <Card className="bg-[#0d1426] border-slate-800">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-sm font-medium text-slate-300">Capital Formation Economics</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      {[
-                        { label: "Total Mgmt Fees (24M)", value: `$${simulation.totalFees.toFixed(1)}M` },
-                        { label: "Placement Commissions", value: `$${simulation.totalCommissions.toFixed(1)}M` },
-                        { label: "Total Fee Drag", value: `$${(simulation.totalFees + simulation.totalCommissions).toFixed(1)}M` },
-                        { label: "Net/Gross Ratio", value: `${((simulation.netAUM / Math.max(simulation.grossRaised, 0.01)) * 100).toFixed(1)}%` },
-                      ].map((item) => (
-                        <div key={item.label} className="bg-slate-900/50 rounded-lg p-3">
-                          <p className="text-[10px] text-slate-500 mb-1">{item.label}</p>
-                          <p className="text-lg font-mono font-semibold text-white">{item.value}</p>
-                        </div>
-                      ))}
+                    <div>
+                      <p className="text-slate-400">Placement Commissions</p>
+                      <p className="text-white font-semibold">${result.placementCommissionsM}M</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400">Total Fee Drag</p>
+                      <p className="text-white font-semibold">${(result.cumulativeMgmtFeesM + result.placementCommissionsM).toFixed(1)}M</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400">Net/Gross Ratio</p>
+                      <p className="text-white font-semibold">{(100 - result.feeDragPct).toFixed(1)}%</p>
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
 
-              {/* ── TAB 2: S-Curve Simulation ────────────────────────────── */}
-              <TabsContent value="simulation">
-                <Card className="bg-[#0d1426] border-slate-800">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm font-medium text-slate-300">
-                        Capital Formation S-Curve — 24-Month Projection
-                      </CardTitle>
-                      <span className="text-xs text-slate-500">
-                        Close at Month {simulation.estimatedCloseMonth} · ${simulation.grossRaised.toFixed(0)}M raised
-                      </span>
-                    </div>
+                {/* S-Curve Chart */}
+                <Card className="bg-slate-800/60 border-slate-700">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xs text-slate-400 uppercase tracking-wide">Cumulative Raised — 24-Month S-Curve</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={340}>
-                      <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#1e2a3a" />
-                        <XAxis dataKey="month" tick={{ fill: "#64748b", fontSize: 10 }} />
-                        <YAxis tick={{ fill: "#64748b", fontSize: 10 }} tickFormatter={(v) => `$${v}M`} />
+                  <CardContent className="pt-0">
+                    <ResponsiveContainer width="100%" height={180}>
+                      <AreaChart data={result.sCurveData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="gradRaised" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                            <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                          </linearGradient>
+                          <linearGradient id="gradNet" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#1e2d3d" />
+                        <XAxis dataKey="month" tick={{ fontSize: 9, fill: "#64748b" }} label={{ value: "Month", position: "insideBottom", offset: -2, fontSize: 9, fill: "#64748b" }} />
+                        <YAxis tick={{ fontSize: 9, fill: "#64748b" }} />
                         <Tooltip
-                          contentStyle={{ background: "#0d1426", border: "1px solid #1e293b", borderRadius: 8 }}
-                          labelStyle={{ color: "#94a3b8", fontSize: 11 }}
-                          itemStyle={{ fontSize: 11 }}
-                          formatter={(value: number) => [`$${value.toFixed(1)}M`]}
+                          contentStyle={{ background: "#1e293b", border: "1px solid #334155", fontSize: 11 }}
+                          formatter={(v: number) => [`$${v}M`]}
                         />
-                        <Legend wrapperStyle={{ fontSize: 11, color: "#94a3b8" }} />
-                        <Line
-                          type="monotone"
-                          dataKey="Gross Raised"
-                          stroke="#3b82f6"
-                          strokeWidth={2}
-                          dot={false}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="Net AUM"
-                          stroke="#10b981"
-                          strokeWidth={2}
-                          dot={false}
-                        />
-                        <Line
-                          type="monotone"
-                          dataKey="Fee Drag"
-                          stroke="#f59e0b"
-                          strokeWidth={1.5}
-                          strokeDasharray="4 2"
-                          dot={false}
-                        />
-                      </LineChart>
+                        <Area type="monotone" dataKey="raised" stroke="#3b82f6" fill="url(#gradRaised)" strokeWidth={2} name="Gross Raised" />
+                        <Area type="monotone" dataKey="netAum" stroke="#10b981" fill="url(#gradNet)" strokeWidth={1.5} strokeDasharray="4 2" name="Net AUM" />
+                      </AreaChart>
                     </ResponsiveContainer>
-                    <div className="mt-4 grid grid-cols-3 gap-3">
-                      <div className="bg-slate-900/50 rounded-lg p-3 text-center">
-                        <p className="text-[10px] text-slate-500 mb-1">Velocity Lever</p>
-                        <p className="text-lg font-mono font-semibold text-blue-400">{params.velocityLever}/100</p>
-                      </div>
-                      <div className="bg-slate-900/50 rounded-lg p-3 text-center">
-                        <p className="text-[10px] text-slate-500 mb-1">Placement Agent</p>
-                        <p className="text-lg font-mono font-semibold text-white">{params.placementAgent ? "Yes (+25%)" : "No"}</p>
-                      </div>
-                      <div className="bg-slate-900/50 rounded-lg p-3 text-center">
-                        <p className="text-[10px] text-slate-500 mb-1">Fee Drag Total</p>
-                        <p className="text-lg font-mono font-semibold text-amber-400">
-                          ${(simulation.totalFees + simulation.totalCommissions).toFixed(1)}M
-                        </p>
-                      </div>
+                    <div className="flex gap-4 mt-1 text-[10px]">
+                      <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-blue-500 inline-block" /> Gross Raised</span>
+                      <span className="flex items-center gap-1"><span className="w-3 h-0.5 bg-emerald-500 inline-block border-dashed" /> Net AUM</span>
                     </div>
                   </CardContent>
                 </Card>
-              </TabsContent>
 
-              {/* ── TAB 3: IC Simulation ─────────────────────────────────── */}
-              <TabsContent value="ic">
-                <div className="space-y-4">
-                  {/* Verdict */}
-                  <Card className="bg-[#0d1426] border-slate-800">
-                    <CardHeader className="pb-3">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-sm font-medium text-slate-300">
-                          Adversarial IC Simulation — {selectedLP.name}
-                        </CardTitle>
-                        <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${verdictColor(icResult.icVerdict)}`}>
-                          {icResult.icVerdict}
-                        </span>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-slate-300 leading-relaxed">{icResult.icRationale}</p>
-                    </CardContent>
-                  </Card>
-
-                  {/* Objections */}
-                  <Card className="bg-[#0d1426] border-slate-800">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium text-slate-300">IC Objections</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {icResult.icObjections.map((obj, i) => (
-                        <div key={i} className="border border-slate-800 rounded-lg p-3">
-                          <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-xs font-medium text-slate-300">{obj.agent}</span>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full border ${
-                              obj.severity === "High"
-                                ? "bg-red-500/20 text-red-300 border-red-500/40"
-                                : obj.severity === "Medium"
-                                ? "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                                : "bg-slate-700 text-slate-400 border-slate-600"
-                            }`}>
-                              {obj.severity}
-                            </span>
-                          </div>
-                          <p className="text-xs text-slate-400 leading-relaxed">{obj.objection}</p>
+                {/* Decision Ledger */}
+                <Card className="bg-slate-800/60 border-slate-700">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-xs text-slate-400 uppercase tracking-wide">
+                      Decision Ledger — Last {Math.min(ledger.length, 5)} Runs
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-1.5">
+                    {ledger.slice(-5).reverse().map((entry, i) => {
+                      const lp = LP_REGISTRY.find((l) => l.id === entry.lpId);
+                      return (
+                        <div key={i} className="flex items-center justify-between text-[10px]">
+                          <span className="text-slate-400 truncate max-w-[120px]">{lp?.name ?? entry.lpId}</span>
+                          <span className="text-slate-500 font-mono">{entry.fitScore}/100</span>
+                          <span className={
+                            entry.verdict === "Approved" ? "text-green-400" :
+                            entry.verdict === "Conditional Watchlist" ? "text-yellow-400" : "text-red-400"
+                          }>
+                            {entry.verdict === "Conditional Watchlist" ? "Watchlist" : entry.verdict}
+                          </span>
                         </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-
-                  {/* Tailored Pitch */}
-                  <Card className="bg-[#0d1426] border-slate-800">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-sm font-medium text-slate-300">
-                        Tailored LP Pitch — {selectedLP.region} Jurisdiction
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <pre className="text-xs text-slate-300 whitespace-pre-wrap leading-relaxed font-sans bg-slate-900/50 rounded-lg p-4">
-                        {icResult.tailoredPitch}
-                      </pre>
-                    </CardContent>
-                  </Card>
-
-                  <Button
-                    onClick={handleSaveToLedger}
-                    disabled={savedToLedger}
-                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs"
-                  >
-                    {savedToLedger ? "Saved to Decision Ledger ✓" : "Save to Decision Ledger"}
-                  </Button>
-                </div>
-              </TabsContent>
-
-              {/* ── TAB 4: Compliance Gate ───────────────────────────────── */}
-              <TabsContent value="compliance">
-                <Card className="bg-[#0d1426] border-slate-800">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm font-medium text-slate-300">
-                        RegInterceptor — Compliance Gate
-                      </CardTitle>
-                      <span className={`text-xs px-2.5 py-1 rounded-full border font-medium ${complianceBadge(compliance.passed)}`}>
-                        {compliance.passed ? "CLEARED" : "BLOCKED"}
-                      </span>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="bg-slate-900/50 rounded-lg p-3">
-                      <p className="text-sm text-slate-300">{compliance.summary}</p>
-                    </div>
-                    {compliance.flags.length === 0 ? (
-                      <p className="text-xs text-emerald-400">No compliance issues detected for {selectedLP.name} under {selectedLP.complianceFlags.join(", ")} rules.</p>
-                    ) : (
-                      <div className="space-y-3">
-                        {compliance.flags.map((flag, i) => (
-                          <div key={i} className={`border rounded-lg p-3 ${
-                            flag.severity === "BLOCK"
-                              ? "border-red-500/40 bg-red-500/5"
-                              : "border-amber-500/40 bg-amber-500/5"
-                          }`}>
-                            <div className="flex items-center justify-between mb-1.5">
-                              <span className="text-xs font-medium text-slate-200">{flag.rule}</span>
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full border font-medium ${
-                                flag.severity === "BLOCK"
-                                  ? "bg-red-500/20 text-red-300 border-red-500/40"
-                                  : "bg-amber-500/20 text-amber-300 border-amber-500/40"
-                              }`}>
-                                {flag.severity}
-                              </span>
-                            </div>
-                            <p className="text-xs text-slate-300 mb-1">{flag.message}</p>
-                            <p className="text-[11px] text-slate-500 leading-relaxed">{flag.detail}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                    <div className="border border-slate-800 rounded-lg p-3">
-                      <p className="text-[10px] text-slate-500 uppercase tracking-wider mb-2">Active Compliance Rules</p>
-                      <div className="flex flex-wrap gap-2">
-                        {selectedLP.complianceFlags.map((f) => (
-                          <Badge key={f} variant="outline" className="text-[10px] border-slate-600 text-slate-400">
-                            {f}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* ── TAB 5: Decision Ledger ───────────────────────────────── */}
-              <TabsContent value="ledger">
-                <Card className="bg-[#0d1426] border-slate-800">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm font-medium text-slate-300">
-                        Auto-Calibration Decision Ledger
-                      </CardTitle>
-                      <span className="text-xs text-slate-500">{ledger.length} entries</span>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {ledger.length === 0 ? (
-                      <div className="text-center py-10">
-                        <p className="text-sm text-slate-500">No decisions recorded yet.</p>
-                        <p className="text-xs text-slate-600 mt-1">Run a simulation and click "Save to Decision Ledger" to begin calibration.</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {[...ledger].reverse().map((entry) => (
-                          <div key={entry.id} className="flex items-center justify-between border border-slate-800 rounded-lg px-3 py-2">
-                            <div className="flex items-center gap-3">
-                              <span className="text-[10px] text-slate-500 font-mono">
-                                {new Date(entry.timestamp).toLocaleDateString()}
-                              </span>
-                              <span className="text-xs text-slate-300">{entry.lpId}</span>
-                              <Badge variant="outline" className="text-[10px] border-slate-700 text-slate-400">
-                                {entry.strategy}
-                              </Badge>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <span className={`text-xs font-mono ${scoreColor(entry.fitScore)}`}>
-                                {entry.fitScore}/100
-                              </span>
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full border ${verdictColor(entry.icVerdict)}`}>
-                                {entry.icVerdict}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                      );
+                    })}
+                    {ledger.length === 0 && (
+                      <p className="text-[10px] text-slate-500 italic">No runs yet. Pattern Moat calibration begins after 3 simulations.</p>
                     )}
                   </CardContent>
                 </Card>
-              </TabsContent>
-            </Tabs>
+              </>
+            ) : (
+              <div className="flex flex-col items-center justify-center h-48 text-center">
+                <TrendingUp className="w-8 h-8 text-slate-700 mb-2" />
+                <p className="text-xs text-slate-500">Projections appear here after simulation.</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 }

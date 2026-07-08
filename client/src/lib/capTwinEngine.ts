@@ -146,8 +146,8 @@ export function computeFitScore(
   const strategyFit = lp.strategies.includes(params.strategy) ? 100 : 30;
 
   // Pedigree fit (0–100): track record vs LP minimum
-  const trackRecordRatio = Math.min(params.trackRecord / lp.trackRecordMin, 1);
-  const irrBonus = params.priorIRR >= lp.irrHurdle ? 20 : 0;
+  const trackRecordRatio = Math.min(params.trackRecord / lp.trackRecordLimit, 1);
+  const irrBonus = lp.irrHurdle !== null && params.priorIRR >= lp.irrHurdle ? 20 : 0;
   const pedigreeFit = Math.min(trackRecordRatio * 80 + irrBonus, 100);
 
   // Fee alignment (0–100): lower fees = better score
@@ -159,16 +159,16 @@ export function computeFitScore(
     penalties.push(40);
     penaltyReasons.push("Sharia mismatch: strategy not Sharia-compatible");
   }
-  if (params.trackRecord < lp.trackRecordMin) {
-    const shortfall = lp.trackRecordMin - params.trackRecord;
+  if (params.trackRecord < lp.trackRecordLimit) {
+    const shortfall = lp.trackRecordLimit - params.trackRecord;
     penalties.push(shortfall * 5);
-    penaltyReasons.push(`Track record ${params.trackRecord}yr below LP minimum ${lp.trackRecordMin}yr`);
+    penaltyReasons.push(`Track record ${params.trackRecord}yr below LP limit ${lp.trackRecordLimit}yr`);
   }
   if (params.managementFee > lp.maxManagementFee) {
     penalties.push(15);
     penaltyReasons.push(`Management fee ${params.managementFee}% exceeds LP maximum ${lp.maxManagementFee}%`);
   }
-  if (params.priorIRR < lp.irrHurdle) {
+  if (lp.irrHurdle !== null && params.priorIRR < lp.irrHurdle) {
     penalties.push(10);
     penaltyReasons.push(`Prior IRR ${params.priorIRR}% below LP hurdle ${lp.irrHurdle}%`);
   }

@@ -104,13 +104,13 @@ export function simulateIC(
   const objections: ICObjection[] = [];
 
   // Objection 1: Track record
-  if (params.trackRecord < lp.trackRecordMin) {
+  if (params.trackRecord < lp.trackRecordLimit) {
     objections.push({
       agent: "IC Risk Officer",
-      objection: `GP track record of ${params.trackRecord} years is below our ${lp.trackRecordMin}-year minimum. We require a full fund cycle of evidence before committing capital at this size.`,
+      objection: `GP track record of ${params.trackRecord} years is below our ${lp.trackRecordLimit}-year limit. We require a full fund cycle of evidence before committing capital at this size.`,
       severity: "High",
     });
-  } else if (params.trackRecord === lp.trackRecordMin) {
+  } else if (params.trackRecord === lp.trackRecordLimit) {
     objections.push({
       agent: "IC Risk Officer",
       objection: `Track record meets our minimum threshold, but we would prefer to see one additional full fund cycle before a first-time allocation at this ticket size.`,
@@ -152,7 +152,7 @@ export function simulateIC(
       objection: `The pitch does not include a Principal Adverse Impact (PAI) statement or SFDR pre-contractual disclosure. Article 8 classification requires these before we can proceed to due diligence.`,
       severity: "Medium",
     });
-  } else if (params.priorIRR < lp.irrHurdle) {
+  } else if (lp.irrHurdle !== null && params.priorIRR < lp.irrHurdle) {
     objections.push({
       agent: "IC Chair",
       objection: `Prior fund net IRR of ${params.priorIRR}% does not meet our ${lp.irrHurdle}% absolute return hurdle. We would need to understand the performance attribution and whether the shortfall was structural or cyclical.`,
