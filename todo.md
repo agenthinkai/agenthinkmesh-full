@@ -5401,3 +5401,11 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Enhancement 3: Add Sovereign AI Infrastructure Council card to investment tab in Home.tsx
 - [x] Enhancement 4: Update Outcome Calibration description in Landing.tsx with Brier scoring mathematical rigor text
 - [x] Enhancement 5: Add On-Premise Executive Sandbox compliance block to SADOLanding.tsx
+
+## CapTwin — Capital Formation Digital Twin
+- [x] LP Registry data layer (lpRegistry.ts)
+- [x] Deterministic simulation engine (capTwinEngine.ts)
+- [x] Compliance gating layer (regInterceptor.ts)
+- [x] Orchestration agents and Decision Ledger (capTwinAgents.ts)
+- [x] Full dashboard cockpit UI (CapTwin.tsx)
+- [x] Route /captwin registered in App.tsx

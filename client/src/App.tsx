@@ -181,6 +181,7 @@ const ArosProof = lazy(() => import("./pages/aros/ArosProof"));
 const ArosBoardPack = lazy(() => import("./pages/aros/ArosBoardPack"));
 const DecisionTwin = lazy(() => import("./pages/DecisionTwin"));
 const TwinDashboard = lazy(() => import("./pages/TwinDashboard"));
+const CapTwin = lazy(() => import("./pages/CapTwin"));
 
 // ── Page-level loading fallback ───────────────────────────────────────────────
 function PageLoader() {
@@ -493,6 +494,7 @@ function Router() {
       {/* Decision Twin */}
       <Route path="/twin/dashboard" component={TwinDashboard} />
       <Route path="/twin/:templateId" component={DecisionTwin} />
+      <Route path="/captwin" component={CapTwin} />
       {/* Fallback */}
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
