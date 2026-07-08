@@ -5393,3 +5393,11 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] ArosBoardPack.tsx UI: company selector, 8-section preview, one-click export
 - [ ] Route /aros/board-pack registered in App.tsx
 - [x] Board Intelligence Pack nav item in DashboardLayout sidebar
+
+## GTM Enhancement Sprint — Jul 2026
+
+- [x] Enhancement 1: Add "Stress-Test Your Business Idea In 60 Seconds" CTA button in hero section (Home.tsx) routing to /start
+- [x] Enhancement 2: Add Banking Balance-Sheet Steer Council card to investment tab in Home.tsx
+- [x] Enhancement 3: Add Sovereign AI Infrastructure Council card to investment tab in Home.tsx
+- [x] Enhancement 4: Update Outcome Calibration description in Landing.tsx with Brier scoring mathematical rigor text
+- [x] Enhancement 5: Add On-Premise Executive Sandbox compliance block to SADOLanding.tsx

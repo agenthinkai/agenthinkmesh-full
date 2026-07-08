@@ -301,6 +301,18 @@ export default function Home() {
           {/* ── PRIMARY FREE-RUN CTA ── */}
           {!isAuthenticated && (
             <div className="mb-10 w-full max-w-xl mx-auto">
+              {/* ── HERO STRESS-TEST CTA (primary conversion) ── */}
+              <a
+                href="/start"
+                onClick={() => trackEvent("home_stress_test_cta_click", { location: "hero_primary" })}
+                className="block w-full text-center py-4 px-6 rounded-2xl text-white font-extrabold text-lg shadow-2xl shadow-violet-900/60 transition-all duration-150 hover:scale-[1.02] hover:shadow-violet-900/80 focus:outline-none mb-2 ring-2 ring-violet-500/40"
+                style={{ background: "linear-gradient(135deg, #7c3aed 0%, #4f46e5 60%, #0ea5e9 100%)" }}
+              >
+                Stress-Test Your Business Idea In 60 Seconds
+              </a>
+              <p className="mb-5 text-xs text-white/45 text-center">
+                No login required · Council of 10 · Instant structured feedback
+              </p>
               {/* Primary PitchMirror CTA */}
               <a
                 href="/pitchmirror"
@@ -560,6 +572,48 @@ export default function Home() {
                         </div>
                       </button>
                     </Link>
+
+                    {/* Banking Balance-Sheet Steer Council */}
+                    <button
+                      className="group w-full text-left flex flex-col gap-3 p-5 rounded-2xl bg-gradient-to-br from-blue-600/15 to-blue-600/5 border border-blue-500/35 hover:border-blue-400/65 hover:from-blue-600/25 hover:to-blue-600/10 transition-all duration-200 shadow-lg shadow-blue-900/20 hover:-translate-y-0.5 relative"
+                      onClick={() => { import("sonner").then(m => m.toast.info("Banking Balance-Sheet Steer Council — preview launching soon")); }}
+                    >
+                      <div className="absolute -top-2.5 right-4 px-2 py-0.5 rounded-full bg-blue-500 text-[8px] font-bold uppercase tracking-widest text-white shadow">ENTERPRISE</div>
+                      <div className="flex items-center justify-between">
+                        <div className="w-9 h-9 rounded-xl bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
+                          <span className="text-lg">🏛️</span>
+                        </div>
+                        <span className="text-[9px] font-mono text-blue-400/70 uppercase tracking-widest px-2 py-0.5 rounded-full bg-blue-500/10 border border-blue-500/20">Banking</span>
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-white mb-1">Banking Balance-Sheet Steer Council</div>
+                        <div className="text-xs text-white/45 leading-relaxed">Deliberates risk, asset allocation, and liquidity yields under simulated Basel III stress tests.</div>
+                      </div>
+                      <div className="text-xs font-medium text-blue-400 flex items-center gap-1 group-hover:gap-2 transition-all">
+                        Preview Council of 10 <ArrowRight className="w-3 h-3" />
+                      </div>
+                    </button>
+
+                    {/* Sovereign AI Infrastructure Council */}
+                    <button
+                      className="group w-full text-left flex flex-col gap-3 p-5 rounded-2xl bg-gradient-to-br from-violet-600/15 to-violet-600/5 border border-violet-500/35 hover:border-violet-400/65 hover:from-violet-600/25 hover:to-violet-600/10 transition-all duration-200 shadow-lg shadow-violet-900/20 hover:-translate-y-0.5 relative"
+                      onClick={() => { import("sonner").then(m => m.toast.info("Sovereign AI Infrastructure Council — preview launching soon")); }}
+                    >
+                      <div className="absolute -top-2.5 right-4 px-2 py-0.5 rounded-full bg-violet-500 text-[8px] font-bold uppercase tracking-widest text-white shadow">ENTERPRISE</div>
+                      <div className="flex items-center justify-between">
+                        <div className="w-9 h-9 rounded-xl bg-violet-500/20 border border-violet-500/30 flex items-center justify-center flex-shrink-0">
+                          <span className="text-lg">🛰️</span>
+                        </div>
+                        <span className="text-[9px] font-mono text-violet-400/70 uppercase tracking-widest px-2 py-0.5 rounded-full bg-violet-500/10 border border-violet-500/20">Sovereign AI</span>
+                      </div>
+                      <div>
+                        <div className="text-sm font-semibold text-white mb-1">Sovereign AI Infrastructure Council</div>
+                        <div className="text-xs text-white/45 leading-relaxed">Simulates strategic pathways for local GPU capacity planning and hyperscale partnerships.</div>
+                      </div>
+                      <div className="text-xs font-medium text-violet-400 flex items-center gap-1 group-hover:gap-2 transition-all">
+                        Preview Council of 10 <ArrowRight className="w-3 h-3" />
+                      </div>
+                    </button>
                   </div>
                 </>
               )}

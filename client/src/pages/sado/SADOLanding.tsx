@@ -576,6 +576,25 @@ export default function SADOLanding() {
                 deployable on-premises or in a sovereign cloud region with no dependency on external AI APIs
                 in production mode.
               </p>
+              {/* ── ON-PREMISE EXECUTIVE SANDBOX ── */}
+              <div className="mt-4 p-4 rounded-xl border-2 border-blue-500/40 bg-blue-500/5">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-7 h-7 rounded-lg bg-blue-500/20 flex items-center justify-center mt-0.5">
+                    <Shield className="w-3.5 h-3.5 text-blue-500" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-bold text-foreground mb-1">Sealed by Design: On-Premise Executive Sandbox</div>
+                    <p className="text-xs text-muted-foreground leading-relaxed">
+                      Fully supports Internal Executive Sandbox Deployments. Deploy the entire decision twin as a decoupled Docker bundle inside your secure, private cloud network. Zero core banking integrations are required, zero Personally Identifiable Information (PII) is processed, and zero data leaves your network.
+                    </p>
+                    <div className="flex flex-wrap gap-1.5 mt-2">
+                      {["Docker bundle", "Air-gapped deployment", "Zero PII", "Zero external integrations", "GCC data localisation"].map(t => (
+                        <span key={t} className="px-2 py-0.5 rounded bg-blue-500/10 border border-blue-500/25 text-[10px] text-blue-600 dark:text-blue-400 font-medium">{t}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div className="flex flex-wrap gap-2 mt-3">
                 {["Python · FastAPI", "PostgreSQL · Neo4j", "OpenTelemetry", "MCP connectors", "Kubernetes-ready"].map(t => (
                   <span key={t} className="px-2 py-0.5 rounded bg-white border border-border text-xs text-muted-foreground">

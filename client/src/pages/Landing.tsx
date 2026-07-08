@@ -214,7 +214,7 @@ function ProcessFlow() {
 const CAPABILITIES = [
   { icon: "⚖️", title: "Council of 10",           desc: "Ten specialist perspectives evaluate every decision in parallel, each recording a structured verdict with rationale and confidence score.", color: BLUE_400 },
   { icon: "📜", title: "Constitutional Governance", desc: "A versioned Constitution defines mandatory governance constraints. BLOCK violations prevent release. Every rule change is versioned and traceable.", color: "#A78BFA" },
-  { icon: "📊", title: "Outcome Calibration",      desc: "The Calibration Loop scores each persona's historical accuracy using Brier scoring and adjusts weights accordingly.", color: GREEN_400 },
+  { icon: "📊", title: "Outcome Calibration",      desc: "Persona decision-making weights are mathematically validated and dynamically adjusted over time against actual real-world portfolio outcomes using Brier scoring algorithms. This provides a self-correcting statistical moat that completely eliminates standard generative AI hallucinations.", color: GREEN_400 },
   { icon: "🔬", title: "Strategic Stress Testing", desc: "Every decision is tested across thousands of scenarios — rate shocks, regulatory shifts, market dislocations, and geopolitical events.", color: GOLD },
   { icon: "🔐", title: "Institutional Proof",      desc: "Every conclusion in the Proof Report references a decision ID, rule version, finding ID, and audit reference. No conclusion without a traceable source.", color: BLUE_300 },
   { icon: "📋", title: "Audit & Traceability",     desc: "The unified audit log records every evaluation, finding, weight change, and Constitution version in an immutable append-only log.", color: "#F97316" },
