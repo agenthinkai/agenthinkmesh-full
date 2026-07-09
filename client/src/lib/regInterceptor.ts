@@ -103,7 +103,7 @@ export function runComplianceCheck(
         severity: "WARN",
         message: "No Sharia-compliant structure referenced in pitch",
         detail:
-          "Gulf Investment GIC requires Murabaha or Ijara structuring. Reference AAOIFI-compliant instruments explicitly.",
+          "Apex Sovereign Fund requires Murabaha or Ijara structuring. Reference AAOIFI-compliant instruments explicitly.",
       });
     }
   }
