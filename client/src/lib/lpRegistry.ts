@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// CapTwin — LP Registry (Static, anonymised institutional LPs)
-// Spec: SWF/Pension LPs, Family Offices, FoF, Individual Investors
-// All entries are fully generic archetypes — no real company names.
+// CapTwin — LP Registry (Generic Institutional Investor Segments)
+// All entries are fully anonymised representative archetypes.
+// No real company names or identifiable entities are referenced.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type LPRegion = "GCC" | "Europe" | "US";
@@ -53,7 +53,7 @@ export interface LimitedPartner {
 }
 
 export const LP_REGISTRY: LimitedPartner[] = [
-  // ── SWF ────────────────────────────────────────────────────────────────────
+  // ── 1. Sovereign Wealth Fund ───────────────────────────────────────────────
   {
     id: "apex-sovereign-fund",
     name: "Apex Sovereign Fund",
@@ -80,7 +80,7 @@ export const LP_REGISTRY: LimitedPartner[] = [
       "Absence of sovereign share-class with preferred liquidity rights is a hard gate.",
     ],
   },
-  // ── Pension ─────────────────────────────────────────────────────────────────
+  // ── 2. Pension Fund ─────────────────────────────────────────────────────────
   {
     id: "global-pension-alliance",
     name: "Global Pension Alliance",
@@ -107,10 +107,10 @@ export const LP_REGISTRY: LimitedPartner[] = [
       "ESG integration score below our minimum threshold of 8/10 for new manager commitments.",
     ],
   },
-  // ── Family Office (SFO) ─────────────────────────────────────────────────────
+  // ── 3. Single Family Office ─────────────────────────────────────────────────
   {
     id: "horizon-legacy-sfo",
-    name: "Horizon Legacy SFO",
+    name: "Horizon Legacy Single Family Office",
     region: "GCC",
     segment: "SFO",
     ticketMin: 5,
@@ -127,43 +127,43 @@ export const LP_REGISTRY: LimitedPartner[] = [
     digitalOnboardingRequired: false,
     currency: "USD",
     description:
-      "GCC single-family office with Sharia-mandated deployment and strong key-man sensitivity. Focuses on GP-LP carry alignment and key-man risk insulation clauses. Track record limit of 3 years for new manager relationships.",
+      "GCC single-family office domiciled in Kuwait with Sharia-mandated deployment and strong key-man sensitivity. Focuses on GP-LP carry alignment and key-man risk insulation clauses. 3-year track record limit for new manager relationships.",
     objections: [
       "Key-man risk is unacceptably high — no succession or deputy PM clause in the LPA.",
       "GP-LP carry alignment is misaligned — we require a GP co-invest of minimum 2% of fund size.",
       "Strategy is not Sharia-compliant — no evidence of Sharia supervisory board oversight.",
     ],
   },
-  // ── Fund of Funds ───────────────────────────────────────────────────────────
+  // ── 4. Fund of Funds ────────────────────────────────────────────────────────
   {
     id: "beacon-capital-fof",
-    name: "Beacon Capital FoF",
+    name: "Beacon Capital Fund of Funds",
     region: "Europe",
     segment: "FoF",
-    ticketMin: 10,
+    ticketMin: 15,
     ticketMax: 50,
-    strategies: ["Private Equity", "Private Credit", "Venture Capital", "Growth Equity"],
-    trackRecordLimit: 6,
+    strategies: ["Private Equity", "Private Credit", "Growth Equity", "Venture Capital"],
+    trackRecordLimit: 4,
     esgPriority: 7,
     shariaRequired: false,
-    irrHurdle: 10,
-    maxManagementFee: 1.5,
-    maxCarry: 15,
-    complianceFlags: ["eu-aifmd"],
+    irrHurdle: null,
+    maxManagementFee: 1.75,
+    maxCarry: 20,
+    complianceFlags: ["eu-aifmd", "sfdr-article-8"],
     keyManSensitive: false,
-    digitalOnboardingRequired: true,
+    digitalOnboardingRequired: false,
     currency: "CHF",
     description:
-      "European fund-of-funds allocator with diversified mandate across PE, credit, and growth strategies. Requires net IRR above 10% hurdle, digital reporting portals, and AIFMD passporting. Typical decision cycle of 8–12 weeks.",
+      "Swiss-domiciled fund of funds with absolute return focus and 4-year GP track record limit. Requires AIFMD compliance and SFDR Article 8 disclosure. Diversified across strategies with strong preference for co-investment rights.",
     objections: [
-      "Net IRR projection does not clear our 10% FoF hurdle after double layer of fee drag.",
-      "No digital reporting portal or LP data room — our operations team requires automated capital call and distribution notices.",
-      "AIFMD passporting documentation is absent — EU marketing compliance is non-negotiable.",
+      "No co-investment rights clause in the LPA — our FoF mandate requires at least 10% co-invest allocation.",
+      "SFDR Article 8 disclosure is absent — Swiss regulatory equivalence requires full sustainability risk documentation.",
+      "GP track record exceeds our 4-year emerging manager threshold — requires enhanced due diligence package.",
     ],
   },
-  // ── Individual / UHNWI ──────────────────────────────────────────────────────
+  // ── 5. Individual Accredited Investor ───────────────────────────────────────
   {
-    id: "global-network-qpi",
+    id: "global-network-qualified-private",
     name: "Global Network of Qualified Private Investors",
     region: "US",
     segment: "Individual",
@@ -181,7 +181,7 @@ export const LP_REGISTRY: LimitedPartner[] = [
     digitalOnboardingRequired: true,
     currency: "USD",
     description:
-      "US individual investor network with absolute return mandate. Prioritises net IRR above 8.5% and is strategy-agnostic. Requires SEC Rule 506(c) verified-accreditation disclosure footer and direct digital onboarding. Shorter decision cycle of 6–8 weeks.",
+      "US-based network of qualified private investors with absolute return mandate. Requires net IRR above 8.5%, SEC Rule 506(c) verified-accreditation disclosure, and direct digital onboarding. 2-year track record limit. Decision cycle of 6–8 weeks.",
     objections: [
       "No verified accredited-investor status disclosure footer — SEC Rule 506(c) compliance is mandatory for general solicitation.",
       "Digital onboarding portal is absent — this network will not accept paper-based capital call processes.",
