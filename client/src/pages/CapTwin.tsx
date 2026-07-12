@@ -528,27 +528,12 @@ export default function CapTwin() {
     }
   }, [hasAutoHydrated, runSimulation]);
 
-  // ── Block 3: PDF export ─────────────────────────────────────────────────────
-  const handleExportPDF = async () => {
-    // Attempt html2pdf if available, otherwise fall back to window.print()
-    try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const html2pdf = ((await import("html2pdf.js" as any)) as any).default;
-      if (printRef.current) {
-        html2pdf()
-          .set({
-            margin: [12, 10, 12, 10],
-            filename: "CapTwin_Executive_Board_Brief.pdf",
-            image: { type: "jpeg", quality: 0.97 },
-            html2canvas: { scale: 2, useCORS: true },
-            jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-          })
-          .from(printRef.current)
-          .save();
-      }
-    } catch {
-      window.print();
-    }
+  // ── Block 3: PDF export via browser print dialog ───────────────────────────
+  const handleExportPDF = () => {
+    const prevTitle = document.title;
+    document.title = "CapTwin_Executive_Board_Brief";
+    window.print();
+    setTimeout(() => { document.title = prevTitle; }, 500);
   };
 
   const moat = calcPatternMoat(ledger);
