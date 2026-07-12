@@ -5409,3 +5409,19 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Orchestration agents and Decision Ledger (capTwinAgents.ts)
 - [x] Full dashboard cockpit UI (CapTwin.tsx)
 - [x] Route /captwin registered in App.tsx
+
+## CapTwin UI/UX Enhancement Blocks (pasted_content_4.txt)
+
+- [x] Block 1: Auto-hydrate on mount — useEffect triggers default simulation (Private Credit + Apex Sovereign Fund) so charts/pitch/compliance are populated immediately on page load
+- [x] Block 2a: Wire placement agent toggle — 25% timeline reduction on Est. Final Close month card, 2% fee drag on Net Investable AUM, chart updates dynamically
+- [x] Block 2b: Pattern Moat badge hover tooltip — "Pattern Moat Multiplier (1.04x): A self-correcting machine learning loop that compares predicted Investment Committee scores against actual fundraising close rates to auto-calibrate fit coefficients."
+- [x] Block 3: Native PDF export — CSS @media print A4 double-column layout hiding nav/sliders; html2pdf branded download as "CapTwin_Executive_Board_Brief.pdf"
+- [x] Block 4a: Compliance tooltip — SEC Rule 506(b): "Prohibits general solicitation. Scans outreach templates for public marketing indicators."
+- [x] Block 4b: Compliance tooltip — Kuwait CMA Gate: "Enforces the mandatory KWD 100,000 minimum private placement ticket size."
+- [x] Block 4c: Compliance tooltip — Sharia AAOIFI: "Validates debt underlying structures against AAOIFI ledger parameters."
+- [x] Block 4d: Compliance tooltip — EU SFDR: "Checks Article 8/9 sustainability reporting requirements."
+- [x] Block 5a: Premium glassmorphic dark theme — slate-900 backdrops, semi-transparent borders, backdrop-blur panels
+- [x] Block 5b: Glowing compliance badges — green outer-glow for Passed, amber outer-glow for Conditional Watchlist, red pulse for Violation Detected
+- [x] Block 5c: Framer Motion entry animations for charts and text panels
+- [x] TypeScript 0 errors confirmed after all blocks
+- [x] Checkpoint saved and published to production

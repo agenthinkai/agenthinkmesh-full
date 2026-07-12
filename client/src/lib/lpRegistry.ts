@@ -1,10 +1,11 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // CapTwin — LP Registry (Static, anonymised institutional LPs)
-// Spec: SWF/Pension LPs, Family Offices, Individual Investors
+// Spec: SWF/Pension LPs, Family Offices, FoF, Individual Investors
+// All entries are fully generic archetypes — no real company names.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type LPRegion = "GCC" | "Europe" | "US";
-export type LPSegment = "SWF" | "Pension" | "SFO" | "Individual";
+export type LPSegment = "SWF" | "Pension" | "SFO" | "FoF" | "Individual";
 export type FundStrategy =
   | "Infrastructure"
   | "Private Equity"
@@ -54,8 +55,8 @@ export interface LimitedPartner {
 export const LP_REGISTRY: LimitedPartner[] = [
   // ── SWF ────────────────────────────────────────────────────────────────────
   {
-    id: "gulf-investment-gic",
-    name: "Gulf Investment GIC",
+    id: "apex-sovereign-fund",
+    name: "Apex Sovereign Fund",
     region: "GCC",
     segment: "SWF",
     ticketMin: 50,
@@ -81,8 +82,8 @@ export const LP_REGISTRY: LimitedPartner[] = [
   },
   // ── Pension ─────────────────────────────────────────────────────────────────
   {
-    id: "nordic-pension-pool",
-    name: "Nordic Pension Pool",
+    id: "global-pension-alliance",
+    name: "Global Pension Alliance",
     region: "Europe",
     segment: "Pension",
     ticketMin: 30,
@@ -108,8 +109,8 @@ export const LP_REGISTRY: LimitedPartner[] = [
   },
   // ── Family Office (SFO) ─────────────────────────────────────────────────────
   {
-    id: "al-sayer-legacy-sfo",
-    name: "Al-Sayer Legacy SFO",
+    id: "horizon-legacy-sfo",
+    name: "Horizon Legacy SFO",
     region: "GCC",
     segment: "SFO",
     ticketMin: 5,
@@ -133,10 +134,37 @@ export const LP_REGISTRY: LimitedPartner[] = [
       "Strategy is not Sharia-compliant — no evidence of Sharia supervisory board oversight.",
     ],
   },
+  // ── Fund of Funds ───────────────────────────────────────────────────────────
+  {
+    id: "beacon-capital-fof",
+    name: "Beacon Capital FoF",
+    region: "Europe",
+    segment: "FoF",
+    ticketMin: 10,
+    ticketMax: 50,
+    strategies: ["Private Equity", "Private Credit", "Venture Capital", "Growth Equity"],
+    trackRecordLimit: 6,
+    esgPriority: 7,
+    shariaRequired: false,
+    irrHurdle: 10,
+    maxManagementFee: 1.5,
+    maxCarry: 15,
+    complianceFlags: ["eu-aifmd"],
+    keyManSensitive: false,
+    digitalOnboardingRequired: true,
+    currency: "CHF",
+    description:
+      "European fund-of-funds allocator with diversified mandate across PE, credit, and growth strategies. Requires net IRR above 10% hurdle, digital reporting portals, and AIFMD passporting. Typical decision cycle of 8–12 weeks.",
+    objections: [
+      "Net IRR projection does not clear our 10% FoF hurdle after double layer of fee drag.",
+      "No digital reporting portal or LP data room — our operations team requires automated capital call and distribution notices.",
+      "AIFMD passporting documentation is absent — EU marketing compliance is non-negotiable.",
+    ],
+  },
   // ── Individual / UHNWI ──────────────────────────────────────────────────────
   {
-    id: "global-premium-uhnwi",
-    name: "Global Premium UHNWI Network",
+    id: "global-network-qpi",
+    name: "Global Network of Qualified Private Investors",
     region: "US",
     segment: "Individual",
     ticketMin: 0.25,   // $250k
@@ -153,7 +181,7 @@ export const LP_REGISTRY: LimitedPartner[] = [
     digitalOnboardingRequired: true,
     currency: "USD",
     description:
-      "US individual UHNWI network with absolute return mandate. Prioritises net IRR above 8.5% and is strategy-agnostic. Requires SEC Rule 506(c) verified-accreditation disclosure footer and direct digital onboarding. Shorter decision cycle of 6–8 weeks.",
+      "US individual investor network with absolute return mandate. Prioritises net IRR above 8.5% and is strategy-agnostic. Requires SEC Rule 506(c) verified-accreditation disclosure footer and direct digital onboarding. Shorter decision cycle of 6–8 weeks.",
     objections: [
       "No verified accredited-investor status disclosure footer — SEC Rule 506(c) compliance is mandatory for general solicitation.",
       "Digital onboarding portal is absent — this network will not accept paper-based capital call processes.",
