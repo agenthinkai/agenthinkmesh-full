@@ -5425,3 +5425,14 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Block 5c: Framer Motion entry animations for charts and text panels
 - [x] TypeScript 0 errors confirmed after all blocks
 - [x] Checkpoint saved and published to production
+
+- [x] Batch 2: append Pacific Rim Sovereign Trust to LP_REGISTRY with audit-safe generic parameters
+- [x] Batch 2: append Al-Hamra Legacy SFO to LP_REGISTRY with audit-safe generic parameters
+- [x] Batch 2: append Academia Global Endowment Fund to LP_REGISTRY with audit-safe generic parameters
+- [x] Batch 2: append GCC Elite Syndicate to LP_REGISTRY with audit-safe generic parameters
+- [x] Batch 2: append North American Teachers Pension Pool to LP_REGISTRY with audit-safe generic parameters
+- [x] Batch 2: expand LP registry types or mappings so all 10 targets compile without type regressions
+- [x] Batch 2: verify all 10 targets appear in the CapTwin scrolling target list
+- [x] Batch 2: verify RegInterceptor compliance logic still compiles for the expanded registry
+- [x] Batch 2: verify Recharts S-curve simulation still compiles and renders for the expanded registry
+- [x] Batch 2: save a publish-ready checkpoint for CapTwin registry expansion

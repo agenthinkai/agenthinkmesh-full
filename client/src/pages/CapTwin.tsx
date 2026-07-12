@@ -108,6 +108,8 @@ const COMPLIANCE_TOOLTIPS: Record<string, string> = {
     "Validates debt underlying structures against AAOIFI ledger parameters.",
   "EU AIFMD":
     "Checks Article 8/9 sustainability reporting requirements and AIFMD passporting disclosure.",
+  "MAS CIS":
+    "Validates that the offering document meets Singapore MAS Collective Investment Scheme regulatory requirements.",
 };
 
 // ── Deterministic Math ─────────────────────────────────────────────────────────
@@ -246,6 +248,21 @@ function runRegInterceptor(pitch: string, lp: LimitedPartner): ComplianceFlag[] 
     });
   }
 
+  if (lp.complianceFlags.includes("mas-cis")) {
+    const hasMas =
+      pitchLower.includes("mas") ||
+      pitchLower.includes("cis") ||
+      pitchLower.includes("collective investment scheme") ||
+      pitchLower.includes("singapore");
+    flags.push({
+      rule: "MAS CIS",
+      status: hasMas ? "pass" : "warn",
+      message: hasMas
+        ? "MAS Collective Investment Scheme disclosure language present."
+        : "WARNING: Singapore MAS CIS-compliant offering document disclosure is required for this allocator.",
+    });
+  }
+
   if (lp.shariaRequired) {
     const hasSharia =
       pitchLower.includes("sharia") ||
@@ -294,6 +311,11 @@ function generatePitch(params: FundParams, lp: LimitedPartner): string {
       " We provide a digital LP data room with automated capital call and distribution notices. " +
       "Our net IRR track record consistently clears the 10% FoF hurdle after fee drag. " +
       "AIFMD passporting documentation is available for EU marketing compliance.";
+  } else if (lp.segment === "Endowment") {
+    segmentClause =
+      " This fund provides full ESG integration methodology and sustainability risk disclosure aligned with UNPRI. " +
+      "Perpetual capital horizon of 15–20 years is supported with flexible capital call scheduling. " +
+      "Co-investment rights of minimum 5% of fund size are available to qualifying endowment LPs.";
   } else if (lp.segment === "Individual") {
     segmentClause =
       " Digital onboarding is fully supported with simplified capital call processes accessible via secure portal. " +
