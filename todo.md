@@ -5436,3 +5436,24 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Batch 2: verify RegInterceptor compliance logic still compiles for the expanded registry
 - [x] Batch 2: verify Recharts S-curve simulation still compiles and renders for the expanded registry
 - [x] Batch 2: save a publish-ready checkpoint for CapTwin registry expansion
+
+## Batch 3: Autonomous LP Research & Ingestion (Elements 11–20)
+- [ ] Research 3 GCC Family Offices with Private Credit mandates (generic names)
+- [ ] Research 3 European/North American Pension Pools with ESG Article 8/9 and Private Credit
+- [ ] Research 2 Global University Endowments/Foundations
+- [ ] Research 2 MENA/North America UHNWI Networks
+- [ ] Ingest all 10 as elements 11–20 in lpRegistry.ts
+- [ ] Extend LPRegion/LPSegment types if new regions/segments needed
+- [ ] TypeScript 0 errors confirmed
+- [ ] Production build passes
+- [ ] Checkpoint saved and published to production
+
+## LP Registry Batch 3 — 10 New Institutional Archetypes (elements 11–20)
+- [x] Research: 3 GCC SFOs/MFOs with Private Credit mandates
+- [x] Research: 3 European/North American Pension Pools with SFDR Article 8/9 rules
+- [x] Research: 2 Global University Endowments/Foundations
+- [x] Research: 2 UHNWI networks (Middle East + North America)
+- [x] Extend LPSegment type: add MFO, Foundation
+- [x] Extend FundStrategy type: add Direct Lending, Real Assets, Opportunistic Credit
+- [x] Ingest elements 11-20 into LP_REGISTRY
+- [x] TypeScript 0 errors confirmed
