@@ -296,6 +296,40 @@ router.post("/fleet-trigger", async (req: Request, res: Response) => {
     return;
   }
 
+  // ── Special action: runs-list — return all founder_agent_runs rows ─────────
+  if (action === "runs-list") {
+    try {
+      const db = await getDb();
+      if (!db) {
+        res.status(503).json({ action: "runs-list", error: "Database unavailable" });
+        return;
+      }
+      const rows = await db
+        .select({
+          id:              founderAgentRuns.id,
+          runDate:         founderAgentRuns.runDate,
+          fleetMode:       founderAgentRuns.fleetMode,
+          status:          founderAgentRuns.status,
+          totalIdeas:      founderAgentRuns.totalIdeas,
+          completed:       founderAgentRuns.completed,
+          totalTokens:     founderAgentRuns.totalTokens,
+          totalCostUsd:    founderAgentRuns.totalCostUsd,
+          startedAt:       founderAgentRuns.startedAt,
+          completedAt:     founderAgentRuns.completedAt,
+          createdAt:       founderAgentRuns.createdAt,
+        })
+        .from(founderAgentRuns)
+        .orderBy(founderAgentRuns.id);
+      console.log(`[WebhookFleetTrigger] runs-list: ${rows.length} runs`);
+      res.json({ action: "runs-list", count: rows.length, exportedAt: timestamp, runs: rows });
+    } catch (err) {
+      const msg = (err as Error)?.message ?? String(err);
+      console.error(`[WebhookFleetTrigger] runs-list error:`, msg);
+      res.status(500).json({ action: "runs-list", error: msg });
+    }
+    return;
+  }
+
   // ── Normal fleet trigger ───────────────────────────────────────────────────
   // Return immediately — fleet runs in background
   res.json({ status: "triggered", timestamp, mode: mode ?? "all" });
