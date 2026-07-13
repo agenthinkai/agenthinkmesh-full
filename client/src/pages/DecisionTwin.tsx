@@ -172,12 +172,12 @@ function computeIndicators(r: ComputedResult, s: SliderState, B: BaseData) {
         },
       },
       {
-        n: "Gulf Bank Merger Risk",
+        n: "Peer Bank Merger Risk",
         st: (gulfMerger < 30) ? "safe" : (gulfMerger >= 30 && gulfConversion >= 40) ? "safe" : (gulfMerger >= 30 && gulfConversion >= 20) ? "watch" : "alert",
         d: {
-          safe: "Merger risk contained — clear timeline or no commitment.",
-          watch: "Merger in progress — Sharia conversion timeline not yet defined.",
-          alert: "Merger proceeding without conversion plan. P/B compression risk is high.",
+          safe: "Peer bank merger risk contained — clear timeline or no commitment.",
+          watch: "Peer bank merger in progress — Sharia conversion timeline not yet defined.",
+          alert: "Peer bank merger proceeding without conversion plan. P/B compression risk is high.",
         },
       },
       {

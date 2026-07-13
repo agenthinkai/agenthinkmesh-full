@@ -290,7 +290,7 @@ export const KEO_TEMPLATE: CompanyTemplate = {
 // Banking Engine v1 — built from public data sources:
 // • Warba Bank Annual Report 2024 (NASDAQ Dubai)
 // • KPMG Kuwait Listed Banks YE25 (March 2026)
-// • Gulf Business: Warba acquires 32.75% Alghanim stake in Gulf Bank ($1.62B)
+// • Gulf Business: Warba acquires 32.75% Alghanim stake in GCC Peer Bank A ($1.62B)
 // • Warba Bank investor presentations and CBK disclosures
 // Data as of: June 2026
 
@@ -327,7 +327,7 @@ export const WARBA_TEMPLATE: CompanyTemplate = {
     svc: { arch: 0, eng: 0, pm: 0, pgm: 0, da: 0 },
     dig: 35,    // % digital channel adoption (estimated from digital-first positioning)
   },
-  overviewText: "Warba Bank's fundamentals have <b>transformed in 12 months</b> — net profit +121%, share price +51%, cost-to-income from 57.7% to 43.1%, NPL at 1.3%. The market has not yet repriced this. Warba trades at <b>1.4x P/B</b>. Boubyan Bank — the closest comparable — trades at <b>3.2x P/B</b>. The gap between what Warba is worth and what the market believes it is worth is the strategic opportunity. The question is not whether to merge with Gulf Bank or wait for the Mortgage Law. The question is: <b>what closes the valuation gap, and how fast?</b>",
+  overviewText: "Warba Bank's fundamentals have <b>transformed in 12 months</b> — net profit +121%, share price +51%, cost-to-income from 57.7% to 43.1%, NPL at 1.3%. The market has not yet repriced this. Warba trades at <b>1.4x P/B</b>. Boubyan Bank — the closest comparable — trades at <b>3.2x P/B</b>. The gap between what Warba is worth and what the market believes it is worth is the strategic opportunity. The question is not whether to merge with GCC Peer Bank A or wait for the Mortgage Law. The question is: <b>what closes the valuation gap, and how fast?</b>",
   scenarios: {
     current: {
       name: "Valuation Gap: Today", tag: "where you stand now", base: true,
@@ -340,19 +340,19 @@ export const WARBA_TEMPLATE: CompanyTemplate = {
       rec: "Warba's fundamentals have already improved dramatically. The market has not repriced this. The valuation gap — 1.4x P/B vs. Boubyan's 3.2x — is not a market error. It is a narrative gap. The market does not yet have a coherent story about what Warba is becoming.",
       conf: "High",
       assum: [
-        "Current P/B of 1.4x reflects market uncertainty about Gulf Bank merger outcome",
+        "Current P/B of 1.4x reflects market uncertainty about GCC Peer Bank A merger outcome",
         "Market has not yet priced in the 121% net profit improvement",
         "No clear investor narrative exists about Warba's 3-year strategic direction",
         "Boubyan's 3.2x P/B is the achievable benchmark — same market, same regulatory environment",
       ],
       risks: [
-        "Valuation gap widens if Gulf Bank merger creates uncertainty without a clear timeline",
+        "Valuation gap widens if GCC Peer Bank A merger creates uncertainty without a clear timeline",
         "Boubyan accelerates digital investment — the gap becomes structural, not temporary",
         "Mortgage Law delay extends the period of narrative uncertainty",
       ],
       acts: [
         "Define and communicate a clear 3-year strategic narrative to the market",
-        "Establish explicit go/no-go criteria for the Gulf Bank merger — uncertainty is the enemy of valuation",
+        "Establish explicit go/no-go criteria for the GCC Peer Bank A merger — uncertainty is the enemy of valuation",
         "Publish a digital banking roadmap that positions Warba as the GCC Islamic neobank",
       ],
       opp: [
@@ -362,7 +362,7 @@ export const WARBA_TEMPLATE: CompanyTemplate = {
       ],
       rsk: [
         "Narrative vacuum — no clear story means the market defaults to 'small bank with merger risk'",
-        "Gulf Bank stake without a merger timeline is a capital drag on valuation",
+        "GCC Peer Bank A stake without a merger timeline is a capital drag on valuation",
         "Boubyan's 3.2x P/B becomes the ceiling, not the target, if Warba doesn't act",
       ],
     },
@@ -378,12 +378,12 @@ export const WARBA_TEMPLATE: CompanyTemplate = {
       conf: "Moderate",
       assum: [
         "CBK approves full merger within 18 months — valuation uncertainty compresses during this period",
-        "Gulf Bank conventional assets convert to Sharia-compliant structures within 3 years",
+        "GCC Peer Bank A conventional assets convert to Sharia-compliant structures within 3 years",
         "Combined entity achieves cost-to-income of 38% — below Boubyan's current 42%",
         "Merger narrative is communicated clearly: scale + digital = premium Islamic bank",
       ],
       risks: [
-        "Sharia conversion of KD 7.7B conventional book is unprecedented in Kuwait — timeline unknown",
+        "Sharia conversion of large conventional book is complex — timeline unknown",
         "Market prices in integration risk, not scale upside — P/B may compress before it expands",
         "Boubyan captures Warba's digital-first customers during the 3-year integration window",
       ],
@@ -421,7 +421,7 @@ export const WARBA_TEMPLATE: CompanyTemplate = {
       ],
       risks: [
         "Boubyan is 5 years ahead on digital — Warba must leapfrog, not catch up",
-        "Platform investment requires capital that could otherwise fund the Gulf Bank merger",
+        "Platform investment requires capital that could otherwise fund the GCC Peer Bank A merger",
         "Regulatory approval for AI credit decisioning is uncertain",
       ],
       acts: [
@@ -451,7 +451,7 @@ export const WARBA_TEMPLATE: CompanyTemplate = {
       rec: "The valuation gap widens when Warba pursues the merger without a clear Sharia conversion timeline. The market prices in integration risk and narrative uncertainty simultaneously. P/B falls below 1.2x. This is not a tail risk — it is the default outcome if no strategic narrative is established.",
       conf: "High",
       assum: [
-        "Gulf Bank merger proceeds but Sharia conversion timeline is undefined",
+        "GCC Peer Bank A merger proceeds but Sharia conversion timeline is undefined",
         "IT integration consumes management attention — digital investment stalls",
         "No clear investor narrative: 'merger bank' is not a premium category",
         "Boubyan reaches 3.8x P/B while Warba is at 1.1x — gap becomes structural",
@@ -462,14 +462,14 @@ export const WARBA_TEMPLATE: CompanyTemplate = {
         "Boubyan captures Warba's youth segment permanently during the integration window",
       ],
       acts: [
-        "Do not proceed with the merger without a defined Sharia conversion timeline — this is the single most important governance decision",
-        "Establish a public go/no-go date for the merger — uncertainty is more damaging than a 'no'",
+        "Do not proceed with the GCC Peer Bank A merger without a defined Sharia conversion timeline — this is the single most important governance decision",
+        "Establish a public go/no-go date for the GCC Peer Bank A merger — uncertainty is more damaging than a 'no'",
         "Ring-fence the digital innovation budget regardless of merger decision",
       ],
       opp: [
         "This scenario forces the board to confront the valuation gap explicitly",
-        "A disciplined 'no' to the merger — with a clear digital narrative — could rerate Warba faster than the merger",
-        "Minority stake monetization (selling the Gulf Bank stake at a premium) is an option if merger is not viable",
+        "A disciplined 'no' to the GCC Peer Bank A merger — with a clear digital narrative — could rerate Warba faster than the merger",
+        "Minority stake monetization (selling the GCC Peer Bank A stake at a premium) is an option if merger is not viable",
       ],
       rsk: [
         "P/B falls to 1.0–1.1x — below book value — triggering institutional selling",
@@ -533,7 +533,7 @@ export const WARBA_TEMPLATE: CompanyTemplate = {
       risks: [
         "Premature expansion dilutes the Kuwait franchise — the source of the valuation premium",
         "QNB precedent: regional acquisitions created complexity, not premium multiples",
-        "Management bandwidth — Kuwait + Gulf Bank + GCC expansion simultaneously is too many fronts",
+        "Management bandwidth — Kuwait + GCC Peer Bank A + GCC expansion simultaneously is too many fronts",
       ],
       acts: [
         "Sequence explicitly: Kuwait rerating first (P/B 2.5x+), then GCC expansion",
@@ -555,30 +555,320 @@ export const WARBA_TEMPLATE: CompanyTemplate = {
   growthPaths: [
     { t: "Digital Rerating: 1.4x → 3.0x P/B", d: "Commit to the digital platform strategy — open banking API, AI credit, BaaS — and communicate a 3-year P/B target to the market. Boubyan's playbook, executed with 5 years of hindsight.", live: s => (s.digitalAdoption ?? 0) >= 65 && s.ai >= 50 },
     { t: "Mortgage First-Mover Premium", d: "Be launch-ready on Mortgage Law approval day. Pre-approve 5,000 customers digitally. The Al Rajhi precedent: mortgage law + digital = P/B expansion from 2x to 4x in 3 years.", live: s => (s.mortgageLaw ?? 0) >= 60 && (s.financingGrowth ?? 0) >= 15 },
-    { t: "Merger Scale Premium", d: "Execute the Gulf Bank merger with a clean Sharia conversion narrative. Combined KD 13.7B in assets justifies institutional investor attention and a 2.0–2.4x P/B.", live: s => (s.gulfMerger ?? 0) >= 50 && (s.gulfConversion ?? 0) >= 40 },
+    { t: "Merger Scale Premium", d: "Execute the GCC Peer Bank A merger with a clean Sharia conversion narrative. Combined KD 13.7B in assets justifies institutional investor attention and a 2.0–2.4x P/B.", live: s => (s.gulfMerger ?? 0) >= 50 && (s.gulfConversion ?? 0) >= 40 },
     { t: "Narrative Rerating", d: "Define and communicate a clear 3-year strategic story. The market currently has no coherent narrative for Warba. A clear story alone — without any operational change — could close 30% of the valuation gap.", live: s => s.growth >= 12 && (s.digitalAdoption ?? 0) >= 50 },
     { t: "GCC Platform Premium", d: "After Kuwait rerating (P/B 2.5x+), expand to UAE digital-only. A GCC Islamic neobank commands a software-adjacent multiple — 4x+ P/B is the ceiling.", live: s => (s.regionalExpansion ?? 0) >= 50 && (s.digitalAdoption ?? 0) >= 60 },
   ],
   failPaths: [
     { t: "Narrative Vacuum", d: "No clear strategic story means the market defaults to 'small bank with merger risk'. P/B stays at 1.4x or falls. This is the current default trajectory.", live: s => s.growth < 12 && (s.digitalAdoption ?? 0) < 55 },
-    { t: "Merger Without Conversion Timeline", d: "Proceeding with the Gulf Bank merger without a defined Sharia conversion timeline is the single most likely path to P/B compression below 1.2x.", live: s => (s.gulfMerger ?? 0) >= 60 && (s.gulfConversion ?? 0) < 40 },
+    { t: "Merger Without Conversion Timeline", d: "Proceeding with the GCC Peer Bank A merger without a defined Sharia conversion timeline is the single most likely path to P/B compression below 1.2x.", live: s => (s.gulfMerger ?? 0) >= 60 && (s.gulfConversion ?? 0) < 40 },
     { t: "Boubyan Captures the Premium", d: "Boubyan reaches 4x P/B while Warba is at 1.4x. The gap becomes structural — Warba can no longer compete for talent, acquisitions, or institutional capital.", live: s => (s.digitalAdoption ?? 0) < 50 && s.ai < 40 },
     { t: "Mortgage Law Dependence", d: "Strategy is over-indexed on a single regulatory event. If the law is delayed again, the valuation catalyst narrative collapses and investor patience runs out.", live: s => (s.mortgageLaw ?? 0) < 30 && (s.financingGrowth ?? 0) < 8 },
-    { t: "Capital Drag Without Upside", d: "KD 498M Gulf Bank stake without a merger timeline is capital that earns a minority dividend, not a control premium. P/B reflects the drag.", live: s => (s.gulfMerger ?? 0) < 30 && (s.depositGrowth ?? 0) < 8 },
+    { t: "Capital Drag Without Upside", d: "GCC Peer Bank A stake without a merger timeline is capital that earns a minority dividend, not a control premium. P/B reflects the drag.", live: s => (s.gulfMerger ?? 0) < 30 && (s.depositGrowth ?? 0) < 8 },
   ],
   historicalPrecedents: [
     { name: "Boubyan Bank (Kuwait)", outcome: "P/B expanded from 1.2x to 3.2x (2015–2025) through digital-first focus and avoiding premature geographic expansion. Assets grew from KD 2B to KD 9B.", relevance: "The direct valuation benchmark — same market, same regulatory environment, same Islamic banking model. Boubyan's P/B is the target, not the ceiling." },
     { name: "Al Rajhi Bank (Saudi Arabia)", outcome: "P/B expanded from 2.1x to 4.8x in the 3 years following Saudi mortgage law. Mortgage book grew 40% annually. Digital channel handled 72% of applications.", relevance: "The Mortgage Law catalyst precedent — the most important data point for Warba's valuation rerating potential." },
-    { name: "Emirates Islamic (UAE)", outcome: "Converted from conventional to Islamic banking in 2004. Conversion took 3 years and required CBK approval for each product category. P/B compressed during conversion, then expanded.", relevance: "Sharia conversion precedent — the market prices in conversion risk before it prices in the upside. Gulf Bank conversion will follow the same pattern." },
+    { name: "Emirates Islamic (UAE)", outcome: "Converted from conventional to Islamic banking in 2004. Conversion took 3 years and required CBK approval for each product category. P/B compressed during conversion, then expanded.", relevance: "Sharia conversion precedent — the market prices in conversion risk before it prices in the upside. GCC Peer Bank A conversion will follow the same pattern." },
     { name: "NCB / Samba merger (Saudi Arabia)", outcome: "Created Saudi National Bank — largest bank in Saudi Arabia — but P/B did not expand post-merger. Scale without a premium narrative does not rerate.", relevance: "The merger valuation lesson — scale is necessary but not sufficient for P/B expansion. The narrative must change, not just the balance sheet." },
     { name: "Kakao Bank (South Korea)", outcome: "P/B reached 8x at IPO as a digital-first bank with no branches. Cost-to-income of 28% — 20 points below conventional peers — was the primary valuation driver.", relevance: "The platform premium ceiling — a digital Islamic bank with Warba's cost-to-income trajectory could command a multiple that conventional bank comparables cannot predict." },
   ],
   outcomeLedgerEntry: {
     ref: "OL-003",
     decision: "Warba Bank: What is the primary driver of valuation rerating from 1.4x P/B to 3.0x+ P/B — and what is the sequence of decisions required to achieve it?",
-    hiddenVariable: "Narrative Architecture Constraint — the market currently has no coherent story about what Warba is becoming. The valuation gap is not primarily a fundamentals gap (fundamentals have already improved dramatically). It is a narrative gap. The hidden variable is whether Warba's board is willing to commit publicly to a 3-year strategic direction — and whether that direction is digital platform, merger scale, or mortgage catalyst.",
-    recommendation: "The valuation rerating pathway is the single most important strategic question. The answer determines whether the Gulf Bank merger is a rerating event or a distraction. Pursue the digital platform narrative first — it does not require the merger, does not require the Mortgage Law, and is the path Boubyan used to reach 3.2x P/B. The merger and the Mortgage Law are accelerants, not foundations.",
+    hiddenVariable: "Narrative Architecture Constraint — the market currently has no coherent story about what Warba is becoming. The valuation gap is not primarily a fundamentals gap (fundamentals have already improved dramatically). It is a narrative gap. The hidden variable is whether Warba's board is willing to commit publicly to a 3-year strategic direction — and whether that direction is digital platform, GCC Peer Bank A merger scale, or mortgage catalyst.",
+    recommendation: "The valuation rerating pathway is the single most important strategic question. The answer determines whether the GCC Peer Bank A merger is a rerating event or a distraction. Pursue the digital platform narrative first — it does not require the merger, does not require the Mortgage Law, and is the path Boubyan used to reach 3.2x P/B. The merger and the Mortgage Law are accelerants, not foundations.",
     confidence: 72,
+    reviewDates: ["December 2026", "June 2027", "December 2027"],
+  },
+};
+
+// ─── Apex Islamic Bank ───────────────────────────────────────────────────────
+// Generic GCC Islamic bank archetype — no real company names.
+// Mirrors the Warba banking engine; all M&A references use "GCC Peer Bank A".
+export const APEX_TEMPLATE: CompanyTemplate = {
+  id: "apex",
+  name: "Apex Islamic Bank",
+  industry: "Islamic Banking",
+  region: "GCC",
+  brand: "#1B6B4A",
+  brandDark: "#0F4530",
+  bankingMode: true,
+  bankingDefaults: {
+    totalAssets: 5800,
+    netProfit: 44,
+    roe: 7.8,
+    roa: 0.76,
+    costToIncome: 46.0,
+    npl: 1.55,
+    depositBase: 2900,
+    financingBook: 3400,
+    capitalAdequacy: 17.5,
+    sharePrice: 250,
+    pbRatio: 1.3,
+    marketCap: 680,
+  },
+  geoLabels: { ksa: "Saudi Arabia", uae: "UAE", kw: "Kuwait", other: "Other GCC" },
+  defaults: {
+    rev: 240,
+    eb: 44,
+    emp: 850, fee: 0, util: 0,
+    geo: { ksa: 8, uae: 12, kw: 75, other: 5 },
+    svc: { arch: 0, eng: 0, pm: 0, pgm: 0, da: 0 },
+    dig: 30,
+  },
+  overviewText: "Apex Islamic Bank's fundamentals show <b>improving momentum</b> — net profit growing, cost-to-income declining, capital adequacy well above regulatory minimums. The market has not yet repriced this. Apex trades at <b>1.3x P/B</b>. The leading GCC Islamic banking comparable trades at <b>3.2x P/B</b>. The gap between what Apex is worth and what the market believes it is worth is the strategic opportunity. The question is not whether to merge with GCC Peer Bank A or wait for the Mortgage Law. The question is: <b>what closes the valuation gap, and how fast?</b>",
+  scenarios: {
+    current: {
+      name: "Valuation Gap: Today", tag: "where you stand now", base: true,
+      set: {
+        ai: 30, pricing: 38, share: 4, growth: 10, costInfl: 4, daGrowth: 30, gcc: 12,
+        mortgageLaw: 25, gulfMerger: 18, gulfConversion: 0,
+        depositGrowth: 9, financingGrowth: 7, digitalAdoption: 48,
+        costToIncomeTarget: 44, regionalExpansion: 12, rateEnv: 50,
+      },
+      rec: "Apex's fundamentals are improving but the market has not repriced this. The valuation gap — 1.3x P/B vs. the leading GCC Islamic bank at 3.2x — is not a market error. It is a narrative gap. The market does not yet have a coherent story about what Apex is becoming.",
+      conf: "High",
+      assum: [
+        "Current P/B of 1.3x reflects market uncertainty about GCC Peer Bank A merger outcome",
+        "Market has not yet priced in the recent profit improvement trajectory",
+        "No clear investor narrative exists about Apex's 3-year strategic direction",
+        "Leading GCC Islamic bank at 3.2x P/B is the achievable benchmark — same regulatory environment",
+      ],
+      risks: [
+        "Valuation gap widens if GCC Peer Bank A merger creates uncertainty without a clear timeline",
+        "Leading peer accelerates digital investment — the gap becomes structural, not temporary",
+        "Mortgage Law delay extends the period of narrative uncertainty",
+      ],
+      acts: [
+        "Define and communicate a clear 3-year strategic narrative to the market",
+        "Establish explicit go/no-go criteria for the GCC Peer Bank A merger — uncertainty is the enemy of valuation",
+        "Publish a digital banking roadmap that positions Apex as the GCC Islamic neobank",
+      ],
+      opp: [
+        "Closing half the P/B gap (1.3x → 2.2x) adds significant market cap",
+        "Net profit trajectory is already improving — the story needs to be told",
+        "Digital-first positioning is a genuine premium vs. conventional peers",
+      ],
+      rsk: [
+        "Narrative vacuum — no clear story means the market defaults to 'small bank with merger risk'",
+        "GCC Peer Bank A stake without a merger timeline is a capital drag on valuation",
+        "Leading peer's high P/B becomes the ceiling, not the target, if Apex doesn't act",
+      ],
+    },
+    aiaug: {
+      name: "Merger Rerating", tag: "the scale path to 2.2x P/B",
+      set: {
+        ai: 48, pricing: 43, share: 8, growth: 17, costInfl: 5, daGrowth: 42, gcc: 22,
+        mortgageLaw: 48, gulfMerger: 72, gulfConversion: 58,
+        depositGrowth: 14, financingGrowth: 13, digitalAdoption: 58,
+        costToIncomeTarget: 38, regionalExpansion: 22, rateEnv: 55,
+      },
+      rec: "A successful merger with GCC Peer Bank A creates a leading regional Islamic bank and justifies a valuation rerating to 2.0–2.4x P/B — but only if the Sharia conversion is executed cleanly. The market will price in the risk, not the upside, until conversion is complete.",
+      conf: "Moderate",
+      assum: [
+        "Regulatory approval for full merger within 18 months — valuation uncertainty compresses during this period",
+        "GCC Peer Bank A conventional assets convert to Sharia-compliant structures within 3 years",
+        "Combined entity achieves cost-to-income of 38% — below leading peer's current 42%",
+        "Merger narrative is communicated clearly: scale + digital = premium Islamic bank",
+      ],
+      risks: [
+        "Sharia conversion of large conventional book is complex — timeline unknown",
+        "Market prices in integration risk, not scale upside — P/B may compress before it expands",
+        "Leading peer captures Apex's digital-first customers during the 3-year integration window",
+      ],
+      acts: [
+        "Publish a merger narrative: 'GCC's first full-spectrum Islamic bank' — not just 'larger balance sheet'",
+        "Ring-fence Apex digital innovation team from merger integration to protect the premium",
+        "Set a public cost-to-income target of 38% post-merger — this is the valuation signal",
+      ],
+      opp: [
+        "Combined asset base justifies institutional investor attention — new buyer universe",
+        "Scale + digital is a narrative that commands a premium multiple in Islamic banking",
+        "Branch rationalization synergies fund the digital investment that drives the rerating",
+      ],
+      rsk: [
+        "Integration uncertainty is a valuation depressant — the gap may widen before it closes",
+        "If Sharia conversion stalls, the merger narrative collapses and P/B falls below 1.3x",
+        "Leading peer reaches 4x P/B while Apex is distracted — the gap becomes permanent",
+      ],
+    },
+    digital: {
+      name: "Digital Rerating", tag: "the fastest path to 3.0x P/B",
+      set: {
+        ai: 72, pricing: 53, share: 7, growth: 19, costInfl: 3, daGrowth: 78, gcc: 32,
+        mortgageLaw: 58, gulfMerger: 28, gulfConversion: 0,
+        depositGrowth: 17, financingGrowth: 15, digitalAdoption: 82,
+        costToIncomeTarget: 35, regionalExpansion: 32, rateEnv: 60,
+      },
+      rec: "Digital-first execution is the fastest path to a valuation rerating. The leading GCC Islamic bank reached 3.2x P/B by being the digital Islamic bank — not by being the largest. Apex can reach 2.8–3.2x P/B by becoming the GCC Islamic neobank. This path does not require the merger. It does not require the Mortgage Law. It requires a decision.",
+      conf: "High",
+      assum: [
+        "Apex commits to a 3-year digital platform investment — not incremental, transformational",
+        "Cost-to-income reaches 35% — below leading peer's 42%, justifying a premium multiple",
+        "Open banking API layer is live within 18 months — Apex becomes infrastructure, not just a bank",
+        "Market re-narrativizes Apex as 'the Islamic neobank' — new institutional buyer universe",
+      ],
+      risks: [
+        "Leading peer is ahead on digital — Apex must leapfrog, not catch up",
+        "Platform investment requires capital that could otherwise fund the GCC Peer Bank A merger",
+        "Regulatory approval for AI credit decisioning is uncertain",
+      ],
+      acts: [
+        "Publish a 3-year digital roadmap with specific milestones and P/B targets — this is the investor narrative",
+        "Launch open banking API layer within 18 months — become BaaS infrastructure for regional fintechs",
+        "Set a public cost-to-income target of 35% — 7 points below leading peer — as the valuation signal",
+      ],
+      opp: [
+        "Closing the P/B gap from 1.3x to 3.0x adds substantial market cap — this is the prize",
+        "Software-adjacent P/B multiples are available to banks with genuine platform businesses",
+        "Leading peer's playbook is proven — Apex can execute the same strategy with hindsight advantage",
+      ],
+      rsk: [
+        "Leading peer reaches 4x P/B before Apex reaches 2x — the gap becomes a structural disadvantage",
+        "Platform investment without clear ROI narrative depresses P/B further before it rises",
+        "Talent competition with regional fintechs for the engineers who build the platform",
+      ],
+    },
+    margin: {
+      name: "Valuation Compression", tag: "how the gap widens",
+      set: {
+        ai: 18, pricing: 22, share: 3, growth: 4, costInfl: 8, daGrowth: 12, gcc: 8,
+        mortgageLaw: 8, gulfMerger: 78, gulfConversion: 22,
+        depositGrowth: 3, financingGrowth: 2, digitalAdoption: 38,
+        costToIncomeTarget: 55, regionalExpansion: 8, rateEnv: 28,
+      },
+      rec: "The valuation gap widens when Apex pursues the merger without a clear Sharia conversion timeline. The market prices in integration risk and narrative uncertainty simultaneously. P/B falls below 1.1x. This is not a tail risk — it is the default outcome if no strategic narrative is established.",
+      conf: "High",
+      assum: [
+        "GCC Peer Bank A merger proceeds but Sharia conversion timeline is undefined",
+        "IT integration consumes management attention — digital investment stalls",
+        "No clear investor narrative: 'merger bank' is not a premium category",
+        "Leading peer reaches 3.8x P/B while Apex is at 1.1x — gap becomes structural",
+      ],
+      risks: [
+        "Cost-to-income reverts toward 55% during integration — the recent improvement is reversed",
+        "Institutional investors exit — 'integration risk' is not a category they hold",
+        "Leading peer captures Apex's youth segment permanently during the integration window",
+      ],
+      acts: [
+        "Do not proceed with the GCC Peer Bank A merger without a defined Sharia conversion timeline — this is the single most important governance decision",
+        "Establish a public go/no-go date for the GCC Peer Bank A merger — uncertainty is more damaging than a 'no'",
+        "Ring-fence the digital innovation budget regardless of merger decision",
+      ],
+      opp: [
+        "This scenario forces the board to confront the valuation gap explicitly",
+        "A disciplined 'no' to the GCC Peer Bank A merger — with a clear digital narrative — could rerate Apex faster than the merger",
+        "Minority stake monetization (selling the GCC Peer Bank A stake at a premium) is an option if merger is not viable",
+      ],
+      rsk: [
+        "P/B falls to 1.0–1.1x — below book value — triggering institutional selling",
+        "The valuation gap becomes a self-fulfilling prophecy: low P/B limits capital raising, which limits growth",
+        "Leading peer's high P/B makes it impossible for Apex to compete for talent and acquisitions",
+      ],
+    },
+    ainative: {
+      name: "Mortgage Rerating", tag: "the retail catalyst",
+      set: {
+        ai: 52, pricing: 48, share: 6, growth: 21, costInfl: 4, daGrowth: 48, gcc: 18,
+        mortgageLaw: 93, gulfMerger: 38, gulfConversion: 0,
+        depositGrowth: 15, financingGrowth: 24, digitalAdoption: 68,
+        costToIncomeTarget: 38, regionalExpansion: 18, rateEnv: 63,
+      },
+      rec: "Mortgage Law approval is the highest-probability single event that could rerate Apex's valuation. The Al Rajhi precedent shows mortgage book growth of 40% annually post-law, with P/B expanding from 2.1x to 4.8x. Apex must be ready on approval day, not 6 months after.",
+      conf: "Moderate-High",
+      assum: [
+        "Regional Mortgage Law approved by legislature in 2026 or 2027",
+        "Apex launches Sharia-compliant mortgage product within 30 days of approval — not 6 months",
+        "Digital channel handles 70%+ of mortgage applications — this is the valuation signal",
+        "Mortgage book grows substantially within 3 years — from near-zero today",
+      ],
+      risks: [
+        "Mortgage Law delayed again — the 'regulatory catalyst' narrative loses credibility with investors",
+        "Larger peers launch mortgage products first — Apex loses the first-mover premium",
+        "Rapid balance sheet expansion pressures capital adequacy below regulatory comfort zone",
+      ],
+      acts: [
+        "Pre-build the Sharia mortgage product today — launch-ready before the law passes",
+        "Pre-approve customers digitally — announce this publicly to signal readiness",
+        "Communicate the mortgage opportunity to investors now: 'significant pent-up demand, Apex is ready'",
+      ],
+      opp: [
+        "Al Rajhi precedent: mortgage law + digital-first = P/B expansion from 2x to 4x in 3 years",
+        "Mortgage customers are 15–25 year relationships — the highest-LTV customer in banking",
+        "Digital mortgage process is a genuine differentiator vs. branch-based conventional peers",
+      ],
+      rsk: [
+        "Mortgage Law dependence — if delayed again, the valuation catalyst narrative collapses",
+        "Concentration risk: mortgage book growing from near-zero rapidly is aggressive",
+        "Capital adequacy pressure if mortgage growth outpaces deposit growth",
+      ],
+    },
+    boom: {
+      name: "GCC Rerating", tag: "the platform premium path",
+      set: {
+        ai: 43, pricing: 38, share: 5, growth: 15, costInfl: 5, daGrowth: 38, gcc: 68,
+        mortgageLaw: 48, gulfMerger: 32, gulfConversion: 0,
+        depositGrowth: 13, financingGrowth: 11, digitalAdoption: 63,
+        costToIncomeTarget: 40, regionalExpansion: 68, rateEnv: 53,
+      },
+      rec: "GCC expansion is the path to a platform premium — but only after the domestic franchise is fully optimized. Regional expansion creates scale but not a premium multiple if the domestic narrative is not established first. The lesson: depth before breadth.",
+      conf: "Moderate",
+      assum: [
+        "Domestic franchise is fully optimized before GCC expansion begins — P/B above 2.5x domestically first",
+        "UAE digital banking license obtained within 24 months — digital-only, no branches",
+        "GCC expansion narrative adds a 'platform premium' to the P/B multiple",
+        "Capital adequacy supports expansion without dilutive rights issue",
+      ],
+      risks: [
+        "Premature expansion dilutes the domestic narrative and the capital",
+        "Management bandwidth — domestic franchise + GCC Peer Bank A + GCC expansion simultaneously is too many fronts",
+        "Regulatory approval timelines in each GCC market are unpredictable",
+      ],
+      acts: [
+        "Sequence explicitly: domestic rerating first (P/B 2.5x+), then GCC expansion",
+        "UAE digital-only entry — no branches, no acquisition — preserves the capital for domestic franchise",
+        "Communicate the GCC roadmap to investors now, but execute domestic first",
+      ],
+      opp: [
+        "GCC Islamic banking market is large — the platform premium is real if the narrative is right",
+        "Digital-first GCC entry has lower capital requirements than branch banking",
+        "A GCC Islamic neobank commands a software-adjacent multiple — 4x+ P/B is achievable",
+      ],
+      rsk: [
+        "Expansion before domestic rerating dilutes the narrative and the capital",
+        "Regulatory approval timelines in each GCC market are unpredictable",
+        "Talent competition with regional fintechs for the engineers who build the platform",
+      ],
+    },
+  },
+  growthPaths: [
+    { t: "Digital Rerating: 1.3x → 3.0x P/B", d: "Commit to the digital platform strategy — open banking API, AI credit, BaaS — and communicate a 3-year P/B target to the market. The leading peer's playbook, executed with hindsight advantage.", live: s => (s.digitalAdoption ?? 0) >= 65 && s.ai >= 50 },
+    { t: "Mortgage First-Mover Premium", d: "Be launch-ready on Mortgage Law approval day. Pre-approve customers digitally. The Al Rajhi precedent: mortgage law + digital = P/B expansion from 2x to 4x in 3 years.", live: s => (s.mortgageLaw ?? 0) >= 60 && (s.financingGrowth ?? 0) >= 15 },
+    { t: "Merger Scale Premium", d: "Execute the GCC Peer Bank A merger with a clean Sharia conversion narrative. Combined asset base justifies institutional investor attention and a 2.0–2.4x P/B.", live: s => (s.gulfMerger ?? 0) >= 50 && (s.gulfConversion ?? 0) >= 40 },
+    { t: "Narrative Rerating", d: "Define and communicate a clear 3-year strategic story. The market currently has no coherent narrative for Apex. A clear story alone — without any operational change — could close 30% of the valuation gap.", live: s => s.growth >= 12 && (s.digitalAdoption ?? 0) >= 50 },
+    { t: "GCC Platform Premium", d: "After domestic rerating (P/B 2.5x+), expand to UAE digital-only. A GCC Islamic neobank commands a software-adjacent multiple — 4x+ P/B is the ceiling.", live: s => (s.regionalExpansion ?? 0) >= 50 && (s.digitalAdoption ?? 0) >= 60 },
+  ],
+  failPaths: [
+    { t: "Narrative Vacuum", d: "No clear strategic story means the market defaults to 'small bank with merger risk'. P/B stays at 1.3x or falls. This is the current default trajectory.", live: s => s.growth < 12 && (s.digitalAdoption ?? 0) < 55 },
+    { t: "Merger Without Conversion Timeline", d: "Proceeding with the GCC Peer Bank A merger without a defined Sharia conversion timeline is the single most likely path to P/B compression below 1.1x.", live: s => (s.gulfMerger ?? 0) >= 60 && (s.gulfConversion ?? 0) < 40 },
+    { t: "Leading Peer Captures the Premium", d: "Leading GCC Islamic peer reaches 4x P/B while Apex is at 1.3x. The gap becomes structural — Apex can no longer compete for talent, acquisitions, or institutional capital.", live: s => (s.digitalAdoption ?? 0) < 50 && s.ai < 40 },
+    { t: "Mortgage Law Dependence", d: "Strategy is over-indexed on a single regulatory event. If the law is delayed again, the valuation catalyst narrative collapses and investor patience runs out.", live: s => (s.mortgageLaw ?? 0) < 30 && (s.financingGrowth ?? 0) < 8 },
+    { t: "Capital Drag Without Upside", d: "GCC Peer Bank A stake without a merger timeline is capital that earns a minority dividend, not a control premium. P/B reflects the drag.", live: s => (s.gulfMerger ?? 0) < 30 && (s.depositGrowth ?? 0) < 8 },
+  ],
+  historicalPrecedents: [
+    { name: "Boubyan Bank (Kuwait)", outcome: "P/B expanded from 1.2x to 3.2x (2015–2025) through digital-first focus and avoiding premature geographic expansion. Assets grew from KD 2B to KD 9B.", relevance: "The direct valuation benchmark — same market, same regulatory environment, same Islamic banking model. Boubyan's P/B is the target, not the ceiling." },
+    { name: "Al Rajhi Bank (Saudi Arabia)", outcome: "P/B expanded from 2.1x to 4.8x in the 3 years following Saudi mortgage law. Mortgage book grew 40% annually. Digital channel handled 72% of applications.", relevance: "The Mortgage Law catalyst precedent — the most important data point for Islamic bank valuation rerating potential." },
+    { name: "Emirates Islamic (UAE)", outcome: "Converted from conventional to Islamic banking in 2004. Conversion took 3 years and required regulatory approval for each product category. P/B compressed during conversion, then expanded.", relevance: "Sharia conversion precedent — the market prices in conversion risk before it prices in the upside. GCC Peer Bank A conversion will follow the same pattern." },
+    { name: "NCB / Samba merger (Saudi Arabia)", outcome: "Created Saudi National Bank — largest bank in Saudi Arabia — but P/B did not expand post-merger. Scale without a premium narrative does not rerate.", relevance: "The merger valuation lesson — scale is necessary but not sufficient for P/B expansion. The narrative must change, not just the balance sheet." },
+    { name: "Kakao Bank (South Korea)", outcome: "P/B reached 8x at IPO as a digital-first bank with no branches. Cost-to-income of 28% — 20 points below conventional peers — was the primary valuation driver.", relevance: "The platform premium ceiling — a digital Islamic bank with Apex's cost-to-income trajectory could command a multiple that conventional bank comparables cannot predict." },
+  ],
+  outcomeLedgerEntry: {
+    ref: "OL-004",
+    decision: "Apex Islamic Bank: What is the primary driver of valuation rerating from 1.3x P/B to 3.0x+ P/B — and what is the sequence of decisions required to achieve it?",
+    hiddenVariable: "Narrative Architecture Constraint — the market currently has no coherent story about what Apex is becoming. The valuation gap is not primarily a fundamentals gap. It is a narrative gap. The hidden variable is whether Apex's board is willing to commit publicly to a 3-year strategic direction — and whether that direction is digital platform, GCC Peer Bank A merger scale, or mortgage catalyst.",
+    recommendation: "The valuation rerating pathway is the single most important strategic question. The answer determines whether the GCC Peer Bank A merger is a rerating event or a distraction. Pursue the digital platform narrative first — it does not require the merger, does not require the Mortgage Law, and is the path the leading peer used to reach 3.2x P/B. The merger and the Mortgage Law are accelerants, not foundations.",
+    confidence: 68,
     reviewDates: ["December 2026", "June 2027", "December 2027"],
   },
 };
@@ -1246,6 +1536,7 @@ export const CORE42_TEMPLATE: CompanyTemplate = {
 export const TEMPLATES: Record<string, CompanyTemplate> = {
   keo: KEO_TEMPLATE,
   warba: WARBA_TEMPLATE,
+  apex: APEX_TEMPLATE,
   zain: ZAIN_TEMPLATE,
   alghanim: ALGHANIM_TEMPLATE,
   core42: CORE42_TEMPLATE,
