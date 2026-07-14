@@ -71,6 +71,19 @@ describe("noveltyComboKey", () => {
     expect(noveltyComboKey("Fintech", "Open Banking", "GCC"))
       .not.toBe(noveltyComboKey("Fintech", "Open Banking", "global emerging markets"));
   });
+
+  it("preserves non-Latin letters while applying Unicode compatibility normalization", () => {
+    const canonical = noveltyComboKey("التقنية المالية", "الخدمات المصرفية المفتوحة", "الخليج");
+    expect(canonical).toContain("التقنية المالية");
+    expect(canonical).toContain("الخدمات المصرفية المفتوحة");
+    expect(noveltyComboKey("التقنية  المالية", "الخدمات المصرفية المفتوحة", "الخليج"))
+      .toBe(canonical);
+  });
+
+  it("does not collapse distinct non-Latin sub-sectors into the same key", () => {
+    expect(noveltyComboKey("Fintech", "التمويل الإسلامي", "GCC"))
+      .not.toBe(noveltyComboKey("Fintech", "المصرفية المفتوحة", "GCC"));
+  });
 });
 
 describe("FLEET_DOMAINS", () => {

@@ -6,7 +6,11 @@
 - [x] Restore full scoring for net-new candidates and light status-only re-checks for the current ENGAGE shortlist, excluding WATCH and PASS
 - [x] Restore weekly delta persistence and summary email output with candidate, novelty, new ENGAGE, status-flip, and cost metrics
 - [x] Preserve execution_score logic without modification
-- [ ] Verify the current ENGAGE shortlist and projected weekly-versus-daily cost delta
-- [ ] Run focused Vitest coverage, TypeScript checks, and the production build
+- [x] Verify the current ENGAGE shortlist and projected weekly-versus-daily cost delta
+- [x] Run focused Vitest coverage, TypeScript checks, and the production build
 - [ ] Save a deployable project checkpoint
-- [ ] Deliver one implementation document with exact old-versus-new configuration values, architecture findings, novelty-gate logic, cost delta, limitations, and the ENGAGE baseline
+- [x] Deliver one implementation document with exact old-versus-new configuration values, architecture findings, novelty-gate logic, cost delta, limitations, and the ENGAGE baseline
+- [x] Derive and record the projected weekly run cost from the verified full-run baseline, minimum and bounded generation-retry overhead, and the current 26-item ENGAGE light-recheck token envelope
+- [x] Harden and verify weekly scheduler idempotency and the ENGAGE-only recheck source selection without changing fleet cadence or scoring behavior
+- [x] Validate the novelty gate against the full historical corpus and document legacy-duplicate/concurrency constraints
+- [x] Add focused regression tests for newly identified hardening cases and rerun Vitest, TypeScript, and production build checks

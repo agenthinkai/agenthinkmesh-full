@@ -42,7 +42,7 @@ import cron from "node-cron";
 import { runFleet, resumeInterruptedRuns } from "../founderFleet";
 import { getDb } from "../db";
 import { founderAgentRuns, fleetConfig, founderAgentEvaluations } from "../../drizzle/schema";
-import { eq, and, avg, sql, sum, gte, count } from "drizzle-orm";
+import { eq, and, avg, sql, sum, gte, count, inArray } from "drizzle-orm";
 import { notifyOwner } from "../_core/notification";
 import { sendGraphEmail } from "../graphEmail";
 import { getWeeklyDeltaReport, WeeklyDeltaReport } from "../weeklyFleetDelta";
@@ -346,6 +346,35 @@ async function runSingleFleetMode(
       console.log(`[FounderFleet] Reset ${cleanedCount} orphaned 'running' evals → 'queued' before ${config.fleetMode} run`);
     }
 
+    // COST GUARD 0: Refuse to launch a second run while the same fleet mode is
+    // already active. This protects against ordinary scheduler retries and
+    // overlapping webhook deliveries before either run has completed.
+    const ACTIVE_RUN_STATUSES = ["pending", "generating", "researching", "pitching", "evaluating", "extracting", "paused"] as const;
+    const [activeRun] = await db
+      .select({ id: founderAgentRuns.id, status: founderAgentRuns.status })
+      .from(founderAgentRuns)
+      .where(and(
+        eq(founderAgentRuns.fleetMode, config.fleetMode),
+        inArray(founderAgentRuns.status, ACTIVE_RUN_STATUSES),
+      ))
+      .limit(1);
+    if (activeRun) {
+      console.warn(`[FounderFleet] ACTIVE RUN GUARD: ${config.fleetMode} run #${activeRun.id} is ${activeRun.status} — skipping duplicate launch`);
+      await notifyOwner({
+        title: `Fleet duplicate launch blocked — ${config.fleetMode}`,
+        content: `${config.fleetMode} fleet run #${activeRun.id} is already ${activeRun.status}. No additional scheduled run was started.`,
+      });
+      return {
+        mode: config.fleetMode,
+        runId: -1,
+        status: "failed" as const,
+        evaluations: 0,
+        totalIdeas: targetIdeas,
+        avgScore: null,
+        runsRemaining: config.runsRemaining,
+      };
+    }
+
     // COST GUARD 1: Weekly cadence — max 1 completed run per fleet mode in
     // any rolling 7-day window. Failed or interrupted runs remain manually
     // resumable and do not consume the next successful weekly slot.
@@ -356,7 +385,7 @@ async function runSingleFleetMode(
       .from(founderAgentRuns)
       .where(and(
         eq(founderAgentRuns.fleetMode, config.fleetMode),
-        gte(founderAgentRuns.createdAt, weekWindowStart),
+        gte(founderAgentRuns.completedAt, weekWindowStart),
         eq(founderAgentRuns.status, "completed"),
       ));
     const runsThisWeek = Number(weeklyRunCount?.n ?? 0);
@@ -380,16 +409,16 @@ async function runSingleFleetMode(
     // ── COST GUARD 2: Duplicate detection — skip if a run completed in last 30 min ──
     const DUPLICATE_WINDOW_MS = 30 * 60 * 1000;
     const windowStart = Date.now() - DUPLICATE_WINDOW_MS;
-    const [recentCompleted] = await db.select({ id: founderAgentRuns.id, createdAt: founderAgentRuns.createdAt })
+    const [recentCompleted] = await db.select({ id: founderAgentRuns.id, completedAt: founderAgentRuns.completedAt })
       .from(founderAgentRuns)
       .where(and(
         eq(founderAgentRuns.fleetMode, config.fleetMode),
         eq(founderAgentRuns.status, "completed"),
-        gte(founderAgentRuns.createdAt, windowStart),
+        gte(founderAgentRuns.completedAt, windowStart),
       ))
       .limit(1);
     if (recentCompleted) {
-      const minsAgo = Math.round((Date.now() - Number(recentCompleted.createdAt)) / 60_000);
+      const minsAgo = Math.round((Date.now() - Number(recentCompleted.completedAt)) / 60_000);
       console.warn(`[FounderFleet] DUPLICATE GUARD: ${config.fleetMode} run #${recentCompleted.id} completed ${minsAgo}m ago — skipping to prevent duplicate`);
       await notifyOwner({
         title: `Fleet duplicate run blocked — ${config.fleetMode}`,

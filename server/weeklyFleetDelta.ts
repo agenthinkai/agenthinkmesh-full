@@ -78,13 +78,17 @@ function normalizeComboPart(value: string): string {
     .normalize("NFKC")
     .toLowerCase()
     .replace(/&/g, " and ")
-    .replace(/[^a-z0-9]+/g, " ")
+    .replace(new RegExp("[^\\p{L}\\p{N}]+", "gu"), " ")
     .trim()
     .replace(/\s+/g, " ");
 }
 
-function comboKey(domain: string, subSector: string, region: string): string {
+export function comboKey(domain: string, subSector: string, region: string): string {
   return [domain, subSector, region].map(normalizeComboPart).join("|");
+}
+
+export function isPreviousRunEngageCandidate(candidateRunId: number, previousRunId: number): boolean {
+  return candidateRunId === previousRunId;
 }
 
 function extractText(content: unknown): string {
@@ -135,6 +139,7 @@ async function loadPreviousEngageShortlist(
       .where(eq(founderAgentResearch.runId, runId)),
     db.select({
       evaluationId: founderAgentEvaluations.id,
+      runId: founderAgentEvaluations.runId,
       domain: founderAgentIdeas.domain,
       subSector: founderAgentIdeas.subSector,
       region: founderAgentIdeas.targetRegion,
@@ -149,7 +154,7 @@ async function loadPreviousEngageShortlist(
       .innerJoin(founderAgentPitches, eq(founderAgentEvaluations.pitchId, founderAgentPitches.id))
       .where(and(
         eq(founderAgentEvaluations.fleetMode, fleetMode),
-        lt(founderAgentEvaluations.runId, runId),
+        eq(founderAgentEvaluations.runId, previousRun.id),
         eq(founderAgentEvaluations.status, "completed"),
         eq(founderAgentEvaluations.classification, "ENGAGE"),
       ))
@@ -186,6 +191,7 @@ async function loadPreviousEngageShortlist(
 
   const deduped = new Map<string, PreviousEngageItem>();
   for (const row of engageRows) {
+    if (!isPreviousRunEngageCandidate(row.runId, previousRun.id)) continue;
     const key = comboKey(row.domain, row.subSector, row.region);
     if (downgradedKeys.has(key) || deduped.has(key)) continue;
     deduped.set(key, {
