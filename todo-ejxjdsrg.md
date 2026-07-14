@@ -21,4 +21,4 @@
 - [x] Confirm execution_score, secrets, and fleet cadence remain unchanged
 - [x] Run focused tests, full Vitest, TypeScript, and production build validation
 - [x] Deliver one short document covering map load location, collision counts, test result, canonical-only generator vocabulary, and rankings/reporting follow-up
-- [ ] Save a deployable checkpoint for the canonical-domain novelty change
+- [x] Save a deployable checkpoint for the canonical-domain novelty change
