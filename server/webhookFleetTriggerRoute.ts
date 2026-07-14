@@ -1,5 +1,5 @@
 /**
- * webhookFleetTriggerRoute.ts — Public webhook trigger for the daily FounderAgent fleet
+ * webhookFleetTriggerRoute.ts — Public webhook trigger for the weekly FounderAgent discovery fleet
  *
  * POST /webhook/fleet-trigger
  *
@@ -13,8 +13,8 @@
  * Behaviour:
  *   - Identical logic to /api/scheduled/fleet-trigger
  *   - Returns 200 immediately (fire-and-forget background execution)
- *   - Runs orphan cleanup, then GCC (200 ideas) + Global (300 ideas) fleet runs
- *   - Sends daily summary email when both complete
+ *   - Runs orphan cleanup, then GCC (100 ideas) + Global (200 ideas) discovery runs
+ *   - Sends the weekly delta report when both complete
  *   - Uses bypassCostGuard: true (same as the cron)
  *
  * Special actions (via body.action):
@@ -30,7 +30,7 @@
  *   /api/scheduled/* routes before requests reach the Express app.
  */
 import { Router, Request, Response } from "express";
-import { runDailyFleet } from "./jobs/founderFleetScheduler";
+import { runWeeklyFleet } from "./jobs/founderFleetScheduler";
 import { runFleet } from "./founderFleet";
 import { sendGraphEmail } from "./graphEmail";
 import { getDb } from "./db";
@@ -362,8 +362,8 @@ router.post("/fleet-trigger", async (req: Request, res: Response) => {
       }
     })();
   } else {
-    // Full daily fleet (both modes)
-    runDailyFleet().catch((err: unknown) => {
+    // Full weekly discovery fleet (both modes)
+    runWeeklyFleet().catch((err: unknown) => {
       console.error("[WebhookFleetTrigger] Background fleet run error:", (err as Error)?.message);
     });
   }

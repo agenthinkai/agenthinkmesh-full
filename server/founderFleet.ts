@@ -17,11 +17,15 @@ import {
   founderAgentRunCosts, fleetConfig,
   FounderAgentIdea, FounderAgentPitch, FounderAgentEvaluation,
 } from "../drizzle/schema";
-import { eq, and, inArray, sql } from "drizzle-orm";
+import { eq, and, inArray, ne, sql } from "drizzle-orm";
 import { invokeLLM } from "./_core/llm";
 import { runCouncil } from "./councilEngine";
 import { scheduleWarmup } from "./lib/llm/evalCacheWarmup";
 import { encryptWithMasterKey, decryptWithMasterKey } from "./cmk";
+import {
+  buildAndPersistWeeklyDelta,
+  WeeklyDeltaReport,
+} from "./weeklyFleetDelta";
 
 // ── Model constants ────────────────────────────────────────────────────────────
 const HAIKU  = "claude-haiku-4-5-20251001";
@@ -125,6 +129,34 @@ function fingerprint(domain: string, subSector: string, description: string): st
     .digest("hex")
     .slice(0, 64);
 }
+
+/**
+ * Normalize corpus dimensions before novelty comparison. This deliberately
+ * collapses punctuation, spacing and "&"/"and" variants so cosmetic wording
+ * changes cannot bypass the novelty gate.
+ */
+function normalizeComboPart(value: string): string {
+  return value
+    .normalize("NFKC")
+    .toLowerCase()
+    .replace(/&/g, " and ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .replace(/\s+/g, " ");
+}
+
+export function noveltyComboKey(domain: string, subSector: string, region: string): string {
+  return [domain, subSector, region].map(normalizeComboPart).join("|");
+}
+
+export interface NoveltyMetrics {
+  candidatesGenerated: number;
+  candidatesSurvived: number;
+  duplicatesDropped: number;
+}
+
+const SYSTEM_METADATA_DOMAIN = "__SYSTEM__";
+export const NOVELTY_METRICS_QUERY = "weekly_novelty_metrics_v1";
 
 // ── Cost tracking ─────────────────────────────────────────────────────────────
 // Rough token cost estimates (USD per 1K tokens)
@@ -274,106 +306,179 @@ async function saveCosts(runId: number, acc: CostAccumulator): Promise<void> {
   }
 }
 
-// ── Step 1: Generate 100 ideas in one LLM call ────────────────────────────────
-async function generateIdeas(runId: number, acc: CostAccumulator, opts: { ideasPerDomain?: number; gccMode?: boolean } = {}): Promise<number[]> {
+// ── Step 1: Generate genuinely net-new candidate ideas ───────────────────────
+interface GenerationOutcome {
+  ideaIds: number[];
+  metrics: NoveltyMetrics;
+}
+
+interface IdeaRaw {
+  domain: string;
+  subSector: string;
+  description: string;
+  targetRegion: string;
+  founderName: string;
+  fundingStage: string;
+  fundingAsk: string;
+}
+
+function isCandidateIdea(value: unknown): value is IdeaRaw {
+  if (!value || typeof value !== "object") return false;
+  const idea = value as Partial<IdeaRaw>;
+  return [
+    idea.domain,
+    idea.subSector,
+    idea.description,
+    idea.founderName,
+    idea.fundingStage,
+    idea.fundingAsk,
+  ].every((field) => typeof field === "string" && field.trim().length > 0);
+}
+
+async function generateIdeas(
+  runId: number,
+  acc: CostAccumulator,
+  opts: { ideasPerDomain?: number; gccMode?: boolean } = {},
+): Promise<GenerationOutcome> {
   const ideasPerDomain = opts.ideasPerDomain ?? 20;
   const { gccMode = false } = opts;
   const db = await requireDb();
 
-  // Load existing fingerprints to avoid duplicates across runs
-  // Load existing fingerprints once — shared across all domain calls to prevent cross-domain duplicates
-  const existingRows = await db.select({ fp: founderAgentIdeas.ideaFingerprint }).from(founderAgentIdeas);
-  const existingFingerprints = new Set(existingRows.map((r: { fp: string }) => r.fp));
+  // The novelty corpus is every previously generated idea, not merely the most
+  // recent fingerprints. This is intentionally stricter than the requirement's
+  // "previously evaluated" floor: a failed or interrupted historical candidate
+  // must not be silently redrawn and re-costed later.
+  const existingRows = await db
+    .select({
+      domain: founderAgentIdeas.domain,
+      subSector: founderAgentIdeas.subSector,
+      targetRegion: founderAgentIdeas.targetRegion,
+    })
+    .from(founderAgentIdeas);
 
+  const seenCombos = new Set(
+    existingRows.map((row) => noveltyComboKey(row.domain, row.subSector, row.targetRegion)),
+  );
   const domains = gccMode ? GCC_FLEET_DOMAINS : FLEET_DOMAINS;
+  const canonicalRegion = gccMode ? "GCC" : "global emerging markets";
   const insertedIds: number[] = [];
+  const metrics: NoveltyMetrics = {
+    candidatesGenerated: 0,
+    candidatesSurvived: 0,
+    duplicatesDropped: 0,
+  };
 
-  interface IdeaRaw {
-    domain: string; subSector: string; description: string;
-    targetRegion: string; founderName: string; fundingStage: string; fundingAsk: string;
-  }
-
-  // ── Per-domain calls: batched at MAX_IDEAS_PER_LLM_CALL each to stay within output token budget ────
-  // When ideasPerDomain > MAX_IDEAS_PER_LLM_CALL (e.g. GCC=40), we run multiple batches per domain.
-  // This prevents JSON truncation that caused completed=0 on the first 200-idea GCC run.
+  // Retry generation when the novelty gate removes candidates. The previous
+  // implementation repeatedly sampled a small fixed seed list and only compared
+  // description fingerprints; this loop instead asks for adjacent unexplored
+  // sub-sectors and keeps generating until the weekly net-new target is filled or
+  // a bounded retry ceiling is reached.
   const MAX_IDEAS_PER_LLM_CALL = 20;
+  const MAX_GENERATION_ATTEMPTS_PER_DOMAIN = Math.max(4, Math.ceil(ideasPerDomain / MAX_IDEAS_PER_LLM_CALL) * 4);
+
   for (const domain of domains) {
-    const domainSubSectors = domain.subSectors.join(", ");
-    const regionHint = gccMode ? "GCC (Saudi Arabia, UAE, Kuwait, Qatar, Bahrain, Oman)" : "global emerging markets";
-    const batchCount = Math.ceil(ideasPerDomain / MAX_IDEAS_PER_LLM_CALL);
-    const batchSize = Math.min(ideasPerDomain, MAX_IDEAS_PER_LLM_CALL);
     let domainInserted = 0;
-    for (let batch = 0; batch < batchCount; batch++) {
+    let attempt = 0;
+    const normalizedDomain = normalizeComboPart(domain.name);
+    const excludedSubSectors = new Set(
+      existingRows
+        .filter((row) =>
+          normalizeComboPart(row.domain) === normalizedDomain &&
+          normalizeComboPart(row.targetRegion) === normalizeComboPart(canonicalRegion),
+        )
+        .map((row) => normalizeComboPart(row.subSector)),
+    );
+
+    while (domainInserted < ideasPerDomain && attempt < MAX_GENERATION_ATTEMPTS_PER_DOMAIN) {
+      attempt++;
       const remaining = ideasPerDomain - domainInserted;
-      const thisBatch = Math.min(batchSize, remaining);
-      if (thisBatch <= 0) break;
-      const prompt = `Generate exactly ${thisBatch} unique, credible early-stage startup ideas for the domain: ${domain.name}.
-Sub-sectors to cover (one idea per sub-sector): ${domainSubSectors}
-Target region: ${regionHint}
-CRITICAL QUALITY RULES — every idea MUST include all four of these:
-1. FOUNDER UNFAIR ADVANTAGE: A specific prior role, network, or domain expertise that gives this founder an edge no generalist has.
-2. TRACTION SIGNAL: Minimum 2 paying customers, signed LOIs, or active pilots. Not "seeking" or "planning" — something already secured and verifiable.
-3. DEFENSIBLE MOAT: A specific moat that is NOT just "AI-powered" or "first mover" — e.g. proprietary data, exclusive distribution, regulatory licence, switching costs, or network effects.
-4. WHY NOW / WHY THIS FOUNDER: A specific market timing insight or structural change that makes this the right moment, and why this specific founder is positioned to capture it.
-Other rules:
-- No duplicates (check against existing ideas listed below)
-- Each idea must cover a different sub-sector within ${domain.name}
-- Return ONLY a JSON array of ${thisBatch} objects, no markdown, no explanation
-Each object must have these exact keys:
+      const thisBatch = Math.min(MAX_IDEAS_PER_LLM_CALL, remaining);
+      const excludedList = Array.from(excludedSubSectors).sort().slice(-300);
+      const prompt = `Generate exactly ${thisBatch} genuinely new, credible early-stage startup candidates for the domain: ${domain.name}.
+Seed themes for exploration only: ${domain.subSectors.join(", ")}.
+Target region: ${canonicalRegion}.
+
+NOVELTY IS THE PRIMARY REQUIREMENT:
+- Invent narrow, adjacent or emerging sub-sectors rather than repeating the seed themes.
+- Every object in this response must use a different subSector.
+- Do not use any excluded sub-sector below, including spelling, punctuation, singular/plural or "&"/"and" variants.
+- A fresh description for an old sub-sector is still a duplicate and will be rejected.
+
+Excluded historical sub-sectors for ${domain.name} × ${canonicalRegion}:
+${excludedList.join("\n") || "None"}
+
+QUALITY RULES — every candidate MUST include:
+1. A specific founder unfair advantage.
+2. At least two paying customers, signed LOIs or active pilots.
+3. A concrete defensible moat beyond "AI-powered" or "first mover".
+4. A specific why-now timing insight.
+
+Return ONLY a JSON array of ${thisBatch} objects. Each object must have exactly:
 {
-  "domain": string (must be "${domain.name}"),
+  "domain": "${domain.name}",
   "subSector": string,
-  "description": string (2-3 sentences: what they build, founder background, traction signal — max 280 chars),
-  "targetRegion": string,
-  "founderName": string (realistic full name matching the target region),
-  "fundingStage": string (MUST be one of: "Seed", "Series A") — Pre-seed is NOT allowed,
-  "fundingAsk": string — MUST be between $1M and $15M (e.g. "$1.5M", "$3M", "$8M") — no pre-seed asks below $1M
-}
-Existing idea fingerprints to avoid (domain|subSector|description):
-${Array.from(existingFingerprints).slice(-50).join("\n") || "None yet"}`;
-      // Note: we use the last 50 fingerprints (most recent) rather than the first 200.
-      // With 10k+ ideas in the DB the full list makes prompts enormous and slow.
-      // Recent fingerprints are most relevant for dedup within a run.
+  "description": string (2-3 sentences, max 280 chars),
+  "targetRegion": "${canonicalRegion}",
+  "founderName": string,
+  "fundingStage": "Seed" or "Series A",
+  "fundingAsk": string between "$1M" and "$15M"
+}`;
 
       let resp: Awaited<ReturnType<typeof invokeLLM>>;
       try {
         resp = await invokeLLM({
           messages: [
-            { role: "system", content: "You are a startup idea generator. Return only valid JSON arrays." },
+            { role: "system", content: "You discover startup categories not present in a historical corpus. Return only valid JSON arrays." },
             { role: "user", content: prompt },
           ],
           model: HAIKU,
           max_tokens: 2000,
         });
       } catch (llmErr) {
-        // Log the full error so it appears in Cloud Run logs for diagnosis
         console.error(
-          `[FleetOrchestrator] generateIdeas LLM error — domain "${domain.name}" batch ${batch + 1}:`,
+          `[FleetOrchestrator] generateIdeas LLM error — domain "${domain.name}" attempt ${attempt}:`,
           (llmErr as Error)?.message ?? String(llmErr),
           llmErr,
         );
-        continue; // skip this batch, try next domain
+        continue;
       }
+
       const usage = extractUsage(resp);
       addLlmCost(acc, HAIKU, usage.prompt_tokens || 800, usage.completion_tokens || 800);
       const rawContent = extractContent(resp);
-      let batchIdeas: IdeaRaw[] = [];
+      let batchIdeas: unknown[] = [];
       try {
         const cleaned = rawContent.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-        batchIdeas = JSON.parse(cleaned) as IdeaRaw[];
+        const parsed = JSON.parse(cleaned);
+        batchIdeas = Array.isArray(parsed) ? parsed : [];
       } catch {
-        console.error(`[FleetOrchestrator] Failed to parse ideas JSON for domain ${domain.name} batch ${batch + 1}:`, rawContent.slice(0, 200));
-        continue; // skip this batch, try next
+        console.error(
+          `[FleetOrchestrator] Failed to parse ideas JSON for domain ${domain.name} attempt ${attempt}:`,
+          rawContent.slice(0, 200),
+        );
+        continue;
       }
-      // Deduplicate and insert for this batch
-      const toInsert = batchIdeas.filter((idea: IdeaRaw) => {
-        const fp = fingerprint(idea.domain, idea.subSector, idea.description);
-        if (existingFingerprints.has(fp)) return false;
-        existingFingerprints.add(fp);
-        return true;
-      }).slice(0, thisBatch);
-      for (const idea of toInsert) {
-        const fp = fingerprint(idea.domain, idea.subSector, idea.description);
+
+      for (const rawIdea of batchIdeas) {
+        if (!isCandidateIdea(rawIdea)) continue;
+        metrics.candidatesGenerated++;
+
+        const idea: IdeaRaw = {
+          ...rawIdea,
+          domain: domain.name,
+          targetRegion: canonicalRegion,
+          subSector: rawIdea.subSector.trim(),
+        };
+        const comboKey = noveltyComboKey(idea.domain, idea.subSector, idea.targetRegion);
+        if (seenCombos.has(comboKey)) {
+          metrics.duplicatesDropped++;
+          continue;
+        }
+
+        // Reserve the combination before inserting so duplicates within this
+        // response or a later retry cannot pass the same run's novelty gate.
+        seenCombos.add(comboKey);
+        excludedSubSectors.add(normalizeComboPart(idea.subSector));
         const result = await db.insert(founderAgentIdeas).values({
           runId,
           domain: idea.domain,
@@ -383,17 +488,55 @@ ${Array.from(existingFingerprints).slice(-50).join("\n") || "None yet"}`;
           founderName: idea.founderName,
           fundingStage: idea.fundingStage,
           fundingAsk: idea.fundingAsk,
-          ideaFingerprint: fp,
+          ideaFingerprint: fingerprint(idea.domain, idea.subSector, idea.description),
         });
         const insertId = (result as unknown as [{ insertId: number }])[0]?.insertId;
-        if (insertId) { insertedIds.push(insertId); domainInserted++; }
+        if (insertId) {
+          insertedIds.push(insertId);
+          domainInserted++;
+          metrics.candidatesSurvived++;
+        }
+        if (domainInserted >= ideasPerDomain) break;
       }
-      console.log(`[FleetOrchestrator] Domain "${domain.name}" batch ${batch + 1}/${batchCount}: ${toInsert.length} ideas inserted (domain total: ${domainInserted})`);
+
+      console.log(
+        `[FleetOrchestrator] Domain "${domain.name}" attempt ${attempt}: ` +
+        `${domainInserted}/${ideasPerDomain} net-new candidates accepted; ` +
+        `${metrics.duplicatesDropped} duplicates dropped fleet-wide`,
+      );
+    }
+
+    if (domainInserted < ideasPerDomain) {
+      console.warn(
+        `[FleetOrchestrator] Novelty supply exhausted for ${domain.name}: ` +
+        `${domainInserted}/${ideasPerDomain} accepted after ${attempt} attempts`,
+      );
     }
   }
 
-  await db.update(founderAgentRuns).set({ totalIdeas: insertedIds.length }).where(eq(founderAgentRuns.id, runId));
-  return insertedIds;
+  await db.update(founderAgentRuns)
+    .set({ totalIdeas: insertedIds.length })
+    .where(eq(founderAgentRuns.id, runId));
+
+  // Persist the gate ledger in the existing research table to avoid a production
+  // schema migration. The reserved domain/query pair is excluded from all idea
+  // research lookups because no candidate uses SYSTEM_METADATA_DOMAIN.
+  await db.delete(founderAgentResearch).where(and(
+    eq(founderAgentResearch.runId, runId),
+    eq(founderAgentResearch.query, NOVELTY_METRICS_QUERY),
+  ));
+  await db.insert(founderAgentResearch).values({
+    runId,
+    domain: SYSTEM_METADATA_DOMAIN,
+    query: NOVELTY_METRICS_QUERY,
+    resultSummary: JSON.stringify(metrics),
+  });
+
+  console.log(
+    `[FleetOrchestrator] Novelty gate run ${runId}: generated=${metrics.candidatesGenerated}, ` +
+    `survived=${metrics.candidatesSurvived}, duplicates=${metrics.duplicatesDropped}`,
+  );
+  return { ideaIds: insertedIds, metrics };
 }
 
 // ── Step 2: Research in batches (max 3 searches per domain) ───────────────────
@@ -945,7 +1088,12 @@ async function reRankByPercentile(runId: number): Promise<void> {
 }
 
 // ── Step 7: Pattern extraction (1 Sonnet call over 3-sentence summaries) ──────
-async function extractInsights(runId: number, acc: CostAccumulator, fleetMode: "global" | "gcc" = "global"): Promise<void> {
+async function extractInsights(
+  runId: number,
+  acc: CostAccumulator,
+  fleetMode: "global" | "gcc" = "global",
+  weeklyDelta?: WeeklyDeltaReport,
+): Promise<void> {
   const db = await requireDb();
 
   interface EvalJoinRow {
@@ -1123,7 +1271,7 @@ No generic statements. Every insight must be grounded in the actual data provide
     domainComparison:       JSON.stringify(insights.domainComparison ?? {}),
     improvementSuggestions: JSON.stringify(insights.improvementSuggestions ?? []),
     idealPitchStructure:    insights.idealPitchStructure ?? "",
-    rawJson:                content,
+    rawJson:                JSON.stringify({ insightModelOutput: insights, weeklyDelta: weeklyDelta ?? null }),
   };
 
   const existing = await db.select({ id: founderAgentInsights.id })
@@ -1192,7 +1340,8 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
     } else {
       await updateRunStatus(runId, "generating", { startedAt: Date.now() });
       if (await waitIfPaused(runId)) { await updateRunStatus(runId, "paused"); return; }
-      ideaIds = await generateIdeas(runId, acc, quickTest ? { ideasPerDomain: 2 } : { ideasPerDomain, gccMode: opts.gccMode });
+      const generation = await generateIdeas(runId, acc, quickTest ? { ideasPerDomain: 2 } : { ideasPerDomain, gccMode: opts.gccMode });
+      ideaIds = generation.ideaIds;
       await saveCosts(runId, acc);
     }
 
@@ -1203,7 +1352,10 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
       const existingResearch = await dbResume.select({
         domain: founderAgentResearch.domain,
         resultSummary: founderAgentResearch.resultSummary,
-      }).from(founderAgentResearch).where(eq(founderAgentResearch.runId, runId));
+      }).from(founderAgentResearch).where(and(
+        eq(founderAgentResearch.runId, runId),
+        ne(founderAgentResearch.domain, SYSTEM_METADATA_DOMAIN),
+      ));
       researchByDomain = {};
       for (const r of existingResearch) {
         if (r.domain && r.resultSummary) {
@@ -1266,9 +1418,27 @@ export async function runFleet(runId: number, opts: FleetOptions = {}): Promise<
       } else {
         console.log(`[FleetOrchestrator] Skipping outcome assignment for test run ${runId}`);
       }
+      // Weekly delta: full scoring above covers net-new candidates only. This
+      // separate light re-check examines only the previous ENGAGE shortlist and
+      // never calls the execution-score path.
+      const weeklyDeltaResult = await buildAndPersistWeeklyDelta(
+        runId,
+        opts.gccMode ? "gcc" : "global",
+      );
+      acc.llmCalls += weeklyDeltaResult.cost.llmCalls;
+      acc.inputTokens += weeklyDeltaResult.cost.inputTokens;
+      acc.outputTokens += weeklyDeltaResult.cost.outputTokens;
+      acc.tokens += weeklyDeltaResult.cost.inputTokens + weeklyDeltaResult.cost.outputTokens;
+      acc.costUsd += weeklyDeltaResult.cost.costUsd;
+
       // Step 7: Extract insights
       await updateRunStatus(runId, "extracting");
-      await extractInsights(runId, acc, opts.gccMode ? "gcc" : "global");
+      await extractInsights(
+        runId,
+        acc,
+        opts.gccMode ? "gcc" : "global",
+        weeklyDeltaResult.report,
+      );
       await saveCosts(runId, acc);
 
       // Complete
@@ -1391,18 +1561,21 @@ export async function runFleetPhase(
       return { ideasGenerated: existing.length };
     }
     await updateRunStatus(runId, "generating", { startedAt: Date.now() });
-    const ideaIds = await generateIdeas(runId, acc, { ideasPerDomain, gccMode });
+    const generation = await generateIdeas(runId, acc, { ideasPerDomain, gccMode });
     await saveCosts(runId, acc);
     // Advance status to researching so the next phase can start
     await updateRunStatus(runId, "researching");
-    return { ideasGenerated: ideaIds.length };
+    return { ideasGenerated: generation.ideaIds.length };
   }
 
   // ── Phase: research ──────────────────────────────────────────────────────
   if (phase === "research") {
     // Idempotency: skip if research rows already exist for this run
     const existingResearch = await db.select({ id: founderAgentResearch.id })
-      .from(founderAgentResearch).where(eq(founderAgentResearch.runId, runId));
+      .from(founderAgentResearch).where(and(
+        eq(founderAgentResearch.runId, runId),
+        ne(founderAgentResearch.domain, SYSTEM_METADATA_DOMAIN),
+      ));
     if (existingResearch.length > 0) {
       console.log(`[FleetPhase] research run ${runId}: ${existingResearch.length} research rows already exist — skipping`);
       await updateRunStatus(runId, "pitching");
@@ -1442,7 +1615,10 @@ export async function runFleetPhase(
     const researchRows = await db.select({
       domain: founderAgentResearch.domain,
       resultSummary: founderAgentResearch.resultSummary,
-    }).from(founderAgentResearch).where(eq(founderAgentResearch.runId, runId));
+    }).from(founderAgentResearch).where(and(
+      eq(founderAgentResearch.runId, runId),
+      ne(founderAgentResearch.domain, SYSTEM_METADATA_DOMAIN),
+    ));
 
     const researchByDomain: Record<string, string> = {};
     for (const r of researchRows) {
@@ -1475,8 +1651,23 @@ export async function runFleetPhase(
     await assignDecisionOutcomes(runId);
     await saveCosts(runId, acc);
 
+    const weeklyDeltaResult = await buildAndPersistWeeklyDelta(
+      runId,
+      gccMode ? "gcc" : "global",
+    );
+    acc.llmCalls += weeklyDeltaResult.cost.llmCalls;
+    acc.inputTokens += weeklyDeltaResult.cost.inputTokens;
+    acc.outputTokens += weeklyDeltaResult.cost.outputTokens;
+    acc.tokens += weeklyDeltaResult.cost.inputTokens + weeklyDeltaResult.cost.outputTokens;
+    acc.costUsd += weeklyDeltaResult.cost.costUsd;
+
     await updateRunStatus(runId, "extracting");
-    await extractInsights(runId, acc, gccMode ? "gcc" : "global");
+    await extractInsights(
+      runId,
+      acc,
+      gccMode ? "gcc" : "global",
+      weeklyDeltaResult.report,
+    );
     await saveCosts(runId, acc);
 
     await updateRunStatus(runId, "completed", { completedAt: Date.now() });

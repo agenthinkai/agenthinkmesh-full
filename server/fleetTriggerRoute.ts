@@ -1,5 +1,5 @@
 /**
- * fleetTriggerRoute.ts — External HTTP trigger for the daily FounderAgent fleet
+ * fleetTriggerRoute.ts — External HTTP trigger for the weekly FounderAgent discovery fleet
  *
  * POST /api/scheduled/fleet-trigger
  *
@@ -38,7 +38,7 @@
  *   03:35 — { mode: "global", phase: "evaluate"  }
  */
 import { Router, Request, Response } from "express";
-import { runDailyFleet } from "./jobs/founderFleetScheduler";
+import { runWeeklyFleet } from "./jobs/founderFleetScheduler";
 import { runFleet, runFleetPhase, type FleetPhase } from "./founderFleet";
 import { sendGraphEmail } from "./graphEmail";
 import { getDb } from "./db";
@@ -323,8 +323,8 @@ router.post("/fleet-trigger", async (req: Request, res: Response) => {
       }
     })();
   } else {
-    // Full daily fleet (both modes)
-    runDailyFleet().catch((err: unknown) => {
+    // Full weekly discovery fleet (both modes)
+    runWeeklyFleet().catch((err: unknown) => {
       console.error("[FleetTrigger] Background fleet run error:", (err as Error)?.message);
     });
   }

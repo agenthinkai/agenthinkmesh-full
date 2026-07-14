@@ -1,7 +1,7 @@
 /**
- * founderFleetScheduler.ts — Daily FounderAgent Fleet Run
+ * founderFleetScheduler.ts — Weekly FounderAgent Discovery Fleet Run
  *
- * Fires at 06:00 Asia/Kuwait (03:00 UTC) every day.
+ * Canonically triggered by the platform scheduler once every 7 days.
  * Reads fleet_config WHERE active = true and runs each fleet mode.
  * Decrements runs_remaining and increments runs_completed ONLY after a
  * run completes successfully (status = "completed") — not optimistically.
@@ -30,7 +30,7 @@
  *   never block the other.
  *
  * FIX 2 — REMOVED (2026-05-03 emergency cost fix): auto-retry has been removed.
- *   Fleet runs once per day per mode. If a run fails, the owner is notified and
+ *   Fleet runs once per 7 days per mode. If a run fails, the owner is notified and
  *   a manual re-trigger is available via the admin UI. No automatic retries.
  *
  * FIX 3 — Run-level error_message: the catch block in runSingleFleetMode now
@@ -42,9 +42,10 @@ import cron from "node-cron";
 import { runFleet, resumeInterruptedRuns } from "../founderFleet";
 import { getDb } from "../db";
 import { founderAgentRuns, fleetConfig, founderAgentEvaluations } from "../../drizzle/schema";
-import { eq, and, ne, avg, sql, sum, gte, count } from "drizzle-orm";
+import { eq, and, avg, sql, sum, gte, count } from "drizzle-orm";
 import { notifyOwner } from "../_core/notification";
 import { sendGraphEmail } from "../graphEmail";
+import { getWeeklyDeltaReport, WeeklyDeltaReport } from "../weeklyFleetDelta";
 
 // ── Kuwait timezone helpers ───────────────────────────────────────────────────
 
@@ -98,6 +99,15 @@ interface FleetRunResult {
 
 // ── Combined email builder ────────────────────────────────────────────────────
 
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 async function buildAndSendFleetEmail(
   results: FleetRunResult[],
   runTs: number
@@ -107,212 +117,108 @@ async function buildAndSendFleetEmail(
 
   const { date, time } = formatKuwaitDateTime(runTs);
   const dateLabel = formatKuwaitDate(runTs);
-
-  // ── Pattern Moat: aggregate totals across all evaluations ──────────────────
-  const globalAgg = await db
-    .select({ total: sql<number>`COUNT(*)`, avgScore: avg(founderAgentEvaluations.finalScore) })
-    .from(founderAgentEvaluations)
-    .where(eq(founderAgentEvaluations.fleetMode, "global"));
-
-  const gccAgg = await db
-    .select({ total: sql<number>`COUNT(*)`, avgScore: avg(founderAgentEvaluations.finalScore) })
-    .from(founderAgentEvaluations)
-    .where(eq(founderAgentEvaluations.fleetMode, "gcc"));
-
-  const globalTotal = Number(globalAgg[0]?.total ?? 0);
-  const gccTotal = Number(gccAgg[0]?.total ?? 0);
-  const globalAvg = globalAgg[0]?.avgScore ? parseFloat(String(globalAgg[0].avgScore)) : null;
-  const gccAvg = gccAgg[0]?.avgScore ? parseFloat(String(gccAgg[0].avgScore)) : null;
-  const gap =
-    globalAvg !== null && gccAvg !== null
-      ? (gccAvg - globalAvg).toFixed(2)
-      : "N/A";
-  const gapLabel =
-    typeof gap === "string" && gap !== "N/A"
-      ? `${parseFloat(gap) >= 0 ? "+" : ""}${gap} points`
-      : "N/A";
-
-  // ── Token & cost aggregates per mode (from today's runs) ───────────────────────────
-  // Keyed by runId from the current run results
-  const runIds = results.map((r) => r.runId).filter((id) => id > 0);
-
-  // Per-mode token/cost: query founder_agent_runs for each runId
+  const reportsByMode: Record<string, WeeklyDeltaReport | null> = {};
   const tokensByMode: Record<string, { tokIn: number; tokOut: number; cost: number }> = {};
-  for (const r of results) {
-    if (r.runId <= 0) {
-      tokensByMode[r.mode] = { tokIn: 0, tokOut: 0, cost: 0 };
+
+  for (const result of results) {
+    reportsByMode[result.mode] = result.runId > 0
+      ? await getWeeklyDeltaReport(result.runId)
+      : null;
+
+    if (result.runId <= 0) {
+      tokensByMode[result.mode] = { tokIn: 0, tokOut: 0, cost: 0 };
       continue;
     }
-    const row = await db
-      .select({
-        tokIn:  sql<number>`COALESCE(SUM(total_tokens_input), 0)`,
-        tokOut: sql<number>`COALESCE(SUM(total_tokens_output), 0)`,
-        cost:   sql<number>`COALESCE(SUM(CAST(total_cost_usd AS DECIMAL(10,4))), 0)`,
-      })
-      .from(founderAgentRuns)
-      .where(eq(founderAgentRuns.id, r.runId));
-    tokensByMode[r.mode] = {
-      tokIn:  Number(row[0]?.tokIn  ?? 0),
-      tokOut: Number(row[0]?.tokOut ?? 0),
-      cost:   Number(row[0]?.cost   ?? 0),
+    const [row] = await db.select({
+      tokIn: founderAgentRuns.totalTokensInput,
+      tokOut: founderAgentRuns.totalTokensOutput,
+      cost: founderAgentRuns.totalCostUsd,
+    }).from(founderAgentRuns).where(eq(founderAgentRuns.id, result.runId)).limit(1);
+    tokensByMode[result.mode] = {
+      tokIn: Number(row?.tokIn ?? 0),
+      tokOut: Number(row?.tokOut ?? 0),
+      cost: Number(row?.cost ?? 0),
     };
   }
 
-  // Cumulative cost across ALL runs to date
-  const cumulativeRow = await db
+  const [cumulativeRow] = await db
     .select({ totalCost: sql<number>`COALESCE(SUM(CAST(total_cost_usd AS DECIMAL(10,4))), 0)` })
     .from(founderAgentRuns);
-  const cumulativeCost = Number(cumulativeRow[0]?.totalCost ?? 0);
+  const cumulativeCost = Number(cumulativeRow?.totalCost ?? 0);
+  const combinedTokIn = Object.values(tokensByMode).reduce((sumValue, item) => sumValue + item.tokIn, 0);
+  const combinedTokOut = Object.values(tokensByMode).reduce((sumValue, item) => sumValue + item.tokOut, 0);
+  const combinedCost = Object.values(tokensByMode).reduce((sumValue, item) => sumValue + item.cost, 0);
+  const generated = Object.values(reportsByMode).reduce((sumValue, report) => sumValue + (report?.novelty.candidatesGenerated ?? 0), 0);
+  const survived = Object.values(reportsByMode).reduce((sumValue, report) => sumValue + (report?.novelty.candidatesSurvived ?? 0), 0);
+  const dropped = Object.values(reportsByMode).reduce((sumValue, report) => sumValue + (report?.novelty.duplicatesDropped ?? 0), 0);
+  const checked = Object.values(reportsByMode).reduce((sumValue, report) => sumValue + (report?.engageShortlistChecked ?? 0), 0);
+  const newEngageHits = Object.values(reportsByMode).flatMap((report) => report?.newEngageHits ?? []);
+  const statusFlips = Object.values(reportsByMode).flatMap((report) => report?.engageStatusFlips ?? []);
+  const costPerNewIdea = survived > 0 ? combinedCost / survived : 0;
 
-  // Combined totals for today's runs
-  const combinedTokIn  = Object.values(tokensByMode).reduce((a, v) => a + v.tokIn, 0);
-  const combinedTokOut = Object.values(tokensByMode).reduce((a, v) => a + v.tokOut, 0);
-  const combinedCost   = Object.values(tokensByMode).reduce((a, v) => a + v.cost, 0);
-  const totalEvals     = results.reduce((a, r) => a + r.evaluations, 0);
-  const costPerEval    = totalEvals > 0 ? combinedCost / totalEvals : 0;
-
-  // suppress unused variable warning
-  void runIds;
-
-  // ── Build per-mode blocks ──────────────────────────────────────────────────
-  const modeBlocks = results.map((r) => {
-    const modeTitle = r.mode === "gcc" ? "GCC FLEET" : "GLOBAL FLEET";
-    const statusLabel = r.status === "completed" ? "completed" : "FAILED";
-    const evalLabel = r.status === "completed" ? `${r.evaluations} / ${r.totalIdeas}` : `${r.evaluations} / ${r.totalIdeas} (incomplete)`;
-    const scoreLabel = r.avgScore !== null ? r.avgScore.toFixed(2) : "N/A";
-    return `${modeTitle}
-Status:          ${statusLabel}
-Evaluations:     ${evalLabel}
-Avg score:       ${scoreLabel}
-Runs remaining:  ${r.runsRemaining} / 30`;
-  });
-
-  // ── Build token/cost text block per mode ─────────────────────────────────────────────────────────────────
-  const tokenTextBlocks = results.map((r) => {
-    const t = tokensByMode[r.mode] ?? { tokIn: 0, tokOut: 0, cost: 0 };
-    const modeTitle = r.mode === "gcc" ? "GCC Fleet:" : "Global Fleet:";
-    return `${modeTitle}
-  Tokens input:   ${t.tokIn.toLocaleString()}
-  Tokens output:  ${t.tokOut.toLocaleString()}
-  Total tokens:   ${(t.tokIn + t.tokOut).toLocaleString()}
-  Run cost:       $${t.cost.toFixed(2)}`;
+  const modeText = results.map((result) => {
+    const report = reportsByMode[result.mode];
+    const token = tokensByMode[result.mode] ?? { tokIn: 0, tokOut: 0, cost: 0 };
+    const title = result.mode === "gcc" ? "GCC FLEET" : "GLOBAL FLEET";
+    return `${title}\nStatus: ${result.status}\nCandidates generated: ${report?.novelty.candidatesGenerated ?? 0}\nNet-new ideas scanned: ${report?.newIdeasScanned ?? 0}\nDuplicates dropped: ${report?.novelty.duplicatesDropped ?? 0}\nExisting ENGAGE checked: ${report?.engageShortlistChecked ?? 0}\nRun cost: $${token.cost.toFixed(2)}`;
   }).join("\n\n");
 
-  // ── Plain-text body ─────────────────────────────────────────────────────────────────
-  const textBody = `Daily Fleet Run Summary
-Date: ${date} · ${time} Kuwait time
+  const newEngageText = newEngageHits.length > 0
+    ? newEngageHits.map((item) => `- ${item.domain} / ${item.subSector} / ${item.region}`).join("\n")
+    : "- None";
+  const flipsText = statusFlips.length > 0
+    ? statusFlips.map((item) => `- ${item.domain} / ${item.subSector} / ${item.region}: ENGAGE → ${item.newClassification} — ${item.rationale}`).join("\n")
+    : "- None";
 
-${modeBlocks.join("\n\n")}
+  const textBody = `Weekly Fleet Delta Report\nDate: ${date} · ${time} Kuwait time\n\n${modeText}\n\nNOVELTY GATE\nCandidates generated: ${generated}\nNet-new ideas scanned: ${survived}\nDuplicates dropped: ${dropped}\n\nNEW ENGAGE HITS\n${newEngageText}\n\nEXISTING ENGAGE STATUS CHECK\nShortlist items checked: ${checked}\nStatus flips:\n${flipsText}\n\nTOKENS & COST\nInput tokens: ${combinedTokIn.toLocaleString()}\nOutput tokens: ${combinedTokOut.toLocaleString()}\nWeekly run cost: $${combinedCost.toFixed(2)}\nCost per net-new idea: $${costPerNewIdea.toFixed(4)}\nCumulative cost: $${cumulativeCost.toFixed(2)}\n\nView full results:\nhttps://agenthink-7enctkan.manus.space/admin/usage`;
 
-PATTERN MOAT
-Total evaluations to date: ${globalTotal + gccTotal}
-Global avg score:  ${globalAvg !== null ? globalAvg.toFixed(2) : "N/A"}
-GCC avg score:     ${gccAvg !== null ? gccAvg.toFixed(2) : "N/A"}
-GCC vs Global gap: ${gapLabel}
+  const modeHtml = results.map((result) => {
+    const report = reportsByMode[result.mode];
+    const token = tokensByMode[result.mode] ?? { tokIn: 0, tokOut: 0, cost: 0 };
+    const title = result.mode === "gcc" ? "GCC FLEET" : "GLOBAL FLEET";
+    const statusColor = result.status === "completed" ? "#16a34a" : "#dc2626";
+    return `<table style="width:100%;border-collapse:collapse;margin-bottom:20px;">
+      <tr><td colspan="2" style="font-weight:700;font-size:13px;letter-spacing:.08em;color:#374151;padding:8px 0 4px;border-bottom:1px solid #e5e7eb;">${title}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;width:220px;">Status</td><td style="color:${statusColor};font-weight:600;">${result.status}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Candidates generated</td><td>${report?.novelty.candidatesGenerated ?? 0}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Net-new ideas scanned</td><td>${report?.newIdeasScanned ?? 0}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Duplicates dropped</td><td>${report?.novelty.duplicatesDropped ?? 0}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Existing ENGAGE checked</td><td>${report?.engageShortlistChecked ?? 0}</td></tr>
+      <tr><td style="padding:4px 0;color:#6b7280;">Run cost</td><td>$${token.cost.toFixed(2)}</td></tr>
+    </table>`;
+  }).join("");
 
-TOKENS & COST
-${tokenTextBlocks}
+  const newEngageHtml = newEngageHits.length > 0
+    ? `<ul style="margin:8px 0 20px;padding-left:20px;">${newEngageHits.map((item) => `<li>${escapeHtml(item.domain)} / ${escapeHtml(item.subSector)} / ${escapeHtml(item.region)}</li>`).join("")}</ul>`
+    : `<p style="color:#6b7280;">None</p>`;
+  const flipsHtml = statusFlips.length > 0
+    ? `<ul style="margin:8px 0 20px;padding-left:20px;">${statusFlips.map((item) => `<li>${escapeHtml(item.domain)} / ${escapeHtml(item.subSector)} / ${escapeHtml(item.region)}: <strong>ENGAGE → ${escapeHtml(item.newClassification)}</strong> — ${escapeHtml(item.rationale)}</li>`).join("")}</ul>`
+    : `<p style="color:#6b7280;">None</p>`;
 
-Combined:
-  Total tokens today:  ${(combinedTokIn + combinedTokOut).toLocaleString()}
-  Total cost today:    $${combinedCost.toFixed(2)}
-  Cost per evaluation: $${costPerEval.toFixed(4)}
-  Cumulative cost:     $${cumulativeCost.toFixed(2)} (all runs to date)
-
-View full results:
-https://agenthink-7enctkan.manus.space/admin/usage`;// ── HTML body ─────────────────────────────────────────────────────────────
-  const modeBlocksHtml = results
-    .map((r) => {
-      const modeTitle = r.mode === "gcc" ? "GCC FLEET" : "GLOBAL FLEET";
-      const statusColor = r.status === "completed" ? "#16a34a" : "#dc2626";
-      const statusLabel = r.status === "completed" ? "completed" : "FAILED";
-      const evalLabel =
-        r.status === "completed"
-          ? `${r.evaluations} / ${r.totalIdeas}`
-          : `${r.evaluations} / ${r.totalIdeas} (incomplete)`;
-      const scoreLabel = r.avgScore !== null ? r.avgScore.toFixed(2) : "N/A";
-      return `
-      <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
-        <tr><td colspan="2" style="font-weight:700;font-size:13px;letter-spacing:0.08em;color:#374151;padding:8px 0 4px;border-bottom:1px solid #e5e7eb;">${modeTitle}</td></tr>
-        <tr><td style="padding:4px 0;color:#6b7280;width:160px;">Status</td><td style="padding:4px 0;font-weight:600;color:${statusColor};">${statusLabel}</td></tr>
-        <tr><td style="padding:4px 0;color:#6b7280;">Evaluations</td><td style="padding:4px 0;">${evalLabel}</td></tr>
-        <tr><td style="padding:4px 0;color:#6b7280;">Avg score</td><td style="padding:4px 0;">${scoreLabel}</td></tr>
-        <tr><td style="padding:4px 0;color:#6b7280;">Runs remaining</td><td style="padding:4px 0;">${r.runsRemaining} / 30</td></tr>
-      </table>`;
-    })
-    .join("");
-
-  const tokenBlocksHtml = results
-    .map((r) => {
-      const t = tokensByMode[r.mode] ?? { tokIn: 0, tokOut: 0, cost: 0 };
-      const modeTitle = r.mode === "gcc" ? "GCC Fleet" : "Global Fleet";
-      return `
-      <tr><td colspan="2" style="font-weight:700;font-size:13px;letter-spacing:0.08em;color:#374151;padding:8px 0 4px;border-bottom:1px solid #e5e7eb;">${modeTitle}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;width:220px;">Tokens input</td><td style="padding:4px 0;">${t.tokIn.toLocaleString()}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Tokens output</td><td style="padding:4px 0;">${t.tokOut.toLocaleString()}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Total tokens</td><td style="padding:4px 0;">${(t.tokIn + t.tokOut).toLocaleString()}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Run cost</td><td style="padding:4px 0;">$${t.cost.toFixed(2)}</td></tr>`;
-    })
-    .join("");
-
-  const html = `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><title>AgenThink Fleet Report</title></head>
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>AgenThink Weekly Fleet Delta</title></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f9fafb;margin:0;padding:24px;">
-  <div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:8px;border:1px solid #e5e7eb;padding:32px;">
-    <div style="margin-bottom:24px;">
-      <div style="font-size:11px;font-weight:700;letter-spacing:0.1em;color:#6b7280;text-transform:uppercase;margin-bottom:4px;">AgenThink Fleet Report</div>
-      <div style="font-size:20px;font-weight:700;color:#111827;">Daily Fleet Run Summary</div>
-      <div style="font-size:13px;color:#6b7280;margin-top:4px;">Date: ${date} &middot; ${time} Kuwait time</div>
-    </div>
+<div style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:32px;">
+  <div style="font-size:11px;font-weight:700;letter-spacing:.1em;color:#6b7280;text-transform:uppercase;">AgenThink Fleet</div>
+  <h1 style="font-size:22px;margin:4px 0;">Weekly Fleet Delta Report</h1>
+  <div style="font-size:13px;color:#6b7280;margin-bottom:24px;">${date} &middot; ${time} Kuwait time</div>
+  ${modeHtml}
+  <h2 style="font-size:14px;border-bottom:1px solid #e5e7eb;padding-bottom:4px;">NOVELTY GATE</h2>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:20px;"><tr><td>Candidates generated</td><td>${generated}</td></tr><tr><td>Net-new ideas scanned</td><td>${survived}</td></tr><tr><td>Duplicates dropped</td><td>${dropped}</td></tr></table>
+  <h2 style="font-size:14px;border-bottom:1px solid #e5e7eb;padding-bottom:4px;">NEW ENGAGE HITS</h2>${newEngageHtml}
+  <h2 style="font-size:14px;border-bottom:1px solid #e5e7eb;padding-bottom:4px;">EXISTING ENGAGE STATUS CHECK</h2>
+  <p>Shortlist items checked: <strong>${checked}</strong></p>${flipsHtml}
+  <h2 style="font-size:14px;border-bottom:1px solid #e5e7eb;padding-bottom:4px;">TOKENS &amp; COST</h2>
+  <table style="width:100%;border-collapse:collapse;margin-bottom:24px;"><tr><td>Input tokens</td><td>${combinedTokIn.toLocaleString()}</td></tr><tr><td>Output tokens</td><td>${combinedTokOut.toLocaleString()}</td></tr><tr><td>Weekly run cost</td><td>$${combinedCost.toFixed(2)}</td></tr><tr><td>Cost per net-new idea</td><td>$${costPerNewIdea.toFixed(4)}</td></tr><tr><td>Cumulative cost</td><td>$${cumulativeCost.toFixed(2)}</td></tr></table>
+  <a href="https://agenthink-7enctkan.manus.space/admin/usage" style="display:inline-block;background:#111827;color:#fff;text-decoration:none;padding:10px 20px;border-radius:6px;font-size:13px;font-weight:600;">View full results &rarr;</a>
+</div></body></html>`;
 
-    ${modeBlocksHtml}
-
-    <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
-      <tr><td colspan="2" style="font-weight:700;font-size:13px;letter-spacing:0.08em;color:#374151;padding:8px 0 4px;border-bottom:1px solid #e5e7eb;">PATTERN MOAT</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;width:220px;">Total evaluations to date</td><td style="padding:4px 0;">${globalTotal + gccTotal}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Global avg score</td><td style="padding:4px 0;">${globalAvg !== null ? globalAvg.toFixed(2) : "N/A"}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">GCC avg score</td><td style="padding:4px 0;">${gccAvg !== null ? gccAvg.toFixed(2) : "N/A"}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">GCC vs Global gap</td><td style="padding:4px 0;">${gapLabel}</td></tr>
-    </table>
-
-    <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
-      <tr><td colspan="2" style="font-weight:700;font-size:13px;letter-spacing:0.08em;color:#374151;padding:8px 0 4px;border-bottom:1px solid #e5e7eb;">TOKENS &amp; COST</td></tr>
-      ${tokenBlocksHtml}
-      <tr><td colspan="2" style="padding:8px 0 4px;border-top:1px solid #e5e7eb;"></td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;width:220px;">Total tokens today</td><td style="padding:4px 0;">${(combinedTokIn + combinedTokOut).toLocaleString()}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Total cost today</td><td style="padding:4px 0;">$${combinedCost.toFixed(2)}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Cost per evaluation</td><td style="padding:4px 0;">$${costPerEval.toFixed(4)}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Cumulative cost</td><td style="padding:4px 0;">$${cumulativeCost.toFixed(2)}</td></tr>
-    </table>
-
-    <table style="width:100%;border-collapse:collapse;margin-bottom:24px;">
-      <tr><td colspan="2" style="font-weight:700;font-size:13px;letter-spacing:0.08em;color:#374151;padding:8px 0 4px;border-bottom:1px solid #e5e7eb;">TRAJECTORY</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;width:220px;">Total evaluations to date</td><td style="padding:4px 0;font-weight:600;">${(globalTotal + gccTotal).toLocaleString()}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Today</td><td style="padding:4px 0;">500 / day</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Target (Sep 2026)</td><td style="padding:4px 0;">100,000 / day</td></tr>
-    </table>
-
-    <a href="https://agenthink-7enctkan.manus.space/admin/usage"
-       style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;padding:10px 20px;border-radius:6px;font-size:13px;font-weight:600;">
-      View full results &rarr;
-    </a>
-  </div>
-</body>
-</html>`;
-
-  const subject = `AgenThink Fleet Report — ${dateLabel} Kuwait`;
-  const sent = await sendGraphEmail({
-    to: "farouq@agenthink.ai",
-    subject,
-    html,
-  });
+  const subject = `AgenThink Weekly Fleet Delta — ${dateLabel} Kuwait`;
+  const sent = await sendGraphEmail({ to: "farouq@agenthink.ai", subject, html });
   if (sent) {
-    console.log(`[FounderFleet] Fleet summary email sent to farouq@agenthink.ai — "${subject}"`);
+    console.log(`[FounderFleet] Weekly delta email sent — "${subject}"`);
   } else {
-    console.error("[FounderFleet] Fleet summary email FAILED — check Graph API credentials");
+    console.error("[FounderFleet] Weekly delta email FAILED — check Graph API credentials");
   }
-  // Log plain-text body to console for debugging
   console.log("[FounderFleet] Email body preview:\n" + textBody);
 }
 
@@ -440,27 +346,25 @@ async function runSingleFleetMode(
       console.log(`[FounderFleet] Reset ${cleanedCount} orphaned 'running' evals → 'queued' before ${config.fleetMode} run`);
     }
 
-    // COST GUARD 1: Hard daily cap — max 1 run per fleet mode per calendar day.
-    // EMERGENCY COST FIX (2026-05-03): Reduced from 2 → 1. No automatic retries.
-    const DAILY_RUN_CAP = 1;
-    // Exclude failed runs from the cap count so that a failed run does not
-    // permanently lock out retries for the rest of the day.
-    // NOTE: A run that fails after consuming real LLM budget is NOT counted here.
-    // See issue #7 (Cost guard ignores partial-failure costs) for follow-up.
-    const [todayRunCount] = await db
+    // COST GUARD 1: Weekly cadence — max 1 completed run per fleet mode in
+    // any rolling 7-day window. Failed or interrupted runs remain manually
+    // resumable and do not consume the next successful weekly slot.
+    const WEEKLY_RUN_CAP = 1;
+    const weekWindowStart = Date.now() - 7 * 24 * 60 * 60 * 1000;
+    const [weeklyRunCount] = await db
       .select({ n: count() })
       .from(founderAgentRuns)
       .where(and(
         eq(founderAgentRuns.fleetMode, config.fleetMode),
-        eq(founderAgentRuns.runDate, today),
-        ne(founderAgentRuns.status, "failed"),
+        gte(founderAgentRuns.createdAt, weekWindowStart),
+        eq(founderAgentRuns.status, "completed"),
       ));
-    const runsToday = Number(todayRunCount?.n ?? 0);
-    if (runsToday >= DAILY_RUN_CAP) {
-      console.warn(`[FounderFleet] DAILY CAP reached for ${config.fleetMode}: ${runsToday}/${DAILY_RUN_CAP} runs today — skipping`);
+    const runsThisWeek = Number(weeklyRunCount?.n ?? 0);
+    if (runsThisWeek >= WEEKLY_RUN_CAP) {
+      console.warn(`[FounderFleet] WEEKLY CAP reached for ${config.fleetMode}: ${runsThisWeek}/${WEEKLY_RUN_CAP} runs in the last 7 days — skipping`);
       await notifyOwner({
-        title: `Fleet daily cap reached — ${config.fleetMode}`,
-        content: `${config.fleetMode} fleet has already completed ${runsToday} run(s) today (cap: ${DAILY_RUN_CAP}). No further runs will be started until tomorrow.`,
+        title: `Fleet weekly cap reached — ${config.fleetMode}`,
+        content: `${config.fleetMode} fleet already has ${runsThisWeek} completed run(s) in the last 7 days (cap: ${WEEKLY_RUN_CAP}). No additional scheduled run was started.`,
       });
       return {
         mode: config.fleetMode,
@@ -693,11 +597,11 @@ async function runSingleFleetMode(
   }
 }
 
-// ── Shared daily fleet execution (used by cron + HTTP trigger) ───────────────
+// ── Shared weekly fleet execution (used by the canonical HTTP trigger) ───────
 
-export async function runDailyFleet(): Promise<void> {
+export async function runWeeklyFleet(): Promise<void> {
   const runTs = Date.now();
-  console.log("[FounderFleet] Daily fleet run starting");
+  console.log("[FounderFleet] Weekly discovery fleet run starting");
 
   const db = await getDb();
   if (!db) {
@@ -738,7 +642,7 @@ export async function runDailyFleet(): Promise<void> {
     };
   });
 
-  // EMERGENCY COST FIX: Auto-retry removed. Fleet runs once per day per mode.
+  // Auto-retry remains disabled. Fleet runs once per 7 days per mode.
   // If a run fails, it fails. No automatic retries. Owner is notified via the
   // summary email below. Manual re-trigger available via the admin UI.
   const failedModes = fleetResults.filter((r) => r.status === "failed");
@@ -747,7 +651,7 @@ export async function runDailyFleet(): Promise<void> {
     console.warn(`[FounderFleet] Failed modes (no retry): ${failedList}`);
     notifyOwner({
       title:   `Fleet run failed — ${failedList}`,
-      content: `The following fleet mode(s) failed today and will NOT be retried automatically: ${failedList}.\nManual re-trigger available via the admin UI.`,
+      content: `The following weekly fleet mode(s) failed and will NOT be retried automatically: ${failedList}.\nManual resume is available via the admin UI.`,
     }).catch(() => {});
   }
 
@@ -757,7 +661,7 @@ export async function runDailyFleet(): Promise<void> {
       console.error("[FounderFleet] Fleet summary email error:", (emailErr as Error)?.message)
     );
 
-    // One-time first-500/day verification email (fire-and-forget)
+    // Legacy scale-verification email remains fire-and-forget until its one-time threshold is reached.
     maybeSendFirstScaleVerificationEmail(fleetResults).catch((verifyErr: unknown) =>
       console.error("[FounderFleet] First-scale verification email error:", (verifyErr as Error)?.message)
     );
@@ -778,23 +682,13 @@ export function startFounderFleetScheduler(): void {
     console.warn("[FounderFleet] Resume on startup failed:", (err as Error)?.message)
   );
 
-  // ── In-process cron DISABLED (2026-05-07) ──────────────────────────────────
-  // The Manus-platform scheduled task at ~00:00 UTC (03:00 KWT) is the canonical
-  // trigger, hitting POST /api/scheduled/fleet-trigger. Running a second cron
-  // here at 03:00 UTC (06:00 KWT) created a daily cap race: after DAILY_RUN_CAP
-  // was reduced from 2 → 1 on 2026-05-03, the Manus cron always consumed the
-  // single daily slot first, and this node-cron always hit the cap and emitted a
-  // failure notification. Disabled to eliminate the conflict.
+  // ── In-process cron DISABLED ────────────────────────────────────────────────
+  // The Manus-platform task is the only cadence configuration and calls
+  // POST /api/scheduled/fleet-trigger once every 7 days. SCHEDULER_SECRET only
+  // authenticates that endpoint; it does not control cadence. Do not add a
+  // second node-cron schedule here.
   //
-  // runDailyFleet() and runSingleFleetMode() remain exported and are still called
-  // by the /api/scheduled/fleet-trigger HTTP endpoint.
-  //
-  // To re-enable, uncomment the block below and remove the Manus platform task:
-  // cron.schedule("0 3 * * *", () => {
-  //   runDailyFleet().catch((err: unknown) =>
-  //     console.error("[FounderFleet] Cron run error:", (err as Error)?.message)
-  //   );
-  // }, { timezone: "UTC" });
+  // runWeeklyFleet() and runSingleFleetMode() remain called by the HTTP endpoint.
 
-  console.log("[FounderFleet] Startup complete — in-process daily cron is DISABLED; canonical trigger is Manus-platform scheduled task at 00:00 UTC");
+  console.log("[FounderFleet] Startup complete — in-process cron is DISABLED; canonical trigger is the weekly Manus-platform scheduled task");
 }

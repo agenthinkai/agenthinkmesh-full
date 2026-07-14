@@ -10,6 +10,7 @@ import {
   classificationToScore,
   computeFinalScore,
   FLEET_DOMAINS,
+  noveltyComboKey,
 } from "./founderFleet";
 
 describe("classificationToScore", () => {
@@ -56,6 +57,19 @@ describe("computeFinalScore", () => {
   it("clamps to 0–100 range", () => {
     expect(computeFinalScore(0, 0, 0)).toBeGreaterThanOrEqual(0);
     expect(computeFinalScore(100, 100, 100)).toBeLessThanOrEqual(100);
+  });
+});
+
+describe("noveltyComboKey", () => {
+  it("normalizes case, punctuation, spacing, and ampersand variants", () => {
+    const canonical = noveltyComboKey("Fintech", "Islamic Finance & Banking", "GCC");
+    expect(noveltyComboKey(" fintech ", "Islamic finance and banking", "gcc")).toBe(canonical);
+    expect(noveltyComboKey("FINTECH", "Islamic-Finance & Banking", "GCC")).toBe(canonical);
+  });
+
+  it("keeps the same domain and sub-sector novel in a different region", () => {
+    expect(noveltyComboKey("Fintech", "Open Banking", "GCC"))
+      .not.toBe(noveltyComboKey("Fintech", "Open Banking", "global emerging markets"));
   });
 });
 
