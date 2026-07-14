@@ -5457,3 +5457,10 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Extend FundStrategy type: add Direct Lending, Real Assets, Opportunistic Credit
 - [x] Ingest elements 11-20 into LP_REGISTRY
 - [x] TypeScript 0 errors confirmed
+
+## TPA Digital Twin Cockpit (/twin/tpa)
+- [ ] Build client/src/lib/tpaEngine.ts: factor deconstruction, volatility model, SWF/Pension dual-mode
+- [ ] Build client/src/pages/TPACockpit.tsx: three-column glassmorphic cockpit
+- [x] Register /twin/tpa route in App.tsx (before /twin/:templateId catch-all)
+- [ ] TypeScript 0 errors confirmed
+- [ ] Checkpoint saved and published
