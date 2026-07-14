@@ -8,7 +8,7 @@
 - [x] Preserve execution_score logic without modification
 - [x] Verify the current ENGAGE shortlist and projected weekly-versus-daily cost delta
 - [x] Run focused Vitest coverage, TypeScript checks, and the production build
-- [ ] Save a deployable project checkpoint
+- [x] Save a deployable project checkpoint
 - [x] Deliver one implementation document with exact old-versus-new configuration values, architecture findings, novelty-gate logic, cost delta, limitations, and the ENGAGE baseline
 - [x] Derive and record the projected weekly run cost from the verified full-run baseline, minimum and bounded generation-retry overhead, and the current 26-item ENGAGE light-recheck token envelope
 - [x] Harden and verify weekly scheduler idempotency and the ENGAGE-only recheck source selection without changing fleet cadence or scoring behavior
