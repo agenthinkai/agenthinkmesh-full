@@ -8,6 +8,7 @@
 import { describe, it, expect } from "vitest";
 import {
   classificationToScore,
+  CANONICAL_DOMAINS,
   computeFinalScore,
   FLEET_DOMAINS,
   noveltyComboKey,
@@ -72,6 +73,16 @@ describe("noveltyComboKey", () => {
       .not.toBe(noveltyComboKey("Fintech", "Open Banking", "global emerging markets"));
   });
 
+  it("rejects an absorbed Logistics & Trade candidate when the canonical Logistics combo is already seen", () => {
+    const seenCombos = new Set([
+      noveltyComboKey("Logistics", "cold chain", "GCC"),
+    ]);
+
+    expect(seenCombos.has(
+      noveltyComboKey("Logistics & Trade", "cold chain", "GCC"),
+    )).toBe(true);
+  });
+
   it("preserves non-Latin letters while applying Unicode compatibility normalization", () => {
     const canonical = noveltyComboKey("التقنية المالية", "الخدمات المصرفية المفتوحة", "الخليج");
     expect(canonical).toContain("التقنية المالية");
@@ -83,6 +94,15 @@ describe("noveltyComboKey", () => {
   it("does not collapse distinct non-Latin sub-sectors into the same key", () => {
     expect(noveltyComboKey("Fintech", "التمويل الإسلامي", "GCC"))
       .not.toBe(noveltyComboKey("Fintech", "المصرفية المفتوحة", "GCC"));
+  });
+});
+
+describe("CANONICAL_DOMAINS", () => {
+  it("contains canonical labels and excludes absorbed variants", () => {
+    expect(CANONICAL_DOMAINS).toContain("Healthtech");
+    expect(CANONICAL_DOMAINS).toContain("Logistics");
+    expect(CANONICAL_DOMAINS).not.toContain("Healthcare & Wellness");
+    expect(CANONICAL_DOMAINS).not.toContain("Logistics & Trade");
   });
 });
 

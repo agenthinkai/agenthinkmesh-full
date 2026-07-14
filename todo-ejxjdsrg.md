@@ -14,3 +14,11 @@
 - [x] Harden and verify weekly scheduler idempotency and the ENGAGE-only recheck source selection without changing fleet cadence or scoring behavior
 - [x] Validate the novelty gate against the full historical corpus and document legacy-duplicate/concurrency constraints
 - [x] Add focused regression tests for newly identified hardening cases and rerun Vitest, TypeScript, and production build checks
+- [x] Load and apply the domain alias map before novelty-key canonicalization for both generated candidates and the historical seen corpus
+- [x] Constrain fleet generation to the map-derived canonical domain vocabulary and prevent absorbed labels from being emitted
+- [x] Add a regression proving Logistics & Trade / cold chain / GCC collides with Logistics / cold chain / GCC
+- [x] Measure historical rows whose domain changes and additional duplicate collisions caught by the mapped key
+- [x] Confirm execution_score, secrets, and fleet cadence remain unchanged
+- [x] Run focused tests, full Vitest, TypeScript, and production build validation
+- [x] Deliver one short document covering map load location, collision counts, test result, canonical-only generator vocabulary, and rankings/reporting follow-up
+- [ ] Save a deployable checkpoint for the canonical-domain novelty change

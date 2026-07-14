@@ -79,6 +79,25 @@ export const GCC_FLEET_DOMAINS = [
   },
 ] as const;
 
+/**
+ * Controlled domain aliases for fleet novelty and generation. Apply this map
+ * before the existing Unicode/case/punctuation canonicalization so absorbed
+ * labels collide with their canonical domain across the full history corpus.
+ */
+export const DOMAIN_MAP = new Map<string, string>([
+  ["Healthcare & Wellness", "Healthtech"],
+  ["Logistics & Trade", "Logistics"],
+]);
+
+export function canonicalDomain(rawDomain: string): string {
+  const stripped = rawDomain.trim();
+  return DOMAIN_MAP.get(stripped) ?? stripped;
+}
+
+export const CANONICAL_DOMAINS = Array.from(new Set(
+  [...FLEET_DOMAINS, ...GCC_FLEET_DOMAINS].map((domain) => canonicalDomain(domain.name)),
+));
+
 export const GCC_COUNCIL_PERSONAS = [
   "Saudi Vision 2030 Fund Analyst",
   "UAE Family Office Principal",
@@ -146,7 +165,8 @@ function normalizeComboPart(value: string): string {
 }
 
 export function noveltyComboKey(domain: string, subSector: string, region: string): string {
-  return [domain, subSector, region].map(normalizeComboPart).join("|");
+  const canonicalDomainName = canonicalDomain(domain);
+  return [canonicalDomainName, subSector, region].map(normalizeComboPart).join("|");
 }
 
 export interface NoveltyMetrics {
@@ -379,11 +399,12 @@ async function generateIdeas(
   for (const domain of domains) {
     let domainInserted = 0;
     let attempt = 0;
-    const normalizedDomain = normalizeComboPart(domain.name);
+    const canonicalDomainName = canonicalDomain(domain.name);
+    const normalizedDomain = normalizeComboPart(canonicalDomainName);
     const excludedSubSectors = new Set(
       existingRows
         .filter((row) =>
-          normalizeComboPart(row.domain) === normalizedDomain &&
+          normalizeComboPart(canonicalDomain(row.domain)) === normalizedDomain &&
           normalizeComboPart(row.targetRegion) === normalizeComboPart(canonicalRegion),
         )
         .map((row) => normalizeComboPart(row.subSector)),
@@ -394,7 +415,9 @@ async function generateIdeas(
       const remaining = ideasPerDomain - domainInserted;
       const thisBatch = Math.min(MAX_IDEAS_PER_LLM_CALL, remaining);
       const excludedList = Array.from(excludedSubSectors).sort().slice(-300);
-      const prompt = `Generate exactly ${thisBatch} genuinely new, credible early-stage startup candidates for the domain: ${domain.name}.
+      const prompt = `Generate exactly ${thisBatch} genuinely new, credible early-stage startup candidates for the domain: ${canonicalDomainName}.
+Controlled domain vocabulary: ${CANONICAL_DOMAINS.join(", ")}.
+Use exactly "${canonicalDomainName}" as every object's domain. Never emit an alias, absorbed label, or any domain outside the controlled vocabulary.
 Seed themes for exploration only: ${domain.subSectors.join(", ")}.
 Target region: ${canonicalRegion}.
 
@@ -404,7 +427,7 @@ NOVELTY IS THE PRIMARY REQUIREMENT:
 - Do not use any excluded sub-sector below, including spelling, punctuation, singular/plural or "&"/"and" variants.
 - A fresh description for an old sub-sector is still a duplicate and will be rejected.
 
-Excluded historical sub-sectors for ${domain.name} × ${canonicalRegion}:
+Excluded historical sub-sectors for ${canonicalDomainName} × ${canonicalRegion}:
 ${excludedList.join("\n") || "None"}
 
 QUALITY RULES — every candidate MUST include:
@@ -415,7 +438,7 @@ QUALITY RULES — every candidate MUST include:
 
 Return ONLY a JSON array of ${thisBatch} objects. Each object must have exactly:
 {
-  "domain": "${domain.name}",
+  "domain": "${canonicalDomainName}",
   "subSector": string,
   "description": string (2-3 sentences, max 280 chars),
   "targetRegion": "${canonicalRegion}",
@@ -465,7 +488,7 @@ Return ONLY a JSON array of ${thisBatch} objects. Each object must have exactly:
 
         const idea: IdeaRaw = {
           ...rawIdea,
-          domain: domain.name,
+          domain: canonicalDomainName,
           targetRegion: canonicalRegion,
           subSector: rawIdea.subSector.trim(),
         };
