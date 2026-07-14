@@ -9,13 +9,15 @@
   "env_vars": {
     "DATABASE_URL": "mysql://2dg2iR9orw75o4J.0aefcec34322:80xOj7x5daM6EuXxoq0H@gateway02.us-east-1.prod.aws.tidbcloud.com:4000/7EnctkaNppkKLbjFfnH6YY?ssl={\"rejectUnauthorized\":true}"
   },
-  "experiments": null,
+  "experiments": [
+    "no_db_push"
+  ],
   "git_remote": {
     "repo_url": "s3://vida-prod-gitrepo/webdev-git/310519663268376562/7EnctkaNppkKLbjFfnH6YY",
-    "access_key_id": "ASIAZV3A2ECZLEKMSIWJ",
-    "secret_access_key": "DZPhLeSPpU4f78tzS+oHrcFQ7HFL3SuAE6d2HPYb",
-    "session_token": "IQoJb3JpZ2luX2VjEDYaCXVzLWVhc3QtMSJHMEUCIQDtPl+OQMakJju2be4+YBFoH/k6UTuksSs+hDND6rkghwIgNRwOXE5yYkTDMxIi9AiVozxX2Dog32Ir9LRRFpGQuxwq/wMI/v//////////ARAEGgw2NjUzODYwOTg4NjYiDO4RQ8+vsHycBYtLOSrTA+agm3QWGS8bEeKJhQP6AwQZaH8MszZItbjyB79KicOjO0SqPeuFR4dKbaDbMZkzpMWErwYKvAcLTchXeFhC4iy/we/352W3tGyC7ZzZmIKpDxtej1a7eM0mAzrMkaaz55cmskp0AB86nXEsXvVJF8vi5+PZMJQJxqLAgoinklv0WRsOBbSaqd4+JYikKLtUe048R//1cNbGTjgvx6WoSlZhnoOTYNeDX4KAIr4+6yJJW8132ENKAOwAwW6myr6PNAoB6tJ9fWE0kdBOPk10/t8VkthMAW8W5471tkVVS5CsZ0iJ9v6BTgN7GOno5gH5GxBK9P3yQxOeoTbnsLjorA3kLfgDhDX/r//g2vyY5FMxFcDr/mqYn90wkVs8Ekzu50AJIVYZdheQj9jmoPvEakVyA/IjAXcP3Zr23u6VJ1ZydNUZibPNzeNyXCkZ4i2ZFcGsQUt2RMYEZvX1sNAAqy4OA9bTy3CmOckpuI7M1J8kw0EgbGofMDeKJWxKvVAx061VbUm7GJ175sKOSFyfEUYdnXVoitd5AS3A7meZciDwW0E+IW9pZ8a9Y5/vu4v9Gebo1oZWMlbNCgfghDLuRx0cTyF9Ok5PBMEShvH3SNikvQ0RMK/L09IGOp0BemVpbj32BDWY9sBXb3pYHKCCKpWW6uHzWu/kR8wnQ+RP+4JDLuqCBzOqna3u3/t8MvIjwOzCaHbhM2sFyqR3JgBRC3a1tu2Mg61ZZ2nY9tuEpN56gLjZn4YYRhBdzYyRYusESTbdinj0L4gHJfgcSmVwXlDFkzjauQk90ogR435TLr4fuwuWc4Qh/NFvWhPc8ruYdGLhVvfyHBIIlw==",
-    "expiration": "2026-07-14T01:18:39.000Z",
+    "access_key_id": "ASIAZV3A2ECZFJZL6ELE",
+    "secret_access_key": "ioJE/SSnDGYWjtRAopE52ynEzeVrjKAPY7IA+o08",
+    "session_token": "IQoJb3JpZ2luX2VjEEYaCXVzLWVhc3QtMSJHMEUCIEqsyUCO6xtgYTk/fCumJnYzf8vSzfIUCMN0dIMP8HC7AiEA7nKiCAi+5k/WbjvZHBhmuevhYn6vfPN7JRpPKiiP8Bkq9gMIDxAEGgw2NjUzODYwOTg4NjYiDO6FndK3BMtJbMbjDCrTA1JcXPBd16KhjOkusYTGY4cRvskkmuc7Tc6LV4gR4ZHJVJnDZ1ufU/LzgSj0zKfIvdgh6IvVacP+b8Oz5NnbdjVvTCwhSSNLgWkaxRDVtrd6h2vlXVaHCh9Ig10eIwjCQNVEgHg9PYflTAgBi8V9Mj5TrjCoLT4YrIp6SJfiIkdO9gPmMkDukXSsZlTOmPc1OUHLUgWXf1dMLHo8UaPhJnqVzsj9FONHVXMPOBKKnvMh2Z65Lsb3AduFLdrFh6xodLK3mFxF5xh6DGwZjEbv/5hBv5Ng/+LUOwPcrjfESjsjEABmOH750528Sxa4Ea8BgSP+RiCgNd3iFhUvzw6YacysVQDJZaWXq8CMJkvAiADmyCF5B133QSVUdVXqM5B8gqskWdmMzkczid+uajyOQa0N8E6szRRnz6n7BmpSZf1GPpWBh/B7HDeHOaVoEqve5b7GVp6GMszO6kHB2xFx77f10l5E2cugNi0YzOHlTS4Bed598iGKyLq9AS3SN8cugcQek0/XzuYT/dmPCBMgsh1xqYoSXmUu4Bk/XyJnnfPXTBZtWxfwU2vCiXfhmK3hddtky4HtIVuzutgh1qhdX3N/aeuXiOtOIguYfOs/hqMmDCwQMLuV19IGOp0BLn3xHVYujALTHub0cYDCThHtMitZTjSI0iz2ZDXyHgLcCxg4FeKlMTogjnrHM/Z3+5/JIXnWD3G9H5MqW9LdA7/EQEVxT5Bi49656ss7CUspf6nZypYNzkczSnmR0bVz/6bN7k43k65xiBSloK2sLutnMNA/bmDPjKeYc387w65zfVq5LITtg1E7mEKKHzb1A8O1MjQ99Nh/rP5itQ==",
+    "expiration": "2026-07-14T17:35:55.000Z",
     "backend": "GIT_BACKEND_S3"
   },
   "name": "agenthinkmesh-full",
