@@ -5481,3 +5481,14 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Register `/admin/mesh-core` route in App.tsx (lazy-loaded, admin-gated)
 - [x] Write 17 unit tests in `server/meshRuntime.test.ts` — all 17 passing
 - [x] TypeScript: 0 errors
+
+## Mesh Core v0.1 — Escalation Engine (Session: Escalation)
+
+- [x] Schema: align drizzle/schema.ts orchestration_units to live DB (tiers_used, final_tier, attempts_count, escalation_reason, model, provider, retry_number columns)
+- [x] DB: add tiers_used and final_tier columns to live orchestration_units table
+- [x] server/meshRuntime.ts: validateStructuredOutput — deterministic JSON parse + required fields + type check + markdown fence strip
+- [x] server/meshRuntime.ts: runEscalating engine — validation fail → escalate, hard fail → same-tier retry then escalate, cap breach → abort, max 6 attempts
+- [x] server/meshRuntime.ts: computeTokenCost, computeLoadedCost (Amendment A), computeVerdict (Amendment D) exported for tests
+- [x] meshCoreRouter.ts: recordOU updated — accepts attemptsCount, tiersUsed[], escalationReason
+- [x] meshCoreRouter.ts: seedDemoOUs updated — generates realistic tiersUsed arrays (SMALL→MID, SMALL→SMALL→MID, MID→LARGE, clean single-tier)
+- [x] server/meshRuntime.test.ts: 36 tests all passing — canonical SMALL→MID, same-tier retry, hard fail chain, cap abort, all-tiers-exhausted, max-6, token accumulation, startTier override, Amendment A/C/D boundaries

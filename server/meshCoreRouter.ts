@@ -204,11 +204,13 @@ export const meshCoreRouter = router({
           loadedCostUsd: parseFloat(r.loadedCostUsd as unknown as string),
           priceUsd: parseFloat(r.priceUsd as unknown as string),
           latencyMs: r.latencyMs,
-          attempts: r.attempts,
+          attemptsCount: r.attemptsCount,
+          tiersUsed: (() => { try { return JSON.parse(r.tiersUsed ?? "[]"); } catch { return []; } })(),
           finalTier: r.finalTier,
           capBreach: Boolean(r.capBreach),
           escalated: Boolean(r.escalated),
           validationPassed: Boolean(r.validationPassed),
+          escalationReason: r.escalationReason,
           createdAt: r.createdAt,
         })),
         total,
@@ -396,8 +398,60 @@ export const meshCoreRouter = router({
         });
 
         const capBreach = loadedCostUsd > pbPrice * 0.95 ? 1 : 0;
-        const escalated = tier === "LARGE" ? 1 : Math.random() < 0.05 ? 1 : 0;
-        const validationPassed = Math.random() < 0.92 ? 1 : 0;
+
+        // Simulate realistic escalation paths
+        // ~10% of OUs escalate: SMALL→MID or SMALL→SMALL(retry)→MID
+        // ~3% cap breach (no escalation, just abort)
+        // ~87% clean single-tier runs
+        const rand = Math.random();
+        let tiersUsed: string[];
+        let attemptsCount: number;
+        let escalatedFlag: number;
+        let validationPassed: number;
+        let finalTier: string;
+        let escalationReason: string | null = null;
+
+        if (capBreach) {
+          tiersUsed = [tier];
+          attemptsCount = 1;
+          escalatedFlag = 0;
+          validationPassed = 0;
+          finalTier = tier;
+          escalationReason = "Token budget cap breached";
+        } else if (rand < 0.05) {
+          // SMALL→MID escalation (validation failure on SMALL)
+          const startTier = "SMALL";
+          tiersUsed = [startTier, "MID"];
+          attemptsCount = 2;
+          escalatedFlag = 1;
+          validationPassed = 1;
+          finalTier = "MID";
+          escalationReason = `Validation failed on ${startTier} — escalated to MID`;
+        } else if (rand < 0.08) {
+          // SMALL→SMALL(retry)→MID (hard failure + retry + escalation)
+          tiersUsed = ["SMALL", "SMALL", "MID"];
+          attemptsCount = 3;
+          escalatedFlag = 1;
+          validationPassed = 1;
+          finalTier = "MID";
+          escalationReason = "Hard failure on SMALL, same-tier retry failed, escalated to MID";
+        } else if (rand < 0.10) {
+          // MID→LARGE escalation
+          tiersUsed = ["MID", "LARGE"];
+          attemptsCount = 2;
+          escalatedFlag = 1;
+          validationPassed = 1;
+          finalTier = "LARGE";
+          escalationReason = "Validation failed on MID — escalated to LARGE";
+        } else {
+          // Clean single-tier run
+          tiersUsed = [tier];
+          attemptsCount = 1;
+          escalatedFlag = 0;
+          validationPassed = 1;
+          finalTier = tier;
+        }
+
         const createdAt = Date.now() - Math.floor(Math.random() * 7 * 24 * 60 * 60 * 1000);
 
         records.push({
@@ -411,13 +465,15 @@ export const meshCoreRouter = router({
           residencyCacUsd: residencyCacUsd.toFixed(8),
           liabilityReserveUsd: liabilityReserveUsd.toFixed(8),
           loadedCostUsd: loadedCostUsd.toFixed(8),
-          priceUsd: pbPrice.toFixed(6),
+          priceUsd: pbPrice.toFixed(8),
           latencyMs: Math.floor(800 + Math.random() * 4200),
-          attempts: Math.random() < 0.1 ? 2 : 1,
-          finalTier: tier,
+          attemptsCount,
+          tiersUsed: JSON.stringify(tiersUsed),
+          finalTier,
           capBreach,
-          escalated,
+          escalated: escalatedFlag,
           validationPassed,
+          escalationReason,
           createdAt,
         } as typeof orchestrationUnits.$inferInsert);
       }
@@ -446,11 +502,13 @@ export const meshCoreRouter = router({
       loadedCostUsd: z.number(),
       priceUsd: z.number(),
       latencyMs: z.number().int().optional(),
-      attempts: z.number().int().min(1).default(1),
+      attemptsCount: z.number().int().min(1).default(1),
+      tiersUsed: z.array(z.enum(["SMALL", "MID", "LARGE"])).default([]),
       finalTier: z.string().optional(),
       capBreach: z.boolean().default(false),
       escalated: z.boolean().default(false),
       validationPassed: z.boolean().default(true),
+      escalationReason: z.string().nullable().optional(),
     }))
     .mutation(async ({ ctx, input }) => {
       const db = await getDb();
@@ -470,11 +528,13 @@ export const meshCoreRouter = router({
         loadedCostUsd: input.loadedCostUsd.toFixed(8),
         priceUsd: input.priceUsd.toFixed(6),
         latencyMs: input.latencyMs,
-        attempts: input.attempts,
+        attemptsCount: input.attemptsCount,
+        tiersUsed: JSON.stringify(input.tiersUsed),
         finalTier: input.finalTier ?? input.tier,
         capBreach: input.capBreach ? 1 : 0,
         escalated: input.escalated ? 1 : 0,
         validationPassed: input.validationPassed ? 1 : 0,
+        escalationReason: input.escalationReason ?? null,
         createdAt: Date.now(),
       } as typeof orchestrationUnits.$inferInsert);
       return { success: true };

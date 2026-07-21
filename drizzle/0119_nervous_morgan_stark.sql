@@ -1,0 +1,1 @@
+ALTER TABLE `orchestration_units` ADD `tiers_used` text DEFAULT ('[]') NOT NULL;
