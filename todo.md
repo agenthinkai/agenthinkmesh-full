@@ -5492,3 +5492,23 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] meshCoreRouter.ts: recordOU updated — accepts attemptsCount, tiersUsed[], escalationReason
 - [x] meshCoreRouter.ts: seedDemoOUs updated — generates realistic tiersUsed arrays (SMALL→MID, SMALL→SMALL→MID, MID→LARGE, clean single-tier)
 - [x] server/meshRuntime.test.ts: 36 tests all passing — canonical SMALL→MID, same-tier retry, hard fail chain, cap abort, all-tiers-exhausted, max-6, token accumulation, startTier override, Amendment A/C/D boundaries
+
+## Diaspora Founder Diagnostic — Bilingual Landing Pages
+
+- [x] Schema: diaspora_leads table (id, email, diagnosisDate, ideaHealthScore, gap1, gap2, gap3, language, buSource, createdAt)
+- [x] DB: run migration for diaspora_leads
+- [x] server/diagnosisRouter.ts: runDiagnosis procedure (LLM call, writes orchestration_units row, returns score + dimensions + gaps)
+- [x] server/diagnosisRouter.ts: captureLead procedure (stores email + metadata to diaspora_leads)
+- [x] server/diagnosisRouter.ts: getLeads procedure (admin-only, returns all leads for CSV export)
+- [x] server/diagnosisRouter.ts: createStripeCheckout procedure ($14 deep report / $39 AI Partner)
+- [x] Wire diagnosisRouter into appRouter
+- [x] client/src/pages/FounderDiagnostic.tsx: English landing page at /founder (hero, 3-step, comparison, pricing, FAQ, final CTA)
+- [x] client/src/pages/FounderDiagnosticZh.tsx: Chinese landing page at /zh (Block 1 copy, same layout)
+- [x] Shared DiagnosticFlow component: textarea input → engine call → free preview (score + 4 dimensions + 3 gap titles) → email capture gate (skippable) → full report (gaps with why_fatal + fix)
+- [x] Email capture: prominent but skippable, stores email + score + gaps + language + source "diaspora"
+- [x] Stripe: $14 one-time deep report, $39/month AI Partner — linked from pricing section
+- [x] Analytics: identical events on both /founder and /zh pages
+- [x] Admin page: /admin/diaspora-leads — table + CSV export button
+- [x] Tests: runDiagnosis schema validation, captureLead, verdict thresholds
+- [x] TypeScript check — zero errors
+- [x] Save checkpoint

@@ -185,6 +185,9 @@ const CapTwin = lazy(() => import("./pages/CapTwin"));
 const TPACockpit = lazy(() => import("./pages/TPACockpit"));
 const JobToAgent = lazy(() => import("./pages/JobToAgent"));
 const MeshCostDashboard = lazy(() => import("./pages/MeshCostDashboard"));
+const FounderDiagnostic = lazy(() => import("./pages/FounderDiagnostic"));
+const FounderDiagnosticZh = lazy(() => import("./pages/FounderDiagnosticZh"));
+const DiasporaLeadsAdmin = lazy(() => import("./pages/DiasporaLeadsAdmin"));
 
 // ── Page-level loading fallback ───────────────────────────────────────────────
 function PageLoader() {
@@ -499,6 +502,9 @@ function Router() {
       <Route path="/twin/tpa" component={TPACockpit} />
       <Route path="/tools/job-to-agent" component={JobToAgent} />
       <Route path="/admin/mesh-core" component={MeshCostDashboard} />
+      <Route path="/founder" component={FounderDiagnostic} />
+      <Route path="/zh" component={FounderDiagnosticZh} />
+      <Route path="/admin/diaspora-leads" component={DiasporaLeadsAdmin} />
       <Route path="/twin/:templateId" component={DecisionTwin} />
       <Route path="/captwin" component={CapTwin} />
       {/* Fallback */}

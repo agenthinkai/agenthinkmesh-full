@@ -3407,3 +3407,20 @@ export const orchestrationUnits = mysqlTable("orchestration_units", {
 });
 export type OrchestrationUnit = typeof orchestrationUnits.$inferSelect;
 export type InsertOrchestrationUnit = typeof orchestrationUnits.$inferInsert;
+
+// ── Diaspora Founder Diagnostic — lead capture ────────────────────────────────
+export const diasporaLeads = mysqlTable("diaspora_leads", {
+  id: int("id").primaryKey().autoincrement(),
+  email: varchar("email", { length: 255 }).notNull(),
+  diagnosisDate: bigint("diagnosis_date", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  ideaHealthScore: int("idea_health_score").notNull(),
+  gap1: varchar("gap1", { length: 512 }),
+  gap2: varchar("gap2", { length: 512 }),
+  gap3: varchar("gap3", { length: 512 }),
+  language: varchar("language", { length: 10 }).notNull().default("zh"),
+  buSource: varchar("bu_source", { length: 64 }).notNull().default("diaspora"),
+  ideaSnippet: varchar("idea_snippet", { length: 500 }),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type DiasporaLead = typeof diasporaLeads.$inferSelect;
+export type InsertDiasporaLead = typeof diasporaLeads.$inferInsert;
