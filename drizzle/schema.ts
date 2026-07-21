@@ -3344,3 +3344,61 @@ export const atlasEditorialReviews = mysqlTable("atlas_editorial_reviews", {
 });
 export type AtlasEditorialReview = typeof atlasEditorialReviews.$inferSelect;
 export type InsertAtlasEditorialReview = typeof atlasEditorialReviews.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Mesh Core v0.1 — Cost & Margin Infrastructure
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** Amendment B seed tiers: SMALL / MID / LARGE */
+export const modelPricing = mysqlTable("model_pricing", {
+  id: int("id").primaryKey().autoincrement(),
+  tier: varchar("tier", { length: 10 }).notNull().unique(),
+  inputPricePerMillion: decimal("input_price_per_million", { precision: 12, scale: 6 }).notNull(),
+  outputPricePerMillion: decimal("output_price_per_million", { precision: 12, scale: 6 }).notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type ModelPricing = typeof modelPricing.$inferSelect;
+
+/** Per-workflow pricing defaults (admin-editable). Amendment B defaults seeded. */
+export const workflowPricebook = mysqlTable("workflow_pricebook", {
+  id: int("id").primaryKey().autoincrement(),
+  workflowType: varchar("workflow_type", { length: 80 }).notNull().unique(),
+  priceUsd: decimal("price_usd", { precision: 12, scale: 6 }).notNull(),
+  liabilityReservePct: decimal("liability_reserve_pct", { precision: 8, scale: 6 }).notNull().default("0.030000"),
+  humanGateCostPerMinute: decimal("human_gate_cost_per_minute", { precision: 8, scale: 6 }).notNull().default("0.500000"),
+  humanGateMinutes: decimal("human_gate_minutes", { precision: 8, scale: 4 }).notNull().default("0.0000"),
+  residencyCacPerOuUsd: decimal("residency_cac_per_ou_usd", { precision: 12, scale: 6 }).notNull().default("0.004000"),
+  disputeRate: decimal("dispute_rate", { precision: 8, scale: 6 }).notNull().default("0.050000"),
+  isEnterprise: tinyint("is_enterprise").notNull().default(0),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type WorkflowPricebook = typeof workflowPricebook.$inferSelect;
+
+/** Per-OU cost ledger — one row per orchestration unit execution */
+export const orchestrationUnits = mysqlTable("orchestration_units", {
+  id: int("id").primaryKey().autoincrement(),
+  workflowType: varchar("workflow_type", { length: 80 }).notNull(),
+  workflowId: varchar("workflow_id", { length: 120 }),
+  userId: varchar("user_id", { length: 120 }),
+  tier: varchar("tier", { length: 10 }).notNull().default("SMALL"),
+  inputTokens: int("input_tokens").notNull().default(0),
+  outputTokens: int("output_tokens").notNull().default(0),
+  tokenCostUsd: decimal("token_cost_usd", { precision: 14, scale: 8 }).notNull().default("0.00000000"),
+  humanGateCostUsd: decimal("human_gate_cost_usd", { precision: 14, scale: 8 }).notNull().default("0.00000000"),
+  disputeCostUsd: decimal("dispute_cost_usd", { precision: 14, scale: 8 }).notNull().default("0.00000000"),
+  residencyCacUsd: decimal("residency_cac_usd", { precision: 14, scale: 8 }).notNull().default("0.00000000"),
+  liabilityReserveUsd: decimal("liability_reserve_usd", { precision: 14, scale: 8 }).notNull().default("0.00000000"),
+  loadedCostUsd: decimal("loaded_cost_usd", { precision: 14, scale: 8 }).notNull().default("0.00000000"),
+  priceUsd: decimal("price_usd", { precision: 12, scale: 6 }).notNull().default("0.000000"),
+  latencyMs: int("latency_ms"),
+  attempts: int("attempts").notNull().default(1),
+  finalTier: varchar("final_tier", { length: 10 }),
+  capBreach: tinyint("cap_breach").notNull().default(0),
+  escalated: tinyint("escalated").notNull().default(0),
+  validationPassed: tinyint("validation_passed").notNull().default(1),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type OrchestrationUnit = typeof orchestrationUnits.$inferSelect;
+export type InsertOrchestrationUnit = typeof orchestrationUnits.$inferInsert;

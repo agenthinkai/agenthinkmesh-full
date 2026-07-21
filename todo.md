@@ -5464,3 +5464,20 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Register /twin/tpa route in App.tsx (before /twin/:templateId catch-all)
 - [ ] TypeScript 0 errors confirmed
 - [ ] Checkpoint saved and published
+
+## Mesh Core v0.1 — Cost & Margin Infrastructure (Amendments A–D)
+
+- [x] Add `model_pricing` table to schema.ts (SMALL/MID/LARGE tiers, Amendment B)
+- [x] Add `workflow_pricebook` table to schema.ts (per-workflow pricing defaults)
+- [x] Add `orchestration_units` table to schema.ts (per-OU cost ledger, Amendment A fields)
+- [x] Create all three tables in DB via SQL
+- [x] Seed `model_pricing`: SMALL $0.15/$0.60, MID $0.60/$2.40, LARGE $2.50/$10.00
+- [x] Seed `workflow_pricebook` with 8 workflows (enterprise + self-serve) and Amendment B defaults
+- [x] Write `server/meshCoreRouter.ts` — Amendment A loaded-cost formula (token + gate + dispute + cac + reserve)
+- [x] Implement Amendment C p90 definition (margin at 90th-percentile cost OU, not 90th-percentile of margin values)
+- [x] Implement Amendment D verdict thresholds (STRONG ≥50% / VIABLE ≥20% / REPRICE p50≥50%+p90<20% / FAIL p50<50%)
+- [x] Wire `meshCoreRouter` into `appRouter` as `meshCore`
+- [x] Build `client/src/pages/MeshCostDashboard.tsx` (4 tabs: Margins, Pricebook, Models, OU Ledger + Live Alerts)
+- [x] Register `/admin/mesh-core` route in App.tsx (lazy-loaded, admin-gated)
+- [x] Write 17 unit tests in `server/meshRuntime.test.ts` — all 17 passing
+- [x] TypeScript: 0 errors

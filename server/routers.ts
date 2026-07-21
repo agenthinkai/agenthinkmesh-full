@@ -14,6 +14,7 @@ import { dossierPdfRouter } from "./routers/dossierPdf";
 import { billingRouter } from "./routers/billing";
 import { portfolioRouter } from "./routers/portfolio";
 import { jobAgentRouter } from "./jobAgentRouter";
+import { meshCoreRouter } from "./meshCoreRouter";
 import { insuranceRouter } from "./routers/insurance";
 import { admeshRouter } from "./routers/admesh";
 import { openclawRouter } from "./routers/openclaw";
@@ -155,6 +156,7 @@ export const appRouter = router({
   infraSim: infraSimRouter,
   scenarioSim: scenarioSimRouter,
   jobAgent: jobAgentRouter,
+  meshCore: meshCoreRouter,
   pharmaPilot: pharmaPilotRouter,
 
   // ── AROS — Autonomous Revenue Operating System ───────────────────────────────

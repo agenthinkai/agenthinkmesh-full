@@ -184,6 +184,7 @@ const TwinDashboard = lazy(() => import("./pages/TwinDashboard"));
 const CapTwin = lazy(() => import("./pages/CapTwin"));
 const TPACockpit = lazy(() => import("./pages/TPACockpit"));
 const JobToAgent = lazy(() => import("./pages/JobToAgent"));
+const MeshCostDashboard = lazy(() => import("./pages/MeshCostDashboard"));
 
 // ── Page-level loading fallback ───────────────────────────────────────────────
 function PageLoader() {
@@ -497,6 +498,7 @@ function Router() {
       <Route path="/twin/dashboard" component={TwinDashboard} />
       <Route path="/twin/tpa" component={TPACockpit} />
       <Route path="/tools/job-to-agent" component={JobToAgent} />
+      <Route path="/admin/mesh-core" component={MeshCostDashboard} />
       <Route path="/twin/:templateId" component={DecisionTwin} />
       <Route path="/captwin" component={CapTwin} />
       {/* Fallback */}
