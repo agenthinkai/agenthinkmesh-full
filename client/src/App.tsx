@@ -183,6 +183,7 @@ const DecisionTwin = lazy(() => import("./pages/DecisionTwin"));
 const TwinDashboard = lazy(() => import("./pages/TwinDashboard"));
 const CapTwin = lazy(() => import("./pages/CapTwin"));
 const TPACockpit = lazy(() => import("./pages/TPACockpit"));
+const JobToAgent = lazy(() => import("./pages/JobToAgent"));
 
 // ── Page-level loading fallback ───────────────────────────────────────────────
 function PageLoader() {
@@ -495,6 +496,7 @@ function Router() {
       {/* Decision Twin */}
       <Route path="/twin/dashboard" component={TwinDashboard} />
       <Route path="/twin/tpa" component={TPACockpit} />
+      <Route path="/tools/job-to-agent" component={JobToAgent} />
       <Route path="/twin/:templateId" component={DecisionTwin} />
       <Route path="/captwin" component={CapTwin} />
       {/* Fallback */}
