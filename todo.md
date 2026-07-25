@@ -5444,7 +5444,7 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Research 2 MENA/North America UHNWI Networks
 - [ ] Ingest all 10 as elements 11–20 in lpRegistry.ts
 - [ ] Extend LPRegion/LPSegment types if new regions/segments needed
-- [ ] TypeScript 0 errors confirmed
+- [x] TypeScript 0 errors confirmed
 - [ ] Production build passes
 - [ ] Checkpoint saved and published to production
 
@@ -5462,7 +5462,7 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Build client/src/lib/tpaEngine.ts: factor deconstruction, volatility model, SWF/Pension dual-mode
 - [ ] Build client/src/pages/TPACockpit.tsx: three-column glassmorphic cockpit
 - [x] Register /twin/tpa route in App.tsx (before /twin/:templateId catch-all)
-- [ ] TypeScript 0 errors confirmed
+- [x] TypeScript 0 errors confirmed
 - [ ] Checkpoint saved and published
 
 ## Mesh Core v0.1 — Cost & Margin Infrastructure (Amendments A–D)
@@ -5512,3 +5512,10 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Tests: runDiagnosis schema validation, captureLead, verdict thresholds
 - [x] TypeScript check — zero errors
 - [x] Save checkpoint
+
+## 创诊 Diaspora Landing Page at /chuangzhen
+- [x] Create client/src/pages/ChuangZhen.tsx — standalone Chinese landing page at /chuangzhen
+- [x] Update diagnosisRouter.ts success_url / cancel_url to handle /chuangzhen path
+- [x] Register /chuangzhen route in App.tsx (lazy import + Route)
+- [x] TypeScript 0 errors confirmed
+- [ ] Checkpoint saved and published

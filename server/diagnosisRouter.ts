@@ -411,8 +411,16 @@ export const diagnosisRouter = router({
           },
         ],
         allow_promotion_codes: true,
-        success_url: `${input.origin}${input.origin.includes("/zh") ? "/zh" : "/founder"}?paid=1&product=${input.product}&session_id={CHECKOUT_SESSION_ID}`,
-        cancel_url: `${input.origin}${input.origin.includes("/zh") ? "/zh" : "/founder"}?canceled=1`,
+        success_url: (() => {
+          const base = input.origin.replace(/\/(chuangzhen|zh)$/, "");
+          const path = input.origin.endsWith("/chuangzhen") ? "/chuangzhen" : input.origin.endsWith("/zh") ? "/zh" : "/founder";
+          return `${base}${path}?paid=1&product=${input.product}&session_id={CHECKOUT_SESSION_ID}`;
+        })(),
+        cancel_url: (() => {
+          const base = input.origin.replace(/\/(chuangzhen|zh)$/, "");
+          const path = input.origin.endsWith("/chuangzhen") ? "/chuangzhen" : input.origin.endsWith("/zh") ? "/zh" : "/founder";
+          return `${base}${path}?canceled=1`;
+        })(),
         metadata: {
           type: "founder_diagnostic",
           product: input.product,
