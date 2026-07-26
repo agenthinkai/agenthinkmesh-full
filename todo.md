@@ -4589,9 +4589,9 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Generate governance share URL for demo
 
 ### Phase 10: QA & Delivery
-- [ ] Write vitest tests for simulation engine
-- [ ] Write vitest tests for decision logic
-- [ ] Write vitest tests for approval pathway engine
+- [x] Write vitest tests for simulation engine
+- [x] Write vitest tests for decision logic
+- [x] Write vitest tests for approval pathway engine
 - [ ] Final checkpoint
 - [ ] Deliver to user
 
@@ -5446,7 +5446,7 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Extend LPRegion/LPSegment types if new regions/segments needed
 - [x] TypeScript 0 errors confirmed
 - [ ] Production build passes
-- [ ] Checkpoint saved and published to production
+- [x] Checkpoint saved and published to production
 
 ## LP Registry Batch 3 — 10 New Institutional Archetypes (elements 11–20)
 - [x] Research: 3 GCC SFOs/MFOs with Private Credit mandates
@@ -5463,7 +5463,7 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Build client/src/pages/TPACockpit.tsx: three-column glassmorphic cockpit
 - [x] Register /twin/tpa route in App.tsx (before /twin/:templateId catch-all)
 - [x] TypeScript 0 errors confirmed
-- [ ] Checkpoint saved and published
+- [x] Checkpoint saved and published
 
 ## Mesh Core v0.1 — Cost & Margin Infrastructure (Amendments A–D)
 
@@ -5518,4 +5518,14 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Update diagnosisRouter.ts success_url / cancel_url to handle /chuangzhen path
 - [x] Register /chuangzhen route in App.tsx (lazy import + Route)
 - [x] TypeScript 0 errors confirmed
+- [x] Checkpoint saved and published
+
+## LegalRedline Mesh at /redline
+- [ ] Create server/legalRedlineRoute.ts — PDF upload, text extraction, LLM audit engine, Stripe $1,200 checkout, PDF/JSON export
+- [ ] Create server/legalRedlinePdf.ts — PDFKit proof report generator
+- [ ] Register /api/audit-contract and /api/redline/* routes in server/_core/index.ts
+- [ ] Create client/src/pages/LegalRedline.tsx — full UI with hero, dropzone, risk meter, clause table, export buttons
+- [x] Register /redline route in App.tsx
+- [ ] TypeScript 0 errors confirmed
+- [ ] Vitest tests for LegalRedline backend
 - [ ] Checkpoint saved and published

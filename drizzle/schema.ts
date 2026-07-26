@@ -3424,3 +3424,20 @@ export const diasporaLeads = mysqlTable("diaspora_leads", {
 });
 export type DiasporaLead = typeof diasporaLeads.$inferSelect;
 export type InsertDiasporaLead = typeof diasporaLeads.$inferInsert;
+
+// ── LegalRedline Mesh — contract audit results ────────────────────────────────
+export const legalAudits = mysqlTable("legal_audits", {
+  id: int("id").primaryKey().autoincrement(),
+  auditId: varchar("audit_id", { length: 64 }).notNull().unique(),
+  filename: varchar("filename", { length: 512 }).notNull(),
+  contractType: varchar("contract_type", { length: 64 }).notNull().default("Other"),
+  contractTitle: varchar("contract_title", { length: 512 }).notNull().default(""),
+  overallHealthScore: int("overall_health_score").notNull().default(0),
+  criticalCount: int("critical_count").notNull().default(0),
+  warningCount: int("warning_count").notNull().default(0),
+  clearCount: int("clear_count").notNull().default(0),
+  resultJson: text("result_json").notNull(),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type LegalAudit = typeof legalAudits.$inferSelect;
+export type InsertLegalAudit = typeof legalAudits.$inferInsert;

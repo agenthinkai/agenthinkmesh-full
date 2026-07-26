@@ -31,6 +31,7 @@ import { runTier0Ingestion } from "../tier0Ingestion";
 import signalsIngestRouter from "../signalsIngestRoute";
 import dealScreenRouter from "../dealScreenRoute";
 import { dataRoomUploadRouter } from "../dataRoomUploadRoute";
+import legalRedlineRouter from "../legalRedlineRoute";
 import { registerPitchMirrorMetaRoute } from "../pitchMirrorMetaRoute";
 import { registerFleetSchedulerStatusRoute } from "../fleetSchedulerStatusRoute";
 import { registerEncryptionReportRoute } from "../encryptionReportRoute";
@@ -216,6 +217,8 @@ async function startServer() {
   app.use("/api/deal", dealScreenRouter);
   // Data Room Upload — file/ZIP upload + bulk PDF download
   app.use("/api/dataroom", dataRoomUploadRouter);
+  // LegalRedline Mesh — contract audit, Stripe checkout, PDF/JSON export
+  app.use("/api", legalRedlineRouter);
   // Intelligence Agent document parse endpoint
   app.use("/api/intelligence/parse-document", intelligenceParseRouter);
   // Gmail OAuth for Reply Tracker

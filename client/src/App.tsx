@@ -188,6 +188,7 @@ const MeshCostDashboard = lazy(() => import("./pages/MeshCostDashboard"));
 const FounderDiagnostic = lazy(() => import("./pages/FounderDiagnostic"));
 const FounderDiagnosticZh = lazy(() => import("./pages/FounderDiagnosticZh"));
 const ChuangZhen = lazy(() => import("./pages/ChuangZhen"));
+const LegalRedline = lazy(() => import("./pages/LegalRedline"));
 const DiasporaLeadsAdmin = lazy(() => import("./pages/DiasporaLeadsAdmin"));
 
 // ── Page-level loading fallback ───────────────────────────────────────────────
@@ -506,6 +507,7 @@ function Router() {
       <Route path="/founder" component={FounderDiagnostic} />
       <Route path="/zh" component={FounderDiagnosticZh} />
       <Route path="/chuangzhen" component={ChuangZhen} />
+      <Route path="/redline" component={LegalRedline} />
       <Route path="/admin/diaspora-leads" component={DiasporaLeadsAdmin} />
       <Route path="/twin/:templateId" component={DecisionTwin} />
       <Route path="/captwin" component={CapTwin} />
