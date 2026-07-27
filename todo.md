@@ -5529,3 +5529,12 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] TypeScript 0 errors confirmed
 - [ ] Vitest tests for LegalRedline backend
 - [ ] Checkpoint saved and published
+
+## MeshPilot CPU Node Demo at /meshpilot-demo
+- [ ] Create server/meshpilotDemoRoute.ts — /api/meshpilot/chat, /api/meshpilot/audit-log, /api/meshpilot/stats, /api/meshpilot/pii-scan
+- [x] Create meshpilot_demo_sessions table via SQL
+- [ ] Register /api/meshpilot route in server/_core/index.ts
+- [ ] Create client/src/pages/MeshPilotDemo.tsx — full demo UI with chat, compliance panel, audit log, PII detection, stats
+- [x] Register /meshpilot-demo route in App.tsx
+- [ ] TypeScript 0 errors confirmed
+- [ ] Checkpoint saved and published
