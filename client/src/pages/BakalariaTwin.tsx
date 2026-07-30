@@ -277,8 +277,9 @@ function TrancheCard({ t }: { t: TrancheSummary }) {
 
 export default function BakalariaTwin() {
   const [scenarioId, setScenarioId] = useState(DEFAULT_SCENARIO_ID);
+  const [facilityKD, setFacilityKD] = useState(1_000_000);
 
-  const metrics = useMemo(() => computeBakalariaMetrics(scenarioId), [scenarioId]);
+  const metrics = useMemo(() => computeBakalariaMetrics(scenarioId, facilityKD), [scenarioId, facilityKD]);
   const { scenario, projections, tranches, covenants, icVerdict } = metrics;
 
   // Combined historical + projected for charts
@@ -328,7 +329,7 @@ export default function BakalariaTwin() {
               <span className="text-slate-600">|</span>
               <span className="text-sm font-bold text-slate-100">Bakalaria</span>
               <span className="text-slate-600">|</span>
-              <span className="text-xs text-slate-400">B2B/B2C Food Distribution · Kuwait · KD 1M Facility</span>
+              <span className="text-xs text-slate-400">B2B/B2C Food Distribution · Kuwait · KD {(facilityKD/1_000_000).toFixed(2)}M Facility</span>
             </div>
             <p className="text-[11px] text-slate-500 mt-0.5">
               Seeded from verified 2023–2025 audited baselines · 48-month pro-forma · All values in KD
@@ -362,6 +363,27 @@ export default function BakalariaTwin() {
               sub="Resolves M17" color="#f59e0b"
               tooltip="DSCR covenant breach during ramp-up phase. Clears at month 17 (May 2027) at 1.74×."
             />
+          </div>
+
+          {/* Facility Size Slider */}
+          <div className="flex flex-col gap-1 no-print min-w-[180px]">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Facility Size</span>
+              <span className="text-xs font-bold font-mono text-cyan-400">KD {(facilityKD/1_000).toFixed(0)}K</span>
+            </div>
+            <input
+              type="range"
+              min={500_000}
+              max={2_000_000}
+              step={50_000}
+              value={facilityKD}
+              onChange={e => setFacilityKD(Number(e.target.value))}
+              className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
+              style={{ accentColor: '#22d3ee' }}
+            />
+            <div className="flex justify-between text-[9px] text-slate-600">
+              <span>KD 500K</span><span>KD 2.0M</span>
+            </div>
           </div>
 
           <button

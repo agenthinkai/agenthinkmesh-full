@@ -569,22 +569,37 @@ export function computeICVerdict(scenario: BakalariaScenario): ICVerdict {
 
 // ─── MAIN COMPUTE ─────────────────────────────────────────────────────────────
 
-export function computeBakalariaMetrics(scenarioId: string): BakalariaMetrics {
+export function computeBakalariaMetrics(scenarioId: string, facilityKD = 1_000_000): BakalariaMetrics {
   const scenario = SCENARIOS[scenarioId] ?? SCENARIOS.base;
   const projections = computeProjections(scenario);
   const icVerdict = computeICVerdict(scenario);
 
+  // Scale tranches proportionally to facility size
+  const scale = facilityKD / 1_000_000;
+  const scaledTranches: TrancheSummary[] = [
+    { ...TRANCHES[0], limitKD: Math.round(350_000 * scale) },
+    { ...TRANCHES[1], limitKD: Math.round(550_000 * scale),
+      statusMonth48: scale <= 1 ? "Fully repaid — KD 0 balance" : `Partially repaid — KD ${Math.round(50_000 * (scale - 1)).toLocaleString()} balance` },
+    { ...TRANCHES[2], limitKD: Math.round(100_000 * scale) },
+  ];
+
+  // Financing cost scales linearly; FCF is scenario-driven (not facility-driven)
+  const scaledFinancingCost = Math.round(127_000 * scale);
+  // DSCR breach window extends if facility is larger (more debt service)
+  const breachMonths = facilityKD <= 1_000_000 ? 16 : facilityKD <= 1_500_000 ? 20 : 24;
+  const recoveryMonth = breachMonths + 1;
+
   return {
     scenario,
     projections,
-    tranches: TRANCHES,
+    tranches: scaledTranches,
     covenants: COVENANTS,
     icVerdict,
     cumulativeFCF48: 7_076_091,
-    dscrBreachMonths: 16,
-    dscrRecoveryMonth: 17,
+    dscrBreachMonths: breachMonths,
+    dscrRecoveryMonth: recoveryMonth,
     netDebtMonth48: 0,
-    totalFinancingCost: 127_000,
+    totalFinancingCost: scaledFinancingCost,
   };
 }
 
