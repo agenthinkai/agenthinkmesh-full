@@ -515,7 +515,7 @@ function Router() {
       <Route path="/redline" component={LegalRedline} />
       <Route path="/meshpilot-demo" component={MeshPilotDemo} />
       <Route path="/damac-demo" component={DamacDemo} />
-      <Route path="/human-ksa-demo" component={HumanKsaDemo} />
+      <Route path="/humain-demo" component={HumanKsaDemo} />
       <Route path="/admin/diaspora-leads" component={DiasporaLeadsAdmin} />
       <Route path="/twin/:templateId" component={DecisionTwin} />
       <Route path="/captwin" component={CapTwin} />

@@ -5,7 +5,7 @@ const KSA_HTML = `<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Human KSA — Sovereign AI Command Center</title>
+<title>Humain — Sovereign AI Command Center</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"><\/script>
 <style>
 :root{
@@ -125,7 +125,7 @@ body{background:var(--bg);color:var(--text);font-family:'SF Mono','Fira Code',mo
   <div class="header-left">
     <div class="ksa-emblem">🌴</div>
     <div>
-      <div class="header-title" id="headerTitle">Human KSA — Sovereign AI Command Center</div>
+      <div class="header-title" id="headerTitle">Humain — Sovereign AI Command Center</div>
       <div class="header-sub" id="headerSub">MeshPilot Unified Platform · CPU-Only · Air-Gapped · Vision 2030 Aligned</div>
     </div>
   </div>
@@ -152,7 +152,7 @@ body{background:var(--bg);color:var(--text);font-family:'SF Mono','Fira Code',mo
 
   <!-- LEFT: Executive Twin -->
   <div class="panel">
-    <div class="panel-title" id="p1title">🏛️ Executive Digital Twin — Human KSA</div>
+    <div class="panel-title" id="p1title">🏛️ Executive Digital Twin — Humain</div>
     <button class="live-btn" onclick="openLive()">⚡ <span id="liveLabel">Sovereign Inference Mode</span></button>
     <div class="sovereignty-badge" id="sovBadge">
       🔒 <strong>Data Sovereignty Guarantee:</strong> All AI inference runs on-premises within the Kingdom. Zero data egress. Compliant with SDAIA National AI Policy and NCA Cloud Cybersecurity Controls (CCC-1).
@@ -166,8 +166,8 @@ body{background:var(--bg);color:var(--text);font-family:'SF Mono','Fira Code',mo
 
     <div class="tab-content active" id="tab-brief">
       <div class="section-title" id="briefTitle">Strategic Brief</div>
-      <div class="body-text" id="briefEn">Human KSA is executing a sovereign AI infrastructure mandate aligned with Vision 2030's National AI Strategy. The Riyadh Phase 1 data centre — 50MW, 1,200 CPU-only racks, powered by renewable energy — represents the first fully sovereign, GPU-free AI compute facility in the Kingdom. With Saudi Arabia ranked 2nd globally in data centre capacity growth (467MW as of Q1 2026, +6% since January), and the national AI investment target set at $18 billion, Human KSA is positioned to capture the government and enterprise workloads that cannot leave the Kingdom under SDAIA and NCA regulations. The CPU-only architecture eliminates GPU export control risk (EAR99/BIS) entirely — a structural advantage that no cloud provider can replicate without violating Saudi data residency law.</div>
-      <div class="body-text-ar" id="briefAr" style="display:none">تنفذ هيومن المملكة العربية السعودية تفويضاً سيادياً للبنية التحتية للذكاء الاصطناعي متوافقاً مع الاستراتيجية الوطنية للذكاء الاصطناعي ضمن رؤية 2030. يمثل مركز البيانات في الرياض - المرحلة الأولى - بقدرة 50 ميغاواط و1,200 رف معالج مركزي فقط، مدعوماً بالطاقة المتجددة، أول منشأة حوسبة ذكاء اصطناعي سيادية وخالية من وحدات معالجة الرسومات في المملكة. مع تصنيف المملكة العربية السعودية في المرتبة الثانية عالمياً في نمو طاقة مراكز البيانات، تتمتع هيومن المملكة بميزة استراتيجية لا يمكن لأي مزود سحابي تكرارها.</div>
+      <div class="body-text" id="briefEn">Humain is executing a sovereign AI infrastructure mandate aligned with Vision 2030's National AI Strategy. The Riyadh Phase 1 data centre — 50MW, 1,200 CPU-only racks, powered by renewable energy — represents the first fully sovereign, GPU-free AI compute facility in the Kingdom. With Saudi Arabia ranked 2nd globally in data centre capacity growth (467MW as of Q1 2026, +6% since January), and the national AI investment target set at $18 billion, Humain is positioned to capture the government and enterprise workloads that cannot leave the Kingdom under SDAIA and NCA regulations. The CPU-only architecture eliminates GPU export control risk (EAR99/BIS) entirely — a structural advantage that no cloud provider can replicate without violating Saudi data residency law.</div>
+      <div class="body-text-ar" id="briefAr" style="display:none">تنفذ هيومن تفويضاً سيادياً للبنية التحتية للذكاء الاصطناعي متوافقاً مع الاستراتيجية الوطنية للذكاء الاصطناعي ضمن رؤية 2030. يمثل مركز البيانات في الرياض - المرحلة الأولى - بقدرة 50 ميغاواط و1,200 رف معالج مركزي فقط، مدعوماً بالطاقة المتجددة، أول منشأة حوسبة ذكاء اصطناعي سيادية وخالية من وحدات معالجة الرسومات في المملكة. مع تصنيف المملكة العربية السعودية في المرتبة الثانية عالمياً في نمو طاقة مراكز البيانات، تتمتع هيومن بميزة استراتيجية لا يمكن لأي مزود سحابي تكرارها.</div>
     </div>
 
     <div class="tab-content" id="tab-v2030">
@@ -190,7 +190,7 @@ body{background:var(--bg);color:var(--text);font-family:'SF Mono','Fira Code',mo
 
     <div class="tab-content" id="tab-risk">
       <div class="section-title">Risk Assessment</div>
-      <div class="body-text">Three material risks. First: SDAIA and NCA data residency regulations are a structural tailwind — any workload touching government or financial data cannot legally use foreign cloud. Human KSA's on-premises CPU architecture is the only compliant option. Second: the 1,300MW national DC target by 2030 creates a 833MW gap from today's 467MW — Human KSA's Riyadh Phase 1 (50MW) is the first mover in sovereign AI compute. Third: GPU export controls (EAR99/BIS) could strand a GPU-based competitor's entire capex with a single US policy change. The single risk that would change the thesis: if SDAIA relaxes data residency requirements for non-sensitive workloads, reducing the addressable market. Current trajectory makes this unlikely before 2030.</div>
+      <div class="body-text">Three material risks. First: SDAIA and NCA data residency regulations are a structural tailwind — any workload touching government or financial data cannot legally use foreign cloud. Humain's on-premises CPU architecture is the only compliant option. Second: the 1,300MW national DC target by 2030 creates a 833MW gap from today's 467MW — Humain's Riyadh Phase 1 (50MW) is the first mover in sovereign AI compute. Third: GPU export controls (EAR99/BIS) could strand a GPU-based competitor's entire capex with a single US policy change. The single risk that would change the thesis: if SDAIA relaxes data residency requirements for non-sensitive workloads, reducing the addressable market. Current trajectory makes this unlikely before 2030.</div>
     </div>
 
     <div class="tab-content" id="tab-rec">
@@ -200,12 +200,12 @@ body{background:var(--bg);color:var(--text);font-family:'SF Mono','Fira Code',mo
 
     <div style="margin-top:18px">
       <div class="section-title">Council of 5 — Strategic Vote</div>
-      <div style="color:var(--muted);font-size:9px;margin-bottom:10px">Q: Should Human KSA pursue a PIF co-investment for Phase 2 expansion?</div>
+      <div style="color:var(--muted);font-size:9px;margin-bottom:10px">Q: Should Humain pursue a PIF co-investment for Phase 2 expansion?</div>
       <div class="vote-card vote-approve"><div class="agent" style="color:var(--green-glow)">✅ CFO Twin — APPROVE</div><div class="rationale">PIF co-investment at Vision 2030 mandate rates reduces cost of capital to ~4.5%. At 200MW full capacity, the DC generates $220M EBITDA — PIF stake unlocks $3.3–5.5B valuation at infrastructure multiples.</div></div>
       <div class="vote-card vote-conditional"><div class="agent" style="color:var(--amber)">⚠️ Risk Officer — CONDITIONAL</div><div class="rationale">Approve only after anchor tenant LOI is signed. PIF will not co-invest in a facility without a government anchor. Secure ARAMCO, SABIC, or a Ministry contract first.</div></div>
       <div class="vote-card vote-approve"><div class="agent" style="color:var(--green-glow)">✅ Vision 2030 Alignment — APPROVE</div><div class="rationale">Sovereign AI compute is explicitly listed in the National AI Strategy. This is not a commercial bet — it is a national infrastructure mandate. First mover advantage is 18–24 months.</div></div>
       <div class="vote-card vote-conditional"><div class="agent" style="color:var(--amber)">⚠️ Regulatory Twin — CONDITIONAL</div><div class="rationale">NCA CCC-1 compliance certification required before government workloads can be onboarded. Timeline: 6–9 months. Begin certification process immediately.</div></div>
-      <div class="vote-card vote-approve"><div class="agent" style="color:var(--green-glow)">✅ Market Intel — APPROVE</div><div class="rationale">833MW gap between current capacity (467MW) and 2030 target (1,300MW). Human KSA's 50MW Phase 1 captures 6% of the gap. Phase 2 at 200MW captures 24%. No comparable sovereign CPU-only facility exists in KSA today.</div></div>
+      <div class="vote-card vote-approve"><div class="agent" style="color:var(--green-glow)">✅ Market Intel — APPROVE</div><div class="rationale">833MW gap between current capacity (467MW) and 2030 target (1,300MW). Humain's 50MW Phase 1 captures 6% of the gap. Phase 2 at 200MW captures 24%. No comparable sovereign CPU-only facility exists in KSA today.</div></div>
       <div class="tally">
         <div class="tally-item"><div class="n green">3</div><div class="l">APPROVE</div></div>
         <div class="tally-item"><div class="n amber">2</div><div class="l">CONDITIONAL</div></div>
@@ -330,21 +330,21 @@ function showTab(name,el){
 // Arabic toggle
 let isArabic=false;
 const EN={
-  headerTitle:'Human KSA — Sovereign AI Command Center',
+  headerTitle:'Humain — Sovereign AI Command Center',
   headerSub:'MeshPilot Unified Platform · CPU-Only · Air-Gapped · Vision 2030 Aligned',
   langBtn:'العربية',
   liveLabel:'Sovereign Inference Mode',
-  p1title:'🏛️ Executive Digital Twin — Human KSA',
+  p1title:'🏛️ Executive Digital Twin — Humain',
   m1:'AI Investment',m2:'Digital GDP Target',m3:'KSA DC Capacity',m4:'Riyadh Phase 1',
   m5:'NEOM Area',m6:'NEOM AMRs',m7:'CPU IRR',m8:'Tech Jobs Target',
   briefTitle:'Strategic Brief',
 };
 const AR={
-  headerTitle:'هيومن المملكة العربية السعودية — مركز قيادة الذكاء الاصطناعي السيادي',
+  headerTitle:'هيومن — مركز قيادة الذكاء الاصطناعي السيادي',
   headerSub:'منصة ميش بايلوت · معالج مركزي فقط · معزول · متوافق مع رؤية 2030',
   langBtn:'English',
   liveLabel:'وضع الاستدلال السيادي',
-  p1title:'🏛️ التوأم الرقمي التنفيذي — هيومن المملكة',
+  p1title:'🏛️ التوأم الرقمي التنفيذي — هيومن',
   m1:'الاستثمار في الذكاء الاصطناعي',m2:'هدف الاقتصاد الرقمي',m3:'طاقة مراكز البيانات',m4:'الرياض المرحلة 1',
   m5:'مساحة نيوم',m6:'روبوتات نيوم',m7:'معدل العائد الداخلي',m8:'هدف الوظائف التقنية',
   briefTitle:'الموجز الاستراتيجي',
@@ -421,7 +421,7 @@ new Chart(document.getElementById('dcCapChart'),{
       borderColor:'#00c9a7',backgroundColor:'rgba(0,201,167,.1)',
       borderWidth:2,pointRadius:4,pointBackgroundColor:'#00c9a7',fill:true,tension:.3
     },{
-      label:'Human KSA Phase 1',
+      label:'Humain Phase 1',
       data:[null,null,null,50,50,250],
       borderColor:'#00c853',backgroundColor:'transparent',
       borderWidth:2,borderDash:[4,4],pointRadius:3,pointBackgroundColor:'#00c853'
@@ -464,7 +464,7 @@ new Chart(document.getElementById('fcfChart'),{
 
 export default function HumanKsaDemo() {
   useEffect(() => {
-    document.title = "Human KSA — Sovereign AI Command Center";
+    document.title = "Humain — Sovereign AI Command Center";
     return () => { document.title = "AgenThinkMesh"; };
   }, []);
 
@@ -473,7 +473,7 @@ export default function HumanKsaDemo() {
       <iframe
         srcDoc={KSA_HTML}
         style={{ width: "100%", height: "100%", border: "none", display: "block" }}
-        title="Human KSA Sovereign AI Command Center"
+        title="Humain Sovereign AI Command Center"
         sandbox="allow-scripts"
       />
     </div>
