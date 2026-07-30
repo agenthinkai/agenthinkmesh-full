@@ -193,6 +193,7 @@ const LegalRedline = lazy(() => import("./pages/LegalRedline"));
 const MeshPilotDemo = lazy(() => import("./pages/MeshPilotDemo"));
 const DiasporaLeadsAdmin = lazy(() => import("./pages/DiasporaLeadsAdmin"));
 const DamacDemo = lazy(() => import("./pages/DamacDemo"));
+const HumanKsaDemo = lazy(() => import("./pages/HumanKsaDemo"));
 
 // ── Page-level loading fallback ───────────────────────────────────────────────
 function PageLoader() {
@@ -514,6 +515,7 @@ function Router() {
       <Route path="/redline" component={LegalRedline} />
       <Route path="/meshpilot-demo" component={MeshPilotDemo} />
       <Route path="/damac-demo" component={DamacDemo} />
+      <Route path="/human-ksa-demo" component={HumanKsaDemo} />
       <Route path="/admin/diaspora-leads" component={DiasporaLeadsAdmin} />
       <Route path="/twin/:templateId" component={DecisionTwin} />
       <Route path="/captwin" component={CapTwin} />
