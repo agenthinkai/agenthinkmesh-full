@@ -4,6 +4,7 @@
 // IC Verdict panel · P&L table · Covenant tracker · Tranche cards · Board Brief export
 
 import { useState, useMemo } from "react";
+import { BakalariaCouncilPanel } from "@/components/BakalariaCouncilPanel";
 import {
   AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid,
   Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceLine, Cell,
@@ -655,6 +656,12 @@ export default function BakalariaTwin() {
               ))}
             </div>
           </div>
+
+          {/* Council of 8 Specialist Agents */}
+          <BakalariaCouncilPanel
+            scenarioId={scenarioId}
+            scenarioLabel={SCENARIOS[scenarioId]?.name ?? scenarioId}
+          />
 
           {/* Data sources */}
           <div className="rounded-xl border border-slate-700/50 bg-slate-900/60 p-3">

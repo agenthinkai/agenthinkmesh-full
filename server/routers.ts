@@ -50,6 +50,7 @@ import { voiceDemoRouter } from "./routers/voiceDemo";
 import { decisionUpgradeRouter } from "./routers/decisionUpgrade";
 import { councilRouter } from "./routers/council";
 import { infraSimRouter } from "./routers/infraSim";
+import { bakalariaCouncilRouter } from "./routers/bakalariaCouncil";
 import { scenarioSimRouter } from "./routers/scenarioSim";
 import { pharmaPilotRouter } from "./routers/pharmaPilot";
 import {
@@ -155,6 +156,7 @@ export const appRouter = router({
   decisionUpgrade: decisionUpgradeRouter,
   council: councilRouter,
   infraSim: infraSimRouter,
+  bakalariaCouncil: bakalariaCouncilRouter,
   scenarioSim: scenarioSimRouter,
   jobAgent: jobAgentRouter,
   meshCore: meshCoreRouter,
