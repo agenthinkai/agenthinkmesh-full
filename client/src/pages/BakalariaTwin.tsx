@@ -112,7 +112,27 @@ function ICVerdictPanel({ verdict }: { verdict: ICVerdict }) {
       bg: "from-red-950/60 to-transparent",
       border: "border-red-800/50",
     },
-  }[verdict.verdict];
+    "High Risk — Covenant Holiday + Force Majeure Clause": {
+      icon: <AlertTriangle size={18} />,
+      color: "#f97316",
+      glow: "shadow-[0_0_16px_#f9731640]",
+      bg: "from-orange-950/60 to-transparent",
+      border: "border-orange-700/50",
+    },
+    "Approved — Accelerated Drawdown": {
+      icon: <CheckCircle size={18} />,
+      color: "#06b6d4",
+      glow: "shadow-[0_0_16px_#06b6d440]",
+      bg: "from-cyan-950/60 to-transparent",
+      border: "border-cyan-800/50",
+    },
+  }[verdict.verdict] ?? {
+    icon: <AlertTriangle size={18} />,
+    color: "#94a3b8",
+    glow: "",
+    bg: "from-slate-900/60 to-transparent",
+    border: "border-slate-700/50",
+  };
 
   return (
     <div className={`rounded-xl border p-4 bg-gradient-to-br ${config.bg} ${config.border} ${config.glow}`}>

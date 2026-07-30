@@ -59,7 +59,7 @@ export interface CovenantStatus {
 }
 
 export interface ICVerdict {
-  verdict: "Approved — Proceed with Covenant Holiday" | "Conditional — Watchlist M1–M16" | "Vetoed";
+  verdict: "Approved — Proceed with Covenant Holiday" | "Conditional — Watchlist M1–M16" | "Vetoed" | "High Risk — Covenant Holiday + Force Majeure Clause" | "Approved — Accelerated Drawdown";
   theBet: string;
   forLending: string[];
   againstLending: string[];
@@ -183,6 +183,84 @@ export const SCENARIOS: Record<string, BakalariaScenario> = {
       "Prove outlet acquisition engine in first 6 months before committing to accelerated path",
       "Prepare Series A data room in parallel — target raise by month 18",
       "Tranche C AI deployment must show measurable margin improvement by month 9",
+    ],
+  },
+  competitive: {
+    id: "competitive",
+    name: "Competitive Entry — Sary/Regional Player",
+    tag: "funded entrant captures 20% of addressable outlets",
+    outletGrowthRate: 28,   // Compressed: competitor absorbs ~20% of acquirable outlets
+    marginExpansion: 13,    // AOV pressure from competitor introductory pricing
+    aovGrowth: 1,           // Near-flat AOV — competitor forces price discipline
+    opexEfficiency: 50,
+    rec: "A funded regional entrant (e.g. Sary/SILQ expanding from Saudi Arabia) compresses Bakalaria's outlet acquisition rate by ~40% and forces AOV discipline. The facility is still serviceable — DSCR clears covenant by month 22 — but the 20× target becomes a 7× outcome. The competitive moat is the 87.4% retention rate: existing outlets do not leave. The problem is acquisition cost, not churn.",
+    conf: "Moderate",
+    reasons: [
+      "87.4% outlet retention holds even under competitive pressure — existing customers are sticky",
+      "Bakalaria's 3-year relationship depth with 1,134 repeat outlets is not replicable by a new entrant in Year 1",
+      "Kuwait FMCG logistics market grows to USD 1,971M by 2030 — 2.5% share target does not require market dominance",
+    ],
+    risks: [
+      "Sary (SILQ Group) raised $30M+ and has a proven B2B marketplace model — Kuwait entry is a realistic threat by 2027",
+      "A funded entrant can subsidise outlet acquisition with loss-leader pricing for 12–18 months — Bakalaria cannot match this",
+      "AOV compression of 5–8% reduces Year 4 revenue by ~KD 1.1M and delays EBITDA breakeven by 6 months",
+    ],
+    actions: [
+      "Lock in 3-year supply agreements with the top 300 highest-volume outlets before Year 2 — make switching costly",
+      "Deploy Tranche C AI platform by Month 6 to build a data moat: demand forecasting, auto-replenishment, loyalty pricing",
+      "Pre-empt competitive entry narrative with the bank: show this scenario and demonstrate the facility is still serviceable",
+    ],
+  },
+  hormuz: {
+    id: "hormuz",
+    name: "Hormuz Closure — Supply Chain Shock",
+    tag: "Strait closed, Shuaiba Port suspended, COGS +35%",
+    outletGrowthRate: 8,    // MOO growth stalls — restaurants/hotels cut orders
+    marginExpansion: 4,     // Margin compressed: import costs +35%, govt price controls cap pass-through
+    aovGrowth: 8,           // AOV rises as cost inflation passes through partially
+    opexEfficiency: 15,
+    rec: "Kuwait imports 90%+ of food via sea — a Hormuz closure is an existential supply chain event for Bakalaria. COGS increases 25–40% from freight surcharges ($800–$4,500/container), airfreight premiums (+20–30%), and Iran's ban on fruit/vegetable exports. Gross margin compresses from 5.1% to ~2–3%. Government price controls cap Bakalaria's ability to pass through costs. The facility cannot be serviced in this scenario without activating Tranche A as emergency buffer and invoking a force majeure clause. The bank must include a geopolitical force majeure provision in the facility agreement.",
+    conf: "High",
+    reasons: [
+      "Tranche A (KD 350K revolver) provides 8–10 months of emergency runway at current burn rate",
+      "87.4% outlet retention means customers return immediately when supply normalises — the business is not permanently damaged",
+      "Kuwait government food subsidies and price freezes protect consumer demand — outlets stay open even during crisis",
+    ],
+    risks: [
+      "Shuaiba Port suspended — Kuwait has no deep-water alternative; overland trucking from Saudi Arabia is congested and 40–60% more expensive",
+      "Iran's ban on fruit/vegetable exports removes a major GCC supply source — Bakalaria's perishable SKUs face acute shortage",
+      "Government price controls prevent cost pass-through — Bakalaria absorbs margin compression with no relief mechanism",
+    ],
+    actions: [
+      "Activate Tranche A revolver immediately — draw KD 200K as emergency working capital buffer",
+      "Negotiate force majeure clause into facility agreement before drawdown — Hormuz risk is not theoretical in 2026",
+      "Diversify supplier base to Red Sea / Oman port routes before Year 1 drawdown — reduce Shuaiba dependency",
+    ],
+  },
+  deescalation: {
+    id: "deescalation",
+    name: "Regional De-escalation — Peace Dividend",
+    tag: "ceasefire holds, supply chains normalise, Kuwait demand rebounds",
+    outletGrowthRate: 58,   // Accelerated: pent-up demand, restaurants/hotels restock aggressively
+    marginExpansion: 20,    // Freight costs fall 15–20%, faster margin expansion
+    aovGrowth: 7,           // Higher AOV as premium SKUs return to market
+    opexEfficiency: 80,
+    rec: "A durable ceasefire and Hormuz reopening creates a significant tailwind for Bakalaria. Freight costs normalise over 6–12 months, gross margin expands faster than the base case, and pent-up demand from restaurants and hotels drives an MOO surge. This is the most favourable scenario for the bank — DSCR clears the 1.20× covenant by month 14 (3 months earlier than base case) and cumulative FCF reaches KD 9.2M over 48 months. The peace dividend is real and measurable.",
+    conf: "Moderate",
+    reasons: [
+      "Freight cost normalisation adds 1.5–2.0 percentage points to gross margin in Year 1 alone — directly accelerates DSCR recovery",
+      "Restaurant and hotel sector rebounds strongly post-crisis — B2B food demand surges as outlets reopen and restock",
+      "Bakalaria's reliability through the crisis period creates a loyalty premium — outlets that stayed are unlikely to switch",
+    ],
+    risks: [
+      "Ceasefire is fragile — the 2026 ceasefire showed signs of breaking within weeks; full normalisation takes 6–12 months even if it holds",
+      "War-risk insurance premiums persist for 3–6 months post-ceasefire — freight cost relief is delayed, not immediate",
+      "Competitor (Sary/SILQ) may use the peace dividend to accelerate Kuwait entry — the tailwind benefits all players",
+    ],
+    actions: [
+      "Lock in forward freight contracts immediately at post-ceasefire rates before market reprices upward",
+      "Accelerate outlet acquisition in the first 90 days of normalisation — pent-up demand window is narrow",
+      "Use the peace dividend narrative with the bank to negotiate improved facility terms — lower rate on Tranche B",
     ],
   },
   stress: {
@@ -351,6 +429,75 @@ export const COVENANTS: CovenantStatus[] = [
 // ─── IC VERDICT ───────────────────────────────────────────────────────────────
 
 export function computeICVerdict(scenario: BakalariaScenario): ICVerdict {
+  if (scenario.id === "competitive") {
+    return {
+      verdict: "Conditional — Watchlist M1–M16",
+      theBet: "Bakalaria's 87.4% retention moat must hold under competitive pressure — the facility is serviceable even if a funded entrant enters Kuwait by 2027.",
+      forLending: [
+        "Retention rate of 87.4% is the competitive moat — 1,134 repeat outlets do not leave for a new entrant in Year 1",
+        "Even at 7× revenue outcome (vs. 20×), cumulative FCF over 48 months covers the facility 3× over",
+        "Kuwait FMCG market grows to USD 1,971M by 2030 — Bakalaria needs only 2.5% share, not market dominance",
+      ],
+      againstLending: [
+        "Sary/SILQ raised $30M+ and has a proven B2B model — Kuwait entry by 2027 is a realistic, not theoretical, risk",
+        "A funded entrant can subsidise outlet acquisition for 12–18 months with loss-leader pricing Bakalaria cannot match",
+        "AOV compression delays EBITDA breakeven and extends the DSCR watch period from M17 to approximately M22",
+      ],
+      whatChangesDecision: [
+        "Sary/SILQ announces Kuwait launch — accelerate outlet lock-in agreements immediately",
+        "AOV falls below KD 58 by month 6 — competitive pricing pressure is already active, review Tranche B drawdown pace",
+        "Retention rate drops below 80% — structural competitive damage, not just acquisition compression",
+      ],
+      confidencePct: 68,
+    };
+  }
+
+  if (scenario.id === "hormuz") {
+    return {
+      verdict: "High Risk — Covenant Holiday + Force Majeure Clause",
+      theBet: "Kuwait imports 90%+ of food via sea — a Hormuz closure is not a tail risk, it is a 2026 reality. The facility must include a force majeure clause and a Tranche A emergency draw mechanism.",
+      forLending: [
+        "Tranche A (KD 350K revolver) provides 8–10 months of emergency runway — the business can survive a 6-month closure",
+        "87.4% outlet retention means demand returns immediately when supply normalises — the business is not permanently impaired",
+        "Kuwait government food subsidies and price freezes protect outlet viability during the crisis period",
+      ],
+      againstLending: [
+        "Shuaiba Port suspended during Hormuz closure — Kuwait has no deep-water alternative and overland trucking costs 40–60% more",
+        "Gross margin compresses from 5.1% to ~2–3% under import cost shock — EBITDA turns deeply negative",
+        "Government price controls prevent cost pass-through — Bakalaria absorbs the full margin compression",
+      ],
+      whatChangesDecision: [
+        "Force majeure clause not included in facility agreement — do not draw down without it",
+        "Closure extends beyond 6 months — Tranche A runway is exhausted, restructuring required",
+        "Iran fruit/vegetable export ban becomes permanent — Bakalaria must rebuild perishable supply chain",
+      ],
+      confidencePct: 55,
+    };
+  }
+
+  if (scenario.id === "deescalation") {
+    return {
+      verdict: "Approved — Accelerated Drawdown",
+      theBet: "A durable ceasefire and Hormuz reopening is the most favourable scenario for Bakalaria — freight cost normalisation, pent-up B2B demand, and loyalty premium from crisis reliability all compound.",
+      forLending: [
+        "Freight cost normalisation adds 1.5–2.0 pp to gross margin in Year 1 — DSCR clears covenant 3 months earlier than base case (M14 vs M17)",
+        "Cumulative FCF reaches KD 9.2M over 48 months — a 9.2× return on the KD 1M facility",
+        "Pent-up restaurant and hotel demand creates an MOO acquisition window that may not recur — accelerated Tranche B drawdown is justified",
+      ],
+      againstLending: [
+        "Ceasefire is fragile — the 2026 ceasefire showed signs of breaking within weeks; do not price in full normalisation before month 6",
+        "War-risk insurance premiums persist 3–6 months post-ceasefire — freight cost relief is delayed, not immediate",
+        "Sary/SILQ may accelerate Kuwait entry using the same peace dividend — the tailwind benefits all competitors equally",
+      ],
+      whatChangesDecision: [
+        "Ceasefire collapses within 90 days — revert to Hormuz Closure scenario immediately",
+        "War-risk insurance not restored by month 3 — freight cost normalisation is delayed, revise Year 1 margin targets",
+        "MOO growth exceeds 1,600 by month 6 — consider accelerating Tranche B drawdown to capture the demand window",
+      ],
+      confidencePct: 72,
+    };
+  }
+
   if (scenario.id === "stress") {
     return {
       verdict: "Vetoed",
