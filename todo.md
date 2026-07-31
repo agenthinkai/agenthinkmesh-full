@@ -5521,20 +5521,20 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Checkpoint saved and published
 
 ## LegalRedline Mesh at /redline
-- [ ] Create server/legalRedlineRoute.ts — PDF upload, text extraction, LLM audit engine, Stripe $1,200 checkout, PDF/JSON export
-- [ ] Create server/legalRedlinePdf.ts — PDFKit proof report generator
+- [x] Create server/legalRedlineRoute.ts — PDF upload, text extraction, LLM audit engine, Stripe $1,200 checkout, PDF/JSON export
+- [x] Create server/legalRedlinePdf.ts — PDFKit proof report generator
 - [ ] Register /api/audit-contract and /api/redline/* routes in server/_core/index.ts
-- [ ] Create client/src/pages/LegalRedline.tsx — full UI with hero, dropzone, risk meter, clause table, export buttons
+- [x] Create client/src/pages/LegalRedline.tsx — full UI with hero, dropzone, risk meter, clause table, export buttons
 - [x] Register /redline route in App.tsx
 - [ ] TypeScript 0 errors confirmed
 - [ ] Vitest tests for LegalRedline backend
 - [ ] Checkpoint saved and published
 
 ## MeshPilot CPU Node Demo at /meshpilot-demo
-- [ ] Create server/meshpilotDemoRoute.ts — /api/meshpilot/chat, /api/meshpilot/audit-log, /api/meshpilot/stats, /api/meshpilot/pii-scan
+- [x] Create server/meshpilotDemoRoute.ts — /api/meshpilot/chat, /api/meshpilot/audit-log, /api/meshpilot/stats, /api/meshpilot/pii-scan
 - [x] Create meshpilot_demo_sessions table via SQL
 - [ ] Register /api/meshpilot route in server/_core/index.ts
-- [ ] Create client/src/pages/MeshPilotDemo.tsx — full demo UI with chat, compliance panel, audit log, PII detection, stats
+- [x] Create client/src/pages/MeshPilotDemo.tsx — full demo UI with chat, compliance panel, audit log, PII detection, stats
 - [x] Register /meshpilot-demo route in App.tsx
 - [ ] TypeScript 0 errors confirmed
 - [ ] Checkpoint saved and published
