@@ -5523,7 +5523,7 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 ## LegalRedline Mesh at /redline
 - [x] Create server/legalRedlineRoute.ts — PDF upload, text extraction, LLM audit engine, Stripe $1,200 checkout, PDF/JSON export
 - [x] Create server/legalRedlinePdf.ts — PDFKit proof report generator
-- [ ] Register /api/audit-contract and /api/redline/* routes in server/_core/index.ts
+- [x] Register /api/audit-contract and /api/redline/* routes in server/_core/index.ts
 - [x] Create client/src/pages/LegalRedline.tsx — full UI with hero, dropzone, risk meter, clause table, export buttons
 - [x] Register /redline route in App.tsx
 - [ ] TypeScript 0 errors confirmed
@@ -5533,8 +5533,13 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 ## MeshPilot CPU Node Demo at /meshpilot-demo
 - [x] Create server/meshpilotDemoRoute.ts — /api/meshpilot/chat, /api/meshpilot/audit-log, /api/meshpilot/stats, /api/meshpilot/pii-scan
 - [x] Create meshpilot_demo_sessions table via SQL
-- [ ] Register /api/meshpilot route in server/_core/index.ts
+- [x] Register /api/meshpilot route in server/_core/index.ts
 - [x] Create client/src/pages/MeshPilotDemo.tsx — full demo UI with chat, compliance panel, audit log, PII detection, stats
 - [x] Register /meshpilot-demo route in App.tsx
-- [ ] TypeScript 0 errors confirmed
+- [x] TypeScript 0 errors confirmed
+- [x] Checkpoint saved and published
+
+## Alghanim Industries — Sovereign Industrial AI Command Center (Phase 8)
+- [x] Create client/src/pages/AlghanimIndustrialDemo.tsx — full three-panel industrial command center (factory floor map, predictive maintenance, $56.6M ROI calculator, Council of 5 verdict)
+- [x] Register /alghanim-industrial-demo route in App.tsx
 - [ ] Checkpoint saved and published
