@@ -5543,3 +5543,93 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Create client/src/pages/AlghanimIndustrialDemo.tsx — full three-panel industrial command center (factory floor map, predictive maintenance, $56.6M ROI calculator, Council of 5 verdict)
 - [x] Register /alghanim-industrial-demo route in App.tsx
 - [ ] Checkpoint saved and published
+
+## Sprint 2A — Decision Twin Factory Foundation
+
+### Priority 1 — Twin Blueprint Registry
+- [ ] twin_blueprints DB table (root object for all twins)
+- [ ] twinBlueprintService.ts with DB + cache + fallback
+- [ ] tRPC router: twinBlueprints (public get, admin CRUD)
+- [ ] Seed 8 blueprints from existing prospect configs
+- [ ] Tests: blueprint service (8 tests)
+
+### Priority 3 — Council Registry
+- [ ] council_personas DB table
+- [ ] councilPersonaService.ts with DB + cache + fallback
+- [ ] tRPC router: councilPersonas (admin CRUD)
+- [ ] Seed 9 industry councils (Banking, Healthcare, Telecom, Manufacturing, Government, Retail, Energy, Education, Logistics)
+- [ ] councilEngine.ts loads personas from DB at runtime (backward-compatible)
+- [ ] Tests: council persona service (6 tests)
+
+### Priority 4 — Ontology Registry
+- [ ] domain_ontologies DB table
+- [ ] ontologyService.ts with DB + cache + fallback
+- [ ] tRPC router: ontologies (admin CRUD)
+- [ ] Seed 6 ontologies (GCC Finance, Industrial, Defense, E-Commerce, Legal, Healthcare)
+- [ ] Tests: ontology service (4 tests)
+
+### Priority 5 — Decision Library
+- [ ] decision_types DB table
+- [ ] decisionTypeService.ts with DB + cache + fallback
+- [ ] tRPC router: decisionTypes (admin CRUD)
+- [ ] Seed 12 decision types (Capital Allocation, Expansion, Acquisition, Procurement, Hiring, Pricing, Credit, Investment, Transformation, Supply Chain, Risk, Compliance)
+- [ ] Tests: decision type service (4 tests)
+
+### Priority 6 — KPI Registry
+- [ ] kpi_definitions DB table
+- [ ] kpiService.ts with DB + cache + fallback
+- [ ] tRPC router: kpiDefinitions (admin CRUD)
+- [ ] Seed 6 industry KPI sets (Banking, Manufacturing, Telecom, Retail, Healthcare, Energy)
+- [ ] Tests: KPI service (4 tests)
+
+### Priority 7 — Report Registry
+- [ ] report_registry DB table (extends existing report_templates)
+- [ ] reportRegistryService.ts
+- [ ] tRPC router: reportRegistry (admin CRUD)
+- [ ] Seed 6 report types (Executive Brief, Board Report, Institutional Proof, Investment Memo, Credit Memo, Operational Review)
+- [ ] Tests: report registry service (3 tests)
+
+### Priority 8 — Simulation Registry
+- [ ] simulation_plugins DB table
+- [ ] simulationRegistryService.ts with DB + fallback to SIMULATION_MODES
+- [ ] tRPC router: simulationRegistry (admin CRUD)
+- [ ] Seed 6 simulation types (Monte Carlo, Stress Test, Scenario Analysis, Sensitivity, Counterfactual, Forecasting)
+- [ ] Tests: simulation registry service (3 tests)
+
+### Priority 9 — Data Connector Framework
+- [ ] data_connectors DB table
+- [ ] connectorAdapterInterface.ts (plug-in contract)
+- [ ] csvConnector.ts (first concrete adapter)
+- [ ] tRPC router: dataConnectors (admin CRUD + test connection)
+- [ ] Seed 4 connector types (CSV, Excel, REST, SQL)
+- [ ] Tests: connector framework (4 tests)
+
+### Priority 10 — Twin Composer
+- [ ] twin_compositions DB table
+- [ ] twinComposerService.ts
+- [ ] tRPC router: twinComposer (admin CRUD)
+- [ ] Tests: composer service (3 tests)
+
+### Priority 2 — Twin Generator Wizard UI
+- [ ] TwinGenerator.tsx — 11-step wizard page
+- [ ] Route: /admin/twin-generator
+- [ ] Step 1: Choose Industry
+- [ ] Step 2: Choose Blueprint
+- [ ] Step 3: Configure Identity
+- [ ] Step 4: Load Ontology
+- [ ] Step 5: Load Council Personas
+- [ ] Step 6: Load Decision Library
+- [ ] Step 7: Load KPI Set
+- [ ] Step 8: Load Simulations
+- [ ] Step 9: Load Reports
+- [ ] Step 10: Configure Governance
+- [ ] Step 11: Generate & Deploy
+- [ ] Admin navigation entry for Twin Generator
+
+### Sprint 2A Exit Verification
+- [ ] TypeScript: 0 errors
+- [ ] All tests pass (target: 2,200+)
+- [ ] Banking twin can be created from admin UI without code
+- [ ] Healthcare twin can be created from admin UI without code
+- [ ] Manufacturing twin can be created from admin UI without code
+- [ ] Checkpoint saved

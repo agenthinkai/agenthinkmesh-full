@@ -199,6 +199,7 @@ const BakalariaDemoPage = lazy(() => import("./pages/BakalariaDemoPage"));
 const IndonesiaLogisticsDemo = lazy(() => import("./pages/IndonesiaLogisticsDemo"));
 const SamiDemo = lazy(() => import("./pages/SamiDemo"));
 const AlghanimIndustrialDemo = lazy(() => import("./pages/AlghanimIndustrialDemo"));
+const TwinGenerator = lazy(() => import("./pages/TwinGenerator"));
 const FlowardDemo = lazy(() => import("./pages/FlowardDemo"));
 const UicDemo = lazy(() => import("./pages/UicDemo"));
 const LegalDemo = lazy(() => import("./pages/LegalDemo"));

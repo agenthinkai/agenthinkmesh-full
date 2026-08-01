@@ -3531,3 +3531,221 @@ export const reportTemplates = mysqlTable("report_templates", {
 });
 export type ReportTemplate = typeof reportTemplates.$inferSelect;
 export type InsertReportTemplate = typeof reportTemplates.$inferInsert;
+
+// ════════════════════════════════════════════════════════════════════════════
+// SPRINT 2A — DECISION TWIN FACTORY FOUNDATION
+// ════════════════════════════════════════════════════════════════════════════
+
+// ── Priority 1: Twin Blueprint Registry ──────────────────────────────────────
+// The root object. Every Decision Twin is instantiated from a Blueprint.
+export const twinBlueprints = mysqlTable("twin_blueprints", {
+  id: int("id").primaryKey().autoincrement(),
+  blueprintId: varchar("blueprint_id", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 256 }).notNull(),
+  slug: varchar("slug", { length: 64 }).notNull().unique(),
+  industry: varchar("industry", { length: 128 }).notNull(),
+  organizationType: varchar("organization_type", { length: 128 }),
+  description: text("description"),
+  // Registry references (FK-like, stored as IDs for flexibility)
+  ontologyId: varchar("ontology_id", { length: 64 }),
+  defaultCouncilPersonaSetId: varchar("default_council_persona_set_id", { length: 64 }),
+  defaultDecisionTypeIds: text("default_decision_type_ids").notNull().default("[]"),
+  defaultKpiSetId: varchar("default_kpi_set_id", { length: 64 }),
+  defaultSimulationMode: varchar("default_simulation_mode", { length: 32 }).notNull().default("institutional"),
+  defaultReportTemplateIds: text("default_report_template_ids").notNull().default("[]"),
+  defaultWorkflowProtocolId: varchar("default_workflow_protocol_id", { length: 64 }),
+  // Governance & Security
+  governanceProfileId: varchar("governance_profile_id", { length: 64 }),
+  securityProfile: varchar("security_profile", { length: 32 }).notNull().default("standard"),
+  // UI
+  primaryColor: varchar("primary_color", { length: 16 }).notNull().default("#3b82f6"),
+  accentColor: varchar("accent_color", { length: 16 }).notNull().default("#f59e0b"),
+  logoUrl: varchar("logo_url", { length: 512 }),
+  uiTheme: varchar("ui_theme", { length: 32 }).notNull().default("dark"),
+  executiveDashboardLayout: text("executive_dashboard_layout").notNull().default("{}"),
+  // Prompt Templates
+  promptTemplates: text("prompt_templates").notNull().default("{}"),
+  // Lifecycle
+  status: varchar("status", { length: 16 }).notNull().default("ACTIVE"),
+  version: varchar("version", { length: 16 }).notNull().default("1.0.0"),
+  parentBlueprintId: varchar("parent_blueprint_id", { length: 64 }),
+  createdBy: int("created_by"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type TwinBlueprint = typeof twinBlueprints.$inferSelect;
+export type InsertTwinBlueprint = typeof twinBlueprints.$inferInsert;
+
+// ── Priority 3: Council Persona Registry ─────────────────────────────────────
+export const councilPersonas = mysqlTable("council_personas", {
+  id: int("id").primaryKey().autoincrement(),
+  personaId: varchar("persona_id", { length: 64 }).notNull().unique(),
+  personaSetId: varchar("persona_set_id", { length: 64 }).notNull(),
+  industryTag: varchar("industry_tag", { length: 128 }).notNull(),
+  role: varchar("role", { length: 256 }).notNull(),
+  title: varchar("title", { length: 256 }).notNull(),
+  systemPrompt: text("system_prompt").notNull(),
+  constitutionText: text("constitution_text"),
+  voteWeight: int("vote_weight").notNull().default(1),
+  biasProfile: text("bias_profile").notNull().default("{}"),
+  sortOrder: int("sort_order").notNull().default(0),
+  status: varchar("status", { length: 16 }).notNull().default("ACTIVE"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type CouncilPersona = typeof councilPersonas.$inferSelect;
+export type InsertCouncilPersona = typeof councilPersonas.$inferInsert;
+
+// ── Priority 4: Domain Ontology Registry ─────────────────────────────────────
+export const domainOntologies = mysqlTable("domain_ontologies", {
+  id: int("id").primaryKey().autoincrement(),
+  ontologyId: varchar("ontology_id", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 256 }).notNull(),
+  industryTag: varchar("industry_tag", { length: 128 }).notNull(),
+  version: varchar("version", { length: 16 }).notNull().default("1.0.0"),
+  // Core ontology content
+  entities: text("entities").notNull().default("[]"),
+  relationships: text("relationships").notNull().default("[]"),
+  terminology: text("terminology").notNull().default("{}"),
+  regulatoryContext: text("regulatory_context").notNull().default("{}"),
+  geographicContext: text("geographic_context").notNull().default("{}"),
+  // LLM prompt fragments
+  systemPromptFragment: text("system_prompt_fragment"),
+  evaluationCriteria: text("evaluation_criteria"),
+  status: varchar("status", { length: 16 }).notNull().default("ACTIVE"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type DomainOntology = typeof domainOntologies.$inferSelect;
+export type InsertDomainOntology = typeof domainOntologies.$inferInsert;
+
+// ── Priority 5: Decision Type Library ────────────────────────────────────────
+export const decisionTypes = mysqlTable("decision_types", {
+  id: int("id").primaryKey().autoincrement(),
+  decisionTypeId: varchar("decision_type_id", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 256 }).notNull(),
+  category: varchar("category", { length: 128 }).notNull(),
+  description: text("description"),
+  defaultCouncilPersonaSetId: varchar("default_council_persona_set_id", { length: 64 }),
+  defaultKpiSetId: varchar("default_kpi_set_id", { length: 64 }),
+  defaultSimulationMode: varchar("default_simulation_mode", { length: 32 }).notNull().default("institutional"),
+  evaluationFramework: text("evaluation_framework").notNull().default("{}"),
+  requiredInputFields: text("required_input_fields").notNull().default("[]"),
+  outputSchema: text("output_schema").notNull().default("{}"),
+  industryTags: text("industry_tags").notNull().default("[]"),
+  status: varchar("status", { length: 16 }).notNull().default("ACTIVE"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type DecisionType = typeof decisionTypes.$inferSelect;
+export type InsertDecisionType = typeof decisionTypes.$inferInsert;
+
+// ── Priority 6: KPI Definition Registry ──────────────────────────────────────
+export const kpiDefinitions = mysqlTable("kpi_definitions", {
+  id: int("id").primaryKey().autoincrement(),
+  kpiId: varchar("kpi_id", { length: 64 }).notNull().unique(),
+  kpiSetId: varchar("kpi_set_id", { length: 64 }).notNull(),
+  industryTag: varchar("industry_tag", { length: 128 }).notNull(),
+  name: varchar("name", { length: 256 }).notNull(),
+  label: varchar("label", { length: 256 }).notNull(),
+  unit: varchar("unit", { length: 64 }),
+  direction: varchar("direction", { length: 16 }).notNull().default("higher"),
+  threshold: text("threshold").notNull().default("{}"),
+  benchmarkSource: varchar("benchmark_source", { length: 512 }),
+  description: text("description"),
+  formula: text("formula"),
+  category: varchar("category", { length: 128 }),
+  sortOrder: int("sort_order").notNull().default(0),
+  status: varchar("status", { length: 16 }).notNull().default("ACTIVE"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type KpiDefinition = typeof kpiDefinitions.$inferSelect;
+export type InsertKpiDefinition = typeof kpiDefinitions.$inferInsert;
+
+// ── Priority 7: Report Registry ───────────────────────────────────────────────
+export const reportRegistry = mysqlTable("report_registry", {
+  id: int("id").primaryKey().autoincrement(),
+  reportTypeId: varchar("report_type_id", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 128 }).notNull().default("general"),
+  outputFormat: varchar("output_format", { length: 16 }).notNull().default("pdf"),
+  templateSchema: text("template_schema").notNull().default("{}"),
+  requiredSections: text("required_sections").notNull().default("[]"),
+  optionalSections: text("optional_sections").notNull().default("[]"),
+  brandingDefaults: text("branding_defaults").notNull().default("{}"),
+  industryTags: text("industry_tags").notNull().default("[]"),
+  generatorType: varchar("generator_type", { length: 32 }).notNull().default("template"),
+  legacyGeneratorPath: varchar("legacy_generator_path", { length: 512 }),
+  status: varchar("status", { length: 16 }).notNull().default("ACTIVE"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type ReportRegistryEntry = typeof reportRegistry.$inferSelect;
+export type InsertReportRegistryEntry = typeof reportRegistry.$inferInsert;
+
+// ── Priority 8: Simulation Plugin Registry ────────────────────────────────────
+export const simulationPlugins = mysqlTable("simulation_plugins", {
+  id: int("id").primaryKey().autoincrement(),
+  pluginId: varchar("plugin_id", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  category: varchar("category", { length: 128 }).notNull().default("stress_test"),
+  engineType: varchar("engine_type", { length: 64 }).notNull().default("perturbation"),
+  configSchema: text("config_schema").notNull().default("{}"),
+  defaultConfig: text("default_config").notNull().default("{}"),
+  maxScenarioCount: int("max_scenario_count").notNull().default(1000),
+  costTier: varchar("cost_tier", { length: 16 }).notNull().default("medium"),
+  requiresConfirmation: tinyint("requires_confirmation").notNull().default(0),
+  industryTags: text("industry_tags").notNull().default("[]"),
+  status: varchar("status", { length: 16 }).notNull().default("ACTIVE"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type SimulationPlugin = typeof simulationPlugins.$inferSelect;
+export type InsertSimulationPlugin = typeof simulationPlugins.$inferInsert;
+
+// ── Priority 9: Data Connector Framework ─────────────────────────────────────
+export const dataConnectors = mysqlTable("data_connectors", {
+  id: int("id").primaryKey().autoincrement(),
+  connectorId: varchar("connector_id", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 256 }).notNull(),
+  connectorType: varchar("connector_type", { length: 32 }).notNull(),
+  description: text("description"),
+  configSchema: text("config_schema").notNull().default("{}"),
+  adapterPath: varchar("adapter_path", { length: 512 }),
+  authType: varchar("auth_type", { length: 32 }).notNull().default("none"),
+  supportsTestConnection: tinyint("supports_test_connection").notNull().default(1),
+  supportsSchemaInference: tinyint("supports_schema_inference").notNull().default(0),
+  supportsStreaming: tinyint("supports_streaming").notNull().default(0),
+  maxRowsPerSync: int("max_rows_per_sync").notNull().default(10000),
+  status: varchar("status", { length: 16 }).notNull().default("ACTIVE"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type DataConnector = typeof dataConnectors.$inferSelect;
+export type InsertDataConnector = typeof dataConnectors.$inferInsert;
+
+// ── Priority 10: Twin Composition Registry ────────────────────────────────────
+export const twinCompositions = mysqlTable("twin_compositions", {
+  id: int("id").primaryKey().autoincrement(),
+  compositionId: varchar("composition_id", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  // Component twins (array of blueprint IDs)
+  componentBlueprintIds: text("component_blueprint_ids").notNull().default("[]"),
+  // Composition rules
+  conflictResolutionStrategy: varchar("conflict_resolution_strategy", { length: 32 }).notNull().default("union"),
+  councilMergeStrategy: varchar("council_merge_strategy", { length: 32 }).notNull().default("weighted"),
+  kpiAggregationStrategy: varchar("kpi_aggregation_strategy", { length: 32 }).notNull().default("weighted_avg"),
+  // Output blueprint
+  outputBlueprintId: varchar("output_blueprint_id", { length: 64 }),
+  compositionSchema: text("composition_schema").notNull().default("{}"),
+  status: varchar("status", { length: 16 }).notNull().default("DRAFT"),
+  createdBy: int("created_by"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type TwinComposition = typeof twinCompositions.$inferSelect;
+export type InsertTwinComposition = typeof twinCompositions.$inferInsert;
