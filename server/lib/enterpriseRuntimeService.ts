@@ -12,6 +12,7 @@ import {
   twinSessions,
   enterpriseAuditLog,
   twinMessages,
+  users,
 } from "../../drizzle/schema";
 import { eq, and, desc, sql } from "drizzle-orm";
 
@@ -294,6 +295,53 @@ export async function acknowledgeTwinMessage(id: number) {
     .update(twinMessages)
     .set({ status: "acknowledged", acknowledgedAt: new Date() } as any)
     .where(eq(twinMessages.id, id));
+}
+
+// ─── Membership Management (Sprint 3) ────────────────────────────────────────
+
+export type MembershipStatus = "active" | "suspended" | "invited";
+
+export async function updateMembershipStatus(
+  membershipId: number,
+  orgId: number,
+  status: MembershipStatus,
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const [existing] = await db
+    .select({ id: enterpriseMemberships.id })
+    .from(enterpriseMemberships)
+    .where(and(eq(enterpriseMemberships.id, membershipId), eq(enterpriseMemberships.orgId, orgId)))
+    .limit(1);
+  if (!existing) throw new Error("Membership not found or org mismatch");
+  await db
+    .update(enterpriseMemberships)
+    .set({ status, updatedAt: new Date() } as any)
+    .where(eq(enterpriseMemberships.id, membershipId));
+  return { success: true, membershipId, status };
+}
+
+export async function listOrgMembers(orgId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const rows = await db
+    .select({
+      membershipId: enterpriseMemberships.id,
+      userId: enterpriseMemberships.userId,
+      roleId: enterpriseMemberships.roleId,
+      deptId: enterpriseMemberships.deptId,
+      jobTitle: enterpriseMemberships.jobTitle,
+      status: enterpriseMemberships.status,
+      joinedAt: enterpriseMemberships.joinedAt,
+      lastActiveAt: enterpriseMemberships.lastActiveAt,
+      userName: users.name,
+      userEmail: users.email,
+    })
+    .from(enterpriseMemberships)
+    .leftJoin(users, eq(users.id, enterpriseMemberships.userId))
+    .where(eq(enterpriseMemberships.orgId, orgId))
+    .orderBy(desc(enterpriseMemberships.createdAt));
+  return rows;
 }
 
 // ─── Enterprise Stats ─────────────────────────────────────────────────────────

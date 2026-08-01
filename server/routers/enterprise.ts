@@ -1,9 +1,11 @@
 /**
- * Enterprise Runtime tRPC Router — Sprint 2B
+ * Enterprise Runtime tRPC Router — Sprint 3
  * Covers: organizations, departments, roles, memberships, twin instances, sessions, audit log, messages
+ * Sprint 3 additions: runTwin (backed by councilEngine.runCouncil), updateMembership, listOrgMembers
  */
 
 import { z } from "zod";
+import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
 import {
   listDepartments,
@@ -26,7 +28,12 @@ import {
   listTwinMessages,
   acknowledgeTwinMessage,
   getEnterpriseStats,
+  updateMembershipStatus,
+  listOrgMembers,
 } from "../lib/enterpriseRuntimeService";
+import { runCouncil } from "../councilEngine";
+
+const CouncilModeSchema = z.enum(["gcc", "global_vc", "india_pe", "gcc_equities", "infrastructure"]);
 
 const GovernanceProfileSchema = z.enum(["STANDARD", "CONFIDENTIAL", "SOVEREIGN", "CLASSIFIED"]);
 const SessionTypeSchema = z.enum(["run", "simulate", "deliberate", "compare", "calibrate"]);
@@ -228,5 +235,109 @@ export const enterpriseRouter = router({
     .mutation(async ({ input }) => {
       await acknowledgeTwinMessage(input.id);
       return { success: true };
+    }),
+
+  // ─── Sprint 3: runTwin — backed by councilEngine.runCouncil ──────────────────────
+  /**
+   * runTwin: executes a Decision Twin session using the council engine.
+   * Validates org ownership of the twin instance, creates a session record with
+   * councilPersonaSetId-derived councilMode, and persists the result.
+   */
+  runTwin: protectedProcedure
+    .input(z.object({
+      twinInstanceId: z.number(),
+      orgId: z.number(),
+      sessionType: SessionTypeSchema.default("run"),
+      decisionText: z.string().min(10).max(8000),
+      councilMode: CouncilModeSchema.optional().default("gcc"),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      // Verify twin instance belongs to the org
+      const instance = await getTwinInstance(input.twinInstanceId);
+      if (!instance || instance.orgId !== input.orgId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Twin instance not found or org mismatch" });
+      }
+      if (instance.status !== "active") {
+        throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Twin instance is not active" });
+      }
+
+      // Create session record
+      const session = await createTwinSession({
+        twinInstanceId: input.twinInstanceId,
+        orgId: input.orgId,
+        userId: ctx.user.id,
+        sessionType: input.sessionType,
+        inputJson: { decisionText: input.decisionText, councilMode: input.councilMode },
+      });
+
+      const startMs = Date.now();
+      let councilResult;
+      try {
+        councilResult = await runCouncil(input.decisionText, {
+          councilMode: input.councilMode,
+          userId: ctx.user.id,
+          clientId: `enterprise-org-${input.orgId}`,
+          bypassCostGuard: false,
+        });
+      } catch (err) {
+        await completeTwinSession(session.id, { error: String(err) }, Date.now() - startMs, 0);
+        throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Council engine failed" });
+      }
+
+      const durationMs = Date.now() - startMs;
+      const tokensUsed = 0; // token tracking via billing layer, not CouncilResult
+      await completeTwinSession(session.id, councilResult as any, durationMs, tokensUsed);
+
+      // Write audit log
+      await writeAuditLog({
+        orgId: input.orgId,
+        userId: ctx.user.id,
+        action: `twin.${input.sessionType}`,
+        resourceType: "twin_session",
+        resourceId: String(session.id),
+        details: `Ran ${input.sessionType} on twin ${input.twinInstanceId}, verdict: ${councilResult.verdict}`,
+        severity: "info",
+      });
+
+      return {
+        sessionId: session.id,
+        twinInstanceId: input.twinInstanceId,
+        sessionType: input.sessionType,
+        verdict: councilResult.verdict,
+        finalScore: councilResult.finalScore,
+        confidenceScore: councilResult.confidenceScore,
+        conditionsToProceed: councilResult.conditionsToProceed,
+        blockingIssues: councilResult.blockingIssues,
+        durationMs,
+      };
+    }),
+
+  // ─── Sprint 3: Org User Management ─────────────────────────────────────────────
+  listOrgMembers: protectedProcedure
+    .input(z.object({ orgId: z.number() }))
+    .query(async ({ input }) => {
+      return listOrgMembers(input.orgId);
+    }),
+
+  updateMembership: adminProcedure
+    .input(z.object({
+      membershipId: z.number(),
+      orgId: z.number(),
+      status: z.enum(["active", "suspended", "invited"]),
+    }))
+    .mutation(async ({ input }) => {
+      return updateMembershipStatus(input.membershipId, input.orgId, input.status);
+    }),
+
+  suspendMembership: adminProcedure
+    .input(z.object({ membershipId: z.number(), orgId: z.number() }))
+    .mutation(async ({ input }) => {
+      return updateMembershipStatus(input.membershipId, input.orgId, "suspended");
+    }),
+
+  reactivateMembership: adminProcedure
+    .input(z.object({ membershipId: z.number(), orgId: z.number() }))
+    .mutation(async ({ input }) => {
+      return updateMembershipStatus(input.membershipId, input.orgId, "active");
     }),
 });

@@ -536,7 +536,9 @@ function Router() {
       <Route path="/uic-demo" component={UicDemo} />
       <Route path="/legal-demo" component={LegalDemo} />
       <Route path="/enterprise" component={EnterpriseDashboard} />
+      <Route path="/admin/twin-generator" component={TwinGenerator} />
       <Route path="/admin/twin-marketplace" component={TwinMarketplace} />
+      <Route path="/admin/registry" component={AgentRegistry} />
       <Route path="/admin/diaspora-leads" component={DiasporaLeadsAdmin} />
       <Route path="/twin/:templateId" component={DecisionTwin} />
       <Route path="/captwin" component={CapTwin} />
