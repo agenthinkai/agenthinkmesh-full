@@ -37,6 +37,8 @@ import { uaeRealestateRouter } from "./routers/uaeRealestate";
 import { sadoRouter } from "./routers/sado";
 import { demoRouter } from "./routers/demo";
 import { fleetRouter } from "./routers/founderFleet";
+import { prospectConfigsRouter } from "./routers/prospectConfigs";
+import { twinParametersRouter } from "./routers/twinParameters";
 import { treasuryRouter } from "./routers/treasury";
 import { shareReportRouter } from "./routers/shareReport";
 import { contactsRouter } from "./routers/contacts";
@@ -162,6 +164,8 @@ export const appRouter = router({
   meshCore: meshCoreRouter,
   diagnosis: diagnosisRouter,
   pharmaPilot: pharmaPilotRouter,
+  prospectConfigs: prospectConfigsRouter,
+  twinParameters: twinParametersRouter,
 
   // ── AROS — Autonomous Revenue Operating System ───────────────────────────────
   arosDiscovery: arosDiscoveryRouter,
