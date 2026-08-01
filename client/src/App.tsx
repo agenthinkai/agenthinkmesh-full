@@ -199,6 +199,8 @@ const BakalariaDemoPage = lazy(() => import("./pages/BakalariaDemoPage"));
 const IndonesiaLogisticsDemo = lazy(() => import("./pages/IndonesiaLogisticsDemo"));
 const SamiDemo = lazy(() => import("./pages/SamiDemo"));
 const AlghanimIndustrialDemo = lazy(() => import("./pages/AlghanimIndustrialDemo"));
+const FlowardDemo = lazy(() => import("./pages/FlowardDemo"));
+const UicDemo = lazy(() => import("./pages/UicDemo"));
 
 // ── Page-level loading fallback ───────────────────────────────────────────────
 function PageLoader() {
@@ -526,6 +528,8 @@ function Router() {
       <Route path="/indonesia-demo" component={IndonesiaLogisticsDemo} />
       <Route path="/sami-demo" component={SamiDemo} />
       <Route path="/alghanim-industrial-demo" component={AlghanimIndustrialDemo} />
+      <Route path="/floward-demo" component={FlowardDemo} />
+      <Route path="/uic-demo" component={UicDemo} />
       <Route path="/admin/diaspora-leads" component={DiasporaLeadsAdmin} />
       <Route path="/twin/:templateId" component={DecisionTwin} />
       <Route path="/captwin" component={CapTwin} />
