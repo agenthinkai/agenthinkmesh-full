@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface TwinInstance {
@@ -224,13 +224,10 @@ export default function EnterpriseDashboard() {
       setDecisionText("");
       refetchTwins();
       refetchAudit();
-      toast({
-        title: `Twin ${data.sessionType === "simulate" ? "simulation" : "run"} complete`,
-        description: `Verdict: ${data.verdict} · Session #${data.sessionId}`,
-      });
+      toast.success(`Twin ${data.sessionType === "simulate" ? "simulation" : "run"} complete — Verdict: ${data.verdict} · Session #${data.sessionId}`);
     },
     onError: (err) => {
-      toast({ title: "Run failed", description: err.message, variant: "destructive" });
+      toast.error(`Run failed: ${err.message}`);
     },
   });
 
