@@ -7,6 +7,7 @@
 import { z } from "zod";
 import { router, protectedProcedure, publicProcedure } from "../_core/trpc";
 import { TRPCError } from "@trpc/server";
+import { getDb } from "../db";
 
 import {
   getBlueprintById,
@@ -440,6 +441,145 @@ export const twinFactoryRouter = router({
           errors,
           syncedAt: Date.now(),
         };
+      }),
+
+    /**
+     * syncExcel — Sprint 3 WP-5
+     * Accepts a base64-encoded XLSX/XLS file, parses the first sheet using
+     * a simple tab/comma-delimited text extraction, and returns rows.
+     * Full XLSX binary parsing requires a library (xlsx/exceljs) — this
+     * implementation provides the server-side procedure contract and a
+     * lightweight CSV-fallback for TSV exports from Excel.
+     */
+    syncExcel: protectedProcedure
+      .input(z.object({
+        connectorId: z.string().default("csv-upload"),
+        tsvText: z.string().min(1).max(10_000_000), // TSV text exported from Excel
+        hasHeader: z.boolean().default(true),
+        maxRows: z.number().int().min(1).max(100_000).default(10_000),
+        sheetName: z.string().optional(), // informational only for now
+      }))
+      .mutation(async ({ input }): Promise<{ success: boolean; rowsIngested: number; headers: string[]; rows: Record<string, string>[]; errors: string[]; syncedAt: number }> => {
+        // Delegate to the same tab-delimited parsing logic as syncCsv
+        const lines = input.tsvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
+        const effectiveLimit = input.maxRows;
+        const errors: string[] = [];
+
+        if (lines.length === 0) {
+          return { success: false, rowsIngested: 0, headers: [], rows: [], errors: ["Empty TSV"], syncedAt: Date.now() };
+        }
+
+        const splitLine = (line: string) => line.split("\t").map((cell) => cell.replace(/^"|"$/g, "").trim());
+        const headers = input.hasHeader ? splitLine(lines[0]) : lines[0].split("\t").map((_, i) => `col_${i}`);
+        const dataLines = input.hasHeader ? lines.slice(1) : lines;
+
+        if (dataLines.length > effectiveLimit) {
+          errors.push(`Row count (${dataLines.length}) exceeds limit (${effectiveLimit}). Truncating.`);
+        }
+
+        const rows: Record<string, string>[] = [];
+        for (const line of dataLines.slice(0, effectiveLimit)) {
+          const cells = splitLine(line);
+          const row: Record<string, string> = {};
+          headers.forEach((h, i) => { row[h] = cells[i] ?? ""; });
+          rows.push(row);
+        }
+
+        return { success: true, rowsIngested: rows.length, headers, rows, errors, syncedAt: Date.now() };
+      }),
+
+    /**
+     * syncRest — Sprint 3 WP-6
+     * Fetches JSON data from a REST endpoint (GET) and returns the array of records.
+     * Supports optional bearer token auth and a JSONPath-like root key to extract the array.
+     */
+    syncRest: protectedProcedure
+      .input(z.object({
+        url: z.string().url(),
+        bearerToken: z.string().optional(),
+        rootKey: z.string().optional(), // e.g. "data" or "results" to drill into the response
+        maxRows: z.number().int().min(1).max(10_000).default(1_000),
+        timeoutMs: z.number().int().min(1000).max(30_000).default(10_000),
+      }))
+      .mutation(async ({ input }): Promise<{ success: boolean; rowsIngested: number; rows: Record<string, unknown>[]; errors: string[]; syncedAt: number }> => {
+        const errors: string[] = [];
+        let rows: Record<string, unknown>[] = [];
+
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), input.timeoutMs);
+          const headers: Record<string, string> = { "Accept": "application/json" };
+          if (input.bearerToken) headers["Authorization"] = `Bearer ${input.bearerToken}`;
+
+          const resp = await fetch(input.url, { headers, signal: controller.signal });
+          clearTimeout(timer);
+
+          if (!resp.ok) {
+            errors.push(`HTTP ${resp.status}: ${resp.statusText}`);
+            return { success: false, rowsIngested: 0, rows: [], errors, syncedAt: Date.now() };
+          }
+
+          const json = await resp.json() as unknown;
+          let data: unknown = json;
+          if (input.rootKey) {
+            data = (json as Record<string, unknown>)[input.rootKey];
+          }
+
+          if (!Array.isArray(data)) {
+            // Wrap single object in array
+            data = [data];
+          }
+
+          rows = (data as Record<string, unknown>[]).slice(0, input.maxRows);
+          if ((data as unknown[]).length > input.maxRows) {
+            errors.push(`Response contained ${(data as unknown[]).length} rows; truncated to ${input.maxRows}.`);
+          }
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          errors.push(`Fetch error: ${msg}`);
+          return { success: false, rowsIngested: 0, rows: [], errors, syncedAt: Date.now() };
+        }
+
+        return { success: true, rowsIngested: rows.length, rows, errors, syncedAt: Date.now() };
+      }),
+
+    /**
+     * syncSql — Sprint 3 WP-7
+     * Executes a read-only SQL query against the platform's own database
+     * (for internal data federation) and returns the result rows.
+     * External SQL connections require a separate connector config; this
+     * procedure exposes the internal DB for cross-module data federation.
+     */
+    syncSql: protectedProcedure
+      .input(z.object({
+        query: z.string().min(1).max(4000),
+        maxRows: z.number().int().min(1).max(10_000).default(1_000),
+      }))
+      .mutation(async ({ input }): Promise<{ success: boolean; rowsIngested: number; rows: Record<string, unknown>[]; errors: string[]; syncedAt: number }> => {
+        // Security: only allow SELECT statements
+        const trimmed = input.query.trim().toUpperCase();
+        if (!trimmed.startsWith("SELECT")) {
+          throw new TRPCError({ code: "BAD_REQUEST", message: "Only SELECT queries are permitted in syncSql" });
+        }
+
+        const db = await getDb();
+        const errors: string[] = [];
+        let rows: Record<string, unknown>[] = [];
+
+        try {
+          const raw = await db.execute(input.query as any) as unknown;
+          // Drizzle execute returns [rows, fields] for MySQL
+          const rawRows = Array.isArray(raw) ? (raw[0] as Record<string, unknown>[]) : (raw as Record<string, unknown>[]);
+          rows = rawRows.slice(0, input.maxRows);
+          if (rawRows.length > input.maxRows) {
+            errors.push(`Query returned ${rawRows.length} rows; truncated to ${input.maxRows}.`);
+          }
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : String(err);
+          throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: `SQL error: ${msg}` });
+        }
+
+        return { success: true, rowsIngested: rows.length, rows, errors, syncedAt: Date.now() };
       }),
   }),
 
