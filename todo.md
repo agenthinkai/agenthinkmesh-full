@@ -5673,3 +5673,41 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Full test suite passing
 - [x] Onboarding flow demo (Create Org → Select Industry → Generate Twins → Assign Users → Deploy)
 - [x] Checkpoint saved
+
+## Sprint 3 — Enterprise Deploy Layer
+### WP-1: Enterprise Readiness
+- [x] Fix /admin/twin-generator route in App.tsx
+- [x] Add updateMembershipStatus() to enterpriseRuntimeService.ts
+- [x] Add listOrgMembers() to enterpriseRuntimeService.ts
+### WP-2: Customer Runtime Execution
+- [x] Add runTwin procedure to enterprise router (backed by councilEngine.runCouncil)
+- [x] Wire EnterpriseDashboard Run/Simulate buttons to runTwin mutation
+- [x] Run result panel in EnterpriseDashboard
+### WP-3: User/Role Access Validation
+- [x] suspendMembership procedure in enterprise router
+- [x] reactivateMembership procedure in enterprise router
+- [x] listOrgMembers procedure in enterprise router
+- [x] updateMembership procedure in enterprise router
+### WP-4: Data Connectors + Outcome Ledger
+- [x] syncCsv procedure in twinFactory.connectors
+- [x] storeDecision procedure in outcomeLedger router
+### WP-5: Excel Connector
+- [x] syncExcel (TSV) procedure in twinFactory.connectors
+### WP-6: REST Connector
+- [x] syncRest procedure in twinFactory.connectors
+### WP-7: SQL Connector
+- [x] syncSql (SELECT-only) procedure in twinFactory.connectors
+### WP-8: Enterprise Admin Page
+- [x] OrgUserManager.tsx page
+- [x] /admin/org-users route in App.tsx
+### WP-9: On-Premises Deployment Tooling
+- [x] GET /api/health endpoint with DB check
+- [x] .env.template with all required variables
+- [x] scripts/start-onprem.sh startup script
+### WP-10: Acceptance Test Suite
+- [x] server/sprint3.enterprise.test.ts (27 tests, all passing)
+- [x] Full regression: 2218 tests passing, 0 failures
+### WP-11: Customer Documentation
+- [x] docs/sprint3-enterprise-deploy.md
+### WP-12: Checkpoint & Exit
+- [x] Checkpoint saved (auto-published)
