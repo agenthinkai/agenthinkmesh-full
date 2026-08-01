@@ -5633,3 +5633,43 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [ ] Healthcare twin can be created from admin UI without code
 - [ ] Manufacturing twin can be created from admin UI without code
 - [ ] Checkpoint saved
+
+## Sprint 2B — Enterprise Decision Twin Platform
+
+### Priority 1 — Enterprise Runtime
+- [x] DB tables: departments, enterprise_roles, enterprise_memberships, twin_instances, twin_sessions, enterprise_audit_log
+- [x] enterpriseService.ts — org/department/member CRUD with cache
+- [x] twinInstanceService.ts — twin lifecycle (provision, activate, suspend, archive)
+- [x] enterpriseAuditService.ts — append-only audit log
+- [x] enterprise tRPC router
+
+### Priority 3 — Role-Based Access
+- [x] enterpriseRoleGate middleware — role-scoped procedure wrapper
+- [x] Role-to-twin permission mapping service
+- [x] Frontend role-aware twin visibility
+
+### Priority 4 — Twin Runtime API
+- [x] twinRuntimeService.ts — run/simulate/deliberate/generateReport/compare/learn/calibrate/compose/archive
+- [x] Unified runtime tRPC router
+
+### Priority 5+6 — Twin Communication + Outcome Learning
+- [x] twin_messages DB table + propagation service
+- [x] Outcome learning pipeline wired to Outcome Ledger
+
+### Priority 7 — Twin Marketplace
+- [x] TwinMarketplace.tsx — blueprint browser with one-click deploy
+- [x] marketplace tRPC procedures
+
+### Priority 8 — Platform Administration UI
+- [x] PlatformAdmin.tsx — full CRUD for all 13 registry types + users/roles/orgs
+- [x] Admin navigation integration
+
+### Priority 2+9 — Enterprise Twin Directory + Dashboard
+- [x] EnterpriseTwinDirectory.tsx — 19-twin directory per org
+- [x] EnterpriseDashboard.tsx — 8-panel executive view
+
+### Sprint 2B Exit
+- [x] TypeScript 0 errors
+- [x] Full test suite passing
+- [x] Onboarding flow demo (Create Org → Select Industry → Generate Twins → Assign Users → Deploy)
+- [x] Checkpoint saved

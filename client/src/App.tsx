@@ -200,6 +200,8 @@ const IndonesiaLogisticsDemo = lazy(() => import("./pages/IndonesiaLogisticsDemo
 const SamiDemo = lazy(() => import("./pages/SamiDemo"));
 const AlghanimIndustrialDemo = lazy(() => import("./pages/AlghanimIndustrialDemo"));
 const TwinGenerator = lazy(() => import("./pages/TwinGenerator"));
+const EnterpriseDashboard = lazy(() => import("./pages/EnterpriseDashboard"));
+const TwinMarketplace = lazy(() => import("./pages/TwinMarketplace"));
 const FlowardDemo = lazy(() => import("./pages/FlowardDemo"));
 const UicDemo = lazy(() => import("./pages/UicDemo"));
 const LegalDemo = lazy(() => import("./pages/LegalDemo"));
@@ -533,6 +535,8 @@ function Router() {
       <Route path="/floward-demo" component={FlowardDemo} />
       <Route path="/uic-demo" component={UicDemo} />
       <Route path="/legal-demo" component={LegalDemo} />
+      <Route path="/enterprise" component={EnterpriseDashboard} />
+      <Route path="/admin/twin-marketplace" component={TwinMarketplace} />
       <Route path="/admin/diaspora-leads" component={DiasporaLeadsAdmin} />
       <Route path="/twin/:templateId" component={DecisionTwin} />
       <Route path="/captwin" component={CapTwin} />

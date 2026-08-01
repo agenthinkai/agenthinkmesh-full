@@ -3749,3 +3749,142 @@ export const twinCompositions = mysqlTable("twin_compositions", {
 });
 export type TwinComposition = typeof twinCompositions.$inferSelect;
 export type InsertTwinComposition = typeof twinCompositions.$inferInsert;
+
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// SPRINT 2B — ENTERPRISE DECISION TWIN PLATFORM
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// ── Departments ──────────────────────────────────────────────────────────────
+export const departments = mysqlTable("departments", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  name: varchar("name", { length: 128 }).notNull(),
+  slug: varchar("slug", { length: 64 }).notNull(),
+  description: text("description"),
+  parentDeptId: int("parentDeptId"),
+  headUserId: int("headUserId"),
+  status: mysqlEnum("status", ["active", "inactive"]).notNull().default("active"),
+  sortOrder: int("sortOrder").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type Department = typeof departments.$inferSelect;
+export type InsertDepartment = typeof departments.$inferInsert;
+
+// ── Enterprise Roles ─────────────────────────────────────────────────────────
+export const enterpriseRoles = mysqlTable("enterprise_roles", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  name: varchar("name", { length: 64 }).notNull(),
+  slug: varchar("slug", { length: 64 }).notNull(),
+  description: text("description"),
+  permissions: text("permissions").notNull().default("[]"), // JSON string[]
+  twinAccess: text("twinAccess").notNull().default("[]"),   // JSON string[] of twin slugs
+  isSystemRole: tinyint("isSystemRole").notNull().default(0),
+  sortOrder: int("sortOrder").notNull().default(0),
+  status: mysqlEnum("status", ["active", "inactive"]).notNull().default("active"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type EnterpriseRole = typeof enterpriseRoles.$inferSelect;
+export type InsertEnterpriseRole = typeof enterpriseRoles.$inferInsert;
+
+// ── Enterprise Memberships ────────────────────────────────────────────────────
+export const enterpriseMemberships = mysqlTable("enterprise_memberships", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  userId: int("userId").notNull(),
+  roleId: int("roleId").notNull(),
+  deptId: int("deptId"),
+  jobTitle: varchar("jobTitle", { length: 128 }),
+  status: mysqlEnum("status", ["active", "suspended", "invited"]).notNull().default("invited"),
+  invitedAt: timestamp("invitedAt").defaultNow().notNull(),
+  joinedAt: timestamp("joinedAt"),
+  lastActiveAt: timestamp("lastActiveAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type EnterpriseMembership = typeof enterpriseMemberships.$inferSelect;
+export type InsertEnterpriseMembership = typeof enterpriseMemberships.$inferInsert;
+
+// ── Twin Instances ────────────────────────────────────────────────────────────
+export const twinInstances = mysqlTable("twin_instances", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  deptId: int("deptId"),
+  blueprintId: varchar("blueprintId", { length: 64 }).notNull(),
+  instanceSlug: varchar("instanceSlug", { length: 128 }).notNull(),
+  displayName: varchar("displayName", { length: 128 }).notNull(),
+  description: text("description"),
+  industry: varchar("industry", { length: 64 }),
+  geography: varchar("geography", { length: 64 }),
+  councilPersonaSetId: varchar("councilPersonaSetId", { length: 64 }),
+  ontologyId: varchar("ontologyId", { length: 64 }),
+  kpiSetId: varchar("kpiSetId", { length: 64 }),
+  governanceProfile: mysqlEnum("governanceProfile", ["STANDARD", "CONFIDENTIAL", "SOVEREIGN", "CLASSIFIED"]).notNull().default("STANDARD"),
+  configJson: text("configJson").notNull().default("{}"),
+  status: mysqlEnum("status", ["provisioning", "active", "suspended", "archived"]).notNull().default("provisioning"),
+  provisionedAt: timestamp("provisionedAt"),
+  activatedAt: timestamp("activatedAt"),
+  lastRunAt: timestamp("lastRunAt"),
+  runCount: int("runCount").notNull().default(0),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+export type TwinInstance = typeof twinInstances.$inferSelect;
+export type InsertTwinInstance = typeof twinInstances.$inferInsert;
+
+// ── Twin Sessions ─────────────────────────────────────────────────────────────
+export const twinSessions = mysqlTable("twin_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  twinInstanceId: int("twinInstanceId").notNull(),
+  orgId: int("orgId").notNull(),
+  userId: int("userId").notNull(),
+  sessionType: mysqlEnum("sessionType", ["run", "simulate", "deliberate", "compare", "calibrate"]).notNull().default("run"),
+  inputJson: text("inputJson").notNull().default("{}"),
+  outputJson: text("outputJson"),
+  status: mysqlEnum("status", ["pending", "running", "completed", "failed"]).notNull().default("pending"),
+  durationMs: int("durationMs"),
+  tokensUsed: int("tokensUsed").notNull().default(0),
+  startedAt: timestamp("startedAt").defaultNow().notNull(),
+  completedAt: timestamp("completedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type TwinSession = typeof twinSessions.$inferSelect;
+export type InsertTwinSession = typeof twinSessions.$inferInsert;
+
+// ── Enterprise Audit Log ──────────────────────────────────────────────────────
+export const enterpriseAuditLog = mysqlTable("enterprise_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  userId: int("userId"),
+  action: varchar("action", { length: 128 }).notNull(),
+  resourceType: varchar("resourceType", { length: 64 }).notNull(),
+  resourceId: varchar("resourceId", { length: 128 }),
+  details: text("details"),
+  ipAddress: varchar("ipAddress", { length: 64 }),
+  userAgent: varchar("userAgent", { length: 256 }),
+  severity: mysqlEnum("severity", ["info", "warning", "critical"]).notNull().default("info"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type EnterpriseAuditEntry = typeof enterpriseAuditLog.$inferSelect;
+export type InsertEnterpriseAuditEntry = typeof enterpriseAuditLog.$inferInsert;
+
+// ── Twin Messages (Communication Layer) ──────────────────────────────────────
+export const twinMessages = mysqlTable("twin_messages", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  fromTwinId: int("fromTwinId").notNull(),
+  toTwinId: int("toTwinId").notNull(),
+  messageType: mysqlEnum("messageType", ["signal", "alert", "data_update", "recommendation", "calibration"]).notNull().default("signal"),
+  subject: varchar("subject", { length: 256 }).notNull(),
+  payloadJson: text("payloadJson").notNull().default("{}"),
+  priority: mysqlEnum("priority", ["low", "normal", "high", "critical"]).notNull().default("normal"),
+  status: mysqlEnum("status", ["pending", "delivered", "acknowledged", "failed"]).notNull().default("pending"),
+  deliveredAt: timestamp("deliveredAt"),
+  acknowledgedAt: timestamp("acknowledgedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+export type TwinMessage = typeof twinMessages.$inferSelect;
+export type InsertTwinMessage = typeof twinMessages.$inferInsert;
