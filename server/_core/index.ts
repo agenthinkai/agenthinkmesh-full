@@ -333,6 +333,23 @@ async function startServer() {
     res.send(body);
   });
 
+  // ── Health check endpoint — GET /api/health ─────────────────────────────
+  // Sprint 3 WP-9: standalone REST health probe for load balancers, k8s
+  // liveness/readiness probes, and on-premises deployment monitoring.
+  // Returns HTTP 200 with JSON body when the process is healthy.
+  app.get("/api/health", async (_req, res) => {
+    const { getDb: getDbFn } = await import("../db");
+    const db = await getDbFn().catch(() => null);
+    const dbOk = db !== null;
+    res.status(dbOk ? 200 : 503).json({
+      status: dbOk ? "ok" : "degraded",
+      version: process.env.npm_package_version ?? "unknown",
+      uptime: Math.floor(process.uptime()),
+      db: dbOk ? "connected" : "unavailable",
+      timestamp: new Date().toISOString(),
+    });
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

@@ -562,10 +562,10 @@ export const twinFactoryRouter = router({
           throw new TRPCError({ code: "BAD_REQUEST", message: "Only SELECT queries are permitted in syncSql" });
         }
 
-        const db = await getDb();
+                const db = await getDb();
+        if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
         const errors: string[] = [];
         let rows: Record<string, unknown>[] = [];
-
         try {
           const raw = await db.execute(input.query as any) as unknown;
           // Drizzle execute returns [rows, fields] for MySQL

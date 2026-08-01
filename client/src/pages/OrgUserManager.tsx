@@ -21,19 +21,19 @@ import {
   DialogTitle,
   DialogFooter,
 } from "@/components/ui/dialog";
-import { toast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Link } from "wouter";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface OrgMember {
   membershipId: number;
   userId: number;
-  roleId?: string | null;
+  roleId?: number | string | null;
   deptId?: number | null;
   jobTitle?: string | null;
   status: string;
-  joinedAt?: number | null;
-  lastActiveAt?: number | null;
+  joinedAt?: Date | number | null;
+  lastActiveAt?: Date | number | null;
   userName?: string | null;
   userEmail?: string | null;
 }
@@ -87,29 +87,29 @@ export default function OrgUserManager() {
 
   const suspendMutation = trpc.enterprise.suspendMembership.useMutation({
     onSuccess: () => {
-      toast({ title: "Member suspended", description: `${confirmDialog.member?.name ?? "Member"} has been suspended.` });
+      toast.success(`${confirmDialog.member?.userName ?? "Member"} has been suspended.`);
       setConfirmDialog({ open: false, member: null, action: "suspend" });
       refetch();
     },
-    onError: (err) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+    onError: (err) => toast.error(err.message),
   });
 
   const reactivateMutation = trpc.enterprise.reactivateMembership.useMutation({
     onSuccess: () => {
-      toast({ title: "Member reactivated", description: `${confirmDialog.member?.name ?? "Member"} has been reactivated.` });
+      toast.success(`${confirmDialog.member?.userName ?? "Member"} has been reactivated.`);
       setConfirmDialog({ open: false, member: null, action: "reactivate" });
       refetch();
     },
-    onError: (err) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+    onError: (err) => toast.error(err.message),
   });
 
   const updateMutation = trpc.enterprise.updateMembership.useMutation({
     onSuccess: () => {
-      toast({ title: "Membership updated" });
+      toast.success("Membership updated");
       setConfirmDialog({ open: false, member: null, action: "update" });
       refetch();
     },
-    onError: (err) => toast({ title: "Error", description: err.message, variant: "destructive" }),
+    onError: (err) => toast.error(err.message),
   });
   void updateMutation; // suppress unused warning — reserved for role update flow
 
@@ -123,7 +123,7 @@ export default function OrgUserManager() {
       updateMutation.mutate({
         membershipId: confirmDialog.member.membershipId,
         orgId,
-        status: confirmDialog.member.status,
+        status: confirmDialog.member.status as "active" | "suspended" | "invited",
       });
     }
   };
@@ -233,14 +233,14 @@ export default function OrgUserManager() {
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <RoleBadge role={member.roleId ?? "viewer"} />
+                      <RoleBadge role={String(member.roleId ?? "viewer")} />
                     </td>
                     <td className="px-4 py-3">
                       <StatusBadge status={member.status} />
                     </td>
                     <td className="px-4 py-3 text-xs text-slate-400">
                       {member.joinedAt
-                        ? new Date(member.joinedAt).toLocaleDateString()
+                        ? (member.joinedAt instanceof Date ? member.joinedAt : new Date(member.joinedAt as number)).toLocaleDateString()
                         : "—"}
                     </td>
                     <td className="px-4 py-3 text-right">
@@ -289,13 +289,13 @@ export default function OrgUserManager() {
             {confirmDialog.action === "suspend" ? (
               <p>
                 Are you sure you want to suspend{" "}
-                <span className="font-semibold text-white">{confirmDialog.member?.name ?? "this member"}</span>?
+                <span className="font-semibold text-white">{confirmDialog.member?.userName ?? "this member"}</span>?
                 They will lose access to all org resources immediately.
               </p>
             ) : (
               <p>
                 Reactivate{" "}
-                <span className="font-semibold text-white">{confirmDialog.member?.name ?? "this member"}</span>?
+                <span className="font-semibold text-white">{confirmDialog.member?.userName ?? "this member"}</span>?
                 They will regain access to all org resources.
               </p>
             )}
