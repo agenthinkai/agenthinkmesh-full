@@ -39,6 +39,7 @@ import { demoRouter } from "./routers/demo";
 import { fleetRouter } from "./routers/founderFleet";
 import { prospectConfigsRouter } from "./routers/prospectConfigs";
 import { twinParametersRouter } from "./routers/twinParameters";
+import { workflowProtocolsRouter } from "./routers/workflowProtocols";
 import { treasuryRouter } from "./routers/treasury";
 import { shareReportRouter } from "./routers/shareReport";
 import { contactsRouter } from "./routers/contacts";
@@ -166,6 +167,7 @@ export const appRouter = router({
   pharmaPilot: pharmaPilotRouter,
   prospectConfigs: prospectConfigsRouter,
   twinParameters: twinParametersRouter,
+  workflowProtocols: workflowProtocolsRouter,
 
   // ── AROS — Autonomous Revenue Operating System ───────────────────────────────
   arosDiscovery: arosDiscoveryRouter,
