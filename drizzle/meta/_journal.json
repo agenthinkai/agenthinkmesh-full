@@ -848,6 +848,13 @@
       "when": 1785043506018,
       "tag": "0120_goofy_nightshade",
       "breakpoints": true
+    },
+    {
+      "idx": 121,
+      "version": "5",
+      "when": 1785583726595,
+      "tag": "0121_flaky_talisman",
+      "breakpoints": true
     }
   ]
 }

@@ -3441,3 +3441,93 @@ export const legalAudits = mysqlTable("legal_audits", {
 });
 export type LegalAudit = typeof legalAudits.$inferSelect;
 export type InsertLegalAudit = typeof legalAudits.$inferInsert;
+
+// ── Sprint 1: Prospect Configuration Database ─────────────────────────────────
+export const prospectConfigs = mysqlTable("prospect_configs", {
+  id: int("id").primaryKey().autoincrement(),
+  slug: varchar("slug", { length: 64 }).notNull().unique(),
+  organizationName: varchar("organization_name", { length: 256 }).notNull(),
+  industry: varchar("industry", { length: 256 }).notNull(),
+  geography: varchar("geography", { length: 128 }).notNull(),
+  tagline: varchar("tagline", { length: 512 }),
+  primaryColor: varchar("primary_color", { length: 32 }),
+  accentColor: varchar("accent_color", { length: 32 }),
+  logoUrl: varchar("logo_url", { length: 1024 }),
+  configJson: text("config_json").notNull().default("{}"),
+  featureFlags: text("feature_flags").notNull().default("[]"),
+  status: varchar("status", { length: 16 }).notNull().default("DRAFT"),
+  version: int("version").notNull().default(1),
+  versionHistory: text("version_history").notNull().default("[]"),
+  importedFromHardcoded: tinyint("imported_from_hardcoded").notNull().default(0),
+  ownerId: int("owner_id"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type ProspectConfigRow = typeof prospectConfigs.$inferSelect;
+export type InsertProspectConfigRow = typeof prospectConfigs.$inferInsert;
+
+// ── Sprint 1: Twin Parameters Database ───────────────────────────────────────
+export const twinParameters = mysqlTable("twin_parameters", {
+  id: int("id").primaryKey().autoincrement(),
+  twinId: varchar("twin_id", { length: 64 }).notNull(),
+  paramKey: varchar("param_key", { length: 128 }).notNull(),
+  label: varchar("label", { length: 256 }).notNull(),
+  value: text("value").notNull(),
+  dataType: varchar("data_type", { length: 16 }).notNull().default("number"),
+  unit: varchar("unit", { length: 64 }),
+  displayUnit: varchar("display_unit", { length: 64 }),
+  minValue: varchar("min_value", { length: 64 }),
+  maxValue: varchar("max_value", { length: 64 }),
+  formulaNote: text("formula_note"),
+  source: varchar("source", { length: 512 }),
+  sourceDate: varchar("source_date", { length: 32 }),
+  confidence: int("confidence").notNull().default(80),
+  isEditable: tinyint("is_editable").notNull().default(1),
+  scenarioOverrides: text("scenario_overrides").notNull().default("{}"),
+  version: int("version").notNull().default(1),
+  valueHistory: text("value_history").notNull().default("[]"),
+  tenantId: int("tenant_id"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type TwinParameter = typeof twinParameters.$inferSelect;
+export type InsertTwinParameter = typeof twinParameters.$inferInsert;
+
+// ── Sprint 1: Workflow Protocol Registry ─────────────────────────────────────
+export const workflowProtocolRegistry = mysqlTable("workflow_protocol_registry", {
+  id: int("id").primaryKey().autoincrement(),
+  protocolId: varchar("protocol_id", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 256 }).notNull(),
+  version: varchar("version", { length: 32 }).notNull().default("1.0.0"),
+  description: text("description"),
+  supportedTwinTypes: text("supported_twin_types").notNull().default("[]"),
+  status: varchar("status", { length: 16 }).notNull().default("DRAFT"),
+  tenantAvailability: text("tenant_availability"),
+  configSchemaRef: varchar("config_schema_ref", { length: 512 }),
+  reportTemplateRef: varchar("report_template_ref", { length: 512 }),
+  agentCount: int("agent_count").notNull().default(0),
+  estimatedDurationSec: int("estimated_duration_sec"),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type WorkflowProtocolRegistryRow = typeof workflowProtocolRegistry.$inferSelect;
+export type InsertWorkflowProtocolRegistryRow = typeof workflowProtocolRegistry.$inferInsert;
+
+// ── Sprint 1: Report Engine Template Registry ─────────────────────────────────
+export const reportTemplates = mysqlTable("report_templates", {
+  id: int("id").primaryKey().autoincrement(),
+  templateId: varchar("template_id", { length: 64 }).notNull().unique(),
+  name: varchar("name", { length: 256 }).notNull(),
+  description: text("description"),
+  generatorPath: varchar("generator_path", { length: 512 }).notNull(),
+  generatorType: varchar("generator_type", { length: 16 }).notNull().default("legacy"),
+  status: varchar("status", { length: 16 }).notNull().default("ACTIVE"),
+  brandingJson: text("branding_json").notNull().default("{}"),
+  requiredInputs: text("required_inputs").notNull().default("[]"),
+  supportsPageNumbers: tinyint("supports_page_numbers").notNull().default(1),
+  supportsHeaderFooter: tinyint("supports_header_footer").notNull().default(1),
+  createdAt: bigint("created_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updated_at", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type ReportTemplate = typeof reportTemplates.$inferSelect;
+export type InsertReportTemplate = typeof reportTemplates.$inferInsert;
