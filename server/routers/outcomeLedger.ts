@@ -850,4 +850,49 @@ export const outcomeLedgerRouter = router({
         confidenceDistribution: confidenceRows.map((r) => ({ confidence: r.confidence, count: Number(r.count) })),
       };
     }),
+
+  /**
+   * storeDecision — Sprint 3 WP-4
+   * Persists a new outcome session record from a council run.
+   * Intended for enterprise twin sessions and direct API integrations.
+   */
+  storeDecision: protectedProcedure
+    .input(z.object({
+      dealId: z.string().min(1).max(64),
+      councilRunId: z.string().max(64).optional(),
+      councilMode: z.enum(COUNCIL_MODES),
+      originalVerdict: z.enum(["APPROVED", "APPROVED_WITH_CONDITIONS", "REJECTED", "VETOED", "INSUFFICIENT_DATA"]),
+      consensusScore: z.number().min(0).max(1).optional(),
+      confidenceLevel: z.number().min(0).max(1).optional(),
+      decisionDate: z.number().int().optional(), // Unix ms; defaults to now
+      outcomeStatus: z.enum(OUTCOME_STATUSES).default("UNKNOWN"),
+      outcomeNotes: z.string().max(4000).optional(),
+      primaryDriver: z.enum(["FINANCIAL", "CONSTRUCTION", "REGULATORY", "TECHNOLOGY", "COMMERCIAL", "ESG"]).optional(),
+      sourceConfidence: z.enum(["HIGH", "MEDIUM", "LOW"]).optional(),
+      sourceType: z.enum(["FILING", "ANNUAL_REPORT", "REGULATORY", "LENDER", "DEVELOPER", "ANNOUNCEMENT", "MANUAL"]).optional(),
+      sourceUrl: z.string().url().optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await requireDb();
+      const now = Date.now();
+      const [result] = await db.insert(outcomeSessions).values({
+        dealId: input.dealId,
+        councilRunId: input.councilRunId ?? null,
+        councilMode: input.councilMode,
+        originalVerdict: input.originalVerdict,
+        consensusScore: input.consensusScore?.toString() ?? null,
+        confidenceLevel: input.confidenceLevel?.toString() ?? null,
+        decisionDate: input.decisionDate ?? now,
+        outcomeStatus: input.outcomeStatus,
+        outcomeNotes: input.outcomeNotes ?? null,
+        primaryDriver: input.primaryDriver ?? null,
+        sourceConfidence: input.sourceConfidence ?? null,
+        sourceType: input.sourceType ?? null,
+        sourceUrl: input.sourceUrl ?? null,
+        createdAt: now,
+        updatedAt: now,
+      } as any);
+      const id = (result as any).insertId as number;
+      return { success: true, id, dealId: input.dealId };
+    }),
 });

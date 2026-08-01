@@ -386,6 +386,61 @@ export const twinFactoryRouter = router({
         if (!success) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Failed to register connector" });
         return { success: true };
       }),
+
+    /**
+     * syncCsv — Sprint 3 WP-4
+     * Accepts raw CSV text (uploaded by client), parses it, validates row count against
+     * the connector's maxRowsPerSync limit, and returns a ConnectorSyncResult.
+     * The parsed rows are returned so the caller can persist them to the twin context.
+     */
+    syncCsv: protectedProcedure
+      .input(z.object({
+        connectorId: z.string().default("csv-upload"),
+        csvText: z.string().min(1).max(10_000_000), // 10 MB text limit
+        delimiter: z.string().max(3).default(","),
+        hasHeader: z.boolean().default(true),
+        maxRows: z.number().int().min(1).max(100_000).default(10_000),
+      }))
+      .mutation(async ({ input }): Promise<{ success: boolean; rowsIngested: number; headers: string[]; rows: Record<string, string>[]; errors: string[]; syncedAt: number }> => {
+        const conn = await getConnector(input.connectorId);
+        if (!conn) throw new TRPCError({ code: "NOT_FOUND", message: `Connector '${input.connectorId}' not found` });
+        if (conn.connectorType !== "csv") throw new TRPCError({ code: "BAD_REQUEST", message: "Connector is not of type csv" });
+
+        const lines = input.csvText.split(/\r?\n/).filter((l) => l.trim().length > 0);
+        const effectiveLimit = Math.min(input.maxRows, conn.maxRowsPerSync);
+        const errors: string[] = [];
+
+        if (lines.length === 0) {
+          return { success: false, rowsIngested: 0, headers: [], rows: [], errors: ["Empty CSV"], syncedAt: Date.now() };
+        }
+
+        const splitLine = (line: string) =>
+          line.split(input.delimiter).map((cell) => cell.replace(/^"|"$/g, "").trim());
+
+        const headers = input.hasHeader ? splitLine(lines[0]) : lines[0].split(input.delimiter).map((_, i) => `col_${i}`);
+        const dataLines = input.hasHeader ? lines.slice(1) : lines;
+
+        if (dataLines.length > effectiveLimit) {
+          errors.push(`Row count (${dataLines.length}) exceeds limit (${effectiveLimit}). Truncating.`);
+        }
+
+        const rows: Record<string, string>[] = [];
+        for (const line of dataLines.slice(0, effectiveLimit)) {
+          const cells = splitLine(line);
+          const row: Record<string, string> = {};
+          headers.forEach((h, i) => { row[h] = cells[i] ?? ""; });
+          rows.push(row);
+        }
+
+        return {
+          success: true,
+          rowsIngested: rows.length,
+          headers,
+          rows,
+          errors,
+          syncedAt: Date.now(),
+        };
+      }),
   }),
 
   // ── Twin Compositions ───────────────────────────────────────────────────────
