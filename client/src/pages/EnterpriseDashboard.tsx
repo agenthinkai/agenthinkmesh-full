@@ -5,10 +5,27 @@ import { Link } from "wouter";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 interface TwinInstance {
   id: number;
+  orgId: number;
   displayName: string;
   industry?: string | null;
   geography?: string | null;
@@ -17,6 +34,15 @@ interface TwinInstance {
   runCount: number;
   blueprintId: string;
   createdAt: string | Date;
+}
+
+type CouncilMode = "gcc" | "global_vc" | "india_pe" | "gcc_equities" | "infrastructure";
+type SessionType = "run" | "simulate";
+
+interface RunDialogState {
+  open: boolean;
+  twin: TwinInstance | null;
+  sessionType: SessionType;
 }
 
 // ─── Governance badge ─────────────────────────────────────────────────────────
@@ -45,8 +71,33 @@ function StatusDot({ status }: { status: string }) {
   return <span className={`inline-block w-2 h-2 rounded-full mr-1.5 ${colors[status] ?? "bg-slate-400"}`} />;
 }
 
+// ─── Verdict badge ────────────────────────────────────────────────────────────
+function VerdictBadge({ verdict }: { verdict: string }) {
+  const map: Record<string, string> = {
+    APPROVED: "bg-emerald-900 text-emerald-300",
+    APPROVED_WITH_CONDITIONS: "bg-amber-900 text-amber-300",
+    REJECTED: "bg-red-900 text-red-300",
+    VETOED: "bg-red-900 text-red-300",
+    INSUFFICIENT_DATA: "bg-slate-700 text-slate-300",
+  };
+  return (
+    <span className={`px-2 py-0.5 rounded text-xs font-bold font-mono ${map[verdict] ?? "bg-slate-700 text-slate-300"}`}>
+      {verdict.replace(/_/g, " ")}
+    </span>
+  );
+}
+
 // ─── Twin Card ────────────────────────────────────────────────────────────────
-function TwinCard({ twin }: { twin: TwinInstance }) {
+function TwinCard({
+  twin,
+  onRun,
+  onSimulate,
+}: {
+  twin: TwinInstance;
+  onRun: (twin: TwinInstance) => void;
+  onSimulate: (twin: TwinInstance) => void;
+}) {
+  const isActive = twin.status === "active";
   return (
     <div className="border border-slate-700 rounded-lg p-4 bg-slate-800/60 hover:bg-slate-800 transition-colors">
       <div className="flex items-start justify-between mb-2">
@@ -66,11 +117,23 @@ function TwinCard({ twin }: { twin: TwinInstance }) {
         <span className="text-xs text-slate-500">{twin.runCount} sessions</span>
       </div>
       <div className="mt-3 pt-3 border-t border-slate-700 flex gap-2">
-        <Button size="sm" variant="outline" className="text-xs h-7 flex-1 border-slate-600 text-slate-300 hover:text-white">
-          Run
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={!isActive}
+          onClick={() => onRun(twin)}
+          className="text-xs h-7 flex-1 border-slate-600 text-slate-300 hover:text-white disabled:opacity-40"
+        >
+          ▶ Run
         </Button>
-        <Button size="sm" variant="outline" className="text-xs h-7 flex-1 border-slate-600 text-slate-300 hover:text-white">
-          Simulate
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={!isActive}
+          onClick={() => onSimulate(twin)}
+          className="text-xs h-7 flex-1 border-slate-600 text-slate-300 hover:text-white disabled:opacity-40"
+        >
+          ⟳ Simulate
         </Button>
       </div>
     </div>
@@ -88,17 +151,105 @@ function StatCard({ label, value, sub, accent }: { label: string; value: string 
   );
 }
 
+// ─── Run Result Panel ─────────────────────────────────────────────────────────
+interface RunResult {
+  sessionId: number;
+  twinInstanceId: number;
+  sessionType: string;
+  verdict: string;
+  finalScore: number;
+  confidenceScore: number;
+  conditionsToProceed: string[];
+  blockingIssues: string[];
+  durationMs: number;
+}
+
+function RunResultPanel({ result, onClose }: { result: RunResult; onClose: () => void }) {
+  return (
+    <div className="mt-4 p-4 bg-slate-900 border border-slate-600 rounded-lg">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-sm font-semibold text-white">Session #{result.sessionId} · {result.sessionType.toUpperCase()}</h4>
+        <button onClick={onClose} className="text-slate-500 hover:text-white text-xs">✕ Close</button>
+      </div>
+      <div className="flex items-center gap-3 mb-3">
+        <VerdictBadge verdict={result.verdict} />
+        <span className="text-xs text-slate-400">Score: <span className="text-white font-mono">{(result.finalScore * 100).toFixed(1)}%</span></span>
+        <span className="text-xs text-slate-400">Confidence: <span className="text-white font-mono">{(result.confidenceScore * 100).toFixed(1)}%</span></span>
+        <span className="text-xs text-slate-500">{(result.durationMs / 1000).toFixed(1)}s</span>
+      </div>
+      {result.conditionsToProceed.length > 0 && (
+        <div className="mb-2">
+          <p className="text-xs text-amber-400 font-semibold mb-1">Conditions to Proceed</p>
+          <ul className="space-y-0.5">
+            {result.conditionsToProceed.map((c, i) => (
+              <li key={i} className="text-xs text-slate-300 pl-2 border-l border-amber-700">· {c}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+      {result.blockingIssues.length > 0 && (
+        <div>
+          <p className="text-xs text-red-400 font-semibold mb-1">Blocking Issues</p>
+          <ul className="space-y-0.5">
+            {result.blockingIssues.map((b, i) => (
+              <li key={i} className="text-xs text-slate-300 pl-2 border-l border-red-700">· {b}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function EnterpriseDashboard() {
   const { user } = useAuth();
   const orgId = 1; // Default org — in production this comes from user's org membership
 
   const { data: stats } = trpc.enterprise.getStats.useQuery({ orgId });
-  const { data: twins, isLoading } = trpc.enterprise.listTwinInstances.useQuery({ orgId });
+  const { data: twins, isLoading, refetch: refetchTwins } = trpc.enterprise.listTwinInstances.useQuery({ orgId });
   const { data: blueprints } = trpc.twinFactory.blueprints.list.useQuery({});
-  const { data: auditLog } = trpc.enterprise.listAuditLog.useQuery({ orgId, limit: 10 });
+  const { data: auditLog, refetch: refetchAudit } = trpc.enterprise.listAuditLog.useQuery({ orgId, limit: 10 });
 
   const [activeFilter, setActiveFilter] = useState<string>("all");
+  const [runDialog, setRunDialog] = useState<RunDialogState>({ open: false, twin: null, sessionType: "run" });
+  const [decisionText, setDecisionText] = useState("");
+  const [councilMode, setCouncilMode] = useState<CouncilMode>("gcc");
+  const [lastResult, setLastResult] = useState<RunResult | null>(null);
+
+  const runTwinMutation = trpc.enterprise.runTwin.useMutation({
+    onSuccess: (data) => {
+      setLastResult(data as RunResult);
+      setRunDialog({ open: false, twin: null, sessionType: "run" });
+      setDecisionText("");
+      refetchTwins();
+      refetchAudit();
+      toast({
+        title: `Twin ${data.sessionType === "simulate" ? "simulation" : "run"} complete`,
+        description: `Verdict: ${data.verdict} · Session #${data.sessionId}`,
+      });
+    },
+    onError: (err) => {
+      toast({ title: "Run failed", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const openRunDialog = (twin: TwinInstance, sessionType: SessionType) => {
+    setLastResult(null);
+    setDecisionText("");
+    setRunDialog({ open: true, twin, sessionType });
+  };
+
+  const handleRunSubmit = () => {
+    if (!runDialog.twin || decisionText.trim().length < 10) return;
+    runTwinMutation.mutate({
+      twinInstanceId: runDialog.twin.id,
+      orgId,
+      sessionType: runDialog.sessionType,
+      decisionText: decisionText.trim(),
+      councilMode,
+    });
+  };
 
   const filteredTwins = (twins ?? []).filter((t: TwinInstance) =>
     activeFilter === "all" ? true : t.status === activeFilter
@@ -135,33 +286,18 @@ export default function EnterpriseDashboard() {
       <div className="max-w-7xl mx-auto px-6 py-6">
         {/* Stats Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <StatCard
-            label="Active Twins"
-            value={stats?.activeTwins ?? "—"}
-            sub="Deployed & running"
-            accent="text-emerald-400"
-          />
-          <StatCard
-            label="Total Sessions"
-            value={stats?.totalSessions ?? "—"}
-            sub="All time"
-            accent="text-indigo-400"
-          />
-          <StatCard
-            label="Team Members"
-            value={stats?.totalMembers ?? "—"}
-            sub="Across all roles"
-            accent="text-amber-400"
-          />
-          <StatCard
-            label="Pending Messages"
-            value={stats?.pendingMessages ?? "—"}
-            sub="Inter-twin signals"
-            accent="text-red-400"
-          />
+          <StatCard label="Active Twins" value={stats?.activeTwins ?? "—"} sub="Deployed & running" accent="text-emerald-400" />
+          <StatCard label="Total Sessions" value={stats?.totalSessions ?? "—"} sub="All time" accent="text-indigo-400" />
+          <StatCard label="Team Members" value={stats?.totalMembers ?? "—"} sub="Across all roles" accent="text-amber-400" />
+          <StatCard label="Pending Messages" value={stats?.pendingMessages ?? "—"} sub="Inter-twin signals" accent="text-red-400" />
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Last run result */}
+        {lastResult && (
+          <RunResultPanel result={lastResult} onClose={() => setLastResult(null)} />
+        )}
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
           {/* Twin Directory */}
           <div className="lg:col-span-2">
             <div className="flex items-center justify-between mb-4">
@@ -201,7 +337,12 @@ export default function EnterpriseDashboard() {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {filteredTwins.map((twin: TwinInstance) => (
-                  <TwinCard key={twin.id} twin={twin} />
+                  <TwinCard
+                    key={twin.id}
+                    twin={twin}
+                    onRun={(t) => openRunDialog(t, "run")}
+                    onSimulate={(t) => openRunDialog(t, "simulate")}
+                  />
                 ))}
               </div>
             )}
@@ -292,6 +433,76 @@ export default function EnterpriseDashboard() {
           </div>
         </div>
       </div>
+
+      {/* Run / Simulate Dialog */}
+      <Dialog open={runDialog.open} onOpenChange={(open) => !open && setRunDialog({ open: false, twin: null, sessionType: "run" })}>
+        <DialogContent className="bg-slate-900 border-slate-700 text-white max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-white">
+              {runDialog.sessionType === "simulate" ? "⟳ Simulate" : "▶ Run"} — {runDialog.twin?.displayName}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            <div>
+              <label className="text-xs text-slate-400 mb-1.5 block">Decision / Strategic Question</label>
+              <Textarea
+                value={decisionText}
+                onChange={(e) => setDecisionText(e.target.value)}
+                placeholder="Describe the decision or scenario to evaluate. Minimum 10 characters."
+                className="bg-slate-800 border-slate-600 text-white placeholder:text-slate-500 min-h-[100px] text-sm resize-none"
+                maxLength={8000}
+              />
+              <p className="text-xs text-slate-600 mt-1 text-right">{decisionText.length}/8000</p>
+            </div>
+
+            <div>
+              <label className="text-xs text-slate-400 mb-1.5 block">Council Mode</label>
+              <Select value={councilMode} onValueChange={(v) => setCouncilMode(v as CouncilMode)}>
+                <SelectTrigger className="bg-slate-800 border-slate-600 text-white text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-slate-800 border-slate-600 text-white">
+                  <SelectItem value="gcc">GCC Real Estate</SelectItem>
+                  <SelectItem value="global_vc">Global VC</SelectItem>
+                  <SelectItem value="india_pe">India PE</SelectItem>
+                  <SelectItem value="gcc_equities">GCC Equities</SelectItem>
+                  <SelectItem value="infrastructure">Infrastructure</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {runDialog.sessionType === "simulate" && (
+              <div className="p-3 bg-amber-950/40 border border-amber-800 rounded text-xs text-amber-300">
+                Simulation mode runs the council in a sandboxed context. Results are stored but do not affect production twin state.
+              </div>
+            )}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRunDialog({ open: false, twin: null, sessionType: "run" })}
+              className="border-slate-600 text-slate-300"
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={handleRunSubmit}
+              disabled={decisionText.trim().length < 10 || runTwinMutation.isPending}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+            >
+              {runTwinMutation.isPending
+                ? "Running council…"
+                : runDialog.sessionType === "simulate"
+                ? "⟳ Start Simulation"
+                : "▶ Execute Run"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
