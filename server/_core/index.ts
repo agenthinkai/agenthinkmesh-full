@@ -175,17 +175,29 @@ async function startServer() {
   // ── Security headers (Helmet) ───────────────────────────────────────────────────
   // CR-5: Helmet provides 14 security headers including CSP, HSTS, X-Frame-Options
   app.use(helmet({
+    // CSP: permissive enough for the React SPA (module scripts, inline styles,
+    // Google Fonts, CDN scripts used by demo pages) while blocking the worst
+    // attack vectors (object embeds, data: script execution).
     contentSecurityPolicy: {
       directives: {
         defaultSrc: ["'self'"],
-        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Vite/React requires unsafe-eval in dev
+        scriptSrc: [
+          "'self'",
+          "'unsafe-inline'",  // Required: Manus runtime injects inline scripts
+          "'unsafe-eval'",    // Required: Vite/React in dev; also Chart.js eval path
+          "https://cdn.jsdelivr.net",  // Chart.js CDN used by demo pages
+          "https://cdnjs.cloudflare.com",
+          "https://unpkg.com",
+        ],
         styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com", "data:"],
         imgSrc: ["'self'", "data:", "blob:", "https:"],
         connectSrc: ["'self'", "https:", "wss:"],
-        frameSrc: ["'none'"],
+        // Allow same-origin iframes (srcDoc iframes are same-origin by spec)
+        // and blob: for dynamically created iframes
+        frameSrc: ["'self'", "blob:"],
         objectSrc: ["'none'"],
-        upgradeInsecureRequests: [],
+        // Do NOT set upgradeInsecureRequests in production — Manus proxy handles HTTPS
       },
     },
     hsts: {
@@ -195,7 +207,10 @@ async function startServer() {
     },
     referrerPolicy: { policy: "strict-origin-when-cross-origin" },
     permittedCrossDomainPolicies: false,
-    crossOriginEmbedderPolicy: false, // Required for some embedded resources
+    crossOriginEmbedderPolicy: false, // Required for Manus runtime and embedded resources
+    // X-Frame-Options: SAMEORIGIN allows the app to be embedded in same-origin iframes
+    // (needed for srcDoc iframes in BakalariaDemoPage and similar pages)
+    frameguard: { action: "sameorigin" },
   }));
 
   // ── Rate limiting ────────────────────────────────────────────────────────────────
