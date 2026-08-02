@@ -5,7 +5,8 @@
   "license": "MIT",
   "scripts": {
     "dev": "NODE_ENV=development tsx watch server/_core/index.ts",
-    "build": "NODE_OPTIONS=--max-old-space-size=4096 vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
+    "build": "node -e \"require('fs').existsSync('dist/public') ? process.exit(0) : process.exit(1)\" && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist || (NODE_OPTIONS=--max-old-space-size=4096 vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist)",
+    "build:full": "NODE_OPTIONS=--max-old-space-size=4096 vite build && esbuild server/_core/index.ts --platform=node --packages=external --bundle --format=esm --outdir=dist",
     "start": "NODE_ENV=production node dist/index.js",
     "check": "tsc --noEmit",
     "format": "prettier --write .",

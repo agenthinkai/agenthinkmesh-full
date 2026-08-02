@@ -3,7 +3,10 @@
 .pnpm-store/
 
 # Build outputs
-dist/
+# dist/public is committed so deployment only needs esbuild (not vite build)
+dist/index.js
+dist/*.js
+dist/*.js.map
 build/
 *.dist
 
