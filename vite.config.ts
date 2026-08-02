@@ -178,6 +178,15 @@ export default defineConfig({
             if (id.includes('pdfkit') || id.includes('jspdf') || id.includes('docx') || id.includes('pptxgenjs')) return 'export-libs';
             if (id.includes('@tanstack') || id.includes('@trpc')) return 'trpc';
             if (id.includes('react') || id.includes('react-dom')) return 'react-vendor';
+            // Split large vendor libraries into separate chunks to reduce build memory
+            if (id.includes('@aws-sdk')) return 'aws-sdk';
+            if (id.includes('@anthropic-ai') || id.includes('openai')) return 'ai-sdk';
+            if (id.includes('drizzle-orm') || id.includes('mysql2')) return 'db-vendor';
+            if (id.includes('zod') || id.includes('superjson')) return 'validation';
+            if (id.includes('lucide-react') || id.includes('@heroicons')) return 'icons';
+            if (id.includes('date-fns') || id.includes('dayjs') || id.includes('moment')) return 'date-utils';
+            if (id.includes('@xyflow') || id.includes('reactflow')) return 'flow';
+            if (id.includes('cmdk') || id.includes('vaul') || id.includes('sonner')) return 'ui-extras';
             return 'vendor';
           }
         }

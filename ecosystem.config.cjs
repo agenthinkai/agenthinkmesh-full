@@ -16,7 +16,7 @@ module.exports = {
   apps: [
     {
       name: "mesh-enterprise",
-      script: "dist/server/_core/index.js",
+      script: "dist/index.js",
       cwd: __dirname,
 
       // ── Instance configuration ─────────────────────────────────────────────

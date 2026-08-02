@@ -114,7 +114,7 @@ fi
 if [[ "$MODE" == "direct" ]]; then
   info "Starting server directly (no PM2)..."
   export NODE_ENV=production
-  exec node dist/server/_core/index.js
+  exec node dist/index.js
 fi
 
 # ── Start or reload with PM2 ─────────────────────────────────────────────────
