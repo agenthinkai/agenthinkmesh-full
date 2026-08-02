@@ -68,7 +68,16 @@ export function serveStatic(app: Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  app.use(express.static(distPath, {
+    setHeaders: (res, filePath) => {
+      // Required for <script type="module" crossorigin> to load without CORS errors
+      res.setHeader("Access-Control-Allow-Origin", "*");
+      // Long cache for hashed assets
+      if (filePath.includes("/assets/")) {
+        res.setHeader("Cache-Control", "public, max-age=7776000, immutable");
+      }
+    },
+  }));
 
   // Rosie Protocol standalone SPA — serve its own index.html for all /rosie/* routes
   app.use("/rosie", express.static(path.resolve(distPath, "rosie")));
