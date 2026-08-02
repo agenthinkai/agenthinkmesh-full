@@ -57,24 +57,32 @@ import boardPackRouter from "../boardPackRoute";
 
 // ── Startup assertions — fail fast on missing critical env vars ──────────────
 // These checks run before any route handlers are registered.
-// If a required key is absent or empty the process exits with code 1 so that
-// Cloud Run marks the revision as unhealthy rather than silently running with
-// broken LLM calls.
+// Only BUILT_IN_FORGE_API_KEY is truly required at boot — it powers invokeLLM
+// (the Forge API). ANTHROPIC_API_KEY and other keys are optional integrations
+// that fail gracefully at the call site if absent.
 function assertRequiredEnvVars(): void {
   const required: { name: string; value: string | undefined }[] = [
     { name: "BUILT_IN_FORGE_API_KEY", value: process.env.BUILT_IN_FORGE_API_KEY },
-    { name: "ANTHROPIC_API_KEY",      value: process.env.ANTHROPIC_API_KEY },
   ];
   const missing = required.filter((v) => !v.value || v.value.trim().length === 0);
   if (missing.length > 0) {
     const names = missing.map((v) => v.name).join(", ");
     console.error(
       `[FATAL] Missing required environment variable(s): ${names}. ` +
-      "Set them in the Cloud Run service configuration and redeploy. Exiting."
+      "Set them in the Manus project secrets and redeploy. Exiting."
     );
     process.exit(1);
   }
-  console.log("[Boot] Required env vars present: BUILT_IN_FORGE_API_KEY, ANTHROPIC_API_KEY");
+  // Log presence of optional keys for diagnostics (never log values)
+  const optional = [
+    "ANTHROPIC_API_KEY", "DEEPSEEK_API_KEY", "GOOGLE_API_KEY", "NEWS_API_KEY",
+    "STRIPE_SECRET_KEY", "RESEND_API_KEY",
+  ];
+  const present = optional.filter((k) => !!process.env[k]);
+  const absent  = optional.filter((k) => !process.env[k]);
+  console.log(`[Boot] Required env vars present: BUILT_IN_FORGE_API_KEY`);
+  if (present.length) console.log(`[Boot] Optional env vars present: ${present.join(", ")}`);
+  if (absent.length)  console.log(`[Boot] Optional env vars absent (features will degrade gracefully): ${absent.join(", ")}`);
 }
 
 function isPortAvailable(port: number): Promise<boolean> {
