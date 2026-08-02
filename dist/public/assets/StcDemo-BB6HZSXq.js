@@ -1,0 +1,1 @@
+import{j as t}from"./index-CMFS-KMs.js";import{P as o,a as s}from"./prospectConfigs-BxuiN899.js";function r(){return t.jsx(o,{"data-loc":"client/src/pages/StcDemo.tsx:5",config:s.stc})}export{r as default};

@@ -1,0 +1,1 @@
+import{j as a}from"./index-CMFS-KMs.js";import{P as t,a as o}from"./prospectConfigs-BxuiN899.js";function e(){return a.jsx(t,{"data-loc":"client/src/pages/KiaCapitalDemo.tsx:5",config:o.kia})}export{e as default};

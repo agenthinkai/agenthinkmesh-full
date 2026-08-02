@@ -1,0 +1,1 @@
+import{j as o}from"./index-CMFS-KMs.js";import{P as t,a}from"./prospectConfigs-BxuiN899.js";function r(){return o.jsx(t,{"data-loc":"client/src/pages/AdnocDemo.tsx:5",config:a.adnoc})}export{r as default};

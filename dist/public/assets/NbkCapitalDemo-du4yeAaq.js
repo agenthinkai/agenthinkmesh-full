@@ -1,0 +1,1 @@
+import{j as a}from"./index-CMFS-KMs.js";import{P as t,a as o}from"./prospectConfigs-BxuiN899.js";function r(){return a.jsx(t,{"data-loc":"client/src/pages/NbkCapitalDemo.tsx:5",config:o.nbk})}export{r as default};

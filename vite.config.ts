@@ -185,32 +185,16 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
-    chunkSizeWarningLimit: 1000,
+    chunkSizeWarningLimit: 5000,
     // Remove crossorigin attribute from script tags — the Manus CDN proxy strips
     // Access-Control-Allow-Origin headers, causing crossorigin module scripts to be blocked
     modulePreload: { polyfill: false },
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('chart.js') || id.includes('recharts') || id.includes('d3')) return 'charts';
-            if (id.includes('@radix-ui')) return 'radix';
-            if (id.includes('framer-motion')) return 'framer';
-            if (id.includes('pdfkit') || id.includes('jspdf') || id.includes('docx') || id.includes('pptxgenjs')) return 'export-libs';
-            if (id.includes('@tanstack') || id.includes('@trpc')) return 'trpc';
-            if (id.includes('react') || id.includes('react-dom')) return 'react-vendor';
-            // Split large vendor libraries into separate chunks to reduce build memory
-            if (id.includes('@aws-sdk')) return 'aws-sdk';
-            if (id.includes('@anthropic-ai') || id.includes('openai')) return 'ai-sdk';
-            if (id.includes('drizzle-orm') || id.includes('mysql2')) return 'db-vendor';
-            if (id.includes('zod') || id.includes('superjson')) return 'validation';
-            if (id.includes('lucide-react') || id.includes('@heroicons')) return 'icons';
-            if (id.includes('date-fns') || id.includes('dayjs') || id.includes('moment')) return 'date-utils';
-            if (id.includes('@xyflow') || id.includes('reactflow')) return 'flow';
-            if (id.includes('cmdk') || id.includes('vaul') || id.includes('sonner')) return 'ui-extras';
-            return 'vendor';
-          }
-        }
+        // NOTE: Do NOT use manualChunks — it creates circular dependencies between
+        // react-vendor and vendor chunks, causing React to be undefined at runtime.
+        // Let Rollup handle chunking automatically.
+        manualChunks: undefined
       }
     }
   },

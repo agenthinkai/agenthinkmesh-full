@@ -1,0 +1,1 @@
+import{j as o}from"./index-CMFS-KMs.js";import{P as t,a}from"./prospectConfigs-BxuiN899.js";function m(){return o.jsx(t,{"data-loc":"client/src/pages/KamcoInvestDemo.tsx:5",config:a.kamco})}export{m as default};
