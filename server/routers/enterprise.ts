@@ -11,7 +11,7 @@
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router } from "../_core/trpc";
+import { router, adminProcedure } from "../_core/trpc";
 import { enterpriseProcedure, enterpriseAdminProcedure } from "../_core/orgMiddleware";
 import {
   listDepartments,
@@ -38,6 +38,9 @@ import {
   listOrgMembers,
 } from "../lib/enterpriseRuntimeService";
 import { runCouncil } from "../councilEngine";
+import { getDb } from "../db";
+import { organizations } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 const CouncilModeSchema = z.enum(["gcc", "global_vc", "india_pe", "gcc_equities", "infrastructure"]);
 const GovernanceProfileSchema = z.enum(["STANDARD", "CONFIDENTIAL", "SOVEREIGN", "CLASSIFIED"]);
@@ -46,6 +49,74 @@ const MessageTypeSchema = z.enum(["signal", "alert", "data_update", "recommendat
 const MessagePrioritySchema = z.enum(["low", "normal", "high", "critical"]);
 
 export const enterpriseRouter = router({
+
+  // ─── Platform Admin: Organisation Management (no org membership required) ──
+  // Uses adminProcedure (role=admin), not enterpriseProcedure, because these
+  // operate at the platform level — before any org membership exists.
+
+  createOrganization: adminProcedure
+    .input(z.object({
+      name: z.string().min(2).max(128),
+      slug: z.string().min(2).max(64).regex(/^[a-z0-9-]+$/, "Slug must be lowercase letters, numbers, and hyphens only"),
+      plan: z.enum(["trial", "standard", "enterprise"]).default("trial"),
+      approvedDomains: z.array(z.string()).default([]),
+      dailyTokenLimit: z.number().int().min(1000).max(10000000).default(50000),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const existing = await db.select({ id: organizations.id })
+        .from(organizations).where(eq(organizations.slug, input.slug)).limit(1);
+      if (existing.length > 0) {
+        throw new TRPCError({ code: "CONFLICT", message: `Organisation slug '${input.slug}' is already taken` });
+      }
+      const [result] = await db.insert(organizations).values({
+        name: input.name,
+        slug: input.slug,
+        plan: input.plan,
+        approvedDomains: JSON.stringify(input.approvedDomains),
+        dailyTokenLimit: input.dailyTokenLimit,
+        status: "trial",
+      });
+      return { id: (result as any).insertId, slug: input.slug, name: input.name };
+    }),
+
+  listOrganizations: adminProcedure
+    .input(z.object({}))
+    .query(async () => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      return db.select().from(organizations).orderBy(organizations.createdAt);
+    }),
+
+  getOrganization: adminProcedure
+    .input(z.object({ id: z.number() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const [org] = await db.select().from(organizations).where(eq(organizations.id, input.id)).limit(1);
+      if (!org) throw new TRPCError({ code: "NOT_FOUND", message: "Organisation not found" });
+      return org;
+    }),
+
+  updateOrganization: adminProcedure
+    .input(z.object({
+      id: z.number(),
+      name: z.string().min(2).max(128).optional(),
+      plan: z.enum(["trial", "standard", "enterprise"]).optional(),
+      status: z.enum(["active", "suspended", "trial"]).optional(),
+      approvedDomains: z.array(z.string()).optional(),
+      dailyTokenLimit: z.number().int().min(1000).max(10000000).optional(),
+    }))
+    .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const { id, approvedDomains, ...rest } = input;
+      const updateData: Record<string, unknown> = { ...rest };
+      if (approvedDomains !== undefined) updateData.approvedDomains = JSON.stringify(approvedDomains);
+      await db.update(organizations).set(updateData).where(eq(organizations.id, id));
+      return { success: true };
+    }),
 
   // ─── Stats ─────────────────────────────────────────────────────────────────
   // orgId resolved from ctx — never from input

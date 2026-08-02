@@ -19,8 +19,9 @@ WORKDIR /app
 # Install pnpm
 RUN npm install -g pnpm@9
 
-# Copy package manifests
+# Copy package manifests and patches (required by pnpm patchedDependencies)
 COPY package.json pnpm-lock.yaml ./
+COPY patches/ ./patches/
 
 # Install ALL dependencies (needed for build)
 RUN pnpm install --frozen-lockfile
@@ -48,8 +49,9 @@ RUN addgroup -g 1001 -S meshapp && adduser -S meshapp -u 1001 -G meshapp
 # Install pnpm for production install
 RUN npm install -g pnpm@9
 
-# Copy package manifests and install production deps only
+# Copy package manifests, patches, and install production deps only
 COPY package.json pnpm-lock.yaml ./
+COPY patches/ ./patches/
 RUN pnpm install --frozen-lockfile --prod
 
 # Copy compiled output from builder

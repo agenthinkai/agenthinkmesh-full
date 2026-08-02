@@ -5760,3 +5760,12 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ### Final Certification Report
 - [ ] Produce Mesh Enterprise Platform v1.0 Certification Report (PDF)
+
+## Customer Zero Sprint
+
+- [x] Fix Dockerfile: add patches/ directory to deps stage (wouter patch)
+- [x] Add createOrganization, listOrganizations, getOrganization, updateOrganization procedures (adminProcedure)
+- [x] Build OrgCreationWizard.tsx (4-step wizard at /admin/create-org)
+- [x] Provision Customer Zero via seed-customer-zero.mjs: org=1, 8 depts, 8 roles, 10 twins
+- [x] Build CustomerZeroDashboard.tsx at /admin/customer-zero
+- [x] Register all new routes in App.tsx

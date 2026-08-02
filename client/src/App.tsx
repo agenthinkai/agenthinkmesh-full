@@ -202,6 +202,8 @@ const AlghanimIndustrialDemo = lazy(() => import("./pages/AlghanimIndustrialDemo
 const TwinGenerator = lazy(() => import("./pages/TwinGenerator"));
 const EnterpriseDashboard = lazy(() => import("./pages/EnterpriseDashboard"));
 const OrgUserManager = lazy(() => import("./pages/OrgUserManager"));
+const OrgCreationWizard = lazy(() => import("./pages/OrgCreationWizard"));
+const CustomerZeroDashboard = lazy(() => import("./pages/CustomerZeroDashboard"));
 const TwinMarketplace = lazy(() => import("./pages/TwinMarketplace"));
 const FlowardDemo = lazy(() => import("./pages/FlowardDemo"));
 const UicDemo = lazy(() => import("./pages/UicDemo"));
@@ -541,6 +543,8 @@ function Router() {
       <Route path="/admin/twin-marketplace" component={TwinMarketplace} />
       <Route path="/admin/registry" component={AgentRegistry} />
       <Route path="/admin/org-users" component={OrgUserManager} />
+      <Route path="/admin/create-org" component={OrgCreationWizard} />
+      <Route path="/admin/customer-zero" component={CustomerZeroDashboard} />
       <Route path="/admin/diaspora-leads" component={DiasporaLeadsAdmin} />
       <Route path="/twin/:templateId" component={DecisionTwin} />
       <Route path="/captwin" component={CapTwin} />
