@@ -71,9 +71,8 @@ function RoleBadge({ role }: { role: string }) {
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function OrgUserManager() {
   const { user } = useAuth();
-  const orgId = 1; // Default org — in production from user's org membership
-
-  const { data: members, isLoading, refetch } = trpc.enterprise.listOrgMembers.useQuery({ orgId });
+  // orgId is resolved server-side from the user's active membership — never sent from client
+  const { data: members, isLoading, refetch } = trpc.enterprise.listOrgMembers.useQuery({});
 
   const [confirmDialog, setConfirmDialog] = useState<{
     open: boolean;
@@ -116,13 +115,12 @@ export default function OrgUserManager() {
   const handleConfirm = () => {
     if (!confirmDialog.member) return;
     if (confirmDialog.action === "suspend") {
-      suspendMutation.mutate({ membershipId: confirmDialog.member.membershipId, orgId });
+      suspendMutation.mutate({ membershipId: confirmDialog.member.membershipId });
     } else if (confirmDialog.action === "reactivate") {
-      reactivateMutation.mutate({ membershipId: confirmDialog.member.membershipId, orgId });
+      reactivateMutation.mutate({ membershipId: confirmDialog.member.membershipId });
     } else if (confirmDialog.action === "update" && confirmDialog.newRole) {
       updateMutation.mutate({
         membershipId: confirmDialog.member.membershipId,
-        orgId,
         status: confirmDialog.member.status as "active" | "suspended" | "invited",
       });
     }
@@ -132,7 +130,7 @@ export default function OrgUserManager() {
 
   const filteredMembers = (members ?? []).filter((m: OrgMember) => {
     if (filterStatus !== "all" && m.status !== filterStatus) return false;
-    if (filterRole !== "all" && m.roleId !== filterRole) return false;
+    if (filterRole !== "all" && String(m.roleId ?? "") !== filterRole) return false;
     return true;
   });
 
@@ -151,7 +149,7 @@ export default function OrgUserManager() {
             <div className="w-px h-4 bg-slate-700" />
             <div>
               <h1 className="text-base font-bold text-white">Org User Manager</h1>
-              <p className="text-slate-400 text-xs mt-0.5">{user?.name ?? "Admin"} · Org #{orgId}</p>
+              <p className="text-slate-400 text-xs mt-0.5">{user?.name ?? "Admin"} · Enterprise Admin</p>
             </div>
           </div>
           <div className="flex items-center gap-3">

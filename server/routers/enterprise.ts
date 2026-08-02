@@ -1,12 +1,18 @@
 /**
- * Enterprise Runtime tRPC Router — Sprint 3
- * Covers: organizations, departments, roles, memberships, twin instances, sessions, audit log, messages
- * Sprint 3 additions: runTwin (backed by councilEngine.runCouncil), updateMembership, listOrgMembers
+ * Enterprise Runtime tRPC Router — Enterprise Certification Sprint (CR-1)
+ *
+ * TENANT ISOLATION: All procedures use ctx.orgId resolved by orgMiddleware.
+ * The client NEVER supplies orgId. Any attempt to access another org's data
+ * is structurally impossible — the server resolves the org from the
+ * authenticated user's active membership record.
+ *
+ * Procedures that previously accepted orgId as input now ignore it entirely.
  */
 
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { router, protectedProcedure, adminProcedure } from "../_core/trpc";
+import { router } from "../_core/trpc";
+import { enterpriseProcedure, enterpriseAdminProcedure } from "../_core/orgMiddleware";
 import {
   listDepartments,
   createDepartment,
@@ -34,50 +40,49 @@ import {
 import { runCouncil } from "../councilEngine";
 
 const CouncilModeSchema = z.enum(["gcc", "global_vc", "india_pe", "gcc_equities", "infrastructure"]);
-
 const GovernanceProfileSchema = z.enum(["STANDARD", "CONFIDENTIAL", "SOVEREIGN", "CLASSIFIED"]);
 const SessionTypeSchema = z.enum(["run", "simulate", "deliberate", "compare", "calibrate"]);
 const MessageTypeSchema = z.enum(["signal", "alert", "data_update", "recommendation", "calibration"]);
 const MessagePrioritySchema = z.enum(["low", "normal", "high", "critical"]);
 
 export const enterpriseRouter = router({
+
   // ─── Stats ─────────────────────────────────────────────────────────────────
-  getStats: protectedProcedure
-    .input(z.object({ orgId: z.number() }))
-    .query(async ({ input }) => {
-      return getEnterpriseStats(input.orgId);
+  // orgId resolved from ctx — never from input
+  getStats: enterpriseProcedure
+    .input(z.object({}))
+    .query(async ({ ctx }) => {
+      return getEnterpriseStats(ctx.orgId);
     }),
 
   // ─── Departments ───────────────────────────────────────────────────────────
-  listDepartments: protectedProcedure
-    .input(z.object({ orgId: z.number() }))
-    .query(async ({ input }) => {
-      return listDepartments(input.orgId);
+  listDepartments: enterpriseProcedure
+    .input(z.object({}))
+    .query(async ({ ctx }) => {
+      return listDepartments(ctx.orgId);
     }),
 
-  createDepartment: adminProcedure
+  createDepartment: enterpriseAdminProcedure
     .input(z.object({
-      orgId: z.number(),
       name: z.string().min(1).max(128),
       slug: z.string().min(1).max(64),
       description: z.string().optional(),
       parentDeptId: z.number().optional(),
       headUserId: z.number().optional(),
     }))
-    .mutation(async ({ input }) => {
-      return createDepartment(input);
+    .mutation(async ({ input, ctx }) => {
+      return createDepartment({ ...input, orgId: ctx.orgId });
     }),
 
   // ─── Roles ─────────────────────────────────────────────────────────────────
-  listRoles: protectedProcedure
-    .input(z.object({ orgId: z.number() }))
-    .query(async ({ input }) => {
-      return listRoles(input.orgId);
+  listRoles: enterpriseProcedure
+    .input(z.object({}))
+    .query(async ({ ctx }) => {
+      return listRoles(ctx.orgId);
     }),
 
-  createRole: adminProcedure
+  createRole: enterpriseAdminProcedure
     .input(z.object({
-      orgId: z.number(),
       name: z.string().min(1).max(64),
       slug: z.string().min(1).max(64),
       description: z.string().optional(),
@@ -85,45 +90,48 @@ export const enterpriseRouter = router({
       twinAccess: z.array(z.string()).optional(),
       isSystemRole: z.boolean().optional(),
     }))
-    .mutation(async ({ input }) => {
-      return createRole(input);
+    .mutation(async ({ input, ctx }) => {
+      return createRole({ ...input, orgId: ctx.orgId });
     }),
 
   // ─── Memberships ───────────────────────────────────────────────────────────
-  listMemberships: protectedProcedure
-    .input(z.object({ orgId: z.number() }))
-    .query(async ({ input }) => {
-      return listMemberships(input.orgId);
+  listMemberships: enterpriseProcedure
+    .input(z.object({}))
+    .query(async ({ ctx }) => {
+      return listMemberships(ctx.orgId);
     }),
 
-  createMembership: adminProcedure
+  createMembership: enterpriseAdminProcedure
     .input(z.object({
-      orgId: z.number(),
       userId: z.number(),
       roleId: z.number(),
       deptId: z.number().optional(),
       jobTitle: z.string().max(128).optional(),
     }))
-    .mutation(async ({ input }) => {
-      return createMembership(input);
+    .mutation(async ({ input, ctx }) => {
+      return createMembership({ ...input, orgId: ctx.orgId });
     }),
 
   // ─── Twin Instances ─────────────────────────────────────────────────────────
-  listTwinInstances: protectedProcedure
-    .input(z.object({ orgId: z.number() }))
-    .query(async ({ input }) => {
-      return listTwinInstances(input.orgId);
+  listTwinInstances: enterpriseProcedure
+    .input(z.object({}))
+    .query(async ({ ctx }) => {
+      return listTwinInstances(ctx.orgId);
     }),
 
-  getTwinInstance: protectedProcedure
+  getTwinInstance: enterpriseProcedure
     .input(z.object({ id: z.number() }))
-    .query(async ({ input }) => {
-      return getTwinInstance(input.id);
+    .query(async ({ input, ctx }) => {
+      const instance = await getTwinInstance(input.id);
+      // Verify the instance belongs to the user's org
+      if (!instance || instance.orgId !== ctx.orgId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Twin instance not found" });
+      }
+      return instance;
     }),
 
-  createTwinInstance: adminProcedure
+  createTwinInstance: enterpriseAdminProcedure
     .input(z.object({
-      orgId: z.number(),
       deptId: z.number().optional(),
       blueprintId: z.string().min(1).max(64),
       instanceSlug: z.string().min(1).max(128),
@@ -137,46 +145,63 @@ export const enterpriseRouter = router({
       governanceProfile: GovernanceProfileSchema.optional(),
       configJson: z.record(z.string(), z.unknown()).optional(),
     }))
-    .mutation(async ({ input }) => {
-      return createTwinInstance(input);
+    .mutation(async ({ input, ctx }) => {
+      return createTwinInstance({ ...input, orgId: ctx.orgId });
     }),
 
-  updateTwinInstanceStatus: adminProcedure
+  updateTwinInstanceStatus: enterpriseAdminProcedure
     .input(z.object({
       id: z.number(),
       status: z.enum(["provisioning", "active", "suspended", "archived"]),
     }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      // Verify ownership before updating
+      const instance = await getTwinInstance(input.id);
+      if (!instance || instance.orgId !== ctx.orgId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Twin instance not found" });
+      }
       await updateTwinInstanceStatus(input.id, input.status);
       return { success: true };
     }),
 
-  archiveTwinInstance: adminProcedure
+  archiveTwinInstance: enterpriseAdminProcedure
     .input(z.object({ id: z.number() }))
-    .mutation(async ({ input }) => {
+    .mutation(async ({ input, ctx }) => {
+      const instance = await getTwinInstance(input.id);
+      if (!instance || instance.orgId !== ctx.orgId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Twin instance not found" });
+      }
       await archiveTwinInstance(input.id);
       return { success: true };
     }),
 
   // ─── Twin Sessions ──────────────────────────────────────────────────────────
-  listTwinSessions: protectedProcedure
+  listTwinSessions: enterpriseProcedure
     .input(z.object({ twinInstanceId: z.number(), limit: z.number().max(100).optional() }))
-    .query(async ({ input }) => {
+    .query(async ({ input, ctx }) => {
+      // Verify twin belongs to user's org before listing sessions
+      const instance = await getTwinInstance(input.twinInstanceId);
+      if (!instance || instance.orgId !== ctx.orgId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Twin instance not found" });
+      }
       return listTwinSessions(input.twinInstanceId, input.limit);
     }),
 
-  createTwinSession: protectedProcedure
+  createTwinSession: enterpriseProcedure
     .input(z.object({
       twinInstanceId: z.number(),
-      orgId: z.number(),
       sessionType: SessionTypeSchema,
       inputJson: z.record(z.string(), z.unknown()).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      return createTwinSession({ ...input, userId: ctx.user.id });
+      const instance = await getTwinInstance(input.twinInstanceId);
+      if (!instance || instance.orgId !== ctx.orgId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Twin instance not found" });
+      }
+      return createTwinSession({ ...input, orgId: ctx.orgId, userId: ctx.user.id });
     }),
 
-  completeTwinSession: protectedProcedure
+  completeTwinSession: enterpriseProcedure
     .input(z.object({
       id: z.number(),
       output: z.record(z.string(), z.unknown()),
@@ -189,15 +214,14 @@ export const enterpriseRouter = router({
     }),
 
   // ─── Audit Log ──────────────────────────────────────────────────────────────
-  listAuditLog: adminProcedure
-    .input(z.object({ orgId: z.number(), limit: z.number().max(200).optional() }))
-    .query(async ({ input }) => {
-      return listAuditLog(input.orgId, input.limit);
+  listAuditLog: enterpriseAdminProcedure
+    .input(z.object({ limit: z.number().max(200).optional() }))
+    .query(async ({ input, ctx }) => {
+      return listAuditLog(ctx.orgId, input.limit);
     }),
 
-  writeAuditLog: protectedProcedure
+  writeAuditLog: enterpriseProcedure
     .input(z.object({
-      orgId: z.number(),
       action: z.string().min(1).max(128),
       resourceType: z.string().min(1).max(64),
       resourceId: z.string().max(128).optional(),
@@ -205,20 +229,19 @@ export const enterpriseRouter = router({
       severity: z.enum(["info", "warning", "critical"]).optional(),
     }))
     .mutation(async ({ input, ctx }) => {
-      await writeAuditLog({ ...input, userId: ctx.user.id });
+      await writeAuditLog({ ...input, orgId: ctx.orgId, userId: ctx.user.id });
       return { success: true };
     }),
 
   // ─── Twin Messages ──────────────────────────────────────────────────────────
-  listTwinMessages: protectedProcedure
-    .input(z.object({ orgId: z.number(), twinId: z.number().optional(), limit: z.number().max(100).optional() }))
-    .query(async ({ input }) => {
-      return listTwinMessages(input.orgId, input.twinId, input.limit);
+  listTwinMessages: enterpriseProcedure
+    .input(z.object({ twinId: z.number().optional(), limit: z.number().max(100).optional() }))
+    .query(async ({ input, ctx }) => {
+      return listTwinMessages(ctx.orgId, input.twinId, input.limit);
     }),
 
-  sendTwinMessage: protectedProcedure
+  sendTwinMessage: enterpriseProcedure
     .input(z.object({
-      orgId: z.number(),
       fromTwinId: z.number(),
       toTwinId: z.number(),
       messageType: MessageTypeSchema,
@@ -226,45 +249,51 @@ export const enterpriseRouter = router({
       payloadJson: z.record(z.string(), z.unknown()).optional(),
       priority: MessagePrioritySchema.optional(),
     }))
-    .mutation(async ({ input }) => {
-      return sendTwinMessage(input);
+    .mutation(async ({ input, ctx }) => {
+      // Verify both twins belong to the user's org
+      const [fromTwin, toTwin] = await Promise.all([
+        getTwinInstance(input.fromTwinId),
+        getTwinInstance(input.toTwinId),
+      ]);
+      if (!fromTwin || fromTwin.orgId !== ctx.orgId || !toTwin || toTwin.orgId !== ctx.orgId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Twin instance not found or org mismatch" });
+      }
+      return sendTwinMessage({ ...input, orgId: ctx.orgId });
     }),
 
-  acknowledgeTwinMessage: protectedProcedure
+  acknowledgeTwinMessage: enterpriseProcedure
     .input(z.object({ id: z.number() }))
     .mutation(async ({ input }) => {
       await acknowledgeTwinMessage(input.id);
       return { success: true };
     }),
 
-  // ─── Sprint 3: runTwin — backed by councilEngine.runCouncil ──────────────────────
+  // ─── runTwin — Decision Twin Execution ─────────────────────────────────────
   /**
-   * runTwin: executes a Decision Twin session using the council engine.
-   * Validates org ownership of the twin instance, creates a session record with
-   * councilPersonaSetId-derived councilMode, and persists the result.
+   * TENANT ISOLATION: orgId is from ctx (server-resolved), never from input.
+   * The twin instance ownership is verified against ctx.orgId before execution.
    */
-  runTwin: protectedProcedure
+  runTwin: enterpriseProcedure
     .input(z.object({
       twinInstanceId: z.number(),
-      orgId: z.number(),
       sessionType: SessionTypeSchema.default("run"),
       decisionText: z.string().min(10).max(8000),
       councilMode: CouncilModeSchema.optional().default("gcc"),
     }))
     .mutation(async ({ input, ctx }) => {
-      // Verify twin instance belongs to the org
+      // Verify twin instance belongs to the user's verified org
       const instance = await getTwinInstance(input.twinInstanceId);
-      if (!instance || instance.orgId !== input.orgId) {
-        throw new TRPCError({ code: "NOT_FOUND", message: "Twin instance not found or org mismatch" });
+      if (!instance || instance.orgId !== ctx.orgId) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Twin instance not found" });
       }
       if (instance.status !== "active") {
         throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Twin instance is not active" });
       }
 
-      // Create session record
+      // Create session record — orgId from ctx, never from input
       const session = await createTwinSession({
         twinInstanceId: input.twinInstanceId,
-        orgId: input.orgId,
+        orgId: ctx.orgId,
         userId: ctx.user.id,
         sessionType: input.sessionType,
         inputJson: { decisionText: input.decisionText, councilMode: input.councilMode },
@@ -276,7 +305,7 @@ export const enterpriseRouter = router({
         councilResult = await runCouncil(input.decisionText, {
           councilMode: input.councilMode,
           userId: ctx.user.id,
-          clientId: `enterprise-org-${input.orgId}`,
+          clientId: `enterprise-org-${ctx.orgId}`,
           bypassCostGuard: false,
         });
       } catch (err) {
@@ -285,12 +314,11 @@ export const enterpriseRouter = router({
       }
 
       const durationMs = Date.now() - startMs;
-      const tokensUsed = 0; // token tracking via billing layer, not CouncilResult
-      await completeTwinSession(session.id, councilResult as any, durationMs, tokensUsed);
+      await completeTwinSession(session.id, councilResult as any, durationMs, 0);
 
-      // Write audit log
+      // Write audit log — orgId from ctx
       await writeAuditLog({
-        orgId: input.orgId,
+        orgId: ctx.orgId,
         userId: ctx.user.id,
         action: `twin.${input.sessionType}`,
         resourceType: "twin_session",
@@ -312,32 +340,31 @@ export const enterpriseRouter = router({
       };
     }),
 
-  // ─── Sprint 3: Org User Management ─────────────────────────────────────────────
-  listOrgMembers: protectedProcedure
-    .input(z.object({ orgId: z.number() }))
-    .query(async ({ input }) => {
-      return listOrgMembers(input.orgId);
+  // ─── Org User Management ─────────────────────────────────────────────────
+  listOrgMembers: enterpriseProcedure
+    .input(z.object({}))
+    .query(async ({ ctx }) => {
+      return listOrgMembers(ctx.orgId);
     }),
 
-  updateMembership: adminProcedure
+  updateMembership: enterpriseAdminProcedure
     .input(z.object({
       membershipId: z.number(),
-      orgId: z.number(),
       status: z.enum(["active", "suspended", "invited"]),
     }))
-    .mutation(async ({ input }) => {
-      return updateMembershipStatus(input.membershipId, input.orgId, input.status);
+    .mutation(async ({ input, ctx }) => {
+      return updateMembershipStatus(input.membershipId, ctx.orgId, input.status);
     }),
 
-  suspendMembership: adminProcedure
-    .input(z.object({ membershipId: z.number(), orgId: z.number() }))
-    .mutation(async ({ input }) => {
-      return updateMembershipStatus(input.membershipId, input.orgId, "suspended");
+  suspendMembership: enterpriseAdminProcedure
+    .input(z.object({ membershipId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      return updateMembershipStatus(input.membershipId, ctx.orgId, "suspended");
     }),
 
-  reactivateMembership: adminProcedure
-    .input(z.object({ membershipId: z.number(), orgId: z.number() }))
-    .mutation(async ({ input }) => {
-      return updateMembershipStatus(input.membershipId, input.orgId, "active");
+  reactivateMembership: enterpriseAdminProcedure
+    .input(z.object({ membershipId: z.number() }))
+    .mutation(async ({ input, ctx }) => {
+      return updateMembershipStatus(input.membershipId, ctx.orgId, "active");
     }),
 });
