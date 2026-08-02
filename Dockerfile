@@ -2,12 +2,14 @@
 # Mesh Enterprise Platform — Production Dockerfile
 # Enterprise Certification Sprint — CR-2
 #
+# Build layout (confirmed from vite.config.ts + server/_core/vite.ts):
+#   - Frontend (Vite):  outDir = dist/public  (at project root)
+#   - Server (esbuild): outDir = dist/         (at project root)
+#   - serveStatic() resolves: path.resolve(__dirname, "../..", "dist", "public")
+#     i.e. /app/dist/public at runtime
+#
 # Uses corepack to honour the pnpm version pinned in package.json#packageManager
 # (pnpm@10.4.1) so patchedDependencies / lockfile hash always matches.
-#
-# Usage:
-#   docker build -t mesh-enterprise:latest .
-#   docker run -p 3000:3000 --env-file .env mesh-enterprise:latest
 # ─────────────────────────────────────────────────────────────────────────────
 
 # ── Stage 1: Build ────────────────────────────────────────────────────────────
@@ -17,15 +19,14 @@ WORKDIR /app
 # Enable corepack so the exact pnpm version in package.json#packageManager is used
 RUN npm install -g corepack@latest && corepack enable
 
-# Copy everything first — simplest and safest approach.
-# Avoids COPY-layer ordering bugs with patches/ directory
+# Copy everything — avoids COPY-layer ordering bugs with patches/ directory
 # (pnpm patchedDependencies requires patches/ to exist before pnpm install)
 COPY . .
 
 # Install ALL deps (vite/esbuild are devDependencies needed for the build)
 RUN corepack pnpm install
 
-# Build frontend (Vite) and compile server TypeScript
+# Build frontend (Vite → dist/public) and compile server TypeScript (→ dist/)
 RUN corepack pnpm run build
 
 # ── Stage 2: Production runner ────────────────────────────────────────────────
@@ -42,9 +43,8 @@ COPY patches/ ./patches/
 # Install production dependencies only using the exact pinned pnpm version
 RUN corepack pnpm install --frozen-lockfile --prod
 
-# Copy compiled output from builder
+# Copy the entire dist/ directory (contains both server output and dist/public frontend)
 COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/client/dist ./client/dist
 
 # Copy runtime-required directories
 COPY --from=builder /app/drizzle ./drizzle
