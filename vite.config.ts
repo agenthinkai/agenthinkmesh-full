@@ -150,7 +150,25 @@ function vitePluginManusDebugCollector(): Plugin {
   };
 }
 
-const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector()];
+/**
+ * Vite plugin to remove crossorigin attributes from built index.html.
+ * The Manus CDN proxy strips Access-Control-Allow-Origin headers, so
+ * crossorigin module scripts fail silently in the browser.
+ */
+function vitePluginRemoveCrossOrigin(): Plugin {
+  return {
+    name: "remove-crossorigin",
+    apply: "build",
+    transformIndexHtml(html) {
+      // Remove crossorigin attribute from all script and link tags
+      return html
+        .replace(/ crossorigin=""/g, "")
+        .replace(/ crossorigin/g, "");
+    },
+  };
+}
+
+const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(), vitePluginManusDebugCollector(), vitePluginRemoveCrossOrigin()];
 
 export default defineConfig({
   plugins,
@@ -168,6 +186,9 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
     chunkSizeWarningLimit: 1000,
+    // Remove crossorigin attribute from script tags — the Manus CDN proxy strips
+    // Access-Control-Allow-Origin headers, causing crossorigin module scripts to be blocked
+    modulePreload: { polyfill: false },
     rollupOptions: {
       output: {
         manualChunks(id) {
