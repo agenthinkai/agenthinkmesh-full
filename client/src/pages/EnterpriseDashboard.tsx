@@ -204,12 +204,11 @@ function RunResultPanel({ result, onClose }: { result: RunResult; onClose: () =>
 // ─── Main Component ───────────────────────────────────────────────────────────
 export default function EnterpriseDashboard() {
   const { user } = useAuth();
-  const orgId = 1; // Default org — in production this comes from user's org membership
-
-  const { data: stats } = trpc.enterprise.getStats.useQuery({ orgId });
-  const { data: twins, isLoading, refetch: refetchTwins } = trpc.enterprise.listTwinInstances.useQuery({ orgId });
+  // orgId resolved server-side from authenticated membership — never sent from client
+  const { data: stats } = trpc.enterprise.getStats.useQuery({});
+  const { data: twins, isLoading, refetch: refetchTwins } = trpc.enterprise.listTwinInstances.useQuery({});
   const { data: blueprints } = trpc.twinFactory.blueprints.list.useQuery({});
-  const { data: auditLog, refetch: refetchAudit } = trpc.enterprise.listAuditLog.useQuery({ orgId, limit: 10 });
+  const { data: auditLog, refetch: refetchAudit } = trpc.enterprise.listAuditLog.useQuery({ limit: 10 });
 
   const [activeFilter, setActiveFilter] = useState<string>("all");
   const [runDialog, setRunDialog] = useState<RunDialogState>({ open: false, twin: null, sessionType: "run" });
@@ -241,7 +240,6 @@ export default function EnterpriseDashboard() {
     if (!runDialog.twin || decisionText.trim().length < 10) return;
     runTwinMutation.mutate({
       twinInstanceId: runDialog.twin.id,
-      orgId,
       sessionType: runDialog.sessionType,
       decisionText: decisionText.trim(),
       councilMode,

@@ -2,6 +2,8 @@ import "dotenv/config";
 import express from "express";
 import { createServer } from "http";
 import net from "net";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
@@ -170,22 +172,51 @@ async function startServer() {
   app.use(express.json({ limit: "50mb" }));
   app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-  // ── Security headers ────────────────────────────────────────────────────────
-  app.use((_req, res, next) => {
-    // HSTS — enforce HTTPS for 1 year (including subdomains)
-    res.setHeader("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
-    // Prevent MIME-type sniffing
-    res.setHeader("X-Content-Type-Options", "nosniff");
-    // Deny framing (clickjacking protection)
-    res.setHeader("X-Frame-Options", "DENY");
-    // Disable legacy XSS filter (CSP is the modern replacement)
-    res.setHeader("X-XSS-Protection", "0");
-    // Referrer policy — no referrer on cross-origin requests
-    res.setHeader("Referrer-Policy", "strict-origin-when-cross-origin");
-    // Permissions policy — disable camera, microphone, geolocation
-    res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=()");
-    next();
+  // ── Security headers (Helmet) ───────────────────────────────────────────────────
+  // CR-5: Helmet provides 14 security headers including CSP, HSTS, X-Frame-Options
+  app.use(helmet({
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Vite/React requires unsafe-eval in dev
+        styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+        fontSrc: ["'self'", "https://fonts.gstatic.com"],
+        imgSrc: ["'self'", "data:", "blob:", "https:"],
+        connectSrc: ["'self'", "https:", "wss:"],
+        frameSrc: ["'none'"],
+        objectSrc: ["'none'"],
+        upgradeInsecureRequests: [],
+      },
+    },
+    hsts: {
+      maxAge: 31536000,
+      includeSubDomains: true,
+      preload: true,
+    },
+    referrerPolicy: { policy: "strict-origin-when-cross-origin" },
+    permittedCrossDomainPolicies: false,
+    crossOriginEmbedderPolicy: false, // Required for some embedded resources
+  }));
+
+  // ── Rate limiting ────────────────────────────────────────────────────────────────
+  // CR-5: Rate limiting on all API routes to prevent brute-force and DoS
+  const apiLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 500,                  // 500 requests per window per IP
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: { error: "Too many requests. Please try again in 15 minutes." },
+    skip: (req) => req.path === "/api/health", // Never rate-limit health checks
   });
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 20,                   // 20 auth attempts per window per IP
+    standardHeaders: "draft-7",
+    legacyHeaders: false,
+    message: { error: "Too many authentication attempts. Please try again in 15 minutes." },
+  });
+  app.use("/api", apiLimiter);
+  app.use("/api/oauth", authLimiter);
 
   // Storage proxy — serves /manus-storage/{key} via signed Forge URLs
   registerStorageProxy(app);

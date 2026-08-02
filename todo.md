@@ -5711,3 +5711,52 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] docs/sprint3-enterprise-deploy.md
 ### WP-12: Checkpoint & Exit
 - [x] Checkpoint saved (auto-published)
+
+## Enterprise Certification Sprint
+
+### CR-1: Tenant Isolation (P0)
+- [ ] Create orgMembership middleware resolving orgId from authenticated membership
+- [ ] Apply middleware to all enterprise router procedures
+- [ ] Verify all enterprise service functions use resolved orgId
+- [ ] Write cross-tenant penetration test suite
+- [ ] Produce Tenant Isolation Report
+
+### CR-2: Enterprise Deployment
+- [ ] Write production Dockerfile (Node 20 Alpine, multi-stage)
+- [ ] Write docker-compose.yml (app + MySQL + volumes + health checks)
+- [ ] Add startup env validation (fail fast on missing vars)
+- [ ] Write upgrade/rollback/recovery procedures
+
+### CR-3: Self-Service Onboarding
+- [ ] Create EnterpriseSetup.tsx wizard (org → depts → invite → roles)
+- [ ] Add createOrganization tRPC procedure
+- [ ] Add inviteUser tRPC procedure
+- [ ] Wire orgId from authenticated user's membership (remove hardcoded 1)
+- [ ] Add /enterprise/setup route
+
+### CR-4: Runtime Reliability
+- [ ] Create pm2.config.cjs ecosystem file
+- [ ] Add graceful shutdown handler (SIGTERM/SIGINT)
+- [ ] Add startup validation (DB + env vars)
+- [ ] Add structured JSON logging
+
+### CR-5: Security Review
+- [ ] Install and configure Helmet.js
+- [ ] Add CORS middleware with allowlist
+- [ ] Add rate limiting on auth and API routes
+- [ ] Run npm audit and resolve critical/high vulnerabilities
+- [ ] Produce Security Certification Report
+
+### CR-6: Performance Benchmarks
+- [ ] Write benchmark script and produce benchmark tables
+
+### CR-7: Enterprise Acceptance Testing
+- [ ] Write full E2E scenario test suite
+- [ ] Expand regression tests
+
+### CR-8+9: Documentation Suite
+- [ ] Deployment, Admin, Operations, Security, Backup, Recovery, Pilot, Troubleshooting, Architecture guides
+- [ ] Go-Live, Rollback, Support, Handover checklists
+
+### Final Certification Report
+- [ ] Produce Mesh Enterprise Platform v1.0 Certification Report (PDF)

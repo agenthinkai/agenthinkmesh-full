@@ -1,0 +1,110 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Mesh Enterprise Platform — Docker Compose
+# Enterprise Certification Sprint — CR-2
+#
+# Services:
+#   db      — MySQL 8.0 with persistent volume
+#   app     — Mesh Enterprise Platform (Node 20)
+#
+# Usage:
+#   cp .env.template .env && vi .env   # Fill in all CHANGE_ME values
+#   docker compose up -d               # Start all services
+#   docker compose logs -f app         # Follow application logs
+#   docker compose down                # Stop all services
+#   docker compose down -v             # Stop and remove volumes (DESTRUCTIVE)
+# ─────────────────────────────────────────────────────────────────────────────
+
+services:
+  # ── MySQL Database ──────────────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: mesh-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-mesh_enterprise}
+      MYSQL_USER: ${MYSQL_USER:-meshapp}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mesh_db_data:/var/lib/mysql
+      - ./scripts/mysql-init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+    ports:
+      - "3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    networks:
+      - mesh-network
+
+  # ── Application ─────────────────────────────────────────────────────────────
+  app:
+    image: mesh-enterprise:latest
+    container_name: mesh-app
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      # Database — constructed from individual vars for clarity
+      DATABASE_URL: mysql://${MYSQL_USER:-meshapp}:${MYSQL_PASSWORD}@db:3306/${MYSQL_DATABASE:-mesh_enterprise}
+      # Authentication
+      JWT_SECRET: ${JWT_SECRET}
+      VITE_APP_ID: ${VITE_APP_ID}
+      OAUTH_SERVER_URL: ${OAUTH_SERVER_URL}
+      VITE_OAUTH_PORTAL_URL: ${VITE_OAUTH_PORTAL_URL}
+      # Owner
+      OWNER_OPEN_ID: ${OWNER_OPEN_ID}
+      OWNER_NAME: ${OWNER_NAME}
+      # LLM / AI
+      BUILT_IN_FORGE_API_URL: ${BUILT_IN_FORGE_API_URL}
+      BUILT_IN_FORGE_API_KEY: ${BUILT_IN_FORGE_API_KEY}
+      VITE_FRONTEND_FORGE_API_KEY: ${VITE_FRONTEND_FORGE_API_KEY}
+      VITE_FRONTEND_FORGE_API_URL: ${VITE_FRONTEND_FORGE_API_URL}
+      # Storage
+      S3_BUCKET: ${S3_BUCKET:-}
+      S3_REGION: ${S3_REGION:-}
+      S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+      S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+      # Encryption
+      DATA_ENCRYPTION_KEY: ${DATA_ENCRYPTION_KEY}
+      ENCRYPTION_MASTER_KEY: ${ENCRYPTION_MASTER_KEY}
+      # Optional
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      NEWS_API_KEY: ${NEWS_API_KEY:-}
+    ports:
+      - "${APP_PORT:-3000}:3000"
+    volumes:
+      - mesh_app_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - mesh-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+# ── Volumes ──────────────────────────────────────────────────────────────────
+volumes:
+  mesh_db_data:
+    driver: local
+  mesh_app_logs:
+    driver: local
+
+# ── Networks ─────────────────────────────────────────────────────────────────
+networks:
+  mesh-network:
+    driver: bridge
