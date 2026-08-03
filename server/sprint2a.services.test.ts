@@ -119,10 +119,10 @@ describe("ontologyService", () => {
 describe("decisionTypeService", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns all 10 fallback decision types", async () => {
+  it("returns all fallback decision types", async () => {
     const { listDecisionTypes, FALLBACK_DECISION_TYPES } = await import("./lib/decisionTypeService");
     const types = await listDecisionTypes();
-    expect(types.length).toBe(10);
+    expect(types.length).toBeGreaterThanOrEqual(10); // originally 10, expanded with Customer Zero (ai_company types)
     expect(types.length).toBe(FALLBACK_DECISION_TYPES.length);
   });
 
@@ -192,10 +192,10 @@ describe("kpiService", () => {
 describe("reportRegistryService", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns all 6 fallback report types", async () => {
+  it("returns all fallback report types", async () => {
     const { listReportTypes, FALLBACK_REPORT_TYPES } = await import("./lib/reportRegistryService");
     const types = await listReportTypes();
-    expect(types.length).toBe(6);
+    expect(types.length).toBeGreaterThanOrEqual(6); // originally 6, expanded with Customer Zero (daily-operating-rhythm, weekly-performance-review)
     expect(types.length).toBe(FALLBACK_REPORT_TYPES.length);
   });
 
@@ -245,10 +245,10 @@ describe("simulationRegistryService", () => {
 describe("connectorAdapterInterface", () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it("returns all 4 built-in connectors", async () => {
+  it("returns all built-in connectors", async () => {
     const { listConnectors, BUILTIN_CONNECTORS } = await import("./lib/connectorAdapterInterface");
     const connectors = await listConnectors();
-    expect(connectors.length).toBe(4);
+    expect(connectors.length).toBeGreaterThanOrEqual(4); // originally 4, expanded with Customer Zero (agenthink connectors)
     expect(connectors.length).toBe(BUILTIN_CONNECTORS.length);
   });
 
