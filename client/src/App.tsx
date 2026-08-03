@@ -184,6 +184,7 @@ const TwinDashboard = lazy(() => import("./pages/TwinDashboard"));
 const CapTwin = lazy(() => import("./pages/CapTwin"));
 const TPACockpit = lazy(() => import("./pages/TPACockpit"));
 const BakalariaTwin = lazy(() => import("./pages/BakalariaTwin"));
+const AgenThinkTwin = lazy(() => import("./pages/AgenThinkTwin"));
 const JobToAgent = lazy(() => import("./pages/JobToAgent"));
 const MeshCostDashboard = lazy(() => import("./pages/MeshCostDashboard"));
 const FounderDiagnostic = lazy(() => import("./pages/FounderDiagnostic"));
@@ -521,6 +522,7 @@ function Router() {
       <Route path="/twin/dashboard" component={TwinDashboard} />
       <Route path="/twin/tpa" component={TPACockpit} />
       <Route path="/twin/bakalaria" component={BakalariaTwin} />
+      <Route path="/twin/agenthink" component={AgenThinkTwin} />
       <Route path="/tools/job-to-agent" component={JobToAgent} />
       <Route path="/admin/mesh-core" component={MeshCostDashboard} />
       <Route path="/founder" component={FounderDiagnostic} />

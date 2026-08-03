@@ -5769,3 +5769,13 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Provision Customer Zero via seed-customer-zero.mjs: org=1, 8 depts, 8 roles, 10 twins
 - [x] Build CustomerZeroDashboard.tsx at /admin/customer-zero
 - [x] Register all new routes in App.tsx
+
+## Customer Zero — AgenThink Mesh Self-Onboarding (2026-08-03)
+- [ ] Step 1: Seed AI company blueprint, ontology, council personas, KPI set, and 4 new decision types into registry services
+- [ ] Step 2: Verify AgenThink org exists via seed-customer-zero.mjs (idempotent)
+- [ ] Step 3: Seed Outcome Ledger with 5 real past AgenThink decisions
+- [ ] Step 4: Build Executive Twin Cockpit page (/twin/agenthink) — 3 panels: Company Overview, Decision Queue, Scenario Workspace
+- [ ] Step 5: Daily Operating Rhythm — heartbeat morning brief + weekly report
+- [ ] Step 6: Connector Manifest for AgenThink data sources
+- [ ] Step 7: 12 deliverable documents (Gap Log, Blueprint v1.0, Ontology, Personas, KPIs, Decision Types, Connector Manifest, Outcome Ledger, Executive UX, Daily Rhythm, Acceptance Test, Customer Zero Report)
+- [ ] Step 8: End-to-end acceptance test (12-step workflow proof)

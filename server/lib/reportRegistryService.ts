@@ -109,6 +109,42 @@ const FALLBACK_REPORT_TYPES: ReportRegistryRecord[] = [
     generatorType: "template",
     status: "ACTIVE",
   },
+  {
+    reportTypeId: "daily-operating-rhythm",
+    name: "Daily Operating Rhythm Brief",
+    description: "AI-generated morning brief covering overnight metrics, decision queue, and top 3 priorities for the day",
+    category: "operational",
+    outputFormat: "pdf",
+    templateSchema: {
+      sections: ["overnight_metrics", "decision_queue", "top_priorities", "risk_flags", "kpi_snapshot"],
+      schedule: "daily_0700",
+      recipients: ["ceo", "cto", "coo"],
+    },
+    requiredSections: ["overnight_metrics", "decision_queue", "top_priorities"],
+    optionalSections: ["risk_flags", "kpi_snapshot", "market_pulse"],
+    brandingDefaults: { headerColor: "#0f172a", accentColor: "#3b82f6" },
+    industryTags: ["ai_company", "all"],
+    generatorType: "llm",
+    status: "ACTIVE",
+  },
+  {
+    reportTypeId: "weekly-performance-review",
+    name: "Weekly Performance Review",
+    description: "Weekly AI-generated review of KPI trends, decision outcomes, and strategic priorities",
+    category: "operational",
+    outputFormat: "pdf",
+    templateSchema: {
+      sections: ["kpi_trends", "decision_outcomes", "pipeline_review", "engineering_velocity", "financial_summary", "next_week_priorities"],
+      schedule: "weekly_monday_0800",
+      recipients: ["ceo", "board"],
+    },
+    requiredSections: ["kpi_trends", "decision_outcomes", "financial_summary"],
+    optionalSections: ["pipeline_review", "engineering_velocity", "next_week_priorities"],
+    brandingDefaults: { headerColor: "#0f172a", accentColor: "#3b82f6" },
+    industryTags: ["ai_company", "all"],
+    generatorType: "llm",
+    status: "ACTIVE",
+  },
 ];
 
 const CACHE_TTL_MS = 5 * 60 * 1000;

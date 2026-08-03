@@ -191,6 +191,30 @@ const FALLBACK_BLUEPRINTS: TwinBlueprintRecord[] = [
     status: "ACTIVE",
     version: "1.0.0",
   },
+  {
+    blueprintId: "bp-agenthink",
+    name: "AgenThink Mesh Executive Decision Twin",
+    slug: "agenthink",
+    industry: "Artificial Intelligence",
+    organizationType: "AI Software Company",
+    description: "Customer Zero executive twin for AgenThink Mesh — sovereign AI infrastructure company. Covers model training decisions, enterprise sales, talent, and capital allocation.",
+    defaultSimulationMode: "institutional",
+    defaultDecisionTypeIds: ["model-deployment", "talent-acquisition", "pricing-strategy", "partnership", "capital-allocation"],
+    defaultReportTemplateIds: ["daily-operating-rhythm", "weekly-performance-review", "executive-brief"],
+    securityProfile: "standard",
+    primaryColor: "#0f172a",
+    accentColor: "#3b82f6",
+    uiTheme: "dark",
+    executiveDashboardLayout: {
+      panels: ["company_overview", "decision_queue", "scenario_workspace"],
+      kpiGroups: ["revenue", "model_performance", "engineering_velocity", "financial_health"],
+    },
+    promptTemplates: {
+      systemContext: "You are the AgenThink Mesh Executive Decision Twin. AgenThink Mesh is a Kuwait-based sovereign AI infrastructure company building the world's first distributed intelligence mesh. You advise the CEO and executive team on strategic decisions. Always ground your analysis in the company's mission: sovereign, distributed, explainable AI for the GCC and MENA region.",
+    },
+    status: "ACTIVE",
+    version: "1.0.0",
+  },
 ];
 
 // ── Cache ─────────────────────────────────────────────────────────────────────

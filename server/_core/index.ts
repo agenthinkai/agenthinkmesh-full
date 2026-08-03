@@ -52,6 +52,7 @@ import { atlasWeeklyExpansionHandler } from "../scheduled/atlasWeeklyExpansion";
 import { atlasConstitutionReviewHandler } from "../scheduled/atlasConstitutionReview";
 import { ensureConstitutionV1 } from "../routers/aros/constitution";
 import { handleDailyLearningReport } from "../scheduled/dailyLearningReport";
+import { handleAgenThinkDailyRhythm } from "../scheduled/agenthinkDailyRhythm";
 import { createHeartbeatJob, listHeartbeatJobs } from "./heartbeat";
 import boardPackRouter from "../boardPackRoute";
 
@@ -138,6 +139,13 @@ async function registerAtlasCronJobs(): Promise<void> {
       path: "/api/scheduled/atlas-daily-learning",
       method: "POST" as const,
       description: "Atlas Daily Learning Report — aggregate learning events, compute effectiveness rates, notify owner.",
+    },
+    {
+      name: "agenthink-daily-rhythm",
+      cron: "0 0 7 * * *", // daily 07:00 UTC (10:00 Kuwait time)
+      path: "/api/scheduled/agenthink-daily-rhythm",
+      method: "POST" as const,
+      description: "AgenThink Mesh — Daily Operating Rhythm morning brief: decision queue, outcome accuracy, twin activity.",
     },
   ];
 
@@ -343,6 +351,8 @@ async function startServer() {
   app.post("/api/scheduled/atlas-constitution-review", atlasConstitutionReviewHandler);
   // Atlas daily learning report — POST /api/scheduled/atlas-daily-learning
   app.post("/api/scheduled/atlas-daily-learning", handleDailyLearningReport);
+  // AgenThink Mesh Daily Operating Rhythm — POST /api/scheduled/agenthink-daily-rhythm
+  app.post("/api/scheduled/agenthink-daily-rhythm", handleAgenThinkDailyRhythm);
   // Option A fleet trigger — POST /api/fleet/trigger
   // Mounted under /api/fleet/* which is NOT blocked by the Manus reverse-proxy cookie-auth
   // (unlike /api/scheduled/* which is blocked). This is the primary external trigger path.
