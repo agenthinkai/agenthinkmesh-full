@@ -1,9 +1,22 @@
 import { jsxLocPlugin } from "@builder.io/vite-plugin-jsx-loc";
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
+import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { defineConfig, type Plugin, type ViteDevServer } from "vite";
+
+// Inject git commit hash and build timestamp at build time so the deployed
+// version can be verified from /api/build-id or the page footer.
+function getGitCommit(): string {
+  try {
+    return execSync("git rev-parse --short HEAD", { encoding: "utf-8" }).trim();
+  } catch {
+    return "unknown";
+  }
+}
+const BUILD_COMMIT = getGitCommit();
+const BUILD_TIME = new Date().toISOString();
 import { vitePluginManusRuntime } from "vite-plugin-manus-runtime";
 
 // =============================================================================
@@ -172,6 +185,14 @@ const plugins = [react(), tailwindcss(), jsxLocPlugin(), vitePluginManusRuntime(
 
 export default defineConfig({
   plugins,
+  define: {
+    // Injected at build time — available as process.env.VITE_BUILD_COMMIT in server code
+    // and as import.meta.env.VITE_BUILD_COMMIT in client code.
+    "process.env.VITE_BUILD_COMMIT": JSON.stringify(BUILD_COMMIT),
+    "process.env.VITE_BUILD_TIME": JSON.stringify(BUILD_TIME),
+    "import.meta.env.VITE_BUILD_COMMIT": JSON.stringify(BUILD_COMMIT),
+    "import.meta.env.VITE_BUILD_TIME": JSON.stringify(BUILD_TIME),
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),

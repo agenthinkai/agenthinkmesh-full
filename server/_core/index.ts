@@ -417,6 +417,20 @@ async function startServer() {
     });
   });
 
+  // ── Build-ID diagnostic endpoint — GET /api/build-id ───────────────────────
+  // Returns the git commit hash and build timestamp injected at build time.
+  // Use this to verify which version is actually deployed in production.
+  app.get("/api/build-id", (_req, res) => {
+    res.status(200).json({
+      commit: process.env.VITE_BUILD_COMMIT ?? "unknown",
+      buildTime: process.env.VITE_BUILD_TIME ?? "unknown",
+      version: process.env.npm_package_version ?? "unknown",
+      routes: {
+        "/twin/agenthink": "AgenThinkTwin — Customer Zero Executive Twin",
+      },
+    });
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",

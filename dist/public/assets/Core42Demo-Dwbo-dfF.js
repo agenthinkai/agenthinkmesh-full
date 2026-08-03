@@ -1,1 +1,0 @@
-import{j as o}from"./index-CMFS-KMs.js";import{P as e,a as r}from"./prospectConfigs-BxuiN899.js";function a(){return o.jsx(e,{"data-loc":"client/src/pages/Core42Demo.tsx:5",config:r.core42})}export{a as default};

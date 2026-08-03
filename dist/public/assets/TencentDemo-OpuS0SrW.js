@@ -1,1 +1,0 @@
-import{j as e}from"./index-CMFS-KMs.js";import{P as t,a as n}from"./prospectConfigs-BxuiN899.js";function a(){return e.jsx(t,{"data-loc":"client/src/pages/TencentDemo.tsx:5",config:n.tencent})}export{a as default};

@@ -366,7 +366,7 @@ export default function AgenThinkTwin() {
           <div className="flex items-center gap-3">
             <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-blue-600/20 border border-blue-500/30"><Brain className="h-4 w-4 text-blue-400" /></div>
             <div>
-              <h1 className="text-sm font-semibold text-white">AgenThink Mesh Executive Twin</h1>
+              <h1 className="text-sm font-semibold text-white">AgenThink Mesh — Customer Zero Executive Twin</h1>
               <p className="text-xs text-slate-400">Org: {ctx.org.name} · Twin: {ctx.twin?.displayName ?? "Executive Decision Twin"} · <span className="text-green-400">Customer Zero</span></p>
             </div>
           </div>
