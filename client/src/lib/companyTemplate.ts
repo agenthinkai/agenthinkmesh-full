@@ -1543,6 +1543,19 @@ export const TEMPLATES: Record<string, CompanyTemplate> = {
 };
 
 export function getTemplate(id: string): CompanyTemplate {
+  // HARD GUARD: "agenthink" is reserved for the AgenThink Customer Zero cockpit
+  // (AgenThinkTwin.tsx). DecisionTwin must never render for this slug.
+  // If this is reached, it is a routing error — surface it visibly.
+  if (id === "agenthink") {
+    if (typeof console !== "undefined") {
+      console.error(
+        "[DecisionTwin] getTemplate(\"agenthink\") called — routing error. " +
+        "/twin/agenthink must render AgenThinkTwin, not DecisionTwin."
+      );
+    }
+    // Return a deliberately broken template so the error is visible, not silent
+    return { ...KEO_TEMPLATE, id: "agenthink", name: "[Routing Error]", defaults: { ...KEO_TEMPLATE.defaults, rev: 0, eb: 0 } };
+  }
   return TEMPLATES[id] || KEO_TEMPLATE;
 }
 

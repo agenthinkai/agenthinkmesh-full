@@ -25,6 +25,8 @@ import TermsPage from "./pages/TermsPage";
 import BetaAccess from "./pages/BetaAccess";
 import Unsubscribe from "./pages/Unsubscribe";
 import MeshSidebar from "./components/MeshSidebar";
+// AgenThinkTwin: eager import — Customer Zero route must never fall through to generic /twin/:templateId
+import AgenThinkTwin from "./pages/AgenThinkTwin";
 
 // ── Lazy imports: heavy pages loaded only when navigated to ───────────────────
 const AgentRegistry = lazy(() => import("./pages/AgentRegistry"));
@@ -185,7 +187,7 @@ const TwinDashboard = lazy(() => import("./pages/TwinDashboard"));
 const CapTwin = lazy(() => import("./pages/CapTwin"));
 const TPACockpit = lazy(() => import("./pages/TPACockpit"));
 const BakalariaTwin = lazy(() => import("./pages/BakalariaTwin"));
-const AgenThinkTwin = lazy(() => import("./pages/AgenThinkTwin"));
+
 const JobToAgent = lazy(() => import("./pages/JobToAgent"));
 const MeshCostDashboard = lazy(() => import("./pages/MeshCostDashboard"));
 const FounderDiagnostic = lazy(() => import("./pages/FounderDiagnostic"));

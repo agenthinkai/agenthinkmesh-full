@@ -5779,3 +5779,13 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Step 6: Connector Manifest for AgenThink data sources
 - [x] Step 7: 12 deliverable documents (Gap Log, Blueprint v1.0, Ontology, Personas, KPIs, Decision Types, Connector Manifest, Outcome Ledger, Executive UX, Daily Rhythm, Acceptance Test, Customer Zero Report)
 - [x] Step 8: End-to-end acceptance test (12-step workflow proof)
+
+## /twin/agenthink Routing Fix (Aug 2026)
+
+- [x] Reproduce: /twin/agenthink was showing DecisionTwin's KEO intake form
+- [x] Trace: AgenThinkTwin was lazy() — if chunk failed, wouter fell through to /twin/:templateId → getTemplate("agenthink") → KEO fallback
+- [x] Fix 1: Convert AgenThinkTwin from lazy() to eager import in App.tsx
+- [x] Fix 2: Add hard guard in getTemplate() — "agenthink" slug returns routing-error sentinel, never KEO data
+- [x] Fix 3: Verify /twin/agenthink route declared before /twin/:templateId in Switch
+- [x] Verify DB: org id=1 (AgenThinkMesh), blueprint bp-agenthink (id=9), twin instance id=1 (executive-twin), user id=1 (Farouq Sultan, admin)
+- [x] Add 16 regression tests in server/twin.agenthink.route.test.ts — all passing
