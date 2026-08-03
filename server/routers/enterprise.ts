@@ -629,12 +629,21 @@ export const enterpriseRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       const conditions = [eq(kpiDefinitions.status, "ACTIVE")];
       if (input.kpiSetId) conditions.push(eq(kpiDefinitions.kpiSetId, input.kpiSetId));
-      return db
+      const rows = await db
         .select()
         .from(kpiDefinitions)
         .where(and(...conditions))
         .orderBy(kpiDefinitions.sortOrder)
         .limit(30);
+      // Compute verificationStatus from benchmarkSource presence
+      // live = URL source, manual = text source, unverified = no source
+      return rows.map((r) => ({
+        ...r,
+        verificationStatus: r.benchmarkSource
+          ? (r.benchmarkSource.startsWith("http") ? "live" : "manual")
+          : "unverified" as "live" | "manual" | "unverified",
+        source: r.benchmarkSource ?? null,
+      }));
     }),
 
   /**

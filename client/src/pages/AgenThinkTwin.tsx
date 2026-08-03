@@ -60,7 +60,7 @@ function CompanyOverviewPanel({ org, twin, sessionCount, kpis, kpisLoading }: {
   org: { name: string; slug: string; status: string; plan: string } | null;
   twin: { displayName: string; blueprintId: string; status: string; kpiSetId?: string | null } | null;
   sessionCount: number;
-  kpis: Array<{ kpiId: string; name: string; label: string; unit?: string | null; category?: string | null; direction: string }>;
+  kpis: Array<{ kpiId: string; name: string; label: string; unit?: string | null; category?: string | null; direction: string; verificationStatus?: string; source?: string | null }>;
   kpisLoading: boolean;
 }) {
   const grouped = kpis.reduce<Record<string, typeof kpis>>((acc, k) => {
@@ -111,9 +111,15 @@ function CompanyOverviewPanel({ org, twin, sessionCount, kpis, kpisLoading }: {
                 {items.map((kpi) => (
                   <div key={kpi.kpiId} className="flex items-start gap-2 p-3 rounded-lg bg-slate-800/30 border border-slate-700/40">
                     <div className="mt-0.5">{kpi.direction === "higher" ? <TrendingUp className="h-3.5 w-3.5 text-green-400" /> : kpi.direction === "lower" ? <TrendingDown className="h-3.5 w-3.5 text-red-400" /> : <Minus className="h-3.5 w-3.5 text-slate-400" />}</div>
-                    <div className="min-w-0">
-                      <p className="text-xs font-medium text-white truncate">{kpi.label}</p>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <p className="text-xs font-medium text-white truncate">{kpi.label}</p>
+                        {kpi.verificationStatus === "live" && <span className="text-[10px] px-1 py-0.5 rounded bg-green-900/60 text-green-400 border border-green-800/50 shrink-0">Live</span>}
+                        {kpi.verificationStatus === "manual" && <span className="text-[10px] px-1 py-0.5 rounded bg-blue-900/60 text-blue-400 border border-blue-800/50 shrink-0">Manual</span>}
+                        {kpi.verificationStatus === "unverified" && <span className="text-[10px] px-1 py-0.5 rounded bg-slate-800/60 text-slate-500 border border-slate-700/50 shrink-0">Not connected</span>}
+                      </div>
                       {kpi.unit && <p className="text-xs text-slate-500">{kpi.unit}</p>}
+                      {kpi.source && kpi.verificationStatus !== "unverified" && <p className="text-[10px] text-slate-600 truncate" title={kpi.source}>{kpi.source}</p>}
                     </div>
                   </div>
                 ))}
