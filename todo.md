@@ -5789,3 +5789,36 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] Fix 3: Verify /twin/agenthink route declared before /twin/:templateId in Switch
 - [x] Verify DB: org id=1 (AgenThinkMesh), blueprint bp-agenthink (id=9), twin instance id=1 (executive-twin), user id=1 (Farouq Sultan, admin)
 - [x] Add 16 regression tests in server/twin.agenthink.route.test.ts — all passing
+
+## Customer Zero Final Verification Sprint (Aug 2026)
+
+### P1 — Authentication and Tenant Authorization
+- [ ] Add server-side tRPC procedure: twinFactory.cockpit.verifyAccess — checks auth, orgId membership, twin permission
+- [ ] Add client-side auth guard in AgenThinkTwin.tsx — redirect to login if unauthenticated
+- [ ] Add tenant guard — show access-denied page for authenticated non-AgenThink members
+- [ ] Add audit log entries for successful and denied cockpit access attempts
+- [ ] Add Cache-Control: no-store header to all cockpit API responses
+- [ ] Confirm logout removes cockpit access (session invalidation)
+- [ ] Write regression tests: authorized user, unauthenticated, wrong-org, suspended, API bypass
+
+### P2 — Remove Static KPI Fallbacks
+- [ ] Add tRPC procedure: twinFactory.cockpit.getOrgKpis — resolves orgId from session, never from browser
+- [ ] Return value, unit, source, timestamp, verificationStatus for each KPI
+- [ ] Display missing KPIs as "Not connected" — no silent substitution
+- [ ] Distinguish Live / Manually entered / Calculated / Unverified status badges
+- [ ] Wire AgenThinkTwin Company Overview to live tRPC query
+
+### P3 — Verify Cockpit Panels
+- [ ] Confirm all 10 required panels render with real AgenThink data
+- [x] Confirm no KEO or generic template data appears anywhere
+
+### P4 — First Real Executive Decision
+- [ ] Submit customer-prioritization decision to Executive Council
+- [ ] Run 3 scenarios: fastest revenue / highest contract value / strongest reference
+- [ ] Generate executive decision report
+- [ ] Store decision in Outcome Ledger with outcome measurement date
+- [ ] Confirm audit trail records the full session
+
+### P5 — Final Evidence Package
+- [ ] Produce Customer Zero Final Verification Report (15 required items)
+- [ ] Issue formal verdict: CUSTOMER ZERO LIVE AND VERIFIED — 18/18

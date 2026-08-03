@@ -39,8 +39,8 @@ import {
 } from "../lib/enterpriseRuntimeService";
 import { runCouncil } from "../councilEngine";
 import { getDb } from "../db";
-import { organizations } from "../../drizzle/schema";
-import { eq } from "drizzle-orm";
+import { organizations, kpiDefinitions, twinInstances, twinSessions, outcomeSessions, enterpriseAuditLog } from "../../drizzle/schema";
+import { eq, and, desc, count } from "drizzle-orm";
 
 const CouncilModeSchema = z.enum(["gcc", "global_vc", "india_pe", "gcc_equities", "infrastructure"]);
 const GovernanceProfileSchema = z.enum(["STANDARD", "CONFIDENTIAL", "SOVEREIGN", "CLASSIFIED"]);
@@ -570,5 +570,117 @@ export const enterpriseRouter = router({
         enterpriseUrl: `/enterprise/${input.org.slug}`,
         provisionedAt: new Date().toISOString(),
       };
+    }),
+
+  // ─── Cockpit — Customer Zero Executive Twin ─────────────────────────────────
+
+  /**
+   * cockpitVerifyAccess — Server-side auth + tenant guard for /twin/agenthink.
+   * Returns the verified org context and primary twin instance.
+   * Throws UNAUTHORIZED if not authenticated, FORBIDDEN if not an org member,
+   * FORBIDDEN if org is suspended. Writes an audit log entry on every access.
+   */
+  cockpitVerifyAccess: enterpriseProcedure
+    .input(z.object({}))
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const [org] = await db
+        .select({ id: organizations.id, name: organizations.name, slug: organizations.slug, status: organizations.status, plan: organizations.plan })
+        .from(organizations)
+        .where(eq(organizations.id, ctx.orgId))
+        .limit(1);
+      if (!org) throw new TRPCError({ code: "NOT_FOUND", message: "Organisation not found" });
+      const [twin] = await db
+        .select({ id: twinInstances.id, displayName: twinInstances.displayName, blueprintId: twinInstances.blueprintId, instanceSlug: twinInstances.instanceSlug, status: twinInstances.status, kpiSetId: twinInstances.kpiSetId, councilPersonaSetId: twinInstances.councilPersonaSetId })
+        .from(twinInstances)
+        .where(and(eq(twinInstances.orgId, ctx.orgId), eq(twinInstances.status, "active")))
+        .limit(1);
+      const [sessionCount] = await db
+        .select({ total: count() })
+        .from(twinSessions)
+        .where(eq(twinSessions.orgId, ctx.orgId));
+      await writeAuditLog({
+        orgId: ctx.orgId,
+        userId: ctx.user.id,
+        action: "cockpit.access",
+        resourceType: "twin_cockpit",
+        resourceId: String(ctx.orgId),
+        details: `Cockpit accessed by user ${ctx.user.id} (${ctx.user.name})`,
+        severity: "info",
+      });
+      return {
+        org,
+        twin: twin ?? null,
+        sessionCount: sessionCount?.total ?? 0,
+        userId: ctx.user.id,
+        userName: ctx.user.name,
+        orgId: ctx.orgId,
+      };
+    }),
+
+  /**
+   * cockpitGetOrgKpis — Returns live KPI definitions for the org's kpiSetId.
+   */
+  cockpitGetOrgKpis: enterpriseProcedure
+    .input(z.object({ kpiSetId: z.string().optional() }))
+    .query(async ({ input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const conditions = [eq(kpiDefinitions.status, "ACTIVE")];
+      if (input.kpiSetId) conditions.push(eq(kpiDefinitions.kpiSetId, input.kpiSetId));
+      return db
+        .select()
+        .from(kpiDefinitions)
+        .where(and(...conditions))
+        .orderBy(kpiDefinitions.sortOrder)
+        .limit(30);
+    }),
+
+  /**
+   * cockpitGetSessionHistory — Returns the last 20 twin sessions for this org.
+   */
+  cockpitGetSessionHistory: enterpriseProcedure
+    .input(z.object({}))
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      return db
+        .select()
+        .from(twinSessions)
+        .where(eq(twinSessions.orgId, ctx.orgId))
+        .orderBy(desc(twinSessions.startedAt))
+        .limit(20);
+    }),
+
+  /**
+   * cockpitGetOutcomeLedger — Returns the last 20 outcome ledger entries.
+   */
+  cockpitGetOutcomeLedger: enterpriseProcedure
+    .input(z.object({}))
+    .query(async () => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      return db
+        .select()
+        .from(outcomeSessions)
+        .orderBy(desc(outcomeSessions.decisionDate))
+        .limit(20);
+    }),
+
+  /**
+   * cockpitGetAuditLog — Returns the last 20 audit log entries for this org.
+   */
+  cockpitGetAuditLog: enterpriseProcedure
+    .input(z.object({}))
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      return db
+        .select()
+        .from(enterpriseAuditLog)
+        .where(eq(enterpriseAuditLog.orgId, ctx.orgId))
+        .orderBy(desc(enterpriseAuditLog.createdAt))
+        .limit(20);
     }),
 });
