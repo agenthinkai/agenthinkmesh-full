@@ -1,0 +1,242 @@
+{
+  "runDate": "2026-08-03T06:02:55.862Z",
+  "thresholds": {
+    "errorRatePct": 1,
+    "medianLatencyMs": 500,
+    "p90LatencyMs": 2000,
+    "p99LatencyMs": 5000,
+    "minRps": 5
+  },
+  "results": [
+    {
+      "scenario": "health_probe",
+      "description": "GET /api/health — baseline liveness check",
+      "connections": 20,
+      "duration": 15,
+      "requests": 48549,
+      "rps": 3237.07,
+      "latency": {
+        "min": 2,
+        "max": 25,
+        "mean": 5.73,
+        "p50": 5,
+        "p75": 6,
+        "p90": 8,
+        "p99": 12
+      },
+      "throughputBytesPerSec": 4023569.07,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRatePct": 0,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "scenario": "twin_directory",
+      "description": "Twin Directory — list all available blueprints",
+      "connections": 20,
+      "duration": 15,
+      "requests": 47908,
+      "rps": 3194.47,
+      "latency": {
+        "min": 1,
+        "max": 106,
+        "mean": 5.71,
+        "p50": 5,
+        "p75": 6,
+        "p90": 8,
+        "p99": 11
+      },
+      "throughputBytesPerSec": 3969911.47,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRatePct": 0,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "scenario": "decision_type_registry",
+      "description": "Decision type registry — list all decision types",
+      "connections": 20,
+      "duration": 15,
+      "requests": 50952,
+      "rps": 3397.4,
+      "latency": {
+        "min": 2,
+        "max": 54,
+        "mean": 5.35,
+        "p50": 5,
+        "p75": 5,
+        "p90": 6,
+        "p99": 9
+      },
+      "throughputBytesPerSec": 4222293.34,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRatePct": 0,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "scenario": "kpi_set_list",
+      "description": "KPI registry — list all KPI sets",
+      "connections": 20,
+      "duration": 15,
+      "requests": 50894,
+      "rps": 3393.4,
+      "latency": {
+        "min": 3,
+        "max": 25,
+        "mean": 5.36,
+        "p50": 5,
+        "p75": 5,
+        "p90": 6,
+        "p99": 8
+      },
+      "throughputBytesPerSec": 4217173.34,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRatePct": 0,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "scenario": "ontology_list",
+      "description": "Ontology registry — list all ontologies",
+      "connections": 20,
+      "duration": 15,
+      "requests": 50492,
+      "rps": 3366.87,
+      "latency": {
+        "min": 4,
+        "max": 20,
+        "mean": 5.36,
+        "p50": 5,
+        "p75": 5,
+        "p90": 6,
+        "p99": 9
+      },
+      "throughputBytesPerSec": 4184405.34,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRatePct": 0,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "scenario": "council_personas",
+      "description": "Council persona registry — list all personas",
+      "connections": 20,
+      "duration": 15,
+      "requests": 49379,
+      "rps": 3292.6,
+      "latency": {
+        "min": 3,
+        "max": 20,
+        "mean": 5.5,
+        "p50": 5,
+        "p75": 6,
+        "p90": 7,
+        "p99": 9
+      },
+      "throughputBytesPerSec": 4091767.47,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRatePct": 0,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "scenario": "enterprise_dashboard",
+      "description": "Enterprise dashboard — blueprint list (public)",
+      "connections": 20,
+      "duration": 15,
+      "requests": 47795,
+      "rps": 3186.74,
+      "latency": {
+        "min": 2,
+        "max": 18,
+        "mean": 5.75,
+        "p50": 6,
+        "p75": 6,
+        "p90": 6,
+        "p99": 10
+      },
+      "throughputBytesPerSec": 3960627.2,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRatePct": 0,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "scenario": "connector_list",
+      "description": "Connector registry — list all built-in connectors",
+      "connections": 20,
+      "duration": 15,
+      "requests": 49936,
+      "rps": 3329.4,
+      "latency": {
+        "min": 4,
+        "max": 31,
+        "mean": 5.43,
+        "p50": 5,
+        "p75": 5,
+        "p90": 6,
+        "p99": 10
+      },
+      "throughputBytesPerSec": 4138325.34,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRatePct": 0,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "scenario": "report_type_list",
+      "description": "Report type registry — list all report types",
+      "connections": 20,
+      "duration": 15,
+      "requests": 51501,
+      "rps": 3433.8,
+      "latency": {
+        "min": 4,
+        "max": 14,
+        "mean": 5.26,
+        "p50": 5,
+        "p75": 5,
+        "p90": 5,
+        "p99": 9
+      },
+      "throughputBytesPerSec": 4267349.34,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRatePct": 0,
+      "passed": true,
+      "failures": []
+    },
+    {
+      "scenario": "mixed_read_load",
+      "description": "Mixed read load — 20 concurrent users browsing the platform",
+      "connections": 20,
+      "duration": 15,
+      "requests": 51177,
+      "rps": 3412.2,
+      "latency": {
+        "min": 1,
+        "max": 63,
+        "mean": 5.34,
+        "p50": 5,
+        "p75": 5,
+        "p90": 5,
+        "p99": 10
+      },
+      "throughputBytesPerSec": 4241271.47,
+      "errors": 0,
+      "timeouts": 0,
+      "errorRatePct": 0,
+      "passed": true,
+      "failures": []
+    }
+  ]
+}

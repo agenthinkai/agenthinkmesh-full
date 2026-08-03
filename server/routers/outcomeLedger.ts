@@ -856,6 +856,98 @@ export const outcomeLedgerRouter = router({
    * Persists a new outcome session record from a council run.
    * Intended for enterprise twin sessions and direct API integrations.
    */
+  // ── Batch import (admin) ────────────────────────────────────────────────────
+  batchImport: protectedProcedure
+    .input(z.object({
+      rows: z.array(z.object({
+        dealId: z.string().min(1).max(64),
+        councilRunId: z.string().max(64).optional(),
+        councilMode: z.enum(COUNCIL_MODES).default("gcc"),
+        originalVerdict: z.enum(["APPROVED", "APPROVED_WITH_CONDITIONS", "REJECTED", "VETOED", "INSUFFICIENT_DATA"]).default("APPROVED"),
+        consensusScore: z.number().min(0).max(1).optional(),
+        confidenceLevel: z.number().min(0).max(1).optional(),
+        decisionDate: z.number().int().optional(),
+        outcomeStatus: z.enum(OUTCOME_STATUSES).default("UNKNOWN"),
+        outcomeNotes: z.string().max(4000).optional(),
+        primaryDriver: z.enum(["FINANCIAL", "CONSTRUCTION", "REGULATORY", "TECHNOLOGY", "COMMERCIAL", "ESG"]).optional(),
+        sourceConfidence: z.enum(["HIGH", "MEDIUM", "LOW"]).optional(),
+        sourceType: z.enum(["FILING", "ANNUAL_REPORT", "REGULATORY", "LENDER", "DEVELOPER", "ANNOUNCEMENT", "MANUAL"]).optional(),
+        sourceUrl: z.string().url().optional(),
+      })).min(1).max(500),
+      dryRun: z.boolean().default(false),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      requireAdmin(ctx);
+      const db = await requireDb();
+      const now = Date.now();
+
+      // Validation: check for duplicate dealIds within the batch
+      const seenDealIds = new Set<string>();
+      const duplicates: string[] = [];
+      for (const row of input.rows) {
+        if (seenDealIds.has(row.dealId)) duplicates.push(row.dealId);
+        seenDealIds.add(row.dealId);
+      }
+
+      if (input.dryRun) {
+        return {
+          dryRun: true,
+          rowCount: input.rows.length,
+          duplicatesInBatch: duplicates,
+          valid: duplicates.length === 0,
+          preview: input.rows.slice(0, 5).map(r => ({
+            dealId: r.dealId,
+            councilMode: r.councilMode,
+            outcomeStatus: r.outcomeStatus,
+          })),
+          insertedCount: 0,
+          errorCount: 0,
+          errors: [] as { dealId: string; error: string }[],
+          insertedIds: [] as number[],
+        };
+      }
+
+      const inserted: number[] = [];
+      const errors: { dealId: string; error: string }[] = [];
+
+      for (const row of input.rows) {
+        try {
+          const [result] = await db.insert(outcomeSessions).values({
+            dealId: row.dealId,
+            councilRunId: row.councilRunId ?? null,
+            councilMode: row.councilMode,
+            originalVerdict: row.originalVerdict,
+            consensusScore: row.consensusScore?.toString() ?? null,
+            confidenceLevel: row.confidenceLevel?.toString() ?? null,
+            decisionDate: row.decisionDate ?? now,
+            outcomeStatus: row.outcomeStatus,
+            outcomeNotes: row.outcomeNotes ?? null,
+            primaryDriver: row.primaryDriver ?? null,
+            sourceConfidence: row.sourceConfidence ?? null,
+            sourceType: row.sourceType ?? null,
+            sourceUrl: row.sourceUrl ?? null,
+            createdAt: now,
+            updatedAt: now,
+          } as any);
+          inserted.push((result as any).insertId as number);
+        } catch (err: any) {
+          errors.push({ dealId: row.dealId, error: err.message ?? "Unknown error" });
+        }
+      }
+
+      return {
+        dryRun: false,
+        rowCount: input.rows.length,
+        insertedCount: inserted.length,
+        errorCount: errors.length,
+        errors: errors.slice(0, 20),
+        duplicatesInBatch: duplicates,
+        insertedIds: inserted.slice(0, 50),
+        preview: [] as { dealId: string; councilMode: string; outcomeStatus: string }[],
+        valid: errors.length === 0,
+      };
+    }),
+
   storeDecision: protectedProcedure
     .input(z.object({
       dealId: z.string().min(1).max(64),

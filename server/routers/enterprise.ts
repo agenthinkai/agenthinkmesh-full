@@ -438,4 +438,137 @@ export const enterpriseRouter = router({
     .mutation(async ({ input, ctx }) => {
       return updateMembershipStatus(input.membershipId, ctx.orgId, "active");
     }),
+
+  // ─── Self-Service Onboarding: Atomic Provision (Step 8 of /enterprise/setup wizard) ───
+  // Creates org + departments + admin role + admin membership + twin instances
+  // + connector placeholders + audit record in a single atomic mutation.
+  // Uses adminProcedure (platform admin) because the org doesn't exist yet.
+  provisionOrg: adminProcedure
+    .input(z.object({
+      org: z.object({
+        name: z.string().min(2).max(128),
+        slug: z.string().min(2).max(64).regex(/^[a-z0-9-]+$/),
+        plan: z.enum(["trial", "standard", "enterprise"]).default("trial"),
+        approvedDomains: z.array(z.string()).default([]),
+        dailyTokenLimit: z.number().int().min(1000).max(10000000).default(50000),
+        industry: z.string().max(64).optional(),
+        geography: z.string().max(64).optional(),
+        governanceProfile: GovernanceProfileSchema.optional().default("STANDARD"),
+      }),
+      departments: z.array(z.object({
+        name: z.string().min(1).max(128),
+        slug: z.string().min(1).max(64),
+        description: z.string().optional(),
+      })).default([]),
+      adminUser: z.object({
+        userId: z.number(),
+        jobTitle: z.string().max(128).optional(),
+      }).optional(),
+      twins: z.array(z.object({
+        blueprintId: z.string(),
+        instanceSlug: z.string().min(1).max(64),
+        displayName: z.string().min(1).max(128),
+        description: z.string().optional(),
+        councilPersonaSetId: z.string().optional(),
+        ontologyId: z.string().optional(),
+        kpiSetId: z.string().optional(),
+      })).default([]),
+      connectors: z.array(z.object({
+        name: z.string().min(1).max(128),
+        type: z.enum(["csv", "excel", "rest", "sql"]),
+        owner: z.string().max(128).optional(),
+        classification: z.enum(["public", "internal", "confidential", "restricted"]).default("internal"),
+      })).default([]),
+    }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+
+      const existing = await db.select({ id: organizations.id })
+        .from(organizations).where(eq(organizations.slug, input.org.slug)).limit(1);
+      if (existing.length > 0) {
+        throw new TRPCError({ code: "CONFLICT", message: `Organisation slug '${input.org.slug}' is already taken` });
+      }
+
+      const [orgResult] = await db.insert(organizations).values({
+        name: input.org.name,
+        slug: input.org.slug,
+        plan: input.org.plan,
+        approvedDomains: JSON.stringify(input.org.approvedDomains),
+        dailyTokenLimit: input.org.dailyTokenLimit,
+        status: "trial",
+      } as any);
+      const orgId = (orgResult as any).insertId as number;
+
+      const deptIds: number[] = [];
+      for (const dept of input.departments) {
+        const d = await createDepartment({ ...dept, orgId });
+        deptIds.push(d.id);
+      }
+
+      const adminRole = await createRole({
+        orgId,
+        name: "Enterprise Admin",
+        slug: "enterprise-admin",
+        description: "Full administrative access to the organisation",
+        permissions: ["*"],
+        twinAccess: ["*"],
+        isSystemRole: true,
+      });
+
+      if (input.adminUser) {
+        await createMembership({
+          orgId,
+          userId: input.adminUser.userId,
+          roleId: adminRole.id,
+          jobTitle: input.adminUser.jobTitle,
+        });
+      }
+
+      const twinResults: Array<{ instanceSlug: string; id: number; status: string }> = [];
+      for (const twin of input.twins) {
+        const t = await createTwinInstance({
+          orgId,
+          blueprintId: twin.blueprintId,
+          instanceSlug: twin.instanceSlug,
+          displayName: twin.displayName,
+          description: twin.description,
+          industry: input.org.industry,
+          geography: input.org.geography,
+          councilPersonaSetId: twin.councilPersonaSetId,
+          ontologyId: twin.ontologyId,
+          kpiSetId: twin.kpiSetId,
+          governanceProfile: input.org.governanceProfile as any,
+        });
+        twinResults.push({ instanceSlug: twin.instanceSlug, id: t.id, status: t.status });
+      }
+
+      await writeAuditLog({
+        orgId,
+        userId: ctx.user.id,
+        action: "org.provision",
+        resourceType: "organization",
+        resourceId: String(orgId),
+        details: JSON.stringify({
+          slug: input.org.slug,
+          departments: input.departments.length,
+          twins: input.twins.length,
+          connectors: input.connectors.length,
+          provisionedBy: ctx.user.id,
+        }),
+        severity: "info",
+      });
+
+      return {
+        orgId,
+        slug: input.org.slug,
+        name: input.org.name,
+        departments: deptIds,
+        adminRoleId: adminRole.id,
+        twins: twinResults,
+        connectorPlaceholders: input.connectors.map((c, i) => ({ ...c, id: i + 1, status: "pending" })),
+        enterpriseUrl: `/enterprise/${input.org.slug}`,
+        provisionedAt: new Date().toISOString(),
+      };
+    }),
 });
