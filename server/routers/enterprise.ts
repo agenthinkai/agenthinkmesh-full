@@ -867,7 +867,8 @@ export const enterpriseRouter = router({
       const systemPrompt = reportPrompts[input.reportType];
       const userContent = [decisionContext, councilContext, input.additionalContext].filter(Boolean).join("\n\n") || "Generate based on AgenThink Mesh current operating context.";
       const response = await invokeLLM({ messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userContent }], max_tokens: 1500 });
-      const reportContent = response.choices[0]?.message?.content ?? "Report generation failed.";
+      const rawContent = response.choices[0]?.message?.content;
+      const reportContent = typeof rawContent === "string" ? rawContent : Array.isArray(rawContent) ? rawContent.map((c: any) => c.text ?? "").join("") : "Report generation failed.";
       await writeAuditLog({ orgId: ctx.orgId, userId: ctx.user.id, action: "cockpit.report.generated", resourceType: "report", resourceId: input.reportType, details: `Report type: ${input.reportType}`, severity: "info" });
       return { reportType: input.reportType, content: reportContent, generatedAt: new Date().toISOString() };
     }),
