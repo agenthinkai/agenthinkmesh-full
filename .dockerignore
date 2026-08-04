@@ -1,0 +1,44 @@
+# Development dependencies
+node_modules
+.pnpm-store
+
+# Git
+.git
+.gitignore
+
+# TypeScript build cache
+.tsbuildinfo
+*.tsbuildinfo
+
+# Drizzle migration snapshots (large JSON files, not needed at runtime)
+drizzle/meta
+drizzle/migrations
+
+# Scripts (migration/seed scripts, not needed at runtime)
+scripts
+
+# Test files
+**/*.test.ts
+**/*.spec.ts
+
+# Local environment
+.env
+.env.local
+.env.*.local
+
+# Editor
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+.manus-logs
+
+# Coverage
+coverage
