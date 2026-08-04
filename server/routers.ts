@@ -42,6 +42,7 @@ import { twinParametersRouter } from "./routers/twinParameters";
 import { workflowProtocolsRouter } from "./routers/workflowProtocols";
 import { twinFactoryRouter } from "./routers/twinFactory";
 import { enterpriseRouter } from "./routers/enterprise";
+import { hydroRouter } from "./routers/hydro";
 import { treasuryRouter } from "./routers/treasury";
 import { shareReportRouter } from "./routers/shareReport";
 import { contactsRouter } from "./routers/contacts";
@@ -172,6 +173,7 @@ export const appRouter = router({
   workflowProtocols: workflowProtocolsRouter,
   enterprise: enterpriseRouter,
   twinFactory: twinFactoryRouter,
+  hydro: hydroRouter,
 
   // ── AROS — Autonomous Revenue Operating System ───────────────────────────────
   arosDiscovery: arosDiscoveryRouter,

@@ -5822,3 +5822,44 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 ### P5 — Final Evidence Package
 - [x] Produce Customer Zero Final Verification Report (15 required items) — see final result message
 - [x] Issue formal verdict: CUSTOMER ZERO LIVE AND VERIFIED — 18/18
+
+## Hydro SME Acquisition Decision Twin (/twin/hydro)
+
+- [ ] Add DB tables: hydro_scenarios, hydro_evidence, hydro_audit_log, hydro_stress_params, hydro_company_slots
+- [ ] Add tRPC procedures: hydro.getScenario, hydro.updateAssumption, hydro.logAudit, hydro.runStress, hydro.exportPdf, hydro.exportCsv
+- [ ] Scaffold /twin/hydro route and HydroTwin.tsx page
+- [ ] Build Portfolio Case view: scenario selector (3 Cayman cases), 5-year KPI cards, Chart.js charts (Revenue/EBITDA/Debt/DSCR), acquisition phase schedule, Twin verdict badge, stop-rule alert
+- [ ] Build Warba Monitoring view: covenant dashboard (liquidity KWD 150k, DSCR 1.25x), peak exposure, sponsor liquidity, drawdown gates checklist, PASS/WATCH/FAIL badges, early-warning alerts
+- [ ] Build Evidence and Assumptions register: verified/pending/assumption rows, inline assumption editing, audit trail per edit
+- [ ] Build Stress Testing engine: 10 sliders, 5 required stress cases, live recalculation of all KPIs
+- [ ] Build Portfolio Architecture view: 10 numbered empty company slots, per-slot metrics panel
+- [ ] PDF export: credit-committee briefing with confidentiality footer and forecast disclaimers
+- [ ] CSV export: full 5-year financial schedule with disclaimers
+- [ ] Role-based access: Hydro management (full), adviser (full), auditor (read + export), Warba (read-only lender view)
+- [ ] Audit log: every scenario change, assumption edit, approval, verdict logged with user/time/reason
+- [ ] Human-approval gates: acquisitions, borrowing, payments, employment, contracts require explicit approval
+- [ ] Automated tests: financial model reconciliation, scenario switching, covenant calculation, stop-rule logic
+- [ ] Acceptance criteria verification: all 10 criteria from spec
+
+## Hydro SME Acquisition Decision Twin (Session — Aug 2026)
+
+- [x] DB migration v2: 15 new columns added to hydro_scenarios (scenarioName, acquisitionPriceKwd, warbaFinancingKwd, npvKwd, facilityApprovedKwd, facilityDrawnKwd, facilityUndrawnKwd, acquisitionAllocationKwd, workingCapitalKwd, cashY1-Y5, caymanTreatment)
+- [x] Seed 3 scenarios: Management Case (KWD 2.3M Cayman), Conservative Case (KWD 1M), Delayed/Zero Cayman
+- [x] Seed 18 evidence items across 5 categories (financial, legal, cayman, target_due_diligence, facility)
+- [x] Seed 6 company slots (Phase 1: slot 1, Phase 2: slots 2-3, Phase 3: slots 4-6)
+- [x] Schema updated in drizzle/schema.ts with all new columns
+- [x] server/routers/hydro.ts written and registered in server/routers.ts
+- [x] Route /twin/hydro added to client/src/App.tsx
+- [x] HydroTwin.tsx written with 6 views: Portfolio Case, Warba Monitoring, Evidence Register, Stress Testing, Portfolio Architecture, Audit Log
+- [x] Fix 35 TypeScript errors in HydroTwin.tsx (field name mismatches: y1Dscr→dscrY1, y1Revenue→revenueY1, etc.)
+- [x] Fix stressCase type: changed from literal "base" to union type StressCase
+- [x] Fix stressResult shape: removed nonexistent warningFlags/stressedNpv/stressedIrr, added minDscr/covenantBreached/safetyBreached
+- [x] Fix company slot status: removed nonexistent "pipeline", use "target_identified"
+- [x] Fix slot field: targetRevenueKwd → revenueKwd
+- [x] Fix useAuth import path: @/hooks/useAuth → @/_core/hooks/useAuth
+- [x] Fix Warba Monitoring: facility amount from facilityApprovedKwd, drawdown gates match 3×KWD1M phases
+- [x] Fix Twin Verdict badges: match actual seeded verdict strings (PROCEED_TO_DUE_DILIGENCE, APPROVE_PHASE_1_ONLY, REQUIRE_ADDITIONAL_EQUITY)
+- [x] Fix Portfolio Architecture: 6-slot / 4-6 companies (removed obsolete 10-company references)
+- [x] TypeScript: 0 errors
+- [x] Tests: 2310 passed, 1 skipped, 0 failed
+- [x] Checkpoint and deploy to production

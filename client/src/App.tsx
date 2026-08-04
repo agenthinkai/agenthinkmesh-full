@@ -27,6 +27,8 @@ import Unsubscribe from "./pages/Unsubscribe";
 import MeshSidebar from "./components/MeshSidebar";
 // AgenThinkTwin: eager import — Customer Zero route must never fall through to generic /twin/:templateId
 import AgenThinkTwin from "./pages/AgenThinkTwin";
+// HydroTwin: eager import — Hydro Decision Twin route must never fall through to generic /twin/:templateId
+import HydroTwin from "./pages/HydroTwin";
 
 // ── Lazy imports: heavy pages loaded only when navigated to ───────────────────
 const AgentRegistry = lazy(() => import("./pages/AgentRegistry"));
@@ -527,6 +529,7 @@ function Router() {
       <Route path="/twin/tpa" component={TPACockpit} />
       <Route path="/twin/bakalaria" component={BakalariaTwin} />
       <Route path="/twin/agenthink" component={AgenThinkTwin} />
+      <Route path="/twin/hydro" component={HydroTwin} />
       <Route path="/tools/job-to-agent" component={JobToAgent} />
       <Route path="/admin/mesh-core" component={MeshCostDashboard} />
       <Route path="/founder" component={FounderDiagnostic} />

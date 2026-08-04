@@ -3962,3 +3962,135 @@ export const cockpitScenarioResults = mysqlTable("cockpit_scenario_results", {
 });
 export type CockpitScenarioResult = typeof cockpitScenarioResults.$inferSelect;
 export type InsertCockpitScenarioResult = typeof cockpitScenarioResults.$inferInsert;
+
+
+// ── Hydro SME Acquisition Decision Twin ──────────────────────────────────────
+export const hydroScenarios = mysqlTable("hydro_scenarios", {
+  id: int("id").autoincrement().primaryKey(),
+  scenarioKey: varchar("scenarioKey", { length: 50 }).notNull(),
+  label: varchar("label", { length: 200 }).notNull(),
+  caymanAmountKwd: decimal("caymanAmountKwd", { precision: 12, scale: 3 }).notNull(),
+  caymanTimingMonths: int("caymanTimingMonths").notNull().default(18),
+  revenueY1: decimal("revenueY1", { precision: 12, scale: 3 }),
+  revenueY2: decimal("revenueY2", { precision: 12, scale: 3 }),
+  revenueY3: decimal("revenueY3", { precision: 12, scale: 3 }),
+  revenueY4: decimal("revenueY4", { precision: 12, scale: 3 }),
+  revenueY5: decimal("revenueY5", { precision: 12, scale: 3 }),
+  ebitdaY1: decimal("ebitdaY1", { precision: 12, scale: 3 }),
+  ebitdaY2: decimal("ebitdaY2", { precision: 12, scale: 3 }),
+  ebitdaY3: decimal("ebitdaY3", { precision: 12, scale: 3 }),
+  ebitdaY4: decimal("ebitdaY4", { precision: 12, scale: 3 }),
+  ebitdaY5: decimal("ebitdaY5", { precision: 12, scale: 3 }),
+  seniorDebtY1: decimal("seniorDebtY1", { precision: 12, scale: 3 }),
+  seniorDebtY2: decimal("seniorDebtY2", { precision: 12, scale: 3 }),
+  seniorDebtY3: decimal("seniorDebtY3", { precision: 12, scale: 3 }),
+  seniorDebtY4: decimal("seniorDebtY4", { precision: 12, scale: 3 }),
+  seniorDebtY5: decimal("seniorDebtY5", { precision: 12, scale: 3 }),
+  dscrY1: decimal("dscrY1", { precision: 6, scale: 2 }),
+  dscrY2: decimal("dscrY2", { precision: 6, scale: 2 }),
+  dscrY3: decimal("dscrY3", { precision: 6, scale: 2 }),
+  dscrY4: decimal("dscrY4", { precision: 6, scale: 2 }),
+  dscrY5: decimal("dscrY5", { precision: 6, scale: 2 }),
+  // Additional financial model columns
+  scenarioName: varchar("scenarioName", { length: 200 }),
+  acquisitionPriceKwd: decimal("acquisitionPriceKwd", { precision: 12, scale: 3 }),
+  warbaFinancingKwd: decimal("warbaFinancingKwd", { precision: 12, scale: 3 }),
+  npvKwd: decimal("npvKwd", { precision: 12, scale: 3 }),
+  facilityApprovedKwd: decimal("facilityApprovedKwd", { precision: 12, scale: 3 }),
+  facilityDrawnKwd: decimal("facilityDrawnKwd", { precision: 12, scale: 3 }),
+  facilityUndrawnKwd: decimal("facilityUndrawnKwd", { precision: 12, scale: 3 }),
+  acquisitionAllocationKwd: decimal("acquisitionAllocationKwd", { precision: 12, scale: 3 }),
+  workingCapitalKwd: decimal("workingCapitalKwd", { precision: 12, scale: 3 }),
+  cashY1: decimal("cashY1", { precision: 12, scale: 3 }),
+  cashY2: decimal("cashY2", { precision: 12, scale: 3 }),
+  cashY3: decimal("cashY3", { precision: 12, scale: 3 }),
+  cashY4: decimal("cashY4", { precision: 12, scale: 3 }),
+  cashY5: decimal("cashY5", { precision: 12, scale: 3 }),
+  caymanTreatment: varchar("caymanTreatment", { length: 100 }),
+  twinVerdict: varchar("twinVerdict", { length: 100 }).notNull(),
+  isActive: tinyint("isActive").default(0),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type HydroScenario = typeof hydroScenarios.$inferSelect;
+export type InsertHydroScenario = typeof hydroScenarios.$inferInsert;
+
+export const hydroEvidence = mysqlTable("hydro_evidence", {
+  id: int("id").autoincrement().primaryKey(),
+  itemKey: varchar("itemKey", { length: 100 }).notNull().unique(),
+  label: varchar("label", { length: 300 }).notNull(),
+  currentInput: varchar("currentInput", { length: 500 }),
+  status: mysqlEnum("status", ["verified", "pending", "assumption", "outstanding"]).notNull().default("pending"),
+  statusNote: varchar("statusNote", { length: 500 }),
+  category: varchar("category", { length: 100 }).notNull().default("financial"),
+  isEditable: tinyint("isEditable").default(1),
+  sortOrder: int("sortOrder").default(0),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type HydroEvidence = typeof hydroEvidence.$inferSelect;
+export type InsertHydroEvidence = typeof hydroEvidence.$inferInsert;
+
+export const hydroAuditLog = mysqlTable("hydro_audit_log", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId"),
+  userName: varchar("userName", { length: 200 }),
+  actionType: varchar("actionType", { length: 100 }).notNull(),
+  entityType: varchar("entityType", { length: 100 }),
+  entityId: varchar("entityId", { length: 100 }),
+  oldValue: text("oldValue"),
+  newValue: text("newValue"),
+  reason: text("reason"),
+  ipAddress: varchar("ipAddress", { length: 50 }),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type HydroAuditLog = typeof hydroAuditLog.$inferSelect;
+export type InsertHydroAuditLog = typeof hydroAuditLog.$inferInsert;
+
+export const hydroStressParams = mysqlTable("hydro_stress_params", {
+  id: int("id").autoincrement().primaryKey(),
+  sessionId: varchar("sessionId", { length: 100 }).notNull(),
+  userId: int("userId"),
+  caymanAmountKwd: decimal("caymanAmountKwd", { precision: 12, scale: 3 }).default("1000"),
+  caymanDelayMonths: int("caymanDelayMonths").default(0),
+  revenueGrowthDelta: decimal("revenueGrowthDelta", { precision: 6, scale: 3 }).default("0"),
+  grossMarginDelta: decimal("grossMarginDelta", { precision: 6, scale: 3 }).default("0"),
+  automationSavingsPct: decimal("automationSavingsPct", { precision: 6, scale: 3 }).default("100"),
+  financeRatePct: decimal("financeRatePct", { precision: 6, scale: 3 }).default("5.5"),
+  gracePeriodMonths: int("gracePeriodMonths").default(12),
+  acqTimingDeltaMonths: int("acqTimingDeltaMonths").default(0),
+  acqPriceDeltaPct: decimal("acqPriceDeltaPct", { precision: 6, scale: 3 }).default("0"),
+  customerConcentrationShock: tinyint("customerConcentrationShock").default(0),
+  receivablesDelayDays: int("receivablesDelayDays").default(0),
+  gccDisruption: tinyint("gccDisruption").default(0),
+  stressCase: varchar("stressCase", { length: 50 }).default("custom"),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type HydroStressParams = typeof hydroStressParams.$inferSelect;
+export type InsertHydroStressParams = typeof hydroStressParams.$inferInsert;
+
+export const hydroCompanySlots = mysqlTable("hydro_company_slots", {
+  id: int("id").autoincrement().primaryKey(),
+  slotNumber: int("slotNumber").notNull().unique(),
+  status: mysqlEnum("status", ["empty", "target_identified", "under_diligence", "approved", "acquired", "active", "exited"]).default("empty"),
+  companyName: varchar("companyName", { length: 300 }),
+  sector: varchar("sector", { length: 200 }),
+  acquisitionPriceKwd: decimal("acquisitionPriceKwd", { precision: 12, scale: 3 }),
+  revenueKwd: decimal("revenueKwd", { precision: 12, scale: 3 }),
+  ebitdaKwd: decimal("ebitdaKwd", { precision: 12, scale: 3 }),
+  cashConversionPct: decimal("cashConversionPct", { precision: 6, scale: 2 }),
+  receivablesDays: int("receivablesDays"),
+  customerConcentrationPct: decimal("customerConcentrationPct", { precision: 6, scale: 2 }),
+  totalDebtKwd: decimal("totalDebtKwd", { precision: 12, scale: 3 }),
+  automationPlan: text("automationPlan"),
+  automationSavingsActualKwd: decimal("automationSavingsActualKwd", { precision: 12, scale: 3 }),
+  automationSavingsForecastKwd: decimal("automationSavingsForecastKwd", { precision: 12, scale: 3 }),
+  riskAlerts: text("riskAlerts"),
+  phase: int("phase"),
+  acquisitionDate: bigint("acquisitionDate", { mode: "number" }),
+  notes: text("notes"),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type HydroCompanySlot = typeof hydroCompanySlots.$inferSelect;
+export type InsertHydroCompanySlot = typeof hydroCompanySlots.$inferInsert;
