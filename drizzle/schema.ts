@@ -1,4 +1,4 @@
-import { bigint, boolean, decimal, float, index, int, longtext, mysqlEnum, mysqlTable, text, tinyint, timestamp, unique, varchar } from "drizzle-orm/mysql-core";
+import { bigint, boolean, decimal, float, index, int, longtext, mediumtext, mysqlEnum, mysqlTable, text, tinyint, timestamp, unique, varchar } from "drizzle-orm/mysql-core";
 
 // ── PitchMirror Shares ────────────────────────────────────────────────────────────────────
 export const pitchMirrorShares = mysqlTable("pitch_mirror_shares", {
@@ -3888,3 +3888,77 @@ export const twinMessages = mysqlTable("twin_messages", {
 });
 export type TwinMessage = typeof twinMessages.$inferSelect;
 export type InsertTwinMessage = typeof twinMessages.$inferInsert;
+
+// ── Cockpit Executive Decisions ───────────────────────────────────────────────
+export const cockpitDecisions = mysqlTable("cockpit_decisions", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  decisionRef: varchar("decisionRef", { length: 32 }).notNull(),
+  title: varchar("title", { length: 512 }).notNull(),
+  decisionType: varchar("decisionType", { length: 64 }).notNull().default("STRATEGIC"),
+  priority: mysqlEnum("priority", ["HIGH", "MEDIUM", "LOW"]).notNull().default("MEDIUM"),
+  status: mysqlEnum("status", ["PENDING_COUNCIL", "UNDER_REVIEW", "APPROVED", "REJECTED", "DEFERRED"]).notNull().default("PENDING_COUNCIL"),
+  context: text("context"),
+  assumptions: text("assumptions"),
+  owner: varchar("owner", { length: 256 }).notNull().default(""),
+  urgency: varchar("urgency", { length: 64 }).notNull().default("normal"),
+  kpiImpact: varchar("kpiImpact", { length: 1024 }).notNull().default("[]"),
+  submittedBy: varchar("submittedBy", { length: 256 }).notNull().default(""),
+  outcomeAction: text("outcomeAction"),
+  outcomeDate: varchar("outcomeDate", { length: 32 }),
+  outcomeConfidence: int("outcomeConfidence"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+export type CockpitDecision = typeof cockpitDecisions.$inferSelect;
+export type InsertCockpitDecision = typeof cockpitDecisions.$inferInsert;
+
+// ── Cockpit Council Results ───────────────────────────────────────────────────
+export const cockpitCouncilResults = mysqlTable("cockpit_council_results", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  decisionId: int("decisionId").notNull(),
+  decisionRef: varchar("decisionRef", { length: 32 }).notNull(),
+  councilMode: varchar("councilMode", { length: 64 }).notNull().default("executive"),
+  agentsJson: mediumtext("agentsJson").notNull(),
+  judgeJson: mediumtext("judgeJson").notNull(),
+  tallyApprove: int("tallyApprove").notNull().default(0),
+  tallyConditional: int("tallyConditional").notNull().default(0),
+  tallyReject: int("tallyReject").notNull().default(0),
+  finalVerdict: varchar("finalVerdict", { length: 64 }).notNull().default("PENDING"),
+  confidence: int("confidence").notNull().default(0),
+  runAt: timestamp("runAt").defaultNow().notNull(),
+});
+export type CockpitCouncilResult = typeof cockpitCouncilResults.$inferSelect;
+export type InsertCockpitCouncilResult = typeof cockpitCouncilResults.$inferInsert;
+
+// ── Cockpit Operating KPIs ────────────────────────────────────────────────────
+export const cockpitOperatingKpis = mysqlTable("cockpit_operating_kpis", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  section: varchar("section", { length: 64 }).notNull(),
+  kpiKey: varchar("kpiKey", { length: 128 }).notNull(),
+  label: varchar("label", { length: 256 }).notNull(),
+  value: varchar("value", { length: 256 }),
+  unit: varchar("unit", { length: 64 }),
+  source: varchar("source", { length: 256 }),
+  verificationStatus: mysqlEnum("verificationStatus", ["live", "manual", "unverified"]).notNull().default("unverified"),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+});
+export type CockpitOperatingKpi = typeof cockpitOperatingKpis.$inferSelect;
+export type InsertCockpitOperatingKpi = typeof cockpitOperatingKpis.$inferInsert;
+
+// ── Cockpit Scenario Results ──────────────────────────────────────────────────
+export const cockpitScenarioResults = mysqlTable("cockpit_scenario_results", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  decisionId: int("decisionId").notNull(),
+  scenarioName: varchar("scenarioName", { length: 256 }).notNull(),
+  weightsJson: mediumtext("weightsJson").notNull(),
+  rankingsJson: mediumtext("rankingsJson").notNull(),
+  sensitivityJson: mediumtext("sensitivityJson").notNull(),
+  recommendation: text("recommendation"),
+  runAt: timestamp("runAt").defaultNow().notNull(),
+});
+export type CockpitScenarioResult = typeof cockpitScenarioResults.$inferSelect;
+export type InsertCockpitScenarioResult = typeof cockpitScenarioResults.$inferInsert;

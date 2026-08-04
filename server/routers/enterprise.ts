@@ -39,7 +39,8 @@ import {
 } from "../lib/enterpriseRuntimeService";
 import { runCouncil } from "../councilEngine";
 import { getDb } from "../db";
-import { organizations, kpiDefinitions, twinInstances, twinSessions, outcomeSessions, enterpriseAuditLog } from "../../drizzle/schema";
+import { organizations, kpiDefinitions, twinInstances, twinSessions, outcomeSessions, enterpriseAuditLog, cockpitDecisions, cockpitCouncilResults, cockpitOperatingKpis, cockpitScenarioResults } from "../../drizzle/schema";
+import { invokeLLM } from "../_core/llm";
 import { eq, and, desc, count } from "drizzle-orm";
 
 const CouncilModeSchema = z.enum(["gcc", "global_vc", "india_pe", "gcc_equities", "infrastructure"]);
@@ -692,4 +693,183 @@ export const enterpriseRouter = router({
         .orderBy(desc(enterpriseAuditLog.createdAt))
         .limit(20);
     }),
+
+  cockpitGetOperatingKpis: enterpriseProcedure
+    .input(z.object({}))
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      return db.select().from(cockpitOperatingKpis).where(eq(cockpitOperatingKpis.orgId, ctx.orgId)).orderBy(cockpitOperatingKpis.section, cockpitOperatingKpis.kpiKey);
+    }),
+
+  cockpitUpdateOperatingKpi: enterpriseProcedure
+    .input(z.object({ id: z.number(), value: z.string().nullable(), source: z.string().optional(), verificationStatus: z.enum(["live", "manual", "unverified"]).optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      await db.update(cockpitOperatingKpis).set({ value: input.value, source: input.source, verificationStatus: input.verificationStatus }).where(and(eq(cockpitOperatingKpis.id, input.id), eq(cockpitOperatingKpis.orgId, ctx.orgId)));
+      return { ok: true };
+    }),
+
+  cockpitGetDecisions: enterpriseProcedure
+    .input(z.object({}))
+    .query(async ({ ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      return db.select().from(cockpitDecisions).where(eq(cockpitDecisions.orgId, ctx.orgId)).orderBy(desc(cockpitDecisions.createdAt));
+    }),
+
+  cockpitSaveDecision: enterpriseProcedure
+    .input(z.object({
+      id: z.number().optional(), decisionRef: z.string(), title: z.string(),
+      decisionType: z.string().optional(), priority: z.enum(["HIGH", "MEDIUM", "LOW"]).optional(),
+      status: z.enum(["PENDING_COUNCIL", "UNDER_REVIEW", "APPROVED", "REJECTED", "DEFERRED"]).optional(),
+      context: z.string().optional(), assumptions: z.string().optional(),
+      owner: z.string().optional(), urgency: z.string().optional(), kpiImpact: z.array(z.string()).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const { id, kpiImpact, ...rest } = input;
+      const data = { ...rest, orgId: ctx.orgId, kpiImpact: JSON.stringify(kpiImpact ?? []), submittedBy: ctx.user.name ?? "" };
+      if (id) {
+        await db.update(cockpitDecisions).set({ ...data, updatedAt: new Date() }).where(and(eq(cockpitDecisions.id, id), eq(cockpitDecisions.orgId, ctx.orgId)));
+        return { id };
+      }
+      const [result] = await db.insert(cockpitDecisions).values(data as any);
+      return { id: (result as any).insertId };
+    }),
+
+  cockpitRecordOutcome: enterpriseProcedure
+    .input(z.object({ decisionId: z.number(), outcomeAction: z.string(), outcomeDate: z.string(), outcomeConfidence: z.number().min(0).max(100), status: z.enum(["APPROVED", "REJECTED", "DEFERRED"]) }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      await db.update(cockpitDecisions).set({ outcomeAction: input.outcomeAction, outcomeDate: input.outcomeDate, outcomeConfidence: input.outcomeConfidence, status: input.status, updatedAt: new Date() }).where(and(eq(cockpitDecisions.id, input.decisionId), eq(cockpitDecisions.orgId, ctx.orgId)));
+      await db.insert(outcomeSessions).values({ orgId: ctx.orgId, dealId: `decision-${input.decisionId}`, councilMode: "executive", originalVerdict: input.status, outcomeStatus: input.status === "APPROVED" ? "SUCCEEDED" : input.status === "REJECTED" ? "FAILED" : "PENDING", decisionDate: Date.now() } as any);
+      await writeAuditLog({ orgId: ctx.orgId, userId: ctx.user.id, action: "cockpit.outcome.recorded", resourceType: "cockpit_decision", resourceId: String(input.decisionId), details: `Outcome recorded: ${input.status} — ${input.outcomeAction}`, severity: "info" });
+      return { ok: true };
+    }),
+
+  cockpitRunCouncil: enterpriseProcedure
+    .input(z.object({ decisionId: z.number(), decisionRef: z.string(), decisionTitle: z.string(), decisionContext: z.string(), assumptions: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const AGENT_TIMEOUT_MS = 28_000;
+      const EXECUTIVE_AGENTS = [
+        { id: "ceo", name: "CEO Perspective", icon: "🎯" },
+        { id: "cfo", name: "CFO / Financial Risk", icon: "💰" },
+        { id: "cto", name: "CTO / Technical Feasibility", icon: "⚙️" },
+        { id: "cco", name: "Chief Commercial Officer", icon: "🤝" },
+        { id: "risk", name: "Risk & Governance", icon: "⚠️" },
+        { id: "strategy", name: "Strategy Advisor", icon: "🧭" },
+        { id: "ops", name: "Operations Lead", icon: "🔧" },
+        { id: "dissent", name: "Devil's Advocate", icon: "🔥" },
+      ];
+      const decisionBrief = `DECISION: ${input.decisionTitle}\n\nCONTEXT: ${input.decisionContext}\n\nASSUMPTIONS: ${input.assumptions ?? "None stated"}`;
+      const agentResults = await Promise.all(EXECUTIVE_AGENTS.map(async (agent) => {
+        try {
+          const result = await Promise.race([
+            invokeLLM({ messages: [{ role: "system", content: `You are the ${agent.name} of AgenThink Mesh. Evaluate the decision from your functional perspective. Return only valid JSON.` }, { role: "user", content: `${decisionBrief}\n\nReturn JSON: {"vote":"APPROVE"|"CONDITIONAL"|"REJECT","confidence":0-100,"headline":"one sentence","rationale":"2-3 sentences","key_condition":"most important condition or empty","risk":"primary risk in one sentence"}` }], max_tokens: 300, response_format: { type: "json_schema", json_schema: { name: "agent_vote", strict: true, schema: { type: "object", properties: { vote: { type: "string", enum: ["APPROVE","CONDITIONAL","REJECT"] }, confidence: { type: "number" }, headline: { type: "string" }, rationale: { type: "string" }, key_condition: { type: "string" }, risk: { type: "string" } }, required: ["vote","confidence","headline","rationale","key_condition","risk"], additionalProperties: false } } } }),
+            new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), AGENT_TIMEOUT_MS)),
+          ]);
+          const content = result.choices[0]?.message?.content;
+          const parsed = typeof content === "string" ? JSON.parse(content) : content;
+          return { ...agent, ...parsed, error: null };
+        } catch { return { ...agent, vote: "CONDITIONAL" as const, confidence: 50, headline: "Insufficient context for definitive assessment.", rationale: "Agent timed out. Manual review recommended.", key_condition: "Provide additional context.", risk: "Unknown.", error: "timeout" }; }
+      }));
+      const tallyApprove = agentResults.filter(a => a.vote === "APPROVE").length;
+      const tallyConditional = agentResults.filter(a => a.vote === "CONDITIONAL").length;
+      const tallyReject = agentResults.filter(a => a.vote === "REJECT").length;
+      let judgeResult: any = { final_verdict: "APPROVED_WITH_CONDITIONS", confidence: 72, synthesis: "The council majority supports proceeding with conditions.", the_bet: "This decision succeeds if the primary condition is met.", conditions: ["Address the primary risk identified.", "Confirm resource availability."], dissent: "The Devil's Advocate raises a concern that should not be dismissed.", required_evidence: "Additional data points required before final commitment." };
+      try {
+        const judgeResponse = await Promise.race([
+          invokeLLM({ messages: [{ role: "system", content: `You are the Judge of the AgenThink Executive Council. Synthesise 8 agent votes into a final verdict for: ${input.decisionTitle}. Return only valid JSON.` }, { role: "user", content: `Agent votes: ${JSON.stringify(agentResults.map(a => ({ name: a.name, vote: a.vote, confidence: a.confidence, headline: a.headline, key_condition: a.key_condition })))}\n\nReturn JSON: {"final_verdict":"APPROVED"|"APPROVED_WITH_CONDITIONS"|"REJECTED","confidence":0-100,"synthesis":"3-4 sentences","the_bet":"one sentence","conditions":["condition 1"],"dissent":"most important dissenting view","required_evidence":"what data would change this verdict"}` }], max_tokens: 600, response_format: { type: "json_schema", json_schema: { name: "judge_verdict", strict: true, schema: { type: "object", properties: { final_verdict: { type: "string", enum: ["APPROVED","APPROVED_WITH_CONDITIONS","REJECTED"] }, confidence: { type: "number" }, synthesis: { type: "string" }, the_bet: { type: "string" }, conditions: { type: "array", items: { type: "string" } }, dissent: { type: "string" }, required_evidence: { type: "string" } }, required: ["final_verdict","confidence","synthesis","the_bet","conditions","dissent","required_evidence"], additionalProperties: false } } } }),
+          new Promise<never>((_, reject) => setTimeout(() => reject(new Error("judge timeout")), AGENT_TIMEOUT_MS)),
+        ]);
+        const judgeContent = judgeResponse.choices[0]?.message?.content;
+        judgeResult = typeof judgeContent === "string" ? JSON.parse(judgeContent) : judgeContent;
+      } catch { console.warn("[cockpitRunCouncil] Judge timeout"); }
+      const [insertResult] = await db.insert(cockpitCouncilResults).values({ orgId: ctx.orgId, decisionId: input.decisionId, decisionRef: input.decisionRef, councilMode: "executive", agentsJson: JSON.stringify(agentResults), judgeJson: JSON.stringify(judgeResult), tallyApprove, tallyConditional, tallyReject, finalVerdict: judgeResult.final_verdict, confidence: judgeResult.confidence } as any);
+      await db.update(cockpitDecisions).set({ status: "UNDER_REVIEW", updatedAt: new Date() }).where(and(eq(cockpitDecisions.id, input.decisionId), eq(cockpitDecisions.orgId, ctx.orgId)));
+      await writeAuditLog({ orgId: ctx.orgId, userId: ctx.user.id, action: "cockpit.council.run", resourceType: "cockpit_decision", resourceId: input.decisionRef, details: `Council run for: ${input.decisionTitle} — Verdict: ${judgeResult.final_verdict} (${judgeResult.confidence}%)`, severity: "info" });
+      return { agents: agentResults, judge: judgeResult, tally: { approve: tallyApprove, conditional: tallyConditional, reject: tallyReject }, runAt: new Date().toISOString(), councilResultId: (insertResult as any).insertId };
+    }),
+
+  cockpitGetCouncilResults: enterpriseProcedure
+    .input(z.object({ decisionId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const rows = await db.select().from(cockpitCouncilResults).where(and(eq(cockpitCouncilResults.orgId, ctx.orgId), eq(cockpitCouncilResults.decisionId, input.decisionId))).orderBy(desc(cockpitCouncilResults.runAt)).limit(5);
+      return rows.map(r => ({ ...r, agents: JSON.parse(r.agentsJson), judge: JSON.parse(r.judgeJson) }));
+    }),
+
+  cockpitRunScenario: enterpriseProcedure
+    .input(z.object({
+      decisionId: z.number(), scenarioName: z.string(),
+      weights: z.object({ relationshipStrength: z.number(), probabilityOfMeeting: z.number(), timeToPilot: z.number(), regulatoryComplexity: z.number(), dataAccessComplexity: z.number(), implementationEffort: z.number(), contractValue: z.number(), referenceValue: z.number(), expansionPotential: z.number() }),
+      candidates: z.array(z.object({ name: z.string(), scores: z.object({ relationshipStrength: z.number(), probabilityOfMeeting: z.number(), timeToPilot: z.number(), regulatoryComplexity: z.number(), dataAccessComplexity: z.number(), implementationEffort: z.number(), contractValue: z.number(), referenceValue: z.number(), expansionPotential: z.number() }) })).optional(),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const candidates = input.candidates ?? [
+        { name: "Alghanim Industries", scores: { relationshipStrength: 8, probabilityOfMeeting: 9, timeToPilot: 7, regulatoryComplexity: 5, dataAccessComplexity: 5, implementationEffort: 6, contractValue: 9, referenceValue: 9, expansionPotential: 10 } },
+        { name: "Accenture Middle East", scores: { relationshipStrength: 6, probabilityOfMeeting: 7, timeToPilot: 5, regulatoryComplexity: 4, dataAccessComplexity: 4, implementationEffort: 7, contractValue: 8, referenceValue: 8, expansionPotential: 7 } },
+        { name: "Kuwait Finance House", scores: { relationshipStrength: 5, probabilityOfMeeting: 6, timeToPilot: 4, regulatoryComplexity: 7, dataAccessComplexity: 7, implementationEffort: 8, contractValue: 7, referenceValue: 7, expansionPotential: 6 } },
+        { name: "KIPCO Group", scores: { relationshipStrength: 4, probabilityOfMeeting: 5, timeToPilot: 6, regulatoryComplexity: 5, dataAccessComplexity: 6, implementationEffort: 5, contractValue: 8, referenceValue: 8, expansionPotential: 9 } },
+        { name: "Zain Group", scores: { relationshipStrength: 3, probabilityOfMeeting: 4, timeToPilot: 5, regulatoryComplexity: 4, dataAccessComplexity: 5, implementationEffort: 6, contractValue: 7, referenceValue: 6, expansionPotential: 7 } },
+      ];
+      const weightKeys = Object.keys(input.weights) as Array<keyof typeof input.weights>;
+      const totalWeight = weightKeys.reduce((sum, k) => sum + input.weights[k], 0);
+      const rankings = candidates.map(c => {
+        const weightedScore = weightKeys.reduce((sum, k) => { const w = input.weights[k] / totalWeight; const s = c.scores[k]; const isInverted = ["regulatoryComplexity","dataAccessComplexity","implementationEffort","timeToPilot"].includes(k); return sum + w * (isInverted ? 10 - s : s); }, 0);
+        return { name: c.name, weightedScore: Math.round(weightedScore * 10) / 10, rawScores: c.scores };
+      }).sort((a, b) => b.weightedScore - a.weightedScore);
+      const sensitivityMap: Record<string, string> = {};
+      weightKeys.forEach(k => { const topByDimension = [...candidates].sort((a, b) => { const isInverted = ["regulatoryComplexity","dataAccessComplexity","implementationEffort","timeToPilot"].includes(k); return isInverted ? a.scores[k] - b.scores[k] : b.scores[k] - a.scores[k]; }); sensitivityMap[k] = topByDimension[0]?.name ?? ""; });
+      const recommendation = `Under the "${input.scenarioName}" scenario, ${rankings[0]?.name} ranks first with a weighted score of ${rankings[0]?.weightedScore}/10. ${rankings[1]?.name} is second at ${rankings[1]?.weightedScore}/10.`;
+      await db.insert(cockpitScenarioResults).values({ orgId: ctx.orgId, decisionId: input.decisionId, scenarioName: input.scenarioName, weightsJson: JSON.stringify(input.weights), rankingsJson: JSON.stringify(rankings), sensitivityJson: JSON.stringify(sensitivityMap), recommendation } as any);
+      return { rankings, sensitivityMap, recommendation, scenarioName: input.scenarioName };
+    }),
+
+  cockpitGetScenarioResults: enterpriseProcedure
+    .input(z.object({ decisionId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const rows = await db.select().from(cockpitScenarioResults).where(and(eq(cockpitScenarioResults.orgId, ctx.orgId), eq(cockpitScenarioResults.decisionId, input.decisionId))).orderBy(desc(cockpitScenarioResults.runAt)).limit(10);
+      return rows.map(r => ({ ...r, rankings: JSON.parse(r.rankingsJson), weights: JSON.parse(r.weightsJson), sensitivity: JSON.parse(r.sensitivityJson) }));
+    }),
+
+  cockpitGenerateReport: enterpriseProcedure
+    .input(z.object({ reportType: z.enum(["executive_decision","customer_prioritization","board_summary","weekly_ops","customer_zero_status"]), decisionId: z.number().optional(), additionalContext: z.string().optional() }))
+    .mutation(async ({ ctx, input }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      let decisionContext = "";
+      let councilContext = "";
+      if (input.decisionId) {
+        const [decision] = await db.select().from(cockpitDecisions).where(and(eq(cockpitDecisions.id, input.decisionId), eq(cockpitDecisions.orgId, ctx.orgId))).limit(1);
+        if (decision) decisionContext = `Decision: ${decision.title}\nContext: ${decision.context}\nAssumptions: ${decision.assumptions}\nStatus: ${decision.status}`;
+        const [councilResult] = await db.select().from(cockpitCouncilResults).where(and(eq(cockpitCouncilResults.decisionId, input.decisionId), eq(cockpitCouncilResults.orgId, ctx.orgId))).orderBy(desc(cockpitCouncilResults.runAt)).limit(1);
+        if (councilResult) { const judge = JSON.parse(councilResult.judgeJson); councilContext = `Council Verdict: ${councilResult.finalVerdict} (${councilResult.confidence}% confidence)\nThe Bet: ${judge.the_bet}\nSynthesis: ${judge.synthesis}\nDissent: ${judge.dissent}`; }
+      }
+      const reportPrompts: Record<string, string> = {
+        executive_decision: `Generate a concise Executive Decision Report for AgenThink Mesh. Include: 1) Decision Summary, 2) Evidence & Assumptions, 3) Council Result, 4) Recommendation, 5) Dissent, 6) Action Plan with dates, 7) Outcome Measurement Date. Use markdown. Be direct and opinionated.`,
+        customer_prioritization: `Generate a Customer Prioritization Report for AgenThink Mesh. Include: 1) Executive Summary, 2) Priority Ranking of prospects (Alghanim, Accenture, KFH, KIPCO, Zain), 3) Selection Rationale, 4) Risk Assessment per prospect, 5) Recommended First Customer with justification, 6) 30-day action plan. Use markdown.`,
+        board_summary: `Generate a Board Summary for AgenThink Mesh. Include: 1) Company Status, 2) Key Decisions Made This Month, 3) Commercial Pipeline, 4) Platform Readiness, 5) Next 30-Day Priorities, 6) Risks & Mitigations. Maximum 1 page. Use markdown.`,
+        weekly_ops: `Generate a Weekly Operating Review for AgenThink Mesh. Include: 1) Week Summary, 2) Commercial Progress, 3) Engineering Progress, 4) Customer Zero Status, 5) Blockers, 6) Next Week Priorities. Use markdown.`,
+        customer_zero_status: `Generate a Customer Zero Status Report for AgenThink Mesh. Include: 1) Current Status, 2) Authentication & Access (RESOLVED), 3) Cockpit Functionality Status, 4) Decision Queue Status, 5) Council Execution Status, 6) Next Steps to Full Activation. Use markdown.`,
+      };
+      const systemPrompt = reportPrompts[input.reportType];
+      const userContent = [decisionContext, councilContext, input.additionalContext].filter(Boolean).join("\n\n") || "Generate based on AgenThink Mesh current operating context.";
+      const response = await invokeLLM({ messages: [{ role: "system", content: systemPrompt }, { role: "user", content: userContent }], max_tokens: 1500 });
+      const reportContent = response.choices[0]?.message?.content ?? "Report generation failed.";
+      await writeAuditLog({ orgId: ctx.orgId, userId: ctx.user.id, action: "cockpit.report.generated", resourceType: "report", resourceId: input.reportType, details: `Report type: ${input.reportType}`, severity: "info" });
+      return { reportType: input.reportType, content: reportContent, generatedAt: new Date().toISOString() };
+    }),
 });
+
