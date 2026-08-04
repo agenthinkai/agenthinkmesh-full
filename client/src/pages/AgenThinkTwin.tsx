@@ -292,7 +292,12 @@ function ReportsPanel() {
 // ── Main export ───────────────────────────────────────────────────────────────
 export default function AgenThinkTwin() {
   // Layer 1: Client-side auth guard
-  const { user, loading: authLoading } = useAuth({ redirectOnUnauthenticated: true });
+  // redirectPath ensures that after OAuth login the user returns to /twin/agenthink
+  // instead of the default /persona-setup landing page.
+  const { user, loading: authLoading } = useAuth({
+    redirectOnUnauthenticated: true,
+    redirectPath: getLoginUrl("/twin/agenthink"),
+  });
 
   // Layer 2: Server-side org membership + tenant guard
   const accessQuery = trpc.enterprise.cockpitVerifyAccess.useQuery({}, {
@@ -332,7 +337,7 @@ export default function AgenThinkTwin() {
 
   if (!user) return (
     <div className="min-h-screen bg-[#0a0f1a] flex items-center justify-center">
-      <div className="flex flex-col items-center gap-3"><Lock className="h-8 w-8 text-slate-500" /><p className="text-sm text-slate-400">Redirecting to login…</p><a href={getLoginUrl()} className="text-xs text-blue-400 hover:underline">Click here if not redirected</a></div>
+      <div className="flex flex-col items-center gap-3"><Lock className="h-8 w-8 text-slate-500" /><p className="text-sm text-slate-400">Redirecting to login…</p><a href={getLoginUrl("/twin/agenthink")} className="text-xs text-blue-400 hover:underline">Click here if not redirected</a></div>
     </div>
   );
 
