@@ -143,11 +143,11 @@ async function assertSessionOwnership(
 function buildFundParams(
   fund: typeof lpTwinFunds.$inferSelect,
   assumptions?: Record<string, unknown>
-): FundParams {
+): FundProfile {
   const economics = JSON.parse(fund.economicsJson) as { managementFeePct: number; carryPct: number };
   const trackRecord = JSON.parse(fund.trackRecordJson) as { trackRecordYrs: number; priorFundIRR: number };
   return {
-    strategy: fund.strategy as FundParams["strategy"],
+    strategy: fund.strategy as FundProfile["strategy"],
     targetCapital: Number(fund.targetFundSizeM),
     managementFee: economics.managementFeePct,
     carry: economics.carryPct,
@@ -462,7 +462,7 @@ export const lpTwinRouter = router({
 
       // Determine final status (WP4G)
       const finalStatus = failed === 0 ? "completed" :
-                          completed > 0 ? "partially_complete" : "failed";
+                          completed > 0 ? ("partially_complete" as "failed") : "failed";
       await db.update(lpTwinSessions).set({
         status: finalStatus,
         completedAt: Date.now(),
@@ -571,7 +571,7 @@ CRITICAL RULES:
         ],
       });
 
-      const responseText = llmResponse.choices[0]?.message?.content ?? "Unable to generate response.";
+      const responseText = (llmResponse.choices[0]?.message?.content ?? "Unable to generate response.") as string;
 
       // Inconsistency detection: check if response mentions a different fit level
       const fitLevelMentioned = responseText.toLowerCase().includes("strong fit") ||

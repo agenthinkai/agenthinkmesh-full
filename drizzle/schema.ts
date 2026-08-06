@@ -4226,3 +4226,72 @@ export const lpTwinAskLp = mysqlTable("lp_twin_ask_lp", {
 export type LpTwinAskLp = typeof lpTwinAskLp.$inferSelect;
 export type InsertLpTwinAskLp = typeof lpTwinAskLp.$inferInsert;
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WP5: Fund-Term Laboratory and Fundraising Scenario Engine
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * lp_twin_scenarios — Persistent scenario records for the Fund-Term Laboratory.
+ * Each scenario holds a proposed fund configuration against a base fund version.
+ */
+export const lpTwinScenarios = mysqlTable("lp_twin_scenarios", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  fundId: int("fundId").notNull(),
+  baseFundVersion: int("baseFundVersion").notNull(),
+  createdByUserId: int("createdByUserId").notNull(),
+  scenarioName: varchar("scenarioName", { length: 256 }).notNull(),
+  scenarioType: mysqlEnum("scenarioType", [
+    "term_change",
+    "market_stress",
+    "fundraising_objective",
+    "sensitivity",
+    "custom",
+  ]).notNull().default("term_change"),
+  changedFieldsJson: text("changedFieldsJson").notNull().default("{}"),
+  assumptionsJson: text("assumptionsJson"),
+  marketConditionsJson: text("marketConditionsJson"),
+  objectiveWeightsJson: text("objectiveWeightsJson"),
+  fundraisingObjective: varchar("fundraisingObjective", { length: 128 }),
+  sequenceTemplate: varchar("sequenceTemplate", { length: 128 }),
+  engineVersion: varchar("engineVersion", { length: 32 }).notNull(),
+  registryVersion: varchar("registryVersion", { length: 32 }).notNull(),
+  objectionEngineVersion: varchar("objectionEngineVersion", { length: 32 }).notNull(),
+  status: mysqlEnum("status", ["draft", "computed", "archived"]).notNull().default("draft"),
+  savedAs: mysqlEnum("savedAs", ["scenario_only", "new_fund_version", "duplicated_fund"]),
+  savedFundId: int("savedFundId"),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  archivedAt: bigint("archivedAt", { mode: "number" }),
+});
+export type LpTwinScenario = typeof lpTwinScenarios.$inferSelect;
+export type InsertLpTwinScenario = typeof lpTwinScenarios.$inferInsert;
+
+/**
+ * lp_twin_scenario_results — Per-segment comparison results for a scenario.
+ * Stores deltas against the base session results.
+ */
+export const lpTwinScenarioResults = mysqlTable("lp_twin_scenario_results", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  scenarioId: int("scenarioId").notNull(),
+  segmentId: varchar("segmentId", { length: 64 }).notNull(),
+  baseFitScore: decimal("baseFitScore", { precision: 5, scale: 2 }),
+  scenarioFitScore: decimal("scenarioFitScore", { precision: 5, scale: 2 }).notNull(),
+  scoreDelta: decimal("scoreDelta", { precision: 5, scale: 2 }),
+  baseCategory: varchar("baseCategory", { length: 64 }),
+  scenarioCategory: varchar("scenarioCategory", { length: 64 }).notNull(),
+  objectionsAddedJson: text("objectionsAddedJson"),
+  objectionsResolvedJson: text("objectionsResolvedJson"),
+  confidenceDelta: decimal("confidenceDelta", { precision: 5, scale: 2 }),
+  priorityDelta: varchar("priorityDelta", { length: 64 }),
+  dimensionDeltasJson: text("dimensionDeltasJson"),
+  evidenceGapsJson: text("evidenceGapsJson"),
+  outreachPriority: varchar("outreachPriority", { length: 64 }),
+  outreachWave: int("outreachWave"),
+  modelVersion: varchar("modelVersion", { length: 32 }).notNull(),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type LpTwinScenarioResult = typeof lpTwinScenarioResults.$inferSelect;
+export type InsertLpTwinScenarioResult = typeof lpTwinScenarioResults.$inferInsert;

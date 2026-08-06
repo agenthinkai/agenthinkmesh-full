@@ -60,6 +60,7 @@ import { bakalariaCouncilRouter } from "./routers/bakalariaCouncil";
 import { scenarioSimRouter } from "./routers/scenarioSim";
 import { pharmaPilotRouter } from "./routers/pharmaPilot";
 import { lpTwinRouter } from "./routers/lpTwin";
+import { lpTwinScenarioRouter } from "./routers/lpTwinScenario";
 import {
   arosDiscoveryRouter,
   arosIntelligenceRouter,
@@ -171,6 +172,7 @@ export const appRouter = router({
   pharmaPilot: pharmaPilotRouter,
   // ── LP Twin — CapTwin Enterprise Module ─────────────────────────────────────
   lpTwin: lpTwinRouter,
+  lpTwinScenario: lpTwinScenarioRouter,
   prospectConfigs: prospectConfigsRouter,
   twinParameters: twinParametersRouter,
   workflowProtocols: workflowProtocolsRouter,

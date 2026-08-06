@@ -18,3 +18,4 @@ export * from "./icAgents";
 export * from "./agentBank";
 export * from "./fitEngine";
 export * from "./objectionEngine";
+export * from "./scenarioEngine";
