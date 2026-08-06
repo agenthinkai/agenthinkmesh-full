@@ -187,6 +187,9 @@ const ArosBoardPack = lazy(() => import("./pages/aros/ArosBoardPack"));
 const DecisionTwin = lazy(() => import("./pages/DecisionTwin"));
 const TwinDashboard = lazy(() => import("./pages/TwinDashboard"));
 const CapTwin = lazy(() => import("./pages/CapTwin"));
+const LPTwin = lazy(() => import("./pages/LPTwin"));
+const LPTwinFundWizard = lazy(() => import("./pages/LPTwinFundWizard"));
+const LPTwinSession = lazy(() => import("./pages/LPTwinSession"));
 const TPACockpit = lazy(() => import("./pages/TPACockpit"));
 const BakalariaTwin = lazy(() => import("./pages/BakalariaTwin"));
 
@@ -559,6 +562,9 @@ function Router() {
       <Route path="/admin/diaspora-leads" component={DiasporaLeadsAdmin} />
       <Route path="/twin/:templateId" component={DecisionTwin} />
       <Route path="/captwin" component={CapTwin} />
+      <Route path="/captwin/lp-twin" component={LPTwin} />
+      <Route path="/captwin/lp-twin/new" component={LPTwinFundWizard} />
+      <Route path="/captwin/lp-twin/session/:id" component={LPTwinSession} />
       {/* Fallback */}
       <Route path="/404" component={NotFound} />
       <Route component={NotFound} />
