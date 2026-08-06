@@ -59,6 +59,7 @@ import { infraSimRouter } from "./routers/infraSim";
 import { bakalariaCouncilRouter } from "./routers/bakalariaCouncil";
 import { scenarioSimRouter } from "./routers/scenarioSim";
 import { pharmaPilotRouter } from "./routers/pharmaPilot";
+import { lpTwinRouter } from "./routers/lpTwin";
 import {
   arosDiscoveryRouter,
   arosIntelligenceRouter,
@@ -168,6 +169,8 @@ export const appRouter = router({
   meshCore: meshCoreRouter,
   diagnosis: diagnosisRouter,
   pharmaPilot: pharmaPilotRouter,
+  // ── LP Twin — CapTwin Enterprise Module ─────────────────────────────────────
+  lpTwin: lpTwinRouter,
   prospectConfigs: prospectConfigsRouter,
   twinParameters: twinParametersRouter,
   workflowProtocols: workflowProtocolsRouter,
