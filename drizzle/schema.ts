@@ -3844,7 +3844,7 @@ export const twinSessions = mysqlTable("twin_sessions", {
   sessionType: mysqlEnum("sessionType", ["run", "simulate", "deliberate", "compare", "calibrate"]).notNull().default("run"),
   inputJson: text("inputJson").notNull().default("{}"),
   outputJson: text("outputJson"),
-  status: mysqlEnum("status", ["pending", "running", "completed", "failed"]).notNull().default("pending"),
+  status: mysqlEnum("status", ["draft", "pending", "running", "partially_complete", "completed", "failed", "deleted"]).notNull().default("pending"),
   durationMs: int("durationMs"),
   tokensUsed: int("tokensUsed").notNull().default(0),
   startedAt: timestamp("startedAt").defaultNow().notNull(),
@@ -4151,6 +4151,10 @@ export const lpTwinSessions = mysqlTable("lp_twin_sessions", {
   status: mysqlEnum("status", ["pending", "running", "completed", "failed"]).notNull().default("pending"),
   startedAt: bigint("startedAt", { mode: "number" }),
   completedAt: bigint("completedAt", { mode: "number" }),
+  currentSegment: varchar("currentSegment", { length: 64 }),
+  segmentsCompleted: int("segmentsCompleted").notNull().default(0),
+  segmentsFailed: int("segmentsFailed").notNull().default(0),
+  errorDetailsJson: text("errorDetailsJson"),
   createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
   updatedAt: bigint("updatedAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
   deletedAt: bigint("deletedAt", { mode: "number" }),
@@ -4199,3 +4203,26 @@ export const lpTwinExports = mysqlTable("lp_twin_exports", {
 });
 export type LpTwinExport = typeof lpTwinExports.$inferSelect;
 export type InsertLpTwinExport = typeof lpTwinExports.$inferInsert;
+
+/**
+ * lp_twin_ask_lp — Persisted Ask-an-LP query/response pairs.
+ */
+export const lpTwinAskLp = mysqlTable("lp_twin_ask_lp", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  userId: int("userId").notNull(),
+  fundId: int("fundId").notNull(),
+  fundVersion: int("fundVersion").notNull(),
+  sessionId: int("sessionId").notNull(),
+  segmentId: varchar("segmentId", { length: 64 }).notNull(),
+  question: text("question").notNull(),
+  response: text("response").notNull(),
+  deterministicScore: decimal("deterministicScore", { precision: 5, scale: 2 }),
+  inconsistencyWarning: text("inconsistencyWarning"),
+  engineVersion: varchar("engineVersion", { length: 32 }).notNull(),
+  agentVersion: varchar("agentVersion", { length: 32 }).notNull(),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type LpTwinAskLp = typeof lpTwinAskLp.$inferSelect;
+export type InsertLpTwinAskLp = typeof lpTwinAskLp.$inferInsert;
+
