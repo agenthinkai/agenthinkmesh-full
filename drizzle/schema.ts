@@ -4094,3 +4094,108 @@ export const hydroCompanySlots = mysqlTable("hydro_company_slots", {
 });
 export type HydroCompanySlot = typeof hydroCompanySlots.$inferSelect;
 export type InsertHydroCompanySlot = typeof hydroCompanySlots.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// LP Twin — CapTwin Enterprise Module
+// WP1: Schema v1.0 — 2026-08-06
+// All tables are org-scoped. Never trust orgId from the client.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * lp_twin_funds — Persistent named fund profile.
+ * A fund belongs to an organisation and may be accessed by multiple
+ * authorised users within that org. Fund identity data is stored here,
+ * not duplicated inside session rows.
+ */
+export const lpTwinFunds = mysqlTable("lp_twin_funds", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  createdByUserId: int("createdByUserId").notNull(),
+  updatedByUserId: int("updatedByUserId").notNull(),
+  fundName: varchar("fundName", { length: 256 }).notNull(),
+  gpName: varchar("gpName", { length: 256 }).notNull(),
+  strategy: varchar("strategy", { length: 128 }).notNull(),
+  assetClass: varchar("assetClass", { length: 128 }),
+  geography: varchar("geography", { length: 256 }),
+  domicile: varchar("domicile", { length: 128 }),
+  currency: varchar("currency", { length: 8 }).notNull().default("USD"),
+  targetFundSizeM: decimal("targetFundSizeM", { precision: 14, scale: 2 }).notNull(),
+  economicsJson: text("economicsJson").notNull(),
+  investmentPropositionJson: text("investmentPropositionJson"),
+  riskLiquidityJson: text("riskLiquidityJson"),
+  trackRecordJson: text("trackRecordJson").notNull(),
+  institutionalRequirementsJson: text("institutionalRequirementsJson"),
+  evidenceStatus: mysqlEnum("evidenceStatus", ["draft", "complete", "verified"]).notNull().default("draft"),
+  version: int("version").notNull().default(1),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  archivedAt: bigint("archivedAt", { mode: "number" }),
+});
+export type LpTwinFund = typeof lpTwinFunds.$inferSelect;
+export type InsertLpTwinFund = typeof lpTwinFunds.$inferInsert;
+
+/**
+ * lp_twin_sessions — One simulation or analysis run against a fund profile.
+ */
+export const lpTwinSessions = mysqlTable("lp_twin_sessions", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  fundId: int("fundId").notNull(),
+  createdByUserId: int("createdByUserId").notNull(),
+  sessionName: varchar("sessionName", { length: 256 }).notNull(),
+  selectedSegmentsJson: text("selectedSegmentsJson").notNull(),
+  scenarioType: mysqlEnum("scenarioType", ["baseline", "stress", "optimistic", "custom"]).notNull().default("baseline"),
+  assumptionsJson: text("assumptionsJson"),
+  engineVersion: varchar("engineVersion", { length: 32 }).notNull(),
+  registryVersion: varchar("registryVersion", { length: 32 }).notNull(),
+  status: mysqlEnum("status", ["pending", "running", "completed", "failed"]).notNull().default("pending"),
+  startedAt: bigint("startedAt", { mode: "number" }),
+  completedAt: bigint("completedAt", { mode: "number" }),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  deletedAt: bigint("deletedAt", { mode: "number" }),
+});
+export type LpTwinSession = typeof lpTwinSessions.$inferSelect;
+export type InsertLpTwinSession = typeof lpTwinSessions.$inferInsert;
+
+/**
+ * lp_twin_segment_results — One row per LP segment per session.
+ */
+export const lpTwinSegmentResults = mysqlTable("lp_twin_segment_results", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  sessionId: int("sessionId").notNull(),
+  segmentId: varchar("segmentId", { length: 64 }).notNull(),
+  fitScore: decimal("fitScore", { precision: 5, scale: 1 }).notNull(),
+  fitReasonsJson: text("fitReasonsJson"),
+  disqualifiersJson: text("disqualifiersJson"),
+  objectionsJson: text("objectionsJson"),
+  evidenceGapsJson: text("evidenceGapsJson"),
+  complianceFlagsJson: text("complianceFlagsJson"),
+  icVerdict: mysqlEnum("icVerdict", ["Approved", "Conditional Watchlist", "Rejected"]).notNull(),
+  tailoredPositioning: text("tailoredPositioning"),
+  probabilityBand: varchar("probabilityBand", { length: 32 }),
+  modelVersion: varchar("modelVersion", { length: 32 }).notNull(),
+  actualResponseCapturedAt: bigint("actualResponseCapturedAt", { mode: "number" }),
+  actualResponse: mysqlEnum("actualResponse", ["interested", "declined", "no_response", "committed"]),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type LpTwinSegmentResult = typeof lpTwinSegmentResults.$inferSelect;
+export type InsertLpTwinSegmentResult = typeof lpTwinSegmentResults.$inferInsert;
+
+/**
+ * lp_twin_exports — Audit trail for all export events.
+ */
+export const lpTwinExports = mysqlTable("lp_twin_exports", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  sessionId: int("sessionId").notNull(),
+  exportedByUserId: int("exportedByUserId").notNull(),
+  exportType: mysqlEnum("exportType", ["pdf", "csv", "json"]).notNull(),
+  reportType: mysqlEnum("reportType", ["full_session", "segment_summary", "ic_debate", "fit_matrix"]).notNull().default("full_session"),
+  ipAddress: varchar("ipAddress", { length: 64 }),
+  userAgent: varchar("userAgent", { length: 512 }),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type LpTwinExport = typeof lpTwinExports.$inferSelect;
+export type InsertLpTwinExport = typeof lpTwinExports.$inferInsert;
