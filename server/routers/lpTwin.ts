@@ -35,16 +35,6 @@ import {
   type InsertLpTwinExport,
 } from "../../drizzle/schema";
 import {
-  CAPTWIN_ENGINE_VERSION,
-  CAPTWIN_REGISTRY_VERSION,
-  LP_REGISTRY,
-  computeFitScore,
-  runSimulation,
-  simulateIC,
-  getLPById,
-  type FundParams,
-} from "../../shared/captwin";
-import {
   LP_AGENT_BANK,
   LP_AGENT_BANK_VERSION,
   LP_OBJECTION_RULES_VERSION,
@@ -290,7 +280,7 @@ export const lpTwinRouter = router({
       if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
       await assertFundOwnership(db, input.fundId, ctx.orgId);
       for (const segId of input.selectedSegmentIds) {
-        if (!getLPById(segId)) throw new TRPCError({ code: "BAD_REQUEST", message: `Unknown LP segment ID: ${segId}` });
+        if (!getAgentById(segId)) throw new TRPCError({ code: "BAD_REQUEST", message: `Unknown LP segment ID: ${segId}` });
       }
       const now = Date.now();
       const payload: InsertLpTwinSession = {
@@ -301,8 +291,8 @@ export const lpTwinRouter = router({
         selectedSegmentsJson: JSON.stringify(input.selectedSegmentIds),
         scenarioType: input.scenarioType,
         assumptionsJson: input.assumptions ? JSON.stringify(input.assumptions) : undefined,
-        engineVersion: CAPTWIN_ENGINE_VERSION,
-        registryVersion: CAPTWIN_REGISTRY_VERSION,
+        engineVersion: FIT_ENGINE_VERSION,
+        registryVersion: LP_AGENT_BANK_VERSION,
         status: "pending",
         createdAt: now,
         updatedAt: now,
@@ -349,78 +339,6 @@ export const lpTwinRouter = router({
       return { session, results };
     }),
 
-  // 9. runSegmentAnalysis
-  runSegmentAnalysis: enterpriseProcedure
-    .input(z.object({ sessionId: z.number().int().positive() }))
-    .mutation(async ({ input, ctx }) => {
-      const db = await getDb();
-      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
-      const session = await assertSessionOwnership(db, input.sessionId, ctx.orgId);
-      if (session.status === "running") throw new TRPCError({ code: "BAD_REQUEST", message: "Analysis already running" });
-      if (session.status === "completed") throw new TRPCError({ code: "BAD_REQUEST", message: "Analysis already completed. Create a new session to re-run." });
-      const fund = await assertFundOwnership(db, session.fundId, ctx.orgId);
-      await db.update(lpTwinSessions).set({ status: "running", startedAt: Date.now(), updatedAt: Date.now() }).where(eq(lpTwinSessions.id, input.sessionId));
-      try {
-        const selectedIds = JSON.parse(session.selectedSegmentsJson) as string[];
-        const assumptions = session.assumptionsJson ? JSON.parse(session.assumptionsJson) as Record<string, unknown> : {};
-        const fundParams = buildFundParams(fund, assumptions);
-        const simulation = runSimulation(fundParams);
-        const now = Date.now();
-        const resultRows: InsertLpTwinSegmentResult[] = [];
-        for (const segId of selectedIds) {
-          const lp = getLPById(segId);
-          if (!lp) continue;
-          const fit = computeFitScore(fundParams, lp);
-          const icResult = simulateIC(fundParams, lp, fit);
-          const evidenceGaps = fit.penaltyReasons.map((reason) => ({
-            gap: reason,
-            priority: fit.penalties > 20 ? "high" : "medium",
-          }));
-          const complianceFlags = lp.complianceFlags.map((flag) => ({
-            flag,
-            status: fit.penaltyReasons.some((r) => r.toLowerCase().includes(flag.toLowerCase().split(" ")[0])) ? "fail" : "pass",
-          }));
-          const probabilityBand = icResult.icVerdict === "Approved" ? "60-80%" : icResult.icVerdict === "Conditional Watchlist" ? "25-45%" : "5-15%";
-          resultRows.push({
-            orgId: ctx.orgId,
-            sessionId: input.sessionId,
-            segmentId: segId,
-            fitScore: String(fit.score),
-            fitReasonsJson: JSON.stringify([
-              { dimension: "Strategy Fit", score: fit.strategyFit },
-              { dimension: "Pedigree Fit", score: fit.pedigreeFit },
-              { dimension: "Fee Alignment", score: fit.feeAlignment },
-            ]),
-            disqualifiersJson: JSON.stringify(fit.penaltyReasons.filter((r) => r.includes("mismatch") || r.includes("hard gate"))),
-            objectionsJson: JSON.stringify(icResult.icObjections),
-            evidenceGapsJson: JSON.stringify(evidenceGaps),
-            complianceFlagsJson: JSON.stringify(complianceFlags),
-            icVerdict: icResult.icVerdict,
-            tailoredPositioning: icResult.tailoredPitch,
-            probabilityBand,
-            modelVersion: CAPTWIN_ENGINE_VERSION,
-            createdAt: now,
-          });
-        }
-        if (resultRows.length > 0) await db.insert(lpTwinSegmentResults).values(resultRows);
-        await db.update(lpTwinSessions).set({ status: "completed", completedAt: Date.now(), updatedAt: Date.now() }).where(eq(lpTwinSessions.id, input.sessionId));
-        return {
-          sessionId: input.sessionId,
-          segmentsAnalysed: resultRows.length,
-          simulation: {
-            grossRaised: simulation.grossRaised,
-            netAUM: simulation.netAUM,
-            estimatedCloseMonth: simulation.estimatedCloseMonth,
-            totalFees: simulation.totalFees,
-          },
-          disclaimer: "SYNTHETIC SIMULATION — These outputs are evidence-based synthetic simulations derived from anonymised institutional archetypes. They are not validated predictions of real allocator behaviour.",
-          message: "Segment analysis complete",
-        };
-      } catch (err) {
-        await db.update(lpTwinSessions).set({ status: "failed", updatedAt: Date.now() }).where(eq(lpTwinSessions.id, input.sessionId));
-        throw err;
-      }
-    }),
   // 9. runSegmentAnalysis (WP4B+4C+4G — v2 fit engine, objection engine, progress tracking)
   runSegmentAnalysis: enterpriseProcedure
     .input(z.object({
@@ -840,19 +758,20 @@ CRITICAL RULES:
   listSegments: enterpriseProcedure
     .query(() => {
       return {
-        segments: LP_REGISTRY.map((lp) => ({
-          id: lp.id,
-          name: lp.name,
-          region: lp.region,
-          segment: lp.segment,
-          ticketMin: lp.ticketMin,
-          ticketMax: lp.ticketMax,
-          strategies: lp.strategies,
-          shariaRequired: lp.shariaRequired,
-          esgPriority: lp.esgPriority,
-          irrHurdle: lp.irrHurdle,
-          maxManagementFee: lp.maxManagementFee,
-          description: lp.description,
+        segments: LP_AGENT_BANK.map((a) => ({
+          id: a.id,
+          name: a.name,
+          label: a.label,
+          segmentType: a.segmentType,
+          geography: a.geography,
+          ticketSizeMinM: a.ticketSizeMinM,
+          ticketSizeMaxM: a.ticketSizeMaxM,
+          preferredAssetClasses: a.preferredAssetClasses,
+          shariaRequired: a.shariaRequired,
+          returnThresholdPct: a.returnThresholdPct,
+          maxManagementFeePct: a.maxManagementFeePct,
+          mandate: a.mandate,
+          verificationStatus: a.verificationStatus,
         })),
       };
     }),

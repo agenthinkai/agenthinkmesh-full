@@ -1,560 +1,326 @@
-/**
- * LPTwinSession.tsx — Session Results Shell
- * CapTwin Enterprise Module — WP3/WP4
- *
- * Displays:
- * - Fund summary
- * - Session assumptions
- * - Selected allocator segments
- * - Analysis status
- * - Existing stored results (from DB, not re-run)
- * - Disclaimer
- * - Export action
- * - Delete action
- * - Clear empty / loading / error states
- *
- * Historical sessions can be reopened without re-running.
- * Results are always read from the database.
- */
-
-import { useState } from "react";
-import { useRoute, useLocation } from "wouter";
+import { useState, useCallback } from "react";
+import { useParams, useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import {
-  ArrowLeft, AlertTriangle, CheckCircle2, XCircle, Clock,
-  ChevronDown, ChevronUp, Download, BarChart3, FileText,
-  Shield, MessageSquare, Trash2, Loader2, Info,
+  ArrowLeft, Play, RefreshCw, Download, Trash2,
+  ChevronDown, ChevronUp, MessageSquare, AlertTriangle,
+  CheckCircle2, XCircle, Clock, Target, TrendingUp,
+  Shield, Info, Loader2,
 } from "lucide-react";
-import { toast } from "sonner";
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+interface DimensionScore { dimension: string; score: number; weight: number; reasoning: string; dataPresent: boolean; }
+interface EvidenceGap { field: string; description: string; priority: "Critical" | "High" | "Medium" | "Low"; impactOnScore: string; }
+interface Objection { category: string; statement: string; severity: "Critical" | "High" | "Moderate" | "Low"; likelihood: string; isCurable: boolean; recommendedResponse: string; suggestedTermAdjustment: string | null; suggestedPositioningAdjustment: string | null; }
+interface SegmentResult { id: number; segmentId: string; fitScore: string; fitReasonsJson: string; disqualifiersJson: string; objectionsJson: string; evidenceGapsJson: string; complianceFlagsJson: string; icVerdict: string | null; tailoredPositioning: string | null; probabilityBand: string | null; modelVersion: string | null; createdAt: number | null; }
 
-function formatDate(ts: number) {
-  return new Date(ts).toLocaleString(undefined, {
-    day: "2-digit", month: "short", year: "numeric",
-    hour: "2-digit", minute: "2-digit",
-  });
-}
+function fitCategoryFromScore(s: number) { return s >= 70 ? "Strong Fit" : s >= 50 ? "Conditional Fit" : s >= 30 ? "Weak Fit" : "Likely Ineligible"; }
+function fitCategoryColor(s: number) { return s >= 70 ? "text-emerald-400" : s >= 50 ? "text-amber-400" : s >= 30 ? "text-orange-400" : "text-red-400"; }
+function fitBadgeVariant(s: number): "default" | "secondary" | "destructive" | "outline" { return s >= 70 ? "default" : s >= 50 ? "secondary" : "destructive"; }
+function severityColor(sev: string) { return sev === "Critical" ? "text-red-400 bg-red-950/40 border-red-800/40" : sev === "High" ? "text-orange-400 bg-orange-950/40 border-orange-800/40" : sev === "Moderate" ? "text-amber-400 bg-amber-950/40 border-amber-800/40" : "text-slate-400 bg-slate-800/40 border-slate-700/40"; }
+function statusIcon(status: string) { switch (status) { case "completed": return <CheckCircle2 className="w-4 h-4 text-emerald-400" />; case "running": return <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />; case "failed": return <XCircle className="w-4 h-4 text-red-400" />; case "partially_complete": return <AlertTriangle className="w-4 h-4 text-amber-400" />; default: return <Clock className="w-4 h-4 text-slate-400" />; } }
 
-function VerdictBadge({ verdict }: { verdict: string }) {
-  if (verdict === "Approved")
-    return <Badge className="bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/20">{verdict}</Badge>;
-  if (verdict === "Conditional Watchlist")
-    return <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30 hover:bg-amber-500/20">{verdict}</Badge>;
-  return <Badge className="bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/20">{verdict}</Badge>;
-}
-
-function VerdictIcon({ verdict }: { verdict: string }) {
-  if (verdict === "Approved") return <CheckCircle2 className="h-4 w-4 text-green-400" />;
-  if (verdict === "Conditional Watchlist") return <Clock className="h-4 w-4 text-amber-400" />;
-  return <XCircle className="h-4 w-4 text-red-400" />;
-}
-
-function FitScoreBar({ score }: { score: number }) {
-  const color = score >= 70 ? "bg-green-500" : score >= 45 ? "bg-amber-500" : "bg-red-500";
+function SegmentResultCard({ result, sessionId, agentName, onAskLp }: { result: SegmentResult; sessionId: number; agentName: string; onAskLp: (segId: string, name: string) => void; }) {
+  const [expanded, setExpanded] = useState(false);
+  const score = parseFloat(result.fitScore);
+  const dimensions: DimensionScore[] = (() => { try { return JSON.parse(result.fitReasonsJson) as DimensionScore[]; } catch { return []; } })();
+  const disqualifiers: string[] = (() => { try { return JSON.parse(result.disqualifiersJson) as string[]; } catch { return []; } })();
+  const objections: Objection[] = (() => { try { return JSON.parse(result.objectionsJson) as Objection[]; } catch { return []; } })();
+  const evidenceGaps: EvidenceGap[] = (() => { try { return JSON.parse(result.evidenceGapsJson) as EvidenceGap[]; } catch { return []; } })();
+  const criticalCount = objections.filter((o) => o.severity === "Critical" || o.severity === "High").length;
+  const curableCount = objections.filter((o) => o.isCurable).length;
   return (
-    <div className="flex items-center gap-2">
-      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-        <div className={`h-full rounded-full ${color}`} style={{ width: `${Math.min(score, 100)}%` }} />
+    <div className="bg-slate-900/60 border border-slate-700/50 rounded-lg overflow-hidden">
+      <div className="p-4 flex items-start justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <span className="font-semibold text-white text-sm">{agentName}</span>
+            <Badge variant={fitBadgeVariant(score)} className="text-xs">{fitCategoryFromScore(score)}</Badge>
+            {result.probabilityBand ? <span className="text-xs text-slate-400 bg-slate-800 px-2 py-0.5 rounded">Probability: {result.probabilityBand}</span> : null}
+          </div>
+          <div className="flex items-center gap-4 mt-2">
+            <span className={`text-2xl font-bold ${fitCategoryColor(score)}`}>{score.toFixed(1)}</span>
+            <span className="text-slate-500 text-sm">/ 100</span>
+            {result.icVerdict ? <span className="text-xs text-slate-400">IC: {result.icVerdict}</span> : null}
+          </div>
+          {disqualifiers.length > 0 ? (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {disqualifiers.slice(0, 2).map((d, i) => <span key={i} className="text-xs text-red-400 bg-red-950/30 border border-red-800/30 px-2 py-0.5 rounded">{d}</span>)}
+              {disqualifiers.length > 2 ? <span className="text-xs text-slate-500">+{disqualifiers.length - 2} more</span> : null}
+            </div>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <Button size="sm" variant="outline" className="text-xs border-slate-600 text-slate-300 hover:bg-slate-800" onClick={() => onAskLp(result.segmentId, agentName)}>
+            <MessageSquare className="w-3 h-3 mr-1" />Ask LP
+          </Button>
+          <Button size="sm" variant="ghost" className="text-slate-400 hover:text-white" onClick={() => setExpanded(!expanded)}>
+            {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+          </Button>
+        </div>
       </div>
-      <span className="text-xs font-mono font-semibold w-8 text-right">{score}</span>
+      {expanded ? (
+        <div className="border-t border-slate-700/50 p-4 space-y-5">
+          {dimensions.length > 0 ? (
+            <div>
+              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">18-Dimension Fit Analysis</h4>
+              <div className="grid grid-cols-1 gap-1.5">
+                {dimensions.map((d, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <span className="text-xs text-slate-400 w-40 shrink-0 truncate">{d.dimension}</span>
+                    <div className="flex-1 bg-slate-800 rounded-full h-1.5"><div className={`h-1.5 rounded-full ${d.score >= 70 ? "bg-emerald-500" : d.score >= 50 ? "bg-amber-500" : "bg-red-500"}`} style={{ width: `${d.score}%` }} /></div>
+                    <span className={`text-xs w-8 text-right shrink-0 ${d.score >= 70 ? "text-emerald-400" : d.score >= 50 ? "text-amber-400" : "text-red-400"}`}>{d.score.toFixed(0)}</span>
+                    {!d.dataPresent ? <span className="text-xs text-slate-600 shrink-0">no data</span> : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {objections.length > 0 ? (
+            <div>
+              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Objection Map ({objections.length} total · {criticalCount} critical/high · {curableCount} curable)</h4>
+              <div className="space-y-2">
+                {objections.map((o, i) => (
+                  <div key={i} className={`rounded-lg border p-3 ${severityColor(o.severity)}`}>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-xs leading-relaxed">{o.statement}</p>
+                      <div className="flex gap-1 shrink-0">
+                        <span className="text-xs opacity-70">{o.severity}</span>
+                        {o.isCurable ? <span className="text-xs text-emerald-400 bg-emerald-950/40 px-1.5 rounded">Curable</span> : <span className="text-xs text-slate-500 bg-slate-800 px-1.5 rounded">Fixed</span>}
+                      </div>
+                    </div>
+                    {o.recommendedResponse ? <p className="text-xs mt-2 opacity-80 border-t border-current/20 pt-2"><span className="font-medium">Response: </span>{o.recommendedResponse}</p> : null}
+                    {o.suggestedTermAdjustment ? <p className="text-xs mt-1 opacity-70"><span className="font-medium">Term adjustment: </span>{o.suggestedTermAdjustment}</p> : null}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {evidenceGaps.length > 0 ? (
+            <div>
+              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">Evidence Gaps</h4>
+              <div className="space-y-1.5">
+                {evidenceGaps.map((g, i) => (
+                  <div key={i} className="flex items-start gap-2">
+                    <span className={`text-xs px-1.5 py-0.5 rounded shrink-0 ${g.priority === "Critical" ? "bg-red-950/40 text-red-400" : g.priority === "High" ? "bg-orange-950/40 text-orange-400" : "bg-slate-800 text-slate-400"}`}>{g.priority}</span>
+                    <div><p className="text-xs text-slate-300">{g.description}</p><p className="text-xs text-slate-500">{g.impactOnScore}</p></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+          {result.tailoredPositioning ? (
+            <div>
+              <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Targeting Recommendation</h4>
+              <p className="text-xs text-slate-300 leading-relaxed bg-slate-800/50 rounded p-3">{result.tailoredPositioning}</p>
+            </div>
+          ) : null}
+          <p className="text-xs text-slate-600 italic border-t border-slate-700/50 pt-3">SYNTHETIC SIMULATION — These outputs are evidence-based synthetic simulations derived from anonymised institutional archetypes. They are not validated predictions of real allocator behaviour.</p>
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    pending: "bg-muted text-muted-foreground",
-    running: "bg-blue-500/20 text-blue-400",
-    completed: "bg-green-500/20 text-green-400",
-    failed: "bg-red-500/20 text-red-400",
-  };
+function AskLpPanel({ sessionId, segmentId, agentName, onClose }: { sessionId: number; segmentId: string; agentName: string; onClose: () => void; }) {
+  const [question, setQuestion] = useState("");
+  const [history, setHistory] = useState<Array<{ q: string; a: string; warning: string | null }>>([]);
+  const askMutation = trpc.lpTwin.askLp.useMutation({
+    onSuccess: (data) => { setHistory((prev) => [...prev, { q: question, a: data.response, warning: data.inconsistencyWarning ?? null }]); setQuestion(""); },
+    onError: (err) => toast.error(`Ask LP failed: ${err.message}`),
+  });
   return (
-    <Badge className={`capitalize text-xs ${map[status] ?? "bg-muted text-muted-foreground"} hover:opacity-100`}>
-      {status === "running" && <Loader2 className="h-3 w-3 mr-1 animate-spin" />}
-      {status}
-    </Badge>
-  );
-}
-
-// ── Segment Result Card ───────────────────────────────────────────────────────
-
-type SegmentResult = {
-  id: number;
-  segmentId: string;
-  fitScore: string;
-  icVerdict: "Approved" | "Conditional Watchlist" | "Rejected";
-  probabilityBand: string | null;
-  objectionsJson: string | null;
-  evidenceGapsJson: string | null;
-  complianceFlagsJson: string | null;
-  fitReasonsJson: string | null;
-  tailoredPositioning: string | null;
-  modelVersion: string;
-  createdAt: number;
-};
-
-function SegmentCard({ result }: { result: SegmentResult }) {
-  const [expanded, setExpanded] = useState(false);
-  const score = Number(result.fitScore);
-
-  const objections = result.objectionsJson
-    ? (JSON.parse(result.objectionsJson) as Array<{ agent: string; objection: string; severity: string }>)
-    : [];
-  const evidenceGaps = result.evidenceGapsJson
-    ? (JSON.parse(result.evidenceGapsJson) as Array<{ gap: string; priority: string }>)
-    : [];
-  const complianceFlags = result.complianceFlagsJson
-    ? (JSON.parse(result.complianceFlagsJson) as Array<{ flag: string; status: string }>)
-    : [];
-  const fitReasons = result.fitReasonsJson
-    ? (JSON.parse(result.fitReasonsJson) as Array<{ dimension: string; score: number }>)
-    : [];
-
-  return (
-    <Card className={`transition-colors ${
-      result.icVerdict === "Approved"
-        ? "border-green-500/20"
-        : result.icVerdict === "Conditional Watchlist"
-        ? "border-amber-500/20"
-        : "border-red-500/20"
-    }`}>
-      <CardHeader className="pb-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <VerdictIcon verdict={result.icVerdict} />
-            <CardTitle className="text-sm">{result.segmentId}</CardTitle>
-          </div>
-          <div className="flex items-center gap-2">
-            <VerdictBadge verdict={result.icVerdict} />
-            {result.probabilityBand && (
-              <span className="text-xs text-muted-foreground font-mono">{result.probabilityBand}</span>
-            )}
-          </div>
+    <div className="fixed inset-0 z-50 flex items-end justify-end p-4 pointer-events-none">
+      <div className="pointer-events-auto w-full max-w-lg bg-slate-900 border border-slate-700 rounded-xl shadow-2xl flex flex-col" style={{ maxHeight: "80vh" }}>
+        <div className="flex items-center justify-between p-4 border-b border-slate-700">
+          <div><p className="text-sm font-semibold text-white">Ask an LP</p><p className="text-xs text-slate-400">{agentName} · Synthetic LP Archetype</p></div>
+          <Button size="sm" variant="ghost" onClick={onClose} className="text-slate-400">✕</Button>
         </div>
-        <FitScoreBar score={score} />
-      </CardHeader>
-
-      {expanded && (
-        <CardContent className="pt-0 space-y-4">
-          {fitReasons.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Fit Breakdown</p>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                {fitReasons.map((r) => (
-                  <div key={r.dimension}>
-                    <p className="text-xs text-muted-foreground">{r.dimension}</p>
-                    <p className="text-lg font-bold font-mono">{r.score}</p>
-                  </div>
-                ))}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
+          {history.length === 0 ? (
+            <div className="text-center py-8"><MessageSquare className="w-8 h-8 text-slate-600 mx-auto mb-2" /><p className="text-sm text-slate-500">Ask this allocator archetype a question about your fund.</p><p className="text-xs text-slate-600 mt-1">Responses are grounded in the deterministic fit score.</p></div>
+          ) : null}
+          {history.map((item, i) => (
+            <div key={i} className="space-y-2">
+              <div className="bg-slate-800 rounded-lg p-3"><p className="text-xs text-slate-400 mb-1">You</p><p className="text-sm text-slate-200">{item.q}</p></div>
+              <div className="bg-slate-700/50 rounded-lg p-3">
+                <p className="text-xs text-slate-400 mb-1">{agentName}</p>
+                <p className="text-sm text-slate-200 whitespace-pre-wrap">{item.a}</p>
+                {item.warning ? <div className="mt-2 flex items-start gap-2 bg-amber-950/30 border border-amber-800/30 rounded p-2"><AlertTriangle className="w-3 h-3 text-amber-400 shrink-0 mt-0.5" /><p className="text-xs text-amber-400">{item.warning}</p></div> : null}
               </div>
             </div>
-          )}
-
-          {objections.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
-                <MessageSquare className="h-3 w-3" /> IC Objections
-              </p>
-              <div className="space-y-2">
-                {objections.map((obj, i) => (
-                  <div key={i} className="p-3 rounded-lg bg-muted/40 border border-border">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium text-muted-foreground">{obj.agent}</span>
-                      <Badge variant={obj.severity === "High" ? "destructive" : "secondary"} className="text-xs">{obj.severity}</Badge>
-                    </div>
-                    <p className="text-sm">{obj.objection}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {evidenceGaps.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" /> Evidence Gaps
-              </p>
-              <ul className="space-y-1">
-                {evidenceGaps.map((gap, i) => (
-                  <li key={i} className="text-sm flex items-start gap-2">
-                    <span className={`mt-1.5 h-1.5 w-1.5 rounded-full shrink-0 ${gap.priority === "high" ? "bg-red-400" : "bg-amber-400"}`} />
-                    {gap.gap}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          {complianceFlags.length > 0 && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
-                <Shield className="h-3 w-3" /> Compliance Flags
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {complianceFlags.map((cf, i) => (
-                  <Badge key={i} variant={cf.status === "pass" ? "outline" : "destructive"} className="text-xs">
-                    {cf.flag}: {cf.status.toUpperCase()}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {result.tailoredPositioning && (
-            <div>
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 flex items-center gap-1">
-                <FileText className="h-3 w-3" /> Tailored Positioning
-              </p>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-                {result.tailoredPositioning}
-              </p>
-            </div>
-          )}
-
-          <p className="text-xs text-muted-foreground/50 font-mono">Model v{result.modelVersion}</p>
-        </CardContent>
-      )}
-
-      <div className="px-6 pb-3">
-        <button
-          onClick={() => setExpanded((e) => !e)}
-          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors"
-        >
-          {expanded ? <><ChevronUp className="h-3 w-3" /> Hide details</> : <><ChevronDown className="h-3 w-3" /> Show details</>}
-        </button>
+          ))}
+          {askMutation.isPending ? <div className="flex items-center gap-2 text-slate-400"><Loader2 className="w-4 h-4 animate-spin" /><span className="text-sm">Generating response...</span></div> : null}
+        </div>
+        <div className="p-4 border-t border-slate-700 space-y-2">
+          <Textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="e.g. What would make you reconsider this fund?" className="bg-slate-800 border-slate-600 text-slate-200 text-sm resize-none" rows={3} />
+          <Button className="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-sm" onClick={() => { if (!question.trim()) return; askMutation.mutate({ sessionId, segmentId, question: question.trim() }); }} disabled={askMutation.isPending || !question.trim()}>
+            {askMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}Send
+          </Button>
+          <p className="text-xs text-slate-600">Not predictions of real allocator behaviour.</p>
+        </div>
       </div>
-    </Card>
+    </div>
   );
 }
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-interface SessionData {
-  id: number;
-  orgId: number;
-  fundId: number;
-  sessionName: string;
-  selectedSegmentsJson: string;
-  scenarioType: string;
-  assumptionsJson: string | null;
-  engineVersion: string;
-  registryVersion: string;
-  status: string;
-  startedAt: number | null;
-  completedAt: number | null;
-  createdAt: number;
-  updatedAt: number;
-  deletedAt: number | null;
-}
-
-// ── Main Component ────────────────────────────────────────────────────────────
 
 export default function LPTwinSession() {
+  const { id } = useParams<{ id: string }>();
   const [, navigate] = useLocation();
-  const [, params] = useRoute("/captwin/lp-twin/:id");
-  const sessionId = params?.id ? Number(params.id) : 0;
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const sessionId = parseInt(id ?? "0", 10);
+  const [askLpState, setAskLpState] = useState<{ segmentId: string; agentName: string } | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
-  const utils = trpc.useUtils();
-
-  const { data, isLoading, error } = trpc.lpTwin.getSession.useQuery(
+  const { data, isLoading, error, refetch } = trpc.lpTwin.getSession.useQuery(
     { sessionId },
-    { enabled: sessionId > 0 }
+    { enabled: sessionId > 0, refetchInterval: (q) => { const s = q.state.data?.session?.status; return s === "running" ? 3000 : false; } }
+  );
+  const { data: agentsData } = trpc.lpTwin.listAgents.useQuery();
+  const runMutation = trpc.lpTwin.runSegmentAnalysis.useMutation({ onSuccess: () => { void refetch(); toast.success("Analysis started"); }, onError: (err) => toast.error(`Failed: ${err.message}`) });
+  const deleteMutation = trpc.lpTwin.deleteSession.useMutation({ onSuccess: () => { navigate("/captwin/lp-twin"); toast.success("Session deleted"); }, onError: (err) => toast.error(`Delete failed: ${err.message}`) });
+  const exportMutation = trpc.lpTwin.exportSession.useMutation({
+    onSuccess: (exportData) => { const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" }); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = `lp-twin-session-${sessionId}.json`; a.click(); URL.revokeObjectURL(url); toast.success("Export downloaded"); },
+    onError: (err) => toast.error(`Export failed: ${err.message}`),
+  });
+  const agentNameMap = useCallback((segId: string) => agentsData?.agents.find((a) => a.id === segId)?.name ?? segId, [agentsData]);
+
+  if (!sessionId || isNaN(sessionId)) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><p className="text-slate-400">Invalid session ID</p></div>;
+  if (isLoading) return <div className="min-h-screen bg-slate-950 flex items-center justify-center"><Loader2 className="w-8 h-8 text-indigo-400 animate-spin" /></div>;
+  if (error || !data) return (
+    <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+      <div className="text-center"><XCircle className="w-12 h-12 text-red-400 mx-auto mb-4" /><p className="text-slate-300 mb-4">{error?.message ?? "Session not found"}</p><Button variant="outline" onClick={() => navigate("/captwin/lp-twin")}><ArrowLeft className="w-4 h-4 mr-2" />Back</Button></div>
+    </div>
   );
 
-  const exportMutation = trpc.lpTwin.exportSession.useMutation();
-  const deleteMutation = trpc.lpTwin.deleteSession.useMutation({
-    onSuccess: () => {
-      toast.success("Session deleted");
-      navigate("/captwin/lp-twin");
-    },
-    onError: (err) => toast.error("Delete failed", { description: err.message }),
-  });
-
-  const session = data?.session as SessionData | undefined;
-  const results = (data?.results ?? []) as SegmentResult[];
-
-  const approvedCount = results.filter((r) => r.icVerdict === "Approved").length;
-  const watchlistCount = results.filter((r) => r.icVerdict === "Conditional Watchlist").length;
-  const rejectedCount = results.filter((r) => r.icVerdict === "Rejected").length;
-  const avgFit = results.length > 0
-    ? Math.round(results.reduce((sum, r) => sum + Number(r.fitScore), 0) / results.length)
-    : 0;
-
-  const selectedSegments: string[] = (() => {
-    try {
-      return session?.selectedSegmentsJson ? JSON.parse(session.selectedSegmentsJson) : [];
-    } catch { return []; }
-  })();
-
-  const assumptions: Record<string, unknown> = (() => {
-    try {
-      return session?.assumptionsJson ? JSON.parse(session.assumptionsJson) : {};
-    } catch { return {}; }
-  })();
-
-  async function handleExport() {
-    if (!session) return;
-    try {
-      const result = await exportMutation.mutateAsync({
-        sessionId,
-        exportType: "json",
-        reportType: "full_session",
-      });
-      const blob = new Blob([JSON.stringify(result.exportData, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `lp-twin-${session.sessionName.replace(/\s+/g, "-")}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success("Export downloaded", { description: "Audit record written." });
-    } catch (err: unknown) {
-      toast.error("Export failed", { description: err instanceof Error ? err.message : "Unknown error" });
-    }
-  }
-
-  // ── Loading ──
-  if (isLoading) {
-    return (
-      <div className="min-h-screen bg-background p-6 max-w-4xl mx-auto">
-        <Skeleton className="h-8 w-48 mb-6" />
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          {[1, 2, 3, 4].map((i) => <Skeleton key={i} className="h-20 rounded-lg" />)}
-        </div>
-        <div className="space-y-4">
-          {[1, 2, 3].map((i) => <Skeleton key={i} className="h-28 rounded-lg" />)}
-        </div>
-      </div>
-    );
-  }
-
-  // ── Error ──
-  if (error || !session) {
-    return (
-      <div className="min-h-screen bg-background p-6 max-w-4xl mx-auto text-center py-20 text-muted-foreground">
-        <XCircle className="h-10 w-10 mx-auto mb-3 text-destructive" />
-        <p className="font-medium">Session not found or access denied</p>
-        <p className="text-sm mt-1">{error?.message}</p>
-        <Button variant="outline" size="sm" className="mt-4" onClick={() => navigate("/captwin/lp-twin")}>
-          Back to LP Twin
-        </Button>
-      </div>
-    );
-  }
+  const { session, results } = data;
+  const sortedResults = [...results].sort((a, b) => parseFloat(b.fitScore) - parseFloat(a.fitScore));
+  const selectedIds: string[] = (() => { try { return JSON.parse(session.selectedSegmentsJson) as string[]; } catch { return []; } })();
+  const assumptions: Record<string, unknown> = (() => { try { return session.assumptionsJson ? JSON.parse(session.assumptionsJson) as Record<string, unknown> : {}; } catch { return {}; } })();
+  const avgScore = results.length > 0 ? results.reduce((s, r) => s + parseFloat(r.fitScore), 0) / results.length : 0;
+  const strongFit = results.filter((r) => parseFloat(r.fitScore) >= 70).length;
+  const conditionalFit = results.filter((r) => parseFloat(r.fitScore) >= 50 && parseFloat(r.fitScore) < 70).length;
+  const weakFit = results.filter((r) => parseFloat(r.fitScore) < 50).length;
+  const isPending = session.status === "pending";
+  const isRunning = session.status === "running";
+  const isComplete = session.status === "completed" || session.status === "partially_complete";
+  const isFailed = session.status === "failed";
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <div className="border-b border-border bg-background/95 sticky top-0 z-10 backdrop-blur">
-        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button onClick={() => navigate("/captwin/lp-twin")} className="text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="h-5 w-5" />
-            </button>
-            <div>
-              <h1 className="text-base font-bold leading-tight">{session.sessionName}</h1>
-              <p className="text-xs text-muted-foreground mt-0.5">
-                {session.scenarioType} · Engine {session.engineVersion}
-                {session.registryVersion && ` · Registry ${session.registryVersion}`}
-              </p>
+    <div className="min-h-screen bg-slate-950 text-slate-200">
+      <div className="border-b border-slate-800 bg-slate-900/50 sticky top-0 z-10">
+        <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <Button variant="ghost" size="sm" onClick={() => navigate("/captwin/lp-twin")} className="text-slate-400 hover:text-white shrink-0"><ArrowLeft className="w-4 h-4" /></Button>
+            <div className="min-w-0">
+              <h1 className="text-sm font-semibold text-white truncate">{session.sessionName}</h1>
+              <div className="flex items-center gap-2 mt-0.5">{statusIcon(session.status)}<span className="text-xs text-slate-400 capitalize">{session.status.replace("_", " ")}</span><span className="text-xs text-slate-600">·</span><span className="text-xs text-slate-500">{selectedIds.length} segments</span></div>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <StatusBadge status={session.status} />
-            {session.status === "completed" ? (
-              <Button variant="outline" size="sm" className="gap-1.5 text-xs" onClick={handleExport}>
-                <Download className="h-3.5 w-3.5" /> Export
-              </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            {(isPending || isFailed) ? <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white text-xs" onClick={() => runMutation.mutate({ sessionId })} disabled={runMutation.isPending}>{runMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Play className="w-3 h-3 mr-1" />}Run Analysis</Button> : null}
+            {isRunning ? <Button size="sm" variant="outline" onClick={() => void refetch()} className="text-xs border-slate-600 text-slate-300"><RefreshCw className="w-3 h-3 mr-1" />Refresh</Button> : null}
+            {isComplete ? <Button size="sm" variant="outline" className="text-xs border-slate-600 text-slate-300 hover:bg-slate-800" onClick={() => exportMutation.mutate({ sessionId, exportType: "json", reportType: "full_session" })} disabled={exportMutation.isPending}><Download className="w-3 h-3 mr-1" />Export</Button> : null}
+            <Button size="sm" variant="ghost" className="text-red-400 hover:text-red-300 hover:bg-red-950/30" onClick={() => setDeleteConfirm(true)}><Trash2 className="w-3 h-3" /></Button>
+          </div>
+        </div>
+      </div>
+
+      <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+        {isComplete && results.length > 0 ? (
+          <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-5">
+            <div className="flex items-center gap-2 mb-4"><TrendingUp className="w-4 h-4 text-indigo-400" /><h2 className="text-sm font-semibold text-white">Executive Summary</h2><span className="text-xs text-slate-500 ml-auto">Engine v{results[0]?.modelVersion ?? "2.0.0"}</span></div>
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              <div className="bg-slate-800/50 rounded-lg p-3 text-center"><p className="text-2xl font-bold text-white">{avgScore.toFixed(1)}</p><p className="text-xs text-slate-400 mt-1">Avg Fit Score</p></div>
+              <div className="bg-emerald-950/30 border border-emerald-800/30 rounded-lg p-3 text-center"><p className="text-2xl font-bold text-emerald-400">{strongFit}</p><p className="text-xs text-slate-400 mt-1">Strong Fit</p></div>
+              <div className="bg-amber-950/30 border border-amber-800/30 rounded-lg p-3 text-center"><p className="text-2xl font-bold text-amber-400">{conditionalFit}</p><p className="text-xs text-slate-400 mt-1">Conditional</p></div>
+              <div className="bg-red-950/30 border border-red-800/30 rounded-lg p-3 text-center"><p className="text-2xl font-bold text-red-400">{weakFit}</p><p className="text-xs text-slate-400 mt-1">Weak / Ineligible</p></div>
+            </div>
+            {strongFit > 0 ? (
+              <div className="mt-4 bg-indigo-950/30 border border-indigo-800/30 rounded-lg p-3">
+                <div className="flex items-center gap-2 mb-1"><Target className="w-3 h-3 text-indigo-400" /><span className="text-xs font-semibold text-indigo-300">Targeting Recommendation</span></div>
+                <p className="text-xs text-slate-300">Prioritise outreach to {strongFit} Strong Fit segment{strongFit > 1 ? "s" : ""}.{conditionalFit > 0 ? ` ${conditionalFit} Conditional Fit segment${conditionalFit > 1 ? "s" : ""} may be approachable after addressing key objections.` : ""}{weakFit > 0 ? ` Defer ${weakFit} Weak Fit / Ineligible segment${weakFit > 1 ? "s" : ""} until fund terms or track record improve.` : ""}</p>
+              </div>
             ) : null}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-destructive"
-              onClick={() => setShowDeleteDialog(true)}
-            >
-              <Trash2 className="h-4 w-4" />
+            <p className="text-xs text-slate-600 mt-3 italic">SYNTHETIC SIMULATION — These outputs are evidence-based synthetic simulations derived from anonymised institutional archetypes. They are not validated predictions of real allocator behaviour.</p>
+          </div>
+        ) : null}
+
+        <div className="bg-slate-900/40 border border-slate-700/30 rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3"><Info className="w-4 h-4 text-slate-400" /><h2 className="text-sm font-semibold text-slate-300">Session Parameters</h2></div>
+          <div className="grid grid-cols-2 gap-x-6 gap-y-1.5 sm:grid-cols-3 text-xs">
+            <div className="flex justify-between"><span className="text-slate-500">Scenario</span><span className="text-slate-300 capitalize">{session.scenarioType}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Segments</span><span className="text-slate-300">{selectedIds.length}</span></div>
+            <div className="flex justify-between"><span className="text-slate-500">Engine</span><span className="text-slate-300">{session.engineVersion}</span></div>
+            {Object.entries(assumptions).map(([k, v]) => <div key={k} className="flex justify-between"><span className="text-slate-500 capitalize">{k}</span><span className="text-slate-300">{String(v)}</span></div>)}
+          </div>
+        </div>
+
+        {isRunning ? (
+          <div className="bg-blue-950/30 border border-blue-800/30 rounded-xl p-6 text-center">
+            <Loader2 className="w-8 h-8 text-blue-400 animate-spin mx-auto mb-3" />
+            <p className="text-sm text-blue-300 font-medium">Analysis in progress</p>
+            <p className="text-xs text-slate-400 mt-1">{(session as Record<string, unknown>).segmentsCompleted as number ?? 0} of {selectedIds.length} segments complete</p>
+            <Button size="sm" variant="outline" onClick={() => void refetch()} className="mt-3 text-xs border-slate-600"><RefreshCw className="w-3 h-3 mr-1" />Refresh</Button>
+          </div>
+        ) : null}
+
+        {isPending ? (
+          <div className="bg-slate-900/60 border border-slate-700/50 rounded-xl p-8 text-center">
+            <Shield className="w-10 h-10 text-slate-600 mx-auto mb-4" />
+            <p className="text-slate-300 font-medium mb-2">Analysis not yet started</p>
+            <p className="text-sm text-slate-500 mb-4">Run the analysis to score {selectedIds.length} LP segment{selectedIds.length > 1 ? "s" : ""} against your fund profile.</p>
+            <Button className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => runMutation.mutate({ sessionId })} disabled={runMutation.isPending}>
+              {runMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Play className="w-4 h-4 mr-2" />}Run Segment Analysis
             </Button>
           </div>
-        </div>
-      </div>
+        ) : null}
 
-      <div className="max-w-4xl mx-auto px-6 py-6 space-y-6">
-        {/* Disclaimer */}
-        <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-xs text-amber-400">
-          <AlertTriangle className="h-4 w-4 shrink-0 mt-0.5" />
-          <span>
-            <strong>SYNTHETIC SIMULATION</strong> — These outputs are evidence-based synthetic simulations derived from
-            anonymised institutional archetypes. They are not validated predictions of real allocator behaviour.
-          </span>
-        </div>
+        {isFailed ? (
+          <div className="bg-red-950/20 border border-red-800/30 rounded-xl p-6 text-center">
+            <XCircle className="w-8 h-8 text-red-400 mx-auto mb-3" />
+            <p className="text-red-300 font-medium mb-2">Analysis failed</p>
+            <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => runMutation.mutate({ sessionId })} disabled={runMutation.isPending}>Retry Analysis</Button>
+          </div>
+        ) : null}
 
-        {/* Session metadata */}
-        <div className="flex flex-wrap gap-3 text-xs">
-          <div className="p-3 rounded-lg border border-border min-w-[140px]">
-            <p className="text-muted-foreground mb-0.5">Created</p>
-            <p className="font-medium">{String(new Date(session.createdAt).toLocaleString())}</p>
-          </div>
-          <div className="p-3 rounded-lg border border-border min-w-[140px]">
-            <p className="text-muted-foreground mb-0.5">Completed</p>
-            <p className="font-medium">{session.completedAt ? String(new Date(session.completedAt).toLocaleString()) : "—"}</p>
-          </div>
-          <div className="p-3 rounded-lg border border-border min-w-[120px]">
-            <p className="text-muted-foreground mb-0.5">Segments Tested</p>
-            <p className="font-medium">{selectedSegments.length}</p>
-          </div>
-          <div className="p-3 rounded-lg border border-border min-w-[120px]">
-            <p className="text-muted-foreground mb-0.5">Scenario</p>
-            <p className="font-medium capitalize">{session.scenarioType}</p>
-          </div>
-        </div>
-
-        {/* Selected segments list */}
-        {selectedSegments.length > 0 ? (
+        {sortedResults.length > 0 ? (
           <div>
-            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Segments Tested</p>
-            <div className="flex flex-wrap gap-1.5">
-              {selectedSegments.map((id) => (
-                <Badge key={id} variant="outline" className="text-xs font-mono">{id}</Badge>
-              ))}
+            <div className="flex items-center justify-between mb-3"><h2 className="text-sm font-semibold text-white">Segment Results <span className="text-slate-500 font-normal">ranked by fit score</span></h2></div>
+            <div className="space-y-3">
+              {sortedResults.map((result) => <SegmentResultCard key={result.id} result={result} sessionId={sessionId} agentName={agentNameMap(result.segmentId)} onAskLp={(segId, name) => setAskLpState({ segmentId: segId, agentName: name })} />)}
             </div>
           </div>
         ) : null}
 
-        {/* Custom assumptions */}
-        {assumptions.customNote ? (
-          <div className="p-3 rounded-lg bg-muted/20 border border-border text-xs">
-            <p className="font-semibold text-muted-foreground mb-1 flex items-center gap-1">
-              <Info className="h-3 w-3" /> Custom Assumptions
-            </p>
-            <p className="text-muted-foreground">{String(assumptions.customNote)}</p>
-          </div>
-        ) : null}
-
-        {/* ── Pending / Running / Failed states ── */}
-        {session.status === "pending" ? (
-          <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg">
-            <Clock className="h-8 w-8 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">Analysis pending</p>
-            <p className="text-sm mt-1">The analysis has not started yet.</p>
-          </div>
-        ) : null}
-
-        {session.status === "running" ? (
-          <div className="text-center py-12 text-muted-foreground border border-border rounded-lg bg-muted/10">
-            <Loader2 className="h-8 w-8 mx-auto mb-3 animate-spin text-primary" />
-            <p className="font-medium">Analysis running…</p>
-            <p className="text-sm mt-1">Results will appear here when complete.</p>
-          </div>
-        ) : null}
-
-        {session.status === "failed" ? (
-          <div className="text-center py-12 text-destructive border border-destructive/30 rounded-lg bg-destructive/5">
-            <XCircle className="h-8 w-8 mx-auto mb-3" />
-            <p className="font-medium">Analysis failed</p>
-            <p className="text-sm mt-1 text-muted-foreground">Create a new session to retry.</p>
-          </div>
-        ) : null}
-
-        {/* ── Results ── */}
-        {(session.status === "completed" && results.length === 0) ? (
-          <div className="text-center py-12 text-muted-foreground border border-dashed border-border rounded-lg">
-            <BarChart3 className="h-8 w-8 mx-auto mb-3 opacity-30" />
-            <p className="font-medium">No results stored</p>
-            <p className="text-sm mt-1">The session completed but no segment results were recorded.</p>
-          </div>
-        ) : null}
-
-        {(session.status === "completed" && results.length > 0) ? (
-          <>
-            {/* Summary stats */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card>
-                <CardContent className="pt-4 pb-4 text-center">
-                  <p className="text-2xl font-bold font-mono">{avgFit}</p>
-                  <p className="text-xs text-muted-foreground mt-1 flex items-center justify-center gap-1">
-                    <BarChart3 className="h-3 w-3" /> Avg Fit Score
-                  </p>
-                </CardContent>
-              </Card>
-              <Card className="border-green-500/20">
-                <CardContent className="pt-4 pb-4 text-center">
-                  <p className="text-2xl font-bold font-mono text-green-400">{approvedCount}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Approved</p>
-                </CardContent>
-              </Card>
-              <Card className="border-amber-500/20">
-                <CardContent className="pt-4 pb-4 text-center">
-                  <p className="text-2xl font-bold font-mono text-amber-400">{watchlistCount}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Watchlist</p>
-                </CardContent>
-              </Card>
-              <Card className="border-red-500/20">
-                <CardContent className="pt-4 pb-4 text-center">
-                  <p className="text-2xl font-bold font-mono text-red-400">{rejectedCount}</p>
-                  <p className="text-xs text-muted-foreground mt-1">Rejected</p>
-                </CardContent>
-              </Card>
+        {session.status === "partially_complete" ? (
+          <div className="bg-amber-950/20 border border-amber-800/30 rounded-xl p-4 flex items-start gap-3">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm text-amber-300 font-medium">Partial results</p>
+              <p className="text-xs text-slate-400 mt-1">{(session as Record<string, unknown>).segmentsCompleted as number ?? 0} segments scored, {(session as Record<string, unknown>).segmentsFailed as number ?? 0} failed.</p>
+              <Button size="sm" className="mt-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs" onClick={() => runMutation.mutate({ sessionId })} disabled={runMutation.isPending}>Retry Failed Segments</Button>
             </div>
-
-            {/* Segment results tabs */}
-            <Tabs defaultValue="all">
-              <TabsList className="mb-4">
-                <TabsTrigger value="all">All ({results.length})</TabsTrigger>
-                <TabsTrigger value="approved">Approved ({approvedCount})</TabsTrigger>
-                <TabsTrigger value="watchlist">Watchlist ({watchlistCount})</TabsTrigger>
-                <TabsTrigger value="rejected">Rejected ({rejectedCount})</TabsTrigger>
-              </TabsList>
-              {(["all", "approved", "watchlist", "rejected"] as const).map((tab) => (
-                <TabsContent key={tab} value={tab}>
-                  <div className="space-y-4">
-                    {results
-                      .filter((r) => {
-                        if (tab === "all") return true;
-                        if (tab === "approved") return r.icVerdict === "Approved";
-                        if (tab === "watchlist") return r.icVerdict === "Conditional Watchlist";
-                        return r.icVerdict === "Rejected";
-                      })
-                      .map((r) => <SegmentCard key={r.id} result={r} />)}
-                  </div>
-                </TabsContent>
-              ))}
-            </Tabs>
-          </>
+          </div>
         ) : null}
       </div>
 
-      {/* Delete confirmation */}
-      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Session</AlertDialogTitle>
-            <AlertDialogDescription>
-              Delete <strong>{session.sessionName}</strong>? All stored results will be removed.
-              This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              onClick={() => deleteMutation.mutate({ sessionId })}
-            >
-              {deleteMutation.isPending ? "Deleting…" : "Delete Session"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      {askLpState ? <AskLpPanel sessionId={sessionId} segmentId={askLpState.segmentId} agentName={askLpState.agentName} onClose={() => setAskLpState(null)} /> : null}
+
+      {deleteConfirm ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-sm w-full">
+            <h3 className="text-sm font-semibold text-white mb-2">Delete session?</h3>
+            <p className="text-xs text-slate-400 mb-4">This will permanently delete the session and all segment results. This cannot be undone.</p>
+            <div className="flex gap-2">
+              <Button variant="destructive" size="sm" className="flex-1" onClick={() => deleteMutation.mutate({ sessionId })} disabled={deleteMutation.isPending}>{deleteMutation.isPending ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}Delete</Button>
+              <Button variant="outline" size="sm" className="flex-1 border-slate-600" onClick={() => setDeleteConfirm(false)}>Cancel</Button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
