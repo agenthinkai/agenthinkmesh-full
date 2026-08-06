@@ -191,6 +191,7 @@ const LPTwin = lazy(() => import("./pages/LPTwin"));
 const LPTwinFundWizard = lazy(() => import("./pages/LPTwinFundWizard"));
 const LPTwinSession = lazy(() => import("./pages/LPTwinSession"));
 const LPTwinSessionCreate = lazy(() => import("./pages/LPTwinSessionCreate"));
+const LPTwinFundDetail = lazy(() => import("./pages/LPTwinFundDetail"));
 const TPACockpit = lazy(() => import("./pages/TPACockpit"));
 const BakalariaTwin = lazy(() => import("./pages/BakalariaTwin"));
 
@@ -567,6 +568,7 @@ function Router() {
       <Route path="/captwin/lp-twin/fund/new" component={LPTwinFundWizard} />
       <Route path="/captwin/lp-twin/fund/:id/edit" component={LPTwinFundWizard} />
       <Route path="/captwin/lp-twin/new" component={LPTwinSessionCreate} />
+      <Route path="/captwin/lp-twin/fund/:id" component={LPTwinFundDetail} />
       <Route path="/captwin/lp-twin/:id" component={LPTwinSession} />
       {/* Fallback */}
       <Route path="/404" component={NotFound} />

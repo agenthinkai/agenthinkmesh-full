@@ -461,6 +461,39 @@ export const lpTwinRouter = router({
       return { exportData, exportType: input.exportType, message: "Export prepared. Audit record written." };
     }),
 
+  // duplicateFund — creates a new org-scoped copy of an existing fund
+  duplicateFund: enterpriseProcedure
+    .input(z.object({ fundId: z.number().int().positive() }))
+    .mutation(async ({ input, ctx }) => {
+      const db = await getDb();
+      if (!db) throw new TRPCError({ code: "INTERNAL_SERVER_ERROR", message: "Database unavailable" });
+      const source = await assertFundOwnership(db, input.fundId, ctx.orgId);
+      const now = Date.now();
+      const [result] = await db.insert(lpTwinFunds).values({
+        orgId: ctx.orgId,
+        createdByUserId: ctx.user.id,
+        updatedByUserId: ctx.user.id,
+        fundName: `${source.fundName} (Copy)`,
+        gpName: source.gpName,
+        strategy: source.strategy,
+        assetClass: source.assetClass ?? undefined,
+        geography: source.geography ?? undefined,
+        domicile: source.domicile ?? undefined,
+        currency: source.currency,
+        targetFundSizeM: source.targetFundSizeM,
+        economicsJson: source.economicsJson,
+        investmentPropositionJson: source.investmentPropositionJson ?? undefined,
+        riskLiquidityJson: source.riskLiquidityJson ?? undefined,
+        trackRecordJson: source.trackRecordJson,
+        institutionalRequirementsJson: source.institutionalRequirementsJson ?? undefined,
+        evidenceStatus: "draft",
+        version: 1,
+        createdAt: now,
+        updatedAt: now,
+      });
+      return { newFundId: result.insertId, message: "Fund duplicated" };
+    }),
+
   // listSegments (utility — no mutation, no side effects)
   listSegments: enterpriseProcedure
     .query(() => {
