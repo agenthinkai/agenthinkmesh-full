@@ -13,3 +13,8 @@ export const CAPTWIN_REGISTRY_VERSION = "1.0.0";
 export * from "./lpRegistry";
 export * from "./engine";
 export * from "./icAgents";
+
+// ── WP4 modules ───────────────────────────────────────────────────────────────
+export * from "./agentBank";
+export * from "./fitEngine";
+export * from "./objectionEngine";
