@@ -203,7 +203,7 @@ describe("P07 — createSession", () => {
     const result = await caller.lpTwin.createSession({
       fundId: createdFundId,
       sessionName: `WP2 Test Session ${TAG}`,
-      selectedSegmentIds: ["apex-sovereign-fund", "global-pension-alliance"],
+      selectedSegmentIds: ["swf-001", "ppf-001"],
       scenarioType: "baseline",
     });
     expect(result.sessionId).toBeGreaterThan(0);
@@ -233,7 +233,8 @@ describe("P09 — runSegmentAnalysis", () => {
     const caller = appRouter.createCaller(makeCtx(userAId, orgAId));
     const result = await caller.lpTwin.runSegmentAnalysis({ sessionId: createdSessionId });
     expect(result.segmentsAnalysed).toBe(2);
-    expect(result.simulation.grossRaised).toBeGreaterThan(0);
+    expect(result.segmentsFailed).toBe(0);
+    expect(result.status).toBe("completed");
     expect(result.disclaimer).toContain("SYNTHETIC SIMULATION");
     const db = await getDb();
     if (!db) return;
@@ -261,7 +262,7 @@ describe("P11 — deleteSession", () => {
     const { sessionId: throwawayId } = await caller.lpTwin.createSession({
       fundId: createdFundId,
       sessionName: `Throwaway ${TAG}`,
-      selectedSegmentIds: ["apex-sovereign-fund"],
+      selectedSegmentIds: ["swf-001"],
     });
     await caller.lpTwin.deleteSession({ sessionId: throwawayId });
     const { sessions } = await caller.lpTwin.listSessions({ fundId: createdFundId });
@@ -297,7 +298,7 @@ describe("P13 — listSegments", () => {
     for (const seg of segments) {
       expect(seg.id).toBeTruthy();
       expect(seg.name).toBeTruthy();
-      expect(Array.isArray(seg.strategies)).toBe(true);
+      expect(Array.isArray(seg.preferredAssetClasses)).toBe(true);
     }
   });
 });

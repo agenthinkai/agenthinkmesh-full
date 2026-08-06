@@ -698,27 +698,65 @@ CRITICAL RULES:
         createdAt: Date.now(),
       };
       await db.insert(lpTwinExports).values(exportPayload);
-      const exportData = {
-        sessionId: input.sessionId,
-        sessionName: session.sessionName,
-        scenarioType: session.scenarioType,
-        engineVersion: session.engineVersion,
-        registryVersion: session.registryVersion,
+      // Build full export payload
+      const avgScore = results.length > 0
+        ? results.reduce((s, r) => s + Number(r.fitScore), 0) / results.length
+        : 0;
+      const fullExportData = {
+        exportId: exportPayload.createdAt,
         exportedAt: new Date().toISOString(),
+        exportedByUserId: ctx.user.id,
+        orgId: ctx.orgId,
         reportType: input.reportType,
+        exportType: input.exportType,
         disclaimer: "SYNTHETIC SIMULATION — These outputs are evidence-based synthetic simulations derived from anonymised institutional archetypes. They are not validated predictions of real allocator behaviour.",
+        session: {
+          id: session.id,
+          sessionName: session.sessionName,
+          scenarioType: session.scenarioType,
+          engineVersion: session.engineVersion,
+          registryVersion: session.registryVersion,
+          status: session.status,
+          createdAt: session.createdAt,
+          completedAt: session.completedAt,
+          selectedSegmentCount: (JSON.parse(session.selectedSegmentsJson) as string[]).length,
+        },
+        summary: {
+          averageFitScore: Math.round(avgScore * 10) / 10,
+          strongFitCount: results.filter((r) => Number(r.fitScore) >= 70).length,
+          conditionalFitCount: results.filter((r) => Number(r.fitScore) >= 50 && Number(r.fitScore) < 70).length,
+          weakFitCount: results.filter((r) => Number(r.fitScore) < 50).length,
+          totalSegments: results.length,
+        },
         results: results.map((r) => ({
           segmentId: r.segmentId,
-          fitScore: r.fitScore,
+          fitScore: Number(r.fitScore),
+          fitCategory: Number(r.fitScore) >= 70 ? "Strong Fit" : Number(r.fitScore) >= 50 ? "Conditional Fit" : Number(r.fitScore) >= 30 ? "Weak Fit" : "Likely Ineligible",
           icVerdict: r.icVerdict,
           probabilityBand: r.probabilityBand,
-          objections: r.objectionsJson ? JSON.parse(r.objectionsJson) : [],
-          complianceFlags: r.complianceFlagsJson ? JSON.parse(r.complianceFlagsJson) : [],
+          dimensions: r.fitReasonsJson ? JSON.parse(r.fitReasonsJson) as unknown : [],
+          disqualifiers: r.disqualifiersJson ? JSON.parse(r.disqualifiersJson) as unknown : [],
+          objections: r.objectionsJson ? JSON.parse(r.objectionsJson) as unknown : [],
+          evidenceGaps: r.evidenceGapsJson ? JSON.parse(r.evidenceGapsJson) as unknown : [],
+          complianceFlags: r.complianceFlagsJson ? JSON.parse(r.complianceFlagsJson) as unknown : [],
           tailoredPositioning: r.tailoredPositioning,
           modelVersion: r.modelVersion,
+          scoredAt: r.createdAt,
         })),
       };
-      return { exportData, exportType: input.exportType, message: "Export prepared. Audit record written." };
+      let csvData: string | null = null;
+      if (input.exportType === "csv") {
+        const headers = ["segmentId", "fitScore", "fitCategory", "icVerdict", "probabilityBand", "tailoredPositioning"];
+        const rows = fullExportData.results.map((r) =>
+          headers.map((h) => {
+            const v = (r as Record<string, unknown>)[h];
+            const s = v == null ? "" : String(v);
+            return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g, '""') + '"' : s;
+          }).join(",")
+        );
+        csvData = [headers.join(","), ...rows].join("\n");
+      }
+      return { exportData: fullExportData, csvData, exportType: input.exportType, message: "Export prepared. Audit record written." };
     }),
 
   // duplicateFund — creates a new org-scoped copy of an existing fund

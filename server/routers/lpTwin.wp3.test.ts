@@ -209,7 +209,7 @@ describe("W05 — Session creation links to the correct fund and organization", 
     const result = await caller.lpTwin.createSession({
       fundId: createdFundId,
       sessionName: `WP3 Session ${TAG}`,
-      selectedSegmentIds: ["apex-sovereign-fund"],
+      selectedSegmentIds: ["swf-001"],
       scenarioType: "baseline",
     });
     expect(result.sessionId).toBeGreaterThan(0);
