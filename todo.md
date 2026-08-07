@@ -5825,21 +5825,21 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 
 ## Hydro SME Acquisition Decision Twin (/twin/hydro)
 
-- [ ] Add DB tables: hydro_scenarios, hydro_evidence, hydro_audit_log, hydro_stress_params, hydro_company_slots
-- [ ] Add tRPC procedures: hydro.getScenario, hydro.updateAssumption, hydro.logAudit, hydro.runStress, hydro.exportPdf, hydro.exportCsv
-- [ ] Scaffold /twin/hydro route and HydroTwin.tsx page
-- [ ] Build Portfolio Case view: scenario selector (3 Cayman cases), 5-year KPI cards, Chart.js charts (Revenue/EBITDA/Debt/DSCR), acquisition phase schedule, Twin verdict badge, stop-rule alert
-- [ ] Build Warba Monitoring view: covenant dashboard (liquidity KWD 150k, DSCR 1.25x), peak exposure, sponsor liquidity, drawdown gates checklist, PASS/WATCH/FAIL badges, early-warning alerts
-- [ ] Build Evidence and Assumptions register: verified/pending/assumption rows, inline assumption editing, audit trail per edit
-- [ ] Build Stress Testing engine: 10 sliders, 5 required stress cases, live recalculation of all KPIs
-- [ ] Build Portfolio Architecture view: 10 numbered empty company slots, per-slot metrics panel
-- [ ] PDF export: credit-committee briefing with confidentiality footer and forecast disclaimers
-- [ ] CSV export: full 5-year financial schedule with disclaimers
-- [ ] Role-based access: Hydro management (full), adviser (full), auditor (read + export), Warba (read-only lender view)
-- [ ] Audit log: every scenario change, assumption edit, approval, verdict logged with user/time/reason
-- [ ] Human-approval gates: acquisitions, borrowing, payments, employment, contracts require explicit approval
-- [ ] Automated tests: financial model reconciliation, scenario switching, covenant calculation, stop-rule logic
-- [ ] Acceptance criteria verification: all 10 criteria from spec
+- [x] Add DB tables: hydro_scenarios, hydro_evidence, hydro_audit_log, hydro_stress_params, hydro_company_slots (SUPERSEDED — completed in Aug 2026 Hydro session below)
+- [x] Add tRPC procedures: hydro.getScenario, hydro.updateAssumption, hydro.logAudit, hydro.runStress, hydro.exportPdf, hydro.exportCsv (SUPERSEDED)
+- [x] Scaffold /twin/hydro route and HydroTwin.tsx page (SUPERSEDED)
+- [x] Build Portfolio Case view (SUPERSEDED)
+- [x] Build Warba Monitoring view (SUPERSEDED)
+- [x] Build Evidence and Assumptions register (SUPERSEDED)
+- [x] Build Stress Testing engine (SUPERSEDED)
+- [x] Build Portfolio Architecture view (SUPERSEDED)
+- [x] PDF export (SUPERSEDED)
+- [x] CSV export (SUPERSEDED)
+- [x] Role-based access (SUPERSEDED)
+- [x] Audit log (SUPERSEDED)
+- [x] Human-approval gates (SUPERSEDED)
+- [x] Automated tests (SUPERSEDED)
+- [x] Acceptance criteria verification (SUPERSEDED)
 
 ## Hydro SME Acquisition Decision Twin (Session — Aug 2026)
 
@@ -5863,3 +5863,25 @@ Files changed: SADOAuditTrail.tsx, SADOGovernance.tsx, SADOEscalations.tsx, SADO
 - [x] TypeScript: 0 errors
 - [x] Tests: 2310 passed, 1 skipped, 0 failed
 - [x] Checkpoint and deploy to production
+
+## LP Twin v1 — WP8 Security, Regression Testing, and Pilot Readiness (Aug 2026)
+
+- [x] WP8A: Security audit — traced all 4 LP Twin router data paths, confirmed no publicProcedure, all deletes org-scoped
+- [x] WP8B: Cross-tenant penetration test suite (35 tests, 15 resource types) — all cross-tenant access attempts denied
+- [x] WP8C: Full LP Twin regression suite — 242 tests passing (WP1–WP8)
+- [x] WP8D: TypeScript validation — tsc --noEmit --skipLibCheck: exit 0, 0 errors
+- [x] WP8E: E2E founding customer rehearsal script (docs/lp-twin/WP8E_FOUNDING_CUSTOMER_REHEARSAL.md)
+- [x] WP8F: Demo fund seed script (scripts/seed-lp-twin-demo.ts — Atlas Growth Fund I)
+- [x] WP8G: Customer intake package (docs/lp-twin/WP8G_CUSTOMER_INTAKE_PACKAGE.md)
+- [x] WP8H: Founding engagement package (docs/lp-twin/WP8H_FOUNDING_ENGAGEMENT_PACKAGE.md)
+- [x] WP8I: Customer role matrix (docs/lp-twin/WP8I_CUSTOMER_ROLE_MATRIX.md)
+- [x] WP8J: Model cards for all 6 engines (docs/lp-twin/WP8J_MODEL_CARDS.md)
+- [x] WP8K: Commercial claims review and cleanup (docs/lp-twin/WP8K_COMMERCIAL_CLAIMS_REVIEW.md)
+- [x] WP8L: Performance benchmark (docs/lp-twin/WP8L_PERFORMANCE_BENCHMARK.md)
+- [x] WP8M: Backup/recovery rehearsal (docs/lp-twin/WP8M_BACKUP_RECOVERY_REHEARSAL.md)
+- [x] WP8N: Documentation suite index — 11 guides (docs/lp-twin/WP8N_DOCUMENTATION_INDEX.md)
+- [x] WP8O: Success metrics framework (docs/lp-twin/WP8O_SUCCESS_METRICS.md)
+- [x] WP8P: Release gate tests (20 tests) + release candidate report — READY FOR FOUNDING VALIDATION CUSTOMER
+- [x] Audit logging added to archiveFund, deleteSession, exportSession, consent changes, calibration approvals
+- [x] Commit fcf5d8c pushed to feature/captwin-lp-twin-v1
+- [x] Checkpoint f0e9b1d0 saved and auto-published
