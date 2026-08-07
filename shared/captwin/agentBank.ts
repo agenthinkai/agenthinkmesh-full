@@ -98,6 +98,10 @@ export interface LPAgent {
   evidenceBasis: string;
   /** Verification status */
   verificationStatus: VerificationStatus;
+  /** Last updated date (YYYY-QN format) */
+  lastUpdated: string;
+  /** Known limitations of this archetype */
+  knownLimitations: string[];
   /** Registry version */
   registryVersion: string;
 }
@@ -155,6 +159,12 @@ export const LP_AGENT_BANK: LPAgent[] = [
     ],
     evidenceBasis: "Derived from publicly available sovereign wealth fund investment policies, annual reports, and industry research. Not based on any specific institution.",
     verificationStatus: "Unverified",
+  lastUpdated: "2025-Q4",
+  knownLimitations: [
+    "Based on archetype patterns, not individual institution data",
+    "Mandate details may vary across institutions of this type",
+    "Regulatory requirements may have changed since last update",
+  ],
     registryVersion: LP_AGENT_BANK_VERSION,
   },
 
@@ -207,6 +217,12 @@ export const LP_AGENT_BANK: LPAgent[] = [
     ],
     evidenceBasis: "Derived from public pension fund investment policy statements, CIO interviews, and industry research. Not based on any specific institution.",
     verificationStatus: "Unverified",
+  lastUpdated: "2025-Q4",
+  knownLimitations: [
+    "Based on archetype patterns, not individual institution data",
+    "Mandate details may vary across institutions of this type",
+    "Regulatory requirements may have changed since last update",
+  ],
     registryVersion: LP_AGENT_BANK_VERSION,
   },
 
@@ -257,6 +273,12 @@ export const LP_AGENT_BANK: LPAgent[] = [
     ],
     evidenceBasis: "Derived from corporate pension fund investment guidelines and industry research. Not based on any specific institution.",
     verificationStatus: "Unverified",
+  lastUpdated: "2025-Q4",
+  knownLimitations: [
+    "Based on archetype patterns, not individual institution data",
+    "Mandate details may vary across institutions of this type",
+    "Regulatory requirements may have changed since last update",
+  ],
     registryVersion: LP_AGENT_BANK_VERSION,
   },
 
@@ -308,6 +330,12 @@ export const LP_AGENT_BANK: LPAgent[] = [
     ],
     evidenceBasis: "Derived from insurance company investment guidelines, Solvency II frameworks, and industry research. Not based on any specific institution.",
     verificationStatus: "Unverified",
+  lastUpdated: "2025-Q4",
+  knownLimitations: [
+    "Based on archetype patterns, not individual institution data",
+    "Mandate details may vary across institutions of this type",
+    "Regulatory requirements may have changed since last update",
+  ],
     registryVersion: LP_AGENT_BANK_VERSION,
   },
 
@@ -358,6 +386,12 @@ export const LP_AGENT_BANK: LPAgent[] = [
     ],
     evidenceBasis: "Derived from family office investment surveys, industry research, and practitioner interviews. Not based on any specific institution.",
     verificationStatus: "Unverified",
+  lastUpdated: "2025-Q4",
+  knownLimitations: [
+    "Based on archetype patterns, not individual institution data",
+    "Mandate details may vary across institutions of this type",
+    "Regulatory requirements may have changed since last update",
+  ],
     registryVersion: LP_AGENT_BANK_VERSION,
   },
 
@@ -408,6 +442,12 @@ export const LP_AGENT_BANK: LPAgent[] = [
     ],
     evidenceBasis: "Derived from multi-family office investment policies and industry research. Not based on any specific institution.",
     verificationStatus: "Unverified",
+  lastUpdated: "2025-Q4",
+  knownLimitations: [
+    "Based on archetype patterns, not individual institution data",
+    "Mandate details may vary across institutions of this type",
+    "Regulatory requirements may have changed since last update",
+  ],
     registryVersion: LP_AGENT_BANK_VERSION,
   },
 
@@ -458,6 +498,12 @@ export const LP_AGENT_BANK: LPAgent[] = [
     ],
     evidenceBasis: "Derived from endowment investment policy statements, CIO interviews, and industry research. Not based on any specific institution.",
     verificationStatus: "Unverified",
+  lastUpdated: "2025-Q4",
+  knownLimitations: [
+    "Based on archetype patterns, not individual institution data",
+    "Mandate details may vary across institutions of this type",
+    "Regulatory requirements may have changed since last update",
+  ],
     registryVersion: LP_AGENT_BANK_VERSION,
   },
 
@@ -508,6 +554,12 @@ export const LP_AGENT_BANK: LPAgent[] = [
     ],
     evidenceBasis: "Derived from fund of funds investment policies and industry research. Not based on any specific institution.",
     verificationStatus: "Unverified",
+  lastUpdated: "2025-Q4",
+  knownLimitations: [
+    "Based on archetype patterns, not individual institution data",
+    "Mandate details may vary across institutions of this type",
+    "Regulatory requirements may have changed since last update",
+  ],
     registryVersion: LP_AGENT_BANK_VERSION,
   },
 
@@ -559,6 +611,12 @@ export const LP_AGENT_BANK: LPAgent[] = [
     ],
     evidenceBasis: "Derived from Islamic finance standards (AAOIFI, IFSB), GCC institutional investment policies, and industry research. Not based on any specific institution.",
     verificationStatus: "Unverified",
+  lastUpdated: "2025-Q4",
+  knownLimitations: [
+    "Based on archetype patterns, not individual institution data",
+    "Mandate details may vary across institutions of this type",
+    "Regulatory requirements may have changed since last update",
+  ],
     registryVersion: LP_AGENT_BANK_VERSION,
   },
 

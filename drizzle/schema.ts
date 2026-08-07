@@ -4295,3 +4295,176 @@ export const lpTwinScenarioResults = mysqlTable("lp_twin_scenario_results", {
 });
 export type LpTwinScenarioResult = typeof lpTwinScenarioResults.$inferSelect;
 export type InsertLpTwinScenarioResult = typeof lpTwinScenarioResults.$inferInsert;
+
+// ─── WP6: Capital Formation Execution Layer ───────────────────────────────────
+
+/**
+ * lp_twin_actual_meetings — Records of real investor meetings.
+ * Governance: institution names are access-controlled; unverified recollections
+ * must not automatically influence future agent calibration.
+ */
+export const lpTwinActualMeetings = mysqlTable("lp_twin_actual_meetings", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  createdByUserId: int("createdByUserId").notNull(),
+  updatedByUserId: int("updatedByUserId").notNull(),
+  fundId: int("fundId").notNull(),
+  fundVersion: int("fundVersion").notNull(),
+  sessionId: int("sessionId"),
+  scenarioId: int("scenarioId"),
+  segmentId: varchar("segmentId", { length: 64 }).notNull(),
+  // Institution name is optional and access-controlled
+  institutionName: varchar("institutionName", { length: 256 }),
+  institutionNameVisible: mysqlEnum("institutionNameVisible", ["org_only", "owner_only", "hidden"]).notNull().default("org_only"),
+  meetingDate: bigint("meetingDate", { mode: "number" }).notNull(),
+  meetingType: mysqlEnum("meetingType", ["introductory", "first_diligence", "follow_up", "ic_preparation", "terms_discussion", "final_diligence", "reup_discussion", "consultant_gatekeeper"]).notNull(),
+  meetingObjective: varchar("meetingObjective", { length: 128 }),
+  participants: text("participants"),
+  stage: mysqlEnum("stage", ["target", "contacted", "first_meeting", "follow_up", "diligence", "ic_review", "soft_circle", "committed", "declined", "deferred"]).notNull().default("first_meeting"),
+  interestLevel: mysqlEnum("interestLevel", ["strong", "moderate", "low", "none", "unknown"]).notNull().default("unknown"),
+  actualQuestionsJson: text("actualQuestionsJson"),
+  actualObjectionsJson: text("actualObjectionsJson"),
+  evidenceRequestedJson: text("evidenceRequestedJson"),
+  termsChallengedJson: text("termsChallengedJson"),
+  nextAction: text("nextAction"),
+  followUpDate: bigint("followUpDate", { mode: "number" }),
+  diligenceStatus: varchar("diligenceStatus", { length: 64 }),
+  softCircleStatus: mysqlEnum("softCircleStatus", ["none", "verbal", "written", "confirmed"]).notNull().default("none"),
+  commitmentStatus: mysqlEnum("commitmentStatus", ["none", "soft", "hard", "closed"]).notNull().default("none"),
+  commitmentAmountM: decimal("commitmentAmountM", { precision: 14, scale: 2 }),
+  notes: text("notes"),
+  // Governance
+  verificationStatus: mysqlEnum("verificationStatus", ["unverified", "self_reported", "third_party_verified"]).notNull().default("unverified"),
+  consentStatus: mysqlEnum("consentStatus", ["not_obtained", "obtained", "withdrawn"]).notNull().default("not_obtained"),
+  dataSource: varchar("dataSource", { length: 128 }).notNull().default("user_entry"),
+  permittedUse: mysqlEnum("permittedUse", ["internal_only", "anonymized_research", "calibration_eligible"]).notNull().default("internal_only"),
+  anonymizationStatus: mysqlEnum("anonymizationStatus", ["not_anonymized", "anonymized", "pseudonymized"]).notNull().default("not_anonymized"),
+  calibrationEligibility: mysqlEnum("calibrationEligibility", ["ineligible", "pending_review", "eligible"]).notNull().default("ineligible"),
+  engineVersion: varchar("engineVersion", { length: 32 }).notNull(),
+  registryVersion: varchar("registryVersion", { length: 32 }).notNull(),
+  archivedAt: bigint("archivedAt", { mode: "number" }),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type LpTwinActualMeeting = typeof lpTwinActualMeetings.$inferSelect;
+export type InsertLpTwinActualMeeting = typeof lpTwinActualMeetings.$inferInsert;
+
+/**
+ * lp_twin_actual_responses — Individual question/objection/evidence responses from real meetings.
+ */
+export const lpTwinActualResponses = mysqlTable("lp_twin_actual_responses", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  meetingId: int("meetingId").notNull(),
+  responseType: mysqlEnum("responseType", ["question", "objection", "evidence_request", "term_challenge", "positive_signal"]).notNull(),
+  content: text("content").notNull(),
+  category: varchar("category", { length: 128 }),
+  severity: mysqlEnum("severity", ["critical", "high", "moderate", "low", "unknown"]).notNull().default("unknown"),
+  gpResponse: text("gpResponse"),
+  outcome: mysqlEnum("outcome", ["resolved", "partially_resolved", "unresolved", "deferred", "unknown"]).notNull().default("unknown"),
+  // Governance
+  verificationStatus: mysqlEnum("verificationStatus", ["unverified", "self_reported", "third_party_verified"]).notNull().default("unverified"),
+  calibrationEligibility: mysqlEnum("calibrationEligibility", ["ineligible", "pending_review", "eligible"]).notNull().default("ineligible"),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type LpTwinActualResponse = typeof lpTwinActualResponses.$inferSelect;
+export type InsertLpTwinActualResponse = typeof lpTwinActualResponses.$inferInsert;
+
+/**
+ * lp_twin_validation_comparisons — Synthetic vs actual comparison records.
+ * Agreement labels: agreement, partial_agreement, disagreement, insufficient_evidence.
+ * Not called "accuracy" until validation methodology is established.
+ */
+export const lpTwinValidationComparisons = mysqlTable("lp_twin_validation_comparisons", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  meetingId: int("meetingId").notNull(),
+  sessionId: int("sessionId"),
+  scenarioId: int("scenarioId"),
+  segmentId: varchar("segmentId", { length: 64 }).notNull(),
+  fundId: int("fundId").notNull(),
+  fundVersion: int("fundVersion").notNull(),
+  engineVersion: varchar("engineVersion", { length: 32 }).notNull(),
+  registryVersion: varchar("registryVersion", { length: 32 }).notNull(),
+  // Comparison dimensions
+  objectionsAgreementLabel: mysqlEnum("objectionsAgreementLabel", ["agreement", "partial_agreement", "disagreement", "insufficient_evidence"]).notNull().default("insufficient_evidence"),
+  questionsAgreementLabel: mysqlEnum("questionsAgreementLabel", ["agreement", "partial_agreement", "disagreement", "insufficient_evidence"]).notNull().default("insufficient_evidence"),
+  evidenceAgreementLabel: mysqlEnum("evidenceAgreementLabel", ["agreement", "partial_agreement", "disagreement", "insufficient_evidence"]).notNull().default("insufficient_evidence"),
+  progressionAgreementLabel: mysqlEnum("progressionAgreementLabel", ["agreement", "partial_agreement", "disagreement", "insufficient_evidence"]).notNull().default("insufficient_evidence"),
+  fitAgreementLabel: mysqlEnum("fitAgreementLabel", ["agreement", "partial_agreement", "disagreement", "insufficient_evidence"]).notNull().default("insufficient_evidence"),
+  comparisonDataJson: text("comparisonDataJson").notNull(),
+  summaryNarrative: text("summaryNarrative"),
+  // Governance
+  verificationStatus: mysqlEnum("verificationStatus", ["unverified", "self_reported", "third_party_verified"]).notNull().default("unverified"),
+  calibrationEligibility: mysqlEnum("calibrationEligibility", ["ineligible", "pending_review", "eligible"]).notNull().default("ineligible"),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type LpTwinValidationComparison = typeof lpTwinValidationComparisons.$inferSelect;
+export type InsertLpTwinValidationComparison = typeof lpTwinValidationComparisons.$inferInsert;
+
+/**
+ * lp_twin_pipeline — Lightweight fundraising pipeline entries.
+ * Not a full CRM — tracks stage, fit, readiness, next action.
+ */
+export const lpTwinPipeline = mysqlTable("lp_twin_pipeline", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  createdByUserId: int("createdByUserId").notNull(),
+  updatedByUserId: int("updatedByUserId").notNull(),
+  fundId: int("fundId").notNull(),
+  segmentId: varchar("segmentId", { length: 64 }).notNull(),
+  // Investor identity (access-controlled)
+  investorLabel: varchar("investorLabel", { length: 256 }).notNull(),
+  investorNameVisible: mysqlEnum("investorNameVisible", ["org_only", "owner_only", "hidden"]).notNull().default("org_only"),
+  geography: varchar("geography", { length: 128 }),
+  shariaRequirement: mysqlEnum("shariaRequirement", ["required", "preferred", "not_required", "unknown"]).notNull().default("unknown"),
+  // Pipeline state
+  stage: mysqlEnum("stage", ["target", "contacted", "first_meeting", "follow_up", "diligence", "ic_review", "soft_circle", "committed", "declined", "deferred"]).notNull().default("target"),
+  fitScore: decimal("fitScore", { precision: 5, scale: 2 }),
+  fitCategory: varchar("fitCategory", { length: 64 }),
+  readinessLabel: mysqlEnum("readinessLabel", ["ready", "ready_with_conditions", "not_ready", "unknown"]).notNull().default("unknown"),
+  lastInteractionAt: bigint("lastInteractionAt", { mode: "number" }),
+  nextAction: text("nextAction"),
+  nextActionDate: bigint("nextActionDate", { mode: "number" }),
+  meetingDate: bigint("meetingDate", { mode: "number" }),
+  objectionsJson: text("objectionsJson"),
+  evidenceRequestedJson: text("evidenceRequestedJson"),
+  ownerId: int("ownerId"),
+  expectedTicketMinM: decimal("expectedTicketMinM", { precision: 14, scale: 2 }),
+  expectedTicketMaxM: decimal("expectedTicketMaxM", { precision: 14, scale: 2 }),
+  probabilityBand: mysqlEnum("probabilityBand", ["high", "medium", "low", "unknown"]).notNull().default("unknown"),
+  notes: text("notes"),
+  archivedAt: bigint("archivedAt", { mode: "number" }),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type LpTwinPipelineEntry = typeof lpTwinPipeline.$inferSelect;
+export type InsertLpTwinPipelineEntry = typeof lpTwinPipeline.$inferInsert;
+
+/**
+ * lp_twin_reports — Persisted report records for reproducibility.
+ * Historical reports remain tied to fund version, scenario version, engine version.
+ */
+export const lpTwinReports = mysqlTable("lp_twin_reports", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  generatedByUserId: int("generatedByUserId").notNull(),
+  fundId: int("fundId").notNull(),
+  fundVersion: int("fundVersion").notNull(),
+  sessionId: int("sessionId"),
+  scenarioId: int("scenarioId"),
+  reportType: varchar("reportType", { length: 64 }).notNull(),
+  reportTitle: varchar("reportTitle", { length: 256 }).notNull(),
+  engineVersion: varchar("engineVersion", { length: 32 }).notNull(),
+  registryVersion: varchar("registryVersion", { length: 32 }).notNull(),
+  objectionEngineVersion: varchar("objectionEngineVersion", { length: 32 }).notNull(),
+  evidenceStatus: varchar("evidenceStatus", { length: 32 }).notNull(),
+  assumptionsJson: text("assumptionsJson"),
+  reportDataJson: text("reportDataJson").notNull(),
+  markdownContent: text("markdownContent"),
+  generatedAt: bigint("generatedAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type LpTwinReport = typeof lpTwinReports.$inferSelect;
+export type InsertLpTwinReport = typeof lpTwinReports.$inferInsert;
