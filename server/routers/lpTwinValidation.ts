@@ -22,6 +22,7 @@ import {
   lpTwinHumanResponses,
   lpTwinSyntheticSnapshots,
   lpTwinCalibrationCandidates,
+  enterpriseAuditLog,
   type InsertLpTwinValidationParticipant,
   type InsertLpTwinValidationScenario,
   type InsertLpTwinHumanResponse,
@@ -150,6 +151,17 @@ const ImportResponsesInput = z.object({
 });
 
 // ── Router ────────────────────────────────────────────────────────────────────
+
+
+// ── Audit helper ─────────────────────────────────────────────────────────────
+async function lpValidationAudit(
+  db: Awaited<ReturnType<typeof getDb>>,
+  params: { orgId: number; userId: number; action: string; resourceType: string; resourceId?: string; details?: string; severity?: "info" | "warning" | "critical" }
+) {
+  try {
+    await db!.insert(enterpriseAuditLog).values({ orgId: params.orgId, userId: params.userId, action: params.action, resourceType: params.resourceType, resourceId: params.resourceId, details: params.details, severity: params.severity ?? "info" });
+  } catch { /* audit failures must not block primary operation */ }
+}
 
 export const lpTwinValidationRouter = router({
 
@@ -721,6 +733,7 @@ export const lpTwinValidationRouter = router({
             eq(lpTwinHumanResponses.participantId, input.participantId),
             eq(lpTwinHumanResponses.orgId, ctx.orgId)
           ));
+        await lpValidationAudit(db, { orgId: ctx.orgId, userId: ctx.user.id, action: "revoke_consent", resourceType: "lp_twin_participant", resourceId: String(input.participantId), severity: "warning" });
         return { deleted: false, anonymized: true };
       } else {
         // Hard archive

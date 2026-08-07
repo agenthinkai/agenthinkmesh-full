@@ -29,6 +29,7 @@ import {
   lpTwinSessions,
   lpTwinSegmentResults,
   lpTwinExports,
+  enterpriseAuditLog,
   type InsertLpTwinFund,
   type InsertLpTwinSession,
   type InsertLpTwinSegmentResult,
@@ -119,6 +120,35 @@ async function assertFundOwnership(
     throw new TRPCError({ code: "NOT_FOUND", message: "Fund not found or access denied" });
   }
   return fund;
+}
+
+
+// ── Audit helper ─────────────────────────────────────────────────────────────
+async function lpTwinAudit(
+  db: Awaited<ReturnType<typeof getDb>>,
+  params: {
+    orgId: number;
+    userId: number;
+    action: string;
+    resourceType: string;
+    resourceId?: string;
+    details?: string;
+    severity?: "info" | "warning" | "critical";
+  }
+) {
+  try {
+    await db!.insert(enterpriseAuditLog).values({
+      orgId: params.orgId,
+      userId: params.userId,
+      action: params.action,
+      resourceType: params.resourceType,
+      resourceId: params.resourceId,
+      details: params.details,
+      severity: params.severity ?? "info",
+    });
+  } catch {
+    // Audit failures must not block the primary operation
+  }
 }
 
 async function assertSessionOwnership(
@@ -275,6 +305,7 @@ export const lpTwinRouter = router({
       await assertFundOwnership(db, input.fundId, ctx.orgId);
       await db.update(lpTwinFunds).set({ archivedAt: Date.now(), updatedByUserId: ctx.user.id, updatedAt: Date.now() })
         .where(and(eq(lpTwinFunds.id, input.fundId), eq(lpTwinFunds.orgId, ctx.orgId)));
+      await lpTwinAudit(db, { orgId: ctx.orgId, userId: ctx.user.id, action: "archive_fund", resourceType: "lp_twin_fund", resourceId: String(input.fundId), severity: "warning" });
       return { fundId: input.fundId, message: "Fund archived" };
     }),
 
@@ -681,6 +712,7 @@ CRITICAL RULES:
       await assertSessionOwnership(db, input.sessionId, ctx.orgId);
       await db.update(lpTwinSessions).set({ deletedAt: Date.now(), updatedAt: Date.now() })
         .where(and(eq(lpTwinSessions.id, input.sessionId), eq(lpTwinSessions.orgId, ctx.orgId)));
+      await lpTwinAudit(db, { orgId: ctx.orgId, userId: ctx.user.id, action: "delete_session", resourceType: "lp_twin_session", resourceId: String(input.sessionId), severity: "warning" });
       return { sessionId: input.sessionId, message: "Session deleted" };
     }),
 
