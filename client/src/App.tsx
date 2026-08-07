@@ -197,6 +197,7 @@ const LPTwinMeetingRoom = lazy(() => import('./pages/LPTwinMeetingRoom'));
 const LPTwinAgentBank = lazy(() => import('./pages/LPTwinAgentBank'));
 const LPTwinPipeline = lazy(() => import('./pages/LPTwinPipeline'));
 const LPTwinActualMeeting = lazy(() => import('./pages/LPTwinActualMeeting'));
+const LPTwinValidation = lazy(() => import("./pages/LPTwinValidation"));
 const LPTwinReports = lazy(() => import('./pages/LPTwinReports'));
 const TPACockpit = lazy(() => import("./pages/TPACockpit"));
 const BakalariaTwin = lazy(() => import("./pages/BakalariaTwin"));

@@ -4468,3 +4468,162 @@ export const lpTwinReports = mysqlTable("lp_twin_reports", {
 });
 export type LpTwinReport = typeof lpTwinReports.$inferSelect;
 export type InsertLpTwinReport = typeof lpTwinReports.$inferInsert;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WP7 — Validation and Calibration Infrastructure
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * lp_twin_validation_participants — Governed registry of human validators.
+ */
+export const lpTwinValidationParticipants = mysqlTable("lp_twin_validation_participants", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  participantType: mysqlEnum("participantType", [
+    "institutional_allocator", "family_office_professional", "placement_agent",
+    "fund_manager", "investment_consultant", "capital_formation_executive", "sharia_adviser", "other"
+  ]).notNull(),
+  allocatorSegment: varchar("allocatorSegment", { length: 64 }),
+  organizationName: varchar("organizationName", { length: 256 }),
+  roleTitle: varchar("roleTitle", { length: 128 }),
+  geography: varchar("geography", { length: 128 }),
+  yearsExperience: int("yearsExperience"),
+  consentStatus: mysqlEnum("consentStatus", ["pending", "granted", "revoked", "expired"]).notNull().default("pending"),
+  recordingConsent: boolean("recordingConsent").notNull().default(false),
+  anonymizationPreference: mysqlEnum("anonymizationPreference", ["full_anonymous", "role_only", "org_and_role", "identified"]).notNull().default("full_anonymous"),
+  permittedUse: text("permittedUse").notNull(), // JSON array: ["research_only","product_validation","internal_calibration","anonymous_aggregate","customer_specific","no_model_improvement"]
+  calibrationEligibility: boolean("calibrationEligibility").notNull().default(false),
+  verificationStatus: mysqlEnum("verificationStatus", ["unverified", "self_declared", "verified", "rejected"]).notNull().default("unverified"),
+  source: mysqlEnum("source", ["direct_outreach", "referral", "placement_agent", "conference", "other"]).notNull().default("direct_outreach"),
+  notes: text("notes"),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  archivedAt: bigint("archivedAt", { mode: "number" }),
+});
+export type LpTwinValidationParticipant = typeof lpTwinValidationParticipants.$inferSelect;
+export type InsertLpTwinValidationParticipant = typeof lpTwinValidationParticipants.$inferInsert;
+
+/**
+ * lp_twin_validation_scenarios — Standard controlled fund scenarios for validation.
+ */
+export const lpTwinValidationScenarios = mysqlTable("lp_twin_validation_scenarios", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  scenarioName: varchar("scenarioName", { length: 256 }).notNull(),
+  scenarioCode: varchar("scenarioCode", { length: 64 }).notNull(),
+  version: int("version").notNull().default(1),
+  fundProfileJson: text("fundProfileJson").notNull(),  // Full FundProfile snapshot
+  fundTermsJson: text("fundTermsJson"),
+  strategy: varchar("strategy", { length: 128 }).notNull(),
+  geography: varchar("geography", { length: 256 }),
+  targetSizeM: decimal("targetSizeM", { precision: 14, scale: 2 }).notNull(),
+  managementFeePct: decimal("managementFeePct", { precision: 5, scale: 2 }).notNull(),
+  carryPct: decimal("carryPct", { precision: 5, scale: 2 }).notNull(),
+  trackRecordYrs: int("trackRecordYrs").notNull(),
+  priorFundIRR: decimal("priorFundIRR", { precision: 5, scale: 2 }),
+  shariaCompliant: boolean("shariaCompliant").notNull().default(false),
+  esgPolicy: varchar("esgPolicy", { length: 64 }),
+  governanceJson: text("governanceJson"),
+  evidencePackageJson: text("evidencePackageJson"),
+  expectedQuestionsJson: text("expectedQuestionsJson"),
+  isActive: boolean("isActive").notNull().default(true),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type LpTwinValidationScenario = typeof lpTwinValidationScenarios.$inferSelect;
+export type InsertLpTwinValidationScenario = typeof lpTwinValidationScenarios.$inferInsert;
+
+/**
+ * lp_twin_human_responses — Structured human validator responses to standard scenarios.
+ */
+export const lpTwinHumanResponses = mysqlTable("lp_twin_human_responses", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  participantId: int("participantId").notNull(),
+  scenarioId: int("scenarioId").notNull(),
+  scenarioVersion: int("scenarioVersion").notNull(),
+  allocatorSegment: varchar("allocatorSegment", { length: 64 }).notNull(),
+  initialAttractiveness: int("initialAttractiveness"),  // 1–10
+  verdict: mysqlEnum("verdict", ["pass", "conditional", "reject"]).notNull(),
+  topObjectionsJson: text("topObjectionsJson"),          // string[]
+  rejectionTriggersJson: text("rejectionTriggersJson"),  // string[]
+  requiredEvidenceJson: text("requiredEvidenceJson"),    // string[]
+  termsToChangeJson: text("termsToChangeJson"),          // string[]
+  expectedDiligenceMonths: int("expectedDiligenceMonths"),
+  likelyNextStep: mysqlEnum("likelyNextStep", ["reject", "more_information", "meeting", "diligence", "ic_progression"]),
+  ticketSizeMinM: decimal("ticketSizeMinM", { precision: 10, scale: 2 }),
+  ticketSizeMaxM: decimal("ticketSizeMaxM", { precision: 10, scale: 2 }),
+  confidence: int("confidence"),  // 1–10
+  rationale: text("rationale"),
+  followUpQuestionsJson: text("followUpQuestionsJson"),  // string[]
+  sourceType: mysqlEnum("sourceType", [
+    "structured_validation_interview", "historical_fundraise",
+    "live_fundraising_outcome", "placement_agent_expert_review", "other_verified_source"
+  ]).notNull(),
+  consentVerified: boolean("consentVerified").notNull().default(false),
+  calibrationEligible: boolean("calibrationEligible").notNull().default(false),
+  verificationStatus: mysqlEnum("verificationStatus", ["unverified", "verified", "rejected"]).notNull().default("unverified"),
+  anonymized: boolean("anonymized").notNull().default(false),
+  dataQualityRating: mysqlEnum("dataQualityRating", ["high", "medium", "low", "unrated"]).notNull().default("unrated"),
+  retentionExpiresAt: bigint("retentionExpiresAt", { mode: "number" }),
+  submittedAt: bigint("submittedAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type LpTwinHumanResponse = typeof lpTwinHumanResponses.$inferSelect;
+export type InsertLpTwinHumanResponse = typeof lpTwinHumanResponses.$inferInsert;
+
+/**
+ * lp_twin_synthetic_snapshots — Frozen synthetic outputs before human responses are revealed.
+ */
+export const lpTwinSyntheticSnapshots = mysqlTable("lp_twin_synthetic_snapshots", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  scenarioId: int("scenarioId").notNull(),
+  scenarioVersion: int("scenarioVersion").notNull(),
+  agentId: varchar("agentId", { length: 64 }).notNull(),
+  agentBankVersion: varchar("agentBankVersion", { length: 32 }).notNull(),
+  fitEngineVersion: varchar("fitEngineVersion", { length: 32 }).notNull(),
+  objectionEngineVersion: varchar("objectionEngineVersion", { length: 32 }).notNull(),
+  syntheticVerdict: mysqlEnum("syntheticVerdict", ["pass", "conditional", "reject"]).notNull(),
+  fitScore: decimal("fitScore", { precision: 5, scale: 1 }).notNull(),
+  fitCategory: varchar("fitCategory", { length: 64 }).notNull(),
+  objectionsJson: text("objectionsJson").notNull(),
+  evidenceRequestedJson: text("evidenceRequestedJson"),
+  termsChallengedJson: text("termsChallengedJson"),
+  expectedNextStep: mysqlEnum("expectedNextStep", ["reject", "more_information", "meeting", "diligence", "ic_progression"]),
+  confidence: varchar("confidence", { length: 32 }),
+  isFrozen: boolean("isFrozen").notNull().default(true),  // Must never be mutated after creation
+  frozenAt: bigint("frozenAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  createdByUserId: int("createdByUserId").notNull(),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type LpTwinSyntheticSnapshot = typeof lpTwinSyntheticSnapshots.$inferSelect;
+export type InsertLpTwinSyntheticSnapshot = typeof lpTwinSyntheticSnapshots.$inferInsert;
+
+/**
+ * lp_twin_calibration_candidates — Proposed agent bank changes awaiting human approval.
+ */
+export const lpTwinCalibrationCandidates = mysqlTable("lp_twin_calibration_candidates", {
+  id: int("id").autoincrement().primaryKey(),
+  orgId: int("orgId").notNull(),
+  segmentId: varchar("segmentId", { length: 64 }).notNull(),
+  ruleOrAttribute: varchar("ruleOrAttribute", { length: 256 }).notNull(),
+  currentValue: text("currentValue").notNull(),
+  proposedValue: text("proposedValue").notNull(),
+  evidenceCount: int("evidenceCount").notNull().default(0),
+  supportingComparisonIds: text("supportingComparisonIds"),  // JSON int[]
+  confidence: mysqlEnum("confidence", ["high", "medium", "low"]).notNull().default("low"),
+  impactEstimate: text("impactEstimate"),
+  proposedBy: int("proposedBy").notNull(),
+  reviewStatus: mysqlEnum("reviewStatus", ["proposed", "under_review", "approved", "rejected", "deferred"]).notNull().default("proposed"),
+  approvedBy: int("approvedBy"),
+  approvedAt: bigint("approvedAt", { mode: "number" }),
+  effectiveAgentBankVersion: varchar("effectiveAgentBankVersion", { length: 32 }),
+  createdAt: bigint("createdAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+  updatedAt: bigint("updatedAt", { mode: "number" }).notNull().$defaultFn(() => Date.now()),
+});
+export type LpTwinCalibrationCandidate = typeof lpTwinCalibrationCandidates.$inferSelect;
+export type InsertLpTwinCalibrationCandidate = typeof lpTwinCalibrationCandidates.$inferInsert;

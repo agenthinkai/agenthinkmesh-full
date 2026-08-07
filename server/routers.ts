@@ -61,6 +61,7 @@ import { scenarioSimRouter } from "./routers/scenarioSim";
 import { pharmaPilotRouter } from "./routers/pharmaPilot";
 import { lpTwinRouter } from "./routers/lpTwin";
 import { lpTwinScenarioRouter } from "./routers/lpTwinScenario";
+import { lpTwinValidationRouter } from "./routers/lpTwinValidation";
 import { lpTwinMeetingRouter } from "./routers/lpTwinMeeting";
 import {
   arosDiscoveryRouter,
@@ -175,6 +176,7 @@ export const appRouter = router({
   lpTwin: lpTwinRouter,
   lpTwinScenario: lpTwinScenarioRouter,
   lpTwinMeeting: lpTwinMeetingRouter,
+  lpTwinValidation: lpTwinValidationRouter,
   prospectConfigs: prospectConfigsRouter,
   twinParameters: twinParametersRouter,
   workflowProtocols: workflowProtocolsRouter,
