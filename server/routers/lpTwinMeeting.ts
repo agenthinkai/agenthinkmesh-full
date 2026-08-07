@@ -44,6 +44,7 @@ import {
 } from "../../drizzle/schema";
 import {
   buildFundProfileFromDb,
+  type FundProfile,
   FIT_ENGINE_VERSION,
   computeAllocatorFit,
 } from "../../shared/captwin/fitEngine";
@@ -126,7 +127,7 @@ export const lpTwinMeetingRouter = router({
           )
         ).limit(1);
         if (segResult) {
-          fitResult = segResult.fitResultJson ? JSON.parse(segResult.fitResultJson) : undefined;
+          fitResult = segResult.fitReasonsJson ? JSON.parse(segResult.fitReasonsJson) : undefined;
         }
       }
 
@@ -192,7 +193,7 @@ export const lpTwinMeetingRouter = router({
     }))
     .query(async ({ ctx, input }) => {
       const db = await getDb();
-      let fundProfile;
+      let fundProfile: FundProfile | undefined;
       if (input.compareWithFundId && db) {
         const fund = await assertFundOwnership(db, input.compareWithFundId, ctx.orgId);
         fundProfile = buildFundProfileFromDb(fund);

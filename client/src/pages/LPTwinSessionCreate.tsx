@@ -77,14 +77,14 @@ export default function LPTwinSessionCreate() {
     return segments.filter(
       (s) =>
         s.name.toLowerCase().includes(q) ||
-        s.region.toLowerCase().includes(q) ||
-        s.segment.toLowerCase().includes(q)
+        s.geography.toLowerCase().includes(q) ||
+        s.segmentType.toLowerCase().includes(q)
     );
   }, [segments, segmentSearch]);
 
   const segmentsByRegion = useMemo(() => {
     return filteredSegments.reduce<Record<string, typeof segments>>((acc, seg) => {
-      const region = seg.region || "Other";
+      const region = seg.geography || "Other";
       if (!acc[region]) acc[region] = [];
       acc[region].push(seg);
       return acc;
@@ -271,10 +271,10 @@ export default function LPTwinSessionCreate() {
                         <div className="min-w-0">
                           <p className="text-sm font-medium leading-tight">{seg.name}</p>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {seg.segment} · USD {seg.ticketMin}M–{seg.ticketMax}M
+                            {seg.segmentType} · USD {seg.ticketSizeMinM}M–{seg.ticketSizeMaxM}M
                             {seg.shariaRequired && " · Sharia"}
-                            {seg.esgPriority >= 8 && " · ESG Mandate"}
-                            {seg.irrHurdle ? ` · IRR ≥ ${seg.irrHurdle}%` : ""}
+                            {" · ESG Mandate"}
+                            {seg.returnThresholdPct ? ` · IRR ≥ ${seg.returnThresholdPct}%` : ""}
                           </p>
                         </div>
                       </label>

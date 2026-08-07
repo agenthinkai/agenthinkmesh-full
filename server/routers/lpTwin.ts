@@ -43,6 +43,7 @@ import {
   OBJECTION_ENGINE_VERSION,
   computeAllocatorFit,
   buildFundProfileFromDb,
+  type FundProfile,
   generateObjections,
   summariseObjections,
 } from "../../shared/captwin";
@@ -147,14 +148,19 @@ function buildFundParams(
   const economics = JSON.parse(fund.economicsJson) as { managementFeePct: number; carryPct: number };
   const trackRecord = JSON.parse(fund.trackRecordJson) as { trackRecordYrs: number; priorFundIRR: number };
   return {
-    strategy: fund.strategy as FundProfile["strategy"],
-    targetCapital: Number(fund.targetFundSizeM),
-    managementFee: economics.managementFeePct,
-    carry: economics.carryPct,
-    trackRecord: trackRecord.trackRecordYrs,
-    priorIRR: trackRecord.priorFundIRR,
-    velocityLever: (assumptions?.velocityLever as number) ?? 50,
-    placementAgent: (assumptions?.placementAgent as boolean) ?? false,
+    fundName: fund.fundName,
+    gpName: fund.gpName,
+    strategy: fund.strategy,
+    assetClass: fund.assetClass ?? null,
+    geography: fund.geography ?? null,
+    domicile: fund.domicile ?? null,
+    currency: fund.currency ?? "USD",
+    targetFundSizeM: Number(fund.targetFundSizeM),
+    managementFeePct: economics.managementFeePct,
+    carryPct: economics.carryPct,
+    trackRecordYrs: trackRecord.trackRecordYrs,
+    priorFundIRR: trackRecord.priorFundIRR ?? null,
+    fundVersion: fund.version ?? 1,
   };
 }
 

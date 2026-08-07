@@ -104,7 +104,7 @@ export default function LPTwinAgentBank() {
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       <p className="text-sm font-medium">{agent.name}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{agent.segmentType}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{agent.type}</p>
                       <Badge variant="outline" className="text-xs mt-1.5 text-blue-400 border-blue-500/30">{agent.archetypeLabel}</Badge>
                     </div>
                     {agent.fitScore !== null && (

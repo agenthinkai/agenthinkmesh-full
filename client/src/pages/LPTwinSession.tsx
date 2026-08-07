@@ -15,21 +15,21 @@ import {
 interface DimensionScore { dimension: string; score: number; weight: number; reasoning: string; dataPresent: boolean; }
 interface EvidenceGap { field: string; description: string; priority: "Critical" | "High" | "Medium" | "Low"; impactOnScore: string; }
 interface Objection { category: string; statement: string; severity: "Critical" | "High" | "Moderate" | "Low"; likelihood: string; isCurable: boolean; recommendedResponse: string; suggestedTermAdjustment: string | null; suggestedPositioningAdjustment: string | null; }
-interface SegmentResult { id: number; segmentId: string; fitScore: string; fitReasonsJson: string; disqualifiersJson: string; objectionsJson: string; evidenceGapsJson: string; complianceFlagsJson: string; icVerdict: string | null; tailoredPositioning: string | null; probabilityBand: string | null; modelVersion: string | null; createdAt: number | null; }
+interface SegmentResult { id: number; segmentId: string; fitScore: string; fitReasonsJson: string | null; disqualifiersJson: string | null; objectionsJson: string | null; evidenceGapsJson: string | null; complianceFlagsJson: string | null; icVerdict: string | null; tailoredPositioning: string | null; probabilityBand: string | null; modelVersion: string | null; createdAt: number; }
 
 function fitCategoryFromScore(s: number) { return s >= 70 ? "Strong Fit" : s >= 50 ? "Conditional Fit" : s >= 30 ? "Weak Fit" : "Likely Ineligible"; }
 function fitCategoryColor(s: number) { return s >= 70 ? "text-emerald-400" : s >= 50 ? "text-amber-400" : s >= 30 ? "text-orange-400" : "text-red-400"; }
 function fitBadgeVariant(s: number): "default" | "secondary" | "destructive" | "outline" { return s >= 70 ? "default" : s >= 50 ? "secondary" : "destructive"; }
 function severityColor(sev: string) { return sev === "Critical" ? "text-red-400 bg-red-950/40 border-red-800/40" : sev === "High" ? "text-orange-400 bg-orange-950/40 border-orange-800/40" : sev === "Moderate" ? "text-amber-400 bg-amber-950/40 border-amber-800/40" : "text-slate-400 bg-slate-800/40 border-slate-700/40"; }
-function statusIcon(status: string) { switch (status) { case "completed": return <CheckCircle2 className="w-4 h-4 text-emerald-400" />; case "running": return <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />; case "failed": return <XCircle className="w-4 h-4 text-red-400" />; case "partially_complete": return <AlertTriangle className="w-4 h-4 text-amber-400" />; default: return <Clock className="w-4 h-4 text-slate-400" />; } }
+function statusIcon(status: string) { switch (status) { case "completed": return <CheckCircle2 className="w-4 h-4 text-emerald-400" />; case "running": return <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />; case "failed": return <XCircle className="w-4 h-4 text-red-400" />; case "failed": return <AlertTriangle className="w-4 h-4 text-amber-400" />; default: return <Clock className="w-4 h-4 text-slate-400" />; } }
 
 function SegmentResultCard({ result, sessionId, agentName, onAskLp }: { result: SegmentResult; sessionId: number; agentName: string; onAskLp: (segId: string, name: string) => void; }) {
   const [expanded, setExpanded] = useState(false);
   const score = parseFloat(result.fitScore);
-  const dimensions: DimensionScore[] = (() => { try { return JSON.parse(result.fitReasonsJson) as DimensionScore[]; } catch { return []; } })();
-  const disqualifiers: string[] = (() => { try { return JSON.parse(result.disqualifiersJson) as string[]; } catch { return []; } })();
-  const objections: Objection[] = (() => { try { return JSON.parse(result.objectionsJson) as Objection[]; } catch { return []; } })();
-  const evidenceGaps: EvidenceGap[] = (() => { try { return JSON.parse(result.evidenceGapsJson) as EvidenceGap[]; } catch { return []; } })();
+  const dimensions: DimensionScore[] = (() => { try { return JSON.parse(result.fitReasonsJson ?? "[]") as DimensionScore[]; } catch { return []; } })();
+  const disqualifiers: string[] = (() => { try { return JSON.parse(result.disqualifiersJson ?? "[]") as string[]; } catch { return []; } })();
+  const objections: Objection[] = (() => { try { return JSON.parse(result.objectionsJson ?? "[]") as Objection[]; } catch { return []; } })();
+  const evidenceGaps: EvidenceGap[] = (() => { try { return JSON.parse(result.evidenceGapsJson ?? "[]") as EvidenceGap[]; } catch { return []; } })();
   const criticalCount = objections.filter((o) => o.severity === "Critical" || o.severity === "High").length;
   const curableCount = objections.filter((o) => o.isCurable).length;
   return (
@@ -205,7 +205,7 @@ export default function LPTwinSession() {
   const weakFit = results.filter((r) => parseFloat(r.fitScore) < 50).length;
   const isPending = session.status === "pending";
   const isRunning = session.status === "running";
-  const isComplete = session.status === "completed" || session.status === "partially_complete";
+  const isComplete = session.status === "completed" || session.status === "failed";
   const isFailed = session.status === "failed";
 
   return (
@@ -295,7 +295,7 @@ export default function LPTwinSession() {
           </div>
         ) : null}
 
-        {session.status === "partially_complete" ? (
+        {session.status === "failed" ? (
           <div className="bg-amber-950/20 border border-amber-800/30 rounded-xl p-4 flex items-start gap-3">
             <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
             <div>
