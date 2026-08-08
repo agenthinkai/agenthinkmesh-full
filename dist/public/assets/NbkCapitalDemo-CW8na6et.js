@@ -1,0 +1,1 @@
+import{j as e}from"./index-THH9YYiu.js";import{P as a,a as t}from"./prospectConfigs-DP8A3A1Z.js";function i(){return e.jsxDEV(a,{"data-loc":"client/src/pages/NbkCapitalDemo.tsx:5",config:t.nbk},void 0,!1,{fileName:"/home/ubuntu/agenthinkmesh-full/client/src/pages/NbkCapitalDemo.tsx",lineNumber:5,columnNumber:10},this)}export{i as default};

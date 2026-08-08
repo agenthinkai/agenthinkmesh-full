@@ -1,0 +1,1 @@
+import{j as a}from"./index-THH9YYiu.js";import{P as e,a as t}from"./prospectConfigs-DP8A3A1Z.js";function o(){return a.jsxDEV(e,{"data-loc":"client/src/pages/KiaCapitalDemo.tsx:5",config:t.kia},void 0,!1,{fileName:"/home/ubuntu/agenthinkmesh-full/client/src/pages/KiaCapitalDemo.tsx",lineNumber:5,columnNumber:10},this)}export{o as default};

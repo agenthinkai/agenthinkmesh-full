@@ -1,0 +1,1 @@
+import{j as n,K as s}from"./index-THH9YYiu.js";function l({className:e,...t}){return n.jsxDEV("div",{"data-loc":"client/src/components/ui/skeleton.tsx:5","data-slot":"skeleton",className:s("bg-accent animate-pulse rounded-md",e),...t},void 0,!1,{fileName:"/home/ubuntu/agenthinkmesh-full/client/src/components/ui/skeleton.tsx",lineNumber:5,columnNumber:5},this)}export{l as S};

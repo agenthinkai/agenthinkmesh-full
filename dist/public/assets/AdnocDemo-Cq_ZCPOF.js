@@ -1,0 +1,1 @@
+import{j as e}from"./index-THH9YYiu.js";import{P as o,a as s}from"./prospectConfigs-DP8A3A1Z.js";function a(){return e.jsxDEV(o,{"data-loc":"client/src/pages/AdnocDemo.tsx:5",config:s.adnoc},void 0,!1,{fileName:"/home/ubuntu/agenthinkmesh-full/client/src/pages/AdnocDemo.tsx",lineNumber:5,columnNumber:10},this)}export{a as default};

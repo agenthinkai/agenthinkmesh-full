@@ -1,0 +1,1 @@
+import{j as e}from"./index-THH9YYiu.js";import{P as t,a as s}from"./prospectConfigs-DP8A3A1Z.js";function m(){return e.jsxDEV(t,{"data-loc":"client/src/pages/StcDemo.tsx:5",config:s.stc},void 0,!1,{fileName:"/home/ubuntu/agenthinkmesh-full/client/src/pages/StcDemo.tsx",lineNumber:5,columnNumber:10},this)}export{m as default};

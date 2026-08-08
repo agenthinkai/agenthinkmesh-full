@@ -1,0 +1,1 @@
+import{j as e}from"./index-THH9YYiu.js";import{P as o,a as r}from"./prospectConfigs-DP8A3A1Z.js";function a(){return e.jsxDEV(o,{"data-loc":"client/src/pages/Core42Demo.tsx:5",config:r.core42},void 0,!1,{fileName:"/home/ubuntu/agenthinkmesh-full/client/src/pages/Core42Demo.tsx",lineNumber:5,columnNumber:10},this)}export{a as default};

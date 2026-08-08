@@ -1,0 +1,1 @@
+import{F as a,X as r,Y as s,H as i}from"./generateCategoricalChart-BUjfE_3H.js";import{A as x}from"./Area-0ZRlpX7a.js";var o=a({chartName:"AreaChart",GraphicalChild:x,axisComponents:[{axisType:"xAxis",AxisComp:r},{axisType:"yAxis",AxisComp:s}],formatAxisMap:i});export{o as A};

@@ -1,0 +1,1 @@
+import{j as e}from"./index-THH9YYiu.js";import{P as t,a as n}from"./prospectConfigs-DP8A3A1Z.js";function a(){return e.jsxDEV(t,{"data-loc":"client/src/pages/TencentDemo.tsx:5",config:n.tencent},void 0,!1,{fileName:"/home/ubuntu/agenthinkmesh-full/client/src/pages/TencentDemo.tsx",lineNumber:5,columnNumber:10},this)}export{a as default};
